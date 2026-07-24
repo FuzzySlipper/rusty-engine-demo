@@ -20,4 +20,28 @@ The original Engine repository contains the historical Asha donor provenance for
 This repository records its immediate Engine source and does not recreate the old donor hierarchy or
 runtime claims.
 
-M10B will append the TypeScript/browser transfer and the exact Kenney license/fixture mapping.
+## M10B browser transfer
+
+| Local surface | Source path | Treatment |
+|---|---|---|
+| `ts/packages/project-content` | same path | Copied as the optional immutable content composer and renamed to `@rusty-engine-demo/project-content`. |
+| `ts/packages/browser-shell` | same path | Copied as the product-owned input, projection, feedback, and browser shell; imports renamed to the demo package scope. |
+| `ts/packages/render-contracts` | same path | Copied as the browser product's closed typed render vocabulary and renamed to the demo package scope. |
+| `ts/packages/renderer-three` | same path | Copied as the retained Three/WebGL backend and renamed to the demo package scope. |
+| `scripts/browser-smoke.mjs` | same path | Copied as the end-to-end product proof; the Rust package invocation changed from the source product name to `loading-bay-game`. |
+| Root pnpm, TypeScript, and Vite configuration | same paths | Copied and narrowed to the demo-owned package identities and verification gate. |
+
+The browser packages moved together because all four served one product at extraction time. A
+presentation package can earn promotion back to Engine only after a second real consumer proves a
+smaller reusable seam.
+
+The CC0 conversion source is copied byte-for-byte into `fixtures/voxel-conversion` so the demo can
+inspect the source named by its persisted converted-wall provenance:
+
+- `kenney-wall-a.glb`: 3,352 bytes, SHA-256
+  `6fceda24c30d2c22694f232f03fe2115fb1a462046fbbf719a90eea10dc9af00`
+- `KENNEY-RETRO-URBAN-KIT-LICENSE.txt`: 318 bytes, SHA-256
+  `3679c62e69e67da74fec17327635e67c92991ac82b0bdfcc203d8ecd473c016a`
+
+The Engine copies remain in their repository because Engine's converter/provider tests consume
+them independently. This downstream copy is licensed and source-traceable; it is not a path link.

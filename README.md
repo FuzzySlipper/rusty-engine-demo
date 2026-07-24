@@ -8,24 +8,32 @@ voxel, mesh, asset, and conversion mechanisms.
 
 The Rust game vertical is named `loading-bay-game`. Its Engine dependencies are public Git
 dependencies pinned to exact revision `a2e55f9660e46751d4c78bcdd23b9a321b0dc961`; a sibling checkout
-is not required. That revision is the verified M9 handoff and will be re-pinned if its active review
-produces a successor commit.
+is not required. The browser shell and renderer are demo-owned packages under the
+`@rusty-engine-demo` scope.
 
-## Current extraction phase
+## Run and verify
 
-M10A ports the complete Rust gameplay vertical and its focused/headless tests. The TypeScript
-content-composition and browser/Three product move in the dependency-ordered M10B slice; until then,
-the copied `browser-host` binary compiles and its Rust routes are tested, but a browser distribution
-is intentionally not present in this repository.
-
-## Verify the Rust vertical
+Install the pinned JavaScript toolchain, build the shell, and launch the Rust host:
 
 ```bash
-./scripts/verify-rust.sh
+pnpm install --frozen-lockfile
+pnpm run build:shell
+cargo run --locked -p loading-bay-game --bin browser-host
 ```
 
-This checks formatting, exact Git dependency resolution, the complete Rust test suite, Clippy, and
-the headless door/encounter paths.
+Then open `http://127.0.0.1:8787`. The default project is
+`content/projects/loading-bay.project.json`; pass `--project <path>` to select another admitted
+project.
+
+The complete product gate is:
+
+```bash
+pnpm run verify
+```
+
+It checks package and repository boundaries, TypeScript content and presentation tests, the exact
+Engine Git resolution, the complete Rust suite and Clippy, and a real Chromium/Three/WebGL flow.
+For Rust-only iteration, `./scripts/verify-rust.sh` remains available.
 
 ## Architecture boundary
 

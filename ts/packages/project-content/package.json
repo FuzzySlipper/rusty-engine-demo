@@ -1,0 +1,20 @@
+{
+  "name": "@rusty-engine-demo/project-content",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "check": "tsc --build && node dist/generate.js --check",
+    "generate": "tsc --build && node dist/generate.js --write",
+    "test": "tsc --build && node --test dist/*.test.js",
+    "typecheck": "tsc --build"
+  }
+}

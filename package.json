@@ -1,0 +1,23 @@
+{
+  "name": "rusty-engine-demo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "audit:boundary": "node scripts/audit-boundary.mjs",
+    "build:render": "pnpm --filter @rusty-engine-demo/render-contracts build && pnpm --filter @rusty-engine-demo/renderer-three build",
+    "build:shell": "pnpm run build:render && pnpm --filter @rusty-engine-demo/browser-shell build",
+    "check:content": "pnpm --filter @rusty-engine-demo/project-content check",
+    "generate:content": "pnpm --filter @rusty-engine-demo/project-content generate",
+    "test:shell": "pnpm --filter @rusty-engine-demo/browser-shell test",
+    "test:browser": "node scripts/browser-smoke.mjs",
+    "test:render": "pnpm --filter @rusty-engine-demo/render-contracts test && pnpm --filter @rusty-engine-demo/renderer-three test",
+    "test:ts": "pnpm --filter @rusty-engine-demo/project-content test",
+    "typecheck": "tsc --build ts/tsconfig.json && pnpm --filter @rusty-engine-demo/browser-shell typecheck",
+    "verify": "bash scripts/verify.sh"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.2",
+    "typescript": "5.9.3"
+  }
+}

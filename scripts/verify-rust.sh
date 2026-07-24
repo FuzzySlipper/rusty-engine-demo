@@ -6,7 +6,9 @@ cd "$DEMO_ROOT"
 
 cargo fmt --all --check
 
-if rg -n 'path\s*=\s*".*rusty-engine|asha-engine|asha-demo' Cargo.toml rust; then
+FORBIDDEN_ASHA_ENGINE="asha""-engine"
+FORBIDDEN_ASHA_DEMO="asha""-demo"
+if rg -n "path\\s*=\\s*\".*rusty-engine|${FORBIDDEN_ASHA_ENGINE}|${FORBIDDEN_ASHA_DEMO}" Cargo.toml rust; then
   echo "forbidden sibling/Asha dependency surfaced in active Rust source" >&2
   exit 1
 fi

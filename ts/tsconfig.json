@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/render-contracts" },
+    { "path": "./packages/renderer-three" },
+    { "path": "./packages/project-content" }
+  ]
+}

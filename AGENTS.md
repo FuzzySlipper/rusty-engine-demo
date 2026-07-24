@@ -17,5 +17,5 @@ an Asha compatibility project and it is not the place to generalize speculative 
   bridge, replay/certification spine, or live TypeScript gameplay authority.
 - Keep authored project content distinct from live runtime snapshots and transient presentation.
 - Preserve exact source and asset provenance in `docs/source-provenance.md`.
-- Run `./scripts/verify-rust.sh` for Rust-only changes. Once M10B lands, use the repository's full
-  verification gate for product-visible changes.
+- Run `./scripts/verify-rust.sh` for Rust-only iteration. Use `pnpm run verify` for every
+  product-visible or cross-language change.
