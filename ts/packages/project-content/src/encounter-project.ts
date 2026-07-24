@@ -11,6 +11,8 @@ export const ENCOUNTER_IDS = {
   encounter: 2,
   exit: 3,
   firstEnemy: 4,
+  doorControl: 6,
+  extractionBeacon: 7,
   motionProbe: 10,
 } as const;
 
@@ -22,6 +24,7 @@ export interface EncounterProjectOptions {
   readonly enemyHealth?: number;
   readonly weaponDamage?: number;
   readonly weaponCooldownTicks?: number;
+  readonly beaconActivationRadius?: number;
 }
 
 const GENERATED_ROOM = {
@@ -173,12 +176,13 @@ export function loadingBayStoredProject(
   }
 
   return {
-    schemaVersion: 7,
+    schemaVersion: 8,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",
     assets: [
       { id: "mesh/control-panel" },
+      { id: "mesh/extraction-beacon" },
       { id: "mesh/player-marker" },
       { id: "mesh/security-door" },
       { id: "mesh/security-sentry" },
@@ -192,11 +196,20 @@ export function loadingBayStoredProject(
         entities: [
           ...entities.slice(0, -1),
           {
-            id: 6,
+            id: ENCOUNTER_IDS.doorControl,
             name: "door-control",
             translation: [2.5, 1.5, 10.5],
             renderable: { asset: "mesh/control-panel", visible: true },
             switch: { controls: [ENCOUNTER_IDS.exit] },
+          },
+          {
+            id: ENCOUNTER_IDS.extractionBeacon,
+            name: "extraction-beacon",
+            translation: [GENERATED_EXIT.centerX, 1.5, GENERATED_EXIT.wallZ + 1.5],
+            renderable: { asset: "mesh/extraction-beacon", visible: true },
+            extractionBeacon: {
+              activationRadius: options.beaconActivationRadius ?? 16,
+            },
           },
           probe,
         ],

@@ -59,11 +59,20 @@ fn malformed_or_missing_voxel_assets_report_project_source_paths() {
     let asset = decode_voxel_asset(ASSET).unwrap();
     let mut malformed: serde_json::Value =
         serde_json::from_str(&project_with_asset(&asset)).unwrap();
-    malformed["assets"][5]["voxelVolume"]["contentHash"] =
+    let asset_index = malformed["assets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .position(|candidate| candidate["id"] == asset.asset_id)
+        .expect("converted voxel asset");
+    malformed["assets"][asset_index]["voxelVolume"]["contentHash"] =
         "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into();
     let diagnostic = stored_diagnostic(&serde_json::to_string(&malformed).unwrap());
     assert_eq!(diagnostic.code, diagnostic_code::INVALID_VOXEL_ASSET);
-    assert_eq!(diagnostic.path, "assets[5].voxelVolume.contentHash");
+    assert_eq!(
+        diagnostic.path,
+        format!("assets[{asset_index}].voxelVolume.contentHash")
+    );
 
     let mut missing: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
     missing["scenes"][0]["voxelEnvironment"] = serde_json::json!({

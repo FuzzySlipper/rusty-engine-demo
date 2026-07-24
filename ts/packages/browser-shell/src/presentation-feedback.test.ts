@@ -199,6 +199,7 @@ test("typed gameplay cues map directly to bounded animation audio particle and b
     "damage",
     "defeat",
     "open",
+    "active",
   ]);
   assert.deepEqual(sink.particles.map((particle) => particle.kind), [
     "movement",
@@ -207,17 +208,27 @@ test("typed gameplay cues map directly to bounded animation audio particle and b
     "impact",
     "defeat",
     "door",
+    "beacon",
   ]);
   assert.deepEqual(sink.billboards.map((billboard) => billboard.text), [
     "BLOCKED",
     "-60",
     "DEFEATED",
     "EXIT OPEN",
+    "EXTRACTION ONLINE",
   ]);
-  assert.deepEqual(sink.sounds, ["step", "blocked", "shot", "hit", "defeat", "doorOpen"]);
+  assert.deepEqual(sink.sounds, [
+    "step",
+    "blocked",
+    "shot",
+    "hit",
+    "defeat",
+    "doorOpen",
+    "beacon",
+  ]);
   assert.deepEqual(sink.billboards[1]?.anchor, { entity: 4, position: [7.5, 0, 5.5] });
   assert.deepEqual(sink.billboards[3]?.anchor, { entity: 3, position: [4.5, 4, 10.5] });
-  assert.deepEqual(receipt, { cueCount: 6, failedOperations: 0, scheduledSounds: 6 });
+  assert.deepEqual(receipt, { cueCount: 7, failedOperations: 0, scheduledSounds: 7 });
 });
 
 test("presentation host failure is dropped while later cue realizations continue", async () => {
@@ -228,8 +239,8 @@ test("presentation host failure is dropped while later cue realizations continue
   const receipt = adapter.apply(feedbackState());
 
   assert.equal(receipt.failedOperations, 1);
-  assert.equal(receipt.scheduledSounds, 5);
-  assert.equal(sink.billboards.at(-1)?.text, "EXIT OPEN");
+  assert.equal(receipt.scheduledSounds, 6);
+  assert.equal(sink.billboards.at(-1)?.text, "EXTRACTION ONLINE");
   assert.equal(await adapter.activateAudio(), "running");
 });
 
@@ -250,7 +261,7 @@ test("browser reset clears concrete pulses and audio before rebuilding current p
   assert.equal(host.entities.get(3)?.dataset.animationPulse, "open");
   assert.equal(host.entities.get(4)?.dataset.animationPulse, "defeat");
   assert.ok(Number(layer.dataset.activeEffects ?? "0") > 0);
-  assert.equal(audioStatus.dataset.activeSounds, "6");
+  assert.equal(audioStatus.dataset.activeSounds, "7");
 
   const currentState = feedbackState();
   const receipt = adapter.apply({
@@ -306,6 +317,13 @@ function feedbackState(): RuntimeBrowserState {
       },
     },
     weapon: { damage: 60, ammoRemaining: 6, ammoCapacity: 8, readyAtTick: 6 },
+    extractionBeacon: {
+      id: 7,
+      state: "active",
+      activationRadius: 2.5,
+      activatedBy: 1,
+      activatedAtTick: 5,
+    },
     voxelMeshes: [],
     generatedEnvironment: null,
     enemies: [
@@ -324,6 +342,7 @@ function feedbackState(): RuntimeBrowserState {
         { kind: "damage", attacker: 1, target: 4, amount: 60, remaining: 40 },
         { kind: "defeat", attacker: 1, entity: 4 },
         { kind: "doorChanged", entity: 3, state: "open" },
+        { kind: "extractionBeaconActivated", entity: 7, actor: 1 },
       ],
     },
     lastEvents: [],

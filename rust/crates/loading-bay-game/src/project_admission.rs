@@ -16,6 +16,7 @@ use crate::combat::{HealthConfig, WeaponConfig};
 use crate::content::AdmittedProject;
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::DoorConfig;
+use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::navigation::NavigationConfig;
 use crate::player::{PlayerControllerConfig, PlayerInputBindings};
 use crate::project_codec::decode_project_document;
@@ -485,6 +486,10 @@ fn authored_definition(
             EntityId::new(encounter.exit),
         );
     }
+    if let Some(beacon) = authored.extraction_beacon {
+        definition = definition
+            .with_extraction_beacon(ExtractionBeaconConfig::new(beacon.activation_radius));
+    }
     if let Some(navigation) = authored.navigation {
         definition = definition.with_navigation(NavigationConfig {
             goal: array_vec3(navigation.goal),
@@ -618,6 +623,12 @@ fn definition_error(
         Error::EnemyInMultipleEncounters { second, .. } => (
             diagnostic_code::INVALID_RELATIONSHIP,
             entity_path(scene_index, indexes, *second, "encounter.members"),
+        ),
+        Error::ExtractionBeaconMissingTransform { entity }
+        | Error::ExtractionBeaconMissingRenderable { entity }
+        | Error::InvalidExtractionBeaconConfig { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "extractionBeacon"),
         ),
     };
     StoredProjectError::new(code, path, error.to_string())

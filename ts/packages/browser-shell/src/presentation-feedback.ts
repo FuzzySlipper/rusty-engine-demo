@@ -10,7 +10,8 @@ export type FeedbackParticleKind =
   | "muzzle"
   | "impact"
   | "defeat"
-  | "door";
+  | "door"
+  | "beacon";
 export type FeedbackSoundKind =
   | "step"
   | "blocked"
@@ -18,7 +19,8 @@ export type FeedbackSoundKind =
   | "hit"
   | "defeat"
   | "doorOpen"
-  | "doorClose";
+  | "doorClose"
+  | "beacon";
 
 export interface FeedbackAnchor {
   readonly entity: number;
@@ -125,6 +127,12 @@ export class PresentationFeedbackAdapter {
           ));
           sound(cue.state === "open" ? "doorOpen" : "doorClose");
           break;
+        case "extractionBeaconActivated":
+          attempt(() => this.#sink.pulseAnimation(cue.entity, "active"));
+          attempt(() => this.#sink.emitParticle("beacon", anchor));
+          attempt(() => this.#sink.showBillboard("EXTRACTION ONLINE", "success", anchor));
+          sound("beacon");
+          break;
       }
     }
     return {
@@ -148,6 +156,8 @@ function cueAnchor(state: RuntimeBrowserState, cue: RuntimeFeedbackCue): Feedbac
     case "defeat":
       return entityAnchor(state, cue.entity);
     case "doorChanged":
+      return entityAnchor(state, cue.entity);
+    case "extractionBeaconActivated":
       return entityAnchor(state, cue.entity);
   }
 }
@@ -438,6 +448,7 @@ const SOUND_PROFILES: Record<FeedbackSoundKind, {
   defeat: { frequency: 180, frequencyEnd: 48, duration: 0.3, gain: 0.045, wave: "sawtooth" },
   doorOpen: { frequency: 150, frequencyEnd: 310, duration: 0.24, gain: 0.035, wave: "triangle" },
   doorClose: { frequency: 260, frequencyEnd: 90, duration: 0.2, gain: 0.035, wave: "triangle" },
+  beacon: { frequency: 240, frequencyEnd: 720, duration: 0.32, gain: 0.035, wave: "sine" },
 };
 
 function clamp(value: number, minimum: number, maximum: number): number {

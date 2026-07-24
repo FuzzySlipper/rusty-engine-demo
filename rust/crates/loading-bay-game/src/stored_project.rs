@@ -10,7 +10,7 @@ use core_assets::{AssetId, AssetKind};
 use serde::{Deserialize, Serialize};
 use voxel_asset::VoxelAsset;
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 7;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 8;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -127,6 +127,8 @@ pub struct StoredEntityDefinition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub encounter: Option<StoredEncounter>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub extraction_beacon: Option<StoredExtractionBeacon>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub kinematic: Option<StoredKinematic>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub navigation: Option<StoredNavigation>,
@@ -168,6 +170,12 @@ pub struct StoredSwitch {
 pub struct StoredEncounter {
     pub members: Vec<u64>,
     pub exit: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredExtractionBeacon {
+    pub activation_radius: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]

@@ -25,6 +25,7 @@ use state::{browser_state, BrowserState};
 
 const DEFAULT_ADDRESS: &str = "127.0.0.1:37881";
 const ACTOR: EntityId = EntityId::new(1);
+const BEACON: EntityId = EntityId::new(7);
 const ENCOUNTER: EntityId = EntityId::new(2);
 const EXIT: EntityId = EntityId::new(3);
 const FIRST_ENEMY: u64 = 4;
@@ -486,6 +487,24 @@ fn route(
                 Err(error) => error_json(409, &format!("{error}")),
             }
         }
+        ("POST", "/api/extraction-beacon/activate") => {
+            let mut runtime = runtime.lock().expect("runtime lock");
+            match runtime.activate_extraction_beacon(ACTOR, BEACON) {
+                Ok(receipt) => {
+                    let mut feedback = BrowserFeedbackProjection::default();
+                    feedback.extend_extraction_beacon(receipt.fact);
+                    json_response(
+                        200,
+                        browser_state(
+                            &runtime,
+                            vec!["ExtractionBeaconActivated".to_owned()],
+                            feedback,
+                        ),
+                    )
+                }
+                Err(error) => error_json(409, &format!("{error}")),
+            }
+        }
         ("POST", "/api/voxel-edit") => {
             let request: BrowserVoxelEditRequest = match serde_json::from_slice(body) {
                 Ok(request) => request,
@@ -858,8 +877,13 @@ mod tests {
                     .as_array()
                     .expect("animation states")
                     .len(),
-                4
+                5
             );
+            assert!(value["presentation"]["animationStates"]
+                .as_array()
+                .expect("animation states")
+                .iter()
+                .any(|state| state["entity"] == BEACON.raw()));
         }
     }
 

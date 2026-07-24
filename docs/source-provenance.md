@@ -45,3 +45,11 @@ inspect the source named by its persisted converted-wall provenance:
 
 The Engine copies remain in their repository because Engine's converter/provider tests consume
 them independently. This downstream copy is licensed and source-traceable; it is not a path link.
+
+## M10C native downstream extension
+
+`ExtractionBeacon` and project schema 8 were authored directly in this repository after the
+transfer. The component family, named service, direct runtime entry point, typed fact, admission,
+snapshot persistence, browser readout, and Three presentation have no corresponding source path in
+Rusty Engine. Engine dependencies remain pinned to the same exact transfer revision, so this
+extension is evidence of downstream ownership rather than another copied product surface.

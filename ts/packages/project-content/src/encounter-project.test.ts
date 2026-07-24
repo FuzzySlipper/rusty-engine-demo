@@ -152,6 +152,21 @@ test("optional TypeScript authoring materializes the checked-in stored-project c
   assert.deepEqual(loadingBayStoredProject(), artifact);
 });
 
+test("the extraction beacon is game-owned data on its responsible entity", () => {
+  const project = loadingBayStoredProject({ beaconActivationRadius: 3 });
+  const beacon = project.scenes[0]?.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.extractionBeacon,
+  );
+
+  assert.deepEqual(beacon, {
+    id: ENCOUNTER_IDS.extractionBeacon,
+    name: "extraction-beacon",
+    translation: [4.5, 1.5, 12.5],
+    renderable: { asset: "mesh/extraction-beacon", visible: true },
+    extractionBeacon: { activationRadius: 3 },
+  });
+});
+
 test("stored-project seed remains a candidate-only variation", () => {
   const first = loadingBayStoredProject({ generationSeed: 4 });
   const second = loadingBayStoredProject({ generationSeed: 9 });

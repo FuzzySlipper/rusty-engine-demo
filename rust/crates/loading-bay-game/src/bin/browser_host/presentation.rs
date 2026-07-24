@@ -6,8 +6,8 @@
 
 use core_ids::EntityId;
 use loading_bay_game::{
-    CombatFact, DoorState, EnemyState, GameEvent, GameRuntime, MotionFact, NavigationFact,
-    NavigationState, PlayerControlFact,
+    CombatFact, DoorState, EnemyState, ExtractionBeaconFact, ExtractionBeaconState, GameEvent,
+    GameRuntime, MotionFact, NavigationFact, NavigationState, PlayerControlFact,
 };
 use serde::Serialize;
 
@@ -58,6 +58,10 @@ enum BrowserFeedbackCue {
     DoorChanged {
         entity: u64,
         state: &'static str,
+    },
+    ExtractionBeaconActivated {
+        entity: u64,
+        actor: u64,
     },
 }
 
@@ -158,6 +162,15 @@ impl BrowserFeedbackProjection {
         }
     }
 
+    pub(super) fn extend_extraction_beacon(&mut self, fact: ExtractionBeaconFact) {
+        let ExtractionBeaconFact::Activated { beacon, actor, .. } = fact;
+        self.cues
+            .push(BrowserFeedbackCue::ExtractionBeaconActivated {
+                entity: beacon.raw(),
+                actor: actor.raw(),
+            });
+    }
+
     fn push_movement(&mut self, entity: EntityId, from: [f32; 3], to: [f32; 3]) {
         if let Some(BrowserFeedbackCue::Movement {
             to: previous_to, ..
@@ -211,13 +224,23 @@ pub(super) fn project_presentation(
     player: EntityId,
     enemies: &[EntityId],
     door: EntityId,
+    beacon: EntityId,
     feedback: BrowserFeedbackProjection,
 ) -> BrowserPresentation {
-    let mut animation_states = Vec::with_capacity(enemies.len() + 2);
+    let mut animation_states = Vec::with_capacity(enemies.len() + 3);
     animation_states.push(BrowserAnimationState {
         entity: player.raw(),
         posture: "idle",
     });
+    if let Some(beacon) = runtime.session().extraction_beacon(beacon) {
+        animation_states.push(BrowserAnimationState {
+            entity: beacon.entity.raw(),
+            posture: match beacon.state {
+                ExtractionBeaconState::Standby => "standby",
+                ExtractionBeaconState::Active { .. } => "active",
+            },
+        });
+    }
     animation_states.extend(enemies.iter().map(|entity| {
         let enemy = runtime
             .session()
@@ -312,8 +335,13 @@ mod tests {
                 entity_facts: Vec::new(),
             },
         ]);
+        projection.extend_extraction_beacon(ExtractionBeaconFact::Activated {
+            beacon: EntityId::new(7),
+            actor,
+            tick: core_time::Tick::new(2),
+        });
 
-        assert_eq!(projection.cues.len(), 5);
+        assert_eq!(projection.cues.len(), 6);
         assert_eq!(
             projection.cues[0],
             BrowserFeedbackCue::Movement {
@@ -339,6 +367,10 @@ mod tests {
                 BrowserFeedbackCue::DoorChanged {
                     entity: 3,
                     state: "open"
+                },
+                BrowserFeedbackCue::ExtractionBeaconActivated {
+                    entity: 7,
+                    actor: 1
                 },
             ]
         ));

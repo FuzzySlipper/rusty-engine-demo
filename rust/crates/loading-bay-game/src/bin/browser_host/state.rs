@@ -2,11 +2,13 @@
 
 use core_ids::EntityId;
 use core_math::Vec3;
-use loading_bay_game::{DoorState, EncounterState, EnemyState, GameRuntime, NavigationState};
+use loading_bay_game::{
+    DoorState, EncounterState, EnemyState, ExtractionBeaconState, GameRuntime, NavigationState,
+};
 use serde::Serialize;
 
 use super::presentation::{project_presentation, BrowserFeedbackProjection, BrowserPresentation};
-use super::{ACTOR, ENCOUNTER, EXIT, FIRST_ENEMY, MOTION_PROBE, SECOND_ENEMY};
+use super::{ACTOR, BEACON, ENCOUNTER, EXIT, FIRST_ENEMY, MOTION_PROBE, SECOND_ENEMY};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -63,6 +65,16 @@ struct BrowserWeaponState {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct BrowserExtractionBeaconState {
+    id: u64,
+    state: &'static str,
+    activation_radius: f32,
+    activated_by: Option<u64>,
+    activated_at_tick: Option<u64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct BrowserVoxelMeshGroup {
     material_slot: u16,
     start: u32,
@@ -112,6 +124,7 @@ pub(super) struct BrowserState {
     combat_state: &'static str,
     player: BrowserPlayerState,
     weapon: BrowserWeaponState,
+    extraction_beacon: Option<BrowserExtractionBeaconState>,
     voxel_meshes: Vec<BrowserVoxelMeshChunk>,
     generated_environment: Option<BrowserGeneratedEnvironment>,
     enemies: Vec<BrowserEnemyState>,
@@ -206,6 +219,22 @@ pub(super) fn browser_state(
         ammo_capacity: weapon.config.ammo_capacity,
         ready_at_tick: weapon.state.ready_at_tick.raw(),
     };
+    let extraction_beacon = runtime.session().extraction_beacon(BEACON).map(|beacon| {
+        let (state, activated_by, activated_at_tick) = match beacon.state {
+            ExtractionBeaconState::Standby => ("standby", None, None),
+            ExtractionBeaconState::Active {
+                actor,
+                activated_at,
+            } => ("active", Some(actor.raw()), Some(activated_at.raw())),
+        };
+        BrowserExtractionBeaconState {
+            id: beacon.entity.raw(),
+            state,
+            activation_radius: beacon.config.activation_radius,
+            activated_by,
+            activated_at_tick,
+        }
+    });
     let player_motion_state = if last_events.iter().any(|event| event == "PlayerBlocked") {
         "blocked"
     } else if last_events.iter().any(|event| event == "PlayerMoved") {
@@ -319,6 +348,7 @@ pub(super) fn browser_state(
         combat_state,
         player: player_state,
         weapon: weapon_state,
+        extraction_beacon,
         voxel_meshes,
         generated_environment,
         enemies,
@@ -327,6 +357,7 @@ pub(super) fn browser_state(
             ACTOR,
             &[EntityId::new(FIRST_ENEMY), EntityId::new(SECOND_ENEMY)],
             EXIT,
+            BEACON,
             feedback,
         ),
         last_events,

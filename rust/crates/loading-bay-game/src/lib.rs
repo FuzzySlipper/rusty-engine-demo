@@ -11,6 +11,7 @@ mod content;
 mod definition;
 mod door;
 mod encounter;
+mod extraction_beacon;
 mod interaction;
 mod navigation;
 mod player;
@@ -44,6 +45,11 @@ pub use engine_spatial::{
     VoxelEditRejection, VoxelEditTransaction, VoxelProjectionRevisions, VoxelSourceRevision,
 };
 pub use engine_spatial::{MotionAxis, MotionFact, MotionPhaseReceipt};
+pub use extraction_beacon::{
+    ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconFact,
+    ExtractionBeaconReceipt, ExtractionBeaconState, ExtractionBeaconView,
+    MAX_EXTRACTION_BEACON_ACTIVATION_RADIUS,
+};
 pub use interaction::{SwitchComponent, SwitchView};
 pub use navigation::{
     NavigationComponent, NavigationConfig, NavigationFact, NavigationFailure,
@@ -71,17 +77,19 @@ pub use runtime_records::{GameEvent, JournalEntry, RuntimeReadout, RuntimeReceip
 pub use scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 pub use session::GameSession;
 pub use snapshot::{
-    decode_game_snapshot, encode_game_snapshot, EncounterSnapshot, EnemySnapshot, GameSnapshot,
-    GameSnapshotError, GeneratedRoomSnapshot, HealthSnapshot, MaterialVoxelSnapshot,
-    NavigationSnapshot, PlayerControllerSnapshot, PlayerInputBindingsSnapshot,
-    SnapshotEncounterState, SnapshotEnemyState, SnapshotNavigationState, VoxelCollisionSnapshot,
-    WeaponSnapshot, GAME_SNAPSHOT_SCHEMA_VERSION,
+    decode_game_snapshot, encode_game_snapshot, EncounterSnapshot, EnemySnapshot,
+    ExtractionBeaconSnapshot, GameSnapshot, GameSnapshotError, GeneratedRoomSnapshot,
+    HealthSnapshot, MaterialVoxelSnapshot, NavigationSnapshot, PlayerControllerSnapshot,
+    PlayerInputBindingsSnapshot, SnapshotEncounterState, SnapshotEnemyState,
+    SnapshotExtractionBeaconState, SnapshotNavigationState, VoxelCollisionSnapshot, WeaponSnapshot,
+    GAME_SNAPSHOT_SCHEMA_VERSION,
 };
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset, StoredCollision,
-    StoredDoor, StoredEncounter, StoredEntityDefinition, StoredGeneratedVoxelEnvironment,
-    StoredHealth, StoredKinematic, StoredMaterialVoxel, StoredMaterialVoxelEnvironment,
-    StoredNavigation, StoredPlayerController, StoredPlayerInputBindings, StoredProject,
-    StoredProjectError, StoredRenderable, StoredScene, StoredSolidVoxelEnvironment, StoredSwitch,
-    StoredVoxelEnvironment, StoredWeapon, STORED_PROJECT_SCHEMA_VERSION,
+    StoredDoor, StoredEncounter, StoredEntityDefinition, StoredExtractionBeacon,
+    StoredGeneratedVoxelEnvironment, StoredHealth, StoredKinematic, StoredMaterialVoxel,
+    StoredMaterialVoxelEnvironment, StoredNavigation, StoredPlayerController,
+    StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable, StoredScene,
+    StoredSolidVoxelEnvironment, StoredSwitch, StoredVoxelEnvironment, StoredWeapon,
+    STORED_PROJECT_SCHEMA_VERSION,
 };

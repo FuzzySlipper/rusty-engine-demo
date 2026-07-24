@@ -11,7 +11,7 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
     let project = decode_stored_project(PROJECT).expect("stored project");
     assert_eq!(project.project_id, "loading-bay");
     assert_eq!(project.entry_scene, "scene/loading-bay");
-    assert_eq!(project.assets.len(), 5);
+    assert_eq!(project.assets.len(), 6);
     assert_eq!(project.scenes.len(), 1);
 
     let entities = &project.scenes[0].entities;
@@ -24,6 +24,9 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
     assert!(entities.iter().any(|entity| entity.encounter.is_some()));
     assert!(entities.iter().any(|entity| entity.door.is_some()));
     assert!(entities.iter().any(|entity| entity.switch.is_some()));
+    assert!(entities
+        .iter()
+        .any(|entity| entity.extraction_beacon.is_some()));
 }
 
 #[test]
@@ -88,6 +91,7 @@ fn stored_project_admits_every_settled_component_family_atomically() {
     assert!(session.enemy(EntityId::new(4)).is_some());
     assert!(session.health(EntityId::new(4)).is_some());
     assert!(session.navigation(EntityId::new(4)).is_some());
+    assert!(session.extraction_beacon(EntityId::new(7)).is_some());
     assert_eq!(
         session
             .switch(EntityId::new(6))
@@ -111,11 +115,16 @@ fn renderables_require_declared_static_mesh_assets() {
     assert_eq!(wrong_kind.path, "scenes[0].entities[5].renderable.asset");
 
     let missing = mutate(|project| {
-        project["assets"].as_array_mut().unwrap().remove(2);
+        let assets = project["assets"].as_array_mut().unwrap();
+        let player_marker = assets
+            .iter()
+            .position(|asset| asset["id"] == "mesh/player-marker")
+            .expect("player marker asset");
+        assets.remove(player_marker);
     });
     let missing = admission_diagnostic(&missing);
     assert_eq!(missing.code, diagnostic_code::MISSING_ASSET);
-    assert_eq!(missing.path, "scenes[0].entities[2].renderable.asset");
+    assert_eq!(missing.path, "scenes[0].entities[0].renderable.asset");
 }
 
 #[test]

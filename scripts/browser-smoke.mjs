@@ -49,7 +49,7 @@ try {
     resolve(repoRoot, "content/projects/loading-bay.project.json"),
     persistedProject,
   );
-  if (!currentReceipt.includes("sourceSchema=7") || !currentReceipt.includes("currentSchema=7")) {
+  if (!currentReceipt.includes("sourceSchema=8") || !currentReceipt.includes("currentSchema=8")) {
     throw new Error(`current project persistence receipt was incomplete\n${currentReceipt}`);
   }
   await runFullBrowserProduct(persistedProject);
@@ -59,7 +59,7 @@ try {
     resolve(repoRoot, "content/projects/converted-wall.project.json"),
     convertedProject,
   );
-  if (!convertedReceipt.includes("sourceSchema=7") || !convertedReceipt.includes("currentSchema=7")) {
+  if (!convertedReceipt.includes("sourceSchema=8") || !convertedReceipt.includes("currentSchema=8")) {
     throw new Error(`converted project persistence receipt was incomplete\n${convertedReceipt}`);
   }
   await runConvertedBrowserProduct(convertedProject);
@@ -69,7 +69,7 @@ try {
     resolve(repoRoot, "content/generated/encounter-gate.project.json"),
     migratedProject,
   );
-  if (!migrationReceipt.includes("sourceSchema=6") || !migrationReceipt.includes("currentSchema=7")) {
+  if (!migrationReceipt.includes("sourceSchema=6") || !migrationReceipt.includes("currentSchema=8")) {
     throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
   }
   await runMigratedBrowserProduct(migratedProject);
@@ -127,6 +127,7 @@ async function runFullBrowserProduct(project) {
       'data-gate-passage="pass"',
       'data-queue-recovery="pass"',
       'data-cooldown="pass"',
+      'data-beacon-activation="pass"',
       'data-feedback-reset="pass"',
       'data-feedback-concrete-reset="pass"',
       'data-feedback-families="pass"',
@@ -149,6 +150,7 @@ async function runFullBrowserProduct(project) {
       "DamageApplied",
       "CombatEnemyDefeated",
       "CombatRejected",
+      "ExtractionBeaconActivated",
       "SEED 4",
     ];
     const missing = required.filter((marker) => !result.stdout.includes(marker));
@@ -163,6 +165,7 @@ async function runFullBrowserProduct(project) {
       !beforeReloadResponse.ok ||
       beforeReload.encounterState !== "cleared" ||
       beforeReload.doorState !== "open" ||
+      beforeReload.extractionBeacon?.state !== "active" ||
       !beforeReload.enemies?.every((enemy) => enemy.state === "defeated") ||
       beforeReload.presentation?.cues?.length !== 0
     ) {
@@ -197,6 +200,7 @@ async function runFullBrowserProduct(project) {
       'data-reload-audio-targets="0"',
       'data-posture="open"',
       'data-posture="defeated"',
+      'data-posture="active"',
       "PASS · Page reload rebuilt posture without transient feedback",
     ];
     const missingReload = reloadRequired.filter(
@@ -220,12 +224,12 @@ async function runFullBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
-      "sourceSchema=7",
-      "currentSchema=7",
+      "sourceSchema=8",
+      "currentSchema=8",
       "entryScene=scene/loading-bay",
-      "assets=5",
+      "assets=6",
       "scenes=1",
-      "entities=7",
+      "entities=8",
     ]) {
       if (!startup.includes(marker)) {
         throw new Error(`browser host startup missing ${marker}\n${startup}`);
@@ -263,7 +267,7 @@ async function runMigratedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=migrated-v6-project",
-      "currentSchema=7",
+      "currentSchema=8",
       "assets=4",
       "scenes=1",
       "entities=6",
@@ -316,8 +320,8 @@ async function runConvertedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=converted-wall",
-      "sourceSchema=7",
-      "currentSchema=7",
+      "sourceSchema=8",
+      "currentSchema=8",
       "entryScene=scene/converted-wall",
       "assets=6",
       "scenes=1",

@@ -46,6 +46,7 @@ function state(projection: RuntimeBrowserState["projection"]): RuntimeBrowserSta
       ammoCapacity: 8,
       readyAtTick: 0,
     },
+    extractionBeacon: null,
     voxelMeshes: [],
     generatedEnvironment: null,
     enemies: [],
@@ -125,4 +126,45 @@ test("camera pose is rebuilt as a presentation offset from accepted player state
   };
   const created = new RuntimeProjectionAdapter().apply(state([localPlayer])).ops[0];
   assert.equal(created?.op === "create" ? created.node.visible : true, false);
+});
+
+test("demo-owned beacon state changes retained Three material without a generic bridge", () => {
+  const adapter = new RuntimeProjectionAdapter();
+  const beacon = {
+    id: 7,
+    name: "extraction-beacon",
+    asset: "mesh/extraction-beacon",
+    translation: [4.5, 1.5, 12.5] as const,
+    visible: true,
+  };
+  const standby = {
+    ...state([beacon]),
+    extractionBeacon: {
+      id: 7,
+      state: "standby" as const,
+      activationRadius: 2.5,
+      activatedBy: null,
+      activatedAtTick: null,
+    },
+  };
+
+  const created = adapter.apply(standby).ops[0];
+  const active = adapter.apply({
+    ...standby,
+    extractionBeacon: {
+      ...standby.extractionBeacon,
+      state: "active",
+      activatedBy: 1,
+      activatedAtTick: 9,
+    },
+  }).ops[0];
+
+  assert.deepEqual(
+    created?.op === "create" ? created.node.material.color : null,
+    [0.85, 0.54, 0.18, 1],
+  );
+  assert.deepEqual(
+    active?.op === "update" ? active.material?.color : null,
+    [0.22, 0.95, 0.72, 1],
+  );
 });

@@ -54,8 +54,36 @@ fn real_schema_six_project_migrates_into_the_current_admitted_shape() {
 }
 
 #[test]
+fn schema_seven_project_migrates_without_minting_new_beacon_meaning() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["schemaVersion"] = 7.into();
+    previous["assets"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|asset| asset["id"] != "mesh/extraction-beacon");
+    previous["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|entity| entity["id"] != 7);
+
+    let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
+
+    assert_eq!(decoded.source_schema_version, 7);
+    assert_eq!(
+        decoded.project.schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
+    assert!(decoded.was_migrated());
+    assert!(decoded.project.scenes[0]
+        .entities
+        .iter()
+        .all(|entity| entity.extraction_beacon.is_none()));
+    admit_stored_project(decoded.project).unwrap();
+}
+
+#[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 8, 99] {
+    for schema_version in [0, 5, 9, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);

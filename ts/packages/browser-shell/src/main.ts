@@ -34,6 +34,7 @@ const motionState = requiredElement("motion-state", HTMLElement);
 const navigationState = requiredElement("navigation-state", HTMLElement);
 const playerMotionState = requiredElement("player-motion-state", HTMLElement);
 const combatState = requiredElement("combat-state", HTMLElement);
+const beaconState = requiredElement("beacon-state", HTMLElement);
 const playerPose = requiredElement("player-pose", HTMLElement);
 const weaponState = requiredElement("weapon-state", HTMLElement);
 const environmentState = requiredElement("environment-state", HTMLElement);
@@ -95,6 +96,10 @@ requiredElement("run-motion", HTMLButtonElement).addEventListener("click", () =>
 requiredElement("run-navigation", HTMLButtonElement).addEventListener("click", () => {
   void presentationFeedback.activateAudio();
   void perform("/api/navigation-phase");
+});
+requiredElement("activate-beacon", HTMLButtonElement).addEventListener("click", () => {
+  void presentationFeedback.activateAudio();
+  void perform("/api/extraction-beacon/activate");
 });
 requiredElement("remove-voxel", HTMLButtonElement).addEventListener("click", () => {
   void actionQueue.enqueue(() => performVoxelEdit({
@@ -176,7 +181,14 @@ if (reloadSmokeMode) {
     doorCaption.dataset.posture === "open" &&
     document.querySelector<HTMLElement>('[data-entity-id="4"]')?.dataset.posture === "defeated" &&
     document.querySelector<HTMLElement>('[data-entity-id="5"]')?.dataset.posture === "defeated" &&
-    includesEvery(feedbackLayer.dataset.animationStates, ["3:open", "4:defeated", "5:defeated"]);
+    current.extractionBeacon?.state === "active" &&
+    beaconState.dataset.posture === "active" &&
+    includesEvery(feedbackLayer.dataset.animationStates, [
+      "3:open",
+      "4:defeated",
+      "5:defeated",
+      "7:active",
+    ]);
   const reloadCuesCleared = current.presentation.cues.length === 0 &&
     feedbackLayer.dataset.lastCueCount === "0";
   const reloadPulsesCleared = document.querySelector("[data-animation-pulse]") === null;
@@ -391,6 +403,16 @@ if (reloadSmokeMode) {
   const cooldownRecovered =
     cooldownRejected && current.enemies.find((enemy) => enemy.id === 4)?.currentHealth === 0;
   document.body.dataset.cooldown = cooldownRecovered ? "pass" : "fail";
+  await perform("/api/extraction-beacon/activate");
+  surface.renderOnce();
+  const beaconActivated =
+    current.extractionBeacon?.state === "active" &&
+    current.extractionBeacon.activatedBy === current.player.id &&
+    eventHistory.includes("ExtractionBeaconActivated") &&
+    beaconState.dataset.state === "active" &&
+    beaconState.dataset.posture === "active" &&
+    surface.snapshot().includes("extraction-beacon");
+  document.body.dataset.beaconActivation = beaconActivated ? "pass" : "fail";
   await perform("/api/motion-phase");
   surface.renderOnce();
   const door = current.projection.find((node) => node.id === 3);
@@ -415,6 +437,7 @@ if (reloadSmokeMode) {
     combatHit &&
     openGateTraversed &&
     current.enemies.every((enemy) => enemy.currentHealth === 0) &&
+    beaconActivated &&
     eventHistory.includes("CombatHit") &&
     eventHistory.includes("DamageApplied") &&
     current.voxelMeshes.length === 1 &&
@@ -428,6 +451,7 @@ if (reloadSmokeMode) {
       "damage",
       "defeat",
       "open",
+      "active",
     ]) &&
     includesEvery(feedbackLayer.dataset.particleKinds, [
       "movement",
@@ -436,8 +460,15 @@ if (reloadSmokeMode) {
       "impact",
       "defeat",
       "door",
+      "beacon",
     ]) &&
-    includesEvery(feedbackLayer.dataset.billboardValues, ["BLOCKED", "-60", "DEFEATED", "EXIT OPEN"]) &&
+    includesEvery(feedbackLayer.dataset.billboardValues, [
+      "BLOCKED",
+      "-60",
+      "DEFEATED",
+      "EXIT OPEN",
+      "EXTRACTION ONLINE",
+    ]) &&
     Number(feedbackLayer.dataset.activeEffects ?? "0") <= 24;
   document.body.dataset.feedbackFamilies = feedbackFamiliesPassed ? "pass" : "fail";
   document.body.dataset.feedbackEvidence = [
@@ -580,6 +611,13 @@ function renderReadout(state: RuntimeBrowserState): void {
     ? `MATERIALIZED · ${String(state.voxelSolidCount)} VOXELS`
     : `SEED ${String(state.generatedEnvironment.seed)} · ${String(state.generatedEnvironment.meshQuads)} QUADS · ${state.generatedEnvironment.outputHash.slice(0, 8)}`;
   voxelState.textContent = `VOXEL REV ${String(state.voxelRevision)} · NAV ${state.voxelNavigationHash.slice(0, 8)} · PATH ${String(state.voxelProbePathLength)}`;
+  beaconState.textContent = state.extractionBeacon?.state.toUpperCase() ?? "UNAVAILABLE";
+  beaconState.dataset.state = state.extractionBeacon?.state ?? "unavailable";
+  if (state.extractionBeacon !== null) {
+    beaconState.dataset.entityId = String(state.extractionBeacon.id);
+  } else {
+    delete beaconState.dataset.entityId;
+  }
   enemyList.replaceChildren(
     ...state.enemies.map((enemy) => {
       const row = document.createElement("div");
@@ -849,6 +887,7 @@ function authoritativeBrowserFingerprint(state: RuntimeBrowserState): string {
     encounterState: state.encounterState,
     player: state.player,
     weapon: state.weapon,
+    extractionBeacon: state.extractionBeacon,
     enemies: state.enemies,
   });
 }

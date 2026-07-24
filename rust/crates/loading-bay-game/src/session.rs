@@ -12,6 +12,9 @@ use crate::combat::{
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::{DoorComponent, DoorState, DoorView};
 use crate::encounter::{EncounterComponent, EncounterState, EncounterView};
+use crate::extraction_beacon::{
+    ExtractionBeaconComponent, ExtractionBeaconState, ExtractionBeaconView,
+};
 use crate::interaction::{SwitchComponent, SwitchView};
 use crate::navigation::{
     NavigationComponent, NavigationState, NavigationView, MAX_NAVIGATION_QUERY_BUDGET,
@@ -28,6 +31,7 @@ pub struct GameSession {
     pub(crate) enemies: BTreeMap<EntityId, EnemyComponent>,
     pub(crate) health: BTreeMap<EntityId, HealthComponent>,
     pub(crate) encounters: BTreeMap<EntityId, EncounterComponent>,
+    pub(crate) extraction_beacons: BTreeMap<EntityId, ExtractionBeaconComponent>,
     pub(crate) navigators: BTreeMap<EntityId, NavigationComponent>,
     pub(crate) player_controllers: BTreeMap<EntityId, PlayerControllerComponent>,
     pub(crate) weapons: BTreeMap<EntityId, WeaponComponent>,
@@ -51,6 +55,7 @@ impl GameSession {
         let mut enemies = BTreeMap::new();
         let mut health = BTreeMap::new();
         let mut encounters = BTreeMap::new();
+        let mut extraction_beacons = BTreeMap::new();
         let mut navigators = BTreeMap::new();
         let mut player_controllers = BTreeMap::new();
         let mut weapons = BTreeMap::new();
@@ -242,6 +247,31 @@ impl GameSession {
                     },
                 );
             }
+            if let Some(config) = definition.extraction_beacon {
+                let view = entities.view(entity).expect("definition created entity");
+                if view.transform.is_none() {
+                    return Err(
+                        GameEntityDefinitionError::ExtractionBeaconMissingTransform { entity },
+                    );
+                }
+                if view.renderable.is_none() {
+                    return Err(
+                        GameEntityDefinitionError::ExtractionBeaconMissingRenderable { entity },
+                    );
+                }
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidExtractionBeaconConfig {
+                        entity,
+                    });
+                }
+                extraction_beacons.insert(
+                    entity,
+                    ExtractionBeaconComponent {
+                        config,
+                        state: ExtractionBeaconState::Standby,
+                    },
+                );
+            }
         }
 
         for (switch, targets) in &controls {
@@ -306,6 +336,7 @@ impl GameSession {
             enemies,
             health,
             encounters,
+            extraction_beacons,
             navigators,
             player_controllers,
             weapons,
@@ -370,6 +401,16 @@ impl GameSession {
     pub fn navigation(&self, entity: EntityId) -> Option<NavigationView> {
         let component = self.navigators.get(&entity)?;
         Some(NavigationView {
+            entity,
+            config: component.config,
+            state: component.state,
+            entity_view: self.entities.view(entity).ok()?,
+        })
+    }
+
+    pub fn extraction_beacon(&self, entity: EntityId) -> Option<ExtractionBeaconView> {
+        let component = self.extraction_beacons.get(&entity)?;
+        Some(ExtractionBeaconView {
             entity,
             config: component.config,
             state: component.state,

@@ -16,6 +16,9 @@ use crate::combat::{
 };
 use crate::door::{DoorComponent, DoorConfig, DoorState};
 use crate::encounter::{EncounterComponent, EncounterConfig, EncounterState};
+use crate::extraction_beacon::{
+    ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconState,
+};
 use crate::interaction::SwitchComponent;
 use crate::navigation::{
     NavigationComponent, NavigationConfig, NavigationState, MAX_NAVIGATION_QUERY_BUDGET,
@@ -28,7 +31,7 @@ use crate::runtime::GameRuntime;
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 9;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 10;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -39,6 +42,7 @@ pub struct GameSnapshot {
     pub voxel_collision: Option<VoxelCollisionSnapshot>,
     pub doors: Vec<DoorSnapshot>,
     pub switches: Vec<SwitchSnapshot>,
+    pub extraction_beacons: Vec<ExtractionBeaconSnapshot>,
     pub controls: Vec<ControlsSnapshot>,
     pub enemies: Vec<EnemySnapshot>,
     pub health: Vec<HealthSnapshot>,
@@ -100,6 +104,25 @@ pub enum SnapshotDoorState {
 pub struct SwitchSnapshot {
     pub entity: u64,
     pub activation_count: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct ExtractionBeaconSnapshot {
+    pub entity: u64,
+    pub activation_radius: f32,
+    pub state: SnapshotExtractionBeaconState,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "state",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum SnapshotExtractionBeaconState {
+    Standby,
+    Active { actor: u64, activated_at_tick: u64 },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -222,49 +245,158 @@ pub enum ScheduledSnapshotKind {
 pub enum GameSnapshotError {
     Encode(serde_json::Error),
     Decode(serde_json::Error),
-    UnsupportedSchema { actual: u32 },
+    UnsupportedSchema {
+        actual: u32,
+    },
     EntityState(entity_state::EntityStateSnapshotError),
     CollisionScene(engine_spatial::CollisionSceneError),
     AmbiguousVoxelSnapshot,
-    GeneratedRoomRevisionMismatch { actual: u64 },
-    UnsupportedGeneratedRoomVersion { actual: u32 },
-    GeneratedRoomHashMismatch { expected: u64, actual: u64 },
-    VoxelAuthorityHashMismatch { expected: u64, actual: u64 },
-    DuplicateDoor { entity: u64 },
-    DuplicateSwitch { entity: u64 },
-    DuplicateEnemy { entity: u64 },
-    DuplicateHealth { entity: u64 },
-    DuplicateEncounter { entity: u64 },
-    DuplicateNavigation { entity: u64 },
-    DuplicatePlayerController { entity: u64 },
-    DuplicateWeapon { entity: u64 },
-    UnknownDoorEntity { entity: u64 },
-    UnknownSwitchEntity { entity: u64 },
-    UnknownEnemyEntity { entity: u64 },
-    UnknownHealthEntity { entity: u64 },
-    UnknownEncounterEntity { entity: u64 },
-    UnknownNavigationEntity { entity: u64 },
-    UnknownPlayerControllerEntity { entity: u64 },
-    UnknownWeaponEntity { entity: u64 },
-    UnknownControlTarget { switch: u64, target: u64 },
-    UnknownEncounterMember { encounter: u64, member: u64 },
-    UnknownEncounterExit { encounter: u64, exit: u64 },
-    MissingDoorCapability { entity: u64 },
-    MissingEnemyCapability { entity: u64 },
-    MissingHealthCapability { entity: u64 },
-    MissingNavigationCapability { entity: u64 },
-    MissingPlayerControllerCapability { entity: u64 },
-    MissingWeaponCapability { entity: u64 },
-    NavigationMissingCollisionScene { entity: u64 },
-    PlayerControllerMissingCollisionScene { entity: u64 },
-    InvalidNavigationConfig { entity: u64 },
-    InvalidPlayerControllerConfig { entity: u64 },
-    InvalidHealthConfig { entity: u64 },
-    InvalidWeaponConfig { entity: u64 },
-    EnemyHealthStateMismatch { entity: u64 },
-    DuplicateEncounterMember { encounter: u64, member: u64 },
-    EnemyInMultipleEncounters { enemy: u64, first: u64, second: u64 },
-    DuplicateSchedule { door: u64 },
+    GeneratedRoomRevisionMismatch {
+        actual: u64,
+    },
+    UnsupportedGeneratedRoomVersion {
+        actual: u32,
+    },
+    GeneratedRoomHashMismatch {
+        expected: u64,
+        actual: u64,
+    },
+    VoxelAuthorityHashMismatch {
+        expected: u64,
+        actual: u64,
+    },
+    DuplicateDoor {
+        entity: u64,
+    },
+    DuplicateSwitch {
+        entity: u64,
+    },
+    DuplicateExtractionBeacon {
+        entity: u64,
+    },
+    DuplicateEnemy {
+        entity: u64,
+    },
+    DuplicateHealth {
+        entity: u64,
+    },
+    DuplicateEncounter {
+        entity: u64,
+    },
+    DuplicateNavigation {
+        entity: u64,
+    },
+    DuplicatePlayerController {
+        entity: u64,
+    },
+    DuplicateWeapon {
+        entity: u64,
+    },
+    UnknownDoorEntity {
+        entity: u64,
+    },
+    UnknownSwitchEntity {
+        entity: u64,
+    },
+    UnknownExtractionBeaconEntity {
+        entity: u64,
+    },
+    UnknownExtractionBeaconActor {
+        beacon: u64,
+        actor: u64,
+    },
+    UnknownEnemyEntity {
+        entity: u64,
+    },
+    UnknownHealthEntity {
+        entity: u64,
+    },
+    UnknownEncounterEntity {
+        entity: u64,
+    },
+    UnknownNavigationEntity {
+        entity: u64,
+    },
+    UnknownPlayerControllerEntity {
+        entity: u64,
+    },
+    UnknownWeaponEntity {
+        entity: u64,
+    },
+    UnknownControlTarget {
+        switch: u64,
+        target: u64,
+    },
+    UnknownEncounterMember {
+        encounter: u64,
+        member: u64,
+    },
+    UnknownEncounterExit {
+        encounter: u64,
+        exit: u64,
+    },
+    MissingDoorCapability {
+        entity: u64,
+    },
+    MissingExtractionBeaconCapability {
+        entity: u64,
+    },
+    MissingEnemyCapability {
+        entity: u64,
+    },
+    MissingHealthCapability {
+        entity: u64,
+    },
+    MissingNavigationCapability {
+        entity: u64,
+    },
+    MissingPlayerControllerCapability {
+        entity: u64,
+    },
+    MissingWeaponCapability {
+        entity: u64,
+    },
+    NavigationMissingCollisionScene {
+        entity: u64,
+    },
+    PlayerControllerMissingCollisionScene {
+        entity: u64,
+    },
+    InvalidNavigationConfig {
+        entity: u64,
+    },
+    InvalidPlayerControllerConfig {
+        entity: u64,
+    },
+    InvalidHealthConfig {
+        entity: u64,
+    },
+    InvalidWeaponConfig {
+        entity: u64,
+    },
+    InvalidExtractionBeaconConfig {
+        entity: u64,
+    },
+    ExtractionBeaconActivationFromFuture {
+        entity: u64,
+        activated_at_tick: u64,
+        snapshot_tick: u64,
+    },
+    EnemyHealthStateMismatch {
+        entity: u64,
+    },
+    DuplicateEncounterMember {
+        encounter: u64,
+        member: u64,
+    },
+    EnemyInMultipleEncounters {
+        enemy: u64,
+        first: u64,
+        second: u64,
+    },
+    DuplicateSchedule {
+        door: u64,
+    },
 }
 
 impl std::fmt::Display for GameSnapshotError {
@@ -334,6 +466,25 @@ impl GameRuntime {
                 .map(|(entity, component)| SwitchSnapshot {
                     entity: entity.raw(),
                     activation_count: component.activation_count,
+                })
+                .collect(),
+            extraction_beacons: self
+                .session
+                .extraction_beacons
+                .iter()
+                .map(|(entity, component)| ExtractionBeaconSnapshot {
+                    entity: entity.raw(),
+                    activation_radius: component.config.activation_radius,
+                    state: match component.state {
+                        ExtractionBeaconState::Standby => SnapshotExtractionBeaconState::Standby,
+                        ExtractionBeaconState::Active {
+                            actor,
+                            activated_at,
+                        } => SnapshotExtractionBeaconState::Active {
+                            actor: actor.raw(),
+                            activated_at_tick: activated_at.raw(),
+                        },
+                    },
                 })
                 .collect(),
             controls: self
@@ -589,6 +740,66 @@ impl GameRuntime {
                     activation_count: switch.activation_count,
                 },
             );
+        }
+
+        let mut extraction_beacons = BTreeMap::new();
+        let mut extraction_beacon_ids = BTreeSet::new();
+        for beacon in snapshot.extraction_beacons {
+            if !extraction_beacon_ids.insert(beacon.entity) {
+                return Err(GameSnapshotError::DuplicateExtractionBeacon {
+                    entity: beacon.entity,
+                });
+            }
+            let entity = EntityId::new(beacon.entity);
+            let view = entities.view(entity).map_err(|_| {
+                GameSnapshotError::UnknownExtractionBeaconEntity {
+                    entity: beacon.entity,
+                }
+            })?;
+            if view.transform.is_none() || view.renderable.is_none() {
+                return Err(GameSnapshotError::MissingExtractionBeaconCapability {
+                    entity: beacon.entity,
+                });
+            }
+            let config = ExtractionBeaconConfig::new(beacon.activation_radius);
+            if !config.is_valid() {
+                return Err(GameSnapshotError::InvalidExtractionBeaconConfig {
+                    entity: beacon.entity,
+                });
+            }
+            let state = match beacon.state {
+                SnapshotExtractionBeaconState::Standby => ExtractionBeaconState::Standby,
+                SnapshotExtractionBeaconState::Active {
+                    actor,
+                    activated_at_tick,
+                } => {
+                    let actor_entity = EntityId::new(actor);
+                    let actor_view = entities.view(actor_entity).map_err(|_| {
+                        GameSnapshotError::UnknownExtractionBeaconActor {
+                            beacon: beacon.entity,
+                            actor,
+                        }
+                    })?;
+                    if actor_view.transform.is_none() {
+                        return Err(GameSnapshotError::UnknownExtractionBeaconActor {
+                            beacon: beacon.entity,
+                            actor,
+                        });
+                    }
+                    if activated_at_tick > snapshot.tick {
+                        return Err(GameSnapshotError::ExtractionBeaconActivationFromFuture {
+                            entity: beacon.entity,
+                            activated_at_tick,
+                            snapshot_tick: snapshot.tick,
+                        });
+                    }
+                    ExtractionBeaconState::Active {
+                        actor: actor_entity,
+                        activated_at: Tick::new(activated_at_tick),
+                    }
+                }
+            };
+            extraction_beacons.insert(entity, ExtractionBeaconComponent { config, state });
         }
 
         let mut controls = BTreeMap::new();
@@ -949,6 +1160,7 @@ impl GameRuntime {
                 enemies,
                 health,
                 encounters,
+                extraction_beacons,
                 navigators,
                 player_controllers,
                 weapons,

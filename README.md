@@ -11,6 +11,11 @@ dependencies pinned to exact revision `a2e55f9660e46751d4c78bcdd23b9a321b0dc961`
 is not required. The browser shell and renderer are demo-owned packages under the
 `@rusty-engine-demo` scope.
 
+The demo-owned `ExtractionBeacon` is the first post-extraction gameplay addition. Its authored
+configuration and live state remain on the beacon entity, `ExtractionBeaconService` owns the
+activation rules, and accepted activation produces a typed fact consumed by bounded browser
+presentation. It deliberately adds no Engine vocabulary.
+
 ## Run and verify
 
 Install the pinned JavaScript toolchain, build the shell, and launch the Rust host:

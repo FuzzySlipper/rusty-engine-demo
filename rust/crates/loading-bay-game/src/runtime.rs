@@ -14,6 +14,7 @@ use crate::content::{decode_project_content, AdmittedProject, ProjectContentErro
 use crate::definition::GameEntityDefinitionError;
 use crate::door::{security_door_definitions, DoorService, DoorTransition, SecurityDoorIds};
 use crate::encounter::EncounterService;
+use crate::extraction_beacon::{ExtractionBeaconReceipt, ExtractionBeaconService};
 use crate::interaction::InteractionService;
 use crate::navigation::{EnemyNavigationSystem, NavigationPhaseReceipt};
 use crate::player::{PlayerControlReceipt, PlayerControllerService, ResolvedPlayerAction};
@@ -51,6 +52,21 @@ pub enum RuntimeError {
     },
     UnknownPlayerController {
         player: EntityId,
+    },
+    UnknownExtractionBeacon {
+        beacon: EntityId,
+    },
+    ExtractionBeaconActorMissingTransform {
+        actor: EntityId,
+    },
+    ExtractionBeaconAlreadyActive {
+        beacon: EntityId,
+    },
+    ExtractionBeaconOutOfRange {
+        actor: EntityId,
+        beacon: EntityId,
+        distance_squared: f32,
+        activation_radius: f32,
     },
     InvalidPlayerAction {
         action: ResolvedPlayerAction,
@@ -205,6 +221,17 @@ impl GameRuntime {
             .as_ref()
             .ok_or(RuntimeError::MissingCollisionScene)?;
         PlayerControllerService::apply(&mut self.session, scene, player, action)
+    }
+
+    /// Activate one game-owned extraction beacon through its named service.
+    /// This direct entry point returns a typed fact and does not route through
+    /// a generic event bus or method-name bridge.
+    pub fn activate_extraction_beacon(
+        &mut self,
+        actor: EntityId,
+        beacon: EntityId,
+    ) -> Result<ExtractionBeaconReceipt, RuntimeError> {
+        ExtractionBeaconService::activate(&mut self.session, self.tick, actor, beacon)
     }
 
     pub fn interact(

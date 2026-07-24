@@ -25,6 +25,10 @@ export interface EncounterDefinition {
   readonly exit: number;
 }
 
+export interface ExtractionBeaconDefinition {
+  readonly activationRadius: number;
+}
+
 export interface HealthDefinition {
   readonly max: number;
   readonly hitboxHalfExtents: Vec3;
@@ -104,6 +108,7 @@ export interface EntityDefinition {
   readonly enemy?: true;
   readonly health?: HealthDefinition;
   readonly encounter?: EncounterDefinition;
+  readonly extractionBeacon?: ExtractionBeaconDefinition;
   readonly kinematic?: KinematicDefinition;
   readonly navigation?: NavigationDefinition;
   readonly playerController?: PlayerControllerDefinition;
@@ -134,7 +139,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 7;
+  readonly schemaVersion: 8;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

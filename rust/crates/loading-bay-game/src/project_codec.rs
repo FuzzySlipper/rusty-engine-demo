@@ -1,4 +1,4 @@
-//! Canonical authored-project encoding and one explicit predecessor migration.
+//! Canonical authored-project encoding and explicit predecessor migrations.
 //!
 //! This is intentionally not a runtime snapshot codec. It accepts only the
 //! static [`StoredProject`] shape and never observes a [`crate::GameRuntime`].
@@ -18,6 +18,7 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 7;
 
 /// A current authored project together with the schema version actually read.
 /// A lower source version means Rust performed the documented migration before
@@ -49,14 +50,17 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v7(decode_v7(input)?)?,
         PROJECT_CONTENT_SCHEMA_VERSION => migrate_v6(decode_v6(input)?)?,
         actual => {
             return Err(StoredProjectError::new(
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {} and {}; found {actual}",
-                    PROJECT_CONTENT_SCHEMA_VERSION, STORED_PROJECT_SCHEMA_VERSION
+                    "supported project schemas are {}, {}, and {}; found {actual}",
+                    PROJECT_CONTENT_SCHEMA_VERSION,
+                    PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
+                    STORED_PROJECT_SCHEMA_VERSION
                 ),
             ));
         }
@@ -115,13 +119,14 @@ fn probe_schema_version(input: &str) -> Result<u32, StoredProjectError> {
 
 fn decode_v6(input: &str) -> Result<LegacyProjectV6, StoredProjectError> {
     let mut deserializer = serde_json::Deserializer::from_str(input);
-    let document = serde_path_to_error::deserialize(&mut deserializer).map_err(|error| {
-        StoredProjectError::new(
-            diagnostic_code::DECODE,
-            json_path(&error.path().to_string()),
-            error.inner().to_string(),
-        )
-    })?;
+    let document: LegacyProjectV6 =
+        serde_path_to_error::deserialize(&mut deserializer).map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::DECODE,
+                json_path(&error.path().to_string()),
+                error.inner().to_string(),
+            )
+        })?;
     deserializer.end().map_err(|error| {
         StoredProjectError::new(
             diagnostic_code::DECODE,
@@ -135,6 +140,52 @@ fn decode_v6(input: &str) -> Result<LegacyProjectV6, StoredProjectError> {
         )
     })?;
     Ok(document)
+}
+
+fn decode_v7(input: &str) -> Result<StoredProject, StoredProjectError> {
+    let mut deserializer = serde_json::Deserializer::from_str(input);
+    let document: StoredProject =
+        serde_path_to_error::deserialize(&mut deserializer).map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::DECODE,
+                json_path(&error.path().to_string()),
+                error.inner().to_string(),
+            )
+        })?;
+    deserializer.end().map_err(|error| {
+        StoredProjectError::new(
+            diagnostic_code::DECODE,
+            "$",
+            format!(
+                "{} at line {}, column {}",
+                error,
+                error.line(),
+                error.column()
+            ),
+        )
+    })?;
+    if document.scenes.iter().any(|scene| {
+        scene
+            .entities
+            .iter()
+            .any(|entity| entity.extraction_beacon.is_some())
+    }) {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "scenes",
+            "schema 7 cannot declare extractionBeacon",
+        ));
+    }
+    Ok(document)
+}
+
+fn migrate_v7(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
+    );
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
 }
 
 fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjectError> {
@@ -288,6 +339,12 @@ fn normalize_numbers(document: &mut StoredProject) -> Result<(), StoredProjectEr
                 normalize_f32(
                     &mut component.speed_units_per_second,
                     format!("{root}.navigation.speedUnitsPerSecond"),
+                )?;
+            }
+            if let Some(component) = &mut entity.extraction_beacon {
+                normalize_f32(
+                    &mut component.activation_radius,
+                    format!("{root}.extractionBeacon.activationRadius"),
                 )?;
             }
             if let Some(component) = &mut entity.player_controller {

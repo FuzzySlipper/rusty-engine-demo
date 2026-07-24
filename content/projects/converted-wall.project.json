@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "projectId": "converted-wall",
   "name": "Converted Wall",
   "entryScene": "scene/converted-wall",

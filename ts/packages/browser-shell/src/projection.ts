@@ -54,6 +54,14 @@ export interface RuntimeWeaponState {
   readonly readyAtTick: number;
 }
 
+export interface RuntimeExtractionBeaconState {
+  readonly id: number;
+  readonly state: "standby" | "active";
+  readonly activationRadius: number;
+  readonly activatedBy: number | null;
+  readonly activatedAtTick: number | null;
+}
+
 export interface DerivedCameraPose {
   readonly position: readonly [number, number, number];
   readonly yawDegrees: number;
@@ -88,7 +96,7 @@ export interface RuntimeGeneratedEnvironment {
 
 export interface RuntimeAnimationState {
   readonly entity: number;
-  readonly posture: "idle" | "moving" | "defeated" | "open" | "closed";
+  readonly posture: "idle" | "moving" | "defeated" | "open" | "closed" | "standby" | "active";
 }
 
 export type RuntimeFeedbackCue =
@@ -113,7 +121,8 @@ export type RuntimeFeedbackCue =
       readonly remaining: number;
     }
   | { readonly kind: "defeat"; readonly attacker: number | null; readonly entity: number }
-  | { readonly kind: "doorChanged"; readonly entity: number; readonly state: "open" | "closed" };
+  | { readonly kind: "doorChanged"; readonly entity: number; readonly state: "open" | "closed" }
+  | { readonly kind: "extractionBeaconActivated"; readonly entity: number; readonly actor: number };
 
 export interface RuntimePresentationState {
   readonly animationStates: readonly RuntimeAnimationState[];
@@ -137,6 +146,7 @@ export interface RuntimeBrowserState {
   readonly combatState: "ready" | "hit" | "missed";
   readonly player: RuntimePlayerState;
   readonly weapon: RuntimeWeaponState;
+  readonly extractionBeacon: RuntimeExtractionBeaconState | null;
   readonly voxelMeshes: readonly RuntimeVoxelMeshChunk[];
   readonly generatedEnvironment: RuntimeGeneratedEnvironment | null;
   readonly enemies: readonly RuntimeEnemyState[];
@@ -180,7 +190,10 @@ const FIRST_VOXEL_MESH_HANDLE = 800_000;
 
 /** Stateful adapter from whole Rust projection readouts to retained renderer diffs. */
 export class RuntimeProjectionAdapter {
-  readonly #known = new Map<number, RuntimeProjectionNode>();
+  readonly #known = new Map<
+    number,
+    { readonly node: RuntimeProjectionNode; readonly beaconState: "standby" | "active" | null }
+  >();
   readonly #meshHashes = new Map<string, string>();
   readonly #meshHandles = new Map<string, RenderHandle>();
   #nextMeshHandle = FIRST_VOXEL_MESH_HANDLE;
@@ -227,15 +240,18 @@ export class RuntimeProjectionAdapter {
     for (const node of state.projection) {
       incoming.add(node.id);
       const known = this.#known.get(node.id);
+      const beaconState = state.extractionBeacon?.id === node.id
+        ? state.extractionBeacon.state
+        : null;
       if (known === undefined) {
         ops.push({
           op: "create",
           handle: entityHandle(node.id),
           parent: null,
-          node: projectedNode(node),
+          node: projectedNode(node, beaconState),
         });
-      } else if (!sameProjectionNode(known, node)) {
-        const next = projectedNode(node);
+      } else if (!sameProjectionNode(known.node, node) || known.beaconState !== beaconState) {
+        const next = projectedNode(node, beaconState);
         ops.push({
           op: "update",
           handle: entityHandle(node.id),
@@ -245,7 +261,7 @@ export class RuntimeProjectionAdapter {
           metadata: next.metadata,
         });
       }
-      this.#known.set(node.id, node);
+      this.#known.set(node.id, { node, beaconState });
     }
 
     for (const id of [...this.#known.keys()]) {
@@ -296,13 +312,19 @@ export function entityHandle(id: number): RenderHandle {
   return renderHandle(ENTITY_HANDLE_OFFSET + id);
 }
 
-function projectedNode(node: RuntimeProjectionNode): RenderNode {
+function projectedNode(
+  node: RuntimeProjectionNode,
+  beaconState: "standby" | "active" | null,
+): RenderNode {
   const door = node.asset.includes("door");
+  const beacon = node.asset.includes("extraction-beacon");
   const probe = node.asset.includes("spatial-probe");
   const wall = node.asset.includes("voxel-wall");
   const player = node.asset.includes("player-marker");
   const scale: readonly [number, number, number] = door
     ? [2.4, 3.4, 0.55]
+    : beacon
+      ? [0.8, 2.4, 0.8]
     : probe
       ? [0.5, 0.5, 0.5]
       : wall
@@ -318,6 +340,10 @@ function projectedNode(node: RuntimeProjectionNode): RenderNode {
   ];
   const color: Material = door
     ? { color: [0.9, 0.55, 0.16, 1], wireframe: false }
+    : beacon
+      ? beaconState === "active"
+        ? { color: [0.22, 0.95, 0.72, 1], wireframe: false }
+        : { color: [0.85, 0.54, 0.18, 1], wireframe: false }
     : probe
       ? { color: [0.26, 0.85, 0.68, 1], wireframe: false }
       : wall

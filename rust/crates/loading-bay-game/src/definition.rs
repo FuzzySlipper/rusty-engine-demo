@@ -4,6 +4,7 @@ use entity_state::EntityDefinition;
 use crate::combat::{HealthConfig, WeaponConfig};
 use crate::door::DoorConfig;
 use crate::encounter::EncounterConfig;
+use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::navigation::NavigationConfig;
 use crate::player::PlayerControllerConfig;
 
@@ -16,6 +17,7 @@ pub struct GameEntityDefinition {
     pub enemy: bool,
     pub health: Option<HealthConfig>,
     pub encounter: Option<EncounterConfig>,
+    pub extraction_beacon: Option<ExtractionBeaconConfig>,
     pub navigation: Option<NavigationConfig>,
     pub player_controller: Option<PlayerControllerConfig>,
     pub weapon: Option<WeaponConfig>,
@@ -31,6 +33,7 @@ impl GameEntityDefinition {
             enemy: false,
             health: None,
             encounter: None,
+            extraction_beacon: None,
             navigation: None,
             player_controller: None,
             weapon: None,
@@ -76,6 +79,11 @@ impl GameEntityDefinition {
 
     pub fn with_navigation(mut self, config: NavigationConfig) -> Self {
         self.navigation = Some(config);
+        self
+    }
+
+    pub fn with_extraction_beacon(mut self, config: ExtractionBeaconConfig) -> Self {
+        self.extraction_beacon = Some(config);
         self
     }
 
@@ -201,6 +209,15 @@ pub enum GameEntityDefinitionError {
         enemy: EntityId,
         first: EntityId,
         second: EntityId,
+    },
+    ExtractionBeaconMissingTransform {
+        entity: EntityId,
+    },
+    ExtractionBeaconMissingRenderable {
+        entity: EntityId,
+    },
+    InvalidExtractionBeaconConfig {
+        entity: EntityId,
     },
 }
 
