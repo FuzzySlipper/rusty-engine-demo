@@ -1,0 +1,1040 @@
+{
+  "schemaVersion": 7,
+  "projectId": "converted-wall",
+  "name": "Converted Wall",
+  "entryScene": "scene/converted-wall",
+  "assets": [
+    {
+      "id": "mesh/control-panel"
+    },
+    {
+      "id": "mesh/player-marker"
+    },
+    {
+      "id": "mesh/security-door"
+    },
+    {
+      "id": "mesh/security-sentry"
+    },
+    {
+      "id": "mesh/spatial-probe"
+    },
+    {
+      "id": "voxel-volume/kenney-wall-a",
+      "voxelVolume": {
+        "schemaVersion": 1,
+        "assetId": "voxel-volume/kenney-wall-a",
+        "grid": {
+          "coordinateSystem": "rightHandedYUp",
+          "cellSize": 1.0,
+          "chunkSize": 16,
+          "origin": [
+            4,
+            0,
+            6
+          ]
+        },
+        "bounds": {
+          "min": [
+            0,
+            0,
+            0
+          ],
+          "max": [
+            1,
+            1,
+            1
+          ]
+        },
+        "representation": {
+          "kind": "sparseRuns",
+          "sparseRuns": [
+            {
+              "start": [
+                0,
+                0,
+                0
+              ],
+              "length": 2,
+              "materialSlot": 7
+            },
+            {
+              "start": [
+                0,
+                0,
+                1
+              ],
+              "length": 2,
+              "materialSlot": 7
+            },
+            {
+              "start": [
+                0,
+                1,
+                0
+              ],
+              "length": 2,
+              "materialSlot": 7
+            },
+            {
+              "start": [
+                0,
+                1,
+                1
+              ],
+              "length": 2,
+              "materialSlot": 7
+            }
+          ]
+        },
+        "materialMap": [
+          {
+            "sourceMaterialSlot": 0,
+            "sourceMaterialName": "wall_lines",
+            "voxelMaterialSlot": 7
+          },
+          {
+            "sourceMaterialSlot": 1,
+            "sourceMaterialName": "concrete",
+            "voxelMaterialSlot": 8
+          }
+        ],
+        "provenance": {
+          "kind": "convertedStaticMesh",
+          "sourcePath": "fixtures/voxel-conversion/kenney-wall-a.glb",
+          "sourceSha256": "sha256:6fceda24c30d2c22694f232f03fe2115fb1a462046fbbf719a90eea10dc9af00",
+          "sourceByteCount": 3352,
+          "converter": "rusty-engine.mesh-to-voxel.v1",
+          "settingsSha256": "sha256:98cb7d07a99015f5e759a39d89e77bb4f64cbdb0b3b5ed724bba9d35f95902ba",
+          "licensePath": "fixtures/voxel-conversion/KENNEY-RETRO-URBAN-KIT-LICENSE.txt"
+        },
+        "contentHash": "sha256:086d81f12403192c6d7568289c2b47771741e5620a967e5b5fe5093fd5608ab7"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene/converted-wall",
+      "name": "Converted Wall",
+      "voxelEnvironment": {
+        "kind": "material",
+        "voxelSize": 1.0,
+        "chunkSize": 16,
+        "materialVoxels": [
+          {
+            "address": [
+              0,
+              0,
+              0
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              0,
+              0,
+              1
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              0,
+              0,
+              2
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              0,
+              0,
+              3
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              0,
+              0,
+              4
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              0,
+              0,
+              5
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              0,
+              0,
+              6
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              0,
+              0,
+              7
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              0,
+              0,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              0,
+              0,
+              9
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              1,
+              0,
+              0
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              1,
+              0,
+              1
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              1,
+              0,
+              2
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              1,
+              0,
+              3
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              1,
+              0,
+              4
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              1,
+              0,
+              5
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              1,
+              0,
+              6
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              1,
+              0,
+              7
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              1,
+              0,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              1,
+              0,
+              9
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              2,
+              0,
+              0
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              2,
+              0,
+              1
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              2,
+              0,
+              2
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              2,
+              0,
+              3
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              2,
+              0,
+              4
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              2,
+              0,
+              5
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              2,
+              0,
+              6
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              2,
+              0,
+              7
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              2,
+              0,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              2,
+              0,
+              9
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              0,
+              0
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              0,
+              1
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              0,
+              2
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              0,
+              3
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              0,
+              4
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              0,
+              5
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              0,
+              6
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              0,
+              7
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              0,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              0,
+              9
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              4,
+              0,
+              0
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              4,
+              0,
+              1
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              4,
+              0,
+              2
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              4,
+              0,
+              3
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              4,
+              0,
+              4
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              4,
+              0,
+              5
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              4,
+              0,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              4,
+              0,
+              9
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              5,
+              0,
+              0
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              5,
+              0,
+              1
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              5,
+              0,
+              2
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              5,
+              0,
+              3
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              5,
+              0,
+              4
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              5,
+              0,
+              5
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              5,
+              0,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              5,
+              0,
+              9
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              6,
+              0,
+              0
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              6,
+              0,
+              1
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              6,
+              0,
+              2
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              6,
+              0,
+              3
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              6,
+              0,
+              4
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              6,
+              0,
+              5
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              6,
+              0,
+              6
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              6,
+              0,
+              7
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              6,
+              0,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              6,
+              0,
+              9
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              7,
+              0,
+              0
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              7,
+              0,
+              1
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              7,
+              0,
+              2
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              7,
+              0,
+              3
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              7,
+              0,
+              4
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              7,
+              0,
+              5
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              7,
+              0,
+              6
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              7,
+              0,
+              7
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              7,
+              0,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              7,
+              0,
+              9
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              8,
+              0,
+              0
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              8,
+              0,
+              1
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              8,
+              0,
+              2
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              8,
+              0,
+              3
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              8,
+              0,
+              4
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              8,
+              0,
+              5
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              8,
+              0,
+              6
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              8,
+              0,
+              7
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              8,
+              0,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              8,
+              0,
+              9
+            ],
+            "materialSlot": 1
+          }
+        ],
+        "voxelAssets": [
+          "voxel-volume/kenney-wall-a"
+        ]
+      },
+      "entities": [
+        {
+          "id": 1,
+          "name": "player",
+          "translation": [
+            1.5,
+            1.5,
+            2.5
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/player-marker",
+            "visible": true
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.25,
+              0.25,
+              0.25
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "playerController": {
+            "moveSpeedUnitsPerSecond": 4.0,
+            "moveStepSeconds": 0.1,
+            "lookDegreesPerUnit": 12.0,
+            "initialYawDegrees": 0.0,
+            "initialPitchDegrees": -10.0,
+            "bindings": {
+              "moveForward": "KeyW",
+              "moveBackward": "KeyS",
+              "moveLeft": "KeyA",
+              "moveRight": "KeyD",
+              "mouseLook": "pointer",
+              "primaryFire": "Mouse0"
+            }
+          },
+          "weapon": {
+            "damage": 60,
+            "maxDistance": 20.0,
+            "cooldownTicks": 2,
+            "ammoCapacity": 8,
+            "muzzleOffset": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        {
+          "id": 2,
+          "name": "converted-wall-encounter",
+          "encounter": {
+            "members": [
+              4,
+              5
+            ],
+            "exit": 3
+          }
+        },
+        {
+          "id": 3,
+          "name": "converted-wall-exit",
+          "translation": [
+            4.5,
+            1.0,
+            11.0
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": true
+          },
+          "renderable": {
+            "asset": "mesh/security-door",
+            "visible": true
+          },
+          "door": {
+            "openTranslation": [
+              4.5,
+              4.0,
+              11.0
+            ],
+            "autoCloseAfterTicks": null
+          },
+          "kinematic": {
+            "halfExtents": [
+              1.2,
+              1.5,
+              0.275
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        {
+          "id": 4,
+          "name": "sentry-alpha",
+          "translation": [
+            1.5,
+            1.5,
+            6.5
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/security-sentry",
+            "visible": true
+          },
+          "enemy": true,
+          "health": {
+            "max": 100,
+            "hitboxHalfExtents": [
+              0.55,
+              0.9,
+              0.55
+            ]
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.25,
+              0.25,
+              0.25
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "navigation": {
+            "goal": [
+              7.5,
+              1.5,
+              6.5
+            ],
+            "speedUnitsPerSecond": 4.0,
+            "maxVisited": 512
+          }
+        },
+        {
+          "id": 5,
+          "name": "sentry-beta",
+          "translation": [
+            6.5,
+            1.5,
+            2.5
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/security-sentry",
+            "visible": true
+          },
+          "enemy": true,
+          "health": {
+            "max": 100,
+            "hitboxHalfExtents": [
+              0.55,
+              0.9,
+              0.55
+            ]
+          }
+        },
+        {
+          "id": 6,
+          "name": "door-control",
+          "translation": [
+            2.5,
+            1.5,
+            9.5
+          ],
+          "renderable": {
+            "asset": "mesh/control-panel",
+            "visible": true
+          },
+          "switch": {
+            "controls": [
+              3
+            ]
+          }
+        },
+        {
+          "id": 10,
+          "name": "spatial-probe",
+          "translation": [
+            1.5,
+            1.5,
+            8.5
+          ],
+          "renderable": {
+            "asset": "mesh/spatial-probe",
+            "visible": true
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.25,
+              0.25,
+              0.25
+            ],
+            "velocity": [
+              5.0,
+              0.0,
+              0.0
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

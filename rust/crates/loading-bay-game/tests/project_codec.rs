@@ -1,0 +1,136 @@
+use loading_bay_game::{
+    admit_stored_project, decode_project_document, diagnostic_code, encode_project_document,
+    StoredProject, MIGRATED_V6_PROJECT_ID, MIGRATED_V6_SCENE_ID, STORED_PROJECT_SCHEMA_VERSION,
+};
+
+const CURRENT_PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
+const LEGACY_PROJECT: &str =
+    include_str!("../../../../content/generated/encounter-gate.project.json");
+
+#[test]
+fn canonical_encode_is_a_byte_stable_fixed_point() {
+    let mut document = decode_project_document(CURRENT_PROJECT).unwrap().project;
+    document.assets.reverse();
+    document.scenes[0].entities.reverse();
+    document.scenes[0].entities[0].translation = Some([-0.0, 0.0, -0.0]);
+
+    let first = encode_project_document(&document).unwrap();
+    let decoded = decode_project_document(&first).unwrap();
+    let second = encode_project_document(&decoded.project).unwrap();
+
+    assert_eq!(first, second);
+    assert!(first.ends_with('\n'));
+    assert!(first.find("mesh/control-panel").unwrap() < first.find("mesh/player-marker").unwrap());
+    assert!(!first.contains("-0.0"));
+    assert_eq!(decoded.source_schema_version, STORED_PROJECT_SCHEMA_VERSION);
+    assert!(!decoded.was_migrated());
+}
+
+#[test]
+fn real_schema_six_project_migrates_into_the_current_admitted_shape() {
+    let decoded = decode_project_document(LEGACY_PROJECT).unwrap();
+
+    assert_eq!(decoded.source_schema_version, 6);
+    assert!(decoded.was_migrated());
+    assert_eq!(
+        decoded.project.schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
+    assert_eq!(decoded.project.project_id, MIGRATED_V6_PROJECT_ID);
+    assert_eq!(decoded.project.entry_scene, MIGRATED_V6_SCENE_ID);
+    assert!(decoded
+        .project
+        .assets
+        .iter()
+        .all(|asset| asset.id.starts_with("mesh/")));
+    assert!(decoded.project.scenes[0]
+        .entities
+        .iter()
+        .all(|entity| entity
+            .renderable
+            .as_ref()
+            .is_none_or(|renderable| !renderable.asset.starts_with("primitive/"))));
+    admit_stored_project(decoded.project).expect("migrated project admits");
+}
+
+#[test]
+fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
+    for schema_version in [0, 5, 8, 99] {
+        let input = format!("{{\"schemaVersion\":{schema_version}}}");
+        let error = decode_project_document(&input).unwrap_err();
+        assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
+        assert_eq!(error.diagnostic().path, "schemaVersion");
+    }
+
+    let error = decode_project_document("{}").unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::DECODE);
+    assert_eq!(error.diagnostic().path, "schemaVersion");
+}
+
+#[test]
+fn migration_rejects_the_ambiguous_legacy_spatial_shape() {
+    let mut legacy: serde_json::Value = serde_json::from_str(LEGACY_PROJECT).unwrap();
+    legacy["voxelCollision"] = serde_json::json!({
+        "voxelSize": 1,
+        "chunkSize": 16,
+        "solidVoxels": [[0, 0, 0]]
+    });
+
+    let error = decode_project_document(&serde_json::to_string(&legacy).unwrap()).unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
+    assert!(error.diagnostic().message.contains("both"));
+}
+
+#[test]
+fn authored_project_codec_has_no_runtime_state_surface() {
+    let project = decode_project_document(CURRENT_PROJECT).unwrap().project;
+    let encoded = encode_project_document(&project).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&encoded).unwrap();
+
+    for runtime_root in ["tick", "scheduled", "events", "journal"] {
+        assert!(
+            value.get(runtime_root).is_none(),
+            "unexpected {runtime_root}"
+        );
+    }
+    for runtime_field in [
+        "current",
+        "ammoRemaining",
+        "readyAtTick",
+        "yawDegrees",
+        "pitchDegrees",
+    ] {
+        assert!(
+            !contains_object_key(&value, runtime_field),
+            "unexpected {runtime_field}"
+        );
+    }
+}
+
+#[test]
+fn canonical_encode_rejects_non_finite_authored_numbers() {
+    let mut project: StoredProject = decode_project_document(CURRENT_PROJECT).unwrap().project;
+    project.scenes[0].entities[0].translation.as_mut().unwrap()[1] = f32::NAN;
+
+    let error = encode_project_document(&project).unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::ENCODE);
+    assert_eq!(
+        error.diagnostic().path,
+        "scenes[0].entities[0].translation[1]"
+    );
+}
+
+fn contains_object_key(value: &serde_json::Value, needle: &str) -> bool {
+    match value {
+        serde_json::Value::Array(values) => values
+            .iter()
+            .any(|value| contains_object_key(value, needle)),
+        serde_json::Value::Object(values) => {
+            values.contains_key(needle)
+                || values
+                    .values()
+                    .any(|value| contains_object_key(value, needle))
+        }
+        _ => false,
+    }
+}

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "assetId": "voxel-volume/kenney-wall-a",
+  "grid": {
+    "coordinateSystem": "rightHandedYUp",
+    "cellSize": 1.0,
+    "chunkSize": 16,
+    "origin": [
+      4,
+      0,
+      6
+    ]
+  },
+  "bounds": {
+    "min": [
+      0,
+      0,
+      0
+    ],
+    "max": [
+      1,
+      1,
+      1
+    ]
+  },
+  "representation": {
+    "kind": "sparseRuns",
+    "sparseRuns": [
+      {
+        "start": [
+          0,
+          0,
+          0
+        ],
+        "length": 2,
+        "materialSlot": 7
+      },
+      {
+        "start": [
+          0,
+          0,
+          1
+        ],
+        "length": 2,
+        "materialSlot": 7
+      },
+      {
+        "start": [
+          0,
+          1,
+          0
+        ],
+        "length": 2,
+        "materialSlot": 7
+      },
+      {
+        "start": [
+          0,
+          1,
+          1
+        ],
+        "length": 2,
+        "materialSlot": 7
+      }
+    ]
+  },
+  "materialMap": [
+    {
+      "sourceMaterialSlot": 0,
+      "sourceMaterialName": "wall_lines",
+      "voxelMaterialSlot": 7
+    },
+    {
+      "sourceMaterialSlot": 1,
+      "sourceMaterialName": "concrete",
+      "voxelMaterialSlot": 8
+    }
+  ],
+  "provenance": {
+    "kind": "convertedStaticMesh",
+    "sourcePath": "fixtures/voxel-conversion/kenney-wall-a.glb",
+    "sourceSha256": "sha256:6fceda24c30d2c22694f232f03fe2115fb1a462046fbbf719a90eea10dc9af00",
+    "sourceByteCount": 3352,
+    "converter": "rusty-engine.mesh-to-voxel.v1",
+    "settingsSha256": "sha256:98cb7d07a99015f5e759a39d89e77bb4f64cbdb0b3b5ed724bba9d35f95902ba",
+    "licensePath": "fixtures/voxel-conversion/KENNEY-RETRO-URBAN-KIT-LICENSE.txt"
+  },
+  "contentHash": "sha256:086d81f12403192c6d7568289c2b47771741e5620a967e5b5fe5093fd5608ab7"
+}

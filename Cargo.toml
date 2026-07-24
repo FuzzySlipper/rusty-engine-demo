@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = ["rust/crates/loading-bay-game"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+core-assets = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
+core-ids = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
+core-math = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
+core-time = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
+engine-spatial = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
+entity-state = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
+voxel-asset = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_path_to_error = "0.1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.metadata.rusty-engine]
+repository = "https://github.com/FuzzySlipper/rusty-engine"
+revision = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961"

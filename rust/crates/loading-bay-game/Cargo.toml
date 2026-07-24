@@ -1,0 +1,20 @@
+[package]
+name = "loading-bay-game"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+core-assets.workspace = true
+core-ids.workspace = true
+core-math.workspace = true
+core-time.workspace = true
+engine-spatial.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_path_to_error.workspace = true
+entity-state.workspace = true
+voxel-asset.workspace = true

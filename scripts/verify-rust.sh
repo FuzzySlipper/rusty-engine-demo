@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DEMO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$DEMO_ROOT"
+
+cargo fmt --all --check
+
+if rg -n 'path\s*=\s*".*rusty-engine|asha-engine|asha-demo' Cargo.toml rust; then
+  echo "forbidden sibling/Asha dependency surfaced in active Rust source" >&2
+  exit 1
+fi
+
+cargo metadata --format-version 1 --locked --no-deps > /dev/null
+
+EXPECTED_ENGINE_SOURCE='git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961'
+RESOLVED_GIT_SOURCES="$(sed -n 's/^source = "\(git+[^\"]*\)"$/\1/p' Cargo.lock | sort -u)"
+if [[ "$RESOLVED_GIT_SOURCES" != "$EXPECTED_ENGINE_SOURCE" ]]; then
+  echo "Cargo.lock does not resolve exactly the reviewed Rusty Engine revision" >&2
+  printf '%s\n' "$RESOLVED_GIT_SOURCES" >&2
+  exit 1
+fi
+
+cargo test --workspace --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo run -q --locked -p loading-bay-game --bin headless-door > /dev/null
+cargo run -q --locked -p loading-bay-game --bin headless-encounter > /dev/null

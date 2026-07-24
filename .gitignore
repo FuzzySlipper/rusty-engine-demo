@@ -1,0 +1,7 @@
+/target/
+/node_modules/
+/ts/**/node_modules/
+/ts/**/dist/
+*.log
+*.tsbuildinfo
+.DS_Store
