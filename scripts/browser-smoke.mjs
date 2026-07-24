@@ -21,10 +21,6 @@ const forbiddenRuntimeSurface = [
   "GameplayFabric",
   "NativeRuntimeBridge",
   "RuntimeSession",
-  "AnimationProjectionOp",
-  "AudioProjectionOp",
-  "BillboardProjectionOp",
-  "ParticleProjectionOp",
   "VoxelConversionRequest",
   "rusty-engine.mesh-to-voxel",
   "voxel-convert",
@@ -75,7 +71,7 @@ try {
   await runMigratedBrowserProduct(migratedProject);
 
   console.log(
-    "browser smoke passed: persisted projects + converted asset + v6 migration -> accepted gameplay -> retained Three/WebGL + disposable feedback -> fresh-page posture rebuild",
+    "browser smoke passed: persisted projects + converted asset + v6 migration -> accepted gameplay -> shared Rusty Engine retained renderer + shared disposable hosts -> fresh-page posture rebuild",
   );
 } finally {
   rmSync(proofDirectory, { recursive: true, force: true });
@@ -113,7 +109,7 @@ async function runFullBrowserProduct(project) {
       "--use-angle=swiftshader",
       "--enable-unsafe-swiftshader",
       "--autoplay-policy=no-user-gesture-required",
-      "--virtual-time-budget=10000",
+      "--virtual-time-budget=20000",
       "--dump-dom",
       `http://${running.address}/?smoke=1`,
     ]);

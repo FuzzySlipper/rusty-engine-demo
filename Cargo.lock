@@ -65,32 +65,32 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 [[package]]
 name = "core-assets"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 
 [[package]]
 name = "core-ids"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 
 [[package]]
 name = "core-math"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 
 [[package]]
 name = "core-space"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 
 [[package]]
 name = "core-time"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 
 [[package]]
 name = "core-voxel"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 
 [[package]]
 name = "cpufeatures"
@@ -145,7 +145,7 @@ dependencies = [
 [[package]]
 name = "engine-spatial"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 dependencies = [
  "core-ids",
  "core-math",
@@ -163,7 +163,7 @@ dependencies = [
 [[package]]
 name = "entity-state"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 dependencies = [
  "core-ids",
  "core-math",
@@ -520,7 +520,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 [[package]]
 name = "svc-collision"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 dependencies = [
  "core-space",
  "core-voxel",
@@ -532,7 +532,7 @@ dependencies = [
 [[package]]
 name = "svc-mesh"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 dependencies = [
  "core-space",
  "core-voxel",
@@ -543,7 +543,7 @@ dependencies = [
 [[package]]
 name = "svc-pathfinding"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 dependencies = [
  "core-math",
  "core-space",
@@ -553,12 +553,12 @@ dependencies = [
 [[package]]
 name = "svc-rng"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 
 [[package]]
 name = "svc-spatial"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 dependencies = [
  "core-space",
  "core-voxel",
@@ -568,7 +568,7 @@ dependencies = [
 [[package]]
 name = "svc-volume"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 dependencies = [
  "core-space",
  "core-voxel",
@@ -637,7 +637,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "voxel-asset"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=a2e55f9660e46751d4c78bcdd23b9a321b0dc961#a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+source = "git+https://github.com/FuzzySlipper/rusty-engine.git?rev=8cb49db6cfe9471faa23ab0661656a2366a83d8c#8cb49db6cfe9471faa23ab0661656a2366a83d8c"
 dependencies = [
  "core-assets",
  "serde",

@@ -1,3 +1,22 @@
+import {
+  billboardHandle,
+  telemetryOverlayHandle,
+  type BillboardHandle,
+  type PresentationFrameDiff,
+  type PresentationOp,
+} from "@rusty-engine/render-contracts";
+import {
+  RendererAudioHost,
+  RendererBillboardHost,
+  RendererDomParticleBillboardSink,
+  RendererDomTelemetryOverlaySink,
+  RendererLiveTelemetryCollector,
+  RendererParticleHost,
+  RendererPresentationHostSet,
+  RendererTelemetryOverlayHost,
+  type RendererSurface,
+} from "@rusty-engine/renderer-host";
+
 import type {
   RuntimeAnimationState,
   RuntimeBrowserState,
@@ -27,119 +46,481 @@ export interface FeedbackAnchor {
   readonly position: readonly [number, number, number];
 }
 
-export interface PresentationFeedbackSink {
-  clearTransient(): void;
-  setAnimationState(state: RuntimeAnimationState): void;
-  pulseAnimation(entity: number, name: string): void;
-  emitParticle(kind: FeedbackParticleKind, anchor: FeedbackAnchor): void;
-  showBillboard(text: string, tone: "neutral" | "warning" | "success", anchor: FeedbackAnchor): void;
-  playSound(kind: FeedbackSoundKind): boolean;
-  activateAudio(): Promise<"running" | "blocked" | "unavailable">;
-}
-
 export interface FeedbackApplicationReceipt {
   readonly cueCount: number;
   readonly failedOperations: number;
   readonly scheduledSounds: number;
 }
 
+export interface ProjectedPresentationFeedback {
+  readonly animationPulses: readonly string[];
+  readonly animationStates: readonly RuntimeAnimationState[];
+  readonly billboardHandles: readonly BillboardHandle[];
+  readonly billboardValues: readonly string[];
+  readonly cueCount: number;
+  readonly frame: PresentationFrameDiff;
+  readonly particleKinds: readonly FeedbackParticleKind[];
+  readonly soundKinds: readonly FeedbackSoundKind[];
+}
+
+interface CueFeedback {
+  readonly particle: FeedbackParticleKind;
+  readonly pulse: string;
+  readonly sound: FeedbackSoundKind;
+  readonly billboard?: {
+    readonly text: string;
+    readonly tone: "neutral" | "warning" | "success";
+  };
+}
+
 /**
- * Direct semantic-cue to browser-feedback mapping. This adapter has no input,
- * gameplay, or persistence methods; sink failures are counted and discarded.
+ * Game-specific semantic mapping only. Shared Rusty Engine hosts own every
+ * browser renderer, resource, simulation, and cleanup mechanism.
  */
 export class PresentationFeedbackAdapter {
-  readonly #sink: PresentationFeedbackSink;
+  #generation = 0;
+  #nextBillboardHandle = 1;
+  #telemetryCreated = false;
 
-  constructor(sink: PresentationFeedbackSink) {
-    this.#sink = sink;
+  reset(): void {
+    this.#generation = 0;
+    this.#nextBillboardHandle = 1;
+    this.#telemetryCreated = false;
+  }
+
+  project(state: RuntimeBrowserState): ProjectedPresentationFeedback {
+    this.#generation += 1;
+    const operations: PresentationOp[] = [];
+    const animationPulses: string[] = [];
+    const billboardHandles: BillboardHandle[] = [];
+    const billboardValues: string[] = [];
+    const particleKinds: FeedbackParticleKind[] = [];
+    const soundKinds: FeedbackSoundKind[] = [];
+
+    if (!this.#telemetryCreated) {
+      operations.push(telemetryCreate(operations.length));
+      this.#telemetryCreated = true;
+    }
+
+    state.presentation.cues.forEach((cue, index) => {
+      const anchor = cueAnchor(state, cue);
+      const feedback = cueFeedback(cue);
+      const signalStem = [
+        "loading-bay",
+        String(this.#generation),
+        String(state.tick),
+        String(index),
+        cue.kind,
+      ].join(":");
+      animationPulses.push(feedback.pulse);
+      particleKinds.push(feedback.particle);
+      soundKinds.push(feedback.sound);
+      operations.push(particleEmit(
+        operations.length,
+        `${signalStem}:particle`,
+        feedback.particle,
+        anchor,
+        state.tick + this.#generation + index,
+      ));
+      operations.push(audioEmit(
+        operations.length,
+        `${signalStem}:audio`,
+        feedback.sound,
+        anchor,
+      ));
+      if (feedback.billboard !== undefined) {
+        const handle = billboardHandle(this.#nextBillboardHandle);
+        this.#nextBillboardHandle += 1;
+        billboardHandles.push(handle);
+        billboardValues.push(feedback.billboard.text);
+        operations.push(billboardCreate(
+          operations.length,
+          handle,
+          feedback.billboard.text,
+          feedback.billboard.tone,
+          anchor,
+        ));
+      }
+    });
+
+    return {
+      animationPulses,
+      animationStates: state.presentation.animationStates,
+      billboardHandles,
+      billboardValues,
+      cueCount: state.presentation.cues.length,
+      frame: { schemaVersion: 1, ops: operations },
+      particleKinds,
+      soundKinds,
+    };
+  }
+}
+
+export interface BrowserPresentationFeedbackOptions {
+  readonly audioStatus: HTMLElement;
+  readonly layer: HTMLElement;
+  readonly readState: () => RuntimeBrowserState;
+  readonly surface: RendererSurface;
+}
+
+interface SharedPresentationHosts {
+  readonly audio: RendererAudioHost;
+  readonly billboard: RendererBillboardHost;
+  readonly particle: RendererParticleHost;
+  readonly particleSink: RendererDomParticleBillboardSink;
+  readonly set: RendererPresentationHostSet;
+  readonly telemetry: RendererTelemetryOverlayHost;
+  readonly telemetrySink: RendererDomTelemetryOverlaySink;
+}
+
+/** Browser composition over the shared renderer-host package. */
+export class BrowserPresentationFeedback {
+  readonly #adapter = new PresentationFeedbackAdapter();
+  readonly #audioStatus: HTMLElement;
+  readonly #layer: HTMLElement;
+  readonly #readState: () => RuntimeBrowserState;
+  readonly #surface: RendererSurface;
+  readonly #pulseTargets = new Set<HTMLElement>();
+  readonly #timeouts = new Set<ReturnType<typeof globalThis.setTimeout>>();
+  #tail: Promise<void> = Promise.resolve();
+  #hosts: SharedPresentationHosts;
+  #activeSoundWindows = 0;
+  #soundAttempts = 0;
+  #scheduledSounds = 0;
+
+  constructor(options: BrowserPresentationFeedbackOptions) {
+    this.#audioStatus = options.audioStatus;
+    this.#layer = options.layer;
+    this.#readState = options.readState;
+    this.#surface = options.surface;
+    this.#hosts = this.#createHosts();
+    this.#surface.setPresentationHosts(this.#hosts.set);
+    this.#setAudioStatus("inactive");
+    this.#audioStatus.dataset.activeSounds = "0";
+    this.#layer.dataset.activeEffects = "0";
+    this.#layer.dataset.maxActiveEffects = String(MAX_ACTIVE_EFFECTS);
+    this.#layer.dataset.sharedRendererHosts = "audio,billboard,particle,telemetry";
   }
 
   async activateAudio(): Promise<"running" | "blocked" | "unavailable"> {
     try {
-      return await this.#sink.activateAudio();
+      const diagnostics = await this.#hosts.audio.resume();
+      const status = diagnostics.length === 0 ? "running" : "blocked";
+      this.#setAudioStatus(status);
+      return status;
     } catch {
-      return "blocked";
+      this.#setAudioStatus("unavailable");
+      return "unavailable";
     }
   }
 
-  apply(state: RuntimeBrowserState, reset = false): FeedbackApplicationReceipt {
-    let failedOperations = 0;
-    let scheduledSounds = 0;
-    const attempt = (operation: () => void): void => {
-      try {
-        operation();
-      } catch {
-        failedOperations += 1;
-      }
-    };
-    const sound = (kind: FeedbackSoundKind): void => {
-      attempt(() => {
-        if (this.#sink.playSound(kind)) {
-          scheduledSounds += 1;
-        }
-      });
-    };
+  apply(
+    state: RuntimeBrowserState,
+    reset = false,
+    renderDiffCount = 0,
+  ): Promise<FeedbackApplicationReceipt> {
+    const cueCount = state.presentation.cues.length;
+    const attempt = this.#tail
+      .then(() => this.#applyNow(state, reset, renderDiffCount))
+      .catch(() => ({ cueCount, failedOperations: 1, scheduledSounds: 0 }));
+    this.#tail = attempt.then(() => undefined);
+    return attempt;
+  }
 
+  settled(): Promise<void> {
+    return this.#tail;
+  }
+
+  async #applyNow(
+    state: RuntimeBrowserState,
+    reset: boolean,
+    renderDiffCount: number,
+  ): Promise<FeedbackApplicationReceipt> {
     if (reset) {
-      attempt(() => this.#sink.clearTransient());
+      await this.#resetTransient();
     }
-    for (const animation of state.presentation.animationStates) {
-      attempt(() => this.#sink.setAnimationState(animation));
+    const projected = this.#adapter.project(state);
+    projected.animationStates.forEach((animation) => this.#setAnimationState(animation));
+
+    this.#soundAttempts += projected.soundKinds.length;
+    this.#audioStatus.dataset.attempted = String(this.#soundAttempts);
+    const receipt = await this.#surface.applyPresentation(projected.frame);
+    state.presentation.cues.forEach((cue, index) => {
+      this.#pulseAnimation(cueEntity(cue), projected.animationPulses[index] ?? cue.kind);
+    });
+    const scheduledSounds = receipt.domains.find((domain) => domain.domain === "audio")?.applied ?? 0;
+    this.#scheduledSounds += scheduledSounds;
+    this.#audioStatus.dataset.scheduled = String(this.#scheduledSounds);
+    projected.soundKinds.forEach((kind) => this.#recordAudioKind(kind));
+    if (scheduledSounds > 0) {
+      this.#activeSoundWindows += scheduledSounds;
+      this.#audioStatus.dataset.activeSounds = String(this.#activeSoundWindows);
+      this.#schedule(() => {
+        this.#activeSoundWindows = Math.max(0, this.#activeSoundWindows - scheduledSounds);
+        this.#audioStatus.dataset.activeSounds = String(this.#activeSoundWindows);
+      }, ACTIVE_SOUND_EVIDENCE_MILLISECONDS);
     }
-    for (const cue of state.presentation.cues) {
-      const anchor = cueAnchor(state, cue);
-      switch (cue.kind) {
-        case "movement":
-          attempt(() => this.#sink.pulseAnimation(cue.entity, "movement"));
-          attempt(() => this.#sink.emitParticle("movement", anchor));
-          sound("step");
-          break;
-        case "movementBlocked":
-          attempt(() => this.#sink.pulseAnimation(cue.entity, "blocked"));
-          attempt(() => this.#sink.emitParticle("blocked", anchor));
-          attempt(() => this.#sink.showBillboard("BLOCKED", "warning", anchor));
-          sound("blocked");
-          break;
-        case "attack":
-          attempt(() => this.#sink.pulseAnimation(cue.attacker, "attack"));
-          attempt(() => this.#sink.emitParticle("muzzle", anchor));
-          sound("shot");
-          break;
-        case "damage":
-          attempt(() => this.#sink.pulseAnimation(cue.target, "damage"));
-          attempt(() => this.#sink.emitParticle("impact", anchor));
-          attempt(() => this.#sink.showBillboard(`-${String(cue.amount)}`, "warning", anchor));
-          sound("hit");
-          break;
-        case "defeat":
-          attempt(() => this.#sink.pulseAnimation(cue.entity, "defeat"));
-          attempt(() => this.#sink.emitParticle("defeat", anchor));
-          attempt(() => this.#sink.showBillboard("DEFEATED", "neutral", anchor));
-          sound("defeat");
-          break;
-        case "doorChanged":
-          attempt(() => this.#sink.pulseAnimation(cue.entity, cue.state));
-          attempt(() => this.#sink.emitParticle("door", anchor));
-          attempt(() => this.#sink.showBillboard(
-            cue.state === "open" ? "EXIT OPEN" : "EXIT SEALED",
-            cue.state === "open" ? "success" : "neutral",
-            anchor,
-          ));
-          sound(cue.state === "open" ? "doorOpen" : "doorClose");
-          break;
-        case "extractionBeaconActivated":
-          attempt(() => this.#sink.pulseAnimation(cue.entity, "active"));
-          attempt(() => this.#sink.emitParticle("beacon", anchor));
-          attempt(() => this.#sink.showBillboard("EXTRACTION ONLINE", "success", anchor));
-          sound("beacon");
-          break;
-      }
-    }
+
+    projected.billboardHandles.forEach((handle) => this.#scheduleBillboardDestroy(handle));
+    projected.particleKinds.forEach((kind) => this.#record("particleKinds", kind));
+    projected.billboardValues.forEach((value) => this.#record("billboardValues", value));
+    this.#hosts.telemetry.sample({
+      sourceTick: state.tick,
+      frameTimeMs: 0,
+      counters: {
+        entityCount: state.projection.length,
+        residentChunkCount: state.voxelMeshes.length,
+        renderDiffCount,
+      },
+    }, globalThis.performance?.now() ?? 0);
+    this.#updateActiveEffects();
+    this.#layer.dataset.lastCueCount = String(projected.cueCount);
+    this.#layer.dataset.sharedPresentationApplied = String(receipt.applied);
+    this.#layer.dataset.sharedPresentationDiagnostics = String(receipt.diagnostics.length);
     return {
-      cueCount: state.presentation.cues.length,
-      failedOperations,
+      cueCount: projected.cueCount,
+      failedOperations: receipt.diagnostics.length,
       scheduledSounds,
     };
+  }
+
+  async dispose(): Promise<void> {
+    this.#surface.setPresentationHosts(null);
+    this.#clearTimersAndPulses();
+    this.#hosts.billboard.dispose();
+    this.#hosts.particle.dispose();
+    this.#hosts.particleSink.dispose();
+    this.#hosts.telemetry.cleanup();
+    this.#hosts.telemetrySink.dispose();
+    await this.#hosts.audio.dispose();
+    this.#updateActiveEffects();
+  }
+
+  async #resetTransient(): Promise<void> {
+    this.#surface.setPresentationHosts(null);
+    this.#clearTimersAndPulses();
+    this.#hosts.billboard.dispose();
+    this.#hosts.particle.dispose();
+    this.#hosts.particleSink.dispose();
+    this.#hosts.telemetry.cleanup();
+    this.#hosts.telemetrySink.dispose();
+    // Audio graph disposal is synchronous inside the shared host; browser
+    // AudioContext.close() may settle only after virtual/headless time moves.
+    // Start it, retain the cleanup, and do not stall authoritative reset.
+    void this.#hosts.audio.dispose().catch(() => undefined);
+    this.#adapter.reset();
+    this.#hosts = this.#createHosts();
+    this.#surface.setPresentationHosts(this.#hosts.set);
+    this.#activeSoundWindows = 0;
+    this.#audioStatus.dataset.activeSounds = "0";
+    this.#setAudioStatus("inactive");
+    for (const key of [
+      "animationStates",
+      "cueKinds",
+      "particleKinds",
+      "billboardValues",
+      "animationPulses",
+    ] as const) {
+      delete this.#layer.dataset[key];
+    }
+    this.#updateActiveEffects();
+  }
+
+  #createHosts(): SharedPresentationHosts {
+    const resolveEntityPosition = (entity: number): readonly [number, number, number] | null =>
+      entityPosition(this.#readState(), entity);
+    const audio = new RendererAudioHost({
+      resolveEntityPosition,
+      resolveResource: async (clip) => {
+        const resource = AUDIO_RESOURCES_BY_ASSET.get(clip.asset);
+        if (resource === undefined) {
+          throw new Error(`unknown loading-bay audio resource ${clip.asset}`);
+        }
+        return { bytes: resource.bytes.slice(0), contentHash: resource.contentHash };
+      },
+    });
+    const billboard = new RendererBillboardHost({
+      container: this.#layer,
+      createElement: () => {
+        const element = document.createElement("strong");
+        element.className = "feedback-billboard";
+        return element;
+      },
+      projectWorld: (position) => ({
+        ...this.#surface.projectWorldPoint(position),
+        occluded: false,
+      }),
+      resolveEntityPosition,
+    });
+    const particleSink = new RendererDomParticleBillboardSink({
+      container: this.#layer,
+      createElement: () => {
+        const element = document.createElement("div");
+        element.className = "feedback-particle";
+        return element;
+      },
+      pixelsPerWorldUnit: 22,
+      projectWorld: this.#surface.projectWorldPoint,
+    });
+    const particle = new RendererParticleHost({
+      maxActiveEmitters: MAX_ACTIVE_EFFECTS,
+      maxParticles: MAX_ACTIVE_EFFECTS,
+      resolveEntityPosition,
+      resolveResource: async (sprite) => sprite.asset === PARTICLE_ASSET
+        ? { bytes: PARTICLE_BYTES.slice(0), url: PARTICLE_DATA_URL }
+        : null,
+      sink: particleSink,
+    });
+    const telemetryCollector = new RendererLiveTelemetryCollector({
+      expectedCounters: ["entityCount", "residentChunkCount", "renderDiffCount"],
+      maxFrameTimeSamples: 20,
+    });
+    const telemetrySink = new RendererDomTelemetryOverlaySink({
+      container: this.#layer,
+      createElement: () => {
+        const element = document.createElement("pre");
+        element.className = "shared-render-telemetry";
+        return element;
+      },
+    });
+    const telemetry = new RendererTelemetryOverlayHost({
+      collector: telemetryCollector,
+      sink: telemetrySink,
+    });
+    return {
+      audio,
+      billboard,
+      particle,
+      particleSink,
+      telemetry,
+      telemetrySink,
+      set: new RendererPresentationHostSet({ audio, billboard, particle, telemetryOverlay: telemetry }),
+    };
+  }
+
+  #setAnimationState(state: RuntimeAnimationState): void {
+    const entity = document.querySelector<HTMLElement>(`[data-entity-id="${String(state.entity)}"]`);
+    if (entity !== null) entity.dataset.posture = state.posture;
+    this.#record("animationStates", `${String(state.entity)}:${state.posture}`);
+  }
+
+  #pulseAnimation(entity: number, name: string): void {
+    const target = document.querySelector<HTMLElement>(`[data-entity-id="${String(entity)}"]`);
+    if (target !== null) {
+      target.dataset.animationPulse = name;
+      this.#pulseTargets.add(target);
+      this.#schedule(() => {
+        if (target.dataset.animationPulse === name) delete target.dataset.animationPulse;
+        this.#pulseTargets.delete(target);
+      }, PULSE_LIFETIME_MILLISECONDS);
+    }
+    this.#record("animationPulses", name);
+    this.#record("cueKinds", name);
+  }
+
+  #scheduleBillboardDestroy(handle: BillboardHandle): void {
+    this.#schedule(() => {
+      void this.#surface.applyPresentation({
+        schemaVersion: 1,
+        ops: [{
+          domain: "billboard",
+          meta: { sequence: 0 },
+          op: { op: "destroy", handle },
+        }],
+      }).then(() => this.#updateActiveEffects());
+    }, BILLBOARD_LIFETIME_MILLISECONDS);
+  }
+
+  #recordAudioKind(kind: FeedbackSoundKind): void {
+    this.#audioStatus.dataset.lastSound = kind;
+  }
+
+  #record(
+    field: "animationStates" | "animationPulses" | "cueKinds" | "particleKinds" | "billboardValues",
+    value: string,
+  ): void {
+    const values = new Set((this.#layer.dataset[field] ?? "").split(",").filter(Boolean));
+    values.add(value);
+    this.#layer.dataset[field] = [...values].join(",");
+  }
+
+  #schedule(operation: () => void, delay: number): void {
+    const timeout = globalThis.setTimeout(() => {
+      this.#timeouts.delete(timeout);
+      operation();
+    }, delay);
+    this.#timeouts.add(timeout);
+  }
+
+  #clearTimersAndPulses(): void {
+    for (const timeout of this.#timeouts) globalThis.clearTimeout(timeout);
+    this.#timeouts.clear();
+    for (const target of this.#pulseTargets) delete target.dataset.animationPulse;
+    this.#pulseTargets.clear();
+  }
+
+  #updateActiveEffects(): void {
+    const active = this.#hosts.particleSink.activeCount
+      + this.#hosts.billboard.readout().activeBillboards;
+    this.#layer.dataset.activeEffects = String(active);
+  }
+
+  #setAudioStatus(status: "inactive" | "running" | "blocked" | "unavailable"): void {
+    this.#audioStatus.dataset.state = status;
+    this.#audioStatus.textContent = status === "running"
+      ? "AUDIO ARMED"
+      : status === "inactive"
+        ? "AUDIO WAITING"
+        : status === "unavailable"
+          ? "AUDIO UNAVAILABLE"
+          : "AUDIO BLOCKED";
+  }
+}
+
+function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
+  switch (cue.kind) {
+    case "movement":
+      return { particle: "movement", pulse: "movement", sound: "step" };
+    case "movementBlocked":
+      return {
+        particle: "blocked",
+        pulse: "blocked",
+        sound: "blocked",
+        billboard: { text: "BLOCKED", tone: "warning" },
+      };
+    case "attack":
+      return { particle: "muzzle", pulse: "attack", sound: "shot" };
+    case "damage":
+      return {
+        particle: "impact",
+        pulse: "damage",
+        sound: "hit",
+        billboard: { text: `-${String(cue.amount)}`, tone: "warning" },
+      };
+    case "defeat":
+      return {
+        particle: "defeat",
+        pulse: "defeat",
+        sound: "defeat",
+        billboard: { text: "DEFEATED", tone: "neutral" },
+      };
+    case "doorChanged":
+      return {
+        particle: "door",
+        pulse: cue.state,
+        sound: cue.state === "open" ? "doorOpen" : "doorClose",
+        billboard: {
+          text: cue.state === "open" ? "EXIT OPEN" : "EXIT SEALED",
+          tone: cue.state === "open" ? "success" : "neutral",
+        },
+      };
+    case "extractionBeaconActivated":
+      return {
+        particle: "beacon",
+        pulse: "active",
+        sound: "beacon",
+        billboard: { text: "EXTRACTION ONLINE", tone: "success" },
+      };
   }
 }
 
@@ -162,295 +543,279 @@ function cueAnchor(state: RuntimeBrowserState, cue: RuntimeFeedbackCue): Feedbac
   }
 }
 
+function cueEntity(cue: RuntimeFeedbackCue): number {
+  switch (cue.kind) {
+    case "movement":
+    case "movementBlocked":
+      return cue.entity;
+    case "attack":
+      return cue.attacker;
+    case "damage":
+      return cue.target;
+    case "defeat":
+    case "doorChanged":
+    case "extractionBeaconActivated":
+      return cue.entity;
+  }
+}
+
 function entityAnchor(state: RuntimeBrowserState, entity: number): FeedbackAnchor {
-  if (state.player.id === entity) {
-    return { entity, position: state.player.position };
-  }
+  return { entity, position: entityPosition(state, entity) ?? [0, 0, 0] };
+}
+
+function entityPosition(
+  state: RuntimeBrowserState,
+  entity: number,
+): readonly [number, number, number] | null {
+  if (state.player.id === entity) return state.player.position;
   const enemy = state.enemies.find((candidate) => candidate.id === entity);
-  if (enemy !== undefined) {
-    return { entity, position: enemy.position };
-  }
-  const node = state.projection.find((candidate) => candidate.id === entity);
-  return { entity, position: node?.translation ?? [0, 0, 0] };
+  if (enemy !== undefined) return enemy.position;
+  return state.projection.find((candidate) => candidate.id === entity)?.translation ?? null;
 }
 
-const MAX_ACTIVE_EFFECTS = 24;
-const PARTICLE_LIFETIME_MILLISECONDS = 700;
-const BILLBOARD_LIFETIME_MILLISECONDS = 1_100;
-const PULSE_LIFETIME_MILLISECONDS = 420;
-
-export interface BrowserPresentationHost {
-  queryEntity(entity: number): HTMLElement | null;
-  createElement(tagName: "span" | "strong"): HTMLElement;
-  createAudioContext(): AudioContext | null;
-  setTimeout(
-    operation: () => void,
-    delayMilliseconds: number,
-  ): ReturnType<typeof globalThis.setTimeout>;
-  clearTimeout(timeout: ReturnType<typeof globalThis.setTimeout>): void;
+function telemetryCreate(sequence: number): PresentationOp {
+  return {
+    domain: "telemetryOverlay",
+    meta: { sequence },
+    op: {
+      op: "create",
+      handle: telemetryOverlayHandle(1),
+      descriptor: {
+        title: "Shared renderer",
+        corner: "bottomRight",
+        refreshIntervalMs: 100,
+        maxFrameTimeSamples: 20,
+        visible: true,
+      },
+    },
+  };
 }
 
-const DEFAULT_BROWSER_PRESENTATION_HOST: BrowserPresentationHost = {
-  queryEntity(entity) {
-    return document.querySelector<HTMLElement>(`[data-entity-id="${String(entity)}"]`);
-  },
-  createElement(tagName) {
-    return document.createElement(tagName);
-  },
-  createAudioContext() {
-    const Context = globalThis.AudioContext;
-    return Context === undefined ? null : new Context();
-  },
-  setTimeout(operation, delayMilliseconds) {
-    return globalThis.setTimeout(operation, delayMilliseconds);
-  },
-  clearTimeout(timeout) {
-    globalThis.clearTimeout(timeout);
-  },
-};
-
-interface ActiveSound {
-  readonly oscillator: OscillatorNode;
-  readonly gain: GainNode;
+function particleEmit(
+  sequence: number,
+  signalId: string,
+  kind: FeedbackParticleKind,
+  anchor: FeedbackAnchor,
+  seed: number,
+): PresentationOp {
+  const color = PARTICLE_COLORS[kind];
+  return {
+    domain: "particle",
+    meta: { sequence },
+    op: {
+      op: "emit",
+      signalId,
+      descriptor: {
+        anchor: { kind: "world", position: anchor.position },
+        sprite: { asset: PARTICLE_ASSET, contentHash: PARTICLE_HASH, frameCount: 1 },
+        ratePerSecond: 0,
+        burstCount: 1,
+        lifetimeSeconds: [0.45, 0.7],
+        velocityMin: [-0.35, 0.25, -0.35],
+        velocityMax: [0.35, 0.9, 0.35],
+        acceleration: [0, -0.65, 0],
+        sizeCurve: [{ age: 0, value: 0.7 }, { age: 1, value: 0.08 }],
+        colorCurve: [{ age: 0, color }, { age: 1, color: [color[0], color[1], color[2], 0] }],
+        flipbookFramesPerSecond: 0,
+        seed: Math.max(0, seed),
+        maxParticles: 1,
+        visible: true,
+      },
+    },
+  };
 }
 
-/** DOM/Web Audio realization for the concrete browser shell. */
-export class BrowserPresentationFeedbackSink implements PresentationFeedbackSink {
-  readonly #layer: HTMLElement;
-  readonly #audioStatus: HTMLElement;
-  readonly #host: BrowserPresentationHost;
-  readonly #active: HTMLElement[] = [];
-  readonly #pulseTargets = new Set<HTMLElement>();
-  readonly #activeSounds = new Set<ActiveSound>();
-  readonly #timeouts = new Set<ReturnType<typeof globalThis.setTimeout>>();
-  #audioContext: AudioContext | null = null;
-  #soundAttempts = 0;
-  #scheduledSounds = 0;
-  #droppedSounds = 0;
+function audioEmit(
+  sequence: number,
+  signalId: string,
+  kind: FeedbackSoundKind,
+  anchor: FeedbackAnchor,
+): PresentationOp {
+  const resource = AUDIO_RESOURCES[kind];
+  return {
+    domain: "audio",
+    meta: { sequence },
+    op: {
+      op: "emit",
+      signalId,
+      descriptor: {
+        clip: { asset: resource.asset, contentHash: resource.contentHash },
+        bus: "sfx",
+        volume: resource.volume,
+        pitch: 1,
+        looping: false,
+        spatialBlend: 0.65,
+        attenuation: 24,
+        pan: 0,
+        emitter: { kind: "world3d", position: anchor.position },
+      },
+    },
+  };
+}
 
-  constructor(
-    layer: HTMLElement,
-    audioStatus: HTMLElement,
-    host: BrowserPresentationHost = DEFAULT_BROWSER_PRESENTATION_HOST,
-  ) {
-    this.#layer = layer;
-    this.#audioStatus = audioStatus;
-    this.#host = host;
-    this.#setAudioStatus("inactive");
-    this.#audioStatus.dataset.activeSounds = "0";
-  }
+function billboardCreate(
+  sequence: number,
+  handle: BillboardHandle,
+  text: string,
+  tone: "neutral" | "warning" | "success",
+  anchor: FeedbackAnchor,
+): PresentationOp {
+  const colors = BILLBOARD_COLORS[tone];
+  return {
+    domain: "billboard",
+    meta: { sequence },
+    op: {
+      op: "create",
+      handle,
+      descriptor: {
+        anchor: { kind: "world", position: anchor.position },
+        content: {
+          kind: "text",
+          localizationKey: `loading-bay.feedback.${text.toLowerCase().replaceAll(" ", "-")}`,
+          fallbackText: text,
+          arguments: [],
+        },
+        font: { kind: "system", family: "ui-monospace, monospace" },
+        heightPixels: 14,
+        color: colors.foreground,
+        background: colors.background,
+        maxDistance: 60,
+        layer: "alwaysOnTop",
+        visible: true,
+      },
+    },
+  };
+}
 
-  async activateAudio(): Promise<"running" | "blocked" | "unavailable"> {
-    try {
-      if (this.#audioContext === null) {
-        this.#audioContext = this.#host.createAudioContext();
-      }
-      if (this.#audioContext === null) {
-        this.#setAudioStatus("unavailable");
-        return "unavailable";
-      }
-      if (this.#audioContext.state === "suspended") {
-        await this.#audioContext.resume();
-      }
-      const state = this.#audioContext.state === "running" ? "running" : "blocked";
-      this.#setAudioStatus(state);
-      return state;
-    } catch {
-      this.#setAudioStatus("blocked");
-      return "blocked";
-    }
-  }
-
-  clearTransient(): void {
-    for (const timeout of this.#timeouts) {
-      this.#host.clearTimeout(timeout);
-    }
-    this.#timeouts.clear();
-    for (const target of this.#pulseTargets) {
-      delete target.dataset.animationPulse;
-    }
-    this.#pulseTargets.clear();
-    for (const element of this.#active) {
-      element.remove();
-    }
-    this.#active.length = 0;
-    for (const sound of this.#activeSounds) {
-      try {
-        sound.oscillator.stop();
-      } catch {
-        // A source that ended between dispatch and reset is already silent.
-      }
-      sound.oscillator.disconnect();
-      sound.gain.disconnect();
-    }
-    this.#activeSounds.clear();
-    this.#audioStatus.dataset.activeSounds = "0";
-    for (const key of [
-      "animationStates",
-      "cueKinds",
-      "particleKinds",
-      "billboardValues",
-      "animationPulses",
-    ] as const) {
-      delete this.#layer.dataset[key];
-    }
-    this.#layer.dataset.activeEffects = "0";
-  }
-
-  setAnimationState(state: RuntimeAnimationState): void {
-    const entity = this.#host.queryEntity(state.entity);
-    if (entity !== null) {
-      entity.dataset.posture = state.posture;
-    }
-    this.#record("animationStates", `${String(state.entity)}:${state.posture}`);
-  }
-
-  pulseAnimation(entity: number, name: string): void {
-    const target = this.#host.queryEntity(entity);
-    if (target !== null) {
-      target.dataset.animationPulse = name;
-      this.#pulseTargets.add(target);
-      this.#schedule(() => {
-        if (target.dataset.animationPulse === name) {
-          delete target.dataset.animationPulse;
-          this.#pulseTargets.delete(target);
-        }
-      }, PULSE_LIFETIME_MILLISECONDS);
-    }
-    this.#record("animationPulses", name);
-    this.#record("cueKinds", name);
-  }
-
-  emitParticle(kind: FeedbackParticleKind, anchor: FeedbackAnchor): void {
-    const element = this.#host.createElement("span");
-    element.className = `feedback-particle feedback-particle--${kind}`;
-    element.dataset.kind = kind;
-    this.#position(element, anchor.position);
-    this.#appendTransient(element, PARTICLE_LIFETIME_MILLISECONDS);
-    this.#record("particleKinds", kind);
-  }
-
-  showBillboard(
-    text: string,
-    tone: "neutral" | "warning" | "success",
-    anchor: FeedbackAnchor,
-  ): void {
-    const element = this.#host.createElement("strong");
-    element.className = "feedback-billboard";
-    element.dataset.tone = tone;
-    element.dataset.entityId = String(anchor.entity);
-    element.textContent = text;
-    this.#position(element, anchor.position);
-    this.#appendTransient(element, BILLBOARD_LIFETIME_MILLISECONDS);
-    this.#record("billboardValues", text);
-  }
-
-  playSound(kind: FeedbackSoundKind): boolean {
-    this.#soundAttempts += 1;
-    this.#audioStatus.dataset.attempted = String(this.#soundAttempts);
-    const context = this.#audioContext;
-    if (context === null || context.state !== "running") {
-      this.#droppedSounds += 1;
-      this.#audioStatus.dataset.dropped = String(this.#droppedSounds);
-      return false;
-    }
-    const profile = SOUND_PROFILES[kind];
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    const start = context.currentTime;
-    oscillator.type = profile.wave;
-    oscillator.frequency.setValueAtTime(profile.frequency, start);
-    oscillator.frequency.exponentialRampToValueAtTime(profile.frequencyEnd, start + profile.duration);
-    gain.gain.setValueAtTime(profile.gain, start);
-    gain.gain.linearRampToValueAtTime(0, start + profile.duration);
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    const activeSound = { oscillator, gain };
-    this.#activeSounds.add(activeSound);
-    this.#audioStatus.dataset.activeSounds = String(this.#activeSounds.size);
-    oscillator.addEventListener("ended", () => {
-      if (this.#activeSounds.delete(activeSound)) {
-        oscillator.disconnect();
-        gain.disconnect();
-        this.#audioStatus.dataset.activeSounds = String(this.#activeSounds.size);
-      }
-    }, { once: true });
-    oscillator.start(start);
-    oscillator.stop(start + profile.duration);
-    this.#scheduledSounds += 1;
-    this.#audioStatus.dataset.scheduled = String(this.#scheduledSounds);
-    this.#audioStatus.dataset.lastSound = kind;
-    return true;
-  }
-
-  #position(element: HTMLElement, position: readonly [number, number, number]): void {
-    const left = clamp(12 + (position[0] / 12) * 76, 8, 92);
-    const top = clamp(84 - (position[2] / 15) * 64 - position[1] * 1.5, 12, 86);
-    element.style.setProperty("--feedback-left", `${left.toFixed(2)}%`);
-    element.style.setProperty("--feedback-top", `${top.toFixed(2)}%`);
-  }
-
-  #appendTransient(element: HTMLElement, lifetime: number): void {
-    while (this.#active.length >= MAX_ACTIVE_EFFECTS) {
-      this.#active.shift()?.remove();
-    }
-    this.#active.push(element);
-    this.#layer.append(element);
-    this.#layer.dataset.activeEffects = String(this.#active.length);
-    this.#layer.dataset.maxActiveEffects = String(MAX_ACTIVE_EFFECTS);
-    this.#schedule(() => {
-      const index = this.#active.indexOf(element);
-      if (index >= 0) {
-        this.#active.splice(index, 1);
-      }
-      element.remove();
-      this.#layer.dataset.activeEffects = String(this.#active.length);
-    }, lifetime);
-  }
-
-  #schedule(operation: () => void, delay: number): void {
-    const timeout = this.#host.setTimeout(() => {
-      this.#timeouts.delete(timeout);
-      operation();
-    }, delay);
-    this.#timeouts.add(timeout);
-  }
-
-  #record(field: "animationStates" | "animationPulses" | "cueKinds" | "particleKinds" | "billboardValues", value: string): void {
-    const values = new Set((this.#layer.dataset[field] ?? "").split(",").filter(Boolean));
-    values.add(value);
-    this.#layer.dataset[field] = [...values].join(",");
-  }
-
-  #setAudioStatus(status: "inactive" | "running" | "blocked" | "unavailable"): void {
-    this.#audioStatus.dataset.state = status;
-    this.#audioStatus.textContent = status === "running"
-      ? "AUDIO ARMED"
-      : status === "inactive"
-        ? "AUDIO WAITING"
-        : status === "unavailable"
-          ? "AUDIO UNAVAILABLE"
-          : "AUDIO BLOCKED";
-  }
+interface AudioResource {
+  readonly asset: string;
+  readonly bytes: ArrayBuffer;
+  readonly contentHash: string;
+  readonly volume: number;
 }
 
 const SOUND_PROFILES: Record<FeedbackSoundKind, {
+  readonly duration: number;
   readonly frequency: number;
   readonly frequencyEnd: number;
-  readonly duration: number;
-  readonly gain: number;
-  readonly wave: OscillatorType;
+  readonly volume: number;
 }> = {
-  step: { frequency: 95, frequencyEnd: 70, duration: 0.05, gain: 0.025, wave: "triangle" },
-  blocked: { frequency: 120, frequencyEnd: 55, duration: 0.11, gain: 0.04, wave: "square" },
-  shot: { frequency: 220, frequencyEnd: 48, duration: 0.13, gain: 0.055, wave: "sawtooth" },
-  hit: { frequency: 440, frequencyEnd: 180, duration: 0.09, gain: 0.04, wave: "square" },
-  defeat: { frequency: 180, frequencyEnd: 48, duration: 0.3, gain: 0.045, wave: "sawtooth" },
-  doorOpen: { frequency: 150, frequencyEnd: 310, duration: 0.24, gain: 0.035, wave: "triangle" },
-  doorClose: { frequency: 260, frequencyEnd: 90, duration: 0.2, gain: 0.035, wave: "triangle" },
-  beacon: { frequency: 240, frequencyEnd: 720, duration: 0.32, gain: 0.035, wave: "sine" },
+  step: { frequency: 95, frequencyEnd: 70, duration: 0.05, volume: 0.12 },
+  blocked: { frequency: 120, frequencyEnd: 55, duration: 0.11, volume: 0.18 },
+  shot: { frequency: 220, frequencyEnd: 48, duration: 0.13, volume: 0.2 },
+  hit: { frequency: 440, frequencyEnd: 180, duration: 0.09, volume: 0.16 },
+  defeat: { frequency: 180, frequencyEnd: 48, duration: 0.3, volume: 0.18 },
+  doorOpen: { frequency: 150, frequencyEnd: 310, duration: 0.24, volume: 0.15 },
+  doorClose: { frequency: 260, frequencyEnd: 90, duration: 0.2, volume: 0.15 },
+  beacon: { frequency: 240, frequencyEnd: 720, duration: 0.32, volume: 0.15 },
 };
 
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.max(minimum, Math.min(maximum, value));
+const AUDIO_RESOURCES = createAudioResources();
+const AUDIO_RESOURCES_BY_ASSET = new Map(
+  Object.values(AUDIO_RESOURCES).map((resource) => [resource.asset, resource]),
+);
+
+function createAudioResources(): Record<FeedbackSoundKind, AudioResource> {
+  return Object.fromEntries(
+    Object.entries(SOUND_PROFILES).map(([kind, profile]) => {
+      const bytes = toneWave(profile.frequency, profile.frequencyEnd, profile.duration);
+      return [kind, {
+        asset: `audio/loading-bay/${kind}`,
+        bytes,
+        contentHash: fnv1a64(new Uint8Array(bytes)),
+        volume: profile.volume,
+      }];
+    }),
+  ) as unknown as Record<FeedbackSoundKind, AudioResource>;
 }
+
+function toneWave(frequency: number, frequencyEnd: number, duration: number): ArrayBuffer {
+  const sampleRate = 8_000;
+  const sampleCount = Math.max(1, Math.round(sampleRate * duration));
+  const bytes = new ArrayBuffer(44 + sampleCount * 2);
+  const view = new DataView(bytes);
+  writeAscii(view, 0, "RIFF");
+  view.setUint32(4, bytes.byteLength - 8, true);
+  writeAscii(view, 8, "WAVE");
+  writeAscii(view, 12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeAscii(view, 36, "data");
+  view.setUint32(40, sampleCount * 2, true);
+  let phase = 0;
+  for (let index = 0; index < sampleCount; index += 1) {
+    const progress = index / sampleCount;
+    const frequencyAtSample = frequency + (frequencyEnd - frequency) * progress;
+    phase += (Math.PI * 2 * frequencyAtSample) / sampleRate;
+    const sample = Math.sin(phase) * (1 - progress) * 0.5;
+    view.setInt16(44 + index * 2, Math.round(sample * 0x7fff), true);
+  }
+  return bytes;
+}
+
+function writeAscii(view: DataView, offset: number, value: string): void {
+  for (let index = 0; index < value.length; index += 1) {
+    view.setUint8(offset + index, value.charCodeAt(index));
+  }
+}
+
+function fnv1a64(bytes: Uint8Array): string {
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of bytes) {
+    hash ^= BigInt(byte);
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+  }
+  return hash.toString(16).padStart(16, "0");
+}
+
+const PARTICLE_SOURCE = [
+  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">',
+  '<circle cx="8" cy="8" r="7" fill="white"/>',
+  '</svg>',
+].join("");
+const PARTICLE_BYTES_VIEW = new TextEncoder().encode(PARTICLE_SOURCE);
+const PARTICLE_BYTES = PARTICLE_BYTES_VIEW.buffer.slice(
+  PARTICLE_BYTES_VIEW.byteOffset,
+  PARTICLE_BYTES_VIEW.byteOffset + PARTICLE_BYTES_VIEW.byteLength,
+) as ArrayBuffer;
+const PARTICLE_ASSET = "sprite/loading-bay-feedback";
+const PARTICLE_HASH = fnv1a64(new Uint8Array(PARTICLE_BYTES));
+const PARTICLE_DATA_URL = `data:image/svg+xml,${encodeURIComponent(PARTICLE_SOURCE)}`;
+
+const PARTICLE_COLORS: Record<
+  FeedbackParticleKind,
+  readonly [number, number, number, number]
+> = {
+  movement: [0.5, 0.78, 0.84, 0.9],
+  blocked: [0.94, 0.68, 0.4, 1],
+  muzzle: [1, 0.94, 0.64, 1],
+  impact: [1, 0.44, 0.37, 1],
+  defeat: [0.91, 0.37, 0.32, 1],
+  door: [0.36, 0.83, 0.65, 1],
+  beacon: [0.4, 0.94, 0.76, 1],
+};
+
+const BILLBOARD_COLORS = {
+  neutral: {
+    foreground: [0.86, 0.92, 0.9, 1],
+    background: [0.03, 0.06, 0.07, 0.88],
+  },
+  warning: {
+    foreground: [1, 0.6, 0.52, 1],
+    background: [0.18, 0.04, 0.03, 0.9],
+  },
+  success: {
+    foreground: [0.47, 0.91, 0.74, 1],
+    background: [0.02, 0.12, 0.09, 0.9],
+  },
+} as const;
+
+const MAX_ACTIVE_EFFECTS = 24;
+const BILLBOARD_LIFETIME_MILLISECONDS = 1_100;
+const PULSE_LIFETIME_MILLISECONDS = 420;
+const ACTIVE_SOUND_EVIDENCE_MILLISECONDS = 400;

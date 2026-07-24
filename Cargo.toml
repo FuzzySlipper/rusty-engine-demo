@@ -7,13 +7,13 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
-core-assets = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
-core-ids = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
-core-math = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
-core-time = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
-engine-spatial = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
-entity-state = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
-voxel-asset = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961" }
+core-assets = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "8cb49db6cfe9471faa23ab0661656a2366a83d8c" }
+core-ids = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "8cb49db6cfe9471faa23ab0661656a2366a83d8c" }
+core-math = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "8cb49db6cfe9471faa23ab0661656a2366a83d8c" }
+core-time = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "8cb49db6cfe9471faa23ab0661656a2366a83d8c" }
+engine-spatial = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "8cb49db6cfe9471faa23ab0661656a2366a83d8c" }
+entity-state = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "8cb49db6cfe9471faa23ab0661656a2366a83d8c" }
+voxel-asset = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "8cb49db6cfe9471faa23ab0661656a2366a83d8c" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_path_to_error = "0.1"
@@ -23,4 +23,4 @@ unsafe_code = "forbid"
 
 [workspace.metadata.rusty-engine]
 repository = "https://github.com/FuzzySlipper/rusty-engine"
-revision = "a2e55f9660e46751d4c78bcdd23b9a321b0dc961"
+revision = "8cb49db6cfe9471faa23ab0661656a2366a83d8c"

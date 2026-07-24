@@ -1,198 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  BrowserPresentationFeedbackSink,
-  PresentationFeedbackAdapter,
-  type BrowserPresentationHost,
-  type FeedbackAnchor,
-  type FeedbackParticleKind,
-  type FeedbackSoundKind,
-  type PresentationFeedbackSink,
-} from "./presentation-feedback.ts";
-import type { RuntimeAnimationState, RuntimeBrowserState } from "./projection.ts";
+import { decodePresentationFrameDiff } from "@rusty-engine/render-contracts";
 
-class RecordingSink implements PresentationFeedbackSink {
-  readonly animations: RuntimeAnimationState[] = [];
-  readonly pulses: { readonly entity: number; readonly name: string }[] = [];
-  readonly particles: { readonly kind: FeedbackParticleKind; readonly anchor: FeedbackAnchor }[] = [];
-  readonly billboards: { readonly text: string; readonly anchor: FeedbackAnchor }[] = [];
-  readonly sounds: FeedbackSoundKind[] = [];
-  clears = 0;
-  failSound: FeedbackSoundKind | null = null;
+import { PresentationFeedbackAdapter } from "./presentation-feedback.ts";
+import type { RuntimeBrowserState } from "./projection.ts";
 
-  clearTransient(): void {
-    this.clears += 1;
-  }
+test("typed gameplay cues map to shared audio billboard particle and telemetry descriptors", () => {
+  const adapter = new PresentationFeedbackAdapter();
+  const projected = adapter.project(feedbackState());
 
-  setAnimationState(state: RuntimeAnimationState): void {
-    this.animations.push(state);
-  }
-
-  pulseAnimation(entity: number, name: string): void {
-    this.pulses.push({ entity, name });
-  }
-
-  emitParticle(kind: FeedbackParticleKind, anchor: FeedbackAnchor): void {
-    this.particles.push({ kind, anchor });
-  }
-
-  showBillboard(text: string, _tone: "neutral" | "warning" | "success", anchor: FeedbackAnchor): void {
-    this.billboards.push({ text, anchor });
-  }
-
-  playSound(kind: FeedbackSoundKind): boolean {
-    if (kind === this.failSound) {
-      throw new Error("simulated audio host failure");
-    }
-    this.sounds.push(kind);
-    return true;
-  }
-
-  activateAudio(): Promise<"running"> {
-    return Promise.resolve("running");
-  }
-}
-
-class FakeElement {
-  readonly dataset = {} as DOMStringMap;
-  readonly children: FakeElement[] = [];
-  readonly properties = new Map<string, string>();
-  readonly style = {
-    setProperty: (name: string, value: string) => {
-      this.properties.set(name, value);
-    },
-  } as unknown as CSSStyleDeclaration;
-  className = "";
-  textContent: string | null = null;
-  removed = false;
-
-  append(...nodes: Node[]): void {
-    this.children.push(...nodes.map((node) => node as unknown as FakeElement));
-  }
-
-  remove(): void {
-    this.removed = true;
-  }
-
-  asHtml(): HTMLElement {
-    return this as unknown as HTMLElement;
-  }
-}
-
-class FakeAudioParam {
-  setValueAtTime(): void {}
-  exponentialRampToValueAtTime(): void {}
-  linearRampToValueAtTime(): void {}
-}
-
-class FakeOscillator {
-  readonly frequency = new FakeAudioParam();
-  type: OscillatorType = "sine";
-  stopCalls = 0;
-  disconnectCalls = 0;
-
-  connect(): void {}
-  start(): void {}
-
-  stop(): void {
-    this.stopCalls += 1;
-  }
-
-  disconnect(): void {
-    this.disconnectCalls += 1;
-  }
-
-  addEventListener(): void {}
-
-  asNode(): OscillatorNode {
-    return this as unknown as OscillatorNode;
-  }
-}
-
-class FakeGain {
-  readonly gain = new FakeAudioParam();
-  disconnectCalls = 0;
-
-  connect(): void {}
-
-  disconnect(): void {
-    this.disconnectCalls += 1;
-  }
-
-  asNode(): GainNode {
-    return this as unknown as GainNode;
-  }
-}
-
-class FakeAudioContext {
-  readonly destination = {} as AudioDestinationNode;
-  readonly oscillators: FakeOscillator[] = [];
-  readonly gains: FakeGain[] = [];
-  readonly currentTime = 10;
-  readonly state: AudioContextState = "running";
-
-  createOscillator(): OscillatorNode {
-    const oscillator = new FakeOscillator();
-    this.oscillators.push(oscillator);
-    return oscillator.asNode();
-  }
-
-  createGain(): GainNode {
-    const gain = new FakeGain();
-    this.gains.push(gain);
-    return gain.asNode();
-  }
-
-  resume(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  asContext(): AudioContext {
-    return this as unknown as AudioContext;
-  }
-}
-
-class FakeBrowserHost implements BrowserPresentationHost {
-  readonly audio = new FakeAudioContext();
-  readonly entities = new Map<number, FakeElement>();
-  readonly cancelledTimeouts: ReturnType<typeof globalThis.setTimeout>[] = [];
-  #nextTimeout = 1;
-
-  queryEntity(entity: number): HTMLElement | null {
-    return this.entities.get(entity)?.asHtml() ?? null;
-  }
-
-  createElement(): HTMLElement {
-    return new FakeElement().asHtml();
-  }
-
-  createAudioContext(): AudioContext {
-    return this.audio.asContext();
-  }
-
-  setTimeout(): ReturnType<typeof globalThis.setTimeout> {
-    return this.#nextTimeout++ as unknown as ReturnType<typeof globalThis.setTimeout>;
-  }
-
-  clearTimeout(timeout: ReturnType<typeof globalThis.setTimeout>): void {
-    this.cancelledTimeouts.push(timeout);
-  }
-}
-
-test("typed gameplay cues map directly to bounded animation audio particle and billboard calls", () => {
-  const sink = new RecordingSink();
-  const adapter = new PresentationFeedbackAdapter(sink);
-
-  const receipt = adapter.apply(feedbackState(), true);
-
-  assert.equal(sink.clears, 1);
-  assert.deepEqual(sink.animations.map((state) => `${String(state.entity)}:${state.posture}`), [
-    "1:idle",
-    "4:defeated",
-    "3:open",
-  ]);
-  assert.deepEqual(sink.pulses.map((pulse) => pulse.name), [
+  assert.equal(decodePresentationFrameDiff(projected.frame).ops.length, 20);
+  assert.deepEqual(projected.animationStates.map(
+    (state) => `${String(state.entity)}:${state.posture}`,
+  ), ["1:idle", "4:defeated", "3:open"]);
+  assert.deepEqual(projected.animationPulses, [
     "movement",
     "blocked",
     "attack",
@@ -201,7 +23,7 @@ test("typed gameplay cues map directly to bounded animation audio particle and b
     "open",
     "active",
   ]);
-  assert.deepEqual(sink.particles.map((particle) => particle.kind), [
+  assert.deepEqual(projected.particleKinds, [
     "movement",
     "blocked",
     "muzzle",
@@ -210,14 +32,14 @@ test("typed gameplay cues map directly to bounded animation audio particle and b
     "door",
     "beacon",
   ]);
-  assert.deepEqual(sink.billboards.map((billboard) => billboard.text), [
+  assert.deepEqual(projected.billboardValues, [
     "BLOCKED",
     "-60",
     "DEFEATED",
     "EXIT OPEN",
     "EXTRACTION ONLINE",
   ]);
-  assert.deepEqual(sink.sounds, [
+  assert.deepEqual(projected.soundKinds, [
     "step",
     "blocked",
     "shot",
@@ -226,61 +48,71 @@ test("typed gameplay cues map directly to bounded animation audio particle and b
     "doorOpen",
     "beacon",
   ]);
-  assert.deepEqual(sink.billboards[1]?.anchor, { entity: 4, position: [7.5, 0, 5.5] });
-  assert.deepEqual(sink.billboards[3]?.anchor, { entity: 3, position: [4.5, 4, 10.5] });
-  assert.deepEqual(receipt, { cueCount: 7, failedOperations: 0, scheduledSounds: 7 });
-});
 
-test("presentation host failure is dropped while later cue realizations continue", async () => {
-  const sink = new RecordingSink();
-  sink.failSound = "hit";
-  const adapter = new PresentationFeedbackAdapter(sink);
-
-  const receipt = adapter.apply(feedbackState());
-
-  assert.equal(receipt.failedOperations, 1);
-  assert.equal(receipt.scheduledSounds, 6);
-  assert.equal(sink.billboards.at(-1)?.text, "EXTRACTION ONLINE");
-  assert.equal(await adapter.activateAudio(), "running");
-});
-
-test("browser reset clears concrete pulses and audio before rebuilding current posture", async () => {
-  const layer = new FakeElement();
-  const audioStatus = new FakeElement();
-  const host = new FakeBrowserHost();
-  host.entities.set(1, new FakeElement());
-  host.entities.set(3, new FakeElement());
-  host.entities.set(4, new FakeElement());
-  const adapter = new PresentationFeedbackAdapter(
-    new BrowserPresentationFeedbackSink(layer.asHtml(), audioStatus.asHtml(), host),
+  const domains = projected.frame.ops.map((operation) => operation.domain);
+  assert.equal(domains.filter((domain) => domain === "telemetryOverlay").length, 1);
+  assert.equal(domains.filter((domain) => domain === "particle").length, 7);
+  assert.equal(domains.filter((domain) => domain === "audio").length, 7);
+  assert.equal(domains.filter((domain) => domain === "billboard").length, 5);
+  assert.deepEqual(
+    projected.frame.ops.map((operation) => operation.meta.sequence),
+    projected.frame.ops.map((_, index) => index),
   );
 
-  assert.equal(await adapter.activateAudio(), "running");
-  adapter.apply(feedbackState());
-  assert.equal(host.entities.get(1)?.dataset.animationPulse, "attack");
-  assert.equal(host.entities.get(3)?.dataset.animationPulse, "open");
-  assert.equal(host.entities.get(4)?.dataset.animationPulse, "defeat");
-  assert.ok(Number(layer.dataset.activeEffects ?? "0") > 0);
-  assert.equal(audioStatus.dataset.activeSounds, "7");
-
-  const currentState = feedbackState();
-  const receipt = adapter.apply({
-    ...currentState,
-    presentation: { animationStates: currentState.presentation.animationStates, cues: [] },
-  }, true);
-
-  assert.equal(host.entities.get(1)?.dataset.animationPulse, undefined);
-  assert.equal(host.entities.get(3)?.dataset.animationPulse, undefined);
-  assert.equal(host.entities.get(4)?.dataset.animationPulse, undefined);
-  assert.equal(host.entities.get(1)?.dataset.posture, "idle");
-  assert.equal(host.entities.get(3)?.dataset.posture, "open");
-  assert.equal(host.entities.get(4)?.dataset.posture, "defeated");
-  assert.equal(layer.dataset.activeEffects, "0");
-  assert.equal(audioStatus.dataset.activeSounds, "0");
-  assert.ok(host.cancelledTimeouts.length > 0);
-  assert.ok(host.audio.oscillators.every((oscillator) => oscillator.stopCalls === 2));
-  assert.deepEqual(receipt, { cueCount: 0, failedOperations: 0, scheduledSounds: 0 });
+  const damageBillboard = projected.frame.ops.find((operation) =>
+    operation.domain === "billboard"
+    && operation.op.op === "create"
+    && operation.op.descriptor.content.kind === "text"
+    && operation.op.descriptor.content.fallbackText === "-60");
+  assert.deepEqual(
+    damageBillboard?.domain === "billboard" && damageBillboard.op.op === "create"
+      ? damageBillboard.op.descriptor.anchor
+      : null,
+    { kind: "world", position: [7.5, 0, 5.5] },
+  );
+  const doorBillboard = projected.frame.ops.find((operation) =>
+    operation.domain === "billboard"
+    && operation.op.op === "create"
+    && operation.op.descriptor.content.kind === "text"
+    && operation.op.descriptor.content.fallbackText === "EXIT OPEN");
+  assert.deepEqual(
+    doorBillboard?.domain === "billboard" && doorBillboard.op.op === "create"
+      ? doorBillboard.op.descriptor.anchor
+      : null,
+    { kind: "world", position: [4.5, 4, 10.5] },
+  );
 });
+
+test("shared signal ids are delivery-local and a reset reopens retained host identities", () => {
+  const adapter = new PresentationFeedbackAdapter();
+  const first = adapter.project(feedbackState());
+  const second = adapter.project(feedbackState());
+  const firstSignals = signalIds(first.frame);
+  const secondSignals = signalIds(second.frame);
+
+  assert.equal(first.frame.ops[0]?.domain, "telemetryOverlay");
+  assert.equal(second.frame.ops.some((operation) => operation.domain === "telemetryOverlay"), false);
+  assert.equal(firstSignals.some((signal) => secondSignals.includes(signal)), false);
+  assert.notDeepEqual(first.billboardHandles, second.billboardHandles);
+
+  adapter.reset();
+  const reopened = adapter.project(feedbackState());
+  assert.equal(reopened.frame.ops[0]?.domain, "telemetryOverlay");
+  assert.deepEqual(reopened.billboardHandles, first.billboardHandles);
+  assert.deepEqual(signalIds(reopened.frame), firstSignals);
+});
+
+function signalIds(frame: ReturnType<PresentationFeedbackAdapter["project"]>["frame"]): string[] {
+  return frame.ops.flatMap((operation) => {
+    if (
+      (operation.domain === "audio" || operation.domain === "particle")
+      && operation.op.op === "emit"
+    ) {
+      return [operation.op.signalId];
+    }
+    return [];
+  });
+}
 
 function feedbackState(): RuntimeBrowserState {
   return {

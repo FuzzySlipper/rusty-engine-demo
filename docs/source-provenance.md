@@ -1,8 +1,12 @@
 # Source provenance
 
-Rusty Engine Demo was extracted from
+Rusty Engine Demo was originally extracted from
 [`FuzzySlipper/rusty-engine`](https://github.com/FuzzySlipper/rusty-engine) at commit
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
+
+The current Rust and browser dependencies resolve from exact Engine revision
+`8cb49db6cfe9471faa23ab0661656a2366a83d8c`. The older revision below remains the historical
+extraction point, not the active dependency pin.
 
 ## M10A Rust transfer
 
@@ -26,14 +30,15 @@ runtime claims.
 |---|---|---|
 | `ts/packages/project-content` | same path | Copied as the optional immutable content composer and renamed to `@rusty-engine-demo/project-content`. |
 | `ts/packages/browser-shell` | same path | Copied as the product-owned input, projection, feedback, and browser shell; imports renamed to the demo package scope. |
-| `ts/packages/render-contracts` | same path | Copied as the browser product's closed typed render vocabulary and renamed to the demo package scope. |
-| `ts/packages/renderer-three` | same path | Copied as the retained Three/WebGL backend and renamed to the demo package scope. |
+| `ts/packages/render-contracts` | same path | Initially copied into the demo; removed under #6162 after its complete successor became a shared exact-revision Engine package. |
+| `ts/packages/renderer-three` | same path | Initially copied into the demo; removed under #6162 after the retained Three/WebGL backend and browser surface moved behind shared Engine packages. |
 | `scripts/browser-smoke.mjs` | same path | Copied as the end-to-end product proof; the Rust package invocation changed from the source product name to `loading-bay-game`. |
 | Root pnpm, TypeScript, and Vite configuration | same paths | Copied and narrowed to the demo-owned package identities and verification gate. |
 
-The browser packages moved together because all four served one product at extraction time. A
-presentation package can earn promotion back to Engine only after a second real consumer proves a
-smaller reusable seam.
+The browser packages initially moved together because all four served one product at extraction
+time. The later renderer migration made the demo an external consumer of
+`@rusty-engine/render-contracts`, `render-projection`, `renderer-host`, and `renderer-three`.
+Only the game-specific input, semantic projection, and typed fact-to-descriptor mapping remain here.
 
 The CC0 conversion source is copied byte-for-byte into `fixtures/voxel-conversion` so the demo can
 inspect the source named by its persisted converted-wall provenance:
@@ -50,9 +55,10 @@ them independently. This downstream copy is licensed and source-traceable; it is
 
 `ExtractionBeacon` and project schema 8 were authored directly in this repository after the
 transfer. The component family, named service, direct runtime entry point, typed fact, admission,
-snapshot persistence, browser readout, and Three presentation have no corresponding source path in
-Rusty Engine. Engine dependencies remain pinned to the same exact transfer revision, so this
-extension is evidence of downstream ownership rather than another copied product surface.
+snapshot persistence, browser readout, and game-specific presentation mapping have no corresponding
+source path in Rusty Engine. Updating to the later shared renderer revision added no Engine gameplay
+vocabulary, so this extension remains evidence of downstream ownership rather than another copied
+product surface.
 
 `content/projects/relay-annex.project.json` is likewise native downstream content. It is generated
 from the TypeScript `relayAnnexStoredProject` composition and admitted by the already-existing Rust

@@ -1,11 +1,10 @@
-import { mountRendererBrowserSurface } from "@rusty-engine-demo/renderer-three/backend";
+import { mountRendererSurface } from "@rusty-engine/renderer-host";
 
 import "./style.css";
 import { SerializedActionQueue } from "./action-queue.js";
 import { HeldMovementInput } from "./held-movement.js";
 import {
-  BrowserPresentationFeedbackSink,
-  PresentationFeedbackAdapter,
+  BrowserPresentationFeedback,
 } from "./presentation-feedback.js";
 import {
   RuntimeProjectionAdapter,
@@ -46,11 +45,6 @@ const smokeResult = requiredElement("smoke-result", HTMLElement);
 const feedbackLayer = requiredElement("feedback-layer", HTMLElement);
 const feedbackAudioStatus = requiredElement("feedback-audio-status", HTMLElement);
 const projection = new RuntimeProjectionAdapter();
-const presentationFeedbackSink = new BrowserPresentationFeedbackSink(
-  feedbackLayer,
-  feedbackAudioStatus,
-);
-const presentationFeedback = new PresentationFeedbackAdapter(presentationFeedbackSink);
 const eventHistory: string[] = [];
 const query = new URLSearchParams(location.search);
 const smokeMode = query.has("smoke");
@@ -66,18 +60,28 @@ const heldMovement = new HeldMovementInput({
   intervalMilliseconds: () => current.player.moveStepSeconds * 1_000,
   dispatch: enqueuePlayerAction,
 });
-const surface = mountRendererBrowserSurface(canvas, {
+const initialFrame = projection.apply(current);
+const initialCamera = derivePlayerCameraPose(current.player);
+const surface = mountRendererSurface(canvas, {
   autoStart: true,
-  camera: {
-    initialPose: derivePlayerCameraPose(current.player),
-    projection: { fovYDegrees: 50, near: 0.1, far: 100 },
+  controls: {
+    initialPosition: initialCamera.position,
+    initialPitchDegrees: initialCamera.pitchDegrees,
+    initialYawDegrees: initialCamera.yawDegrees,
   },
   clearColor: 0x071012,
-  frame: projection.apply(current),
+  frame: initialFrame,
   pixelRatio: Math.min(globalThis.devicePixelRatio ?? 1, 2),
+  projection: { fovYDegrees: 50, near: 0.1, far: 100 },
+});
+const presentationFeedback = new BrowserPresentationFeedback({
+  audioStatus: feedbackAudioStatus,
+  layer: feedbackLayer,
+  readState: () => current,
+  surface,
 });
 renderReadout(current);
-applyPresentationFeedback(true);
+await applyPresentationFeedback(true, initialFrame.ops.length);
 updateRendererStatus();
 
 requiredElement("primary-fire", HTMLButtonElement).addEventListener("click", () => {
@@ -322,6 +326,7 @@ if (reloadSmokeMode) {
 
   await presentationFeedback.activateAudio();
   await enqueueAttackAction({ kind: "attack" });
+  await presentationFeedback.settled();
   const resetStartedWithConcreteTransients =
     playerMotionState.dataset.animationPulse === "attack" &&
     Number(feedbackLayer.dataset.activeEffects ?? "0") > 0 &&
@@ -404,6 +409,7 @@ if (reloadSmokeMode) {
     cooldownRejected && current.enemies.find((enemy) => enemy.id === 4)?.currentHealth === 0;
   document.body.dataset.cooldown = cooldownRecovered ? "pass" : "fail";
   await perform("/api/extraction-beacon/activate");
+  await presentationFeedback.settled();
   surface.renderOnce();
   const beaconActivated =
     current.extractionBeacon?.state === "active" &&
@@ -414,6 +420,7 @@ if (reloadSmokeMode) {
     surface.snapshot().includes("extraction-beacon");
   document.body.dataset.beaconActivation = beaconActivated ? "pass" : "fail";
   await perform("/api/motion-phase");
+  await presentationFeedback.settled();
   surface.renderOnce();
   const door = current.projection.find((node) => node.id === 3);
   const gameplayPassed =
@@ -497,12 +504,13 @@ if (reloadSmokeMode) {
   current = refreshed;
   const refreshFrame = projection.apply(current);
   if (refreshFrame.ops.length > 0) {
-    surface.applyFrame(refreshFrame);
+    applyRendererFrame(refreshFrame);
   }
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   renderReadout(current);
-  applyPresentationFeedback();
+  void applyPresentationFeedback(false, refreshFrame.ops.length);
   await enqueuePlayerAction({ kind: "move", forward: -1, right: 0 });
+  await presentationFeedback.settled();
   const restartStartedWithConcreteTransients =
     playerMotionState.dataset.animationPulse !== undefined &&
     Number(feedbackLayer.dataset.activeEffects ?? "0") > 0 &&
@@ -510,11 +518,11 @@ if (reloadSmokeMode) {
   current = await requestState("/api/state");
   const restartFrame = projection.apply(current);
   if (restartFrame.ops.length > 0) {
-    surface.applyFrame(restartFrame);
+    applyRendererFrame(restartFrame);
   }
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   renderReadout(current);
-  applyPresentationFeedback(true);
+  await applyPresentationFeedback(true, restartFrame.ops.length);
   surface.renderOnce();
   const restartRebuilt =
     restartStartedWithConcreteTransients &&
@@ -552,12 +560,16 @@ async function perform(path: string): Promise<void> {
   eventHistory.push(...current.lastEvents);
   const frame = projection.apply(current);
   if (frame.ops.length > 0) {
-    surface.applyFrame(frame);
+    applyRendererFrame(frame);
   }
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   surface.renderOnce();
   renderReadout(current);
-  applyPresentationFeedback(path === "/api/reset");
+  if (path === "/api/reset") {
+    await applyPresentationFeedback(true, frame.ops.length);
+  } else {
+    void applyPresentationFeedback(false, frame.ops.length);
+  }
   updateRendererStatus();
 }
 
@@ -578,12 +590,12 @@ async function performVoxelEdits(
   eventHistory.push(...current.lastEvents);
   const frame = projection.apply(current);
   if (frame.ops.length > 0) {
-    surface.applyFrame(frame);
+    applyRendererFrame(frame);
   }
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   surface.renderOnce();
   renderReadout(current);
-  applyPresentationFeedback();
+  void applyPresentationFeedback(false, frame.ops.length);
   updateRendererStatus();
 }
 
@@ -644,13 +656,20 @@ function renderReadout(state: RuntimeBrowserState): void {
   );
 }
 
-function applyPresentationFeedback(reset = false): void {
+async function applyPresentationFeedback(reset = false, renderDiffCount = 0): Promise<void> {
   doorCaption.dataset.entityId = "3";
   playerMotionState.dataset.entityId = String(current.player.id);
-  const receipt = presentationFeedback.apply(current, reset);
+  const receipt = await presentationFeedback.apply(current, reset, renderDiffCount);
   feedbackLayer.dataset.lastCueCount = String(receipt.cueCount);
   feedbackLayer.dataset.failedOperations = String(receipt.failedOperations);
   feedbackLayer.dataset.scheduledSounds = String(receipt.scheduledSounds);
+}
+
+function applyRendererFrame(frame: ReturnType<RuntimeProjectionAdapter["apply"]>): void {
+  const receipt = surface.applyFrame(frame);
+  if (!receipt.applied) {
+    throw new Error(receipt.diagnostics.map((diagnostic) => diagnostic.message).join("; "));
+  }
 }
 
 function enqueuePlayerAction(action: ResolvedPlayerAction): Promise<void> {
@@ -675,12 +694,12 @@ async function performPlayerAction(action: ResolvedPlayerAction): Promise<void> 
   eventHistory.push(...current.lastEvents);
   const frame = projection.apply(current);
   if (frame.ops.length > 0) {
-    surface.applyFrame(frame);
+    applyRendererFrame(frame);
   }
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   surface.renderOnce();
   renderReadout(current);
-  applyPresentationFeedback();
+  void applyPresentationFeedback(false, frame.ops.length);
   updateRendererStatus();
 }
 
@@ -690,12 +709,12 @@ async function performAttackAction(action: ResolvedAttackAction): Promise<void> 
   eventHistory.push(...current.lastEvents);
   const frame = projection.apply(current);
   if (frame.ops.length > 0) {
-    surface.applyFrame(frame);
+    applyRendererFrame(frame);
   }
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   surface.renderOnce();
   renderReadout(current);
-  applyPresentationFeedback();
+  void applyPresentationFeedback(false, frame.ops.length);
   updateRendererStatus();
 }
 

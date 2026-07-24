@@ -1,5 +1,4 @@
 import {
-  entityId,
   renderHandle,
   type Geometry,
   type Material,
@@ -9,7 +8,7 @@ import {
   type RenderHandle,
   type RenderNode,
   type Transform,
-} from "@rusty-engine-demo/render-contracts";
+} from "@rusty-engine/render-contracts";
 
 export interface RuntimeProjectionNode {
   readonly id: number;
@@ -270,7 +269,7 @@ export class RuntimeProjectionAdapter {
         this.#known.delete(id);
       }
     }
-    return { ops };
+    return { schemaVersion: 1, ops };
   }
 
   get trackedEntityCount(): number {
@@ -365,19 +364,24 @@ function projectedNode(
 function primitiveNode(
   label: string,
   source: number | null,
-  shape: Exclude<Geometry["shape"], "line">,
+  kind: Exclude<Geometry["kind"], "line" | "group">,
   translation: readonly [number, number, number],
   scale: readonly [number, number, number],
   material: Material,
   visible = true,
 ): RenderNode {
   return {
-    geometry: { shape },
+    geometry: { kind },
     material,
     transform: identityTransform(translation, scale),
     visible,
     layer: "scene",
-    metadata: { source: source === null ? null : entityId(source), tags: [], label },
+    metadata: {
+      sourceEntity: source,
+      sourceSceneNode: null,
+      tags: [],
+      label,
+    },
   };
 }
 
