@@ -217,3 +217,92 @@ export function loadingBayStoredProject(
     ],
   };
 }
+
+/** A second arrangement composed entirely from the demo's settled authored meanings. */
+export function relayAnnexStoredProject(): StoredProjectContent {
+  const source = loadingBayStoredProject({
+    generationSeed: 17,
+    navigationGoal: [1.5, 1.5, 6.5],
+    navigationSpeedUnitsPerSecond: 2.5,
+    enemyHealth: 80,
+    weaponDamage: 40,
+    beaconActivationRadius: 4,
+  });
+  const sourceScene = source.scenes[0];
+  if (sourceScene === undefined) {
+    throw new Error("loading-bay source scene is missing");
+  }
+
+  const entities = sourceScene.entities.flatMap((entity): readonly EntityDefinition[] => {
+    switch (entity.id) {
+      case ENCOUNTER_IDS.actor:
+        return [{ ...entity, translation: [2.5, 1.5, 2.5] }];
+      case ENCOUNTER_IDS.encounter:
+        return [
+          {
+            ...entity,
+            name: "relay-annex-encounter",
+            encounter: { members: [ENCOUNTER_IDS.firstEnemy], exit: ENCOUNTER_IDS.exit },
+          },
+        ];
+      case ENCOUNTER_IDS.exit:
+        return [
+          {
+            ...entity,
+            name: "relay-annex-exit",
+            translation: [3.5, 1, 9],
+            door: { openTranslation: [3.5, 4, 9], autoCloseAfterTicks: null },
+          },
+        ];
+      case ENCOUNTER_IDS.firstEnemy:
+        return [
+          {
+            ...entity,
+            name: "relay-warden",
+            translation: [5.5, 1.5, 6.5],
+          },
+        ];
+      case ENCOUNTER_IDS.firstEnemy + 1:
+        return [];
+      case ENCOUNTER_IDS.doorControl:
+        return [{ ...entity, name: "annex-door-control", translation: [5.5, 1.5, 8.5] }];
+      case ENCOUNTER_IDS.extractionBeacon:
+        return [{ ...entity, name: "relay-beacon", translation: [3.5, 1.5, 4.5] }];
+      case ENCOUNTER_IDS.motionProbe:
+        return [
+          {
+            ...entity,
+            name: "relay-pulse-probe",
+            translation: [1.5, 1.5, 7.5],
+            kinematic: { halfExtents: [0.25, 0.25, 0.25], velocity: [3, 0, 0] },
+          },
+        ];
+      default:
+        throw new Error(`unexpected loading-bay entity ${entity.id}`);
+    }
+  });
+
+  return {
+    ...source,
+    projectId: "relay-annex",
+    name: "Relay Annex",
+    entryScene: "scene/relay-annex",
+    scenes: [
+      {
+        ...sourceScene,
+        id: "scene/relay-annex",
+        name: "Relay Annex",
+        voxelEnvironment: {
+          kind: "generatedRoom",
+          seed: 17,
+          voxelSize: 1,
+          chunkSize: 16,
+          width: 5,
+          height: 4,
+          length: 8,
+        },
+        entities,
+      },
+    ],
+  };
+}

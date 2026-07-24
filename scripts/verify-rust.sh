@@ -28,3 +28,5 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo run -q --locked -p loading-bay-game --bin headless-door > /dev/null
 cargo run -q --locked -p loading-bay-game --bin headless-encounter > /dev/null
 cargo run -q --locked -p loading-bay-game --bin headless-beacon > /dev/null
+cargo run -q --locked -p loading-bay-game --bin headless-beacon -- \
+  --project content/projects/relay-annex.project.json > /dev/null

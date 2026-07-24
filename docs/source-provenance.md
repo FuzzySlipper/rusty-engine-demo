@@ -53,3 +53,7 @@ transfer. The component family, named service, direct runtime entry point, typed
 snapshot persistence, browser readout, and Three presentation have no corresponding source path in
 Rusty Engine. Engine dependencies remain pinned to the same exact transfer revision, so this
 extension is evidence of downstream ownership rather than another copied product surface.
+
+`content/projects/relay-annex.project.json` is likewise native downstream content. It is generated
+from the TypeScript `relayAnnexStoredProject` composition and admitted by the already-existing Rust
+project path and headless beacon proof; it was not transferred from Engine.

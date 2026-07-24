@@ -6,6 +6,7 @@ import {
   ENCOUNTER_IDS,
   encounterGateProject,
   loadingBayStoredProject,
+  relayAnnexStoredProject,
 } from "./encounter-project.js";
 
 test("encounter membership and exit relationships are explicit authored content", () => {
@@ -175,4 +176,39 @@ test("stored-project seed remains a candidate-only variation", () => {
   assert.equal(second.scenes[0]?.voxelEnvironment?.kind, "generatedRoom");
   assert.notDeepEqual(first.scenes[0]?.voxelEnvironment, second.scenes[0]?.voxelEnvironment);
   assert.deepEqual(first.scenes[0]?.entities, second.scenes[0]?.entities);
+});
+
+test("relay annex is a distinct content-only composition with settled demo meanings", () => {
+  const project = relayAnnexStoredProject();
+  const scene = project.scenes[0];
+  const encounter = scene?.entities.find((entity) => entity.id === ENCOUNTER_IDS.encounter);
+  const player = scene?.entities.find((entity) => entity.id === ENCOUNTER_IDS.actor);
+  const beacon = scene?.entities.find((entity) => entity.id === ENCOUNTER_IDS.extractionBeacon);
+
+  assert.equal(project.projectId, "relay-annex");
+  assert.deepEqual(scene?.voxelEnvironment, {
+    kind: "generatedRoom",
+    seed: 17,
+    voxelSize: 1,
+    chunkSize: 16,
+    width: 5,
+    height: 4,
+    length: 8,
+  });
+  assert.deepEqual(encounter?.encounter?.members, [ENCOUNTER_IDS.firstEnemy]);
+  assert.equal(scene?.entities.some((entity) => entity.id === ENCOUNTER_IDS.firstEnemy + 1), false);
+  assert.deepEqual(player?.translation, [2.5, 1.5, 2.5]);
+  assert.deepEqual(beacon?.translation, [3.5, 1.5, 4.5]);
+  assert.deepEqual(beacon?.extractionBeacon, { activationRadius: 4 });
+});
+
+test("relay annex authoring materializes its checked project artifact", () => {
+  const artifact = JSON.parse(
+    readFileSync(
+      new URL("../../../../content/projects/relay-annex.project.json", import.meta.url),
+      "utf8",
+    ),
+  );
+
+  assert.deepEqual(relayAnnexStoredProject(), artifact);
 });

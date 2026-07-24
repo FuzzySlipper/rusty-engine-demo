@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 8,
+  "projectId": "relay-annex",
+  "name": "Relay Annex",
+  "entryScene": "scene/relay-annex",
+  "assets": [
+    {
+      "id": "mesh/control-panel"
+    },
+    {
+      "id": "mesh/extraction-beacon"
+    },
+    {
+      "id": "mesh/player-marker"
+    },
+    {
+      "id": "mesh/security-door"
+    },
+    {
+      "id": "mesh/security-sentry"
+    },
+    {
+      "id": "mesh/spatial-probe"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene/relay-annex",
+      "name": "Relay Annex",
+      "voxelEnvironment": {
+        "kind": "generatedRoom",
+        "seed": 17,
+        "voxelSize": 1,
+        "chunkSize": 16,
+        "width": 5,
+        "height": 4,
+        "length": 8
+      },
+      "entities": [
+        {
+          "id": 1,
+          "name": "player",
+          "translation": [
+            2.5,
+            1.5,
+            2.5
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/player-marker",
+            "visible": true
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.25,
+              0.25,
+              0.25
+            ],
+            "velocity": [
+              0,
+              0,
+              0
+            ]
+          },
+          "playerController": {
+            "moveSpeedUnitsPerSecond": 4,
+            "moveStepSeconds": 0.1,
+            "lookDegreesPerUnit": 12,
+            "initialYawDegrees": 0,
+            "initialPitchDegrees": -10,
+            "bindings": {
+              "moveForward": "KeyW",
+              "moveBackward": "KeyS",
+              "moveLeft": "KeyA",
+              "moveRight": "KeyD",
+              "mouseLook": "pointer",
+              "primaryFire": "Mouse0"
+            }
+          },
+          "weapon": {
+            "damage": 40,
+            "maxDistance": 20,
+            "cooldownTicks": 2,
+            "ammoCapacity": 8,
+            "muzzleOffset": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "id": 2,
+          "name": "relay-annex-encounter",
+          "encounter": {
+            "members": [
+              4
+            ],
+            "exit": 3
+          }
+        },
+        {
+          "id": 3,
+          "name": "relay-annex-exit",
+          "translation": [
+            3.5,
+            1,
+            9
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": true
+          },
+          "renderable": {
+            "asset": "mesh/security-door",
+            "visible": true
+          },
+          "kinematic": {
+            "halfExtents": [
+              1.2,
+              1.5,
+              0.275
+            ],
+            "velocity": [
+              0,
+              0,
+              0
+            ]
+          },
+          "door": {
+            "openTranslation": [
+              3.5,
+              4,
+              9
+            ],
+            "autoCloseAfterTicks": null
+          }
+        },
+        {
+          "id": 4,
+          "name": "relay-warden",
+          "translation": [
+            5.5,
+            1.5,
+            6.5
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/security-sentry",
+            "visible": true
+          },
+          "enemy": true,
+          "health": {
+            "max": 80,
+            "hitboxHalfExtents": [
+              0.55,
+              0.9,
+              0.55
+            ]
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.25,
+              0.25,
+              0.25
+            ],
+            "velocity": [
+              0,
+              0,
+              0
+            ]
+          },
+          "navigation": {
+            "goal": [
+              1.5,
+              1.5,
+              6.5
+            ],
+            "speedUnitsPerSecond": 2.5,
+            "maxVisited": 512
+          }
+        },
+        {
+          "id": 6,
+          "name": "annex-door-control",
+          "translation": [
+            5.5,
+            1.5,
+            8.5
+          ],
+          "renderable": {
+            "asset": "mesh/control-panel",
+            "visible": true
+          },
+          "switch": {
+            "controls": [
+              3
+            ]
+          }
+        },
+        {
+          "id": 7,
+          "name": "relay-beacon",
+          "translation": [
+            3.5,
+            1.5,
+            4.5
+          ],
+          "renderable": {
+            "asset": "mesh/extraction-beacon",
+            "visible": true
+          },
+          "extractionBeacon": {
+            "activationRadius": 4
+          }
+        },
+        {
+          "id": 10,
+          "name": "relay-pulse-probe",
+          "translation": [
+            1.5,
+            1.5,
+            7.5
+          ],
+          "renderable": {
+            "asset": "mesh/spatial-probe",
+            "visible": true
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.25,
+              0.25,
+              0.25
+            ],
+            "velocity": [
+              3,
+              0,
+              0
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

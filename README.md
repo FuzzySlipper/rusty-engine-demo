@@ -28,7 +28,8 @@ cargo run --locked -p loading-bay-game --bin browser-host
 
 Then open `http://127.0.0.1:8787`. The default project is
 `content/projects/loading-bay.project.json`; pass `--project <path>` to select another admitted
-project.
+project. `content/projects/relay-annex.project.json` is a second, entirely TypeScript-authored
+arrangement using the same settled demo meanings.
 
 The complete product gate is:
 
