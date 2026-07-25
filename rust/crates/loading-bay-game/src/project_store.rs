@@ -78,6 +78,10 @@ impl ProjectStore {
         if !path_exists(target)? {
             self.recover_pending(target)?;
         }
+        let _target_lock = match mode {
+            ProjectSaveMode::CreateNew => None,
+            ProjectSaveMode::ReplaceExisting => Some(lock_existing_target(target)?),
+        };
         match (mode, path_exists(target)?) {
             (ProjectSaveMode::CreateNew, true) => {
                 return Err(ProjectStoreError::TargetExists {
@@ -109,11 +113,19 @@ impl ProjectStore {
         }
 
         match mode {
-            ProjectSaveMode::CreateNew => install_new(&pending, target)?,
-            ProjectSaveMode::ReplaceExisting => fs::rename(&pending, target)
-                .map_err(|source| io_error("replace project", target, source))?,
+            ProjectSaveMode::CreateNew => {
+                install_new(&pending, target)?;
+                sync_directory(parent)?;
+            }
+            ProjectSaveMode::ReplaceExisting => {
+                fs::rename(&pending, target)
+                    .map_err(|source| io_error("replace project", target, source))?;
+                // Rename is the publication commit point. A later directory-sync
+                // failure cannot truthfully turn the completed replacement into a
+                // rejected, non-mutating operation.
+                let _post_commit_sync = sync_directory(parent);
+            }
         }
-        sync_directory(parent)?;
         Ok(())
     }
 
@@ -150,14 +162,23 @@ impl ProjectStore {
         project: &AdmittedStoredProject,
         expected_hash: ContentHash,
     ) -> Result<ContentHash, ProjectStoreError> {
-        if !path_exists(target)? {
-            return Err(ProjectStoreError::TargetMissing {
-                path: target.to_path_buf(),
-            });
-        }
-        let observed = read_bounded(target, self.max_bytes)?;
-        require_source_hash(target, expected_hash, observed.as_bytes())?;
+        self.replace_if_unchanged_with(target, project, expected_hash, || {}, || {}, sync_directory)
+    }
 
+    fn replace_if_unchanged_with<AfterTargetOpen, BeforePublish, SyncParent>(
+        &self,
+        target: &Path,
+        project: &AdmittedStoredProject,
+        expected_hash: ContentHash,
+        after_target_open: AfterTargetOpen,
+        before_publish: BeforePublish,
+        sync_parent: SyncParent,
+    ) -> Result<ContentHash, ProjectStoreError>
+    where
+        AfterTargetOpen: FnOnce(),
+        BeforePublish: FnOnce(),
+        SyncParent: FnOnce(&Path) -> Result<(), ProjectStoreError>,
+    {
         let encoded = encode_project_document(project.document())?;
         if encoded.len() > self.max_bytes {
             return Err(ProjectStoreError::TooLarge {
@@ -167,6 +188,15 @@ impl ProjectStore {
             });
         }
 
+        // All ProjectStore replacements of this target cooperate through the
+        // target inode lock. A writer that opened the old inode before another
+        // rename will still re-read the pathname after acquiring the lock and
+        // fail the hash guard instead of overwriting the committed successor.
+        let _target_lock = lock_existing_target_with(target, after_target_open)?;
+        let observed = read_bounded(target, self.max_bytes)?;
+        require_source_hash(target, expected_hash, observed.as_bytes())?;
+
+        let parent = target_parent(target)?;
         let pending = pending_path(target)?;
         if path_exists(&pending)? {
             return Err(ProjectStoreError::PendingConflict { path: pending });
@@ -181,10 +211,15 @@ impl ProjectStore {
             let _ = fs::remove_file(&pending);
             return Err(error);
         }
+        before_publish();
         fs::rename(&pending, target)
             .map_err(|source| io_error("replace project", target, source))?;
-        sync_directory(target_parent(target)?)?;
-        Ok(ContentHash::of(encoded.as_bytes()))
+        let installed_hash = ContentHash::of(encoded.as_bytes());
+        // Everything that can reject the candidate runs before rename. Directory
+        // sync is still attempted for durability, but rename has already
+        // committed the mutation and therefore the caller must receive success.
+        let _post_commit_sync = sync_parent(parent);
+        Ok(installed_hash)
     }
 
     /// Finish an interrupted post-sync/pre-rename save. Recovery only promotes
@@ -226,6 +261,9 @@ impl ProjectStore {
         pending_path(target)
     }
 }
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug)]
 pub enum ProjectStoreError {
@@ -425,6 +463,29 @@ fn write_pending(path: &Path, bytes: &[u8]) -> Result<(), ProjectStoreError> {
     file.sync_all()
         .map_err(|source| io_error("sync pending project", path, source))?;
     Ok(())
+}
+
+fn lock_existing_target(target: &Path) -> Result<File, ProjectStoreError> {
+    lock_existing_target_with(target, || {})
+}
+
+fn lock_existing_target_with(
+    target: &Path,
+    after_open: impl FnOnce(),
+) -> Result<File, ProjectStoreError> {
+    let file = match OpenOptions::new().read(true).write(true).open(target) {
+        Ok(file) => file,
+        Err(source) if source.kind() == io::ErrorKind::NotFound => {
+            return Err(ProjectStoreError::TargetMissing {
+                path: target.to_path_buf(),
+            });
+        }
+        Err(source) => return Err(io_error("open project publication lock", target, source)),
+    };
+    after_open();
+    file.lock()
+        .map_err(|source| io_error("lock project publication", target, source))?;
+    Ok(file)
 }
 
 fn install_new(pending: &Path, target: &Path) -> Result<(), ProjectStoreError> {

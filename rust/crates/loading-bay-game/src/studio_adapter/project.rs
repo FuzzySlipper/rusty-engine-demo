@@ -50,7 +50,6 @@ const JSON_SAFE_U64_MASK: u64 = (1_u64 << 53) - 1;
 
 pub struct OpenedOwnerProject {
     source_schema_version: u32,
-    source_bytes: String,
     source_hash: ContentHash,
     stored: AdmittedStoredProject,
     admitted: AdmittedProject,
@@ -104,7 +103,6 @@ impl OpenedOwnerProject {
 
         Ok(Self {
             source_schema_version,
-            source_bytes,
             source_hash,
             stored,
             admitted,
@@ -352,25 +350,19 @@ pub(crate) fn publish_project_mutation<T>(
     )?;
     let staged_readout = staged.readout()?;
 
-    let installed_hash = ProjectStore::default()
-        .replace_if_unchanged(location.project_file(), &staged.stored, expected_hash)
-        .map_err(project_store_rejection)?;
-    location
-        .revalidate()
-        .map_err(|error| reject("path.changedDuringWrite", error.to_string()))?;
-    let reread = OpenedOwnerProject::load(location)?;
-    if reread.source_hash != installed_hash || reread.source_bytes != staged.source_bytes {
-        return Err(reject(
-            "project.canonicalRereadMismatch",
-            "atomic replacement did not reread as the admitted canonical candidate",
-        ));
-    }
     let observed_next =
-        ContentStoreIdentity::from_manifest(next_content_revision, &reread.manifest)
+        ContentStoreIdentity::from_manifest(next_content_revision, &staged.manifest)
             .map_err(|error| reject("content.confirmationRejected", error.to_string()))?;
     authorized
         .confirm(&observed_next)
         .map_err(|error| reject("content.publicationMismatch", error.to_string()))?;
+    location
+        .revalidate()
+        .map_err(|error| reject("path.changedDuringWrite", error.to_string()))?;
+
+    let installed_hash = ProjectStore::default()
+        .replace_if_unchanged(location.project_file(), &staged.stored, expected_hash)
+        .map_err(project_store_rejection)?;
 
     Ok(PublishedProject {
         value,
