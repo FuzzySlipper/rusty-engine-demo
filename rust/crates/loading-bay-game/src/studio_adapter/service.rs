@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use voxel_convert::PreparedVoxelConversion;
 
 use crate::STORED_PROJECT_SCHEMA_VERSION;
@@ -25,7 +23,7 @@ use super::voxel::{
 struct OpenProject {
     location: ProjectLocation,
     prepared_conversion: Option<PreparedVoxelConversion>,
-    prepared_history_reverts: BTreeMap<String, PreparedProjectHistoryRevert>,
+    prepared_history_revert: Option<(String, PreparedProjectHistoryRevert)>,
     next_history_preview_id: u64,
 }
 
@@ -514,7 +512,7 @@ impl StudioAdapterService {
                     max_samples,
                 ) {
                     Ok((prepared, preview)) => {
-                        open.prepared_history_reverts.insert(preview_id, prepared);
+                        open.prepared_history_revert = Some((preview_id, prepared));
                         StudioAdapterResponse::VoxelHistoryRevertPrepared {
                             protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                             request_id,
@@ -532,7 +530,7 @@ impl StudioAdapterService {
                 let Some(open) = self.open.as_mut() else {
                     return not_open(request_id);
                 };
-                let Some(prepared) = open.prepared_history_reverts.remove(&preview_id) else {
+                let Some((retained_id, prepared)) = open.prepared_history_revert.take() else {
                     return StudioAdapterResponse::rejected(
                         Some(request_id),
                         AdapterRejection::new(
@@ -541,6 +539,16 @@ impl StudioAdapterService {
                         ),
                     );
                 };
+                if retained_id != preview_id {
+                    open.prepared_history_revert = Some((retained_id, prepared));
+                    return StudioAdapterResponse::rejected(
+                        Some(request_id),
+                        AdapterRejection::new(
+                            "voxel.historyPreviewMissing",
+                            format!("no prepared history preview `{preview_id}`"),
+                        ),
+                    );
+                }
                 match apply_prepared_history_revert(
                     &open.location,
                     &expected_project_hash,
@@ -554,7 +562,11 @@ impl StudioAdapterService {
                 let Some(open) = self.open.as_mut() else {
                     return not_open(request_id);
                 };
-                if open.prepared_history_reverts.remove(&preview_id).is_none() {
+                if open
+                    .prepared_history_revert
+                    .as_ref()
+                    .is_none_or(|(retained_id, _)| retained_id != &preview_id)
+                {
                     return StudioAdapterResponse::rejected(
                         Some(request_id),
                         AdapterRejection::new(
@@ -563,6 +575,7 @@ impl StudioAdapterService {
                         ),
                     );
                 }
+                open.prepared_history_revert = None;
                 StudioAdapterResponse::VoxelHistoryRevertDiscarded {
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     request_id,
@@ -765,7 +778,7 @@ impl StudioAdapterService {
                 self.open = Some(OpenProject {
                     location,
                     prepared_conversion: None,
-                    prepared_history_reverts: BTreeMap::new(),
+                    prepared_history_revert: None,
                     next_history_preview_id: 1,
                 });
                 StudioAdapterResponse::ProjectOpened {

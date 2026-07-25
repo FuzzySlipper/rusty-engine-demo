@@ -252,6 +252,39 @@ fn typed_primitives_templates_and_history_previews_share_durable_authority() {
     assert_eq!(preview["preview"]["cursorAfter"], 0);
     assert_eq!(fs::read(root.project_file()).unwrap(), bytes_before_preview);
 
+    let replacement_preview = send(
+        &mut service,
+        json!({
+            "type": "prepareVoxelHistoryRevert",
+            "protocolVersion": 4,
+            "requestId": "replacement-preview",
+            "expectedProjectHash": project_hash(&primitive),
+            "assetId": ASSET_ID,
+            "expectedAssetContentHash": asset_hash(&primitive),
+            "targetCursor": 0,
+            "maxSamples": 8
+        }),
+    );
+    assert_ne!(
+        preview["preview"]["previewId"],
+        replacement_preview["preview"]["previewId"]
+    );
+    let replaced_preview = send(
+        &mut service,
+        json!({
+            "type": "discardVoxelHistoryRevert",
+            "protocolVersion": 4,
+            "requestId": "discard-replaced-preview",
+            "previewId": preview["preview"]["previewId"]
+        }),
+    );
+    assert_eq!(replaced_preview["type"], "rejected");
+    assert_eq!(
+        replaced_preview["error"]["code"],
+        "voxel.historyPreviewMissing"
+    );
+    assert_eq!(fs::read(root.project_file()).unwrap(), bytes_before_preview);
+
     let reverted = send(
         &mut service,
         json!({
@@ -259,7 +292,7 @@ fn typed_primitives_templates_and_history_previews_share_durable_authority() {
             "protocolVersion": 4,
             "requestId": "apply-preview",
             "expectedProjectHash": project_hash(&primitive),
-            "previewId": preview["preview"]["previewId"]
+            "previewId": replacement_preview["preview"]["previewId"]
         }),
     );
     assert_eq!(reverted["receipt"]["kind"], "voxelHistoryMoved");
