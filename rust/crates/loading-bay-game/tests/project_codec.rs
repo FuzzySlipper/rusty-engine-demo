@@ -82,8 +82,34 @@ fn schema_seven_project_migrates_without_minting_new_beacon_meaning() {
 }
 
 #[test]
+fn schema_eight_project_migrates_with_empty_voxel_authoring_collections() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["schemaVersion"] = 8.into();
+
+    let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
+
+    assert_eq!(decoded.source_schema_version, 8);
+    assert_eq!(
+        decoded.project.schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
+    assert!(decoded.was_migrated());
+    assert!(decoded
+        .project
+        .scenes
+        .iter()
+        .all(|scene| scene.voxel_instances.is_empty()));
+    assert!(decoded.project.assets.iter().all(|asset| {
+        asset.voxel_edit_history.is_none()
+            && asset.voxel_annotations.is_empty()
+            && asset.material.is_none()
+    }));
+    admit_stored_project(decoded.project).unwrap();
+}
+
+#[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 9, 99] {
+    for schema_version in [0, 5, 10, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);

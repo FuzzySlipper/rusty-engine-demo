@@ -89,6 +89,15 @@ fn malformed_or_missing_voxel_assets_report_project_source_paths() {
 
 fn project_with_asset(asset: &VoxelAsset) -> String {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    for binding in &asset.material_palette {
+        project["assets"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({
+                "id": binding.material_asset_id,
+                "material": test_material_definition()
+            }));
+    }
     project["assets"]
         .as_array_mut()
         .unwrap()
@@ -104,6 +113,26 @@ fn project_with_asset(asset: &VoxelAsset) -> String {
         "voxelAssets": [asset.asset_id]
     });
     serde_json::to_string(&project).unwrap()
+}
+
+fn test_material_definition() -> serde_json::Value {
+    serde_json::json!({
+        "authority": {
+            "solid": true,
+            "collidable": true,
+            "occludes": true,
+            "structuralClass": "structural"
+        },
+        "style": {
+            "color": [0.5, 0.5, 0.55, 1.0],
+            "texture": null,
+            "textureTint": [1.0, 1.0, 1.0, 1.0],
+            "emissionColor": [0.5, 0.5, 0.55, 1.0],
+            "roughness": 1.0,
+            "emissive": 0.0,
+            "uvStrategy": "flat"
+        }
+    })
 }
 
 fn project_with_authored_voxels(asset: &VoxelAsset) -> String {

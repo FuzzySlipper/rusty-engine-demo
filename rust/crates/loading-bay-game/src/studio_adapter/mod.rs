@@ -9,13 +9,8 @@ mod path;
 mod project;
 mod protocol;
 mod service;
+mod voxel;
 
 pub use path::{PathSafetyError, ProjectLocation, MAX_PROJECT_PATH_BYTES, MAX_ROOT_PATH_BYTES};
-pub use protocol::{
-    AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,
-    LoadingBayDomainReadout, OwnerInspections, ProjectionDiagnosticReadout, ProjectionReadout,
-    StudioAdapterRequest, StudioAdapterResponse, StudioProjectIdentity, StudioProjectReadout,
-    MAX_REQUEST_ID_BYTES, MAX_STUDIO_ADAPTER_REQUEST_BYTES, MAX_STUDIO_ADAPTER_RESPONSE_BYTES,
-    STUDIO_ADAPTER_PROTOCOL_VERSION,
-};
+pub use protocol::*;
 pub use service::StudioAdapterService;

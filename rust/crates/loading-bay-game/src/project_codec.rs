@@ -18,7 +18,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 7;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 8;
+const LEGACY_STORED_PROJECT_SCHEMA_VERSION: u32 = 7;
 
 /// A current authored project together with the schema version actually read.
 /// A lower source version means Rust performed the documented migration before
@@ -50,15 +51,17 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v7(decode_v7(input)?)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v8(decode_legacy_project(input)?)?,
+        LEGACY_STORED_PROJECT_SCHEMA_VERSION => migrate_v7(decode_legacy_project(input)?)?,
         PROJECT_CONTENT_SCHEMA_VERSION => migrate_v6(decode_v6(input)?)?,
         actual => {
             return Err(StoredProjectError::new(
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
+                    LEGACY_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -142,7 +145,7 @@ fn decode_v6(input: &str) -> Result<LegacyProjectV6, StoredProjectError> {
     Ok(document)
 }
 
-fn decode_v7(input: &str) -> Result<StoredProject, StoredProjectError> {
+fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectError> {
     let mut deserializer = serde_json::Deserializer::from_str(input);
     let document: StoredProject =
         serde_path_to_error::deserialize(&mut deserializer).map_err(|error| {
@@ -164,7 +167,21 @@ fn decode_v7(input: &str) -> Result<StoredProject, StoredProjectError> {
             ),
         )
     })?;
-    if document.scenes.iter().any(|scene| {
+    Ok(document)
+}
+
+fn migrate_v8(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
+    );
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn migrate_v7(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(legacy.schema_version, LEGACY_STORED_PROJECT_SCHEMA_VERSION);
+    if legacy.scenes.iter().any(|scene| {
         scene
             .entities
             .iter()
@@ -176,14 +193,6 @@ fn decode_v7(input: &str) -> Result<StoredProject, StoredProjectError> {
             "schema 7 cannot declare extractionBeacon",
         ));
     }
-    Ok(document)
-}
-
-fn migrate_v7(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
-    debug_assert_eq!(
-        legacy.schema_version,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
-    );
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
 }
@@ -224,12 +233,16 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
             .map(|id| StoredAsset {
                 id,
                 voxel_volume: None,
+                voxel_edit_history: None,
+                voxel_annotations: Vec::new(),
+                material: None,
             })
             .collect(),
         scenes: vec![StoredScene {
             id: MIGRATED_V6_SCENE_ID.to_string(),
             name: "Migrated Schema 6 Entry".to_string(),
             voxel_environment,
+            voxel_instances: Vec::new(),
             entities: legacy.entities,
         }],
     })
@@ -267,6 +280,9 @@ fn canonicalize(mut document: StoredProject) -> Result<StoredProject, StoredProj
         .sort_by(|left, right| left.id.cmp(&right.id));
     for scene in &mut document.scenes {
         scene.entities.sort_by_key(|entity| entity.id);
+        scene
+            .voxel_instances
+            .sort_by(|left, right| left.instance_id.cmp(&right.instance_id));
         if let Some(StoredVoxelEnvironment::Solid(environment)) = &mut scene.voxel_environment {
             environment.solid_voxels.sort_unstable();
             environment.solid_voxels.dedup();
@@ -287,6 +303,11 @@ fn canonicalize(mut document: StoredProject) -> Result<StoredProject, StoredProj
                 component.members.dedup();
             }
         }
+    }
+    for asset in &mut document.assets {
+        asset
+            .voxel_annotations
+            .sort_by(|left, right| left.layer_id.cmp(&right.layer_id));
     }
     Ok(document)
 }
@@ -380,6 +401,12 @@ fn normalize_numbers(document: &mut StoredProject) -> Result<(), StoredProjectEr
                 )?;
             }
         }
+        for (instance_index, instance) in scene.voxel_instances.iter_mut().enumerate() {
+            let root = format!("scenes[{scene_index}].voxelInstances[{instance_index}]");
+            normalize_vec3(&mut instance.translation, format!("{root}.translation"))?;
+            normalize_vec4(&mut instance.rotation, format!("{root}.rotation"))?;
+            normalize_vec3(&mut instance.scale, format!("{root}.scale"))?;
+        }
     }
     Ok(())
 }
@@ -395,6 +422,13 @@ fn normalize_optional_vec3(
 }
 
 fn normalize_vec3(value: &mut [f32; 3], path: String) -> Result<(), StoredProjectError> {
+    for (index, number) in value.iter_mut().enumerate() {
+        normalize_f32(number, format!("{path}[{index}]"))?;
+    }
+    Ok(())
+}
+
+fn normalize_vec4(value: &mut [f32; 4], path: String) -> Result<(), StoredProjectError> {
     for (index, number) in value.iter_mut().enumerate() {
         normalize_f32(number, format!("{path}[{index}]"))?;
     }

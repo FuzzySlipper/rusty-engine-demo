@@ -89,6 +89,47 @@ impl ProjectLocation {
         }
         Ok(())
     }
+
+    pub fn read_relative_file(
+        &self,
+        relative_file: &str,
+        max_bytes: u64,
+    ) -> Result<Vec<u8>, PathSafetyError> {
+        if relative_file.len() > MAX_PROJECT_PATH_BYTES || !is_safe_relative_path(relative_file) {
+            return Err(PathSafetyError::UnsafeProjectPath);
+        }
+        require_directory_without_symlink(&self.root, "project root")?;
+        require_path_chain_without_symlinks(&self.root, relative_file)?;
+        let path = self.root.join(relative_file);
+        require_regular_file_without_symlink(&path, "project-relative file")?;
+        let canonical = path.canonicalize().map_err(|source| PathSafetyError::Io {
+            operation: "canonicalize project-relative file",
+            path: path.clone(),
+            source,
+        })?;
+        if !canonical.starts_with(&self.root) {
+            return Err(PathSafetyError::ProjectEscapesRoot);
+        }
+        let length = fs::metadata(&canonical)
+            .map_err(|source| PathSafetyError::Io {
+                operation: "inspect project-relative file",
+                path: canonical.clone(),
+                source,
+            })?
+            .len();
+        if length > max_bytes {
+            return Err(PathSafetyError::FileTooLarge {
+                path: canonical,
+                limit: max_bytes,
+                actual: length,
+            });
+        }
+        fs::read(&canonical).map_err(|source| PathSafetyError::Io {
+            operation: "read project-relative file",
+            path: canonical,
+            source,
+        })
+    }
 }
 
 #[derive(Debug)]
@@ -98,6 +139,11 @@ pub enum PathSafetyError {
     RootNotAbsolute,
     UnsafeProjectPath,
     ProjectEscapesRoot,
+    FileTooLarge {
+        path: PathBuf,
+        limit: u64,
+        actual: u64,
+    },
     Symlink {
         path: PathBuf,
     },
@@ -126,6 +172,15 @@ impl std::fmt::Display for PathSafetyError {
             Self::ProjectEscapesRoot => {
                 formatter.write_str("project file resolves outside the selected root")
             }
+            Self::FileTooLarge {
+                path,
+                limit,
+                actual,
+            } => write!(
+                formatter,
+                "project-relative file {} has {actual} bytes; limit is {limit}",
+                path.display()
+            ),
             Self::Symlink { path } => write!(
                 formatter,
                 "symbolic links are not accepted in the writable project path: {}",

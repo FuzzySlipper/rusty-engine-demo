@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 8,
+  "schemaVersion": 9,
   "projectId": "loading-bay",
   "name": "Loading Bay",
   "entryScene": "scene/loading-bay",
@@ -30,7 +30,7 @@
       "voxelEnvironment": {
         "kind": "generatedRoom",
         "seed": 4,
-        "voxelSize": 1,
+        "voxelSize": 1.0,
         "chunkSize": 16,
         "width": 7,
         "height": 4,
@@ -60,17 +60,17 @@
               0.25
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "playerController": {
-            "moveSpeedUnitsPerSecond": 4,
+            "moveSpeedUnitsPerSecond": 4.0,
             "moveStepSeconds": 0.1,
-            "lookDegreesPerUnit": 12,
-            "initialYawDegrees": 0,
-            "initialPitchDegrees": -10,
+            "lookDegreesPerUnit": 12.0,
+            "initialYawDegrees": 0.0,
+            "initialPitchDegrees": -10.0,
             "bindings": {
               "moveForward": "KeyW",
               "moveBackward": "KeyS",
@@ -82,13 +82,13 @@
           },
           "weapon": {
             "damage": 60,
-            "maxDistance": 20,
+            "maxDistance": 20.0,
             "cooldownTicks": 2,
             "ammoCapacity": 8,
             "muzzleOffset": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           }
         },
@@ -108,8 +108,8 @@
           "name": "loading-bay-exit",
           "translation": [
             4.5,
-            1,
-            11
+            1.0,
+            11.0
           ],
           "collision": {
             "enabled": true,
@@ -119,6 +119,14 @@
             "asset": "mesh/security-door",
             "visible": true
           },
+          "door": {
+            "openTranslation": [
+              4.5,
+              4.0,
+              11.0
+            ],
+            "autoCloseAfterTicks": null
+          },
           "kinematic": {
             "halfExtents": [
               1.2,
@@ -126,18 +134,10 @@
               0.275
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
-          },
-          "door": {
-            "openTranslation": [
-              4.5,
-              4,
-              11
-            ],
-            "autoCloseAfterTicks": null
           }
         },
         {
@@ -172,9 +172,9 @@
               0.25
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "navigation": {
@@ -183,7 +183,7 @@
               1.5,
               6.5
             ],
-            "speedUnitsPerSecond": 4,
+            "speedUnitsPerSecond": 4.0,
             "maxVisited": 512
           }
         },
@@ -244,7 +244,7 @@
             "visible": true
           },
           "extractionBeacon": {
-            "activationRadius": 16
+            "activationRadius": 16.0
           }
         },
         {
@@ -266,9 +266,9 @@
               0.25
             ],
             "velocity": [
-              5,
-              0,
-              0
+              5.0,
+              0.0,
+              0.0
             ]
           }
         }

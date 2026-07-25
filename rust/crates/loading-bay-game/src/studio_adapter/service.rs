@@ -1,15 +1,28 @@
+use std::collections::BTreeMap;
+
+use voxel_convert::PreparedVoxelConversion;
+
 use crate::STORED_PROJECT_SCHEMA_VERSION;
 
 use super::path::ProjectLocation;
 use super::project::{apply_entity_translation, OpenedOwnerProject};
 use super::protocol::{
-    AdapterDescription, AdapterRejection, StudioAdapterRequest, StudioAdapterResponse,
-    MAX_REQUEST_ID_BYTES, MAX_STUDIO_ADAPTER_REQUEST_BYTES, MAX_STUDIO_ADAPTER_RESPONSE_BYTES,
+    AdapterDescription, AdapterRejection, ProjectMutationReceipt, StudioAdapterRequest,
+    StudioAdapterResponse, StudioProjectReadout, VoxelReadout, MAX_REQUEST_ID_BYTES,
+    MAX_STUDIO_ADAPTER_REQUEST_BYTES, MAX_STUDIO_ADAPTER_RESPONSE_BYTES,
     STUDIO_ADAPTER_PROTOCOL_VERSION,
+};
+use super::voxel::{
+    apply_brush, apply_prepared_conversion, attach_voxel_instance, create_annotation_layer,
+    duplicate_voxel_asset, edit_annotation, export_annotation, initialize_voxel_asset,
+    prepare_conversion, query_annotation, query_model, redo_edit, remove_voxel_instance,
+    replace_palette, revert_history, set_voxel_instance_transform, undo_edit, upsert_material,
+    validate_pick,
 };
 
 struct OpenProject {
     location: ProjectLocation,
+    prepared_conversions: BTreeMap<String, PreparedVoxelConversion>,
 }
 
 #[derive(Default)]
@@ -79,15 +92,35 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 2,
+                    adapter_version: 3,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
-                    operations: [
+                    operations: vec![
                         "describe",
                         "openProject",
                         "readProject",
                         "setEntityTranslation",
+                        "upsertMaterial",
+                        "initializeVoxelAsset",
+                        "duplicateVoxelAsset",
+                        "attachVoxelInstance",
+                        "setVoxelInstanceTransform",
+                        "removeVoxelInstance",
+                        "replaceVoxelPalette",
+                        "validateVoxelPick",
+                        "applyVoxelBrush",
+                        "undoVoxelEdit",
+                        "redoVoxelEdit",
+                        "revertVoxelHistory",
+                        "createVoxelAnnotationLayer",
+                        "editVoxelAnnotation",
+                        "queryVoxelAnnotation",
+                        "exportVoxelAnnotation",
+                        "queryVoxelModel",
+                        "prepareVoxelConversion",
+                        "applyVoxelConversion",
+                        "discardVoxelConversion",
                         "closeProject",
                     ],
                 },
@@ -102,13 +135,376 @@ impl StudioAdapterService {
                 entity_id,
                 translation,
                 ..
-            } => self.set_entity_translation(
-                request_id,
-                &expected_project_hash,
-                expected_scene_revision,
-                entity_id,
+            } => {
+                let Some(open) = self.open.as_ref() else {
+                    return not_open(request_id);
+                };
+                match apply_entity_translation(
+                    &open.location,
+                    &expected_project_hash,
+                    expected_scene_revision,
+                    entity_id,
+                    translation,
+                ) {
+                    Ok((receipt, project)) => StudioAdapterResponse::EntityTranslationApplied {
+                        protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                        request_id,
+                        receipt,
+                        project,
+                    },
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::UpsertMaterial {
+                expected_project_hash,
+                asset_id,
+                definition,
+                ..
+            } => self.mutate(request_id, |location| {
+                upsert_material(location, &expected_project_hash, asset_id, definition)
+            }),
+            StudioAdapterRequest::InitializeVoxelAsset {
+                expected_project_hash,
+                asset_id,
+                cell_size,
+                chunk_size,
+                origin,
+                bounds,
+                material_palette,
+                initial_material_slot,
+                ..
+            } => self.mutate(request_id, |location| {
+                initialize_voxel_asset(
+                    location,
+                    &expected_project_hash,
+                    asset_id,
+                    cell_size,
+                    chunk_size,
+                    origin,
+                    bounds,
+                    material_palette,
+                    initial_material_slot,
+                )
+            }),
+            StudioAdapterRequest::DuplicateVoxelAsset {
+                expected_project_hash,
+                source_asset_id,
+                expected_source_content_hash,
+                target_asset_id,
+                ..
+            } => self.mutate(request_id, |location| {
+                duplicate_voxel_asset(
+                    location,
+                    &expected_project_hash,
+                    source_asset_id,
+                    expected_source_content_hash,
+                    target_asset_id,
+                )
+            }),
+            StudioAdapterRequest::AttachVoxelInstance {
+                expected_project_hash,
+                scene_id,
+                instance,
+                ..
+            } => self.mutate(request_id, |location| {
+                attach_voxel_instance(location, &expected_project_hash, scene_id, instance)
+            }),
+            StudioAdapterRequest::SetVoxelInstanceTransform {
+                expected_project_hash,
+                scene_id,
+                instance_id,
                 translation,
-            ),
+                rotation,
+                scale,
+                ..
+            } => self.mutate(request_id, |location| {
+                set_voxel_instance_transform(
+                    location,
+                    &expected_project_hash,
+                    scene_id,
+                    instance_id,
+                    translation,
+                    rotation,
+                    scale,
+                )
+            }),
+            StudioAdapterRequest::RemoveVoxelInstance {
+                expected_project_hash,
+                scene_id,
+                instance_id,
+                ..
+            } => self.mutate(request_id, |location| {
+                remove_voxel_instance(location, &expected_project_hash, scene_id, instance_id)
+            }),
+            StudioAdapterRequest::ReplaceVoxelPalette {
+                expected_project_hash,
+                asset_id,
+                expected_asset_content_hash,
+                expected_voxel_data_hash,
+                replacement,
+                ..
+            } => self.mutate(request_id, |location| {
+                replace_palette(
+                    location,
+                    &expected_project_hash,
+                    asset_id,
+                    expected_asset_content_hash,
+                    expected_voxel_data_hash,
+                    replacement,
+                )
+            }),
+            StudioAdapterRequest::ValidateVoxelPick {
+                expected_project_hash,
+                scene_id,
+                instance_id,
+                origin,
+                direction,
+                max_distance,
+                claimed_voxel,
+                claimed_face,
+                ..
+            } => {
+                let Some(open) = self.open.as_ref() else {
+                    return not_open(request_id);
+                };
+                match validate_pick(
+                    &open.location,
+                    &expected_project_hash,
+                    &scene_id,
+                    &instance_id,
+                    origin,
+                    direction,
+                    max_distance,
+                    claimed_voxel,
+                    claimed_face,
+                ) {
+                    Ok(anchor) => StudioAdapterResponse::VoxelPickValidated {
+                        protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                        request_id,
+                        anchor,
+                    },
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::ApplyVoxelBrush {
+                expected_project_hash,
+                asset_id,
+                expected_asset_content_hash,
+                center,
+                radius,
+                mode,
+                material_slot,
+                ..
+            } => self.mutate(request_id, |location| {
+                apply_brush(
+                    location,
+                    &expected_project_hash,
+                    asset_id,
+                    expected_asset_content_hash,
+                    center,
+                    radius,
+                    mode,
+                    material_slot,
+                )
+            }),
+            StudioAdapterRequest::UndoVoxelEdit {
+                expected_project_hash,
+                asset_id,
+                expected_asset_content_hash,
+                ..
+            } => self.mutate(request_id, |location| {
+                undo_edit(
+                    location,
+                    &expected_project_hash,
+                    asset_id,
+                    expected_asset_content_hash,
+                )
+            }),
+            StudioAdapterRequest::RedoVoxelEdit {
+                expected_project_hash,
+                asset_id,
+                expected_asset_content_hash,
+                ..
+            } => self.mutate(request_id, |location| {
+                redo_edit(
+                    location,
+                    &expected_project_hash,
+                    asset_id,
+                    expected_asset_content_hash,
+                )
+            }),
+            StudioAdapterRequest::RevertVoxelHistory {
+                expected_project_hash,
+                asset_id,
+                expected_asset_content_hash,
+                target_cursor,
+                ..
+            } => self.mutate(request_id, |location| {
+                revert_history(
+                    location,
+                    &expected_project_hash,
+                    asset_id,
+                    expected_asset_content_hash,
+                    target_cursor,
+                )
+            }),
+            StudioAdapterRequest::CreateVoxelAnnotationLayer {
+                expected_project_hash,
+                asset_id,
+                draft,
+                ..
+            } => self.mutate(request_id, |location| {
+                create_annotation_layer(location, &expected_project_hash, asset_id, draft)
+            }),
+            StudioAdapterRequest::EditVoxelAnnotation {
+                expected_project_hash,
+                asset_id,
+                layer_id,
+                transaction,
+                ..
+            } => self.mutate(request_id, |location| {
+                edit_annotation(
+                    location,
+                    &expected_project_hash,
+                    asset_id,
+                    layer_id,
+                    transaction,
+                )
+            }),
+            StudioAdapterRequest::QueryVoxelAnnotation {
+                expected_project_hash,
+                asset_id,
+                layer_id,
+                query,
+                ..
+            } => self.read_voxel(request_id, |location| {
+                query_annotation(
+                    location,
+                    &expected_project_hash,
+                    &asset_id,
+                    &layer_id,
+                    query,
+                )
+            }),
+            StudioAdapterRequest::ExportVoxelAnnotation {
+                expected_project_hash,
+                asset_id,
+                layer_id,
+                expected_layer_hash,
+                ..
+            } => self.read_voxel(request_id, |location| {
+                export_annotation(
+                    location,
+                    &expected_project_hash,
+                    &asset_id,
+                    &layer_id,
+                    &expected_layer_hash,
+                )
+            }),
+            StudioAdapterRequest::QueryVoxelModel {
+                expected_project_hash,
+                asset_id,
+                expected_asset_content_hash,
+                window,
+                ..
+            } => self.read_voxel(request_id, |location| {
+                query_model(
+                    location,
+                    &expected_project_hash,
+                    &asset_id,
+                    &expected_asset_content_hash,
+                    window,
+                )
+            }),
+            StudioAdapterRequest::PrepareVoxelConversion {
+                expected_project_hash,
+                source_asset_id,
+                source_path,
+                target_asset_id,
+                license_path,
+                settings,
+                max_preview_samples,
+                ..
+            } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                match prepare_conversion(
+                    &open.location,
+                    &expected_project_hash,
+                    source_asset_id,
+                    source_path,
+                    target_asset_id,
+                    license_path,
+                    settings,
+                    max_preview_samples,
+                ) {
+                    Ok((prepared, plan, preview)) => {
+                        open.prepared_conversions
+                            .insert(plan.plan_id.clone(), prepared);
+                        StudioAdapterResponse::VoxelConversionPrepared {
+                            protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                            request_id,
+                            plan,
+                            preview,
+                        }
+                    }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::ApplyVoxelConversion {
+                expected_project_hash,
+                plan_id,
+                expected_plan_hash,
+                expected_output_hash,
+                ..
+            } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                let Some(prepared) = open.prepared_conversions.get(&plan_id).cloned() else {
+                    return StudioAdapterResponse::rejected(
+                        Some(request_id),
+                        AdapterRejection::new(
+                            "conversion.planMissing",
+                            format!("no prepared conversion `{plan_id}`"),
+                        ),
+                    );
+                };
+                match apply_prepared_conversion(
+                    &open.location,
+                    &expected_project_hash,
+                    &prepared,
+                    plan_id.clone(),
+                    expected_plan_hash,
+                    expected_output_hash,
+                ) {
+                    Ok((receipt, project)) => {
+                        open.prepared_conversions.remove(&plan_id);
+                        mutation_response(request_id, receipt, project)
+                    }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::DiscardVoxelConversion { plan_id, .. } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                if open.prepared_conversions.remove(&plan_id).is_none() {
+                    return StudioAdapterResponse::rejected(
+                        Some(request_id),
+                        AdapterRejection::new(
+                            "conversion.planMissing",
+                            format!("no prepared conversion `{plan_id}`"),
+                        ),
+                    );
+                }
+                StudioAdapterResponse::VoxelConversionDiscarded {
+                    protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                    request_id,
+                    plan_id,
+                }
+            }
             StudioAdapterRequest::CloseProject { .. } => {
                 self.open = None;
                 StudioAdapterResponse::ProjectClosed {
@@ -134,7 +530,10 @@ impl StudioAdapterService {
         })();
         match result {
             Ok((location, project)) => {
-                self.open = Some(OpenProject { location });
+                self.open = Some(OpenProject {
+                    location,
+                    prepared_conversions: BTreeMap::new(),
+                });
                 StudioAdapterResponse::ProjectOpened {
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     request_id,
@@ -147,10 +546,7 @@ impl StudioAdapterService {
 
     fn read_project(&mut self, request_id: String) -> StudioAdapterResponse {
         let Some(open) = &mut self.open else {
-            return StudioAdapterResponse::rejected(
-                Some(request_id),
-                AdapterRejection::new("project.notOpen", "no external project is open"),
-            );
+            return not_open(request_id);
         };
         let result = (|| {
             let project = OpenedOwnerProject::load(&open.location)?;
@@ -166,36 +562,62 @@ impl StudioAdapterService {
         }
     }
 
-    fn set_entity_translation(
-        &mut self,
+    fn mutate(
+        &self,
         request_id: String,
-        expected_project_hash: &str,
-        expected_scene_revision: u64,
-        entity_id: u64,
-        translation: [f32; 3],
+        operation: impl FnOnce(
+            &ProjectLocation,
+        ) -> Result<
+            (ProjectMutationReceipt, StudioProjectReadout),
+            AdapterRejection,
+        >,
     ) -> StudioAdapterResponse {
-        let Some(open) = &mut self.open else {
-            return StudioAdapterResponse::rejected(
-                Some(request_id),
-                AdapterRejection::new("project.notOpen", "no external project is open"),
-            );
+        let Some(open) = self.open.as_ref() else {
+            return not_open(request_id);
         };
-        match apply_entity_translation(
-            &open.location,
-            expected_project_hash,
-            expected_scene_revision,
-            entity_id,
-            translation,
-        ) {
-            Ok((receipt, project)) => StudioAdapterResponse::EntityTranslationApplied {
+        match operation(&open.location) {
+            Ok((receipt, project)) => mutation_response(request_id, receipt, project),
+            Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+        }
+    }
+
+    fn read_voxel(
+        &self,
+        request_id: String,
+        operation: impl FnOnce(&ProjectLocation) -> Result<VoxelReadout, AdapterRejection>,
+    ) -> StudioAdapterResponse {
+        let Some(open) = self.open.as_ref() else {
+            return not_open(request_id);
+        };
+        match operation(&open.location) {
+            Ok(readout) => StudioAdapterResponse::VoxelRead {
                 protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                 request_id,
-                receipt,
-                project,
+                readout,
             },
             Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
         }
     }
+}
+
+fn mutation_response(
+    request_id: String,
+    receipt: ProjectMutationReceipt,
+    project: StudioProjectReadout,
+) -> StudioAdapterResponse {
+    StudioAdapterResponse::ProjectMutationApplied {
+        protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+        request_id,
+        receipt,
+        project,
+    }
+}
+
+fn not_open(request_id: String) -> StudioAdapterResponse {
+    StudioAdapterResponse::rejected(
+        Some(request_id),
+        AdapterRejection::new("project.notOpen", "no external project is open"),
+    )
 }
 
 fn encode_response(response: StudioAdapterResponse) -> String {

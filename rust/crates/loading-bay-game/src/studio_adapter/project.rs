@@ -1,6 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use asset_catalog::{encode_catalog, validate_catalog, AssetCatalog, CatalogEntry};
+use asset_catalog::{
+    decode_catalog, encode_catalog, validate_catalog, AssetCatalog, StoredAssetCatalog,
+    StoredAssetReference, StoredAssetVersionRequirement, StoredCatalogEntry,
+};
 use authored_scene::{
     composed_world_transforms, encode_scene, validate_scene, AvailableSceneAsset,
     FlatSceneDocument, NodeMetadata, SceneAdmissionPlan, SceneEditCommand, SceneEditService,
@@ -40,6 +43,7 @@ use super::protocol::{
     OwnerInspections, ProjectionDiagnosticReadout, ProjectionReadout, SceneHierarchyNodeReadout,
     SceneHierarchyReadout, StudioProjectIdentity, StudioProjectReadout, TransformReadout,
 };
+use super::voxel::{project_voxel_authoring, voxel_authoring_readout};
 
 const PROJECT_RESOURCE_ROLE: &str = "resource:loading-bay-project";
 const JSON_SAFE_U64_MASK: u64 = (1_u64 << 53) - 1;
@@ -115,6 +119,18 @@ impl OpenedOwnerProject {
         self.scene.revision
     }
 
+    pub(crate) fn document(&self) -> &StoredProject {
+        self.stored.document()
+    }
+
+    pub(crate) fn source_hash(&self) -> ContentHash {
+        self.source_hash
+    }
+
+    pub(crate) fn catalog(&self) -> &AssetCatalog {
+        &self.catalog
+    }
+
     pub fn readout(&self) -> Result<StudioProjectReadout, AdapterRejection> {
         let project = self.stored.document();
         let entry_scene = entry_scene(project);
@@ -139,7 +155,9 @@ impl OpenedOwnerProject {
             .map(projection_diagnostic)
             .collect();
 
-        let projection = complete_projection(&self.catalog, projected.frame)?;
+        let voxel_projected = project_voxel_authoring(project, &self.catalog)?;
+        let projection =
+            complete_projection(&self.catalog, projected.frame, voxel_projected.frame)?;
 
         Ok(StudioProjectReadout {
             identity: StudioProjectIdentity {
@@ -171,12 +189,15 @@ impl OpenedOwnerProject {
                 .collision_scene
                 .as_ref()
                 .map(inspect_voxel_state),
+            voxel_authoring: voxel_authoring_readout(project)?,
             loading_bay: loading_bay_readout(entry_scene),
             projection,
             projection_readout: ProjectionReadout {
                 frame_kind: "complete",
                 source_revision: projected.readout.source_revision,
                 retained_entities: projected.readout.retained_entities,
+                retained_voxel_instances: voxel_projected.instance_count,
+                retained_voxel_chunks: voxel_projected.chunk_count,
                 diagnostics,
             },
         })
@@ -190,6 +211,87 @@ pub fn apply_entity_translation(
     entity_id: u64,
     translation: [f32; 3],
 ) -> Result<(EntityTranslationReceipt, StudioProjectReadout), AdapterRejection> {
+    let published = publish_project_mutation(
+        location,
+        expected_project_hash,
+        |current, document_candidate| {
+            if current.scene.revision != expected_scene_revision {
+                return Err(reject(
+                    "scene.staleRevision",
+                    format!(
+                        "expected scene revision {expected_scene_revision}, found {}",
+                        current.scene.revision
+                    ),
+                ));
+            }
+
+            let node_id = SceneNodeId::new(entity_id);
+            let Some(source_node) = current.scene.nodes.iter().find(|node| node.id == node_id)
+            else {
+                return Err(reject(
+                    "scene.missingEntity",
+                    format!("entry scene has no entity {entity_id}"),
+                )
+                .at_path(format!("entities[{entity_id}]")));
+            };
+            let mut scene_candidate = current.scene.clone();
+            let owner_transform = SceneTransform {
+                translation: Vec3::new(translation[0], translation[1], translation[2]),
+                ..source_node.transform
+            };
+            SceneEditService
+                .apply(
+                    &mut scene_candidate,
+                    expected_scene_revision,
+                    SceneEditCommand::SetTransform {
+                        id: node_id,
+                        transform: owner_transform,
+                    },
+                )
+                .map_err(|error| reject(error.code(), error.to_string()))?;
+
+            let scene = entry_scene_mut(document_candidate);
+            let Some(entity) = scene
+                .entities
+                .iter_mut()
+                .find(|entity| entity.id == entity_id)
+            else {
+                return Err(reject(
+                    "project.entityMappingMismatch",
+                    format!("authored scene entity {entity_id} has no Loading Bay record"),
+                ));
+            };
+            entity.translation = Some(translation);
+            Ok(())
+        },
+    )?;
+
+    let receipt = EntityTranslationReceipt {
+        entity_id,
+        translation,
+        project_hash_before: published.project_hash_before.to_hex(),
+        project_hash_after: published.project_hash_after.to_hex(),
+        scene_revision_before: expected_scene_revision,
+        scene_revision_after: published.scene_revision_after,
+        content_candidate_hash: published.content_candidate_hash.to_hex(),
+    };
+    Ok((receipt, published.readout))
+}
+
+pub(crate) struct PublishedProject<T> {
+    pub value: T,
+    pub project_hash_before: ContentHash,
+    pub project_hash_after: ContentHash,
+    pub content_candidate_hash: ContentHash,
+    pub scene_revision_after: u64,
+    pub readout: StudioProjectReadout,
+}
+
+pub(crate) fn publish_project_mutation<T>(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    mutate: impl FnOnce(&OpenedOwnerProject, &mut StoredProject) -> Result<T, AdapterRejection>,
+) -> Result<PublishedProject<T>, AdapterRejection> {
     let expected_hash = ContentHash::parse(expected_project_hash)
         .map_err(|error| reject("project.invalidHash", error.to_string()))?;
     let current = OpenedOwnerProject::load(location)?;
@@ -202,53 +304,8 @@ pub fn apply_entity_translation(
             ),
         ));
     }
-    if current.scene.revision != expected_scene_revision {
-        return Err(reject(
-            "scene.staleRevision",
-            format!(
-                "expected scene revision {expected_scene_revision}, found {}",
-                current.scene.revision
-            ),
-        ));
-    }
-
-    let node_id = SceneNodeId::new(entity_id);
-    let Some(source_node) = current.scene.nodes.iter().find(|node| node.id == node_id) else {
-        return Err(reject(
-            "scene.missingEntity",
-            format!("entry scene has no entity {entity_id}"),
-        )
-        .at_path(format!("entities[{entity_id}]")));
-    };
-    let mut scene_candidate = current.scene.clone();
-    let owner_transform = SceneTransform {
-        translation: Vec3::new(translation[0], translation[1], translation[2]),
-        ..source_node.transform
-    };
-    SceneEditService
-        .apply(
-            &mut scene_candidate,
-            expected_scene_revision,
-            SceneEditCommand::SetTransform {
-                id: node_id,
-                transform: owner_transform,
-            },
-        )
-        .map_err(|error| reject(error.code(), error.to_string()))?;
-
     let mut document_candidate = current.stored.document().clone();
-    let scene = entry_scene_mut(&mut document_candidate);
-    let Some(entity) = scene
-        .entities
-        .iter_mut()
-        .find(|entity| entity.id == entity_id)
-    else {
-        return Err(reject(
-            "project.entityMappingMismatch",
-            format!("authored scene entity {entity_id} has no Loading Bay record"),
-        ));
-    };
-    entity.translation = Some(translation);
+    let value = mutate(&current, &mut document_candidate)?;
     let (stored_candidate, _) =
         admit_stored_project_with_document(document_candidate).map_err(stored_project_rejection)?;
     let candidate_bytes =
@@ -273,7 +330,7 @@ pub fn apply_entity_translation(
         },
     )
     .map_err(|error| reject("content.writeRejected", error.to_string()))?;
-    let candidate_hash = write_candidate.candidate_hash();
+    let content_candidate_hash = write_candidate.candidate_hash();
     let next_content_revision = write_candidate.expected_next().revision;
     let authorized = write_candidate
         .authorize(&observed_identity)
@@ -311,21 +368,20 @@ pub fn apply_entity_translation(
         .confirm(&observed_next)
         .map_err(|error| reject("content.publicationMismatch", error.to_string()))?;
 
-    let receipt = EntityTranslationReceipt {
-        entity_id,
-        translation,
-        project_hash_before: expected_hash.to_hex(),
-        project_hash_after: installed_hash.to_hex(),
-        scene_revision_before: expected_scene_revision,
+    Ok(PublishedProject {
+        value,
+        project_hash_before: expected_hash,
+        project_hash_after: installed_hash,
+        content_candidate_hash,
         scene_revision_after: staged.scene_revision(),
-        content_candidate_hash: candidate_hash.to_hex(),
-    };
-    Ok((receipt, staged_readout))
+        readout: staged_readout,
+    })
 }
 
 fn complete_projection(
     catalog: &AssetCatalog,
     instances: RenderFrameDiff,
+    voxels: RenderFrameDiff,
 ) -> Result<RenderFrameDiff, AdapterRejection> {
     let mut operations = Vec::new();
     for entry in catalog
@@ -349,6 +405,7 @@ fn complete_projection(
             },
         });
     }
+    operations.extend(voxels.ops);
     operations.extend(instances.ops);
     RenderFrameDiff::try_from_ops(operations)
         .map_err(|error| reject("projection.completeFrameRejected", format!("{error:?}")))
@@ -562,11 +619,34 @@ fn project_catalog(project: &StoredProject) -> Result<AssetCatalog, AdapterRejec
         .iter()
         .map(|asset| {
             AssetId::parse(&asset.id)
-                .map(|id| CatalogEntry::new(id, 1).with_label(asset.id.clone()))
-                .map_err(|error| reject("catalog.invalidAsset", error.to_string()))
+                .map_err(|error| reject("catalog.invalidAsset", error.to_string()))?;
+            let dependencies = asset
+                .voxel_volume
+                .iter()
+                .flat_map(|voxel| &voxel.material_palette)
+                .map(|binding| StoredAssetReference {
+                    id: binding.material_asset_id.clone(),
+                    version: StoredAssetVersionRequirement::Exact { value: 1 },
+                    hash: None,
+                })
+                .collect();
+            Ok(StoredCatalogEntry {
+                id: asset.id.clone(),
+                version: 1,
+                hash: None,
+                source_path: None,
+                label: Some(asset.id.clone()),
+                dependencies,
+                material: asset.material.clone(),
+            })
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let catalog = AssetCatalog::from_entries(entries).canonical();
+    let stored = StoredAssetCatalog { entries };
+    let encoded = serde_json::to_string(&stored)
+        .map_err(|error| reject("catalog.encode", error.to_string()))?;
+    let catalog = decode_catalog(&encoded)
+        .map_err(|error| reject("catalog.invalidMaterial", error.to_string()))?
+        .canonical();
     let validation = validate_catalog(&catalog);
     if !validation.is_ok() {
         return Err(reject(

@@ -6,11 +6,14 @@
 
 use std::collections::BTreeMap;
 
+use asset_catalog::StoredMaterialDefinition;
 use core_assets::{AssetId, AssetKind};
+use engine_spatial::{decode_voxel_edit_history, MaterialVoxel, VoxelEditHistoryLimits};
 use serde::{Deserialize, Serialize};
+use voxel_annotation::{validate_annotation_layer, VoxelAnnotationLayer, VoxelAnnotationLimits};
 use voxel_asset::VoxelAsset;
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 8;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 9;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -30,6 +33,10 @@ pub mod diagnostic_code {
     pub const INVALID_RELATIONSHIP: &str = "project.invalidRelationship";
     pub const INVALID_SPATIAL: &str = "project.invalidSpatial";
     pub const INVALID_VOXEL_ASSET: &str = "project.invalidVoxelAsset";
+    pub const INVALID_VOXEL_HISTORY: &str = "project.invalidVoxelHistory";
+    pub const INVALID_VOXEL_ANNOTATION: &str = "project.invalidVoxelAnnotation";
+    pub const INVALID_VOXEL_INSTANCE: &str = "project.invalidVoxelInstance";
+    pub const INVALID_MATERIAL: &str = "project.invalidMaterial";
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -49,6 +56,12 @@ pub struct StoredAsset {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel_volume: Option<VoxelAsset>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voxel_edit_history: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub voxel_annotations: Vec<VoxelAnnotationLayer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub material: Option<StoredMaterialDefinition>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -58,7 +71,19 @@ pub struct StoredScene {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel_environment: Option<StoredVoxelEnvironment>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub voxel_instances: Vec<StoredVoxelInstance>,
     pub entities: Vec<StoredEntityDefinition>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredVoxelInstance {
+    pub instance_id: String,
+    pub voxel_asset_id: String,
+    pub translation: [f32; 3],
+    pub rotation: [f32; 4],
+    pub scale: [f32; 3],
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -346,27 +371,61 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                 format!("asset `{id}` was already declared at assets[{first}].id"),
             ));
         }
-        if let Some(voxel_volume) = &asset.voxel_volume {
-            expect_kind(&id, AssetKind::VoxelVolume, &path)?;
-            if voxel_volume.asset_id != asset.id {
+        match id.kind() {
+            AssetKind::VoxelVolume => validate_stored_voxel_asset(asset, index)?,
+            AssetKind::Material => {
+                if asset.material.is_none()
+                    || asset.voxel_volume.is_some()
+                    || asset.voxel_edit_history.is_some()
+                    || !asset.voxel_annotations.is_empty()
+                {
+                    return Err(failure(
+                        diagnostic_code::INVALID_MATERIAL,
+                        format!("assets[{index}]"),
+                        "material assets require exactly one asset-catalog material definition",
+                    ));
+                }
+            }
+            _ => {
+                if asset.voxel_volume.is_some()
+                    || asset.voxel_edit_history.is_some()
+                    || !asset.voxel_annotations.is_empty()
+                    || asset.material.is_some()
+                {
+                    return Err(failure(
+                        diagnostic_code::WRONG_ASSET_KIND,
+                        format!("assets[{index}]"),
+                        "voxel and material payloads must match their typed asset identity",
+                    ));
+                }
+            }
+        }
+    }
+
+    for (asset_index, asset) in document.assets.iter().enumerate() {
+        let Some(voxel) = &asset.voxel_volume else {
+            continue;
+        };
+        for (binding_index, binding) in voxel.material_palette.iter().enumerate() {
+            let Some(material_index) = assets.get(&binding.material_asset_id).copied() else {
                 return Err(failure(
-                    diagnostic_code::INVALID_VOXEL_ASSET,
-                    format!("assets[{index}].voxelVolume.assetId"),
+                    diagnostic_code::MISSING_ASSET,
                     format!(
-                        "embedded voxel asset identity {:?} does not match catalog identity {:?}",
-                        voxel_volume.asset_id, asset.id
+                        "assets[{asset_index}].voxelVolume.materialPalette[{binding_index}].materialAssetId"
+                    ),
+                    format!(
+                        "voxel material binding references missing asset `{}`",
+                        binding.material_asset_id
                     ),
                 ));
-            }
-            if let Err(error) = voxel_asset::validate_voxel_asset(voxel_volume) {
-                let diagnostic = error
-                    .diagnostics()
-                    .first()
-                    .expect("voxel asset error has a diagnostic");
+            };
+            if document.assets[material_index].material.is_none() {
                 return Err(failure(
-                    diagnostic_code::INVALID_VOXEL_ASSET,
-                    format!("assets[{index}].voxelVolume.{}", diagnostic.path),
-                    format!("{}: {}", diagnostic.code, diagnostic.message),
+                    diagnostic_code::INVALID_MATERIAL,
+                    format!(
+                        "assets[{asset_index}].voxelVolume.materialPalette[{binding_index}].materialAssetId"
+                    ),
+                    "voxel material binding must resolve to an asset-catalog material definition",
                 ));
             }
         }
@@ -391,6 +450,42 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                 format!("scene `{id}` was already declared at scenes[{first}].id"),
             ));
         }
+        let mut instance_ids = BTreeMap::new();
+        for (instance_index, instance) in scene.voxel_instances.iter().enumerate() {
+            let instance_path = format!("scenes[{index}].voxelInstances[{instance_index}]");
+            if !is_kebab_segment(&instance.instance_id) {
+                return Err(failure(
+                    diagnostic_code::INVALID_VOXEL_INSTANCE,
+                    format!("{instance_path}.instanceId"),
+                    "voxel instance identity must be one kebab-case segment",
+                ));
+            }
+            if let Some(first) = instance_ids.insert(&instance.instance_id, instance_index) {
+                return Err(failure(
+                    diagnostic_code::INVALID_VOXEL_INSTANCE,
+                    format!("{instance_path}.instanceId"),
+                    format!("instance identity was already declared at voxelInstances[{first}]"),
+                ));
+            }
+            let Some(asset_index) = assets.get(&instance.voxel_asset_id).copied() else {
+                return Err(failure(
+                    diagnostic_code::MISSING_ASSET,
+                    format!("{instance_path}.voxelAssetId"),
+                    format!(
+                        "voxel instance references missing asset `{}`",
+                        instance.voxel_asset_id
+                    ),
+                ));
+            };
+            if document.assets[asset_index].voxel_volume.is_none() {
+                return Err(failure(
+                    diagnostic_code::INVALID_VOXEL_INSTANCE,
+                    format!("{instance_path}.voxelAssetId"),
+                    "voxel instance must reference a canonical voxel-volume asset",
+                ));
+            }
+            validate_voxel_instance_transform(instance, &instance_path)?;
+        }
     }
     if !scenes.contains_key(entry_scene.as_str()) {
         return Err(failure(
@@ -400,6 +495,143 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                 "entry scene `{}` is not present in `scenes`",
                 entry_scene.as_str()
             ),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_stored_voxel_asset(
+    asset: &StoredAsset,
+    index: usize,
+) -> Result<(), StoredProjectError> {
+    if asset.material.is_some() {
+        return Err(failure(
+            diagnostic_code::WRONG_ASSET_KIND,
+            format!("assets[{index}].material"),
+            "voxel-volume assets cannot carry a material definition",
+        ));
+    }
+    let Some(voxel) = &asset.voxel_volume else {
+        return Err(failure(
+            diagnostic_code::INVALID_VOXEL_ASSET,
+            format!("assets[{index}].voxelVolume"),
+            "voxel-volume identity requires an embedded canonical voxel asset",
+        ));
+    };
+    if voxel.asset_id != asset.id {
+        return Err(failure(
+            diagnostic_code::INVALID_VOXEL_ASSET,
+            format!("assets[{index}].voxelVolume.assetId"),
+            format!(
+                "embedded voxel asset identity {:?} does not match catalog identity {:?}",
+                voxel.asset_id, asset.id
+            ),
+        ));
+    }
+    if let Err(error) = voxel_asset::validate_voxel_asset(voxel) {
+        let diagnostic = error
+            .diagnostics()
+            .first()
+            .expect("voxel asset error has a diagnostic");
+        return Err(failure(
+            diagnostic_code::INVALID_VOXEL_ASSET,
+            format!("assets[{index}].voxelVolume.{}", diagnostic.path),
+            format!("{}: {}", diagnostic.code, diagnostic.message),
+        ));
+    }
+    if let Some(encoded) = &asset.voxel_edit_history {
+        let restored = decode_voxel_edit_history(encoded, VoxelEditHistoryLimits::default())
+            .map_err(|error| {
+                failure(
+                    diagnostic_code::INVALID_VOXEL_HISTORY,
+                    format!("assets[{index}].voxelEditHistory"),
+                    error.to_string(),
+                )
+            })?;
+        if restored.scene.material_voxels() != expand_voxel_asset(voxel)?.as_slice() {
+            return Err(failure(
+                diagnostic_code::INVALID_VOXEL_HISTORY,
+                format!("assets[{index}].voxelEditHistory"),
+                "history cursor authority does not match the embedded voxel asset",
+            ));
+        }
+    }
+    for (layer_index, layer) in asset.voxel_annotations.iter().enumerate() {
+        validate_annotation_layer(layer, Some(voxel), VoxelAnnotationLimits::default()).map_err(
+            |error| {
+                failure(
+                    diagnostic_code::INVALID_VOXEL_ANNOTATION,
+                    format!("assets[{index}].voxelAnnotations[{layer_index}]"),
+                    error.to_string(),
+                )
+            },
+        )?;
+    }
+    Ok(())
+}
+
+pub(crate) fn expand_voxel_asset(
+    asset: &VoxelAsset,
+) -> Result<Vec<MaterialVoxel>, StoredProjectError> {
+    let mut voxels = Vec::new();
+    for run in &asset.representation.sparse_runs {
+        for offset in 0..run.length {
+            let local_x = run.start[0].checked_add(i64::from(offset)).ok_or_else(|| {
+                failure(
+                    diagnostic_code::INVALID_VOXEL_ASSET,
+                    "representation",
+                    "sparse run overflowed",
+                )
+            })?;
+            let mut address = [local_x, run.start[1], run.start[2]];
+            for (axis, coordinate) in address.iter_mut().enumerate() {
+                *coordinate = asset.grid.origin[axis]
+                    .checked_add(*coordinate)
+                    .ok_or_else(|| {
+                        failure(
+                            diagnostic_code::INVALID_VOXEL_ASSET,
+                            "grid.origin",
+                            "voxel origin mapping overflowed",
+                        )
+                    })?;
+            }
+            voxels.push(MaterialVoxel {
+                address,
+                material_slot: run.material_slot,
+            });
+        }
+    }
+    voxels.sort_unstable_by_key(|voxel| voxel.address);
+    Ok(voxels)
+}
+
+fn validate_voxel_instance_transform(
+    instance: &StoredVoxelInstance,
+    path: &str,
+) -> Result<(), StoredProjectError> {
+    if instance.translation.iter().any(|value| !value.is_finite())
+        || instance.rotation.iter().any(|value| !value.is_finite())
+        || instance
+            .scale
+            .iter()
+            .any(|value| !value.is_finite() || *value <= 0.0)
+    {
+        return Err(failure(
+            diagnostic_code::INVALID_VOXEL_INSTANCE,
+            path,
+            "voxel instance transform must be finite with positive scale",
+        ));
+    }
+    let rotation_norm = instance
+        .rotation
+        .iter()
+        .map(|value| value * value)
+        .sum::<f32>();
+    if (rotation_norm - 1.0).abs() > 0.002 {
+        return Err(failure(
+            diagnostic_code::INVALID_VOXEL_INSTANCE,
+            format!("{path}.rotation"),
+            "voxel instance rotation must be a normalized quaternion",
         ));
     }
     Ok(())

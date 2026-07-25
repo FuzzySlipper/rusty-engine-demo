@@ -266,7 +266,7 @@ fn noncanonical_pending_file_is_not_promoted() {
     let directory = TestDirectory::new();
     let target = directory.path().join("project.json");
     let pending = ProjectStore::pending_path(&target).unwrap();
-    fs::write(&pending, CURRENT_PROJECT).unwrap();
+    fs::write(&pending, CURRENT_PROJECT.trim_end()).unwrap();
 
     let error = ProjectStore::default().load(&target).unwrap_err();
     assert!(matches!(

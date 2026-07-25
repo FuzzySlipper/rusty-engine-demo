@@ -92,8 +92,8 @@ pub use stored_project::{
     StoredGeneratedVoxelEnvironment, StoredHealth, StoredKinematic, StoredMaterialVoxel,
     StoredMaterialVoxelEnvironment, StoredNavigation, StoredPlayerController,
     StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable, StoredScene,
-    StoredSolidVoxelEnvironment, StoredSwitch, StoredVoxelEnvironment, StoredWeapon,
-    STORED_PROJECT_SCHEMA_VERSION,
+    StoredSolidVoxelEnvironment, StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance,
+    StoredWeapon, STORED_PROJECT_SCHEMA_VERSION,
 };
 pub use studio_adapter::{
     AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,
