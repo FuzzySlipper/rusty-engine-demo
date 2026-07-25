@@ -41,7 +41,11 @@ to `@rusty-engine/render-contracts`; Rust remains the semantic validator and mut
 Every project mutation requires the exact project hash it observed, plus the narrower scene, asset,
 voxel-data, layer, plan, or preview identity relevant to that owner. The adapter builds and admits a
 complete candidate, prepares the renderer projection, authorizes the content write, and only then
-publishes canonical bytes atomically. A canonical reread completes the operation.
+publishes canonical bytes atomically. Project-owned replacement writers serialize on the target
+file, recheck the expected hash while holding that lock, sync the complete candidate, and treat the
+atomic rename as the commit point. Semantic admission, path revalidation, and content confirmation
+all finish before that rename, so a response cannot reject after changing project bytes. A later
+explicit read or fresh adapter process rereads the canonical committed document.
 
 Project-relative paths stay within the selected project root. Explicit host-file operations require
 absolute, lexically normalized paths with no symlink in the existing chain and enforce bounded
