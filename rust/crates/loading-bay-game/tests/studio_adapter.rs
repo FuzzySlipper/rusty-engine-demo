@@ -20,7 +20,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 1,
+            "protocolVersion": 2,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -45,13 +45,41 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(response["project"]["voxel"]["solidVoxelCount"], 366);
     assert_eq!(response["project"]["loadingBay"]["doorCount"], 1);
     assert_eq!(response["project"]["loadingBay"]["enemyCount"], 2);
+    assert_eq!(response["project"]["sceneHierarchy"]["sceneId"], 1);
+    assert_eq!(
+        response["project"]["sceneHierarchy"]["nodes"]
+            .as_array()
+            .unwrap()
+            .len(),
+        8
+    );
+    assert_eq!(
+        response["project"]["sceneHierarchy"]["nodes"][0]["label"],
+        "player"
+    );
+    assert_eq!(
+        response["project"]["sceneHierarchy"]["nodes"][0]["entityId"],
+        1
+    );
     assert_eq!(response["project"]["projection"]["schemaVersion"], 1);
     assert_eq!(
         response["project"]["projection"]["ops"]
             .as_array()
             .unwrap()
             .len(),
-        7
+        19
+    );
+    assert_eq!(
+        response["project"]["projection"]["ops"][0]["op"],
+        "defineMaterial"
+    );
+    assert_eq!(
+        response["project"]["projection"]["ops"][1]["op"],
+        "defineStaticMesh"
+    );
+    assert_eq!(
+        response["project"]["projectionReadout"]["frameKind"],
+        "complete"
     );
     assert_eq!(
         response["project"]["projectionReadout"]["diagnostics"],
@@ -85,7 +113,7 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 1,
+            "protocolVersion": 2,
             "requestId": "move-player",
             "expectedProjectHash": project_hash,
             "expectedSceneRevision": scene_revision,
@@ -126,7 +154,7 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 1,
+            "protocolVersion": 2,
             "requestId": "stale-move",
             "expectedProjectHash": project_hash,
             "expectedSceneRevision": scene_revision,
@@ -151,7 +179,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 1,
+            "protocolVersion": 2,
             "requestId": "missing",
             "expectedProjectHash": identity["projectHash"],
             "expectedSceneRevision": identity["sceneRevision"],
@@ -167,7 +195,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 1,
+            "protocolVersion": 2,
             "requestId": "invalid",
             "expectedProjectHash": identity["projectHash"],
             "expectedSceneRevision": identity["sceneRevision"],
@@ -195,7 +223,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut StudioAdapterService::new(),
         json!({
             "type": "openProject",
-            "protocolVersion": 1,
+            "protocolVersion": 2,
             "requestId": "bad-domain",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -234,7 +262,7 @@ fn malformed_unbounded_and_unsafe_paths_fail_closed() {
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 1,
+            "protocolVersion": 2,
             "requestId": "traversal",
             "root": root.path(),
             "projectFile": "../outside.project.json",
@@ -246,7 +274,7 @@ fn malformed_unbounded_and_unsafe_paths_fail_closed() {
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 1,
+            "protocolVersion": 2,
             "requestId": "relative-root",
             "root": "relative",
             "projectFile": PROJECT_FILE,
@@ -267,7 +295,7 @@ fn symlinked_project_paths_are_rejected_even_when_the_target_stays_inside_root()
         &mut StudioAdapterService::new(),
         json!({
             "type": "openProject",
-            "protocolVersion": 1,
+            "protocolVersion": 2,
             "requestId": "symlink",
             "root": root.path(),
             "projectFile": "content/projects/linked.project.json",
@@ -282,7 +310,7 @@ fn open(service: &mut StudioAdapterService, root: &TestProjectRoot) -> Value {
         service,
         json!({
             "type": "openProject",
-            "protocolVersion": 1,
+            "protocolVersion": 2,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE,

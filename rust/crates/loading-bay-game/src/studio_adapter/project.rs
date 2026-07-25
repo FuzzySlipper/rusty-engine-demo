@@ -2,9 +2,10 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use asset_catalog::{encode_catalog, validate_catalog, AssetCatalog, CatalogEntry};
 use authored_scene::{
-    encode_scene, validate_scene, AvailableSceneAsset, FlatSceneDocument, NodeMetadata,
-    SceneAdmissionPlan, SceneEditCommand, SceneEditService, SceneMetadata, SceneNodeKind,
-    SceneNodeRecord, SceneResolutionContext, SceneTransform, CURRENT_SCENE_SCHEMA_VERSION,
+    composed_world_transforms, encode_scene, validate_scene, AvailableSceneAsset,
+    FlatSceneDocument, NodeMetadata, SceneAdmissionPlan, SceneEditCommand, SceneEditService,
+    SceneMetadata, SceneNode, SceneNodeKind, SceneNodeRecord, SceneResolutionContext,
+    SceneTransform, CURRENT_SCENE_SCHEMA_VERSION,
 };
 use content_store::{
     admit_source_batch, encode_manifest, ArtifactRole, ContentArtifact, ContentBody, ContentHash,
@@ -18,8 +19,13 @@ use engine_inspector::{
     inspect_catalog, inspect_content_manifest, inspect_entity_state, inspect_scene,
     inspect_voxel_state,
 };
-use entity_state::{encode_durable_snapshot, EntityState};
-use render_model::{RenderAssetKind, ResolvedRenderAsset};
+use entity_state::{encode_durable_snapshot, EntityState, EntityTransform};
+use render_model::{
+    MaterialUvStrategy, MeshAttribute, MeshAttributeKind, MeshAttributeName, MeshBoundsDescriptor,
+    MeshBufferLayout, MeshCollisionPolicy, MeshGroupDescriptor, MeshIndexWidth, MeshMaterialSlot,
+    MeshPayloadDescriptor, MeshPayloadSource, MeshProvenance, RenderAssetKind, RenderDiff,
+    RenderFrameDiff, RenderMaterialDescriptor, ResolvedRenderAsset, StaticMeshAsset,
+};
 use render_projection::{EntityProjectionDiagnostic, EntityRenderProjector};
 
 use crate::{
@@ -31,8 +37,8 @@ use crate::{
 use super::path::ProjectLocation;
 use super::protocol::{
     AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt, LoadingBayDomainReadout,
-    OwnerInspections, ProjectionDiagnosticReadout, ProjectionReadout, StudioProjectIdentity,
-    StudioProjectReadout,
+    OwnerInspections, ProjectionDiagnosticReadout, ProjectionReadout, SceneHierarchyNodeReadout,
+    SceneHierarchyReadout, StudioProjectIdentity, StudioProjectReadout, TransformReadout,
 };
 
 const PROJECT_RESOURCE_ROLE: &str = "resource:loading-bay-project";
@@ -109,10 +115,7 @@ impl OpenedOwnerProject {
         self.scene.revision
     }
 
-    pub fn readout(
-        &self,
-        projector: &mut EntityRenderProjector,
-    ) -> Result<StudioProjectReadout, AdapterRejection> {
+    pub fn readout(&self) -> Result<StudioProjectReadout, AdapterRejection> {
         let project = self.stored.document();
         let entry_scene = entry_scene(project);
         let catalog_json = encode_catalog(&self.catalog)
@@ -127,7 +130,7 @@ impl OpenedOwnerProject {
             encode_project_document(project).map_err(stored_project_rejection)?;
 
         let render_assets = resolved_render_assets(&self.catalog);
-        let projected = projector
+        let projected = EntityRenderProjector::new()
             .project(self.admitted.session.entities(), &render_assets)
             .map_err(|error| reject("projection.rejected", format!("{error:?}")))?;
         let diagnostics = projected
@@ -135,6 +138,8 @@ impl OpenedOwnerProject {
             .into_iter()
             .map(projection_diagnostic)
             .collect();
+
+        let projection = complete_projection(&self.catalog, projected.frame)?;
 
         Ok(StudioProjectReadout {
             identity: StudioProjectIdentity {
@@ -160,14 +165,16 @@ impl OpenedOwnerProject {
                 entity_state: inspect_entity_state(self.admitted.session.entities()),
                 persistence: inspect_content_manifest(&self.manifest),
             },
+            scene_hierarchy: scene_hierarchy(&self.scene, self.admitted.session.entities()),
             voxel: self
                 .admitted
                 .collision_scene
                 .as_ref()
                 .map(inspect_voxel_state),
             loading_bay: loading_bay_readout(entry_scene),
-            projection: projected.frame,
+            projection,
             projection_readout: ProjectionReadout {
+                frame_kind: "complete",
                 source_revision: projected.readout.source_revision,
                 retained_entities: projected.readout.retained_entities,
                 diagnostics,
@@ -182,7 +189,6 @@ pub fn apply_entity_translation(
     expected_scene_revision: u64,
     entity_id: u64,
     translation: [f32; 3],
-    projector: &mut EntityRenderProjector,
 ) -> Result<(EntityTranslationReceipt, StudioProjectReadout), AdapterRejection> {
     let expected_hash = ContentHash::parse(expected_project_hash)
         .map_err(|error| reject("project.invalidHash", error.to_string()))?;
@@ -283,8 +289,7 @@ pub fn apply_entity_translation(
         candidate_decoded,
         STORED_PROJECT_SCHEMA_VERSION,
     )?;
-    let mut staged_projector = projector.clone();
-    let staged_readout = staged.readout(&mut staged_projector)?;
+    let staged_readout = staged.readout()?;
 
     let installed_hash = ProjectStore::default()
         .replace_if_unchanged(location.project_file(), &staged.stored, expected_hash)
@@ -306,7 +311,6 @@ pub fn apply_entity_translation(
         .confirm(&observed_next)
         .map_err(|error| reject("content.publicationMismatch", error.to_string()))?;
 
-    *projector = staged_projector;
     let receipt = EntityTranslationReceipt {
         entity_id,
         translation,
@@ -317,6 +321,231 @@ pub fn apply_entity_translation(
         content_candidate_hash: candidate_hash.to_hex(),
     };
     Ok((receipt, staged_readout))
+}
+
+fn complete_projection(
+    catalog: &AssetCatalog,
+    instances: RenderFrameDiff,
+) -> Result<RenderFrameDiff, AdapterRejection> {
+    let mut operations = Vec::new();
+    for entry in catalog
+        .iter()
+        .filter(|entry| entry.kind() == AssetKind::StaticMesh)
+    {
+        let asset = entry.id.as_str();
+        let material = format!(
+            "material/studio-{}",
+            asset.trim_start_matches("mesh/").replace('/', "-")
+        );
+        operations.push(RenderDiff::DefineMaterial {
+            material: studio_material(&material, asset),
+        });
+        operations.push(RenderDiff::DefineStaticMesh {
+            asset: StaticMeshAsset {
+                asset: asset.to_string(),
+                payload: cuboid_payload(studio_mesh_dimensions(asset)),
+                material_slots: vec![MeshMaterialSlot { slot: 0, material }],
+                collision: MeshCollisionPolicy::VisualOnly,
+            },
+        });
+    }
+    operations.extend(instances.ops);
+    RenderFrameDiff::try_from_ops(operations)
+        .map_err(|error| reject("projection.completeFrameRejected", format!("{error:?}")))
+}
+
+fn studio_material(id: &str, asset: &str) -> RenderMaterialDescriptor {
+    let seed = asset.bytes().fold(2_166_136_261_u32, |hash, byte| {
+        (hash ^ u32::from(byte)).wrapping_mul(16_777_619)
+    });
+    let channel = |shift: u32| 0.28 + (((seed >> shift) & 0xff) as f32 / 255.0) * 0.58;
+    RenderMaterialDescriptor {
+        schema_version: 1,
+        id: id.to_string(),
+        color: [channel(0), channel(8), channel(16), 1.0],
+        texture: None,
+        roughness: 0.78,
+        texture_tint: [1.0; 4],
+        emission_color: [0.0; 3],
+        emission_intensity: 0.0,
+        uv_strategy: MaterialUvStrategy::Flat,
+    }
+}
+
+fn studio_mesh_dimensions(asset: &str) -> [f32; 3] {
+    if asset.contains("security-door") {
+        [2.4, 3.4, 0.55]
+    } else if asset.contains("extraction-beacon") {
+        [0.8, 2.4, 0.8]
+    } else if asset.contains("spatial-probe") {
+        [0.5, 0.5, 0.5]
+    } else if asset.contains("player-marker") {
+        [0.7, 1.4, 0.7]
+    } else if asset.contains("control-panel") {
+        [1.2, 1.5, 0.8]
+    } else {
+        [1.1, 1.8, 1.1]
+    }
+}
+
+fn cuboid_payload([width, height, depth]: [f32; 3]) -> MeshPayloadDescriptor {
+    let half_width = width / 2.0;
+    let half_depth = depth / 2.0;
+    let positions = vec![
+        -half_width,
+        0.0,
+        -half_depth,
+        half_width,
+        0.0,
+        -half_depth,
+        half_width,
+        height,
+        -half_depth,
+        -half_width,
+        height,
+        -half_depth,
+        -half_width,
+        0.0,
+        half_depth,
+        half_width,
+        0.0,
+        half_depth,
+        half_width,
+        height,
+        half_depth,
+        -half_width,
+        height,
+        half_depth,
+    ];
+    MeshPayloadDescriptor {
+        layout: MeshBufferLayout {
+            vertex_count: 8,
+            index_count: 36,
+            index_width: MeshIndexWidth::U32,
+            attributes: vec![
+                MeshAttribute {
+                    name: MeshAttributeName::Position,
+                    components: 3,
+                    kind: MeshAttributeKind::F32,
+                },
+                MeshAttribute {
+                    name: MeshAttributeName::Normal,
+                    components: 3,
+                    kind: MeshAttributeKind::F32,
+                },
+            ],
+        },
+        groups: vec![MeshGroupDescriptor {
+            material_slot: 0,
+            start: 0,
+            count: 36,
+        }],
+        bounds: MeshBoundsDescriptor {
+            min: [-half_width, 0.0, -half_depth],
+            max: [half_width, height, half_depth],
+        },
+        source: MeshPayloadSource::Inline {
+            positions,
+            normals: vec![
+                -0.577, -0.577, -0.577, 0.577, -0.577, -0.577, 0.577, 0.577, -0.577, -0.577, 0.577,
+                -0.577, -0.577, -0.577, 0.577, 0.577, -0.577, 0.577, 0.577, 0.577, 0.577, -0.577,
+                0.577, 0.577,
+            ],
+            indices: vec![
+                4, 5, 6, 4, 6, 7, 1, 0, 3, 1, 3, 2, 0, 4, 7, 0, 7, 3, 5, 1, 2, 5, 2, 6, 3, 7, 6, 3,
+                6, 2, 0, 1, 5, 0, 5, 4,
+            ],
+        },
+        provenance: MeshProvenance::Generated,
+    }
+}
+
+fn scene_hierarchy(scene: &FlatSceneDocument, state: &EntityState) -> SceneHierarchyReadout {
+    let tree = scene
+        .to_tree()
+        .expect("validated authored scene has a tree representation");
+    let world = composed_world_transforms(scene);
+    let child_orders = scene
+        .nodes
+        .iter()
+        .map(|node| (node.id, node.child_order))
+        .collect::<BTreeMap<_, _>>();
+    let entities = state
+        .entities()
+        .map(|entity| (SceneNodeId::new(entity.id.raw()), entity.id))
+        .collect::<BTreeMap<_, _>>();
+    let mut nodes = Vec::with_capacity(scene.nodes.len());
+    for root in &tree.roots {
+        append_hierarchy_node(root, None, 0, &world, &child_orders, &entities, &mut nodes);
+    }
+    SceneHierarchyReadout {
+        scene_id: scene.id.raw(),
+        revision: scene.revision,
+        name: scene.metadata.name.clone(),
+        root_node_ids: tree.roots.iter().map(|node| node.id.raw()).collect(),
+        nodes,
+    }
+}
+
+fn append_hierarchy_node(
+    node: &SceneNode,
+    parent: Option<u64>,
+    depth: u32,
+    world: &BTreeMap<SceneNodeId, EntityTransform>,
+    child_orders: &BTreeMap<SceneNodeId, u32>,
+    entities: &BTreeMap<SceneNodeId, core_ids::EntityId>,
+    nodes: &mut Vec<SceneHierarchyNodeReadout>,
+) {
+    let display_order = nodes.len() as u32;
+    nodes.push(SceneHierarchyNodeReadout {
+        node_id: node.id.raw(),
+        parent_node_id: parent,
+        child_order: child_orders[&node.id],
+        display_order,
+        depth,
+        node_kind: node.kind.tag(),
+        label: node
+            .metadata
+            .label
+            .clone()
+            .unwrap_or_else(|| format!("Node {}", node.id.raw())),
+        tags: node.metadata.tags.clone(),
+        asset: node
+            .kind
+            .asset()
+            .map(|asset| asset.id().as_str().to_string()),
+        entity_id: entities.get(&node.id).map(|entity| entity.raw()),
+        local_transform: transform_readout(node.transform),
+        world_transform: transform_readout(world[&node.id]),
+    });
+    for child in &node.children {
+        append_hierarchy_node(
+            child,
+            Some(node.id.raw()),
+            depth + 1,
+            world,
+            child_orders,
+            entities,
+            nodes,
+        );
+    }
+}
+
+fn transform_readout(transform: EntityTransform) -> TransformReadout {
+    TransformReadout {
+        translation: [
+            transform.translation.x,
+            transform.translation.y,
+            transform.translation.z,
+        ],
+        rotation: [
+            transform.rotation.x,
+            transform.rotation.y,
+            transform.rotation.z,
+            transform.rotation.w,
+        ],
+        scale: [transform.scale.x, transform.scale.y, transform.scale.z],
+    }
 }
 
 fn project_manifest(relative_project_file: &str, bytes: &[u8]) -> ContentManifest {

@@ -4,13 +4,13 @@ The `studio-adapter` binary is Loading Bay's project-owned Rust composition boun
 Engine Studio. It is not a gameplay runtime facade and it does not generalize Loading Bay concepts
 into Engine vocabulary.
 
-Protocol version 1 has exactly five request families:
+Protocol version 2 has exactly five request families:
 
 - `describe` identifies the adapter and supported project schema;
 - `openProject` selects one explicit absolute root and safe relative project file;
 - `readProject` rereads the open project through the same owner path;
 - `setEntityTranslation` performs one typed authored transform operation; and
-- `closeProject` discards the adapter's open-project and retained-projection state.
+- `closeProject` discards the adapter's open-project state.
 
 Requests and responses are one bounded JSON value per line. There is no method-name dispatch,
 provider registry, arbitrary command payload, callback subscription, HTTP route, or browser
@@ -26,11 +26,16 @@ composes the public Engine owners:
 3. `asset-catalog` validates the derived canonical asset authority.
 4. `authored-scene` validates and admits the derived entry-scene view through `entity-state`.
 5. `engine-inspector` produces catalog, scene, entity, persistence, and voxel readouts.
-6. `render-projection` produces the public `render-model` frame consumed by the shared renderer.
+6. `render-projection` produces entity instances, which the adapter composes with explicit
+   catalog-derived material and mesh definitions into a complete public `render-model` frame.
 
 The response includes canonical owner codecs as strings so Studio can display or retain them without
 reimplementing their semantics. The TypeScript boundary performs structural decoding and delegates
-the frame to `@rusty-engine/render-contracts`; Rust remains the only semantic validator.
+the frame to `@rusty-engine/render-contracts`; Rust remains the only semantic validator. A separate
+`sceneHierarchy` readout gives Studio the validated `authored-scene` traversal order, node/entity
+mapping, and local/world transforms without requiring a TypeScript scene codec. Every response
+contains a complete, atomically replaceable projection frame so renderer resources and instances
+cannot drift across refresh or reopen.
 
 ## Mutation and persistence
 
@@ -54,6 +59,6 @@ cargo test --locked -p loading-bay-game --test studio_adapter --test project_sto
 ```
 
 Rusty Engine owns an explicit integration command that builds this binary, opens the real checkout
-through the TypeScript client, validates owner and voxel readouts, and proves a retained no-op
-reread. That command takes the checkout as an explicit argument; neither repository gains an
-ordinary sibling-checkout dependency.
+through the TypeScript editor store, validates owner, hierarchy, projection, and voxel readouts,
+and performs a canonical reread. That command takes the checkout as an explicit argument; neither
+repository gains an ordinary sibling-checkout dependency.

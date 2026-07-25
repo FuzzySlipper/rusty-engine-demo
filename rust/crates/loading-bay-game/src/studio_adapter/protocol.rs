@@ -5,7 +5,7 @@ use engine_inspector::{
 use render_model::RenderFrameDiff;
 use serde::{Deserialize, Serialize};
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 1;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 2;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 64 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
@@ -145,6 +145,7 @@ pub struct StudioProjectReadout {
     pub identity: StudioProjectIdentity,
     pub canonical: CanonicalOwnerContent,
     pub inspections: OwnerInspections,
+    pub scene_hierarchy: SceneHierarchyReadout,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel: Option<VoxelStateInspection>,
     pub loading_bay: LoadingBayDomainReadout,
@@ -186,6 +187,41 @@ pub struct OwnerInspections {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct SceneHierarchyReadout {
+    pub scene_id: u64,
+    pub revision: u64,
+    pub name: Option<String>,
+    pub root_node_ids: Vec<u64>,
+    pub nodes: Vec<SceneHierarchyNodeReadout>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SceneHierarchyNodeReadout {
+    pub node_id: u64,
+    pub parent_node_id: Option<u64>,
+    pub child_order: u32,
+    pub display_order: u32,
+    pub depth: u32,
+    pub node_kind: &'static str,
+    pub label: String,
+    pub tags: Vec<String>,
+    pub asset: Option<String>,
+    pub entity_id: Option<u64>,
+    pub local_transform: TransformReadout,
+    pub world_transform: TransformReadout,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransformReadout {
+    pub translation: [f32; 3],
+    pub rotation: [f32; 4],
+    pub scale: [f32; 3],
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LoadingBayDomainReadout {
     pub scene_name: String,
     pub entity_count: usize,
@@ -203,6 +239,7 @@ pub struct LoadingBayDomainReadout {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectionReadout {
+    pub frame_kind: &'static str,
     pub source_revision: u64,
     pub retained_entities: usize,
     pub diagnostics: Vec<ProjectionDiagnosticReadout>,

@@ -1,5 +1,3 @@
-use render_projection::EntityRenderProjector;
-
 use crate::STORED_PROJECT_SCHEMA_VERSION;
 
 use super::path::ProjectLocation;
@@ -12,7 +10,6 @@ use super::protocol::{
 
 struct OpenProject {
     location: ProjectLocation,
-    projector: EntityRenderProjector,
 }
 
 #[derive(Default)]
@@ -82,7 +79,7 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 1,
+                    adapter_version: 2,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -132,16 +129,12 @@ impl StudioAdapterService {
             let location = ProjectLocation::resolve(root, project_file)
                 .map_err(|error| AdapterRejection::new("path.rejected", error.to_string()))?;
             let project = OpenedOwnerProject::load(&location)?;
-            let mut projector = EntityRenderProjector::new();
-            let readout = project.readout(&mut projector)?;
-            Ok::<_, AdapterRejection>((location, projector, readout))
+            let readout = project.readout()?;
+            Ok::<_, AdapterRejection>((location, readout))
         })();
         match result {
-            Ok((location, projector, project)) => {
-                self.open = Some(OpenProject {
-                    location,
-                    projector,
-                });
+            Ok((location, project)) => {
+                self.open = Some(OpenProject { location });
                 StudioAdapterResponse::ProjectOpened {
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     request_id,
@@ -161,19 +154,14 @@ impl StudioAdapterService {
         };
         let result = (|| {
             let project = OpenedOwnerProject::load(&open.location)?;
-            let mut staged_projector = open.projector.clone();
-            let readout = project.readout(&mut staged_projector)?;
-            Ok::<_, AdapterRejection>((staged_projector, readout))
+            project.readout()
         })();
         match result {
-            Ok((projector, project)) => {
-                open.projector = projector;
-                StudioAdapterResponse::ProjectRead {
-                    protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
-                    request_id,
-                    project,
-                }
-            }
+            Ok(project) => StudioAdapterResponse::ProjectRead {
+                protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                request_id,
+                project,
+            },
             Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
         }
     }
@@ -198,7 +186,6 @@ impl StudioAdapterService {
             expected_scene_revision,
             entity_id,
             translation,
-            &mut open.projector,
         ) {
             Ok((receipt, project)) => StudioAdapterResponse::EntityTranslationApplied {
                 protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
