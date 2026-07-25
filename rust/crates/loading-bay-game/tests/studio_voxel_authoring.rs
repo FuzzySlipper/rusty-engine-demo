@@ -93,7 +93,7 @@ fn voxel_host_file_open_export_save_as_and_stale_guards_are_atomic() {
         &mut service,
         json!({
             "type": "exportVoxelAssetFile",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "export",
             "expectedProjectHash": project_hash(&opened),
             "assetId": ASSET_ID,
@@ -111,7 +111,7 @@ fn voxel_host_file_open_export_save_as_and_stale_guards_are_atomic() {
         &mut service,
         json!({
             "type": "importVoxelAssetFile",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "import",
             "expectedProjectHash": project_hash(&opened),
             "sourcePath": target,
@@ -129,7 +129,7 @@ fn voxel_host_file_open_export_save_as_and_stale_guards_are_atomic() {
         &mut service,
         json!({
             "type": "exportVoxelAssetFile",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "stale-export",
             "expectedProjectHash": project_hash(&imported),
             "assetId": ASSET_ID,
@@ -145,7 +145,7 @@ fn voxel_host_file_open_export_save_as_and_stale_guards_are_atomic() {
         &mut service,
         json!({
             "type": "exportVoxelAssetFile",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "replace-export",
             "expectedProjectHash": project_hash(&imported),
             "assetId": ASSET_ID,
@@ -167,7 +167,7 @@ fn voxel_host_file_open_export_save_as_and_stale_guards_are_atomic() {
             &mut service,
             json!({
                 "type": "importVoxelAssetFile",
-                "protocolVersion": 4,
+                "protocolVersion": 5,
                 "requestId": "symlink-import",
                 "expectedProjectHash": project_hash(&imported),
                 "sourcePath": link,
@@ -188,7 +188,7 @@ fn typed_primitives_templates_and_history_previews_share_durable_authority() {
         &mut service,
         json!({
             "type": "applyVoxelPrimitive",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "line",
             "expectedProjectHash": project_hash(&opened),
             "assetId": ASSET_ID,
@@ -212,7 +212,7 @@ fn typed_primitives_templates_and_history_previews_share_durable_authority() {
         &mut service,
         json!({
             "type": "queryVoxelHistory",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "history",
             "expectedProjectHash": project_hash(&primitive),
             "assetId": ASSET_ID,
@@ -237,7 +237,7 @@ fn typed_primitives_templates_and_history_previews_share_durable_authority() {
         &mut service,
         json!({
             "type": "prepareVoxelHistoryRevert",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "preview",
             "expectedProjectHash": project_hash(&primitive),
             "assetId": ASSET_ID,
@@ -256,7 +256,7 @@ fn typed_primitives_templates_and_history_previews_share_durable_authority() {
         &mut service,
         json!({
             "type": "prepareVoxelHistoryRevert",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "replacement-preview",
             "expectedProjectHash": project_hash(&primitive),
             "assetId": ASSET_ID,
@@ -273,7 +273,7 @@ fn typed_primitives_templates_and_history_previews_share_durable_authority() {
         &mut service,
         json!({
             "type": "discardVoxelHistoryRevert",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "discard-replaced-preview",
             "previewId": preview["preview"]["previewId"]
         }),
@@ -289,7 +289,7 @@ fn typed_primitives_templates_and_history_previews_share_durable_authority() {
         &mut service,
         json!({
             "type": "applyVoxelHistoryRevert",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "apply-preview",
             "expectedProjectHash": project_hash(&primitive),
             "previewId": replacement_preview["preview"]["previewId"]
@@ -306,7 +306,7 @@ fn typed_primitives_templates_and_history_previews_share_durable_authority() {
         &mut service,
         json!({
             "type": "initializeVoxelTemplate",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "house-template",
             "expectedProjectHash": project_hash(&reverted),
             "assetId": "voxel-volume/studio-house",
@@ -382,7 +382,7 @@ fn shared_projection_pick_model_and_durable_history_use_engine_owners() {
         &mut service,
         json!({
             "type": "queryVoxelModel",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "model",
             "expectedProjectHash": project_hash,
             "assetId": ASSET_ID,
@@ -411,7 +411,7 @@ fn shared_projection_pick_model_and_durable_history_use_engine_owners() {
         &mut service,
         json!({
             "type": "validateVoxelPick",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "pick",
             "expectedProjectHash": project_hash,
             "sceneId": "scene/converted-wall",
@@ -432,7 +432,7 @@ fn shared_projection_pick_model_and_durable_history_use_engine_owners() {
         &mut service,
         json!({
             "type": "applyVoxelBrush",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "erase",
             "expectedProjectHash": project_hash,
             "assetId": ASSET_ID,
@@ -459,7 +459,7 @@ fn shared_projection_pick_model_and_durable_history_use_engine_owners() {
         &mut service,
         json!({
             "type": "applyVoxelBrush",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "stale",
             "expectedProjectHash": project_hash,
             "assetId": ASSET_ID,
@@ -526,7 +526,7 @@ fn annotations_are_typed_queryable_editable_exportable_and_hash_guarded() {
         &mut service,
         json!({
             "type": "createVoxelAnnotationLayer",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "create-annotation",
             "expectedProjectHash": opened_project_hash,
             "assetId": ASSET_ID,
@@ -561,7 +561,7 @@ fn annotations_are_typed_queryable_editable_exportable_and_hash_guarded() {
         &mut service,
         json!({
             "type": "queryVoxelAnnotation",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "query-annotation",
             "expectedProjectHash": project_hash(&created),
             "assetId": ASSET_ID,
@@ -583,7 +583,7 @@ fn annotations_are_typed_queryable_editable_exportable_and_hash_guarded() {
         &mut service,
         json!({
             "type": "editVoxelAnnotation",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "edit-annotation",
             "expectedProjectHash": project_hash(&created),
             "assetId": ASSET_ID,
@@ -606,7 +606,7 @@ fn annotations_are_typed_queryable_editable_exportable_and_hash_guarded() {
         &mut service,
         json!({
             "type": "exportVoxelAnnotation",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "export-annotation",
             "expectedProjectHash": project_hash(&edited),
             "assetId": ASSET_ID,
@@ -627,7 +627,7 @@ fn annotations_are_typed_queryable_editable_exportable_and_hash_guarded() {
         &mut service,
         json!({
             "type": "editVoxelAnnotation",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "stale-annotation",
             "expectedProjectHash": project_hash(&edited),
             "assetId": ASSET_ID,
@@ -656,7 +656,7 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
         &mut service,
         json!({
             "type": "prepareVoxelConversion",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "prepare",
             "expectedProjectHash": project_hash(&opened),
             "sourceAssetId": "mesh/kenney-wall-a",
@@ -692,7 +692,7 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
         &mut service,
         json!({
             "type": "applyVoxelConversion",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "forged-apply",
             "expectedProjectHash": project_hash(&opened),
             "planId": plan_id,
@@ -708,7 +708,7 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
         &mut service,
         json!({
             "type": "applyVoxelConversion",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "apply",
             "expectedProjectHash": project_hash(&opened),
             "planId": plan_id,
@@ -748,7 +748,7 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
         &mut StudioAdapterService::new(),
         json!({
             "type": "applyVoxelConversion",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "missing-private-plan",
             "expectedProjectHash": project_hash(&applied),
             "planId": plan_id,
@@ -769,7 +769,7 @@ fn conversion_preparation_replaces_the_single_retained_private_plan() {
     let prepare = |request_id: &str, target_asset_id: &str| {
         json!({
             "type": "prepareVoxelConversion",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": request_id,
             "expectedProjectHash": project_hash(&opened),
             "sourceAssetId": "mesh/kenney-wall-a",
@@ -802,7 +802,7 @@ fn conversion_preparation_replaces_the_single_retained_private_plan() {
         &mut service,
         json!({
             "type": "applyVoxelConversion",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "apply-replaced",
             "expectedProjectHash": project_hash(&opened),
             "planId": first["plan"]["planId"],
@@ -821,7 +821,7 @@ fn conversion_preparation_replaces_the_single_retained_private_plan() {
         &mut service,
         json!({
             "type": "discardVoxelConversion",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "discard-current",
             "planId": second["plan"]["planId"]
         }),
@@ -839,7 +839,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "upsertMaterial",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "material",
             "expectedProjectHash": project_hash(&opened),
             "assetId": "material/studio-accent",
@@ -852,7 +852,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "initializeVoxelAsset",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "initialize",
             "expectedProjectHash": project_hash(&material),
             "assetId": "voxel-volume/studio-block",
@@ -878,7 +878,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "attachVoxelInstance",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "attach",
             "expectedProjectHash": project_hash(&initialized),
             "sceneId": "scene/converted-wall",
@@ -903,7 +903,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "setVoxelInstanceTransform",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "transform",
             "expectedProjectHash": project_hash(&attached),
             "sceneId": "scene/converted-wall",
@@ -925,7 +925,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "duplicateVoxelAsset",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "duplicate",
             "expectedProjectHash": project_hash(&transformed),
             "sourceAssetId": "voxel-volume/studio-block",
@@ -945,7 +945,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "replaceVoxelPalette",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "palette",
             "expectedProjectHash": project_hash(&duplicated),
             "assetId": "voxel-volume/studio-block",
@@ -968,7 +968,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "removeVoxelInstance",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "remove",
             "expectedProjectHash": project_hash(&palette),
             "sceneId": "scene/converted-wall",
@@ -1003,7 +1003,7 @@ fn history_request(
 ) -> Value {
     let mut request = json!({
         "type": request_type,
-        "protocolVersion": 4,
+        "protocolVersion": 5,
         "requestId": request_id,
         "expectedProjectHash": project_hash(current),
         "assetId": ASSET_ID,
@@ -1082,7 +1082,7 @@ fn conversion_settings_for_group() -> Value {
 fn environment_request(current: &Value, seed: u64, materials: [u16; 3]) -> Value {
     json!({
         "type": "materializeEnvironment",
-        "protocolVersion": 4,
+        "protocolVersion": 5,
         "requestId": format!("environment-{seed}-{}-{}-{}", materials[0], materials[1], materials[2]),
         "expectedProjectHash": project_hash(current),
         "expectedSceneRevision": current["project"]["identity"]["sceneRevision"],
@@ -1142,7 +1142,7 @@ fn open(service: &mut StudioAdapterService, root: &TestProjectRoot) -> Value {
         service,
         json!({
             "type": "openProject",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE

@@ -18,8 +18,9 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 8;
-const LEGACY_STORED_PROJECT_SCHEMA_VERSION: u32 = 7;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 9;
+const LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION: u32 = 8;
+const LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION: u32 = 7;
 
 /// A current authored project together with the schema version actually read.
 /// A lower source version means Rust performed the documented migration before
@@ -51,17 +52,19 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v8(decode_legacy_project(input)?)?,
-        LEGACY_STORED_PROJECT_SCHEMA_VERSION => migrate_v7(decode_legacy_project(input)?)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v9(decode_legacy_project(input)?)?,
+        LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION => migrate_v8(decode_legacy_project(input)?)?,
+        LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION => migrate_v7(decode_legacy_project(input)?)?,
         PROJECT_CONTENT_SCHEMA_VERSION => migrate_v6(decode_v6(input)?)?,
         actual => {
             return Err(StoredProjectError::new(
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
-                    LEGACY_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -170,17 +173,31 @@ fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectErro
     Ok(document)
 }
 
-fn migrate_v8(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+fn migrate_v9(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
     );
+    assign_legacy_child_order(&mut legacy);
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn migrate_v8(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION
+    );
+    assign_legacy_child_order(&mut legacy);
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
 }
 
 fn migrate_v7(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
-    debug_assert_eq!(legacy.schema_version, LEGACY_STORED_PROJECT_SCHEMA_VERSION);
+    debug_assert_eq!(
+        legacy.schema_version,
+        LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION
+    );
     if legacy.scenes.iter().any(|scene| {
         scene
             .entities
@@ -193,6 +210,7 @@ fn migrate_v7(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
             "schema 7 cannot declare extractionBeacon",
         ));
     }
+    assign_legacy_child_order(&mut legacy);
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
 }
@@ -222,6 +240,9 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
             asset_ids.insert(renderable.asset.clone());
         }
     }
+    for (index, entity) in legacy.entities.iter_mut().enumerate() {
+        entity.child_order = index as u32;
+    }
 
     canonicalize(StoredProject {
         schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -248,6 +269,15 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
     })
 }
 
+fn assign_legacy_child_order(project: &mut StoredProject) {
+    for scene in &mut project.scenes {
+        for (index, entity) in scene.entities.iter_mut().enumerate() {
+            entity.parent = None;
+            entity.child_order = index as u32;
+        }
+    }
+}
+
 fn migrate_v6_asset_id(asset: &str) -> String {
     asset
         .strip_prefix("primitive/")
@@ -255,8 +285,8 @@ fn migrate_v6_asset_id(asset: &str) -> String {
 }
 
 fn canonicalize(mut document: StoredProject) -> Result<StoredProject, StoredProjectError> {
-    validate_stored_project(&document)?;
     normalize_numbers(&mut document)?;
+    validate_stored_project(&document)?;
     for (asset_index, asset) in document.assets.iter_mut().enumerate() {
         if let Some(voxel_volume) = &mut asset.voxel_volume {
             *voxel_volume = canonicalize_voxel_asset(voxel_volume).map_err(|error| {
@@ -333,6 +363,11 @@ fn normalize_numbers(document: &mut StoredProject) -> Result<(), StoredProjectEr
         for (entity_index, entity) in scene.entities.iter_mut().enumerate() {
             let root = format!("scenes[{scene_index}].entities[{entity_index}]");
             normalize_optional_vec3(&mut entity.translation, format!("{root}.translation"))?;
+            normalize_vec4(&mut entity.rotation, format!("{root}.rotation"))?;
+            normalize_vec3(&mut entity.scale, format!("{root}.scale"))?;
+            if let Some(light) = &mut entity.light {
+                normalize_light(light, format!("{root}.light"))?;
+            }
             if let Some(component) = &mut entity.door {
                 normalize_vec3(
                     &mut component.open_translation,
@@ -407,6 +442,57 @@ fn normalize_numbers(document: &mut StoredProject) -> Result<(), StoredProjectEr
             normalize_vec4(&mut instance.rotation, format!("{root}.rotation"))?;
             normalize_vec3(&mut instance.scale, format!("{root}.scale"))?;
         }
+    }
+    Ok(())
+}
+
+fn normalize_light(light: &mut crate::StoredLight, root: String) -> Result<(), StoredProjectError> {
+    use crate::StoredLight;
+    match light {
+        StoredLight::Ambient {
+            color, intensity, ..
+        }
+        | StoredLight::Directional {
+            color, intensity, ..
+        } => {
+            normalize_vec3(color, format!("{root}.color"))?;
+            normalize_f32(intensity, format!("{root}.intensity"))?;
+        }
+        StoredLight::Point {
+            color,
+            intensity,
+            range,
+            decay,
+            ..
+        } => {
+            normalize_vec3(color, format!("{root}.color"))?;
+            normalize_f32(intensity, format!("{root}.intensity"))?;
+            normalize_optional_f32(range, format!("{root}.range"))?;
+            normalize_f32(decay, format!("{root}.decay"))?;
+        }
+        StoredLight::Spot {
+            color,
+            intensity,
+            range,
+            decay,
+            outer_angle_radians,
+            penumbra,
+            ..
+        } => {
+            normalize_vec3(color, format!("{root}.color"))?;
+            normalize_f32(intensity, format!("{root}.intensity"))?;
+            normalize_optional_f32(range, format!("{root}.range"))?;
+            normalize_f32(decay, format!("{root}.decay"))?;
+            normalize_f32(outer_angle_radians, format!("{root}.outerAngleRadians"))?;
+            normalize_f32(penumbra, format!("{root}.penumbra"))?;
+        }
+    }
+    Ok(())
+}
+
+fn normalize_optional_f32(value: &mut Option<f32>, path: String) -> Result<(), StoredProjectError> {
+    if let Some(value) = value {
+        normalize_f32(value, path)?;
     }
     Ok(())
 }

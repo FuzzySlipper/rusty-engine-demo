@@ -10,7 +10,7 @@ use engine_spatial::{
     validate_material_voxel, GeneratedRoomConfig, MaterialVoxel, VoxelAuthorityValidationError,
     VoxelCollisionScene,
 };
-use entity_state::{EntityDefinition, MAX_ABS_TRANSLATION};
+use entity_state::{EntityDefinition, EntityTransform, Quat, MAX_ABS_TRANSLATION};
 
 use crate::combat::{HealthConfig, WeaponConfig};
 use crate::content::AdmittedProject;
@@ -414,8 +414,25 @@ fn authored_definition(
         |component: &str| format!("scenes[{scene_index}].entities[{entity_index}].{component}");
     let initial_translation = authored.translation.map(array_vec3);
     let mut entity_definition = EntityDefinition::new(entity, authored.name.clone());
-    if let Some(translation) = initial_translation {
-        entity_definition = entity_definition.with_transform(translation);
+    if initial_translation.is_some()
+        || authored.parent.is_some()
+        || authored.rotation != [0.0, 0.0, 0.0, 1.0]
+        || authored.scale != [1.0; 3]
+        || authored.light.is_some()
+    {
+        entity_definition = entity_definition.with_full_transform(EntityTransform {
+            translation: initial_translation.unwrap_or(Vec3::ZERO),
+            rotation: Quat::new(
+                authored.rotation[0],
+                authored.rotation[1],
+                authored.rotation[2],
+                authored.rotation[3],
+            ),
+            scale: array_vec3(authored.scale),
+        });
+    }
+    if let Some(parent) = authored.parent {
+        entity_definition = entity_definition.with_transform_parent(EntityId::new(parent));
     }
     if let Some(collision) = authored.collision {
         entity_definition =

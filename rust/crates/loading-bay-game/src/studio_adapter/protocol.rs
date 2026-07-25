@@ -16,9 +16,9 @@ use voxel_convert::{
     VoxelModelWindowReadout, VoxelModelWindowRequest,
 };
 
-use crate::StoredVoxelInstance;
+use crate::{StoredCollision, StoredKinematic, StoredLight, StoredVoxelInstance};
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 4;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 5;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
@@ -41,9 +41,116 @@ pub enum StudioAdapterRequest {
         root: String,
         project_file: String,
     },
+    CreateProject {
+        protocol_version: u32,
+        request_id: String,
+        root: String,
+        project_file: String,
+        project_id: String,
+        name: String,
+        entry_scene: String,
+        entry_scene_name: String,
+    },
+    SaveProjectAs {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        root: String,
+        project_file: String,
+        project_id: String,
+        name: String,
+    },
     ReadProject {
         protocol_version: u32,
         request_id: String,
+    },
+    CreateScene {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        scene_id: String,
+        name: String,
+        make_entry: bool,
+    },
+    RenameScene {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        scene_id: String,
+        name: String,
+    },
+    DeleteScene {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        scene_id: String,
+    },
+    SetEntryScene {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        scene_id: String,
+    },
+    CreateSceneObject {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        expected_scene_revision: u64,
+        object: StudioSceneObjectDraft,
+    },
+    DeleteSceneObject {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        expected_scene_revision: u64,
+        entity_id: u64,
+    },
+    RenameSceneObject {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        expected_scene_revision: u64,
+        entity_id: u64,
+        name: String,
+    },
+    ReparentSceneObject {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        expected_scene_revision: u64,
+        entity_id: u64,
+        parent_entity_id: Option<u64>,
+        child_order: u32,
+    },
+    SetSceneObjectTransform {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        expected_scene_revision: u64,
+        entity_id: u64,
+        transform: TransformReadout,
+    },
+    SetSceneObjectAppearance {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        expected_scene_revision: u64,
+        entity_id: u64,
+        appearance: StudioSceneAppearance,
+    },
+    SetEntityCollision {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        entity_id: u64,
+        collision: Option<StoredCollision>,
+    },
+    SetEntityKinematic {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        entity_id: u64,
+        kinematic: Option<StoredKinematic>,
     },
     SetEntityTranslation {
         protocol_version: u32,
@@ -344,7 +451,49 @@ impl StudioAdapterRequest {
             | Self::OpenProject {
                 protocol_version, ..
             }
+            | Self::CreateProject {
+                protocol_version, ..
+            }
+            | Self::SaveProjectAs {
+                protocol_version, ..
+            }
             | Self::ReadProject {
+                protocol_version, ..
+            }
+            | Self::CreateScene {
+                protocol_version, ..
+            }
+            | Self::RenameScene {
+                protocol_version, ..
+            }
+            | Self::DeleteScene {
+                protocol_version, ..
+            }
+            | Self::SetEntryScene {
+                protocol_version, ..
+            }
+            | Self::CreateSceneObject {
+                protocol_version, ..
+            }
+            | Self::DeleteSceneObject {
+                protocol_version, ..
+            }
+            | Self::RenameSceneObject {
+                protocol_version, ..
+            }
+            | Self::ReparentSceneObject {
+                protocol_version, ..
+            }
+            | Self::SetSceneObjectTransform {
+                protocol_version, ..
+            }
+            | Self::SetSceneObjectAppearance {
+                protocol_version, ..
+            }
+            | Self::SetEntityCollision {
+                protocol_version, ..
+            }
+            | Self::SetEntityKinematic {
                 protocol_version, ..
             }
             | Self::SetEntityTranslation {
@@ -447,7 +596,21 @@ impl StudioAdapterRequest {
         match self {
             Self::Describe { request_id, .. }
             | Self::OpenProject { request_id, .. }
+            | Self::CreateProject { request_id, .. }
+            | Self::SaveProjectAs { request_id, .. }
             | Self::ReadProject { request_id, .. }
+            | Self::CreateScene { request_id, .. }
+            | Self::RenameScene { request_id, .. }
+            | Self::DeleteScene { request_id, .. }
+            | Self::SetEntryScene { request_id, .. }
+            | Self::CreateSceneObject { request_id, .. }
+            | Self::DeleteSceneObject { request_id, .. }
+            | Self::RenameSceneObject { request_id, .. }
+            | Self::ReparentSceneObject { request_id, .. }
+            | Self::SetSceneObjectTransform { request_id, .. }
+            | Self::SetSceneObjectAppearance { request_id, .. }
+            | Self::SetEntityCollision { request_id, .. }
+            | Self::SetEntityKinematic { request_id, .. }
             | Self::SetEntityTranslation { request_id, .. }
             | Self::UpsertMaterial { request_id, .. }
             | Self::InitializeVoxelAsset { request_id, .. }
@@ -483,6 +646,32 @@ impl StudioAdapterRequest {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StudioSceneObjectDraft {
+    pub entity_id: u64,
+    pub name: String,
+    pub parent_entity_id: Option<u64>,
+    pub child_order: u32,
+    pub transform: TransformReadout,
+    pub appearance: StudioSceneAppearance,
+    pub collision: Option<StoredCollision>,
+    pub kinematic: Option<StoredKinematic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum StudioSceneAppearance {
+    Empty,
+    StaticMesh { asset: String, visible: bool },
+    Light { light: StoredLight },
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum VoxelBrushMode {
@@ -514,6 +703,16 @@ pub enum StudioAdapterResponse {
         adapter: AdapterDescription,
     },
     ProjectOpened {
+        protocol_version: u32,
+        request_id: String,
+        project: StudioProjectReadout,
+    },
+    ProjectCreated {
+        protocol_version: u32,
+        request_id: String,
+        project: StudioProjectReadout,
+    },
+    ProjectSavedAs {
         protocol_version: u32,
         request_id: String,
         project: StudioProjectReadout,
@@ -735,7 +934,7 @@ pub struct SceneHierarchyNodeReadout {
     pub world_transform: TransformReadout,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransformReadout {
     pub translation: [f32; 3],
@@ -765,6 +964,7 @@ pub struct ProjectionReadout {
     pub frame_kind: &'static str,
     pub source_revision: u64,
     pub retained_entities: usize,
+    pub retained_lights: usize,
     pub retained_voxel_instances: usize,
     pub retained_voxel_chunks: usize,
     pub diagnostics: Vec<ProjectionDiagnosticReadout>,
@@ -799,6 +999,46 @@ pub struct EntityTranslationReceipt {
     rename_all_fields = "camelCase"
 )]
 pub enum ProjectMutationReceipt {
+    SceneCreated {
+        scene_id: String,
+        made_entry: bool,
+    },
+    SceneRenamed {
+        scene_id: String,
+    },
+    SceneDeleted {
+        scene_id: String,
+    },
+    EntrySceneSet {
+        scene_id: String,
+    },
+    SceneObjectCreated {
+        entity_id: u64,
+    },
+    SceneObjectDeleted {
+        entity_id: u64,
+        removed_objects: usize,
+    },
+    SceneObjectRenamed {
+        entity_id: u64,
+    },
+    SceneObjectReparented {
+        entity_id: u64,
+    },
+    SceneObjectTransformSet {
+        entity_id: u64,
+    },
+    SceneObjectAppearanceSet {
+        entity_id: u64,
+    },
+    EntityCollisionSet {
+        entity_id: u64,
+        attached: bool,
+    },
+    EntityKinematicSet {
+        entity_id: u64,
+        attached: bool,
+    },
     MaterialUpserted {
         asset_id: String,
     },

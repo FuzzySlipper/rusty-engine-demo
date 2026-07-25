@@ -3,7 +3,12 @@ use voxel_convert::PreparedVoxelConversion;
 use crate::STORED_PROJECT_SCHEMA_VERSION;
 
 use super::path::ProjectLocation;
-use super::project::{apply_entity_translation, OpenedOwnerProject};
+use super::project::{
+    apply_entity_translation, create_project, create_scene, create_scene_object, delete_scene,
+    delete_scene_object, rename_scene, rename_scene_object, reparent_scene_object, save_project_as,
+    set_entity_collision, set_entity_kinematic, set_entry_scene, set_scene_object_appearance,
+    set_scene_object_transform, OpenedOwnerProject,
+};
 use super::protocol::{
     AdapterDescription, AdapterRejection, ProjectMutationReceipt, StudioAdapterRequest,
     StudioAdapterResponse, StudioProjectReadout, VoxelReadout, MAX_REQUEST_ID_BYTES,
@@ -94,14 +99,28 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 4,
+                    adapter_version: 5,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
                     operations: vec![
                         "describe",
                         "openProject",
+                        "createProject",
+                        "saveProjectAs",
                         "readProject",
+                        "createScene",
+                        "renameScene",
+                        "deleteScene",
+                        "setEntryScene",
+                        "createSceneObject",
+                        "deleteSceneObject",
+                        "renameSceneObject",
+                        "reparentSceneObject",
+                        "setSceneObjectTransform",
+                        "setSceneObjectAppearance",
+                        "setEntityCollision",
+                        "setEntityKinematic",
                         "setEntityTranslation",
                         "upsertMaterial",
                         "initializeVoxelAsset",
@@ -139,7 +158,174 @@ impl StudioAdapterService {
             StudioAdapterRequest::OpenProject {
                 root, project_file, ..
             } => self.open_project(request_id, &root, &project_file),
+            StudioAdapterRequest::CreateProject {
+                root,
+                project_file,
+                project_id,
+                name,
+                entry_scene,
+                entry_scene_name,
+                ..
+            } => self.create_project(
+                request_id,
+                &root,
+                &project_file,
+                project_id,
+                name,
+                entry_scene,
+                entry_scene_name,
+            ),
+            StudioAdapterRequest::SaveProjectAs {
+                expected_project_hash,
+                root,
+                project_file,
+                project_id,
+                name,
+                ..
+            } => self.save_project_as(
+                request_id,
+                &expected_project_hash,
+                &root,
+                &project_file,
+                project_id,
+                name,
+            ),
             StudioAdapterRequest::ReadProject { .. } => self.read_project(request_id),
+            StudioAdapterRequest::CreateScene {
+                expected_project_hash,
+                scene_id,
+                name,
+                make_entry,
+                ..
+            } => self.mutate(request_id, |location| {
+                create_scene(location, &expected_project_hash, scene_id, name, make_entry)
+            }),
+            StudioAdapterRequest::RenameScene {
+                expected_project_hash,
+                scene_id,
+                name,
+                ..
+            } => self.mutate(request_id, |location| {
+                rename_scene(location, &expected_project_hash, scene_id, name)
+            }),
+            StudioAdapterRequest::DeleteScene {
+                expected_project_hash,
+                scene_id,
+                ..
+            } => self.mutate(request_id, |location| {
+                delete_scene(location, &expected_project_hash, scene_id)
+            }),
+            StudioAdapterRequest::SetEntryScene {
+                expected_project_hash,
+                scene_id,
+                ..
+            } => self.mutate(request_id, |location| {
+                set_entry_scene(location, &expected_project_hash, scene_id)
+            }),
+            StudioAdapterRequest::CreateSceneObject {
+                expected_project_hash,
+                expected_scene_revision,
+                object,
+                ..
+            } => self.mutate(request_id, |location| {
+                create_scene_object(
+                    location,
+                    &expected_project_hash,
+                    expected_scene_revision,
+                    object,
+                )
+            }),
+            StudioAdapterRequest::DeleteSceneObject {
+                expected_project_hash,
+                expected_scene_revision,
+                entity_id,
+                ..
+            } => self.mutate(request_id, |location| {
+                delete_scene_object(
+                    location,
+                    &expected_project_hash,
+                    expected_scene_revision,
+                    entity_id,
+                )
+            }),
+            StudioAdapterRequest::RenameSceneObject {
+                expected_project_hash,
+                expected_scene_revision,
+                entity_id,
+                name,
+                ..
+            } => self.mutate(request_id, |location| {
+                rename_scene_object(
+                    location,
+                    &expected_project_hash,
+                    expected_scene_revision,
+                    entity_id,
+                    name,
+                )
+            }),
+            StudioAdapterRequest::ReparentSceneObject {
+                expected_project_hash,
+                expected_scene_revision,
+                entity_id,
+                parent_entity_id,
+                child_order,
+                ..
+            } => self.mutate(request_id, |location| {
+                reparent_scene_object(
+                    location,
+                    &expected_project_hash,
+                    expected_scene_revision,
+                    entity_id,
+                    parent_entity_id,
+                    child_order,
+                )
+            }),
+            StudioAdapterRequest::SetSceneObjectTransform {
+                expected_project_hash,
+                expected_scene_revision,
+                entity_id,
+                transform,
+                ..
+            } => self.mutate(request_id, |location| {
+                set_scene_object_transform(
+                    location,
+                    &expected_project_hash,
+                    expected_scene_revision,
+                    entity_id,
+                    transform,
+                )
+            }),
+            StudioAdapterRequest::SetSceneObjectAppearance {
+                expected_project_hash,
+                expected_scene_revision,
+                entity_id,
+                appearance,
+                ..
+            } => self.mutate(request_id, |location| {
+                set_scene_object_appearance(
+                    location,
+                    &expected_project_hash,
+                    expected_scene_revision,
+                    entity_id,
+                    appearance,
+                )
+            }),
+            StudioAdapterRequest::SetEntityCollision {
+                expected_project_hash,
+                entity_id,
+                collision,
+                ..
+            } => self.mutate(request_id, |location| {
+                set_entity_collision(location, &expected_project_hash, entity_id, collision)
+            }),
+            StudioAdapterRequest::SetEntityKinematic {
+                expected_project_hash,
+                entity_id,
+                kinematic,
+                ..
+            } => self.mutate(request_id, |location| {
+                set_entity_kinematic(location, &expected_project_hash, entity_id, kinematic)
+            }),
             StudioAdapterRequest::SetEntityTranslation {
                 expected_project_hash,
                 expected_scene_revision,
@@ -791,6 +977,74 @@ impl StudioAdapterService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
+    fn create_project(
+        &mut self,
+        request_id: String,
+        root: &str,
+        project_file: &str,
+        project_id: String,
+        name: String,
+        entry_scene: String,
+        entry_scene_name: String,
+    ) -> StudioAdapterResponse {
+        let result = (|| {
+            let location = ProjectLocation::resolve_new(root, project_file)
+                .map_err(|error| AdapterRejection::new("path.rejected", error.to_string()))?;
+            let project =
+                create_project(&location, project_id, name, entry_scene, entry_scene_name)?;
+            Ok::<_, AdapterRejection>((location, project))
+        })();
+        match result {
+            Ok((location, project)) => {
+                self.open = Some(new_open_project(location));
+                StudioAdapterResponse::ProjectCreated {
+                    protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                    request_id,
+                    project,
+                }
+            }
+            Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+        }
+    }
+
+    fn save_project_as(
+        &mut self,
+        request_id: String,
+        expected_project_hash: &str,
+        root: &str,
+        project_file: &str,
+        project_id: String,
+        name: String,
+    ) -> StudioAdapterResponse {
+        let Some(open) = self.open.as_ref() else {
+            return not_open(request_id);
+        };
+        let result = (|| {
+            let location = ProjectLocation::resolve_new(root, project_file)
+                .map_err(|error| AdapterRejection::new("path.rejected", error.to_string()))?;
+            let project = save_project_as(
+                &open.location,
+                &location,
+                expected_project_hash,
+                project_id,
+                name,
+            )?;
+            Ok::<_, AdapterRejection>((location, project))
+        })();
+        match result {
+            Ok((location, project)) => {
+                self.open = Some(new_open_project(location));
+                StudioAdapterResponse::ProjectSavedAs {
+                    protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                    request_id,
+                    project,
+                }
+            }
+            Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+        }
+    }
+
     fn read_project(&mut self, request_id: String) -> StudioAdapterResponse {
         let Some(open) = &mut self.open else {
             return not_open(request_id);
@@ -844,6 +1098,15 @@ impl StudioAdapterService {
             },
             Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
         }
+    }
+}
+
+fn new_open_project(location: ProjectLocation) -> OpenProject {
+    OpenProject {
+        location,
+        prepared_conversion: None,
+        prepared_history_revert: None,
+        next_history_preview_id: 1,
     }
 }
 

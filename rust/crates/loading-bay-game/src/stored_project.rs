@@ -4,7 +4,7 @@
 //! before runtime admission: `content` remains the sole place that can turn a
 //! document into a live [`crate::GameSession`].
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use asset_catalog::StoredMaterialDefinition;
 use core_assets::{AssetId, AssetKind};
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use voxel_annotation::{validate_annotation_layer, VoxelAnnotationLayer, VoxelAnnotationLimits};
 use voxel_asset::VoxelAsset;
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 9;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 10;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -136,7 +136,20 @@ pub struct StoredEntityDefinition {
     pub id: u64,
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent: Option<u64>,
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    pub child_order: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub translation: Option<[f32; 3]>,
+    #[serde(
+        default = "identity_rotation",
+        skip_serializing_if = "is_identity_rotation"
+    )]
+    pub rotation: [f32; 4],
+    #[serde(default = "unit_scale", skip_serializing_if = "is_unit_scale")]
+    pub scale: [f32; 3],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub light: Option<StoredLight>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub collision: Option<StoredCollision>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -161,6 +174,46 @@ pub struct StoredEntityDefinition {
     pub player_controller: Option<StoredPlayerController>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weapon: Option<StoredWeapon>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum StoredLight {
+    Ambient {
+        color: [f32; 3],
+        intensity: f32,
+        enabled: bool,
+        shadows: bool,
+    },
+    Directional {
+        color: [f32; 3],
+        intensity: f32,
+        enabled: bool,
+        shadows: bool,
+    },
+    Point {
+        color: [f32; 3],
+        intensity: f32,
+        enabled: bool,
+        range: Option<f32>,
+        decay: f32,
+        shadows: bool,
+    },
+    Spot {
+        color: [f32; 3],
+        intensity: f32,
+        enabled: bool,
+        range: Option<f32>,
+        decay: f32,
+        outer_angle_radians: f32,
+        penumbra: f32,
+        shadows: bool,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -486,6 +539,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             }
             validate_voxel_instance_transform(instance, &instance_path)?;
         }
+        validate_scene_entities(scene, index)?;
     }
     if !scenes.contains_key(entry_scene.as_str()) {
         return Err(failure(
@@ -495,6 +549,176 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                 "entry scene `{}` is not present in `scenes`",
                 entry_scene.as_str()
             ),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_scene_entities(
+    scene: &StoredScene,
+    scene_index: usize,
+) -> Result<(), StoredProjectError> {
+    let mut entities = BTreeMap::new();
+    for (entity_index, entity) in scene.entities.iter().enumerate() {
+        let root = format!("scenes[{scene_index}].entities[{entity_index}]");
+        if entity.name.trim().is_empty() {
+            return Err(failure(
+                diagnostic_code::INVALID_VALUE,
+                format!("{root}.name"),
+                "entity name must not be empty",
+            ));
+        }
+        if let Some(first) = entities.insert(entity.id, entity_index) {
+            return Err(failure(
+                diagnostic_code::DUPLICATE_ENTITY,
+                format!("{root}.id"),
+                format!(
+                    "entity {} was already declared at scenes[{scene_index}].entities[{first}].id",
+                    entity.id
+                ),
+            ));
+        }
+        if entity.parent == Some(entity.id) {
+            return Err(failure(
+                diagnostic_code::INVALID_RELATIONSHIP,
+                format!("{root}.parent"),
+                "entity cannot be its own parent",
+            ));
+        }
+        validate_entity_transform(entity, &root)?;
+        if entity.light.is_some() && entity.renderable.is_some() {
+            return Err(failure(
+                diagnostic_code::INVALID_COMPONENT,
+                root,
+                "a scene object cannot be both a light and a renderable mesh",
+            ));
+        }
+        if let Some(light) = entity.light {
+            validate_stored_light(light, entity.scale, &format!("{root}.light"))?;
+        }
+    }
+
+    for (entity_index, entity) in scene.entities.iter().enumerate() {
+        if let Some(parent) = entity.parent {
+            if !entities.contains_key(&parent) {
+                return Err(failure(
+                    diagnostic_code::INVALID_RELATIONSHIP,
+                    format!("scenes[{scene_index}].entities[{entity_index}].parent"),
+                    format!("parent entity {parent} does not exist in this scene"),
+                ));
+            }
+        }
+        let mut cursor = entity.parent;
+        let mut visited = BTreeSet::from([entity.id]);
+        while let Some(parent) = cursor {
+            if !visited.insert(parent) {
+                return Err(failure(
+                    diagnostic_code::INVALID_RELATIONSHIP,
+                    format!("scenes[{scene_index}].entities[{entity_index}].parent"),
+                    "entity parent relationship contains a cycle",
+                ));
+            }
+            cursor = scene.entities[entities[&parent]].parent;
+        }
+    }
+    Ok(())
+}
+
+fn validate_entity_transform(
+    entity: &StoredEntityDefinition,
+    root: &str,
+) -> Result<(), StoredProjectError> {
+    if entity
+        .translation
+        .is_some_and(|value| value.iter().any(|coordinate| !coordinate.is_finite()))
+        || entity.rotation.iter().any(|value| !value.is_finite())
+        || entity
+            .scale
+            .iter()
+            .any(|value| !value.is_finite() || *value <= 0.0)
+    {
+        return Err(failure(
+            diagnostic_code::INVALID_COMPONENT,
+            format!("{root}.transform"),
+            "entity transform must be finite with positive scale",
+        ));
+    }
+    let rotation_norm = entity
+        .rotation
+        .iter()
+        .map(|value| value * value)
+        .sum::<f32>();
+    if (rotation_norm - 1.0).abs() > 0.001 {
+        return Err(failure(
+            diagnostic_code::INVALID_COMPONENT,
+            format!("{root}.rotation"),
+            "entity rotation must be a normalized quaternion",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_stored_light(
+    light: StoredLight,
+    scale: [f32; 3],
+    path: &str,
+) -> Result<(), StoredProjectError> {
+    if scale != unit_scale() {
+        return Err(failure(
+            diagnostic_code::INVALID_COMPONENT,
+            path,
+            "light scene objects require unit scale",
+        ));
+    }
+    let (color, intensity, range, decay, spot) = match light {
+        StoredLight::Ambient {
+            color, intensity, ..
+        }
+        | StoredLight::Directional {
+            color, intensity, ..
+        } => (color, intensity, None, None, None),
+        StoredLight::Point {
+            color,
+            intensity,
+            range,
+            decay,
+            ..
+        } => (color, intensity, range, Some(decay), None),
+        StoredLight::Spot {
+            color,
+            intensity,
+            range,
+            decay,
+            outer_angle_radians,
+            penumbra,
+            ..
+        } => (
+            color,
+            intensity,
+            range,
+            Some(decay),
+            Some((outer_angle_radians, penumbra)),
+        ),
+    };
+    if color
+        .iter()
+        .any(|value| !value.is_finite() || !(0.0..=1.0).contains(value))
+        || !intensity.is_finite()
+        || intensity < 0.0
+        || range.is_some_and(|value| !value.is_finite() || value <= 0.0)
+        || decay.is_some_and(|value| !value.is_finite() || value < 0.0)
+        || spot.is_some_and(|(angle, penumbra)| {
+            !angle.is_finite()
+                || angle <= 0.0
+                || angle > std::f32::consts::FRAC_PI_2
+                || !penumbra.is_finite()
+                || !(0.0..=1.0).contains(&penumbra)
+        })
+    {
+        return Err(failure(
+            diagnostic_code::INVALID_COMPONENT,
+            path,
+            "light values are outside the admitted range",
         ));
     }
     Ok(())
@@ -677,6 +901,26 @@ fn json_path(path: &str) -> String {
 
 fn is_false(value: &bool) -> bool {
     !value
+}
+
+fn is_zero_u32(value: &u32) -> bool {
+    *value == 0
+}
+
+const fn identity_rotation() -> [f32; 4] {
+    [0.0, 0.0, 0.0, 1.0]
+}
+
+fn is_identity_rotation(value: &[f32; 4]) -> bool {
+    *value == identity_rotation()
+}
+
+const fn unit_scale() -> [f32; 3] {
+    [1.0; 3]
+}
+
+fn is_unit_scale(value: &[f32; 3]) -> bool {
+    *value == unit_scale()
 }
 
 fn is_kebab_segment(value: &str) -> bool {

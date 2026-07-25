@@ -45,7 +45,7 @@ try {
     resolve(repoRoot, "content/projects/loading-bay.project.json"),
     persistedProject,
   );
-  if (!currentReceipt.includes("sourceSchema=9") || !currentReceipt.includes("currentSchema=9")) {
+  if (!currentReceipt.includes("sourceSchema=10") || !currentReceipt.includes("currentSchema=10")) {
     throw new Error(`current project persistence receipt was incomplete\n${currentReceipt}`);
   }
   await runFullBrowserProduct(persistedProject);
@@ -55,7 +55,7 @@ try {
     resolve(repoRoot, "content/projects/converted-wall.project.json"),
     convertedProject,
   );
-  if (!convertedReceipt.includes("sourceSchema=9") || !convertedReceipt.includes("currentSchema=9")) {
+  if (!convertedReceipt.includes("sourceSchema=10") || !convertedReceipt.includes("currentSchema=10")) {
     throw new Error(`converted project persistence receipt was incomplete\n${convertedReceipt}`);
   }
   await runConvertedBrowserProduct(convertedProject);
@@ -65,7 +65,7 @@ try {
     resolve(repoRoot, "content/generated/encounter-gate.project.json"),
     migratedProject,
   );
-  if (!migrationReceipt.includes("sourceSchema=6") || !migrationReceipt.includes("currentSchema=9")) {
+  if (!migrationReceipt.includes("sourceSchema=6") || !migrationReceipt.includes("currentSchema=10")) {
     throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
   }
   await runMigratedBrowserProduct(migratedProject);
@@ -220,8 +220,8 @@ async function runFullBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
-      "sourceSchema=9",
-      "currentSchema=9",
+      "sourceSchema=10",
+      "currentSchema=10",
       "entryScene=scene/loading-bay",
       "assets=6",
       "scenes=1",
@@ -263,7 +263,7 @@ async function runMigratedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=migrated-v6-project",
-      "currentSchema=9",
+      "currentSchema=10",
       "assets=4",
       "scenes=1",
       "entities=6",
@@ -316,8 +316,8 @@ async function runConvertedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=converted-wall",
-      "sourceSchema=9",
-      "currentSchema=9",
+      "sourceSchema=10",
+      "currentSchema=10",
       "entryScene=scene/converted-wall",
       "assets=9",
       "scenes=1",

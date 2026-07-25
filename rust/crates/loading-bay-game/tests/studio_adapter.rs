@@ -20,7 +20,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -113,7 +113,7 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "move-player",
             "expectedProjectHash": project_hash,
             "expectedSceneRevision": scene_revision,
@@ -154,7 +154,7 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "stale-move",
             "expectedProjectHash": project_hash,
             "expectedSceneRevision": scene_revision,
@@ -179,7 +179,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "missing",
             "expectedProjectHash": identity["projectHash"],
             "expectedSceneRevision": identity["sceneRevision"],
@@ -195,7 +195,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "invalid",
             "expectedProjectHash": identity["projectHash"],
             "expectedSceneRevision": identity["sceneRevision"],
@@ -223,7 +223,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut StudioAdapterService::new(),
         json!({
             "type": "openProject",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "bad-domain",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -232,6 +232,305 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
     assert_eq!(response["type"], "rejected");
     assert_eq!(response["error"]["code"], "project.invalidRelationship");
     assert_eq!(fs::read(root.project_file()).unwrap(), invalid_bytes);
+}
+
+#[test]
+fn project_creation_and_save_as_publish_admitted_canonical_projects() {
+    let root = TestProjectRoot::new(CURRENT_PROJECT);
+    let mut service = StudioAdapterService::new();
+    let created = send(
+        &mut service,
+        json!({
+            "type": "createProject",
+            "protocolVersion": 5,
+            "requestId": "create-project",
+            "root": root.path(),
+            "projectFile": "content/projects/new-project.project.json",
+            "projectId": "new-project",
+            "name": "New Project",
+            "entryScene": "scene/new-entry",
+            "entrySceneName": "New Entry",
+        }),
+    );
+    assert_eq!(created["type"], "projectCreated", "{created:#}");
+    assert_eq!(created["project"]["identity"]["projectId"], "new-project");
+    assert_eq!(created["project"]["identity"]["currentSchemaVersion"], 10);
+    let created_path = root
+        .path()
+        .join("content/projects/new-project.project.json");
+    let created_bytes = fs::read(&created_path).unwrap();
+    let created_document =
+        decode_project_document(std::str::from_utf8(&created_bytes).unwrap()).unwrap();
+    assert_eq!(created_document.source_schema_version, 10);
+    assert_eq!(created_document.project.scenes.len(), 1);
+
+    let duplicate = send(
+        &mut service,
+        json!({
+            "type": "createProject",
+            "protocolVersion": 5,
+            "requestId": "duplicate-project",
+            "root": root.path(),
+            "projectFile": "content/projects/new-project.project.json",
+            "projectId": "other-project",
+            "name": "Other Project",
+            "entryScene": "scene/other-entry",
+            "entrySceneName": "Other Entry",
+        }),
+    );
+    assert_eq!(duplicate["type"], "rejected");
+    assert_eq!(fs::read(&created_path).unwrap(), created_bytes);
+
+    let saved = send(
+        &mut service,
+        json!({
+            "type": "saveProjectAs",
+            "protocolVersion": 5,
+            "requestId": "save-as",
+            "expectedProjectHash": created["project"]["identity"]["projectHash"],
+            "root": root.path(),
+            "projectFile": "content/projects/copied-project.project.json",
+            "projectId": "copied-project",
+            "name": "Copied Project",
+        }),
+    );
+    assert_eq!(saved["type"], "projectSavedAs", "{saved:#}");
+    assert_eq!(saved["project"]["identity"]["projectId"], "copied-project");
+    assert_eq!(
+        saved["project"]["identity"]["relativeProjectFile"],
+        "content/projects/copied-project.project.json"
+    );
+    assert_eq!(fs::read(&created_path).unwrap(), created_bytes);
+    let copied = decode_project_document(
+        &fs::read_to_string(
+            root.path()
+                .join("content/projects/copied-project.project.json"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(copied.project.project_id, "copied-project");
+}
+
+#[test]
+fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admitted() {
+    let root = TestProjectRoot::new(CURRENT_PROJECT);
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+    let (mut hash, mut revision) = owner_version(&opened);
+
+    let created = send(
+        &mut service,
+        json!({
+            "type": "createSceneObject",
+            "protocolVersion": 5,
+            "requestId": "create-object",
+            "expectedProjectHash": hash,
+            "expectedSceneRevision": revision,
+            "object": {
+                "entityId": 50,
+                "name": "authoring-root",
+                "parentEntityId": null,
+                "childOrder": 50,
+                "transform": {
+                    "translation": [1.0, 2.0, 3.0],
+                    "rotation": [0.0, 0.0, 0.0, 1.0],
+                    "scale": [1.0, 1.0, 1.0]
+                },
+                "appearance": { "kind": "empty" },
+                "collision": null,
+                "kinematic": null
+            }
+        }),
+    );
+    assert_eq!(created["type"], "projectMutationApplied", "{created:#}");
+    (hash, revision) = owner_version(&created);
+
+    let lit = send(
+        &mut service,
+        json!({
+            "type": "createSceneObject",
+            "protocolVersion": 5,
+            "requestId": "create-light",
+            "expectedProjectHash": hash,
+            "expectedSceneRevision": revision,
+            "object": {
+                "entityId": 51,
+                "name": "work-light",
+                "parentEntityId": 50,
+                "childOrder": 0,
+                "transform": {
+                    "translation": [0.0, 4.0, 0.0],
+                    "rotation": [0.0, 0.0, 0.0, 1.0],
+                    "scale": [1.0, 1.0, 1.0]
+                },
+                "appearance": {
+                    "kind": "light",
+                    "light": {
+                        "kind": "point",
+                        "color": [1.0, 0.8, 0.6],
+                        "intensity": 3.0,
+                        "enabled": true,
+                        "range": 12.0,
+                        "decay": 2.0,
+                        "shadows": true
+                    }
+                },
+                "collision": null,
+                "kinematic": null
+            }
+        }),
+    );
+    assert_eq!(lit["type"], "projectMutationApplied", "{lit:#}");
+    assert_eq!(lit["project"]["projectionReadout"]["retainedLights"], 1);
+    assert!(lit["project"]["projection"]["ops"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|operation| operation["op"] == "createLight"));
+    (hash, revision) = owner_version(&lit);
+
+    let transformed = send(
+        &mut service,
+        json!({
+            "type": "setSceneObjectTransform",
+            "protocolVersion": 5,
+            "requestId": "full-transform",
+            "expectedProjectHash": hash,
+            "expectedSceneRevision": revision,
+            "entityId": 50,
+            "transform": {
+                "translation": [3.0, 2.0, 1.0],
+                "rotation": [0.0, 0.70710677, 0.0, 0.70710677],
+                "scale": [2.0, 1.5, 0.5]
+            }
+        }),
+    );
+    assert_eq!(transformed["type"], "projectMutationApplied");
+    (hash, revision) = owner_version(&transformed);
+
+    let appeared = send(
+        &mut service,
+        json!({
+            "type": "setSceneObjectAppearance",
+            "protocolVersion": 5,
+            "requestId": "appearance",
+            "expectedProjectHash": hash,
+            "expectedSceneRevision": revision,
+            "entityId": 50,
+            "appearance": {
+                "kind": "staticMesh",
+                "asset": "mesh/player-marker",
+                "visible": true
+            }
+        }),
+    );
+    assert_eq!(appeared["type"], "projectMutationApplied", "{appeared:#}");
+    let mesh_instance = appeared["project"]["projection"]["ops"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|operation| {
+            operation["op"] == "createStaticMeshInstance"
+                && operation["instance"]["metadata"]["sourceEntity"] == 50
+        })
+        .unwrap();
+    assert_eq!(
+        mesh_instance["instance"]["transform"]["rotation"],
+        json!([0.0, 0.70710677, 0.0, 0.70710677])
+    );
+    assert_eq!(
+        mesh_instance["instance"]["transform"]["scale"],
+        json!([2.0, 1.5, 0.5])
+    );
+    hash = owner_version(&appeared).0;
+
+    let collision = send(
+        &mut service,
+        json!({
+            "type": "setEntityCollision",
+            "protocolVersion": 5,
+            "requestId": "collision",
+            "expectedProjectHash": hash,
+            "entityId": 50,
+            "collision": { "enabled": true, "staticCollider": false }
+        }),
+    );
+    assert_eq!(collision["type"], "projectMutationApplied");
+    hash = owner_version(&collision).0;
+
+    let kinematic = send(
+        &mut service,
+        json!({
+            "type": "setEntityKinematic",
+            "protocolVersion": 5,
+            "requestId": "kinematic",
+            "expectedProjectHash": hash,
+            "entityId": 50,
+            "kinematic": {
+                "halfExtents": [0.5, 0.75, 0.25],
+                "velocity": [0.0, 0.0, 0.0]
+            }
+        }),
+    );
+    assert_eq!(kinematic["type"], "projectMutationApplied", "{kinematic:#}");
+    (hash, revision) = owner_version(&kinematic);
+
+    let renamed = send(
+        &mut service,
+        json!({
+            "type": "renameSceneObject",
+            "protocolVersion": 5,
+            "requestId": "rename",
+            "expectedProjectHash": hash,
+            "expectedSceneRevision": revision,
+            "entityId": 50,
+            "name": "authored-display"
+        }),
+    );
+    assert_eq!(renamed["type"], "projectMutationApplied");
+    (hash, revision) = owner_version(&renamed);
+
+    let before_cycle = fs::read(root.project_file()).unwrap();
+    let cycle = send(
+        &mut service,
+        json!({
+            "type": "reparentSceneObject",
+            "protocolVersion": 5,
+            "requestId": "cycle",
+            "expectedProjectHash": hash,
+            "expectedSceneRevision": revision,
+            "entityId": 50,
+            "parentEntityId": 51,
+            "childOrder": 0
+        }),
+    );
+    assert_eq!(cycle["type"], "rejected");
+    assert_eq!(cycle["error"]["code"], "invalid-scene-after-edit");
+    assert_eq!(fs::read(root.project_file()).unwrap(), before_cycle);
+
+    let deleted = send(
+        &mut service,
+        json!({
+            "type": "deleteSceneObject",
+            "protocolVersion": 5,
+            "requestId": "delete-subtree",
+            "expectedProjectHash": hash,
+            "expectedSceneRevision": revision,
+            "entityId": 50
+        }),
+    );
+    assert_eq!(deleted["type"], "projectMutationApplied", "{deleted:#}");
+    assert_eq!(deleted["receipt"]["removedObjects"], 2);
+    assert_eq!(deleted["project"]["projectionReadout"]["retainedLights"], 0);
+
+    let persisted = decode_project_document(&fs::read_to_string(root.project_file()).unwrap())
+        .unwrap()
+        .project;
+    assert!(persisted.scenes[0]
+        .entities
+        .iter()
+        .all(|entity| !matches!(entity.id, 50 | 51)));
 }
 
 #[test]
@@ -262,7 +561,7 @@ fn malformed_unbounded_and_unsafe_paths_fail_closed() {
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "traversal",
             "root": root.path(),
             "projectFile": "../outside.project.json",
@@ -274,7 +573,7 @@ fn malformed_unbounded_and_unsafe_paths_fail_closed() {
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "relative-root",
             "root": "relative",
             "projectFile": PROJECT_FILE,
@@ -295,7 +594,7 @@ fn symlinked_project_paths_are_rejected_even_when_the_target_stays_inside_root()
         &mut StudioAdapterService::new(),
         json!({
             "type": "openProject",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "symlink",
             "root": root.path(),
             "projectFile": "content/projects/linked.project.json",
@@ -310,7 +609,7 @@ fn open(service: &mut StudioAdapterService, root: &TestProjectRoot) -> Value {
         service,
         json!({
             "type": "openProject",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -322,6 +621,18 @@ fn open(service: &mut StudioAdapterService, root: &TestProjectRoot) -> Value {
 
 fn send(service: &mut StudioAdapterService, request: Value) -> Value {
     serde_json::from_str(&service.handle_json(&request.to_string())).unwrap()
+}
+
+fn owner_version(response: &Value) -> (String, u64) {
+    (
+        response["project"]["identity"]["projectHash"]
+            .as_str()
+            .unwrap()
+            .to_string(),
+        response["project"]["identity"]["sceneRevision"]
+            .as_u64()
+            .unwrap(),
+    )
 }
 
 static NEXT_DIRECTORY: AtomicU64 = AtomicU64::new(0);

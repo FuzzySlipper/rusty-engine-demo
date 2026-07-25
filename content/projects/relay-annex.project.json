@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 9,
+  "schemaVersion": 10,
   "projectId": "relay-annex",
   "name": "Relay Annex",
   "entryScene": "scene/relay-annex",

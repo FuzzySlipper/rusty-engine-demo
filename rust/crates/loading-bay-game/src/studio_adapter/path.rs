@@ -60,6 +60,59 @@ impl ProjectLocation {
         })
     }
 
+    pub fn resolve_new(root: &str, relative_project_file: &str) -> Result<Self, PathSafetyError> {
+        if root.len() > MAX_ROOT_PATH_BYTES {
+            return Err(PathSafetyError::RootTooLong);
+        }
+        if relative_project_file.len() > MAX_PROJECT_PATH_BYTES {
+            return Err(PathSafetyError::ProjectPathTooLong);
+        }
+        let requested_root = Path::new(root);
+        if !requested_root.is_absolute() {
+            return Err(PathSafetyError::RootNotAbsolute);
+        }
+        require_directory_without_symlink(requested_root, "project root")?;
+        let canonical_root =
+            requested_root
+                .canonicalize()
+                .map_err(|source| PathSafetyError::Io {
+                    operation: "canonicalize project root",
+                    path: requested_root.to_path_buf(),
+                    source,
+                })?;
+        if !is_safe_relative_path(relative_project_file) {
+            return Err(PathSafetyError::UnsafeProjectPath);
+        }
+        let relative = Path::new(relative_project_file);
+        let mut parent = canonical_root.clone();
+        if let Some(relative_parent) = relative.parent() {
+            for component in relative_parent.components() {
+                let Component::Normal(segment) = component else {
+                    return Err(PathSafetyError::UnsafeProjectPath);
+                };
+                parent.push(segment);
+                require_directory_without_symlink(&parent, "project parent directory")?;
+            }
+        }
+        let project_file = canonical_root.join(relative);
+        match fs::symlink_metadata(&project_file) {
+            Ok(_) => return Err(PathSafetyError::TargetExists { path: project_file }),
+            Err(source) if source.kind() == std::io::ErrorKind::NotFound => {}
+            Err(source) => {
+                return Err(PathSafetyError::Io {
+                    operation: "inspect new project target",
+                    path: project_file,
+                    source,
+                });
+            }
+        }
+        Ok(Self {
+            root: canonical_root,
+            relative_project_file: relative_project_file.to_string(),
+            project_file,
+        })
+    }
+
     pub fn root(&self) -> &Path {
         &self.root
     }
@@ -151,6 +204,9 @@ pub enum PathSafetyError {
         label: &'static str,
         path: PathBuf,
     },
+    TargetExists {
+        path: PathBuf,
+    },
     Io {
         operation: &'static str,
         path: PathBuf,
@@ -193,6 +249,11 @@ impl std::fmt::Display for PathSafetyError {
                     path.display()
                 )
             }
+            Self::TargetExists { path } => write!(
+                formatter,
+                "new project target already exists: {}",
+                path.display()
+            ),
             Self::Io {
                 operation,
                 path,

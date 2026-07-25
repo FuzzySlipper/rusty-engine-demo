@@ -108,8 +108,33 @@ fn schema_eight_project_migrates_with_empty_voxel_authoring_collections() {
 }
 
 #[test]
+fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_transforms() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["schemaVersion"] = 9.into();
+
+    let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
+
+    assert_eq!(decoded.source_schema_version, 9);
+    assert!(decoded.was_migrated());
+    assert_eq!(
+        decoded.project.schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
+    for scene in &decoded.project.scenes {
+        for (index, entity) in scene.entities.iter().enumerate() {
+            assert_eq!(entity.parent, None);
+            assert_eq!(entity.child_order, index as u32);
+            assert_eq!(entity.rotation, [0.0, 0.0, 0.0, 1.0]);
+            assert_eq!(entity.scale, [1.0, 1.0, 1.0]);
+            assert_eq!(entity.light, None);
+        }
+    }
+    admit_stored_project(decoded.project).unwrap();
+}
+
+#[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 10, 99] {
+    for schema_version in [0, 5, 11, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);

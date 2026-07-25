@@ -1,4 +1,5 @@
 export type Vec3 = readonly [number, number, number];
+export type Quat = readonly [number, number, number, number];
 export type VoxelAddress = readonly [number, number, number];
 
 export interface CollisionDefinition {
@@ -100,7 +101,12 @@ export interface MaterialVoxelEnvironmentDefinition {
 export interface EntityDefinition {
   readonly id: number;
   readonly name: string;
+  readonly parent?: number;
+  readonly childOrder?: number;
   readonly translation?: Vec3;
+  readonly rotation?: Quat;
+  readonly scale?: Vec3;
+  readonly light?: LightDefinition;
   readonly collision?: CollisionDefinition;
   readonly renderable?: RenderableDefinition;
   readonly door?: DoorDefinition;
@@ -114,6 +120,42 @@ export interface EntityDefinition {
   readonly playerController?: PlayerControllerDefinition;
   readonly weapon?: WeaponDefinition;
 }
+
+export type LightDefinition =
+  | {
+      readonly kind: "ambient";
+      readonly color: Vec3;
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly shadows: boolean;
+    }
+  | {
+      readonly kind: "directional";
+      readonly color: Vec3;
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly shadows: boolean;
+    }
+  | {
+      readonly kind: "point";
+      readonly color: Vec3;
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly range: number | null;
+      readonly decay: number;
+      readonly shadows: boolean;
+    }
+  | {
+      readonly kind: "spot";
+      readonly color: Vec3;
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly range: number | null;
+      readonly decay: number;
+      readonly outerAngleRadians: number;
+      readonly penumbra: number;
+      readonly shadows: boolean;
+    };
 
 export interface ProjectContent {
   readonly schemaVersion: 6;
@@ -139,7 +181,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 9;
+  readonly schemaVersion: 10;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

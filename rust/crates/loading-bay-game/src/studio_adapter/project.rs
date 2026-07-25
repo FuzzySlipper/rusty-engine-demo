@@ -7,8 +7,8 @@ use asset_catalog::{
 use authored_scene::{
     composed_world_transforms, encode_scene, validate_scene, AvailableSceneAsset,
     FlatSceneDocument, NodeMetadata, SceneAdmissionPlan, SceneEditCommand, SceneEditService,
-    SceneMetadata, SceneNode, SceneNodeKind, SceneNodeRecord, SceneResolutionContext,
-    SceneTransform, CURRENT_SCENE_SCHEMA_VERSION,
+    SceneLight, SceneLightShadowIntent, SceneMetadata, SceneNode, SceneNodeKind, SceneNodeRecord,
+    SceneResolutionContext, SceneTransform, CURRENT_SCENE_SCHEMA_VERSION,
 };
 use content_store::{
     admit_source_batch, encode_manifest, ArtifactRole, ContentArtifact, ContentBody, ContentHash,
@@ -22,26 +22,32 @@ use engine_inspector::{
     inspect_catalog, inspect_content_manifest, inspect_entity_state, inspect_scene,
     inspect_voxel_state,
 };
-use entity_state::{encode_durable_snapshot, EntityState, EntityTransform};
+use entity_state::{encode_durable_snapshot, EntityState, EntityTransform, Quat};
 use render_model::{
-    MaterialUvStrategy, MeshAttribute, MeshAttributeKind, MeshAttributeName, MeshBoundsDescriptor,
-    MeshBufferLayout, MeshCollisionPolicy, MeshGroupDescriptor, MeshIndexWidth, MeshMaterialSlot,
-    MeshPayloadDescriptor, MeshPayloadSource, MeshProvenance, RenderAssetKind, RenderDiff,
-    RenderFrameDiff, RenderMaterialDescriptor, ResolvedRenderAsset, StaticMeshAsset,
+    LightDescriptor, LightShadowIntent, MaterialUvStrategy, MeshAttribute, MeshAttributeKind,
+    MeshAttributeName, MeshBoundsDescriptor, MeshBufferLayout, MeshCollisionPolicy,
+    MeshGroupDescriptor, MeshIndexWidth, MeshMaterialSlot, MeshPayloadDescriptor,
+    MeshPayloadSource, MeshProvenance, RenderAssetKind, RenderDiff, RenderFrameDiff,
+    RenderMaterialDescriptor, ResolvedRenderAsset, StaticMeshAsset,
 };
-use render_projection::{EntityProjectionDiagnostic, EntityRenderProjector};
+use render_projection::{
+    AppearanceLight, AppearanceScene, EntityProjectionDiagnostic, EntityRenderProjector,
+    ProjectionAvailability, ProjectionMode, SceneAppearanceProjector,
+};
 
 use crate::{
     admit_stored_project_with_document, encode_project_document, AdmittedProject,
-    AdmittedStoredProject, DecodedProjectDocument, ProjectStore, StoredEntityDefinition,
-    StoredProject, StoredScene, StoredVoxelEnvironment, STORED_PROJECT_SCHEMA_VERSION,
+    AdmittedStoredProject, DecodedProjectDocument, ProjectSaveMode, ProjectStore, StoredCollision,
+    StoredEntityDefinition, StoredKinematic, StoredLight, StoredProject, StoredRenderable,
+    StoredScene, StoredVoxelEnvironment, STORED_PROJECT_SCHEMA_VERSION,
 };
 
 use super::path::ProjectLocation;
 use super::protocol::{
     AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt, LoadingBayDomainReadout,
-    OwnerInspections, ProjectionDiagnosticReadout, ProjectionReadout, SceneHierarchyNodeReadout,
-    SceneHierarchyReadout, StudioProjectIdentity, StudioProjectReadout, TransformReadout,
+    OwnerInspections, ProjectMutationReceipt, ProjectionDiagnosticReadout, ProjectionReadout,
+    SceneHierarchyNodeReadout, SceneHierarchyReadout, StudioProjectIdentity, StudioProjectReadout,
+    StudioSceneAppearance, StudioSceneObjectDraft, TransformReadout,
 };
 use super::voxel::{project_voxel_authoring, voxel_authoring_readout};
 
@@ -158,8 +164,19 @@ impl OpenedOwnerProject {
             .collect();
 
         let voxel_projected = project_voxel_authoring(project, &self.catalog)?;
-        let projection =
-            complete_projection(&self.catalog, projected.frame, voxel_projected.frame)?;
+        let light_projection = project_scene_lights(&self.scene)?;
+        let retained_lights = self
+            .scene
+            .nodes
+            .iter()
+            .filter(|node| matches!(node.kind, SceneNodeKind::Light(_)))
+            .count();
+        let projection = complete_projection(
+            &self.catalog,
+            projected.frame,
+            light_projection,
+            voxel_projected.frame,
+        )?;
 
         Ok(StudioProjectReadout {
             identity: StudioProjectIdentity {
@@ -198,6 +215,7 @@ impl OpenedOwnerProject {
                 frame_kind: "complete",
                 source_revision: projected.readout.source_revision,
                 retained_entities: projected.readout.retained_entities,
+                retained_lights,
                 retained_voxel_instances: voxel_projected.instance_count,
                 retained_voxel_chunks: voxel_projected.chunk_count,
                 diagnostics,
@@ -278,6 +296,520 @@ pub fn apply_entity_translation(
         content_candidate_hash: published.content_candidate_hash.to_hex(),
     };
     Ok((receipt, published.readout))
+}
+
+pub fn create_project(
+    location: &ProjectLocation,
+    project_id: String,
+    name: String,
+    entry_scene: String,
+    entry_scene_name: String,
+) -> Result<StudioProjectReadout, AdapterRejection> {
+    let document = StoredProject {
+        schema_version: STORED_PROJECT_SCHEMA_VERSION,
+        project_id,
+        name,
+        entry_scene: entry_scene.clone(),
+        assets: Vec::new(),
+        scenes: vec![StoredScene {
+            id: entry_scene,
+            name: entry_scene_name,
+            voxel_environment: None,
+            voxel_instances: Vec::new(),
+            entities: Vec::new(),
+        }],
+    };
+    publish_new_project(location, document)
+}
+
+pub fn save_project_as(
+    source: &ProjectLocation,
+    target: &ProjectLocation,
+    expected_project_hash: &str,
+    project_id: String,
+    name: String,
+) -> Result<StudioProjectReadout, AdapterRejection> {
+    let expected_hash = ContentHash::parse(expected_project_hash)
+        .map_err(|error| reject("project.invalidHash", error.to_string()))?;
+    let current = OpenedOwnerProject::load(source)?;
+    if current.source_hash != expected_hash {
+        return Err(reject(
+            "project.staleHash",
+            format!(
+                "expected project hash {expected_hash}, found {}",
+                current.source_hash
+            ),
+        ));
+    }
+    let mut document = current.stored.document().clone();
+    document.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    document.project_id = project_id;
+    document.name = name;
+    publish_new_project(target, document)
+}
+
+fn publish_new_project(
+    location: &ProjectLocation,
+    document: StoredProject,
+) -> Result<StudioProjectReadout, AdapterRejection> {
+    let (stored, _) =
+        admit_stored_project_with_document(document).map_err(stored_project_rejection)?;
+    let candidate_bytes =
+        encode_project_document(stored.document()).map_err(stored_project_rejection)?;
+    let candidate_decoded = DecodedProjectDocument {
+        project: stored.document().clone(),
+        source_schema_version: STORED_PROJECT_SCHEMA_VERSION,
+    };
+    let staged = OpenedOwnerProject::admit_source(
+        location.relative_project_file(),
+        candidate_bytes,
+        candidate_decoded,
+        STORED_PROJECT_SCHEMA_VERSION,
+    )?;
+    let readout = staged.readout()?;
+    ProjectStore::default()
+        .save(location.project_file(), &stored, ProjectSaveMode::CreateNew)
+        .map_err(project_store_rejection)?;
+    Ok(readout)
+}
+
+pub fn create_scene(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    scene_id: String,
+    name: String,
+    make_entry: bool,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |_current, candidate| {
+            if candidate.scenes.iter().any(|scene| scene.id == scene_id) {
+                return Err(reject(
+                    "project.duplicateScene",
+                    format!("scene `{scene_id}` already exists"),
+                ));
+            }
+            candidate.scenes.push(StoredScene {
+                id: scene_id.clone(),
+                name,
+                voxel_environment: None,
+                voxel_instances: Vec::new(),
+                entities: Vec::new(),
+            });
+            if make_entry {
+                candidate.entry_scene = scene_id.clone();
+            }
+            Ok(ProjectMutationReceipt::SceneCreated {
+                scene_id,
+                made_entry: make_entry,
+            })
+        },
+    )?)
+}
+
+pub fn rename_scene(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    scene_id: String,
+    name: String,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |_current, candidate| {
+            let scene = candidate
+                .scenes
+                .iter_mut()
+                .find(|scene| scene.id == scene_id)
+                .ok_or_else(|| {
+                    reject(
+                        "project.missingScene",
+                        format!("scene `{scene_id}` does not exist"),
+                    )
+                })?;
+            scene.name = name;
+            Ok(ProjectMutationReceipt::SceneRenamed { scene_id })
+        },
+    )?)
+}
+
+pub fn delete_scene(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    scene_id: String,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |_current, candidate| {
+            if candidate.entry_scene == scene_id {
+                return Err(reject(
+                    "project.entrySceneDeletion",
+                    "select another entry scene before deleting this scene",
+                ));
+            }
+            let before = candidate.scenes.len();
+            candidate.scenes.retain(|scene| scene.id != scene_id);
+            if candidate.scenes.len() == before {
+                return Err(reject(
+                    "project.missingScene",
+                    format!("scene `{scene_id}` does not exist"),
+                ));
+            }
+            Ok(ProjectMutationReceipt::SceneDeleted { scene_id })
+        },
+    )?)
+}
+
+pub fn set_entry_scene(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    scene_id: String,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |_current, candidate| {
+            if !candidate.scenes.iter().any(|scene| scene.id == scene_id) {
+                return Err(reject(
+                    "project.missingScene",
+                    format!("scene `{scene_id}` does not exist"),
+                ));
+            }
+            candidate.entry_scene = scene_id.clone();
+            Ok(ProjectMutationReceipt::EntrySceneSet { scene_id })
+        },
+    )?)
+}
+
+pub fn create_scene_object(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    expected_scene_revision: u64,
+    object: StudioSceneObjectDraft,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |current, candidate| {
+            let kind = appearance_kind(&object.appearance)?;
+            apply_scene_edit(
+                current,
+                expected_scene_revision,
+                SceneEditCommand::Create {
+                    record: SceneNodeRecord {
+                        id: SceneNodeId::new(object.entity_id),
+                        parent: object.parent_entity_id.map(SceneNodeId::new),
+                        child_order: object.child_order,
+                        transform: scene_transform(object.transform),
+                        kind,
+                        metadata: NodeMetadata {
+                            label: Some(object.name.clone()),
+                            tags: Vec::new(),
+                        },
+                    },
+                },
+            )?;
+            let (renderable, light) = stored_appearance(object.appearance);
+            entry_scene_mut(candidate)
+                .entities
+                .push(StoredEntityDefinition {
+                    id: object.entity_id,
+                    name: object.name,
+                    parent: object.parent_entity_id,
+                    child_order: object.child_order,
+                    translation: Some(object.transform.translation),
+                    rotation: object.transform.rotation,
+                    scale: object.transform.scale,
+                    light,
+                    collision: object.collision,
+                    renderable,
+                    door: None,
+                    switch: None,
+                    enemy: false,
+                    health: None,
+                    encounter: None,
+                    extraction_beacon: None,
+                    kinematic: object.kinematic,
+                    navigation: None,
+                    player_controller: None,
+                    weapon: None,
+                });
+            Ok(ProjectMutationReceipt::SceneObjectCreated {
+                entity_id: object.entity_id,
+            })
+        },
+    )?)
+}
+
+pub fn delete_scene_object(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    expected_scene_revision: u64,
+    entity_id: u64,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |current, candidate| {
+            let scene = apply_scene_edit(
+                current,
+                expected_scene_revision,
+                SceneEditCommand::Delete {
+                    id: SceneNodeId::new(entity_id),
+                },
+            )?;
+            let retained = scene
+                .nodes
+                .iter()
+                .map(|node| node.id.raw())
+                .collect::<BTreeSet<_>>();
+            let stored_scene = entry_scene_mut(candidate);
+            let removed = stored_scene.entities.len() - retained.len();
+            stored_scene
+                .entities
+                .retain(|entity| retained.contains(&entity.id));
+            Ok(ProjectMutationReceipt::SceneObjectDeleted {
+                entity_id,
+                removed_objects: removed,
+            })
+        },
+    )?)
+}
+
+pub fn rename_scene_object(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    expected_scene_revision: u64,
+    entity_id: u64,
+    name: String,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |current, candidate| {
+            apply_scene_edit(
+                current,
+                expected_scene_revision,
+                SceneEditCommand::Rename {
+                    id: SceneNodeId::new(entity_id),
+                    label: Some(name.clone()),
+                },
+            )?;
+            stored_entity_mut(candidate, entity_id)?.name = name;
+            Ok(ProjectMutationReceipt::SceneObjectRenamed { entity_id })
+        },
+    )?)
+}
+
+pub fn reparent_scene_object(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    expected_scene_revision: u64,
+    entity_id: u64,
+    parent_entity_id: Option<u64>,
+    child_order: u32,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |current, candidate| {
+            apply_scene_edit(
+                current,
+                expected_scene_revision,
+                SceneEditCommand::Reparent {
+                    id: SceneNodeId::new(entity_id),
+                    parent: parent_entity_id.map(SceneNodeId::new),
+                    child_order,
+                },
+            )?;
+            let entity = stored_entity_mut(candidate, entity_id)?;
+            entity.parent = parent_entity_id;
+            entity.child_order = child_order;
+            Ok(ProjectMutationReceipt::SceneObjectReparented { entity_id })
+        },
+    )?)
+}
+
+pub fn set_scene_object_transform(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    expected_scene_revision: u64,
+    entity_id: u64,
+    transform: TransformReadout,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |current, candidate| {
+            apply_scene_edit(
+                current,
+                expected_scene_revision,
+                SceneEditCommand::SetTransform {
+                    id: SceneNodeId::new(entity_id),
+                    transform: scene_transform(transform),
+                },
+            )?;
+            let entity = stored_entity_mut(candidate, entity_id)?;
+            entity.translation = Some(transform.translation);
+            entity.rotation = transform.rotation;
+            entity.scale = transform.scale;
+            Ok(ProjectMutationReceipt::SceneObjectTransformSet { entity_id })
+        },
+    )?)
+}
+
+pub fn set_scene_object_appearance(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    expected_scene_revision: u64,
+    entity_id: u64,
+    appearance: StudioSceneAppearance,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |current, candidate| {
+            let kind = appearance_kind(&appearance)?;
+            apply_scene_edit(
+                current,
+                expected_scene_revision,
+                SceneEditCommand::SetKind {
+                    id: SceneNodeId::new(entity_id),
+                    kind,
+                },
+            )?;
+            let (renderable, light) = stored_appearance(appearance);
+            let entity = stored_entity_mut(candidate, entity_id)?;
+            entity.renderable = renderable;
+            entity.light = light;
+            Ok(ProjectMutationReceipt::SceneObjectAppearanceSet { entity_id })
+        },
+    )?)
+}
+
+pub fn set_entity_collision(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    entity_id: u64,
+    collision: Option<StoredCollision>,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |_current, candidate| {
+            stored_entity_mut(candidate, entity_id)?.collision = collision;
+            Ok(ProjectMutationReceipt::EntityCollisionSet {
+                entity_id,
+                attached: collision.is_some(),
+            })
+        },
+    )?)
+}
+
+pub fn set_entity_kinematic(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    entity_id: u64,
+    kinematic: Option<StoredKinematic>,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |_current, candidate| {
+            stored_entity_mut(candidate, entity_id)?.kinematic = kinematic;
+            Ok(ProjectMutationReceipt::EntityKinematicSet {
+                entity_id,
+                attached: kinematic.is_some(),
+            })
+        },
+    )?)
+}
+
+fn mutation_result(
+    published: PublishedProject<ProjectMutationReceipt>,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    Ok((published.value, published.readout))
+}
+
+fn apply_scene_edit(
+    current: &OpenedOwnerProject,
+    expected_scene_revision: u64,
+    command: SceneEditCommand,
+) -> Result<FlatSceneDocument, AdapterRejection> {
+    let mut scene = current.scene.clone();
+    SceneEditService
+        .apply(&mut scene, expected_scene_revision, command)
+        .map_err(|error| reject(error.code(), error.to_string()))?;
+    Ok(scene)
+}
+
+fn stored_entity_mut(
+    project: &mut StoredProject,
+    entity_id: u64,
+) -> Result<&mut StoredEntityDefinition, AdapterRejection> {
+    entry_scene_mut(project)
+        .entities
+        .iter_mut()
+        .find(|entity| entity.id == entity_id)
+        .ok_or_else(|| {
+            reject(
+                "project.missingEntity",
+                format!("entry scene has no entity {entity_id}"),
+            )
+        })
+}
+
+fn scene_transform(transform: TransformReadout) -> SceneTransform {
+    SceneTransform {
+        translation: Vec3::new(
+            transform.translation[0],
+            transform.translation[1],
+            transform.translation[2],
+        ),
+        rotation: Quat::new(
+            transform.rotation[0],
+            transform.rotation[1],
+            transform.rotation[2],
+            transform.rotation[3],
+        ),
+        scale: Vec3::new(transform.scale[0], transform.scale[1], transform.scale[2]),
+    }
+}
+
+fn appearance_kind(appearance: &StudioSceneAppearance) -> Result<SceneNodeKind, AdapterRejection> {
+    match appearance {
+        StudioSceneAppearance::Empty => Ok(SceneNodeKind::EmptyGroup),
+        StudioSceneAppearance::StaticMesh { asset, .. } => {
+            let id = AssetId::parse(asset)
+                .map_err(|error| reject("scene.invalidAsset", error.to_string()))?;
+            if id.kind() != AssetKind::StaticMesh {
+                return Err(reject(
+                    "scene.wrongAssetKind",
+                    format!("appearance requires a static mesh, found {}", id.kind()),
+                ));
+            }
+            Ok(SceneNodeKind::StaticMesh(AssetReference::new(
+                id,
+                AssetVersionReq::Exact(1),
+                None,
+            )))
+        }
+        StudioSceneAppearance::Light { light } => Ok(SceneNodeKind::Light(stored_light(*light))),
+    }
+}
+
+fn stored_appearance(
+    appearance: StudioSceneAppearance,
+) -> (Option<StoredRenderable>, Option<StoredLight>) {
+    match appearance {
+        StudioSceneAppearance::Empty => (None, None),
+        StudioSceneAppearance::StaticMesh { asset, visible } => {
+            (Some(StoredRenderable { asset, visible }), None)
+        }
+        StudioSceneAppearance::Light { light } => (None, Some(light)),
+    }
 }
 
 pub(crate) struct PublishedProject<T> {
@@ -377,6 +909,7 @@ pub(crate) fn publish_project_mutation<T>(
 fn complete_projection(
     catalog: &AssetCatalog,
     instances: RenderFrameDiff,
+    lights: RenderFrameDiff,
     voxels: RenderFrameDiff,
 ) -> Result<RenderFrameDiff, AdapterRejection> {
     let mut operations = Vec::new();
@@ -402,9 +935,133 @@ fn complete_projection(
         });
     }
     operations.extend(voxels.ops);
+    operations.extend(lights.ops);
     operations.extend(instances.ops);
     RenderFrameDiff::try_from_ops(operations)
         .map_err(|error| reject("projection.completeFrameRejected", format!("{error:?}")))
+}
+
+fn project_scene_lights(scene: &FlatSceneDocument) -> Result<RenderFrameDiff, AdapterRejection> {
+    let world = composed_world_transforms(scene);
+    let lights = scene
+        .nodes
+        .iter()
+        .filter_map(|node| {
+            let SceneNodeKind::Light(light) = &node.kind else {
+                return None;
+            };
+            Some(AppearanceLight {
+                id: node.id.raw(),
+                parent: None,
+                availability: ProjectionAvailability::Both,
+                light: render_light(light, world[&node.id]),
+            })
+        })
+        .collect();
+    SceneAppearanceProjector::new()
+        .project(
+            &AppearanceScene {
+                lights,
+                ..AppearanceScene::default()
+            },
+            ProjectionMode::AuthoredPreview,
+        )
+        .map(|projected| projected.frame)
+        .map_err(|error| reject("projection.lightRejected", format!("{error:?}")))
+}
+
+fn render_light(light: &SceneLight, transform: SceneTransform) -> LightDescriptor {
+    let shadow = |intent| match intent {
+        SceneLightShadowIntent::Disabled => LightShadowIntent::Disabled,
+        SceneLightShadowIntent::Requested => LightShadowIntent::Requested,
+    };
+    let position = [
+        transform.translation.x,
+        transform.translation.y,
+        transform.translation.z,
+    ];
+    let direction = rotate_direction(transform.rotation, [0.0, -1.0, 0.0]);
+    match light {
+        SceneLight::Ambient {
+            color,
+            intensity,
+            enabled,
+            shadow_intent,
+        } => LightDescriptor::Ambient {
+            color: *color,
+            intensity: *intensity,
+            enabled: *enabled,
+            shadow_intent: shadow(*shadow_intent),
+        },
+        SceneLight::Directional {
+            color,
+            intensity,
+            enabled,
+            shadow_intent,
+        } => LightDescriptor::Directional {
+            color: *color,
+            intensity: *intensity,
+            enabled: *enabled,
+            direction,
+            shadow_intent: shadow(*shadow_intent),
+        },
+        SceneLight::Point {
+            color,
+            intensity,
+            enabled,
+            range,
+            decay,
+            shadow_intent,
+        } => LightDescriptor::Point {
+            color: *color,
+            intensity: *intensity,
+            enabled: *enabled,
+            position,
+            range: *range,
+            decay: *decay,
+            shadow_intent: shadow(*shadow_intent),
+        },
+        SceneLight::Spot {
+            color,
+            intensity,
+            enabled,
+            range,
+            decay,
+            outer_angle_radians,
+            penumbra,
+            shadow_intent,
+        } => LightDescriptor::Spot {
+            color: *color,
+            intensity: *intensity,
+            enabled: *enabled,
+            position,
+            direction,
+            range: *range,
+            decay: *decay,
+            outer_angle_radians: *outer_angle_radians,
+            penumbra: *penumbra,
+            shadow_intent: shadow(*shadow_intent),
+        },
+    }
+}
+
+fn rotate_direction(rotation: Quat, vector: [f32; 3]) -> [f32; 3] {
+    let axis = [rotation.x, rotation.y, rotation.z];
+    let cross = |left: [f32; 3], right: [f32; 3]| {
+        [
+            left[1] * right[2] - left[2] * right[1],
+            left[2] * right[0] - left[0] * right[2],
+            left[0] * right[1] - left[1] * right[0],
+        ]
+    };
+    let first = cross(axis, vector);
+    let twice = [first[0] * 2.0, first[1] * 2.0, first[2] * 2.0];
+    let second = cross(axis, twice);
+    [
+        vector[0] + twice[0] * rotation.w + second[0],
+        vector[1] + twice[1] * rotation.w + second[1],
+        vector[2] + twice[2] * rotation.w + second[2],
+    ]
 }
 
 fn studio_material(id: &str, asset: &str) -> RenderMaterialDescriptor {
@@ -675,26 +1332,35 @@ fn project_scene(
     let source = &project.scenes[scene_index];
     let mut dependencies = BTreeMap::<String, AssetReference>::new();
     let mut nodes = Vec::with_capacity(source.entities.len());
-    for (index, entity) in source.entities.iter().enumerate() {
-        let kind = match &entity.renderable {
-            Some(renderable) => {
+    for entity in &source.entities {
+        let kind = match (&entity.light, &entity.renderable) {
+            (Some(light), None) => SceneNodeKind::Light(stored_light(*light)),
+            (None, Some(renderable)) => {
                 let id = AssetId::parse(&renderable.asset)
                     .map_err(|error| reject("scene.invalidAsset", error.to_string()))?;
                 let reference = AssetReference::new(id, AssetVersionReq::Exact(1), None);
                 dependencies.insert(renderable.asset.clone(), reference.clone());
                 SceneNodeKind::StaticMesh(reference)
             }
-            None => SceneNodeKind::EmptyGroup,
+            (None, None) => SceneNodeKind::EmptyGroup,
+            (Some(_), Some(_)) => unreachable!("stored-project validation rejects mixed kinds"),
         };
         nodes.push(SceneNodeRecord {
             id: SceneNodeId::new(entity.id),
-            parent: None,
-            child_order: index as u32,
-            transform: SceneTransform::at(
-                entity
+            parent: entity.parent.map(SceneNodeId::new),
+            child_order: entity.child_order,
+            transform: SceneTransform {
+                translation: entity
                     .translation
                     .map_or(Vec3::ZERO, |value| Vec3::new(value[0], value[1], value[2])),
-            ),
+                rotation: Quat::new(
+                    entity.rotation[0],
+                    entity.rotation[1],
+                    entity.rotation[2],
+                    entity.rotation[3],
+                ),
+                scale: Vec3::new(entity.scale[0], entity.scale[1], entity.scale[2]),
+            },
             kind,
             metadata: NodeMetadata {
                 label: Some(entity.name.clone()),
@@ -716,6 +1382,74 @@ fn project_scene(
     };
     scene.canonicalize();
     Ok(scene)
+}
+
+fn stored_light(light: StoredLight) -> SceneLight {
+    let shadow_intent = |enabled| {
+        if enabled {
+            SceneLightShadowIntent::Requested
+        } else {
+            SceneLightShadowIntent::Disabled
+        }
+    };
+    match light {
+        StoredLight::Ambient {
+            color,
+            intensity,
+            enabled,
+            shadows,
+        } => SceneLight::Ambient {
+            color,
+            intensity,
+            enabled,
+            shadow_intent: shadow_intent(shadows),
+        },
+        StoredLight::Directional {
+            color,
+            intensity,
+            enabled,
+            shadows,
+        } => SceneLight::Directional {
+            color,
+            intensity,
+            enabled,
+            shadow_intent: shadow_intent(shadows),
+        },
+        StoredLight::Point {
+            color,
+            intensity,
+            enabled,
+            range,
+            decay,
+            shadows,
+        } => SceneLight::Point {
+            color,
+            intensity,
+            enabled,
+            range,
+            decay,
+            shadow_intent: shadow_intent(shadows),
+        },
+        StoredLight::Spot {
+            color,
+            intensity,
+            enabled,
+            range,
+            decay,
+            outer_angle_radians,
+            penumbra,
+            shadows,
+        } => SceneLight::Spot {
+            color,
+            intensity,
+            enabled,
+            range,
+            decay,
+            outer_angle_radians,
+            penumbra,
+            shadow_intent: shadow_intent(shadows),
+        },
+    }
 }
 
 fn validate_owner_admission(

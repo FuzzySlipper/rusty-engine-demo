@@ -89,8 +89,8 @@ pub use snapshot::{
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset, StoredCollision,
     StoredDoor, StoredEncounter, StoredEntityDefinition, StoredExtractionBeacon,
-    StoredGeneratedVoxelEnvironment, StoredHealth, StoredKinematic, StoredMaterialVoxel,
-    StoredMaterialVoxelEnvironment, StoredNavigation, StoredPlayerController,
+    StoredGeneratedVoxelEnvironment, StoredHealth, StoredKinematic, StoredLight,
+    StoredMaterialVoxel, StoredMaterialVoxelEnvironment, StoredNavigation, StoredPlayerController,
     StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable, StoredScene,
     StoredSolidVoxelEnvironment, StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance,
     StoredWeapon, STORED_PROJECT_SCHEMA_VERSION,

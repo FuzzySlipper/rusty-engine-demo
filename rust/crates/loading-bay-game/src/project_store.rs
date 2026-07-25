@@ -115,7 +115,10 @@ impl ProjectStore {
         match mode {
             ProjectSaveMode::CreateNew => {
                 install_new(&pending, target)?;
-                sync_directory(parent)?;
+                // Installation is the publication commit point. A later directory
+                // sync failure cannot truthfully turn the created project into a
+                // rejected, non-mutating operation.
+                let _post_commit_sync = sync_directory(parent);
             }
             ProjectSaveMode::ReplaceExisting => {
                 fs::rename(&pending, target)
