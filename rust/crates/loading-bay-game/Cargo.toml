@@ -8,11 +8,17 @@ publish = false
 workspace = true
 
 [dependencies]
+asset-catalog.workspace = true
+authored-scene.workspace = true
+content-store.workspace = true
 core-assets.workspace = true
 core-ids.workspace = true
 core-math.workspace = true
 core-time.workspace = true
+engine-inspector.workspace = true
 engine-spatial.workspace = true
+render-model.workspace = true
+render-projection.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_path_to_error.workspace = true

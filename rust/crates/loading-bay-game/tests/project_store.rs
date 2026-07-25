@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use content_store::ContentHash;
 use loading_bay_game::{
     admit_stored_project_with_document, decode_project_document, encode_project_document,
     AdmittedStoredProject, ProjectSaveMode, ProjectStore, ProjectStoreError,
@@ -183,6 +184,65 @@ fn failed_pending_write_preserves_known_good_readback() {
         encode_project_document(&store.load(&target).unwrap().project).unwrap(),
         known_good
     );
+}
+
+#[test]
+fn optimistic_replace_is_hash_guarded_and_atomically_rereadable() {
+    let directory = TestDirectory::new();
+    let target = directory.path().join("project.json");
+    let store = ProjectStore::default();
+    let original = admitted(CURRENT_PROJECT);
+    store
+        .save(&target, &original, ProjectSaveMode::CreateNew)
+        .unwrap();
+
+    let opened = store.load_source(&target).unwrap();
+    assert_eq!(
+        opened.source_hash(),
+        ContentHash::of(opened.source_bytes().as_bytes())
+    );
+    let mut changed = original.document().clone();
+    changed.name = "CAS Loading Bay".to_string();
+    let (changed, _) = admit_stored_project_with_document(changed).unwrap();
+
+    let installed_hash = store
+        .replace_if_unchanged(&target, &changed, opened.source_hash())
+        .unwrap();
+    let reread = store.load_source(&target).unwrap();
+    assert_eq!(reread.source_hash(), installed_hash);
+    assert_eq!(reread.decoded.project.name, "CAS Loading Bay");
+    assert!(!ProjectStore::pending_path(&target).unwrap().exists());
+}
+
+#[test]
+fn stale_optimistic_replace_preserves_external_bytes_and_candidate_is_not_installed() {
+    let directory = TestDirectory::new();
+    let target = directory.path().join("project.json");
+    let store = ProjectStore::default();
+    let original = admitted(CURRENT_PROJECT);
+    store
+        .save(&target, &original, ProjectSaveMode::CreateNew)
+        .unwrap();
+    let opened = store.load_source(&target).unwrap();
+
+    let mut external = original.document().clone();
+    external.name = "External Change".to_string();
+    let (external, _) = admit_stored_project_with_document(external).unwrap();
+    store
+        .save(&target, &external, ProjectSaveMode::ReplaceExisting)
+        .unwrap();
+    let external_bytes = fs::read(&target).unwrap();
+
+    let mut candidate = original.document().clone();
+    candidate.name = "Stale Candidate".to_string();
+    let (candidate, _) = admit_stored_project_with_document(candidate).unwrap();
+    let error = store
+        .replace_if_unchanged(&target, &candidate, opened.source_hash())
+        .unwrap_err();
+
+    assert!(matches!(error, ProjectStoreError::StaleSource { .. }));
+    assert_eq!(fs::read(&target).unwrap(), external_bytes);
+    assert!(!ProjectStore::pending_path(&target).unwrap().exists());
 }
 
 #[test]

@@ -9,6 +9,8 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 
+use content_store::ContentHash;
+
 use crate::project_admission::AdmittedStoredProject;
 use crate::project_codec::{
     decode_project_document, encode_project_document, DecodedProjectDocument,
@@ -21,6 +23,23 @@ pub const DEFAULT_MAX_PROJECT_FILE_BYTES: usize = 8 * 1024 * 1024;
 pub enum ProjectSaveMode {
     CreateNew,
     ReplaceExisting,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct LoadedProjectSource {
+    pub decoded: DecodedProjectDocument,
+    source_bytes: String,
+    source_hash: ContentHash,
+}
+
+impl LoadedProjectSource {
+    pub fn source_bytes(&self) -> &str {
+        &self.source_bytes
+    }
+
+    pub fn source_hash(&self) -> ContentHash {
+        self.source_hash
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -101,11 +120,71 @@ impl ProjectStore {
     /// Load a bounded project file. If the target is missing but a complete,
     /// canonical pending file exists, finish that interrupted rename first.
     pub fn load(&self, target: &Path) -> Result<DecodedProjectDocument, ProjectStoreError> {
+        self.load_source(target).map(|source| source.decoded)
+    }
+
+    /// Load the admitted-project source together with the exact bounded bytes
+    /// and content identity observed by a trusted host. Callers can retain the
+    /// hash for an optimistic, atomic replacement without inventing another
+    /// project codec or unbounded read path.
+    pub fn load_source(&self, target: &Path) -> Result<LoadedProjectSource, ProjectStoreError> {
         if !path_exists(target)? {
             self.recover_pending(target)?;
         }
         let input = read_bounded(target, self.max_bytes)?;
-        decode_project_document(&input).map_err(ProjectStoreError::Codec)
+        let decoded = decode_project_document(&input).map_err(ProjectStoreError::Codec)?;
+        Ok(LoadedProjectSource {
+            source_hash: ContentHash::of(input.as_bytes()),
+            source_bytes: input,
+            decoded,
+        })
+    }
+
+    /// Replace one existing admitted project only when its exact source hash is
+    /// still the value the editor opened. The candidate is fully encoded before
+    /// a same-directory pending file is created, the source is checked again
+    /// immediately before rename, and the final rename is atomic.
+    pub fn replace_if_unchanged(
+        &self,
+        target: &Path,
+        project: &AdmittedStoredProject,
+        expected_hash: ContentHash,
+    ) -> Result<ContentHash, ProjectStoreError> {
+        if !path_exists(target)? {
+            return Err(ProjectStoreError::TargetMissing {
+                path: target.to_path_buf(),
+            });
+        }
+        let observed = read_bounded(target, self.max_bytes)?;
+        require_source_hash(target, expected_hash, observed.as_bytes())?;
+
+        let encoded = encode_project_document(project.document())?;
+        if encoded.len() > self.max_bytes {
+            return Err(ProjectStoreError::TooLarge {
+                path: target.to_path_buf(),
+                actual_bytes: encoded.len() as u64,
+                max_bytes: self.max_bytes,
+            });
+        }
+
+        let pending = pending_path(target)?;
+        if path_exists(&pending)? {
+            return Err(ProjectStoreError::PendingConflict { path: pending });
+        }
+        if let Err(error) = write_pending(&pending, encoded.as_bytes()) {
+            let _ = fs::remove_file(&pending);
+            return Err(error);
+        }
+
+        let current = read_bounded(target, self.max_bytes)?;
+        if let Err(error) = require_source_hash(target, expected_hash, current.as_bytes()) {
+            let _ = fs::remove_file(&pending);
+            return Err(error);
+        }
+        fs::rename(&pending, target)
+            .map_err(|source| io_error("replace project", target, source))?;
+        sync_directory(target_parent(target)?)?;
+        Ok(ContentHash::of(encoded.as_bytes()))
     }
 
     /// Finish an interrupted post-sync/pre-rename save. Recovery only promotes
@@ -165,6 +244,11 @@ pub enum ProjectStoreError {
     NonCanonicalPending {
         path: PathBuf,
     },
+    StaleSource {
+        path: PathBuf,
+        expected: ContentHash,
+        actual: ContentHash,
+    },
     TooLarge {
         path: PathBuf,
         actual_bytes: u64,
@@ -215,6 +299,15 @@ impl std::fmt::Display for ProjectStoreError {
             Self::NonCanonicalPending { path } => write!(
                 formatter,
                 "project pending file `{}` is not current canonical project bytes",
+                path.display()
+            ),
+            Self::StaleSource {
+                path,
+                expected,
+                actual,
+            } => write!(
+                formatter,
+                "project `{}` changed since it was read: expected {expected}, found {actual}",
                 path.display()
             ),
             Self::TooLarge {
@@ -375,6 +468,22 @@ fn read_bounded(path: &Path, max_bytes: usize) -> Result<String, ProjectStoreErr
     String::from_utf8(bytes).map_err(|_| ProjectStoreError::InvalidUtf8 {
         path: path.to_path_buf(),
     })
+}
+
+fn require_source_hash(
+    path: &Path,
+    expected: ContentHash,
+    bytes: &[u8],
+) -> Result<(), ProjectStoreError> {
+    let actual = ContentHash::of(bytes);
+    if actual != expected {
+        return Err(ProjectStoreError::StaleSource {
+            path: path.to_path_buf(),
+            expected,
+            actual,
+        });
+    }
+    Ok(())
 }
 
 fn sync_directory(path: &Path) -> Result<(), ProjectStoreError> {

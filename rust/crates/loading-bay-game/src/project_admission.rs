@@ -543,9 +543,21 @@ fn definition_error(
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "name"),
             ),
-            entity_state::EntityDefinitionError::InvalidTranslation { entity } => (
+            entity_state::EntityDefinitionError::DuplicateLabel { entity, .. } => (
+                diagnostic_code::INVALID_COMPONENT,
+                entity_path(scene_index, indexes, *entity, "labels"),
+            ),
+            entity_state::EntityDefinitionError::InvalidSource { entity } => (
+                diagnostic_code::INVALID_COMPONENT,
+                entity_path(scene_index, indexes, *entity, "source"),
+            ),
+            entity_state::EntityDefinitionError::InvalidTransform { entity } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "translation"),
+            ),
+            entity_state::EntityDefinitionError::InvalidBounds { entity } => (
+                diagnostic_code::INVALID_COMPONENT,
+                entity_path(scene_index, indexes, *entity, "bounds"),
             ),
             entity_state::EntityDefinitionError::EmptyAsset { entity } => (
                 diagnostic_code::INVALID_COMPONENT,
@@ -556,6 +568,10 @@ fn definition_error(
             | entity_state::EntityDefinitionError::InvalidKinematicVelocity { entity } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "kinematic"),
+            ),
+            entity_state::EntityDefinitionError::InvalidRelationship { entity, .. } => (
+                diagnostic_code::INVALID_RELATIONSHIP,
+                entity_path(scene_index, indexes, *entity, "relationships"),
             ),
         },
         Error::DuplicateControlTarget { switch, .. }

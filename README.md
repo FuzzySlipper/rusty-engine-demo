@@ -8,7 +8,7 @@ voxel, mesh, asset, and conversion mechanisms.
 
 The Rust game vertical is named `loading-bay-game`. Its Engine dependencies are public Git
 dependencies: Rust remains pinned to reviewed gameplay revision
-`8cb49db6cfe9471faa23ab0661656a2366a83d8c`, while the browser renderer is pinned to review-fix
+`e462016d5cafe87ce1994d33f7791f41fa9bd727`, while the browser renderer is pinned to review-fix
 revision `937a3cef2568d04a261e78126f34e6baea1828c9`; a sibling checkout is not required. The demo owns its browser shell and semantic projection adapter,
 while Rusty Engine owns the shared render contracts, retained projection, Three/WebGL backend,
 surface host, audio, particle, billboard, and telemetry hosts.
@@ -42,6 +42,17 @@ pnpm run verify
 It checks package and repository boundaries, TypeScript content and presentation tests, the exact
 Engine Git resolution, the complete Rust suite and Clippy, and a real Chromium/Three/WebGL flow.
 For Rust-only iteration, `./scripts/verify-rust.sh` remains available.
+
+The project-owned Studio adapter can be run as a bounded JSON-lines process:
+
+```bash
+cargo run --locked -p loading-bay-game --bin studio-adapter
+```
+
+It opens only an explicit absolute project root and safe relative project file supplied through the
+closed protocol. It exposes Engine-owned catalog, scene, entity, persistence, voxel inspection, and
+renderer projection readouts while Loading Bay retains its schema and domain-operation meaning. See
+[docs/studio-adapter.md](docs/studio-adapter.md).
 
 ## Architecture boundary
 

@@ -64,6 +64,18 @@
       }
     ]
   },
+  "materialPalette": [
+    {
+      "materialSlot": 7,
+      "materialAssetId": "material/wall-lines",
+      "displayName": "Wall lines"
+    },
+    {
+      "materialSlot": 8,
+      "materialAssetId": "material/concrete",
+      "displayName": "Concrete"
+    }
+  ],
   "materialMap": [
     {
       "sourceMaterialSlot": 0,
@@ -82,8 +94,9 @@
     "sourceSha256": "sha256:6fceda24c30d2c22694f232f03fe2115fb1a462046fbbf719a90eea10dc9af00",
     "sourceByteCount": 3352,
     "converter": "rusty-engine.mesh-to-voxel.v1",
-    "settingsSha256": "sha256:98cb7d07a99015f5e759a39d89e77bb4f64cbdb0b3b5ed724bba9d35f95902ba",
+    "settingsSha256": "sha256:550002c71046096dcb2ce72653a73fb3755a41c070a36f5afee195313d86c297",
     "licensePath": "fixtures/voxel-conversion/KENNEY-RETRO-URBAN-KIT-LICENSE.txt"
   },
-  "contentHash": "sha256:086d81f12403192c6d7568289c2b47771741e5620a967e5b5fe5093fd5608ab7"
+  "voxelDataHash": "sha256:21d05ea8af380b21fd9fdd2ae19bbb92fad82fc91a2af854eef05b312512da94",
+  "contentHash": "sha256:fb01eabaad297076e6129311fb10849c47b4c2fe46ccbb2acfb7b76f08e2124f"
 }

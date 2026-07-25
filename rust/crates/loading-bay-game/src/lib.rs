@@ -24,6 +24,7 @@ mod scheduler;
 mod session;
 mod snapshot;
 mod stored_project;
+mod studio_adapter;
 
 pub use combat::{
     CombatFact, CombatMissReason, CombatReceipt, CombatRejectionReason, EnemyComponent, EnemyState,
@@ -70,7 +71,8 @@ pub use project_codec::{
     MIGRATED_V6_PROJECT_ID, MIGRATED_V6_SCENE_ID,
 };
 pub use project_store::{
-    ProjectSaveMode, ProjectStore, ProjectStoreError, DEFAULT_MAX_PROJECT_FILE_BYTES,
+    LoadedProjectSource, ProjectSaveMode, ProjectStore, ProjectStoreError,
+    DEFAULT_MAX_PROJECT_FILE_BYTES,
 };
 pub use runtime::{GameRuntime, RuntimeError, MAX_EVENT_WAVE, MAX_TICK_ADVANCE};
 pub use runtime_records::{GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
@@ -92,4 +94,12 @@ pub use stored_project::{
     StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable, StoredScene,
     StoredSolidVoxelEnvironment, StoredSwitch, StoredVoxelEnvironment, StoredWeapon,
     STORED_PROJECT_SCHEMA_VERSION,
+};
+pub use studio_adapter::{
+    AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,
+    LoadingBayDomainReadout, OwnerInspections, PathSafetyError, ProjectLocation,
+    ProjectionDiagnosticReadout, ProjectionReadout, StudioAdapterRequest, StudioAdapterResponse,
+    StudioAdapterService, StudioProjectIdentity, StudioProjectReadout, MAX_PROJECT_PATH_BYTES,
+    MAX_REQUEST_ID_BYTES, MAX_ROOT_PATH_BYTES, MAX_STUDIO_ADAPTER_REQUEST_BYTES,
+    MAX_STUDIO_ADAPTER_RESPONSE_BYTES, STUDIO_ADAPTER_PROTOCOL_VERSION,
 };

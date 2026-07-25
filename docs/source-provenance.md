@@ -5,7 +5,7 @@ Rusty Engine Demo was originally extracted from
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
 
 The current Rust dependencies resolve from exact reviewed gameplay revision
-`8cb49db6cfe9471faa23ab0661656a2366a83d8c`; browser render packages resolve from exact review-fix
+`e462016d5cafe87ce1994d33f7791f41fa9bd727`; browser render packages resolve from exact review-fix
 revision `937a3cef2568d04a261e78126f34e6baea1828c9`. The older revision below remains the historical
 extraction point, not an active dependency pin.
 
@@ -16,7 +16,7 @@ extraction point, not an active dependency pin.
 | `rust/crates/loading-bay-game` | `rust/crates/game-host` | Copied as one cohesive gameplay vertical; package/crate imports renamed from `game-host`/`game_host`. |
 | `content/projects` | `content/projects` | Copied unchanged for loading-bay and converted-content admission/product behavior. |
 | `content/generated` | `content/generated` | Copied unchanged for migration, encounter, controller, navigation, and workload tests. |
-| `content/assets/kenney-wall-a.voxel.json` | same path | Copied unchanged as canonical converted-asset test input. |
+| `content/assets/kenney-wall-a.voxel.json` | same path | Copied as the canonical converted-asset test input; later re-encoded through the current Engine voxel owner as recorded below. |
 
 Reusable Rust crates are not copied. Cargo consumes their packages directly from the exact Engine
 Git revision recorded in `Cargo.toml` and `Cargo.lock`.
@@ -64,3 +64,17 @@ product surface.
 `content/projects/relay-annex.project.json` is likewise native downstream content. It is generated
 from the TypeScript `relayAnnexStoredProject` composition and admitted by the already-existing Rust
 project path and headless beacon proof; it was not transferred from Engine.
+
+## M11B Studio adapter and voxel-owner adaptation
+
+The project-owned Studio adapter was authored directly in this repository against exact Engine
+revision `e462016d5cafe87ce1994d33f7791f41fa9bd727`. It composes the public `asset-catalog`,
+`authored-scene`, `content-store`, `entity-state`, `engine-inspector`, `render-model`, and
+`render-projection` crates while retaining Loading Bay schema, layout, and domain admission here.
+No Studio or adapter implementation was copied from Engine or Asha.
+
+That Engine revision also made the converted-voxel owner contract explicit. The checked-in
+`kenney-wall-a.voxel.json` and its embedded project copy retain the same source mesh, sparse voxel
+runs, material mapping, bounds, and provenance, but are re-encoded with the Engine-owned material
+palette plus voxel-data and content hashes. This is a successor-codec adaptation of the existing
+artifact, not new product content or a restored Asha dependency.
