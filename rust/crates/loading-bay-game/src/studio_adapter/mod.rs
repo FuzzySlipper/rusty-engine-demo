@@ -5,6 +5,7 @@
 //! with their Rusty Engine owners. The protocol is deliberately finite and has
 //! no method-name dispatch or runtime facade.
 
+mod host_file;
 mod path;
 mod project;
 mod protocol;

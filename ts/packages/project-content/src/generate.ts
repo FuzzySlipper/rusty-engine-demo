@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 import {
   generatedEncounterProjects,
@@ -41,7 +42,13 @@ for (const [directory, projects] of [
       continue;
     }
     const actual = readFileSync(output, "utf8");
-    if (actual !== expected) {
+    const matches = directory === projectDirectory
+      ? isDeepStrictEqual(
+          JSON.parse(actual) as unknown,
+          JSON.parse(expected) as unknown,
+        )
+      : actual === expected;
+    if (!matches) {
       throw new Error(`${filename} is stale; run pnpm run generate:content`);
     }
   }

@@ -9,8 +9,11 @@ use voxel_convert::{
 
 use crate::StoredAsset;
 
+use super::super::host_file::read_host_file;
 use super::super::project::publish_project_mutation;
-use super::super::protocol::{AdapterRejection, ProjectMutationReceipt, StudioProjectReadout};
+use super::super::protocol::{
+    AdapterRejection, ProjectMutationReceipt, StudioFileSelection, StudioProjectReadout,
+};
 use super::super::ProjectLocation;
 use super::model::{find_voxel_asset_mut, reject, retarget_annotations};
 use super::query::{conversion_rejection, load_expected};
@@ -22,9 +25,10 @@ pub(crate) fn prepare_conversion(
     location: &ProjectLocation,
     expected_project_hash: &str,
     source_asset_id: String,
-    source_path: String,
+    source: StudioFileSelection,
     target_asset_id: String,
-    license_path: Option<String>,
+    license: Option<StudioFileSelection>,
+    mesh_primitive: Option<String>,
     settings: ConversionPlanSettings,
     max_preview_samples: u32,
 ) -> Result<
@@ -50,13 +54,15 @@ pub(crate) fn prepare_conversion(
             format!("catalog has no static mesh `{source_asset_id}`"),
         )
     })?;
-    let source_bytes = location
-        .read_relative_file(&source_path, MAX_CONVERSION_SOURCE_BYTES)
-        .map_err(|error| reject("conversion.sourcePathRejected", error.to_string()))?;
-    if let Some(path) = &license_path {
-        location
-            .read_relative_file(path, MAX_LICENSE_BYTES)
-            .map_err(|error| reject("conversion.licensePathRejected", error.to_string()))?;
+    let source_path = source.path().to_string();
+    let source_bytes = read_selection(location, &source, MAX_CONVERSION_SOURCE_BYTES as usize)
+        .map_err(|error| error.at_path(source_path.clone()))?;
+    let license_path = license
+        .as_ref()
+        .map(|selection| selection.path().to_string());
+    if let Some(selection) = &license {
+        read_selection(location, selection, MAX_LICENSE_BYTES as usize)
+            .map_err(|error| error.at_path(selection.path().to_string()))?;
     }
     let imported = import_mesh_source(&MeshSourceImportRequest {
         source_asset_id,
@@ -65,7 +71,7 @@ pub(crate) fn prepare_conversion(
         format: MeshSourceFormat::Glb,
         source_bytes,
         expected_source_sha256: None,
-        mesh_primitive: None,
+        mesh_primitive,
     })
     .map_err(conversion_rejection)?;
     let prepared = plan_conversion(
@@ -89,6 +95,26 @@ pub(crate) fn prepare_conversion(
     )
     .map_err(conversion_rejection)?;
     Ok((prepared, plan, preview))
+}
+
+fn read_selection(
+    location: &ProjectLocation,
+    selection: &StudioFileSelection,
+    max_bytes: usize,
+) -> Result<Vec<u8>, AdapterRejection> {
+    match selection {
+        StudioFileSelection::Project { path } => location
+            .read_relative_file(path, max_bytes as u64)
+            .map_err(|error| reject("conversion.projectFileRejected", error.to_string())),
+        StudioFileSelection::Host { path } => read_host_file(path, max_bytes)
+            .map(|source| source.bytes)
+            .map_err(|error| {
+                reject(
+                    "conversion.hostFileRejected",
+                    format!("{}: {}", error.code, error.message),
+                )
+            }),
+    }
 }
 
 pub(crate) fn apply_prepared_conversion(

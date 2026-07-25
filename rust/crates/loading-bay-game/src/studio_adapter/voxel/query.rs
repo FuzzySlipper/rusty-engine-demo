@@ -110,7 +110,10 @@ pub(crate) fn query_model(
     let window = window
         .map(|request| query_model_window(asset, &request).map_err(conversion_rejection))
         .transpose()?;
-    Ok(VoxelReadout::Model { info, window })
+    Ok(VoxelReadout::Model {
+        info,
+        window: Box::new(window),
+    })
 }
 
 pub(crate) fn query_annotation(

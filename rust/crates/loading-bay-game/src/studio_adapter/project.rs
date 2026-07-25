@@ -131,6 +131,10 @@ impl OpenedOwnerProject {
         &self.catalog
     }
 
+    pub(crate) fn scene(&self) -> &FlatSceneDocument {
+        &self.scene
+    }
+
     pub fn readout(&self) -> Result<StudioProjectReadout, AdapterRejection> {
         let project = self.stored.document();
         let entry_scene = entry_scene(project);

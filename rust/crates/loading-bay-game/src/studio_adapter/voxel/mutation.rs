@@ -1,6 +1,10 @@
 use asset_catalog::StoredMaterialDefinition;
 use core_assets::{AssetId, AssetKind};
-use engine_spatial::{VoxelEdit, VoxelEditHistoryDiffOptions, MAX_VOXEL_EDITS_PER_TRANSACTION};
+use engine_spatial::{
+    VoxelEdit, VoxelEditHistoryDiffOptions, VoxelPrimitive, VoxelPrimitiveEditService,
+    VoxelPrimitiveRequest, VoxelTemplate, VoxelTemplateEditService, VoxelTemplateRequest,
+    VOXEL_HOUSE_TEMPLATE_BOUNDS,
+};
 use voxel_annotation::{
     finalize_annotation_draft, VoxelAnnotationEditService, VoxelAnnotationEditTransaction,
     VoxelAnnotationLayerDraft, VoxelAnnotationLimits,
@@ -410,16 +414,6 @@ pub(crate) fn apply_brush(
     mode: VoxelBrushMode,
     material_slot: Option<u16>,
 ) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
-    let diameter = u64::from(radius).saturating_mul(2).saturating_add(1);
-    let edit_count = diameter.saturating_pow(3);
-    if edit_count > MAX_VOXEL_EDITS_PER_TRANSACTION as u64 {
-        return Err(reject(
-            "voxel.brushTooLarge",
-            format!(
-                "cube brush expands to {edit_count} edits; limit is {MAX_VOXEL_EDITS_PER_TRANSACTION}"
-            ),
-        ));
-    }
     let paint_slot = match mode {
         VoxelBrushMode::Paint => Some(material_slot.ok_or_else(|| {
             reject(
@@ -429,23 +423,17 @@ pub(crate) fn apply_brush(
         })?),
         VoxelBrushMode::Erase => None,
     };
-    let radius = i64::from(radius);
-    let mut minimum = [0; 3];
-    let mut maximum = [0; 3];
-    for axis in 0..3 {
-        minimum[axis] = center[axis].checked_sub(radius).ok_or_else(|| {
-            reject(
-                "voxel.coordinateOverflow",
-                "brush minimum coordinate overflowed",
-            )
-        })?;
-        maximum[axis] = center[axis].checked_add(radius).ok_or_else(|| {
-            reject(
-                "voxel.coordinateOverflow",
-                "brush maximum coordinate overflowed",
-            )
-        })?;
-    }
+    let request = VoxelPrimitiveRequest {
+        primitive: VoxelPrimitive::Line {
+            start: center,
+            end: center,
+            radius,
+        },
+        material: match paint_slot {
+            Some(material_slot) => engine_spatial::VoxelPrimitiveMaterial::Set { material_slot },
+            None => engine_spatial::VoxelPrimitiveMaterial::Clear,
+        },
+    };
     mutation_result(publish_project_mutation(
         location,
         expected_project_hash,
@@ -464,34 +452,17 @@ pub(crate) fn apply_brush(
                     .expect("voxel asset helper checked payload"),
                 &expected_asset_content_hash,
             )?;
-            let mut edits = Vec::with_capacity(edit_count as usize);
-            for z in minimum[2]..=maximum[2] {
-                for y in minimum[1]..=maximum[1] {
-                    for x in minimum[0]..=maximum[0] {
-                        let local = [x, y, z];
-                        let address = local_to_authority_address(
-                            stored
-                                .voxel_volume
-                                .as_ref()
-                                .expect("voxel asset helper checked payload"),
-                            local,
-                        )?;
-                        edits.push(match paint_slot {
-                            Some(material_slot) => VoxelEdit::Set {
-                                address,
-                                material_slot,
-                            },
-                            None => VoxelEdit::Clear { address },
-                        });
-                    }
-                }
-            }
-            let (mut scene, mut history) = scene_and_history(stored)?;
-            let applied = history
-                .apply(&mut scene, &edits)
-                .map_err(|error| reject("voxel.editRejected", error.to_string()))?;
-            install_scene_and_history(stored, &scene, &history)?;
-            let cursor = history.cursor();
+            let request = primitive_to_authority(
+                stored
+                    .voxel_volume
+                    .as_ref()
+                    .expect("voxel asset helper checked payload"),
+                request,
+            )?;
+            let edits = VoxelPrimitiveEditService
+                .generate(request)
+                .map_err(|error| reject("voxel.brushRejected", error.to_string()))?;
+            let applied = apply_edits(stored, &edits)?;
             let content_hash_after = stored
                 .voxel_volume
                 .as_ref()
@@ -502,14 +473,229 @@ pub(crate) fn apply_brush(
                 asset_id,
                 content_hash_before,
                 content_hash_after,
-                changed_voxels: applied.edit.fact.changed_voxels,
-                source_revision: applied.edit.accepted_revision.raw(),
-                history_cursor: cursor.index,
-                undo_depth: cursor.undo_depth,
-                redo_depth: cursor.redo_depth,
+                changed_voxels: applied.changed_voxels,
+                source_revision: applied.source_revision,
+                history_cursor: applied.history_cursor,
+                undo_depth: applied.undo_depth,
+                redo_depth: applied.redo_depth,
             })
         },
     )?)
+}
+
+pub(crate) fn apply_primitive(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    asset_id: String,
+    expected_asset_content_hash: String,
+    request: VoxelPrimitiveRequest,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    let primitive_kind = match request.primitive {
+        VoxelPrimitive::Block { .. } => "block",
+        VoxelPrimitive::Box { .. } => "box",
+        VoxelPrimitive::Line { .. } => "line",
+    };
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |_, project| {
+            let stored = find_voxel_asset_mut(project, &asset_id)?;
+            let voxel = stored
+                .voxel_volume
+                .as_ref()
+                .expect("voxel asset helper checked payload");
+            require_asset_hash(voxel, &expected_asset_content_hash)?;
+            let content_hash_before = voxel.content_hash.clone();
+            let request = primitive_to_authority(voxel, request)?;
+            let edits = VoxelPrimitiveEditService
+                .generate(request)
+                .map_err(|error| reject("voxel.primitiveRejected", error.to_string()))?;
+            let applied = apply_edits(stored, &edits)?;
+            let content_hash_after = stored
+                .voxel_volume
+                .as_ref()
+                .expect("installed voxel asset")
+                .content_hash
+                .clone();
+            Ok(ProjectMutationReceipt::VoxelPrimitiveApplied {
+                asset_id,
+                primitive_kind,
+                content_hash_before,
+                content_hash_after,
+                changed_voxels: applied.changed_voxels,
+                source_revision: applied.source_revision,
+                history_cursor: applied.history_cursor,
+                undo_depth: applied.undo_depth,
+                redo_depth: applied.redo_depth,
+            })
+        },
+    )?)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn initialize_voxel_template(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    asset_id: String,
+    cell_size: f64,
+    chunk_size: u32,
+    material_palette: Vec<VoxelAssetMaterialBinding>,
+    request: VoxelTemplateRequest,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    require_voxel_identity(&asset_id)?;
+    let template_kind = match request.template {
+        VoxelTemplate::House => "house",
+    };
+    let settings =
+        serde_json::to_vec(&(&asset_id, cell_size, chunk_size, &material_palette, request))
+            .expect("closed template settings serialize");
+    let identity = source_sha256(&settings);
+    let edits = VoxelTemplateEditService
+        .generate(request)
+        .map_err(|error| reject("voxel.templateRejected", error.to_string()))?;
+    let sparse_runs = edits
+        .iter()
+        .map(|edit| {
+            let VoxelEdit::Set {
+                address,
+                material_slot,
+            } = *edit
+            else {
+                return Err(reject(
+                    "voxel.templateRejected",
+                    "template generation unexpectedly produced a clear edit",
+                ));
+            };
+            let local = [0, 1, 2].map(|axis| {
+                address[axis]
+                    .checked_sub(request.origin[axis])
+                    .ok_or_else(|| {
+                        reject(
+                            "voxel.coordinateOverflow",
+                            "template coordinate could not be mapped into asset-local space",
+                        )
+                    })
+            });
+            Ok(VoxelSparseRun {
+                start: [local[0].clone()?, local[1].clone()?, local[2].clone()?],
+                length: 1,
+                material_slot,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let changed_voxels = sparse_runs.len();
+    let asset = with_computed_content_hash(VoxelAsset {
+        schema_version: VOXEL_ASSET_SCHEMA_VERSION,
+        asset_id: asset_id.clone(),
+        grid: VoxelAssetGrid {
+            coordinate_system: VoxelCoordinateSystem::RightHandedYUp,
+            cell_size,
+            chunk_size,
+            origin: request.origin,
+        },
+        bounds: VoxelAssetBounds {
+            min: VOXEL_HOUSE_TEMPLATE_BOUNDS[0],
+            max: VOXEL_HOUSE_TEMPLATE_BOUNDS[1],
+        },
+        representation: VoxelRepresentation {
+            kind: VoxelRepresentationKind::SparseRuns,
+            sparse_runs,
+        },
+        material_palette,
+        material_map: vec![VoxelAssetMaterialMapping {
+            source_material_slot: 0,
+            source_material_name: Some(format!("studio-{template_kind}-template")),
+            voxel_material_slot: request.material_slot,
+        }],
+        provenance: VoxelAssetProvenance {
+            kind: VoxelAssetProvenanceKind::Authored,
+            source_path: format!("studio-template/{template_kind}/{asset_id}"),
+            source_sha256: identity.clone(),
+            source_byte_count: settings.len() as u64,
+            converter: "rusty-engine.studio.voxel-template.v1".to_string(),
+            settings_sha256: identity,
+            license_path: None,
+        },
+        voxel_data_hash: String::new(),
+        content_hash: String::new(),
+    })
+    .map_err(|error| reject("voxel.templateRejected", error.to_string()))?;
+    let content_hash = asset.content_hash.clone();
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |_, project| {
+            if project.assets.iter().any(|stored| stored.id == asset_id) {
+                return Err(reject(
+                    "voxel.assetExists",
+                    format!("asset `{asset_id}` already exists"),
+                ));
+            }
+            project.assets.push(StoredAsset {
+                id: asset_id.clone(),
+                voxel_volume: Some(asset),
+                voxel_edit_history: None,
+                voxel_annotations: Vec::new(),
+                material: None,
+            });
+            Ok(ProjectMutationReceipt::VoxelTemplateInitialized {
+                asset_id,
+                template_kind,
+                content_hash,
+                changed_voxels,
+                history_cursor: 0,
+            })
+        },
+    )?)
+}
+
+struct AppliedVoxelEdits {
+    changed_voxels: usize,
+    source_revision: u64,
+    history_cursor: usize,
+    undo_depth: usize,
+    redo_depth: usize,
+}
+
+fn apply_edits(
+    stored: &mut StoredAsset,
+    edits: &[VoxelEdit],
+) -> Result<AppliedVoxelEdits, AdapterRejection> {
+    let (mut scene, mut history) = scene_and_history(stored)?;
+    let applied = history
+        .apply(&mut scene, edits)
+        .map_err(|error| reject("voxel.editRejected", error.to_string()))?;
+    install_scene_and_history(stored, &scene, &history)?;
+    let cursor = history.cursor();
+    Ok(AppliedVoxelEdits {
+        changed_voxels: applied.edit.fact.changed_voxels,
+        source_revision: applied.edit.accepted_revision.raw(),
+        history_cursor: cursor.index,
+        undo_depth: cursor.undo_depth,
+        redo_depth: cursor.redo_depth,
+    })
+}
+
+fn primitive_to_authority(
+    asset: &VoxelAsset,
+    mut request: VoxelPrimitiveRequest,
+) -> Result<VoxelPrimitiveRequest, AdapterRejection> {
+    request.primitive = match request.primitive {
+        VoxelPrimitive::Block { address } => VoxelPrimitive::Block {
+            address: local_to_authority_address(asset, address)?,
+        },
+        VoxelPrimitive::Box { start, end, fill } => VoxelPrimitive::Box {
+            start: local_to_authority_address(asset, start)?,
+            end: local_to_authority_address(asset, end)?,
+            fill,
+        },
+        VoxelPrimitive::Line { start, end, radius } => VoxelPrimitive::Line {
+            start: local_to_authority_address(asset, start)?,
+            end: local_to_authority_address(asset, end)?,
+            radius,
+        },
+    };
+    Ok(request)
 }
 
 pub(crate) fn undo_edit(
@@ -691,7 +877,7 @@ pub(crate) fn edit_annotation(
     )?)
 }
 
-fn require_voxel_identity(asset_id: &str) -> Result<(), AdapterRejection> {
+pub(crate) fn require_voxel_identity(asset_id: &str) -> Result<(), AdapterRejection> {
     let parsed = AssetId::parse(asset_id)
         .map_err(|error| reject("voxel.invalidAssetId", error.to_string()))?;
     if parsed.kind() == AssetKind::VoxelVolume {

@@ -4,8 +4,8 @@ Rusty Engine Demo was originally extracted from
 [`FuzzySlipper/rusty-engine`](https://github.com/FuzzySlipper/rusty-engine) at commit
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
 
-The current Rust dependencies resolve from exact reviewed gameplay revision
-`e462016d5cafe87ce1994d33f7791f41fa9bd727`; browser render packages resolve from exact review-fix
+The current Rust dependencies resolve from exact reviewed authoring revision
+`dde89b0e1dfe5ffb23f1ed9a9a93362500131a46`; browser render packages resolve from exact review-fix
 revision `937a3cef2568d04a261e78126f34e6baea1828c9`. The older revision below remains the historical
 extraction point, not an active dependency pin.
 
@@ -67,8 +67,8 @@ project path and headless beacon proof; it was not transferred from Engine.
 
 ## M11B Studio adapter and voxel-owner adaptation
 
-The project-owned Studio adapter was authored directly in this repository against exact Engine
-revision `e462016d5cafe87ce1994d33f7791f41fa9bd727`. It composes the public `asset-catalog`,
+The project-owned Studio adapter was authored directly in this repository against an exact Engine
+revision, now `dde89b0e1dfe5ffb23f1ed9a9a93362500131a46`. It composes the public `asset-catalog`,
 `authored-scene`, `content-store`, `entity-state`, `engine-inspector`, `render-model`, and
 `render-projection` crates while retaining Loading Bay schema, layout, and domain admission here.
 No Studio or adapter implementation was copied from Engine or Asha.
@@ -78,3 +78,12 @@ That Engine revision also made the converted-voxel owner contract explicit. The 
 runs, material mapping, bounds, and provenance, but are re-encoded with the Engine-owned material
 palette plus voxel-data and content hashes. This is a successor-codec adaptation of the existing
 artifact, not new product content or a restored Asha dependency.
+
+## M11F Studio parity adaptation
+
+Protocol 4 was authored directly in this repository against Engine revision
+`dde89b0e1dfe5ffb23f1ed9a9a93362500131a46`. It adapts the Engine-owned voxel primitive/template,
+history, annotation, conversion, canonical asset, and environment-authoring mechanisms into named
+Loading Bay project operations. Trusted host-file publication and private prepared-candidate state
+are downstream adapter responsibilities. No Asha replay, facade, generic command, Studio, or demo
+topology was transferred.

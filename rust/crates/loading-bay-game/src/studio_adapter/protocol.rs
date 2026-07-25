@@ -3,6 +3,7 @@ use engine_inspector::{
     CatalogInspection, EntityStateInspection, PersistenceInspection, SceneInspection,
     VoxelAssetInspection, VoxelStateInspection,
 };
+use engine_spatial::{VoxelEditDelta, VoxelPrimitiveRequest, VoxelTemplateRequest};
 use render_model::RenderFrameDiff;
 use serde::{Deserialize, Serialize};
 use voxel_annotation::{
@@ -17,7 +18,7 @@ use voxel_convert::{
 
 use crate::StoredVoxelInstance;
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 3;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 4;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
@@ -135,6 +136,58 @@ pub enum StudioAdapterRequest {
         mode: VoxelBrushMode,
         material_slot: Option<u16>,
     },
+    ApplyVoxelPrimitive {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        asset_id: String,
+        expected_asset_content_hash: String,
+        request: VoxelPrimitiveRequest,
+    },
+    InitializeVoxelTemplate {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        asset_id: String,
+        cell_size: f64,
+        chunk_size: u32,
+        material_palette: Vec<VoxelAssetMaterialBinding>,
+        request: VoxelTemplateRequest,
+    },
+    ImportVoxelAssetFile {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        source_path: String,
+        target_asset_id: String,
+    },
+    ExportVoxelAssetFile {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        asset_id: String,
+        expected_asset_content_hash: String,
+        target_path: String,
+        expected_target_sha256: Option<String>,
+    },
+    MaterializeEnvironment {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        expected_scene_revision: u64,
+        scene_id: String,
+        preset: StudioEnvironmentPreset,
+        seed: u64,
+        voxel_asset_id: String,
+        voxel_instance_id: String,
+        voxel_translation: [f32; 3],
+        player_entity_id: u64,
+        exit_entity_id: u64,
+        wall_material: u16,
+        floor_material: u16,
+        accent_material: u16,
+        material_palette: Vec<VoxelAssetMaterialBinding>,
+    },
     UndoVoxelEdit {
         protocol_version: u32,
         request_id: String,
@@ -156,6 +209,35 @@ pub enum StudioAdapterRequest {
         asset_id: String,
         expected_asset_content_hash: String,
         target_cursor: usize,
+    },
+    QueryVoxelHistory {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        asset_id: String,
+        expected_asset_content_hash: String,
+        max_entries: usize,
+        max_deltas_per_entry: usize,
+    },
+    PrepareVoxelHistoryRevert {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        asset_id: String,
+        expected_asset_content_hash: String,
+        target_cursor: usize,
+        max_samples: usize,
+    },
+    ApplyVoxelHistoryRevert {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        preview_id: String,
+    },
+    DiscardVoxelHistoryRevert {
+        protocol_version: u32,
+        request_id: String,
+        preview_id: String,
     },
     CreateVoxelAnnotationLayer {
         protocol_version: u32,
@@ -201,10 +283,11 @@ pub enum StudioAdapterRequest {
         request_id: String,
         expected_project_hash: String,
         source_asset_id: String,
-        source_path: String,
+        source: StudioFileSelection,
         target_asset_id: String,
-        license_path: Option<String>,
-        settings: ConversionPlanSettings,
+        license: Option<StudioFileSelection>,
+        mesh_primitive: Option<String>,
+        settings: Box<ConversionPlanSettings>,
         max_preview_samples: u32,
     },
     ApplyVoxelConversion {
@@ -224,6 +307,32 @@ pub enum StudioAdapterRequest {
         protocol_version: u32,
         request_id: String,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "scope",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum StudioFileSelection {
+    Project { path: String },
+    Host { path: String },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StudioEnvironmentPreset {
+    TinyEnclosed,
+}
+
+impl StudioFileSelection {
+    pub fn path(&self) -> &str {
+        match self {
+            Self::Project { path } | Self::Host { path } => path,
+        }
+    }
 }
 
 impl StudioAdapterRequest {
@@ -268,6 +377,21 @@ impl StudioAdapterRequest {
             | Self::ApplyVoxelBrush {
                 protocol_version, ..
             }
+            | Self::ApplyVoxelPrimitive {
+                protocol_version, ..
+            }
+            | Self::InitializeVoxelTemplate {
+                protocol_version, ..
+            }
+            | Self::ImportVoxelAssetFile {
+                protocol_version, ..
+            }
+            | Self::ExportVoxelAssetFile {
+                protocol_version, ..
+            }
+            | Self::MaterializeEnvironment {
+                protocol_version, ..
+            }
             | Self::UndoVoxelEdit {
                 protocol_version, ..
             }
@@ -275,6 +399,18 @@ impl StudioAdapterRequest {
                 protocol_version, ..
             }
             | Self::RevertVoxelHistory {
+                protocol_version, ..
+            }
+            | Self::QueryVoxelHistory {
+                protocol_version, ..
+            }
+            | Self::PrepareVoxelHistoryRevert {
+                protocol_version, ..
+            }
+            | Self::ApplyVoxelHistoryRevert {
+                protocol_version, ..
+            }
+            | Self::DiscardVoxelHistoryRevert {
                 protocol_version, ..
             }
             | Self::CreateVoxelAnnotationLayer {
@@ -322,9 +458,18 @@ impl StudioAdapterRequest {
             | Self::ReplaceVoxelPalette { request_id, .. }
             | Self::ValidateVoxelPick { request_id, .. }
             | Self::ApplyVoxelBrush { request_id, .. }
+            | Self::ApplyVoxelPrimitive { request_id, .. }
+            | Self::InitializeVoxelTemplate { request_id, .. }
+            | Self::ImportVoxelAssetFile { request_id, .. }
+            | Self::ExportVoxelAssetFile { request_id, .. }
+            | Self::MaterializeEnvironment { request_id, .. }
             | Self::UndoVoxelEdit { request_id, .. }
             | Self::RedoVoxelEdit { request_id, .. }
             | Self::RevertVoxelHistory { request_id, .. }
+            | Self::QueryVoxelHistory { request_id, .. }
+            | Self::PrepareVoxelHistoryRevert { request_id, .. }
+            | Self::ApplyVoxelHistoryRevert { request_id, .. }
+            | Self::DiscardVoxelHistoryRevert { request_id, .. }
             | Self::CreateVoxelAnnotationLayer { request_id, .. }
             | Self::EditVoxelAnnotation { request_id, .. }
             | Self::QueryVoxelAnnotation { request_id, .. }
@@ -410,6 +555,25 @@ pub enum StudioAdapterResponse {
         protocol_version: u32,
         request_id: String,
         plan_id: String,
+    },
+    VoxelHistoryRevertPrepared {
+        protocol_version: u32,
+        request_id: String,
+        preview: VoxelHistoryRevertPreview,
+    },
+    VoxelHistoryRevertDiscarded {
+        protocol_version: u32,
+        request_id: String,
+        preview_id: String,
+    },
+    VoxelAssetFileExported {
+        protocol_version: u32,
+        request_id: String,
+        asset_id: String,
+        target_path: String,
+        byte_count: usize,
+        sha256: String,
+        replaced_existing: bool,
     },
     ProjectClosed {
         protocol_version: u32,
@@ -677,6 +841,49 @@ pub enum ProjectMutationReceipt {
         undo_depth: usize,
         redo_depth: usize,
     },
+    VoxelPrimitiveApplied {
+        asset_id: String,
+        primitive_kind: &'static str,
+        content_hash_before: String,
+        content_hash_after: String,
+        changed_voxels: usize,
+        source_revision: u64,
+        history_cursor: usize,
+        undo_depth: usize,
+        redo_depth: usize,
+    },
+    VoxelTemplateInitialized {
+        asset_id: String,
+        template_kind: &'static str,
+        content_hash: String,
+        changed_voxels: usize,
+        history_cursor: usize,
+    },
+    VoxelAssetFileImported {
+        source_path: String,
+        source_sha256: String,
+        source_byte_count: usize,
+        source_asset_id: String,
+        target_asset_id: String,
+        content_hash: String,
+    },
+    EnvironmentMaterialized {
+        scene_id: String,
+        preset: &'static str,
+        seed: u64,
+        asset_id: String,
+        instance_id: String,
+        content_hash: String,
+        voxel_count: usize,
+        player_entity_id: u64,
+        player_translation: [f32; 3],
+        exit_entity_id: u64,
+        exit_translation: [f32; 3],
+        generator_id: &'static str,
+        generator_version: u32,
+        settings_sha256: String,
+        voxel_data_sha256: String,
+    },
     VoxelHistoryMoved {
         asset_id: String,
         content_hash_before: String,
@@ -736,7 +943,7 @@ pub enum VoxelReadout {
     Model {
         info: VoxelModelInfoReadout,
         #[serde(skip_serializing_if = "Option::is_none")]
-        window: Option<VoxelModelWindowReadout>,
+        window: Box<Option<VoxelModelWindowReadout>>,
     },
     AnnotationQuery {
         layer_hash: String,
@@ -750,6 +957,63 @@ pub enum VoxelReadout {
         canonical_layer_hash: String,
         membership_data_hash: String,
     },
+    History {
+        asset_id: String,
+        cursor: usize,
+        undo_depth: usize,
+        redo_depth: usize,
+        entry_count: usize,
+        entries_truncated: bool,
+        entries: Vec<VoxelHistoryEntryReadout>,
+    },
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelHistoryEntryReadout {
+    pub transaction_id: u64,
+    pub parent_transaction_id: Option<u64>,
+    pub before_hash: String,
+    pub after_hash: String,
+    pub changed_voxels: usize,
+    pub deltas_truncated: bool,
+    pub deltas: Vec<VoxelEditDelta>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelHistoryRevertPreview {
+    pub preview_id: String,
+    pub asset_id: String,
+    pub expected_project_hash: String,
+    pub expected_asset_content_hash: String,
+    pub cursor_before: usize,
+    pub cursor_after: usize,
+    pub undo_depth_after: usize,
+    pub redo_depth_after: usize,
+    pub revision_before: u64,
+    pub revision_after: u64,
+    pub changed_voxels: usize,
+    pub bounds: Option<VoxelHistoryBoundsReadout>,
+    pub material_deltas: Vec<VoxelHistoryMaterialDeltaReadout>,
+    pub samples: Vec<VoxelEditDelta>,
+    pub samples_truncated: bool,
+    pub included_transaction_ids: Vec<u64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelHistoryBoundsReadout {
+    pub min: [i64; 3],
+    pub max: [i64; 3],
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelHistoryMaterialDeltaReadout {
+    pub before_material: Option<u16>,
+    pub after_material: Option<u16>,
+    pub changed_voxels: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]

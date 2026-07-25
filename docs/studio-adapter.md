@@ -4,61 +4,60 @@ The `studio-adapter` binary is Loading Bay's project-owned Rust composition boun
 Engine Studio. It is not a gameplay runtime facade and it does not generalize Loading Bay concepts
 into Engine vocabulary.
 
-Protocol version 2 has exactly five request families:
+Protocol version 4 is a closed, named operation set. It covers project open/read/close; typed scene
+translation; material and palette authoring; canonical voxel asset and transformed-instance
+lifecycle; authoritative picking; brush and primitive edits; deterministic templates; durable
+history query/preview/apply; every typed annotation edit/query/export family; bounded model and GLB
+conversion planning; trusted host voxel/GLB/license files; and deterministic environment
+materialization. Requests and responses are one bounded JSON value per line. There is no method-name
+dispatch, provider registry, arbitrary command payload, callback subscription, HTTP route, or
+browser persistence seam.
 
-- `describe` identifies the adapter and supported project schema;
-- `openProject` selects one explicit absolute root and safe relative project file;
-- `readProject` rereads the open project through the same owner path;
-- `setEntityTranslation` performs one typed authored transform operation; and
-- `closeProject` discards the adapter's open-project state.
-
-Requests and responses are one bounded JSON value per line. There is no method-name dispatch,
-provider registry, arbitrary command payload, callback subscription, HTTP route, or browser
-persistence seam.
+Prepared conversion plans and history reverts remain private adapter state. A later apply must name
+the exact plan/preview identity and current project hash; discard releases the private candidate.
+Studio receives bounded typed previews, never a callback or executable recipe.
 
 ## Owner path
 
-On open, the adapter uses the existing bounded `ProjectStore` and Loading Bay project decoder, then
-composes the public Engine owners:
+On open, the adapter uses the bounded `ProjectStore` and Loading Bay project decoder, then composes
+the public Engine owners:
 
 1. `content-store` admits the exact project body against a hash- and length-bearing manifest.
 2. Loading Bay admits every scene and its game-specific relationships into concrete Rust state.
-3. `asset-catalog` validates the derived canonical asset authority.
-4. `authored-scene` validates and admits the derived entry-scene view through `entity-state`.
-5. `engine-inspector` produces catalog, scene, entity, persistence, and voxel readouts.
-6. `render-projection` produces entity instances, which the adapter composes with explicit
-   catalog-derived material and mesh definitions into a complete public `render-model` frame.
+3. `asset-catalog`, `voxel-asset`, and `voxel-annotation` validate canonical authored assets.
+4. `authored-scene`, `entity-state`, and `engine-spatial` own scene, entity, voxel, history,
+   collision, navigation, and mesh authority.
+5. `voxel-convert` owns bounded mesh inspection, material policy, planning, preview, and exact output.
+6. `environment-authoring` owns deterministic preset/seed generation; Loading Bay atomically maps
+   the resulting voxel asset, instance, and markers into its named project entities.
+7. `engine-inspector` and `render-projection` produce owner readouts and the shared renderer frame.
 
 The response includes canonical owner codecs as strings so Studio can display or retain them without
-reimplementing their semantics. The TypeScript boundary performs structural decoding and delegates
-the frame to `@rusty-engine/render-contracts`; Rust remains the only semantic validator. A separate
-`sceneHierarchy` readout gives Studio the validated `authored-scene` traversal order, node/entity
-mapping, and local/world transforms without requiring a TypeScript scene codec. Every response
-contains a complete, atomically replaceable projection frame so renderer resources and instances
-cannot drift across refresh or reopen.
+reimplementing their semantics. TypeScript performs closed structural decoding and delegates frames
+to `@rusty-engine/render-contracts`; Rust remains the semantic validator and mutation authority.
 
-## Mutation and persistence
+## Mutation, host files, and persistence
 
-`setEntityTranslation` requires both the exact project content hash and the derived authored-scene
-revision observed by Studio. The adapter stages the `authored-scene` edit, reruns complete Loading
-Bay admission, builds and authorizes a `content-store` write candidate, and stages renderer
-projection before touching disk. The admitted project is then written to a same-directory pending
-file, source identity is checked again, and an atomic rename installs the canonical bytes. A
-canonical reread and publication confirmation complete the operation.
+Every project mutation requires the exact project hash it observed, plus the narrower scene, asset,
+voxel-data, layer, plan, or preview identity relevant to that owner. The adapter builds and admits a
+complete candidate, prepares the renderer projection, authorizes the content write, and only then
+publishes canonical bytes atomically. A canonical reread completes the operation.
 
-Traversal, non-absolute roots, oversized input, non-files, and symlinks anywhere in the writable
-project path are rejected. Invalid candidates, stale identities, and malformed protocol values do
-not alter the project file.
+Project-relative paths stay within the selected project root. Explicit host-file operations require
+absolute, lexically normalized paths with no symlink in the existing chain and enforce bounded
+reads. Host-file replacement requires the exact prior SHA-256, stages and syncs a same-directory
+candidate, rechecks the target, and atomically promotes it. Invalid, stale, oversized, or ambiguous
+requests preserve project and target bytes.
 
 ## Verification
 
-The focused Rust proof is:
+Focused protocol and voxel-owner proof:
 
 ```bash
-cargo test --locked -p loading-bay-game --test studio_adapter --test project_store
+cargo test --locked -p loading-bay-game --test studio_adapter --test studio_voxel_authoring
 ```
 
-Rusty Engine owns an explicit integration command that builds this binary, opens the real checkout
-through the TypeScript editor store, validates owner, hierarchy, projection, and voxel readouts,
-and performs a canonical reread. That command takes the checkout as an explicit argument; neither
-repository gains an ordinary sibling-checkout dependency.
+The complete downstream gate is `pnpm run verify`; it also checks exact Engine resolution, boundary
+isolation, the full Rust suite and Clippy, TypeScript content/presentation, and real Chromium/WebGL.
+Rusty Engine's Studio integration command takes this checkout as an explicit argument. Neither
+repository has an ordinary sibling-checkout dependency.

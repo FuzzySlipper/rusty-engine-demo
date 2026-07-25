@@ -13,16 +13,20 @@ use super::protocol::{
     STUDIO_ADAPTER_PROTOCOL_VERSION,
 };
 use super::voxel::{
-    apply_brush, apply_prepared_conversion, attach_voxel_instance, create_annotation_layer,
-    duplicate_voxel_asset, edit_annotation, export_annotation, initialize_voxel_asset,
-    prepare_conversion, query_annotation, query_model, redo_edit, remove_voxel_instance,
-    replace_palette, revert_history, set_voxel_instance_transform, undo_edit, upsert_material,
-    validate_pick,
+    apply_brush, apply_prepared_conversion, apply_prepared_history_revert, apply_primitive,
+    attach_voxel_instance, create_annotation_layer, duplicate_voxel_asset, edit_annotation,
+    export_annotation, export_voxel_asset_file, import_voxel_asset_file, initialize_voxel_asset,
+    initialize_voxel_template, materialize_project_environment, prepare_conversion,
+    prepare_history_revert, query_annotation, query_history, query_model, redo_edit,
+    remove_voxel_instance, replace_palette, revert_history, set_voxel_instance_transform,
+    undo_edit, upsert_material, validate_pick, PreparedProjectHistoryRevert,
 };
 
 struct OpenProject {
     location: ProjectLocation,
     prepared_conversions: BTreeMap<String, PreparedVoxelConversion>,
+    prepared_history_reverts: BTreeMap<String, PreparedProjectHistoryRevert>,
+    next_history_preview_id: u64,
 }
 
 #[derive(Default)]
@@ -92,7 +96,7 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 3,
+                    adapter_version: 4,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -110,9 +114,18 @@ impl StudioAdapterService {
                         "replaceVoxelPalette",
                         "validateVoxelPick",
                         "applyVoxelBrush",
+                        "applyVoxelPrimitive",
+                        "initializeVoxelTemplate",
+                        "importVoxelAssetFile",
+                        "exportVoxelAssetFile",
+                        "materializeEnvironment",
                         "undoVoxelEdit",
                         "redoVoxelEdit",
                         "revertVoxelHistory",
+                        "queryVoxelHistory",
+                        "prepareVoxelHistoryRevert",
+                        "applyVoxelHistoryRevert",
+                        "discardVoxelHistoryRevert",
                         "createVoxelAnnotationLayer",
                         "editVoxelAnnotation",
                         "queryVoxelAnnotation",
@@ -307,6 +320,119 @@ impl StudioAdapterService {
                     material_slot,
                 )
             }),
+            StudioAdapterRequest::ApplyVoxelPrimitive {
+                expected_project_hash,
+                asset_id,
+                expected_asset_content_hash,
+                request,
+                ..
+            } => self.mutate(request_id, |location| {
+                apply_primitive(
+                    location,
+                    &expected_project_hash,
+                    asset_id,
+                    expected_asset_content_hash,
+                    request,
+                )
+            }),
+            StudioAdapterRequest::InitializeVoxelTemplate {
+                expected_project_hash,
+                asset_id,
+                cell_size,
+                chunk_size,
+                material_palette,
+                request,
+                ..
+            } => self.mutate(request_id, |location| {
+                initialize_voxel_template(
+                    location,
+                    &expected_project_hash,
+                    asset_id,
+                    cell_size,
+                    chunk_size,
+                    material_palette,
+                    request,
+                )
+            }),
+            StudioAdapterRequest::ImportVoxelAssetFile {
+                expected_project_hash,
+                source_path,
+                target_asset_id,
+                ..
+            } => self.mutate(request_id, |location| {
+                import_voxel_asset_file(
+                    location,
+                    &expected_project_hash,
+                    source_path,
+                    target_asset_id,
+                )
+            }),
+            StudioAdapterRequest::ExportVoxelAssetFile {
+                expected_project_hash,
+                asset_id,
+                expected_asset_content_hash,
+                target_path,
+                expected_target_sha256,
+                ..
+            } => {
+                let Some(open) = self.open.as_ref() else {
+                    return not_open(request_id);
+                };
+                match export_voxel_asset_file(
+                    &open.location,
+                    &expected_project_hash,
+                    &asset_id,
+                    &expected_asset_content_hash,
+                    &target_path,
+                    expected_target_sha256.as_deref(),
+                ) {
+                    Ok(receipt) => StudioAdapterResponse::VoxelAssetFileExported {
+                        protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                        request_id,
+                        asset_id,
+                        target_path: receipt.path.display().to_string(),
+                        byte_count: receipt.byte_count,
+                        sha256: receipt.sha256,
+                        replaced_existing: receipt.replaced_existing,
+                    },
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::MaterializeEnvironment {
+                expected_project_hash,
+                expected_scene_revision,
+                scene_id,
+                preset,
+                seed,
+                voxel_asset_id,
+                voxel_instance_id,
+                voxel_translation,
+                player_entity_id,
+                exit_entity_id,
+                wall_material,
+                floor_material,
+                accent_material,
+                material_palette,
+                ..
+            } => self.mutate(request_id, |location| {
+                materialize_project_environment(
+                    location,
+                    &expected_project_hash,
+                    expected_scene_revision,
+                    scene_id,
+                    preset,
+                    seed,
+                    voxel_asset_id,
+                    voxel_instance_id,
+                    voxel_translation,
+                    player_entity_id,
+                    exit_entity_id,
+                    wall_material,
+                    floor_material,
+                    accent_material,
+                    material_palette,
+                )
+            }),
             StudioAdapterRequest::UndoVoxelEdit {
                 expected_project_hash,
                 asset_id,
@@ -348,6 +474,101 @@ impl StudioAdapterService {
                     target_cursor,
                 )
             }),
+            StudioAdapterRequest::QueryVoxelHistory {
+                expected_project_hash,
+                asset_id,
+                expected_asset_content_hash,
+                max_entries,
+                max_deltas_per_entry,
+                ..
+            } => self.read_voxel(request_id, |location| {
+                query_history(
+                    location,
+                    &expected_project_hash,
+                    &asset_id,
+                    &expected_asset_content_hash,
+                    max_entries,
+                    max_deltas_per_entry,
+                )
+            }),
+            StudioAdapterRequest::PrepareVoxelHistoryRevert {
+                expected_project_hash,
+                asset_id,
+                expected_asset_content_hash,
+                target_cursor,
+                max_samples,
+                ..
+            } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                let preview_id = format!("history-preview-{}", open.next_history_preview_id);
+                open.next_history_preview_id = open.next_history_preview_id.saturating_add(1);
+                match prepare_history_revert(
+                    &open.location,
+                    preview_id.clone(),
+                    expected_project_hash,
+                    asset_id,
+                    expected_asset_content_hash,
+                    target_cursor,
+                    max_samples,
+                ) {
+                    Ok((prepared, preview)) => {
+                        open.prepared_history_reverts.insert(preview_id, prepared);
+                        StudioAdapterResponse::VoxelHistoryRevertPrepared {
+                            protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                            request_id,
+                            preview,
+                        }
+                    }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::ApplyVoxelHistoryRevert {
+                expected_project_hash,
+                preview_id,
+                ..
+            } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                let Some(prepared) = open.prepared_history_reverts.remove(&preview_id) else {
+                    return StudioAdapterResponse::rejected(
+                        Some(request_id),
+                        AdapterRejection::new(
+                            "voxel.historyPreviewMissing",
+                            format!("no prepared history preview `{preview_id}`"),
+                        ),
+                    );
+                };
+                match apply_prepared_history_revert(
+                    &open.location,
+                    &expected_project_hash,
+                    prepared,
+                ) {
+                    Ok((receipt, project)) => mutation_response(request_id, receipt, project),
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::DiscardVoxelHistoryRevert { preview_id, .. } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                if open.prepared_history_reverts.remove(&preview_id).is_none() {
+                    return StudioAdapterResponse::rejected(
+                        Some(request_id),
+                        AdapterRejection::new(
+                            "voxel.historyPreviewMissing",
+                            format!("no prepared history preview `{preview_id}`"),
+                        ),
+                    );
+                }
+                StudioAdapterResponse::VoxelHistoryRevertDiscarded {
+                    protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                    request_id,
+                    preview_id,
+                }
+            }
             StudioAdapterRequest::CreateVoxelAnnotationLayer {
                 expected_project_hash,
                 asset_id,
@@ -419,9 +640,10 @@ impl StudioAdapterService {
             StudioAdapterRequest::PrepareVoxelConversion {
                 expected_project_hash,
                 source_asset_id,
-                source_path,
+                source,
                 target_asset_id,
-                license_path,
+                license,
+                mesh_primitive,
                 settings,
                 max_preview_samples,
                 ..
@@ -433,10 +655,11 @@ impl StudioAdapterService {
                     &open.location,
                     &expected_project_hash,
                     source_asset_id,
-                    source_path,
+                    source,
                     target_asset_id,
-                    license_path,
-                    settings,
+                    license,
+                    mesh_primitive,
+                    *settings,
                     max_preview_samples,
                 ) {
                     Ok((prepared, plan, preview)) => {
@@ -533,6 +756,8 @@ impl StudioAdapterService {
                 self.open = Some(OpenProject {
                     location,
                     prepared_conversions: BTreeMap::new(),
+                    prepared_history_reverts: BTreeMap::new(),
+                    next_history_preview_id: 1,
                 });
                 StudioAdapterResponse::ProjectOpened {
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,

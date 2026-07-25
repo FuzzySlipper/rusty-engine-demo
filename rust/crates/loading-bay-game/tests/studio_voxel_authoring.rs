@@ -13,6 +13,311 @@ const LICENSE: &str =
 const ASSET_ID: &str = "voxel-volume/kenney-wall-a";
 
 #[test]
+fn deterministic_environment_materialization_updates_asset_instance_and_named_entities_atomically()
+{
+    let root = TestProjectRoot::new();
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+    let before = fs::read(root.project_file()).unwrap();
+    let invalid = send(&mut service, environment_request(&opened, 42, [7, 7, 9]));
+    assert_eq!(invalid["type"], "rejected");
+    assert_eq!(invalid["error"]["code"], "environment-generation-rejected");
+    assert_eq!(fs::read(root.project_file()).unwrap(), before);
+
+    let materialized = send(&mut service, environment_request(&opened, 42, [7, 8, 9]));
+    assert_eq!(
+        materialized["receipt"]["kind"], "environmentMaterialized",
+        "{materialized:#}"
+    );
+    assert_eq!(materialized["receipt"]["preset"], "tiny-enclosed");
+    assert_eq!(materialized["receipt"]["seed"], 42);
+    assert!(materialized["receipt"]["voxelCount"].as_u64().unwrap() > 100);
+    assert_ne!(
+        materialized["receipt"]["playerTranslation"],
+        materialized["receipt"]["exitTranslation"]
+    );
+    assert_eq!(
+        materialized["project"]["projectionReadout"]["retainedVoxelInstances"],
+        3
+    );
+
+    let stored = decode_project_document(&fs::read_to_string(root.project_file()).unwrap())
+        .unwrap()
+        .project;
+    let scene = &stored.scenes[0];
+    assert!(stored
+        .assets
+        .iter()
+        .any(|asset| asset.id == "voxel-volume/generated-tunnel"));
+    assert!(scene
+        .voxel_instances
+        .iter()
+        .any(|instance| instance.instance_id == "generated-tunnel"));
+    assert_eq!(
+        scene
+            .entities
+            .iter()
+            .find(|entity| entity.id == 1)
+            .unwrap()
+            .translation,
+        Some([
+            materialized["receipt"]["playerTranslation"][0]
+                .as_f64()
+                .unwrap() as f32,
+            materialized["receipt"]["playerTranslation"][1]
+                .as_f64()
+                .unwrap() as f32,
+            materialized["receipt"]["playerTranslation"][2]
+                .as_f64()
+                .unwrap() as f32,
+        ])
+    );
+
+    let mut restarted = StudioAdapterService::new();
+    let reopened = open(&mut restarted, &root);
+    assert_eq!(
+        reopened["project"]["projectionReadout"]["retainedVoxelInstances"],
+        3
+    );
+}
+
+#[test]
+fn voxel_host_file_open_export_save_as_and_stale_guards_are_atomic() {
+    let root = TestProjectRoot::new();
+    fs::create_dir(root.path().join("exports")).unwrap();
+    let target = root.path().join("exports/wall.avxl.json");
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+
+    let exported = send(
+        &mut service,
+        json!({
+            "type": "exportVoxelAssetFile",
+            "protocolVersion": 4,
+            "requestId": "export",
+            "expectedProjectHash": project_hash(&opened),
+            "assetId": ASSET_ID,
+            "expectedAssetContentHash": asset_hash(&opened),
+            "targetPath": target,
+            "expectedTargetSha256": null
+        }),
+    );
+    assert_eq!(exported["type"], "voxelAssetFileExported", "{exported:#}");
+    assert_eq!(exported["replacedExisting"], false);
+    let exported_bytes = fs::read(&target).unwrap();
+    assert_eq!(exported["byteCount"], exported_bytes.len());
+
+    let imported = send(
+        &mut service,
+        json!({
+            "type": "importVoxelAssetFile",
+            "protocolVersion": 4,
+            "requestId": "import",
+            "expectedProjectHash": project_hash(&opened),
+            "sourcePath": target,
+            "targetAssetId": "voxel-volume/imported-wall"
+        }),
+    );
+    assert_eq!(imported["receipt"]["kind"], "voxelAssetFileImported");
+    assert_eq!(imported["receipt"]["sourceAssetId"], ASSET_ID);
+    assert_eq!(
+        imported["receipt"]["targetAssetId"],
+        "voxel-volume/imported-wall"
+    );
+
+    let stale = send(
+        &mut service,
+        json!({
+            "type": "exportVoxelAssetFile",
+            "protocolVersion": 4,
+            "requestId": "stale-export",
+            "expectedProjectHash": project_hash(&imported),
+            "assetId": ASSET_ID,
+            "expectedAssetContentHash": asset_hash(&imported),
+            "targetPath": target,
+            "expectedTargetSha256": "sha256:stale"
+        }),
+    );
+    assert_eq!(stale["error"]["code"], "hostFile.staleTarget");
+    assert_eq!(fs::read(&target).unwrap(), exported_bytes);
+
+    let replaced = send(
+        &mut service,
+        json!({
+            "type": "exportVoxelAssetFile",
+            "protocolVersion": 4,
+            "requestId": "replace-export",
+            "expectedProjectHash": project_hash(&imported),
+            "assetId": ASSET_ID,
+            "expectedAssetContentHash": asset_hash(&imported),
+            "targetPath": target,
+            "expectedTargetSha256": exported["sha256"]
+        }),
+    );
+    assert_eq!(replaced["type"], "voxelAssetFileExported", "{replaced:#}");
+    assert_eq!(replaced["replacedExisting"], true);
+    assert_eq!(fs::read(&target).unwrap(), exported_bytes);
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::symlink;
+        let link = root.path().join("exports/wall-link.avxl.json");
+        symlink(&target, &link).unwrap();
+        let rejected = send(
+            &mut service,
+            json!({
+                "type": "importVoxelAssetFile",
+                "protocolVersion": 4,
+                "requestId": "symlink-import",
+                "expectedProjectHash": project_hash(&imported),
+                "sourcePath": link,
+                "targetAssetId": "voxel-volume/symlink-wall"
+            }),
+        );
+        assert_eq!(rejected["error"]["code"], "hostFile.symlinkRejected");
+    }
+}
+
+#[test]
+fn typed_primitives_templates_and_history_previews_share_durable_authority() {
+    let root = TestProjectRoot::new();
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+
+    let primitive = send(
+        &mut service,
+        json!({
+            "type": "applyVoxelPrimitive",
+            "protocolVersion": 4,
+            "requestId": "line",
+            "expectedProjectHash": project_hash(&opened),
+            "assetId": ASSET_ID,
+            "expectedAssetContentHash": asset_hash(&opened),
+            "request": {
+                "primitive": {
+                    "kind": "line",
+                    "start": [0, 0, 0],
+                    "end": [1, 1, 1],
+                    "radius": 0
+                },
+                "material": { "kind": "clear" }
+            }
+        }),
+    );
+    assert_eq!(primitive["receipt"]["kind"], "voxelPrimitiveApplied");
+    assert_eq!(primitive["receipt"]["primitiveKind"], "line");
+    assert_eq!(primitive["receipt"]["changedVoxels"], 2);
+
+    let history = send(
+        &mut service,
+        json!({
+            "type": "queryVoxelHistory",
+            "protocolVersion": 4,
+            "requestId": "history",
+            "expectedProjectHash": project_hash(&primitive),
+            "assetId": ASSET_ID,
+            "expectedAssetContentHash": asset_hash(&primitive),
+            "maxEntries": 16,
+            "maxDeltasPerEntry": 16
+        }),
+    );
+    assert_eq!(history["readout"]["kind"], "history");
+    assert_eq!(history["readout"]["entryCount"], 1);
+    assert_eq!(history["readout"]["entries"][0]["changedVoxels"], 2);
+    assert_eq!(
+        history["readout"]["entries"][0]["deltas"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
+
+    let bytes_before_preview = fs::read(root.project_file()).unwrap();
+    let preview = send(
+        &mut service,
+        json!({
+            "type": "prepareVoxelHistoryRevert",
+            "protocolVersion": 4,
+            "requestId": "preview",
+            "expectedProjectHash": project_hash(&primitive),
+            "assetId": ASSET_ID,
+            "expectedAssetContentHash": asset_hash(&primitive),
+            "targetCursor": 0,
+            "maxSamples": 8
+        }),
+    );
+    assert_eq!(preview["type"], "voxelHistoryRevertPrepared");
+    assert_eq!(preview["preview"]["changedVoxels"], 2);
+    assert_eq!(preview["preview"]["cursorBefore"], 1);
+    assert_eq!(preview["preview"]["cursorAfter"], 0);
+    assert_eq!(fs::read(root.project_file()).unwrap(), bytes_before_preview);
+
+    let reverted = send(
+        &mut service,
+        json!({
+            "type": "applyVoxelHistoryRevert",
+            "protocolVersion": 4,
+            "requestId": "apply-preview",
+            "expectedProjectHash": project_hash(&primitive),
+            "previewId": preview["preview"]["previewId"]
+        }),
+    );
+    assert_eq!(reverted["receipt"]["kind"], "voxelHistoryMoved");
+    assert_eq!(voxel_asset(&reverted)["history"]["cursor"], 0);
+    assert_eq!(
+        voxel_asset(&reverted)["inspection"]["state"]["solidVoxelCount"],
+        8
+    );
+
+    let template = send(
+        &mut service,
+        json!({
+            "type": "initializeVoxelTemplate",
+            "protocolVersion": 4,
+            "requestId": "house-template",
+            "expectedProjectHash": project_hash(&reverted),
+            "assetId": "voxel-volume/studio-house",
+            "cellSize": 1.0,
+            "chunkSize": 16,
+            "materialPalette": [{
+                "materialSlot": 7,
+                "materialAssetId": "material/wall-lines",
+                "displayName": "Wall lines"
+            }],
+            "request": {
+                "template": "house",
+                "origin": [20, 0, 0],
+                "materialSlot": 7
+            }
+        }),
+    );
+    assert_eq!(
+        template["receipt"]["kind"], "voxelTemplateInitialized",
+        "{template:#}"
+    );
+    assert_eq!(template["receipt"]["changedVoxels"], 329);
+    let house = template["project"]["voxelAuthoring"]["assets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|asset| asset["inspection"]["assetId"] == "voxel-volume/studio-house")
+        .unwrap();
+    assert_eq!(house["inspection"]["state"]["solidVoxelCount"], 329);
+    assert_eq!(house["history"]["cursor"], 0);
+
+    let mut restarted = StudioAdapterService::new();
+    let reopened = open(&mut restarted, &root);
+    let house = reopened["project"]["voxelAuthoring"]["assets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|asset| asset["inspection"]["assetId"] == "voxel-volume/studio-house")
+        .unwrap();
+    assert_eq!(house["inspection"]["state"]["solidVoxelCount"], 329);
+    assert_eq!(house["history"]["persisted"], false);
+}
+
+#[test]
 fn shared_projection_pick_model_and_durable_history_use_engine_owners() {
     let root = TestProjectRoot::new();
     let mut service = StudioAdapterService::new();
@@ -44,7 +349,7 @@ fn shared_projection_pick_model_and_durable_history_use_engine_owners() {
         &mut service,
         json!({
             "type": "queryVoxelModel",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "model",
             "expectedProjectHash": project_hash,
             "assetId": ASSET_ID,
@@ -73,7 +378,7 @@ fn shared_projection_pick_model_and_durable_history_use_engine_owners() {
         &mut service,
         json!({
             "type": "validateVoxelPick",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "pick",
             "expectedProjectHash": project_hash,
             "sceneId": "scene/converted-wall",
@@ -94,7 +399,7 @@ fn shared_projection_pick_model_and_durable_history_use_engine_owners() {
         &mut service,
         json!({
             "type": "applyVoxelBrush",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "erase",
             "expectedProjectHash": project_hash,
             "assetId": ASSET_ID,
@@ -121,7 +426,7 @@ fn shared_projection_pick_model_and_durable_history_use_engine_owners() {
         &mut service,
         json!({
             "type": "applyVoxelBrush",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "stale",
             "expectedProjectHash": project_hash,
             "assetId": ASSET_ID,
@@ -188,7 +493,7 @@ fn annotations_are_typed_queryable_editable_exportable_and_hash_guarded() {
         &mut service,
         json!({
             "type": "createVoxelAnnotationLayer",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "create-annotation",
             "expectedProjectHash": opened_project_hash,
             "assetId": ASSET_ID,
@@ -223,7 +528,7 @@ fn annotations_are_typed_queryable_editable_exportable_and_hash_guarded() {
         &mut service,
         json!({
             "type": "queryVoxelAnnotation",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "query-annotation",
             "expectedProjectHash": project_hash(&created),
             "assetId": ASSET_ID,
@@ -245,7 +550,7 @@ fn annotations_are_typed_queryable_editable_exportable_and_hash_guarded() {
         &mut service,
         json!({
             "type": "editVoxelAnnotation",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "edit-annotation",
             "expectedProjectHash": project_hash(&created),
             "assetId": ASSET_ID,
@@ -268,7 +573,7 @@ fn annotations_are_typed_queryable_editable_exportable_and_hash_guarded() {
         &mut service,
         json!({
             "type": "exportVoxelAnnotation",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "export-annotation",
             "expectedProjectHash": project_hash(&edited),
             "assetId": ASSET_ID,
@@ -289,7 +594,7 @@ fn annotations_are_typed_queryable_editable_exportable_and_hash_guarded() {
         &mut service,
         json!({
             "type": "editVoxelAnnotation",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "stale-annotation",
             "expectedProjectHash": project_hash(&edited),
             "assetId": ASSET_ID,
@@ -318,14 +623,21 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
         &mut service,
         json!({
             "type": "prepareVoxelConversion",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "prepare",
             "expectedProjectHash": project_hash(&opened),
             "sourceAssetId": "mesh/kenney-wall-a",
-            "sourcePath": "fixtures/voxel-conversion/kenney-wall-a.glb",
+            "source": {
+                "scope": "host",
+                "path": root.path().join("fixtures/voxel-conversion/kenney-wall-a.glb")
+            },
             "targetAssetId": "voxel-volume/kenney-wall-b",
-            "licensePath": "fixtures/voxel-conversion/KENNEY-RETRO-URBAN-KIT-LICENSE.txt",
-            "settings": conversion_settings(),
+            "license": {
+                "scope": "host",
+                "path": root.path().join("fixtures/voxel-conversion/KENNEY-RETRO-URBAN-KIT-LICENSE.txt")
+            },
+            "meshPrimitive": "group/0",
+            "settings": conversion_settings_for_group(),
             "maxPreviewSamples": 32
         }),
     );
@@ -334,6 +646,7 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
         prepared["plan"]["targetAssetId"],
         "voxel-volume/kenney-wall-b"
     );
+    assert_eq!(prepared["plan"]["source"]["meshPrimitive"], "group/0");
     assert!(prepared["preview"]["sampleVoxels"].as_array().is_some());
     let plan_id = prepared["plan"]["planId"].as_str().unwrap();
     let plan_hash = prepared["plan"]["planHash"].as_str().unwrap();
@@ -346,7 +659,7 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
         &mut service,
         json!({
             "type": "applyVoxelConversion",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "forged-apply",
             "expectedProjectHash": project_hash(&opened),
             "planId": plan_id,
@@ -362,7 +675,7 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
         &mut service,
         json!({
             "type": "applyVoxelConversion",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "apply",
             "expectedProjectHash": project_hash(&opened),
             "planId": plan_id,
@@ -387,7 +700,10 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
         .unwrap();
     assert_eq!(
         converted.provenance.source_path,
-        "fixtures/voxel-conversion/kenney-wall-a.glb"
+        root.path()
+            .join("fixtures/voxel-conversion/kenney-wall-a.glb")
+            .display()
+            .to_string()
     );
     assert_eq!(
         converted.provenance.converter,
@@ -399,7 +715,7 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
         &mut StudioAdapterService::new(),
         json!({
             "type": "applyVoxelConversion",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "missing-private-plan",
             "expectedProjectHash": project_hash(&applied),
             "planId": plan_id,
@@ -421,7 +737,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "upsertMaterial",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "material",
             "expectedProjectHash": project_hash(&opened),
             "assetId": "material/studio-accent",
@@ -434,7 +750,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "initializeVoxelAsset",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "initialize",
             "expectedProjectHash": project_hash(&material),
             "assetId": "voxel-volume/studio-block",
@@ -460,7 +776,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "attachVoxelInstance",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "attach",
             "expectedProjectHash": project_hash(&initialized),
             "sceneId": "scene/converted-wall",
@@ -485,7 +801,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "setVoxelInstanceTransform",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "transform",
             "expectedProjectHash": project_hash(&attached),
             "sceneId": "scene/converted-wall",
@@ -507,7 +823,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "duplicateVoxelAsset",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "duplicate",
             "expectedProjectHash": project_hash(&transformed),
             "sourceAssetId": "voxel-volume/studio-block",
@@ -527,7 +843,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "replaceVoxelPalette",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "palette",
             "expectedProjectHash": project_hash(&duplicated),
             "assetId": "voxel-volume/studio-block",
@@ -550,7 +866,7 @@ fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
         &mut service,
         json!({
             "type": "removeVoxelInstance",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "remove",
             "expectedProjectHash": project_hash(&palette),
             "sceneId": "scene/converted-wall",
@@ -585,7 +901,7 @@ fn history_request(
 ) -> Value {
     let mut request = json!({
         "type": request_type,
-        "protocolVersion": 3,
+        "protocolVersion": 4,
         "requestId": request_id,
         "expectedProjectHash": project_hash(current),
         "assetId": ASSET_ID,
@@ -648,6 +964,57 @@ fn conversion_settings() -> Value {
     })
 }
 
+fn conversion_settings_for_group() -> Value {
+    let mut settings = conversion_settings();
+    settings["conversion"]["materialPalette"]
+        .as_array_mut()
+        .unwrap()
+        .truncate(1);
+    settings["conversion"]["materialMap"]
+        .as_array_mut()
+        .unwrap()
+        .truncate(1);
+    settings
+}
+
+fn environment_request(current: &Value, seed: u64, materials: [u16; 3]) -> Value {
+    json!({
+        "type": "materializeEnvironment",
+        "protocolVersion": 4,
+        "requestId": format!("environment-{seed}-{}-{}-{}", materials[0], materials[1], materials[2]),
+        "expectedProjectHash": project_hash(current),
+        "expectedSceneRevision": current["project"]["identity"]["sceneRevision"],
+        "sceneId": "scene/converted-wall",
+        "preset": "tinyEnclosed",
+        "seed": seed,
+        "voxelAssetId": "voxel-volume/generated-tunnel",
+        "voxelInstanceId": "generated-tunnel",
+        "voxelTranslation": [0.0, 0.0, 12.0],
+        "playerEntityId": 1,
+        "exitEntityId": 3,
+        "wallMaterial": materials[0],
+        "floorMaterial": materials[1],
+        "accentMaterial": materials[2],
+        "materialPalette": [
+            {
+                "materialSlot": 7,
+                "materialAssetId": "material/wall-lines",
+                "displayName": "Wall"
+            },
+            {
+                "materialSlot": 8,
+                "materialAssetId": "material/concrete",
+                "displayName": "Floor"
+            },
+            {
+                "materialSlot": 9,
+                "materialAssetId": "material/wall-lines",
+                "displayName": "Accent"
+            }
+        ]
+    })
+}
+
 fn material_definition(color: [f32; 4]) -> Value {
     json!({
         "authority": {
@@ -673,7 +1040,7 @@ fn open(service: &mut StudioAdapterService, root: &TestProjectRoot) -> Value {
         service,
         json!({
             "type": "openProject",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE
