@@ -24,7 +24,7 @@ use super::voxel::{
 
 struct OpenProject {
     location: ProjectLocation,
-    prepared_conversions: BTreeMap<String, PreparedVoxelConversion>,
+    prepared_conversion: Option<PreparedVoxelConversion>,
     prepared_history_reverts: BTreeMap<String, PreparedProjectHistoryRevert>,
     next_history_preview_id: u64,
 }
@@ -663,8 +663,7 @@ impl StudioAdapterService {
                     max_preview_samples,
                 ) {
                     Ok((prepared, plan, preview)) => {
-                        open.prepared_conversions
-                            .insert(plan.plan_id.clone(), prepared);
+                        open.prepared_conversion = Some(prepared);
                         StudioAdapterResponse::VoxelConversionPrepared {
                             protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                             request_id,
@@ -685,7 +684,12 @@ impl StudioAdapterService {
                 let Some(open) = self.open.as_mut() else {
                     return not_open(request_id);
                 };
-                let Some(prepared) = open.prepared_conversions.get(&plan_id).cloned() else {
+                let Some(prepared) = open
+                    .prepared_conversion
+                    .as_ref()
+                    .filter(|prepared| prepared.plan().plan_id == plan_id)
+                    .cloned()
+                else {
                     return StudioAdapterResponse::rejected(
                         Some(request_id),
                         AdapterRejection::new(
@@ -703,7 +707,7 @@ impl StudioAdapterService {
                     expected_output_hash,
                 ) {
                     Ok((receipt, project)) => {
-                        open.prepared_conversions.remove(&plan_id);
+                        open.prepared_conversion = None;
                         mutation_response(request_id, receipt, project)
                     }
                     Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
@@ -713,7 +717,11 @@ impl StudioAdapterService {
                 let Some(open) = self.open.as_mut() else {
                     return not_open(request_id);
                 };
-                if open.prepared_conversions.remove(&plan_id).is_none() {
+                if open
+                    .prepared_conversion
+                    .as_ref()
+                    .is_none_or(|prepared| prepared.plan().plan_id != plan_id)
+                {
                     return StudioAdapterResponse::rejected(
                         Some(request_id),
                         AdapterRejection::new(
@@ -722,6 +730,7 @@ impl StudioAdapterService {
                         ),
                     );
                 }
+                open.prepared_conversion = None;
                 StudioAdapterResponse::VoxelConversionDiscarded {
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     request_id,
@@ -755,7 +764,7 @@ impl StudioAdapterService {
             Ok((location, project)) => {
                 self.open = Some(OpenProject {
                     location,
-                    prepared_conversions: BTreeMap::new(),
+                    prepared_conversion: None,
                     prepared_history_reverts: BTreeMap::new(),
                     next_history_preview_id: 1,
                 });

@@ -728,6 +728,75 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
 }
 
 #[test]
+fn conversion_preparation_replaces_the_single_retained_private_plan() {
+    let root = TestProjectRoot::new();
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+
+    let prepare = |request_id: &str, target_asset_id: &str| {
+        json!({
+            "type": "prepareVoxelConversion",
+            "protocolVersion": 4,
+            "requestId": request_id,
+            "expectedProjectHash": project_hash(&opened),
+            "sourceAssetId": "mesh/kenney-wall-a",
+            "source": {
+                "scope": "host",
+                "path": root.path().join("fixtures/voxel-conversion/kenney-wall-a.glb")
+            },
+            "targetAssetId": target_asset_id,
+            "license": {
+                "scope": "host",
+                "path": root.path().join("fixtures/voxel-conversion/KENNEY-RETRO-URBAN-KIT-LICENSE.txt")
+            },
+            "meshPrimitive": "group/0",
+            "settings": conversion_settings_for_group(),
+            "maxPreviewSamples": 4
+        })
+    };
+
+    let first = send(&mut service, prepare("prepare-first", "voxel-volume/first"));
+    let second = send(
+        &mut service,
+        prepare("prepare-second", "voxel-volume/second"),
+    );
+    assert_eq!(first["type"], "voxelConversionPrepared", "{first:#}");
+    assert_eq!(second["type"], "voxelConversionPrepared", "{second:#}");
+    assert_ne!(first["plan"]["planId"], second["plan"]["planId"]);
+
+    let bytes_before_rejected_apply = fs::read(root.project_file()).unwrap();
+    let replaced = send(
+        &mut service,
+        json!({
+            "type": "applyVoxelConversion",
+            "protocolVersion": 4,
+            "requestId": "apply-replaced",
+            "expectedProjectHash": project_hash(&opened),
+            "planId": first["plan"]["planId"],
+            "expectedPlanHash": first["plan"]["planHash"],
+            "expectedOutputHash": first["preview"]["outputHash"]
+        }),
+    );
+    assert_eq!(replaced["type"], "rejected", "{replaced:#}");
+    assert_eq!(replaced["error"]["code"], "conversion.planMissing");
+    assert_eq!(
+        fs::read(root.project_file()).unwrap(),
+        bytes_before_rejected_apply
+    );
+
+    let discarded = send(
+        &mut service,
+        json!({
+            "type": "discardVoxelConversion",
+            "protocolVersion": 4,
+            "requestId": "discard-current",
+            "planId": second["plan"]["planId"]
+        }),
+    );
+    assert_eq!(discarded["type"], "voxelConversionDiscarded");
+}
+
+#[test]
 fn material_asset_and_transformed_instance_lifecycle_is_atomic_and_projected() {
     let root = TestProjectRoot::new();
     let mut service = StudioAdapterService::new();
