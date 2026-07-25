@@ -20,7 +20,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -113,7 +113,7 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "move-player",
             "expectedProjectHash": project_hash,
             "expectedSceneRevision": scene_revision,
@@ -154,7 +154,7 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "stale-move",
             "expectedProjectHash": project_hash,
             "expectedSceneRevision": scene_revision,
@@ -179,7 +179,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "missing",
             "expectedProjectHash": identity["projectHash"],
             "expectedSceneRevision": identity["sceneRevision"],
@@ -195,7 +195,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "invalid",
             "expectedProjectHash": identity["projectHash"],
             "expectedSceneRevision": identity["sceneRevision"],
@@ -223,7 +223,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut StudioAdapterService::new(),
         json!({
             "type": "openProject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "bad-domain",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -242,7 +242,7 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
         &mut service,
         json!({
             "type": "createProject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "create-project",
             "root": root.path(),
             "projectFile": "content/projects/new-project.project.json",
@@ -254,21 +254,21 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
     );
     assert_eq!(created["type"], "projectCreated", "{created:#}");
     assert_eq!(created["project"]["identity"]["projectId"], "new-project");
-    assert_eq!(created["project"]["identity"]["currentSchemaVersion"], 10);
+    assert_eq!(created["project"]["identity"]["currentSchemaVersion"], 11);
     let created_path = root
         .path()
         .join("content/projects/new-project.project.json");
     let created_bytes = fs::read(&created_path).unwrap();
     let created_document =
         decode_project_document(std::str::from_utf8(&created_bytes).unwrap()).unwrap();
-    assert_eq!(created_document.source_schema_version, 10);
+    assert_eq!(created_document.source_schema_version, 11);
     assert_eq!(created_document.project.scenes.len(), 1);
 
     let duplicate = send(
         &mut service,
         json!({
             "type": "createProject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "duplicate-project",
             "root": root.path(),
             "projectFile": "content/projects/new-project.project.json",
@@ -285,7 +285,7 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
         &mut service,
         json!({
             "type": "saveProjectAs",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "save-as",
             "expectedProjectHash": created["project"]["identity"]["projectHash"],
             "root": root.path(),
@@ -323,7 +323,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "createSceneObject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "create-object",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -350,7 +350,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "createSceneObject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "create-light",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -394,7 +394,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setSceneObjectTransform",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "full-transform",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -413,7 +413,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setSceneObjectAppearance",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "appearance",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -449,7 +449,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setEntityCollision",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "collision",
             "expectedProjectHash": hash,
             "entityId": 50,
@@ -463,7 +463,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setEntityKinematic",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "kinematic",
             "expectedProjectHash": hash,
             "entityId": 50,
@@ -480,7 +480,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "renameSceneObject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "rename",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -496,7 +496,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "reparentSceneObject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "cycle",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -513,7 +513,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "deleteSceneObject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "delete-subtree",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -531,6 +531,206 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         .entities
         .iter()
         .all(|entity| !matches!(entity.id, 50 | 51)));
+}
+
+#[test]
+fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
+    let root = TestProjectRoot::new(CURRENT_PROJECT);
+    let source_path = "content/assets/studio-triangle.mesh.json";
+    fs::create_dir_all(root.path().join("content/assets")).unwrap();
+    fs::write(
+        root.path().join(source_path),
+        imported_triangle([0.2, 0.4, 0.8, 1.0]),
+    )
+    .unwrap();
+
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+    let (project_hash, _) = owner_version(&opened);
+    let prepared = send(
+        &mut service,
+        json!({
+            "type": "prepareAssetImport",
+            "protocolVersion": 6,
+            "requestId": "prepare-import",
+            "expectedProjectHash": project_hash,
+            "source": { "scope": "project", "path": source_path },
+            "settings": {
+                "scale": 2.0,
+                "generateCollision": true,
+                "materialNamespace": "studio"
+            }
+        }),
+    );
+    assert_eq!(prepared["type"], "assetImportPrepared", "{prepared:#}");
+    assert_eq!(prepared["plan"]["hasErrors"], false);
+    assert_eq!(prepared["plan"]["meshAssetId"], "mesh/studio-triangle");
+    assert_eq!(prepared["plan"]["reimportKind"], "structuralReload");
+    assert_eq!(
+        prepared["plan"]["generatedAssetIds"],
+        json!(["material/studio/paint", "mesh/studio-triangle"])
+    );
+
+    let applied = send(
+        &mut service,
+        json!({
+            "type": "applyAssetImport",
+            "protocolVersion": 6,
+            "requestId": "apply-import",
+            "expectedProjectHash": project_hash,
+            "planId": prepared["plan"]["planId"],
+            "expectedPlanHash": prepared["plan"]["planHash"]
+        }),
+    );
+    assert_eq!(applied["type"], "projectMutationApplied", "{applied:#}");
+    assert_eq!(applied["receipt"]["kind"], "assetImportApplied");
+    let imported_entry = applied["project"]["assetBrowser"]["assets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|entry| entry["assetId"] == "mesh/studio-triangle")
+        .unwrap();
+    assert_eq!(
+        imported_entry["dependencies"],
+        json!(["material/studio/paint"])
+    );
+    assert_eq!(imported_entry["importedMesh"], true);
+    assert_eq!(imported_entry["import"]["status"], "unchanged");
+    assert!(applied["project"]["assetBrowser"]["lockEntries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|entry| entry["assetId"] == "mesh/studio-triangle"));
+    let mesh_definition = applied["project"]["projection"]["ops"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|operation| {
+            operation["op"] == "defineStaticMesh"
+                && operation["asset"]["asset"] == "mesh/studio-triangle"
+        })
+        .unwrap();
+    assert_eq!(
+        mesh_definition["asset"]["payload"]["source"]["positions"],
+        json!([0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 2.0, 0.0])
+    );
+    assert_eq!(
+        mesh_definition["asset"]["collision"],
+        json!({ "kind": "aabbFallback" })
+    );
+
+    let (project_hash, _) = owner_version(&applied);
+    fs::write(
+        root.path().join(source_path),
+        imported_triangle([0.8, 0.2, 0.1, 1.0]),
+    )
+    .unwrap();
+    let drifted = send(
+        &mut service,
+        json!({
+            "type": "readProject",
+            "protocolVersion": 6,
+            "requestId": "read-drift"
+        }),
+    );
+    let drifted_entry = drifted["project"]["assetBrowser"]["assets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|entry| entry["assetId"] == "mesh/studio-triangle")
+        .unwrap();
+    assert_eq!(drifted_entry["import"]["status"], "contentChanged");
+
+    let reimport = send(
+        &mut service,
+        json!({
+            "type": "prepareAssetReimport",
+            "protocolVersion": 6,
+            "requestId": "prepare-reimport",
+            "expectedProjectHash": project_hash,
+            "assetId": "mesh/studio-triangle"
+        }),
+    );
+    assert_eq!(reimport["type"], "assetImportPrepared", "{reimport:#}");
+    assert_eq!(reimport["plan"]["reimportKind"], "visualUpdate");
+    let reapplied = send(
+        &mut service,
+        json!({
+            "type": "applyAssetImport",
+            "protocolVersion": 6,
+            "requestId": "apply-reimport",
+            "expectedProjectHash": project_hash,
+            "planId": reimport["plan"]["planId"],
+            "expectedPlanHash": reimport["plan"]["planHash"]
+        }),
+    );
+    assert_eq!(reapplied["type"], "projectMutationApplied", "{reapplied:#}");
+    assert_eq!(reapplied["receipt"]["reimportKind"], "visualUpdate");
+    let material = reapplied["project"]["projection"]["ops"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|operation| {
+            operation["op"] == "defineMaterial"
+                && operation["material"]["id"] == "material/studio/paint"
+        })
+        .unwrap();
+    assert_eq!(material["material"]["color"], json!([0.8, 0.2, 0.1, 1.0]));
+
+    let rejected_source = "content/assets/rejected.mesh.json";
+    fs::write(root.path().join(rejected_source), "{\"schemaVersion\":1}").unwrap();
+    let project_hash = owner_version(&reapplied).0;
+    let before = fs::read(root.project_file()).unwrap();
+    let failed_plan = send(
+        &mut service,
+        json!({
+            "type": "prepareAssetImport",
+            "protocolVersion": 6,
+            "requestId": "prepare-invalid",
+            "expectedProjectHash": project_hash,
+            "source": { "scope": "project", "path": rejected_source },
+            "settings": {
+                "scale": 1.0,
+                "generateCollision": false,
+                "materialNamespace": null
+            }
+        }),
+    );
+    assert_eq!(
+        failed_plan["type"], "assetImportPrepared",
+        "{failed_plan:#}"
+    );
+    assert_eq!(failed_plan["plan"]["hasErrors"], true);
+    let rejected = send(
+        &mut service,
+        json!({
+            "type": "applyAssetImport",
+            "protocolVersion": 6,
+            "requestId": "apply-invalid",
+            "expectedProjectHash": project_hash,
+            "planId": failed_plan["plan"]["planId"],
+            "expectedPlanHash": failed_plan["plan"]["planHash"]
+        }),
+    );
+    assert_eq!(rejected["type"], "rejected");
+    assert_eq!(rejected["error"]["code"], "assetImport.planHasErrors");
+    assert_eq!(fs::read(root.project_file()).unwrap(), before);
+}
+
+fn imported_triangle(color: [f32; 4]) -> String {
+    serde_json::to_string_pretty(&json!({
+        "schemaVersion": 1,
+        "name": "studio-triangle",
+        "positions": [0, 0, 0, 1, 0, 0, 0, 1, 0],
+        "normals": [0, 0, 1, 0, 0, 1, 0, 0, 1],
+        "indices": [0, 1, 2],
+        "materials": [
+            { "slot": 0, "name": "paint", "color": color, "texture": null }
+        ],
+        "groups": [{ "materialSlot": 0, "start": 0, "count": 3 }],
+        "collision": "visualOnly"
+    }))
+    .unwrap()
 }
 
 #[test]
@@ -561,7 +761,7 @@ fn malformed_unbounded_and_unsafe_paths_fail_closed() {
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "traversal",
             "root": root.path(),
             "projectFile": "../outside.project.json",
@@ -573,7 +773,7 @@ fn malformed_unbounded_and_unsafe_paths_fail_closed() {
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "relative-root",
             "root": "relative",
             "projectFile": PROJECT_FILE,
@@ -594,7 +794,7 @@ fn symlinked_project_paths_are_rejected_even_when_the_target_stays_inside_root()
         &mut StudioAdapterService::new(),
         json!({
             "type": "openProject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "symlink",
             "root": root.path(),
             "projectFile": "content/projects/linked.project.json",
@@ -609,7 +809,7 @@ fn open(service: &mut StudioAdapterService, root: &TestProjectRoot) -> Value {
         service,
         json!({
             "type": "openProject",
-            "protocolVersion": 5,
+            "protocolVersion": 6,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE,

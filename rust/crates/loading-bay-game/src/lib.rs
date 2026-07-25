@@ -87,10 +87,11 @@ pub use snapshot::{
     GAME_SNAPSHOT_SCHEMA_VERSION,
 };
 pub use stored_project::{
-    decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset, StoredCollision,
-    StoredDoor, StoredEncounter, StoredEntityDefinition, StoredExtractionBeacon,
-    StoredGeneratedVoxelEnvironment, StoredHealth, StoredKinematic, StoredLight,
-    StoredMaterialVoxel, StoredMaterialVoxelEnvironment, StoredNavigation, StoredPlayerController,
+    decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset,
+    StoredAssetCatalogMetadata, StoredAssetImport, StoredCollision, StoredDoor, StoredEncounter,
+    StoredEntityDefinition, StoredExtractionBeacon, StoredGeneratedVoxelEnvironment, StoredHealth,
+    StoredImportSource, StoredKinematic, StoredLight, StoredMaterialVoxel,
+    StoredMaterialVoxelEnvironment, StoredNavigation, StoredPlayerController,
     StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable, StoredScene,
     StoredSolidVoxelEnvironment, StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance,
     StoredWeapon, STORED_PROJECT_SCHEMA_VERSION,

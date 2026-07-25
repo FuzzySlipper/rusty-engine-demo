@@ -134,7 +134,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 11, 99] {
+    for schema_version in [0, 5, 12, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);

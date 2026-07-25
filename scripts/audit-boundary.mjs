@@ -16,7 +16,7 @@ const operationalRoots = [
   "rust",
   "ts",
 ];
-const rustEngineRevision = "dc4b5e5d74f56bd65e28adb78757627991207620";
+const rustEngineRevision = "b2ef146904082178f5edcd943af95fa4e7c5ce22";
 const renderEngineRevision = "937a3cef2568d04a261e78126f34e6baea1828c9";
 
 const files = operationalRoots.flatMap((entry) => collect(resolve(repoRoot, entry)));

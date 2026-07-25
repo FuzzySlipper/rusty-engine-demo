@@ -45,6 +45,9 @@ pub(crate) fn import_voxel_asset_file(
             }
             project.assets.push(StoredAsset {
                 id: target_asset_id.clone(),
+                catalog: None,
+                static_mesh: None,
+                import: None,
                 voxel_volume: Some(asset),
                 voxel_edit_history: None,
                 voxel_annotations: Vec::new(),

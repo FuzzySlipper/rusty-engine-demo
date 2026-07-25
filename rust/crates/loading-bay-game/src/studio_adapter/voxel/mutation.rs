@@ -59,6 +59,9 @@ pub(crate) fn upsert_material(
             } else {
                 project.assets.push(StoredAsset {
                     id: asset_id.clone(),
+                    catalog: None,
+                    static_mesh: None,
+                    import: None,
                     voxel_volume: None,
                     voxel_edit_history: None,
                     voxel_annotations: Vec::new(),
@@ -141,6 +144,9 @@ pub(crate) fn initialize_voxel_asset(
             }
             project.assets.push(StoredAsset {
                 id: asset_id.clone(),
+                catalog: None,
+                static_mesh: None,
+                import: None,
                 voxel_volume: Some(asset),
                 voxel_edit_history: None,
                 voxel_annotations: Vec::new(),
@@ -253,6 +259,9 @@ pub(crate) fn duplicate_voxel_asset(
             let content_hash = duplicate.content_hash.clone();
             project.assets.push(StoredAsset {
                 id: target_asset_id.clone(),
+                catalog: None,
+                static_mesh: None,
+                import: None,
                 voxel_volume: Some(duplicate),
                 voxel_edit_history: None,
                 voxel_annotations: Vec::new(),
@@ -633,6 +642,9 @@ pub(crate) fn initialize_voxel_template(
             }
             project.assets.push(StoredAsset {
                 id: asset_id.clone(),
+                catalog: None,
+                static_mesh: None,
+                import: None,
                 voxel_volume: Some(asset),
                 voxel_edit_history: None,
                 voxel_annotations: Vec::new(),

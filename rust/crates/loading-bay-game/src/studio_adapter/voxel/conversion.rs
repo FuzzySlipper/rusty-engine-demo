@@ -152,6 +152,9 @@ pub(crate) fn apply_prepared_conversion(
             } else {
                 project.assets.push(StoredAsset {
                     id: target_asset_id.clone(),
+                    catalog: None,
+                    static_mesh: None,
+                    import: None,
                     voxel_volume: Some(candidate),
                     voxel_edit_history: None,
                     voxel_annotations: Vec::new(),

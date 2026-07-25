@@ -181,7 +181,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 10;
+  readonly schemaVersion: 11;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

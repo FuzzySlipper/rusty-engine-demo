@@ -9,6 +9,7 @@ workspace = true
 
 [dependencies]
 asset-catalog.workspace = true
+asset-import.workspace = true
 authored-scene.workspace = true
 content-store.workspace = true
 core-assets.workspace = true

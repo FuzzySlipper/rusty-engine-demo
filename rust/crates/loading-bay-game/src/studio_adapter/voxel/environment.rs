@@ -217,6 +217,9 @@ fn install_environment_asset(
             }
             project.assets[index] = StoredAsset {
                 id: asset_id,
+                catalog: None,
+                static_mesh: None,
+                import: None,
                 voxel_volume: Some(candidate),
                 voxel_edit_history: None,
                 voxel_annotations: Vec::new(),
@@ -225,6 +228,9 @@ fn install_environment_asset(
         }
         None => project.assets.push(StoredAsset {
             id: asset_id,
+            catalog: None,
+            static_mesh: None,
+            import: None,
             voxel_volume: Some(candidate),
             voxel_edit_history: None,
             voxel_annotations: Vec::new(),

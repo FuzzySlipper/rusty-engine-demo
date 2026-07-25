@@ -16,9 +16,11 @@ use voxel_convert::{
     VoxelModelWindowReadout, VoxelModelWindowRequest,
 };
 
-use crate::{StoredCollision, StoredKinematic, StoredLight, StoredVoxelInstance};
+use crate::{
+    StoredCollision, StoredImportSource, StoredKinematic, StoredLight, StoredVoxelInstance,
+};
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 5;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 6;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
@@ -166,6 +168,31 @@ pub enum StudioAdapterRequest {
         expected_project_hash: String,
         asset_id: String,
         definition: StoredMaterialDefinition,
+    },
+    PrepareAssetImport {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        source: StudioFileSelection,
+        settings: StudioAssetImportSettings,
+    },
+    PrepareAssetReimport {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        asset_id: String,
+    },
+    ApplyAssetImport {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        plan_id: String,
+        expected_plan_hash: String,
+    },
+    DiscardAssetImport {
+        protocol_version: u32,
+        request_id: String,
+        plan_id: String,
     },
     InitializeVoxelAsset {
         protocol_version: u32,
@@ -502,6 +529,18 @@ impl StudioAdapterRequest {
             | Self::UpsertMaterial {
                 protocol_version, ..
             }
+            | Self::PrepareAssetImport {
+                protocol_version, ..
+            }
+            | Self::PrepareAssetReimport {
+                protocol_version, ..
+            }
+            | Self::ApplyAssetImport {
+                protocol_version, ..
+            }
+            | Self::DiscardAssetImport {
+                protocol_version, ..
+            }
             | Self::InitializeVoxelAsset {
                 protocol_version, ..
             }
@@ -613,6 +652,10 @@ impl StudioAdapterRequest {
             | Self::SetEntityKinematic { request_id, .. }
             | Self::SetEntityTranslation { request_id, .. }
             | Self::UpsertMaterial { request_id, .. }
+            | Self::PrepareAssetImport { request_id, .. }
+            | Self::PrepareAssetReimport { request_id, .. }
+            | Self::ApplyAssetImport { request_id, .. }
+            | Self::DiscardAssetImport { request_id, .. }
             | Self::InitializeVoxelAsset { request_id, .. }
             | Self::DuplicateVoxelAsset { request_id, .. }
             | Self::AttachVoxelInstance { request_id, .. }
@@ -670,6 +713,14 @@ pub enum StudioSceneAppearance {
     Empty,
     StaticMesh { asset: String, visible: bool },
     Light { light: StoredLight },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StudioAssetImportSettings {
+    pub scale: f32,
+    pub generate_collision: bool,
+    pub material_namespace: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -755,6 +806,16 @@ pub enum StudioAdapterResponse {
         request_id: String,
         plan_id: String,
     },
+    AssetImportPrepared {
+        protocol_version: u32,
+        request_id: String,
+        plan: AssetImportPlanReadout,
+    },
+    AssetImportDiscarded {
+        protocol_version: u32,
+        request_id: String,
+        plan_id: String,
+    },
     VoxelHistoryRevertPrepared {
         protocol_version: u32,
         request_id: String,
@@ -814,12 +875,92 @@ pub struct StudioProjectReadout {
     pub canonical: CanonicalOwnerContent,
     pub inspections: OwnerInspections,
     pub scene_hierarchy: SceneHierarchyReadout,
+    pub asset_browser: AssetBrowserReadout,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel: Option<VoxelStateInspection>,
     pub voxel_authoring: VoxelAuthoringReadout,
     pub loading_bay: LoadingBayDomainReadout,
     pub projection: RenderFrameDiff,
     pub projection_readout: ProjectionReadout,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetBrowserReadout {
+    pub assets: Vec<AssetEntryReadout>,
+    pub lock_entries: Vec<AssetLockEntryReadout>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetEntryReadout {
+    pub asset_id: String,
+    pub kind: String,
+    pub version: u32,
+    pub hash: Option<String>,
+    pub source_path: Option<String>,
+    pub label: Option<String>,
+    pub dependencies: Vec<String>,
+    pub dependents: Vec<String>,
+    pub material: bool,
+    pub imported_mesh: bool,
+    pub import: Option<AssetImportReadout>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetImportReadout {
+    pub source: StoredImportSource,
+    pub source_hash: String,
+    pub source_byte_count: u64,
+    pub importer_version: u32,
+    pub generated_asset_ids: Vec<String>,
+    pub status: &'static str,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetLockEntryReadout {
+    pub asset_id: String,
+    pub kind: String,
+    pub version: u32,
+    pub hash: Option<String>,
+    pub dependencies: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetImportPlanReadout {
+    pub plan_id: String,
+    pub plan_hash: String,
+    pub expected_project_hash: String,
+    pub source: StudioFileSelection,
+    pub source_hash: String,
+    pub source_byte_count: u64,
+    pub mesh_asset_id: Option<String>,
+    pub reimport_kind: Option<String>,
+    pub has_errors: bool,
+    pub diagnostics: Vec<AssetImportDiagnosticReadout>,
+    pub generated_artifacts: Vec<AssetImportArtifactReadout>,
+    pub generated_asset_ids: Vec<String>,
+    pub settings: StudioAssetImportSettings,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetImportDiagnosticReadout {
+    pub severity: String,
+    pub code: String,
+    pub locus: String,
+    pub message: String,
+    pub remedy: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetImportArtifactReadout {
+    pub relative_path: String,
+    pub byte_count: u64,
 }
 
 #[derive(Debug, Serialize)]
@@ -1041,6 +1182,14 @@ pub enum ProjectMutationReceipt {
     },
     MaterialUpserted {
         asset_id: String,
+    },
+    AssetImportApplied {
+        plan_id: String,
+        plan_hash: String,
+        asset_id: String,
+        source_path: String,
+        reimport_kind: String,
+        generated_asset_ids: Vec<String>,
     },
     VoxelAssetInitialized {
         asset_id: String,

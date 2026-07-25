@@ -2,6 +2,9 @@ use voxel_convert::PreparedVoxelConversion;
 
 use crate::STORED_PROJECT_SCHEMA_VERSION;
 
+use super::asset_import::{
+    apply_prepared_asset_import, prepare_asset_import, prepare_asset_reimport, PreparedAssetImport,
+};
 use super::path::ProjectLocation;
 use super::project::{
     apply_entity_translation, create_project, create_scene, create_scene_object, delete_scene,
@@ -27,6 +30,7 @@ use super::voxel::{
 
 struct OpenProject {
     location: ProjectLocation,
+    prepared_asset_import: Option<PreparedAssetImport>,
     prepared_conversion: Option<PreparedVoxelConversion>,
     prepared_history_revert: Option<(String, PreparedProjectHistoryRevert)>,
     next_history_preview_id: u64,
@@ -99,7 +103,7 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 5,
+                    adapter_version: 6,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -123,6 +127,10 @@ impl StudioAdapterService {
                         "setEntityKinematic",
                         "setEntityTranslation",
                         "upsertMaterial",
+                        "prepareAssetImport",
+                        "prepareAssetReimport",
+                        "applyAssetImport",
+                        "discardAssetImport",
                         "initializeVoxelAsset",
                         "duplicateVoxelAsset",
                         "attachVoxelInstance",
@@ -360,6 +368,110 @@ impl StudioAdapterService {
             } => self.mutate(request_id, |location| {
                 upsert_material(location, &expected_project_hash, asset_id, definition)
             }),
+            StudioAdapterRequest::PrepareAssetImport {
+                expected_project_hash,
+                source,
+                settings,
+                ..
+            } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                match prepare_asset_import(&open.location, &expected_project_hash, source, settings)
+                {
+                    Ok(prepared) => {
+                        let plan = prepared.readout.clone();
+                        open.prepared_asset_import = Some(prepared);
+                        StudioAdapterResponse::AssetImportPrepared {
+                            protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                            request_id,
+                            plan,
+                        }
+                    }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::PrepareAssetReimport {
+                expected_project_hash,
+                asset_id,
+                ..
+            } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                match prepare_asset_reimport(&open.location, &expected_project_hash, &asset_id) {
+                    Ok(prepared) => {
+                        let plan = prepared.readout.clone();
+                        open.prepared_asset_import = Some(prepared);
+                        StudioAdapterResponse::AssetImportPrepared {
+                            protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                            request_id,
+                            plan,
+                        }
+                    }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::ApplyAssetImport {
+                expected_project_hash,
+                plan_id,
+                expected_plan_hash,
+                ..
+            } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                let Some(prepared) = open
+                    .prepared_asset_import
+                    .as_ref()
+                    .filter(|prepared| prepared.readout.plan_id == plan_id)
+                else {
+                    return StudioAdapterResponse::rejected(
+                        Some(request_id),
+                        AdapterRejection::new(
+                            "assetImport.planMissing",
+                            format!("no prepared asset-import plan `{plan_id}`"),
+                        ),
+                    );
+                };
+                match apply_prepared_asset_import(
+                    &open.location,
+                    &expected_project_hash,
+                    prepared,
+                    &plan_id,
+                    &expected_plan_hash,
+                ) {
+                    Ok((receipt, project)) => {
+                        open.prepared_asset_import = None;
+                        mutation_response(request_id, receipt, project)
+                    }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::DiscardAssetImport { plan_id, .. } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                if open
+                    .prepared_asset_import
+                    .as_ref()
+                    .is_none_or(|prepared| prepared.readout.plan_id != plan_id)
+                {
+                    return StudioAdapterResponse::rejected(
+                        Some(request_id),
+                        AdapterRejection::new(
+                            "assetImport.planMissing",
+                            format!("no prepared asset-import plan `{plan_id}`"),
+                        ),
+                    );
+                }
+                open.prepared_asset_import = None;
+                StudioAdapterResponse::AssetImportDiscarded {
+                    protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                    request_id,
+                    plan_id,
+                }
+            }
             StudioAdapterRequest::InitializeVoxelAsset {
                 expected_project_hash,
                 asset_id,
@@ -963,6 +1075,7 @@ impl StudioAdapterService {
             Ok((location, project)) => {
                 self.open = Some(OpenProject {
                     location,
+                    prepared_asset_import: None,
                     prepared_conversion: None,
                     prepared_history_revert: None,
                     next_history_preview_id: 1,
@@ -1104,6 +1217,7 @@ impl StudioAdapterService {
 fn new_open_project(location: ProjectLocation) -> OpenProject {
     OpenProject {
         location,
+        prepared_asset_import: None,
         prepared_conversion: None,
         prepared_history_revert: None,
         next_history_preview_id: 1,

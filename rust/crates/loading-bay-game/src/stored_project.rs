@@ -6,14 +6,15 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use asset_catalog::StoredMaterialDefinition;
+use asset_catalog::{StoredAssetReference, StoredMaterialDefinition};
 use core_assets::{AssetId, AssetKind};
 use engine_spatial::{decode_voxel_edit_history, MaterialVoxel, VoxelEditHistoryLimits};
+use render_model::StaticMeshAsset;
 use serde::{Deserialize, Serialize};
 use voxel_annotation::{validate_annotation_layer, VoxelAnnotationLayer, VoxelAnnotationLimits};
 use voxel_asset::VoxelAsset;
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 10;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 11;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -37,6 +38,7 @@ pub mod diagnostic_code {
     pub const INVALID_VOXEL_ANNOTATION: &str = "project.invalidVoxelAnnotation";
     pub const INVALID_VOXEL_INSTANCE: &str = "project.invalidVoxelInstance";
     pub const INVALID_MATERIAL: &str = "project.invalidMaterial";
+    pub const INVALID_IMPORT: &str = "project.invalidImport";
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -55,6 +57,12 @@ pub struct StoredProject {
 pub struct StoredAsset {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub catalog: Option<StoredAssetCatalogMetadata>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub static_mesh: Option<StaticMeshAsset>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub import: Option<StoredAssetImport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel_volume: Option<VoxelAsset>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel_edit_history: Option<String>,
@@ -62,6 +70,49 @@ pub struct StoredAsset {
     pub voxel_annotations: Vec<VoxelAnnotationLayer>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub material: Option<StoredMaterialDefinition>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredAssetCatalogMetadata {
+    pub version: u32,
+    pub hash: Option<String>,
+    pub source_path: Option<String>,
+    pub label: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dependencies: Vec<StoredAssetReference>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredAssetImport {
+    pub source: StoredImportSource,
+    pub source_hash: String,
+    pub source_byte_count: u64,
+    pub importer_version: u32,
+    pub manifest_json: String,
+    pub sidecar_json: String,
+    pub generated_asset_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "scope",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum StoredImportSource {
+    Project { path: String },
+    Host { path: String },
+}
+
+impl StoredImportSource {
+    pub fn path(&self) -> &str {
+        match self {
+            Self::Project { path } | Self::Host { path } => path,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -431,6 +482,8 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     || asset.voxel_volume.is_some()
                     || asset.voxel_edit_history.is_some()
                     || !asset.voxel_annotations.is_empty()
+                    || asset.static_mesh.is_some()
+                    || asset.import.is_some()
                 {
                     return Err(failure(
                         diagnostic_code::INVALID_MATERIAL,
@@ -439,7 +492,29 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     ));
                 }
             }
-            _ => {
+            AssetKind::StaticMesh => {
+                if let Some(mesh) = &asset.static_mesh {
+                    if mesh.asset != asset.id {
+                        return Err(failure(
+                            diagnostic_code::INVALID_IMPORT,
+                            format!("assets[{index}].staticMesh.asset"),
+                            "static mesh descriptor identity must match the stored asset identity",
+                        ));
+                    }
+                    mesh.validate().map_err(|error| {
+                        failure(
+                            diagnostic_code::INVALID_IMPORT,
+                            format!("assets[{index}].staticMesh"),
+                            format!("static mesh descriptor is invalid: {error:?}"),
+                        )
+                    })?;
+                } else if asset.import.is_some() {
+                    return Err(failure(
+                        diagnostic_code::INVALID_IMPORT,
+                        format!("assets[{index}].import"),
+                        "an imported static mesh requires its canonical render-model descriptor",
+                    ));
+                }
                 if asset.voxel_volume.is_some()
                     || asset.voxel_edit_history.is_some()
                     || !asset.voxel_annotations.is_empty()
@@ -448,10 +523,39 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     return Err(failure(
                         diagnostic_code::WRONG_ASSET_KIND,
                         format!("assets[{index}]"),
+                        "static mesh assets cannot carry voxel or material payloads",
+                    ));
+                }
+                if let Some(import) = &asset.import {
+                    validate_stored_import(import, &asset.id, index)?;
+                }
+            }
+            _ => {
+                if asset.voxel_volume.is_some()
+                    || asset.voxel_edit_history.is_some()
+                    || !asset.voxel_annotations.is_empty()
+                    || asset.material.is_some()
+                    || asset.static_mesh.is_some()
+                    || asset.import.is_some()
+                {
+                    return Err(failure(
+                        diagnostic_code::WRONG_ASSET_KIND,
+                        format!("assets[{index}]"),
                         "voxel and material payloads must match their typed asset identity",
                     ));
                 }
             }
+        }
+        if asset
+            .catalog
+            .as_ref()
+            .is_some_and(|metadata| metadata.version == 0)
+        {
+            return Err(failure(
+                diagnostic_code::INVALID_VALUE,
+                format!("assets[{index}].catalog.version"),
+                "catalog versions must be non-zero",
+            ));
         }
     }
 
@@ -549,6 +653,51 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                 "entry scene `{}` is not present in `scenes`",
                 entry_scene.as_str()
             ),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_stored_import(
+    import: &StoredAssetImport,
+    asset_id: &str,
+    asset_index: usize,
+) -> Result<(), StoredProjectError> {
+    let path = format!("assets[{asset_index}].import");
+    let manifest =
+        asset_import::decode_import_manifest(&import.manifest_json).map_err(|error| {
+            failure(
+                diagnostic_code::INVALID_IMPORT,
+                format!("{path}.manifestJson.{}", error.path),
+                error.message,
+            )
+        })?;
+    let sidecar = asset_import::decode_sidecar(&import.sidecar_json).map_err(|error| {
+        failure(
+            diagnostic_code::INVALID_IMPORT,
+            format!("{path}.sidecarJson.{}", error.path),
+            error.message,
+        )
+    })?;
+    if manifest.mesh_asset_id != asset_id
+        || manifest.source_hash != import.source_hash
+        || sidecar.source_hash != import.source_hash
+        || manifest.importer_version != import.importer_version
+        || sidecar.importer_version != import.importer_version
+    {
+        return Err(failure(
+            diagnostic_code::INVALID_IMPORT,
+            path,
+            "stored source, manifest, sidecar, and mesh identities must agree",
+        ));
+    }
+    if import.generated_asset_ids.is_empty()
+        || !import.generated_asset_ids.iter().any(|id| id == asset_id)
+    {
+        return Err(failure(
+            diagnostic_code::INVALID_IMPORT,
+            format!("assets[{asset_index}].import.generatedAssetIds"),
+            "generated asset identities must include the imported mesh",
         ));
     }
     Ok(())

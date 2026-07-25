@@ -1,9 +1,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use asset_catalog::{
-    decode_catalog, encode_catalog, validate_catalog, AssetCatalog, StoredAssetCatalog,
-    StoredAssetReference, StoredAssetVersionRequirement, StoredCatalogEntry,
+    decode_catalog, encode_catalog, generate_lock, validate_catalog, AssetCatalog,
+    StoredAssetCatalog, StoredAssetReference, StoredAssetVersionRequirement, StoredCatalogEntry,
+    UvStrategy,
 };
+use asset_import::{decode_sidecar, reconcile, SourceUri, MAX_SOURCE_BYTES};
 use authored_scene::{
     composed_world_transforms, encode_scene, validate_scene, AvailableSceneAsset,
     FlatSceneDocument, NodeMetadata, SceneAdmissionPlan, SceneEditCommand, SceneEditService,
@@ -37,17 +39,20 @@ use render_projection::{
 
 use crate::{
     admit_stored_project_with_document, encode_project_document, AdmittedProject,
-    AdmittedStoredProject, DecodedProjectDocument, ProjectSaveMode, ProjectStore, StoredCollision,
-    StoredEntityDefinition, StoredKinematic, StoredLight, StoredProject, StoredRenderable,
-    StoredScene, StoredVoxelEnvironment, STORED_PROJECT_SCHEMA_VERSION,
+    AdmittedStoredProject, DecodedProjectDocument, ProjectSaveMode, ProjectStore,
+    StoredAssetImport, StoredCollision, StoredEntityDefinition, StoredImportSource,
+    StoredKinematic, StoredLight, StoredProject, StoredRenderable, StoredScene,
+    StoredVoxelEnvironment, STORED_PROJECT_SCHEMA_VERSION,
 };
 
+use super::host_file::read_host_file;
 use super::path::ProjectLocation;
 use super::protocol::{
-    AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt, LoadingBayDomainReadout,
-    OwnerInspections, ProjectMutationReceipt, ProjectionDiagnosticReadout, ProjectionReadout,
-    SceneHierarchyNodeReadout, SceneHierarchyReadout, StudioProjectIdentity, StudioProjectReadout,
-    StudioSceneAppearance, StudioSceneObjectDraft, TransformReadout,
+    AdapterRejection, AssetBrowserReadout, AssetEntryReadout, AssetImportReadout,
+    AssetLockEntryReadout, CanonicalOwnerContent, EntityTranslationReceipt,
+    LoadingBayDomainReadout, OwnerInspections, ProjectMutationReceipt, ProjectionDiagnosticReadout,
+    ProjectionReadout, SceneHierarchyNodeReadout, SceneHierarchyReadout, StudioProjectIdentity,
+    StudioProjectReadout, StudioSceneAppearance, StudioSceneObjectDraft, TransformReadout,
 };
 use super::voxel::{project_voxel_authoring, voxel_authoring_readout};
 
@@ -55,6 +60,7 @@ const PROJECT_RESOURCE_ROLE: &str = "resource:loading-bay-project";
 const JSON_SAFE_U64_MASK: u64 = (1_u64 << 53) - 1;
 
 pub struct OpenedOwnerProject {
+    location: ProjectLocation,
     source_schema_version: u32,
     source_hash: ContentHash,
     stored: AdmittedStoredProject,
@@ -75,7 +81,7 @@ impl OpenedOwnerProject {
             .map_err(project_store_rejection)?;
         let source_schema_version = source.decoded.source_schema_version;
         Self::admit_source(
-            location.relative_project_file(),
+            location,
             source.source_bytes().to_string(),
             source.decoded,
             source_schema_version,
@@ -83,12 +89,13 @@ impl OpenedOwnerProject {
     }
 
     fn admit_source(
-        relative_project_file: &str,
+        location: &ProjectLocation,
         source_bytes: String,
         decoded: DecodedProjectDocument,
         source_schema_version: u32,
     ) -> Result<Self, AdapterRejection> {
         let source_hash = ContentHash::of(source_bytes.as_bytes());
+        let relative_project_file = location.relative_project_file();
         let manifest = project_manifest(relative_project_file, source_bytes.as_bytes());
         let manifest_json = encode_manifest(&manifest)
             .map_err(|error| reject("content.manifestEncode", error.to_string()))?;
@@ -108,6 +115,7 @@ impl OpenedOwnerProject {
         validate_owner_admission(&catalog, &scene)?;
 
         Ok(Self {
+            location: location.clone(),
             source_schema_version,
             source_hash,
             stored,
@@ -172,11 +180,13 @@ impl OpenedOwnerProject {
             .filter(|node| matches!(node.kind, SceneNodeKind::Light(_)))
             .count();
         let projection = complete_projection(
+            project,
             &self.catalog,
             projected.frame,
             light_projection,
             voxel_projected.frame,
         )?;
+        let catalog_lock = generate_lock(&self.catalog);
 
         Ok(StudioProjectReadout {
             identity: StudioProjectIdentity {
@@ -197,12 +207,13 @@ impl OpenedOwnerProject {
                 content_manifest_json: manifest_json,
             },
             inspections: OwnerInspections {
-                catalog: inspect_catalog(&self.catalog, None),
+                catalog: inspect_catalog(&self.catalog, Some(&catalog_lock)),
                 scene: inspect_scene(&self.scene, Some(&self.catalog)),
                 entity_state: inspect_entity_state(self.admitted.session.entities()),
                 persistence: inspect_content_manifest(&self.manifest),
             },
             scene_hierarchy: scene_hierarchy(&self.scene, self.admitted.session.entities()),
+            asset_browser: asset_browser_readout(project, &self.catalog, &self.location),
             voxel: self
                 .admitted
                 .collision_scene
@@ -222,6 +233,101 @@ impl OpenedOwnerProject {
             },
         })
     }
+}
+
+fn asset_browser_readout(
+    project: &StoredProject,
+    catalog: &AssetCatalog,
+    location: &ProjectLocation,
+) -> AssetBrowserReadout {
+    let mut dependents = BTreeMap::<String, Vec<String>>::new();
+    for entry in catalog.iter() {
+        for dependency in &entry.dependencies {
+            dependents
+                .entry(dependency.id().as_str().to_string())
+                .or_default()
+                .push(entry.id.as_str().to_string());
+        }
+    }
+    let assets = catalog
+        .canonical()
+        .entries
+        .into_iter()
+        .map(|entry| {
+            let stored = project
+                .assets
+                .iter()
+                .find(|asset| asset.id == entry.id.as_str());
+            AssetEntryReadout {
+                asset_id: entry.id.as_str().to_string(),
+                kind: entry.kind().prefix().to_string(),
+                version: entry.version,
+                hash: entry.hash.map(|hash| hash.as_str().to_string()),
+                source_path: entry.source_path,
+                label: entry.label,
+                dependencies: entry
+                    .dependencies
+                    .into_iter()
+                    .map(|dependency| dependency.id().as_str().to_string())
+                    .collect(),
+                dependents: dependents.remove(entry.id.as_str()).unwrap_or_default(),
+                material: entry.material.is_some(),
+                imported_mesh: stored.is_some_and(|asset| asset.static_mesh.is_some()),
+                import: stored
+                    .and_then(|asset| asset.import.as_ref())
+                    .map(|import| AssetImportReadout {
+                        source: import.source.clone(),
+                        source_hash: import.source_hash.clone(),
+                        source_byte_count: import.source_byte_count,
+                        importer_version: import.importer_version,
+                        generated_asset_ids: import.generated_asset_ids.clone(),
+                        status: import_status(location, import),
+                    }),
+            }
+        })
+        .collect();
+    let lock_entries = generate_lock(catalog)
+        .entries
+        .into_iter()
+        .map(|entry| AssetLockEntryReadout {
+            asset_id: entry.id.as_str().to_string(),
+            kind: entry.kind.prefix().to_string(),
+            version: entry.version,
+            hash: entry.hash.map(|hash| hash.as_str().to_string()),
+            dependencies: entry
+                .dependencies
+                .into_iter()
+                .map(|dependency| dependency.as_str().to_string())
+                .collect(),
+        })
+        .collect();
+    AssetBrowserReadout {
+        assets,
+        lock_entries,
+    }
+}
+
+fn import_status(location: &ProjectLocation, import: &StoredAssetImport) -> &'static str {
+    let bytes = match &import.source {
+        StoredImportSource::Project { path } => {
+            match location.read_relative_file(path, MAX_SOURCE_BYTES as u64) {
+                Ok(bytes) => bytes,
+                Err(_) => return "unavailable",
+            }
+        }
+        StoredImportSource::Host { path } => match read_host_file(path, MAX_SOURCE_BYTES) {
+            Ok(source) => source.bytes,
+            Err(_) => return "unavailable",
+        },
+    };
+    let Ok(sidecar) = decode_sidecar(&import.sidecar_json) else {
+        return "metadataInvalid";
+    };
+    let uri = match &import.source {
+        StoredImportSource::Project { path } => SourceUri::RelativePath(path.clone()),
+        StoredImportSource::Host { path } => SourceUri::AbsolutePath(path.clone()),
+    };
+    reconcile(Some(&sidecar), &uri, &bytes).label()
 }
 
 pub fn apply_entity_translation(
@@ -361,7 +467,7 @@ fn publish_new_project(
         source_schema_version: STORED_PROJECT_SCHEMA_VERSION,
     };
     let staged = OpenedOwnerProject::admit_source(
-        location.relative_project_file(),
+        location,
         candidate_bytes,
         candidate_decoded,
         STORED_PROJECT_SCHEMA_VERSION,
@@ -875,7 +981,7 @@ pub(crate) fn publish_project_mutation<T>(
         source_schema_version: STORED_PROJECT_SCHEMA_VERSION,
     };
     let staged = OpenedOwnerProject::admit_source(
-        location.relative_project_file(),
+        location,
         candidate_bytes,
         candidate_decoded,
         STORED_PROJECT_SCHEMA_VERSION,
@@ -907,6 +1013,7 @@ pub(crate) fn publish_project_mutation<T>(
 }
 
 fn complete_projection(
+    project: &StoredProject,
     catalog: &AssetCatalog,
     instances: RenderFrameDiff,
     lights: RenderFrameDiff,
@@ -915,24 +1022,72 @@ fn complete_projection(
     let mut operations = Vec::new();
     for entry in catalog
         .iter()
+        .filter(|entry| entry.kind() == AssetKind::Material)
+    {
+        if let Some(material) = &entry.material {
+            let material = material.render_projection();
+            operations.push(RenderDiff::DefineMaterial {
+                material: RenderMaterialDescriptor {
+                    schema_version: 1,
+                    id: entry.id.as_str().to_string(),
+                    color: [
+                        material.color.r,
+                        material.color.g,
+                        material.color.b,
+                        material.color.a,
+                    ],
+                    texture: material
+                        .texture
+                        .as_ref()
+                        .map(|reference| reference.id().as_str().to_string()),
+                    roughness: material.roughness,
+                    texture_tint: [
+                        material.texture_tint.r,
+                        material.texture_tint.g,
+                        material.texture_tint.b,
+                        material.texture_tint.a,
+                    ],
+                    emission_color: [
+                        material.emission_color.r,
+                        material.emission_color.g,
+                        material.emission_color.b,
+                    ],
+                    emission_intensity: material.emissive,
+                    uv_strategy: match material.uv_strategy {
+                        UvStrategy::Flat => MaterialUvStrategy::Flat,
+                        UvStrategy::Planar => MaterialUvStrategy::Planar,
+                        UvStrategy::Atlas => MaterialUvStrategy::Atlas,
+                    },
+                },
+            });
+        }
+    }
+    for entry in catalog
+        .iter()
         .filter(|entry| entry.kind() == AssetKind::StaticMesh)
     {
         let asset = entry.id.as_str();
-        let material = format!(
-            "material/studio-{}",
-            asset.trim_start_matches("mesh/").replace('/', "-")
-        );
-        operations.push(RenderDiff::DefineMaterial {
-            material: studio_material(&material, asset),
-        });
-        operations.push(RenderDiff::DefineStaticMesh {
-            asset: StaticMeshAsset {
+        let imported = project
+            .assets
+            .iter()
+            .find(|candidate| candidate.id == asset)
+            .and_then(|candidate| candidate.static_mesh.clone());
+        let mesh = imported.unwrap_or_else(|| {
+            let material = format!(
+                "material/studio-{}",
+                asset.trim_start_matches("mesh/").replace('/', "-")
+            );
+            operations.push(RenderDiff::DefineMaterial {
+                material: studio_material(&material, asset),
+            });
+            StaticMeshAsset {
                 asset: asset.to_string(),
                 payload: cuboid_payload(studio_mesh_dimensions(asset)),
                 material_slots: vec![MeshMaterialSlot { slot: 0, material }],
                 collision: MeshCollisionPolicy::VisualOnly,
-            },
+            }
         });
+        operations.push(RenderDiff::DefineStaticMesh { asset: mesh });
     }
     operations.extend(voxels.ops);
     operations.extend(lights.ops);
@@ -1273,22 +1428,30 @@ fn project_catalog(project: &StoredProject) -> Result<AssetCatalog, AdapterRejec
         .map(|asset| {
             AssetId::parse(&asset.id)
                 .map_err(|error| reject("catalog.invalidAsset", error.to_string()))?;
-            let dependencies = asset
-                .voxel_volume
-                .iter()
-                .flat_map(|voxel| &voxel.material_palette)
-                .map(|binding| StoredAssetReference {
-                    id: binding.material_asset_id.clone(),
-                    version: StoredAssetVersionRequirement::Exact { value: 1 },
-                    hash: None,
-                })
-                .collect();
+            let metadata = asset.catalog.as_ref();
+            let dependencies = metadata.map_or_else(
+                || {
+                    asset
+                        .voxel_volume
+                        .iter()
+                        .flat_map(|voxel| &voxel.material_palette)
+                        .map(|binding| StoredAssetReference {
+                            id: binding.material_asset_id.clone(),
+                            version: StoredAssetVersionRequirement::Exact { value: 1 },
+                            hash: None,
+                        })
+                        .collect()
+                },
+                |metadata| metadata.dependencies.clone(),
+            );
             Ok(StoredCatalogEntry {
                 id: asset.id.clone(),
-                version: 1,
-                hash: None,
-                source_path: None,
-                label: Some(asset.id.clone()),
+                version: metadata.map_or(1, |metadata| metadata.version),
+                hash: metadata.and_then(|metadata| metadata.hash.clone()),
+                source_path: metadata.and_then(|metadata| metadata.source_path.clone()),
+                label: metadata
+                    .and_then(|metadata| metadata.label.clone())
+                    .or_else(|| Some(asset.id.clone())),
                 dependencies,
                 material: asset.material.clone(),
             })

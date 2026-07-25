@@ -176,7 +176,7 @@ export function loadingBayStoredProject(
   }
 
   return {
-    schemaVersion: 10,
+    schemaVersion: 11,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",

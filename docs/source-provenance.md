@@ -5,7 +5,7 @@ Rusty Engine Demo was originally extracted from
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
 
 The current Rust dependencies resolve from exact reviewed authoring revision
-`dc4b5e5d74f56bd65e28adb78757627991207620`; browser render packages resolve from exact review-fix
+`b2ef146904082178f5edcd943af95fa4e7c5ce22`; browser render packages resolve from exact review-fix
 revision `937a3cef2568d04a261e78126f34e6baea1828c9`. The older revision below remains the historical
 extraction point, not an active dependency pin.
 
@@ -68,7 +68,7 @@ project path and headless beacon proof; it was not transferred from Engine.
 ## M11B Studio adapter and voxel-owner adaptation
 
 The project-owned Studio adapter was authored directly in this repository against an exact Engine
-revision, now `dc4b5e5d74f56bd65e28adb78757627991207620`. It composes the public `asset-catalog`,
+revision, now `b2ef146904082178f5edcd943af95fa4e7c5ce22`. It composes the public `asset-catalog`,
 `authored-scene`, `content-store`, `entity-state`, `engine-inspector`, `render-model`, and
 `render-projection` crates while retaining Loading Bay schema, layout, and domain admission here.
 No Studio or adapter implementation was copied from Engine or Asha.
@@ -81,9 +81,10 @@ artifact, not new product content or a restored Asha dependency.
 
 ## M11F Studio parity adaptation
 
-Protocol 4 was authored directly in this repository against Engine revision
-`dc4b5e5d74f56bd65e28adb78757627991207620`. It adapts the Engine-owned voxel primitive/template,
-history, annotation, conversion, canonical asset, and environment-authoring mechanisms into named
-Loading Bay project operations. Trusted host-file publication and private prepared-candidate state
-are downstream adapter responsibilities. No Asha replay, facade, generic command, Studio, or demo
-topology was transferred.
+Protocol 6 was authored directly in this repository against Engine revision
+`b2ef146904082178f5edcd943af95fa4e7c5ce22`. It adapts the Engine-owned source-asset import,
+catalog/lock, renderer payload, voxel primitive/template, history, annotation, conversion, canonical
+asset, and environment-authoring mechanisms into named Loading Bay project operations. Trusted
+host-file publication, source-drift inspection, and private prepared-candidate state are downstream
+adapter responsibilities. No Asha replay, facade, generic command, Studio, or demo topology was
+transferred.
