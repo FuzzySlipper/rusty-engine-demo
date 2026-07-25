@@ -16,7 +16,8 @@ const operationalRoots = [
   "rust",
   "ts",
 ];
-const engineRevision = "8cb49db6cfe9471faa23ab0661656a2366a83d8c";
+const rustEngineRevision = "8cb49db6cfe9471faa23ab0661656a2366a83d8c";
+const renderEngineRevision = "937a3cef2568d04a261e78126f34e6baea1828c9";
 
 const files = operationalRoots.flatMap((entry) => collect(resolve(repoRoot, entry)));
 const forbidden = [
@@ -70,21 +71,21 @@ for (const packageName of [
   "renderer-three",
 ]) {
   const dependencyName = `@rusty-engine/${packageName}`;
-  const expected = `github:FuzzySlipper/rusty-engine#${engineRevision}&path:render/packages/${packageName}`;
+  const expected = `github:FuzzySlipper/rusty-engine#${renderEngineRevision}&path:render/packages/${packageName}`;
   if (browserPackage.dependencies?.[dependencyName] !== expected) {
     violations.push(
-      `ts/packages/browser-shell/package.json: ${dependencyName} must resolve from exact Engine revision ${engineRevision}`,
+      `ts/packages/browser-shell/package.json: ${dependencyName} must resolve from exact Engine revision ${renderEngineRevision}`,
     );
   }
 }
 
 const cargoManifest = readFileSync(resolve(repoRoot, "Cargo.toml"), "utf8");
-if (!cargoManifest.includes(`revision = "${engineRevision}"`)) {
-  violations.push(`Cargo.toml: Engine metadata revision must be ${engineRevision}`);
+if (!cargoManifest.includes(`revision = "${rustEngineRevision}"`)) {
+  violations.push(`Cargo.toml: Engine metadata revision must be ${rustEngineRevision}`);
 }
 for (const match of cargoManifest.matchAll(/git = "https:\/\/github\.com\/FuzzySlipper\/rusty-engine\.git", rev = "([0-9a-f]+)"/g)) {
-  if (match[1] !== engineRevision) {
-    violations.push(`Cargo.toml: Rust Engine dependency resolves ${match[1]} instead of ${engineRevision}`);
+  if (match[1] !== rustEngineRevision) {
+    violations.push(`Cargo.toml: Rust Engine dependency resolves ${match[1]} instead of ${rustEngineRevision}`);
   }
 }
 

@@ -6,9 +6,10 @@ components, services, project schema, scheduling, persistence, authored content,
 and user-facing acceptance. Rusty Engine owns reusable entity, spatial, collision, navigation,
 voxel, mesh, asset, and conversion mechanisms.
 
-The Rust game vertical is named `loading-bay-game`. Its Rust and browser Engine dependencies are
-public Git dependencies pinned to exact revision `8cb49db6cfe9471faa23ab0661656a2366a83d8c`; a
-sibling checkout is not required. The demo owns its browser shell and semantic projection adapter,
+The Rust game vertical is named `loading-bay-game`. Its Engine dependencies are public Git
+dependencies: Rust remains pinned to reviewed gameplay revision
+`8cb49db6cfe9471faa23ab0661656a2366a83d8c`, while the browser renderer is pinned to review-fix
+revision `937a3cef2568d04a261e78126f34e6baea1828c9`; a sibling checkout is not required. The demo owns its browser shell and semantic projection adapter,
 while Rusty Engine owns the shared render contracts, retained projection, Three/WebGL backend,
 surface host, audio, particle, billboard, and telemetry hosts.
 

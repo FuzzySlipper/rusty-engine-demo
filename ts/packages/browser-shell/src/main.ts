@@ -74,6 +74,7 @@ const surface = mountRendererSurface(canvas, {
   pixelRatio: Math.min(globalThis.devicePixelRatio ?? 1, 2),
   projection: { fovYDegrees: 50, near: 0.1, far: 100 },
 });
+initialFrame.commit();
 const presentationFeedback = new BrowserPresentationFeedback({
   audioStatus: feedbackAudioStatus,
   layer: feedbackLayer,
@@ -503,9 +504,7 @@ if (reloadSmokeMode) {
     authoritativeBrowserFingerprint(refreshed) === authoritativeBrowserFingerprint(droppedResponse);
   current = refreshed;
   const refreshFrame = projection.apply(current);
-  if (refreshFrame.ops.length > 0) {
-    applyRendererFrame(refreshFrame);
-  }
+  applyRendererFrame(refreshFrame);
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   renderReadout(current);
   void applyPresentationFeedback(false, refreshFrame.ops.length);
@@ -517,9 +516,7 @@ if (reloadSmokeMode) {
     Number(feedbackAudioStatus.dataset.activeSounds ?? "0") > 0;
   current = await requestState("/api/state");
   const restartFrame = projection.apply(current);
-  if (restartFrame.ops.length > 0) {
-    applyRendererFrame(restartFrame);
-  }
+  applyRendererFrame(restartFrame);
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   renderReadout(current);
   await applyPresentationFeedback(true, restartFrame.ops.length);
@@ -559,9 +556,7 @@ async function perform(path: string): Promise<void> {
   }
   eventHistory.push(...current.lastEvents);
   const frame = projection.apply(current);
-  if (frame.ops.length > 0) {
-    applyRendererFrame(frame);
-  }
+  applyRendererFrame(frame);
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   surface.renderOnce();
   renderReadout(current);
@@ -589,9 +584,7 @@ async function performVoxelEdits(
   lastActionRejection = null;
   eventHistory.push(...current.lastEvents);
   const frame = projection.apply(current);
-  if (frame.ops.length > 0) {
-    applyRendererFrame(frame);
-  }
+  applyRendererFrame(frame);
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   surface.renderOnce();
   renderReadout(current);
@@ -666,10 +659,13 @@ async function applyPresentationFeedback(reset = false, renderDiffCount = 0): Pr
 }
 
 function applyRendererFrame(frame: ReturnType<RuntimeProjectionAdapter["apply"]>): void {
-  const receipt = surface.applyFrame(frame);
-  if (!receipt.applied) {
-    throw new Error(receipt.diagnostics.map((diagnostic) => diagnostic.message).join("; "));
+  if (frame.ops.length > 0) {
+    const receipt = surface.applyFrame(frame);
+    if (!receipt.applied) {
+      throw new Error(receipt.diagnostics.map((diagnostic) => diagnostic.message).join("; "));
+    }
   }
+  frame.commit();
 }
 
 function enqueuePlayerAction(action: ResolvedPlayerAction): Promise<void> {
@@ -693,9 +689,7 @@ async function performPlayerAction(action: ResolvedPlayerAction): Promise<void> 
   lastActionRejection = null;
   eventHistory.push(...current.lastEvents);
   const frame = projection.apply(current);
-  if (frame.ops.length > 0) {
-    applyRendererFrame(frame);
-  }
+  applyRendererFrame(frame);
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   surface.renderOnce();
   renderReadout(current);
@@ -708,9 +702,7 @@ async function performAttackAction(action: ResolvedAttackAction): Promise<void> 
   lastActionRejection = null;
   eventHistory.push(...current.lastEvents);
   const frame = projection.apply(current);
-  if (frame.ops.length > 0) {
-    applyRendererFrame(frame);
-  }
+  applyRendererFrame(frame);
   surface.setCameraPose(derivePlayerCameraPose(current.player));
   surface.renderOnce();
   renderReadout(current);

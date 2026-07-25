@@ -4,9 +4,10 @@ Rusty Engine Demo was originally extracted from
 [`FuzzySlipper/rusty-engine`](https://github.com/FuzzySlipper/rusty-engine) at commit
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
 
-The current Rust and browser dependencies resolve from exact Engine revision
-`8cb49db6cfe9471faa23ab0661656a2366a83d8c`. The older revision below remains the historical
-extraction point, not the active dependency pin.
+The current Rust dependencies resolve from exact reviewed gameplay revision
+`8cb49db6cfe9471faa23ab0661656a2366a83d8c`; browser render packages resolve from exact review-fix
+revision `937a3cef2568d04a261e78126f34e6baea1828c9`. The older revision below remains the historical
+extraction point, not an active dependency pin.
 
 ## M10A Rust transfer
 

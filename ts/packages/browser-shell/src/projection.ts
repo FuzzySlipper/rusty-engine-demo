@@ -187,6 +187,11 @@ export function derivePlayerCameraPose(
 const ENTITY_HANDLE_OFFSET = 100_000;
 const FIRST_VOXEL_MESH_HANDLE = 800_000;
 
+export interface RuntimeProjectionPlan extends RenderFrameDiff {
+  /** Advance the adapter baseline only after the renderer accepts this frame. */
+  readonly commit: () => void;
+}
+
 /** Stateful adapter from whole Rust projection readouts to retained renderer diffs. */
 export class RuntimeProjectionAdapter {
   readonly #known = new Map<
@@ -196,18 +201,24 @@ export class RuntimeProjectionAdapter {
   readonly #meshHashes = new Map<string, string>();
   readonly #meshHandles = new Map<string, RenderHandle>();
   #nextMeshHandle = FIRST_VOXEL_MESH_HANDLE;
+  #revision = 0;
 
-  apply(state: RuntimeBrowserState): RenderFrameDiff {
+  apply(state: RuntimeBrowserState): RuntimeProjectionPlan {
+    const baseRevision = this.#revision;
+    const nextKnown = new Map(this.#known);
+    const nextMeshHashes = new Map(this.#meshHashes);
+    const nextMeshHandles = new Map(this.#meshHandles);
+    let nextMeshHandle = this.#nextMeshHandle;
     const ops: RenderDiff[] = [];
     const incomingMeshes = new Set<string>();
     for (const mesh of state.voxelMeshes) {
       const key = mesh.chunk.join(",");
       incomingMeshes.add(key);
-      let handle = this.#meshHandles.get(key);
+      let handle = nextMeshHandles.get(key);
       if (handle === undefined) {
-        handle = renderHandle(this.#nextMeshHandle);
-        this.#nextMeshHandle += 1;
-        this.#meshHandles.set(key, handle);
+        handle = renderHandle(nextMeshHandle);
+        nextMeshHandle += 1;
+        nextMeshHandles.set(key, handle);
         ops.push({
           op: "create",
           handle,
@@ -222,23 +233,23 @@ export class RuntimeProjectionAdapter {
           ),
         });
       }
-      if (this.#meshHashes.get(key) !== mesh.contentHash) {
+      if (nextMeshHashes.get(key) !== mesh.contentHash) {
         ops.push({ op: "replaceMeshPayload", handle, payload: meshPayload(mesh) });
-        this.#meshHashes.set(key, mesh.contentHash);
+        nextMeshHashes.set(key, mesh.contentHash);
       }
     }
-    for (const [key, handle] of this.#meshHandles) {
+    for (const [key, handle] of nextMeshHandles) {
       if (!incomingMeshes.has(key)) {
         ops.push({ op: "destroy", handle });
-        this.#meshHandles.delete(key);
-        this.#meshHashes.delete(key);
+        nextMeshHandles.delete(key);
+        nextMeshHashes.delete(key);
       }
     }
 
     const incoming = new Set<number>();
     for (const node of state.projection) {
       incoming.add(node.id);
-      const known = this.#known.get(node.id);
+      const known = nextKnown.get(node.id);
       const beaconState = state.extractionBeacon?.id === node.id
         ? state.extractionBeacon.state
         : null;
@@ -260,16 +271,34 @@ export class RuntimeProjectionAdapter {
           metadata: next.metadata,
         });
       }
-      this.#known.set(node.id, { node, beaconState });
+      nextKnown.set(node.id, { node, beaconState });
     }
 
-    for (const id of [...this.#known.keys()]) {
+    for (const id of [...nextKnown.keys()]) {
       if (!incoming.has(id)) {
         ops.push({ op: "destroy", handle: entityHandle(id) });
-        this.#known.delete(id);
+        nextKnown.delete(id);
       }
     }
-    return { schemaVersion: 1, ops };
+    let committed = false;
+    return {
+      schemaVersion: 1,
+      ops,
+      commit: () => {
+        if (committed) {
+          return;
+        }
+        if (this.#revision !== baseRevision) {
+          throw new Error("cannot commit a stale runtime projection plan");
+        }
+        replaceMap(this.#known, nextKnown);
+        replaceMap(this.#meshHashes, nextMeshHashes);
+        replaceMap(this.#meshHandles, nextMeshHandles);
+        this.#nextMeshHandle = nextMeshHandle;
+        this.#revision += 1;
+        committed = true;
+      },
+    };
   }
 
   get trackedEntityCount(): number {
@@ -278,6 +307,13 @@ export class RuntimeProjectionAdapter {
 
   get trackedMeshCount(): number {
     return this.#meshHandles.size;
+  }
+}
+
+function replaceMap<K, V>(target: Map<K, V>, source: ReadonlyMap<K, V>): void {
+  target.clear();
+  for (const [key, value] of source) {
+    target.set(key, value);
   }
 }
 
