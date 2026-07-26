@@ -5,12 +5,13 @@ use engine_spatial::{GeneratedRoomConfig, VoxelCollisionScene};
 use entity_state::{EntityDefinition, MAX_ABS_TRANSLATION};
 use serde::Deserialize;
 
-use crate::combat::{HealthConfig, WeaponConfig};
+use crate::combat::WeaponConfig;
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::DoorConfig;
 use crate::navigation::NavigationConfig;
 use crate::player::{PlayerControllerConfig, PlayerInputBindings};
 use crate::session::GameSession;
+use crate::vitality::HealthConfig;
 
 pub const PROJECT_CONTENT_SCHEMA_VERSION: u32 = 6;
 
@@ -297,6 +298,8 @@ fn authored_definition(
         definition = definition.with_health(HealthConfig {
             max: health.max,
             hitbox_half_extents: array_vec3(health.hitbox_half_extents),
+            max_armor: 0,
+            armor_absorption_percent: 0,
         });
     }
     if let Some(encounter) = authored.encounter {

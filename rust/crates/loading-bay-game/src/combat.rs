@@ -2,7 +2,7 @@ use core_ids::EntityId;
 use core_math::Vec3;
 use core_time::{Tick, TickDelta};
 use engine_spatial::VoxelCollisionScene;
-use entity_state::{EntityCommand, EntityCommandBatch, EntityView};
+use entity_state::EntityView;
 use serde::{Deserialize, Serialize};
 
 use crate::inventory::{
@@ -12,6 +12,7 @@ use crate::inventory::{
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
+use crate::vitality::{DamageCommand, DamageService, DamageSource, VitalityFact, VitalityState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EnemyState {
@@ -24,38 +25,11 @@ pub struct EnemyComponent {
     pub state: EnemyState,
 }
 
-pub const MAX_HEALTH: u32 = 1_000_000;
 pub const MAX_WEAPON_DAMAGE: u32 = 1_000_000;
 pub const MAX_WEAPON_AMMO: u32 = 1_000_000;
 pub const MAX_WEAPON_RANGE: f32 = 100_000.0;
 pub const MAX_WEAPON_COOLDOWN_TICKS: u64 = 100_000;
-pub const MAX_COMBAT_HITBOX_HALF_EXTENT: f32 = 100_000.0;
 pub const MAX_WEAPON_MUZZLE_OFFSET: f32 = 100_000.0;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct HealthConfig {
-    pub max: u32,
-    pub hitbox_half_extents: Vec3,
-}
-
-impl HealthConfig {
-    pub(crate) fn is_valid(self) -> bool {
-        (1..=MAX_HEALTH).contains(&self.max)
-            && vec3_is_finite(self.hitbox_half_extents)
-            && self.hitbox_half_extents.x > 0.0
-            && self.hitbox_half_extents.y > 0.0
-            && self.hitbox_half_extents.z > 0.0
-            && self.hitbox_half_extents.x <= MAX_COMBAT_HITBOX_HALF_EXTENT
-            && self.hitbox_half_extents.y <= MAX_COMBAT_HITBOX_HALF_EXTENT
-            && self.hitbox_half_extents.z <= MAX_COMBAT_HITBOX_HALF_EXTENT
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct HealthComponent {
-    pub config: HealthConfig,
-    pub current: u32,
-}
 
 /// Legacy schema-6/entity authoring shape. Current projects store these
 /// semantics on the responsible weapon item definition instead.
@@ -130,13 +104,7 @@ pub enum CombatFact {
         attacker: EntityId,
         reason: CombatMissReason,
     },
-    DamageApplied {
-        attacker: EntityId,
-        target: EntityId,
-        amount: u32,
-        before: u32,
-        after: u32,
-    },
+    Vitality(VitalityFact),
     EnemyDefeated {
         attacker: EntityId,
         enemy: EntityId,
@@ -155,13 +123,6 @@ pub struct EnemyView {
     pub entity: EntityId,
     pub state: EnemyState,
     pub entity_view: EntityView,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct HealthView {
-    pub entity: EntityId,
-    pub config: HealthConfig,
-    pub current: u32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -201,7 +162,7 @@ impl CombatService {
         if session
             .health
             .get(&attacker)
-            .is_some_and(|health| health.current == 0)
+            .is_some_and(|health| health.state == VitalityState::Dead)
         {
             return Err(RuntimeError::CombatRejected {
                 entity: attacker,
@@ -324,38 +285,38 @@ impl CombatService {
 
         match target {
             Some(hit) if world_blocker.is_none_or(|distance| hit.distance + 0.000_1 < distance) => {
-                let health = candidate_session
-                    .health
-                    .get(&hit.entity)
-                    .copied()
-                    .expect("target selection requires health");
-                let amount = weapon.damage.min(health.current);
-                let after = health.current - amount;
                 facts.push(CombatFact::AttackHit {
                     attacker,
                     target: hit.entity,
                     distance: hit.distance,
                 });
-                facts.push(CombatFact::DamageApplied {
-                    attacker,
-                    target: hit.entity,
-                    amount,
-                    before: health.current,
-                    after,
-                });
-                if after == 0 {
-                    event = Self::defeat_enemy(&mut candidate_session, attacker, hit.entity)?;
+                let damage = DamageService::apply(
+                    &mut candidate_session,
+                    DamageCommand {
+                        source: DamageSource::Weapon {
+                            attacker,
+                            weapon: weapon_item.clone(),
+                        },
+                        target: hit.entity,
+                        amount: weapon.damage,
+                    },
+                )
+                .map_err(RuntimeError::Vitality)?;
+                facts.extend(damage.facts.into_iter().map(CombatFact::Vitality));
+                facts.extend(
+                    damage
+                        .inventory
+                        .into_iter()
+                        .flat_map(|receipt| receipt.facts)
+                        .map(CombatFact::Inventory),
+                );
+                if damage.event.is_some() {
                     facts.push(CombatFact::EnemyDefeated {
                         attacker,
                         enemy: hit.entity,
                     });
-                } else {
-                    candidate_session
-                        .health
-                        .get_mut(&hit.entity)
-                        .expect("target health remains attached")
-                        .current = after;
                 }
+                event = damage.event;
             }
             Some(_) => facts.push(CombatFact::AttackMissed {
                 attacker,
@@ -386,55 +347,26 @@ impl CombatService {
         actor: EntityId,
         enemy: EntityId,
     ) -> Result<Option<GameEvent>, RuntimeError> {
-        if !session.entities.contains(actor) {
-            return Err(RuntimeError::UnknownActor { actor });
-        }
         let Some(component) = session.enemies.get(&enemy).copied() else {
             return Err(RuntimeError::UnknownEnemy { enemy });
         };
         if component.state == EnemyState::Defeated {
             return Ok(None);
         }
-
-        let mut commands = vec![
-            EntityCommand::SetCollisionEnabled {
-                entity: enemy,
-                enabled: false,
+        let amount = session
+            .health
+            .get(&enemy)
+            .map_or(1, |health| health.current.max(1));
+        DamageService::apply(
+            session,
+            DamageCommand {
+                source: DamageSource::Direct { actor },
+                target: enemy,
+                amount,
             },
-            EntityCommand::SetVisible {
-                entity: enemy,
-                visible: false,
-            },
-        ];
-        if session
-            .entities
-            .view(enemy)
-            .expect("enemy entity validated during admission")
-            .kinematic
-            .is_some()
-        {
-            commands.push(EntityCommand::SetKinematicVelocity {
-                entity: enemy,
-                velocity: Vec3::ZERO,
-            });
-        }
-        let receipt = session
-            .entities
-            .apply_batch(EntityCommandBatch::new(commands))
-            .map_err(RuntimeError::EntityBatch)?;
-        session
-            .enemies
-            .get_mut(&enemy)
-            .expect("enemy validated above")
-            .state = EnemyState::Defeated;
-        if let Some(health) = session.health.get_mut(&enemy) {
-            health.current = 0;
-        }
-        Ok(Some(GameEvent::EnemyDefeated {
-            enemy,
-            actor,
-            entity_facts: receipt.facts,
-        }))
+        )
+        .map(|receipt| receipt.event)
+        .map_err(RuntimeError::Vitality)
     }
 }
 

@@ -22,6 +22,7 @@ export const ENCOUNTER_IDS = {
   healthPickup: 24,
   armorPickup: 25,
   keyPickup: 26,
+  hazard: 27,
 } as const;
 
 export const LOADING_BAY_ITEM_IDS = {
@@ -259,6 +260,12 @@ export function loadingBayStoredProject(
             min: [-0.25, -0.25, -0.25] as const,
             max: [0.25, 0.25, 0.25] as const,
           },
+          health: {
+            max: 100,
+            hitboxHalfExtents: [0.25, 0.5, 0.25] as const,
+            maxArmor: 100,
+            armorAbsorptionPercent: 50,
+          },
           inventory: {
             capacitySlots: 8,
             startingStacks: [
@@ -285,7 +292,7 @@ export function loadingBayStoredProject(
   }
 
   return {
-    schemaVersion: 14,
+    schemaVersion: 15,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",
@@ -293,6 +300,7 @@ export function loadingBayStoredProject(
       ANIMATED_CHARACTER_ASSET,
       { id: "mesh/control-panel" },
       { id: "mesh/extraction-beacon" },
+      { id: "mesh/hazard-pad" },
       { id: "mesh/pickup-ammunition" },
       { id: "mesh/pickup-armor" },
       { id: "mesh/pickup-health" },
@@ -471,6 +479,17 @@ export function loadingBayStoredProject(
             LOADING_BAY_ITEM_IDS.maintenancePass,
             1,
           ),
+          {
+            id: ENCOUNTER_IDS.hazard,
+            name: "coolant-leak",
+            translation: [1.5, 1.5, 4.5],
+            bounds: {
+              min: [-0.45, -0.45, -0.45],
+              max: [0.45, 0.45, 0.45],
+            },
+            renderable: { asset: "mesh/hazard-pad", visible: true },
+            hazard: { damage: 20, cooldownTicks: 60 },
+          },
         ],
       },
     ],
@@ -567,6 +586,8 @@ export function relayAnnexStoredProject(): StoredProjectContent {
               },
             },
           ];
+        case ENCOUNTER_IDS.hazard:
+          return [{ ...entity, translation: [2.5, 1.5, 4.5] }];
         default:
           throw new Error(`unexpected loading-bay entity ${entity.id}`);
       }

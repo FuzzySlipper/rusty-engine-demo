@@ -446,9 +446,16 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
     legacy["scenes"][0]["entities"]
         .as_array_mut()
         .unwrap()
-        .retain(|entity| entity.get("pickup").is_none());
+        .retain(|entity| entity.get("pickup").is_none() && entity.get("hazard").is_none());
     for entity in legacy["scenes"][0]["entities"].as_array_mut().unwrap() {
         entity.as_object_mut().unwrap().remove("bounds");
+        if let Some(health) = entity
+            .get_mut("health")
+            .and_then(serde_json::Value::as_object_mut)
+        {
+            health.remove("maxArmor");
+            health.remove("armorAbsorptionPercent");
+        }
     }
     let decoded = decode_project_document(&legacy.to_string()).unwrap();
     assert_eq!(decoded.source_schema_version, 11);
@@ -510,6 +517,19 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
         .as_object_mut()
         .unwrap()
         .remove("pickupTriggers");
+    previous_snapshot.as_object_mut().unwrap().remove("hazards");
+    previous_snapshot
+        .as_object_mut()
+        .unwrap()
+        .remove("hazardTriggers");
+    for health in previous_snapshot["health"].as_array_mut().unwrap() {
+        let health = health.as_object_mut().unwrap();
+        health.remove("maxArmor");
+        health.remove("armorAbsorptionPercent");
+        health.remove("armor");
+        health.remove("armorItem");
+        health.remove("state");
+    }
     for controller in previous_snapshot["playerControllers"]
         .as_array_mut()
         .unwrap()

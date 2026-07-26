@@ -393,7 +393,7 @@ impl InventoryService {
             && session
                 .health
                 .get(&owner)
-                .is_some_and(|health| health.current == 0)
+                .is_some_and(|health| health.state == crate::VitalityState::Dead)
         {
             return Err(InventoryRejection::OwnerDefeated { owner });
         }

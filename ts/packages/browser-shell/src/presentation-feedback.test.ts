@@ -215,6 +215,11 @@ function feedbackState(): RuntimeBrowserState {
         primaryFire: "Mouse0",
         selectWeapon: ["Digit1", "Digit2", "Digit3"],
       },
+      currentHealth: 100,
+      maxHealth: 100,
+      armor: 0,
+      maxArmor: 100,
+      vitalityState: "alive",
     },
     weapon: {
       item: "weapon/arc-pistol",
@@ -243,6 +248,11 @@ function feedbackState(): RuntimeBrowserState {
       ],
     },
     pickups: [],
+    hazards: [],
+    restart: {
+      authoredBaselineAvailable: true,
+      checkpointAvailable: false,
+    },
     extractionBeacon: {
       id: 7,
       state: "active",

@@ -43,7 +43,7 @@ struct ClientCommandEnvelope {
     command: BrowserGameCommand,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
@@ -62,6 +62,9 @@ enum BrowserGameCommand {
     SelectWeaponSlot {
         slot: u8,
     },
+    UseItem {
+        item: String,
+    },
     SetPaused {
         paused: bool,
     },
@@ -74,6 +77,7 @@ enum BrowserGameCommand {
 #[serde(rename_all = "camelCase")]
 enum RestartMode {
     AuthoredBaseline,
+    Checkpoint,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -96,6 +100,10 @@ pub(super) enum RejectionCode {
     WeaponNotOwned,
     WeaponAlreadySelected,
     PlayerDefeated,
+    ItemNotOwned,
+    ItemNotUsable,
+    HealthFull,
+    CheckpointUnavailable,
     Paused,
     InternalDefect,
 }
@@ -492,6 +500,13 @@ fn process_command(
                 command: GameLoopEdgeCommandKind::SelectWeaponSlot { slot },
             })
         }
+        BrowserGameCommand::UseItem { item } => {
+            host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                connection_generation: context.connection_generation,
+                sequence: envelope.sequence,
+                command: GameLoopEdgeCommandKind::UseItem { item },
+            })
+        }
         BrowserGameCommand::SetPaused { paused } => {
             host.runtime.submit_edge_command(GameLoopEdgeCommand {
                 connection_generation: context.connection_generation,
@@ -546,6 +561,13 @@ fn process_command(
                 receipt
             }
         }
+        BrowserGameCommand::Restart {
+            mode: RestartMode::Checkpoint,
+        } => host.runtime.submit_edge_command(GameLoopEdgeCommand {
+            connection_generation: context.connection_generation,
+            sequence: envelope.sequence,
+            command: GameLoopEdgeCommandKind::RestartCheckpoint,
+        }),
     };
     drop(host);
 
@@ -764,6 +786,9 @@ fn rejection_identity(rejection: InputCommandRejection) -> (RejectionCode, Retry
         InputCommandRejection::EdgeQueueSaturated { .. } => {
             (RejectionCode::EdgeQueueSaturated, RetryDisposition::Never)
         }
+        InputCommandRejection::PlayerDefeated => {
+            (RejectionCode::PlayerDefeated, RetryDisposition::Never)
+        }
     }
 }
 
@@ -772,6 +797,11 @@ fn fact_rejection_code(kind: &str) -> Option<RejectionCode> {
         "InputEdgeRejectedUnknownTarget" => Some(RejectionCode::UnknownTarget),
         "InputEdgeRejectedNotInteractable" => Some(RejectionCode::NotInteractable),
         "InputEdgeRejectedPaused" => Some(RejectionCode::Paused),
+        "InputEdgeRejectedPlayerDefeated" => Some(RejectionCode::PlayerDefeated),
+        "InputEdgeRejectedItemNotOwned" => Some(RejectionCode::ItemNotOwned),
+        "InputEdgeRejectedItemNotUsable" => Some(RejectionCode::ItemNotUsable),
+        "InputEdgeRejectedHealthFull" => Some(RejectionCode::HealthFull),
+        "InputEdgeRejectedCheckpointUnavailable" => Some(RejectionCode::CheckpointUnavailable),
         "CombatRejectedCooldown" => Some(RejectionCode::Cooldown),
         "CombatRejectedNoAmmo" => Some(RejectionCode::NoAmmo),
         "CombatRejectedNoEquippedWeapon" => Some(RejectionCode::NoEquippedWeapon),
@@ -779,7 +809,6 @@ fn fact_rejection_code(kind: &str) -> Option<RejectionCode> {
         "InputEdgeRejectedInvalidWeaponSlot" => Some(RejectionCode::InvalidWeaponSlot),
         "InputEdgeRejectedWeaponNotOwned" => Some(RejectionCode::WeaponNotOwned),
         "InputEdgeRejectedWeaponAlreadySelected" => Some(RejectionCode::WeaponAlreadySelected),
-        "InputEdgeRejectedPlayerDefeated" => Some(RejectionCode::PlayerDefeated),
         "InputEdgeRejectedInventory" => Some(RejectionCode::InternalDefect),
         _ => None,
     }

@@ -13,6 +13,7 @@ mod door;
 mod encounter;
 mod extraction_beacon;
 mod game_loop;
+mod hazard;
 mod interaction;
 mod inventory;
 mod navigation;
@@ -28,11 +29,11 @@ mod session;
 mod snapshot;
 mod stored_project;
 mod studio_adapter;
+mod vitality;
 
 pub use combat::{
     CombatFact, CombatMissReason, CombatReceipt, CombatRejectionReason, EnemyComponent, EnemyState,
-    EnemyView, HealthComponent, HealthConfig, HealthView, ResolvedAttackAction, WeaponConfig,
-    WeaponState, WeaponView, MAX_COMBAT_HITBOX_HALF_EXTENT, MAX_HEALTH, MAX_WEAPON_AMMO,
+    EnemyView, ResolvedAttackAction, WeaponConfig, WeaponState, WeaponView, MAX_WEAPON_AMMO,
     MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_RANGE,
 };
 pub use content::{
@@ -55,11 +56,16 @@ pub use extraction_beacon::{
 };
 pub use game_loop::{
     EdgeCommandRejection, GameLoopAdvanceReceipt, GameLoopEdgeCommand, GameLoopEdgeCommandKind,
-    GameLoopFact, GameLoopPhase, GameLoopTickReceipt, InputCommandDisposition, InputCommandReceipt,
-    InputCommandRejection, LoadingBayGameLoop, PlayerInputCommand, PlayerInputIntent,
-    PlayerInputSessionView, FIXED_SIMULATION_HZ, FIXED_STEP_DURATION, FIXED_STEP_SECONDS,
-    FIXED_TICK_PHASE_ORDER, MAX_ACCUMULATED_LOOK_UNITS, MAX_CATCH_UP_TICKS, MAX_EDGE_COMMANDS,
-    MAX_INPUT_AGE_TICKS, MAX_PENDING_GAME_LOOP_FACTS, MAX_RETAINED_COMMAND_SEQUENCES,
+    GameLoopFact, GameLoopPhase, GameLoopTickReceipt, GameRestartMode, InputCommandDisposition,
+    InputCommandReceipt, InputCommandRejection, LoadingBayGameLoop, PlayerInputCommand,
+    PlayerInputIntent, PlayerInputSessionView, FIXED_SIMULATION_HZ, FIXED_STEP_DURATION,
+    FIXED_STEP_SECONDS, FIXED_TICK_PHASE_ORDER, MAX_ACCUMULATED_LOOK_UNITS, MAX_CATCH_UP_TICKS,
+    MAX_EDGE_COMMANDS, MAX_INPUT_AGE_TICKS, MAX_PENDING_GAME_LOOP_FACTS,
+    MAX_RETAINED_COMMAND_SEQUENCES,
+};
+pub use hazard::{
+    HazardComponent, HazardConfig, HazardFact, HazardPhaseReceipt, HazardRejection, HazardService,
+    HazardView, HAZARD_TRIGGER_SCOPE, MAX_HAZARD_COOLDOWN_TICKS, MAX_HAZARD_OVERLAP_SUBJECTS,
 };
 pub use interaction::{SwitchComponent, SwitchView};
 pub use inventory::{
@@ -104,22 +110,23 @@ pub use session::GameSession;
 pub use snapshot::{
     decode_game_snapshot, encode_game_snapshot, EncounterSnapshot, EnemySnapshot,
     ExtractionBeaconSnapshot, GameSnapshot, GameSnapshotError, GeneratedRoomSnapshot,
-    HealthSnapshot, InventorySnapshot, InventoryStackSnapshot, ItemDefinitionSnapshot,
-    MaterialVoxelSnapshot, NavigationSnapshot, PickupSnapshot, PlayerControllerSnapshot,
-    PlayerInputBindingsSnapshot, SnapshotEncounterState, SnapshotEnemyState,
-    SnapshotExtractionBeaconState, SnapshotItemKind, SnapshotNavigationState,
-    SnapshotPickupCollectionCause, SnapshotPickupState, SnapshotWeaponAttackMode,
-    VoxelCollisionSnapshot, WeaponCooldownSnapshot, WeaponSnapshot, GAME_SNAPSHOT_SCHEMA_VERSION,
+    HazardSnapshot, HealthSnapshot, InventorySnapshot, InventoryStackSnapshot,
+    ItemDefinitionSnapshot, MaterialVoxelSnapshot, NavigationSnapshot, PickupSnapshot,
+    PlayerControllerSnapshot, PlayerInputBindingsSnapshot, SnapshotEncounterState,
+    SnapshotEnemyState, SnapshotExtractionBeaconState, SnapshotItemKind, SnapshotNavigationState,
+    SnapshotPickupCollectionCause, SnapshotPickupState, SnapshotVitalityState,
+    SnapshotWeaponAttackMode, VoxelCollisionSnapshot, WeaponCooldownSnapshot, WeaponSnapshot,
+    GAME_SNAPSHOT_SCHEMA_VERSION,
 };
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset,
     StoredAssetCatalogMetadata, StoredAssetImport, StoredBounds, StoredCollision, StoredDoor,
     StoredEncounter, StoredEntityDefinition, StoredExtractionBeacon,
-    StoredGeneratedVoxelEnvironment, StoredHealth, StoredImportSource, StoredInventory,
-    StoredInventoryStack, StoredItemDefinition, StoredItemKind, StoredKinematic, StoredLight,
-    StoredMaterialVoxel, StoredMaterialVoxelEnvironment, StoredNavigation, StoredPickup,
-    StoredPlayerController, StoredPlayerInputBindings, StoredProject, StoredProjectError,
-    StoredRenderable, StoredScene, StoredSolidVoxelEnvironment, StoredSwitch,
+    StoredGeneratedVoxelEnvironment, StoredHazard, StoredHealth, StoredImportSource,
+    StoredInventory, StoredInventoryStack, StoredItemDefinition, StoredItemKind, StoredKinematic,
+    StoredLight, StoredMaterialVoxel, StoredMaterialVoxelEnvironment, StoredNavigation,
+    StoredPickup, StoredPlayerController, StoredPlayerInputBindings, StoredProject,
+    StoredProjectError, StoredRenderable, StoredScene, StoredSolidVoxelEnvironment, StoredSwitch,
     StoredVoxelEnvironment, StoredVoxelInstance, StoredWeapon, StoredWeaponAttackMode,
     STORED_PROJECT_SCHEMA_VERSION,
 };
@@ -130,4 +137,9 @@ pub use studio_adapter::{
     StudioAdapterService, StudioProjectIdentity, StudioProjectReadout, MAX_PROJECT_PATH_BYTES,
     MAX_REQUEST_ID_BYTES, MAX_ROOT_PATH_BYTES, MAX_STUDIO_ADAPTER_REQUEST_BYTES,
     MAX_STUDIO_ADAPTER_RESPONSE_BYTES, STUDIO_ADAPTER_PROTOCOL_VERSION,
+};
+pub use vitality::{
+    DamageCommand, DamageDisposition, DamageService, DamageSource, HealthComponent, HealthConfig,
+    HealthView, VitalityFact, VitalityReceipt, VitalityRejection, VitalityState, MAX_ARMOR,
+    MAX_COMBAT_HITBOX_HALF_EXTENT, MAX_DAMAGE, MAX_HEALTH,
 };

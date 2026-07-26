@@ -24,6 +24,11 @@ pub enum GameEvent {
         actor: EntityId,
         entity_facts: Vec<EntityFact>,
     },
+    PlayerDied {
+        player: EntityId,
+        source: EntityId,
+        entity_facts: Vec<EntityFact>,
+    },
     EncounterCleared {
         encounter: EntityId,
         exit: EntityId,

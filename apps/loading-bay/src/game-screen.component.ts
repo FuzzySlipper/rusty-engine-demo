@@ -23,9 +23,14 @@ import { CompassComponent } from "@rusty-engine-demo/ui-compass";
 const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
   ammoCapacity: 0,
   ammoRemaining: 0,
+  armor: 0,
   encounterState: "loading",
   events: [],
+  health: 0,
   headingDegrees: 0,
+  maxArmor: 0,
+  maxHealth: 0,
+  vitalityState: "alive",
 };
 
 @Component({
@@ -69,6 +74,19 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
         </div>
 
         <div class="hud-right">
+          <div
+            class="vitality"
+            [attr.data-state]="snapshot().vitalityState"
+            aria-label="Player health and armor"
+          >
+            <span>HEALTH</span>
+            <strong
+              >{{ snapshot().health }} / {{ snapshot().maxHealth }}</strong
+            >
+            <small
+              >ARMOR {{ snapshot().armor }} / {{ snapshot().maxArmor }}</small
+            >
+          </div>
           <div class="scene-caption">
             <span>EXIT / NORTH BULKHEAD</span>
             <strong id="door-caption">LOCKED</strong>
@@ -154,9 +172,15 @@ Awaiting session telemetry</pre
               <button type="button" id="activate-beacon">
                 Activate Extraction
               </button>
+              <button type="button" id="use-health-supply">
+                Use Med Patch
+              </button>
               <button type="button" id="remove-voxel">Remove Voxel</button>
               <button type="button" id="place-voxel">Place Voxel</button>
               <button type="button" id="reset" class="quiet">Reset</button>
+              <button type="button" class="quiet" disabled>
+                Checkpoint unavailable
+              </button>
             </div>
             <label class="persist-control">
               <input type="checkbox" id="persist-voxel-edit" />

@@ -6,15 +6,14 @@ use core_time::Tick;
 use engine_spatial::MAX_TRIGGER_DEFINITIONS;
 use entity_state::{EntityState, EntityView};
 
-use crate::combat::{
-    EnemyComponent, EnemyState, EnemyView, HealthComponent, HealthView, WeaponState, WeaponView,
-};
+use crate::combat::{EnemyComponent, EnemyState, EnemyView, WeaponState, WeaponView};
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::{DoorComponent, DoorState, DoorView};
 use crate::encounter::{EncounterComponent, EncounterState, EncounterView};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconState, ExtractionBeaconView,
 };
+use crate::hazard::{HazardComponent, HazardView};
 use crate::interaction::{SwitchComponent, SwitchView};
 use crate::inventory::{
     admit_item_definitions, inventory_from_config, inventory_view, InventoryComponent,
@@ -26,6 +25,7 @@ use crate::navigation::{
 };
 use crate::pickup::{pickup_view, PickupComponent, PickupState, PickupView};
 use crate::player::{PlayerControllerComponent, PlayerControllerState, PlayerControllerView};
+use crate::vitality::{HealthComponent, HealthView, VitalityState};
 
 #[derive(Debug, Clone)]
 pub struct GameSession {
@@ -35,6 +35,7 @@ pub struct GameSession {
     pub(crate) controls: BTreeMap<EntityId, Vec<EntityId>>,
     pub(crate) enemies: BTreeMap<EntityId, EnemyComponent>,
     pub(crate) health: BTreeMap<EntityId, HealthComponent>,
+    pub(crate) hazards: BTreeMap<EntityId, HazardComponent>,
     pub(crate) encounters: BTreeMap<EntityId, EncounterComponent>,
     pub(crate) extraction_beacons: BTreeMap<EntityId, ExtractionBeaconComponent>,
     pub(crate) navigators: BTreeMap<EntityId, NavigationComponent>,
@@ -56,13 +57,13 @@ impl GameSession {
         definitions: impl IntoIterator<Item = GameEntityDefinition>,
     ) -> Result<Self, GameEntityDefinitionError> {
         let definitions: Vec<GameEntityDefinition> = definitions.into_iter().collect();
-        let pickup_count = definitions
+        let trigger_count = definitions
             .iter()
-            .filter(|definition| definition.pickup.is_some())
+            .filter(|definition| definition.pickup.is_some() || definition.hazard.is_some())
             .count();
-        if pickup_count > MAX_TRIGGER_DEFINITIONS {
+        if trigger_count > MAX_TRIGGER_DEFINITIONS {
             return Err(GameEntityDefinitionError::TooManyPickups {
-                count: pickup_count,
+                count: trigger_count,
                 limit: MAX_TRIGGER_DEFINITIONS,
             });
         }
@@ -80,6 +81,7 @@ impl GameSession {
         let mut controls = BTreeMap::new();
         let mut enemies = BTreeMap::new();
         let mut health = BTreeMap::new();
+        let mut hazards = BTreeMap::new();
         let mut encounters = BTreeMap::new();
         let mut extraction_beacons = BTreeMap::new();
         let mut navigators = BTreeMap::new();
@@ -168,6 +170,47 @@ impl GameSession {
                     HealthComponent {
                         config,
                         current: config.max,
+                        armor: 0,
+                        armor_item: None,
+                        state: VitalityState::Alive,
+                    },
+                );
+            }
+            if let Some(config) = definition.hazard {
+                let view = entities.view(entity).expect("definition created entity");
+                if view.transform.is_none() {
+                    return Err(GameEntityDefinitionError::HazardMissingTransform { entity });
+                }
+                if view.bounds.is_none() {
+                    return Err(GameEntityDefinitionError::HazardMissingBounds { entity });
+                }
+                if view.renderable.is_none() {
+                    return Err(GameEntityDefinitionError::HazardMissingRenderable { entity });
+                }
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidHazardConfig { entity });
+                }
+                if definition.door.is_some()
+                    || definition.switch
+                    || definition.enemy
+                    || definition.health.is_some()
+                    || definition.encounter.is_some()
+                    || definition.extraction_beacon.is_some()
+                    || definition.navigation.is_some()
+                    || definition.player_controller.is_some()
+                    || definition.inventory.is_some()
+                    || definition.pickup.is_some()
+                    || definition.weapon.is_some()
+                {
+                    return Err(
+                        GameEntityDefinitionError::HazardConflictsWithGameplayOwner { entity },
+                    );
+                }
+                hazards.insert(
+                    entity,
+                    HazardComponent {
+                        config,
+                        ready_at_tick: Tick::ZERO,
                     },
                 );
             }
@@ -273,6 +316,7 @@ impl GameSession {
                     || definition.switch
                     || definition.enemy
                     || definition.health.is_some()
+                    || definition.hazard.is_some()
                     || definition.encounter.is_some()
                     || definition.extraction_beacon.is_some()
                     || definition.navigation.is_some()
@@ -430,6 +474,7 @@ impl GameSession {
             controls,
             enemies,
             health,
+            hazards,
             encounters,
             extraction_beacons,
             navigators,
@@ -482,6 +527,26 @@ impl GameSession {
             entity,
             config: component.config,
             current: component.current,
+            armor: component.armor,
+            armor_item: component.armor_item.clone(),
+            state: component.state,
+        })
+    }
+
+    pub fn hazard(&self, entity: EntityId) -> Option<HazardView> {
+        let component = self.hazards.get(&entity)?;
+        Some(HazardView {
+            entity,
+            config: component.config,
+            ready_at_tick: component.ready_at_tick,
+        })
+    }
+
+    pub fn hazards(&self) -> impl ExactSizeIterator<Item = HazardView> + '_ {
+        self.hazards.iter().map(|(entity, component)| HazardView {
+            entity: *entity,
+            config: component.config,
+            ready_at_tick: component.ready_at_tick,
         })
     }
 

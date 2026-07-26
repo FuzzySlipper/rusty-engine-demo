@@ -121,6 +121,14 @@ reuse the existing downstream primitive pickup presentation identities and do no
 texture, sound, sprite, code, or level data. The `arc-pistol`, `breach-scattergun`, and
 `rivet-carbine` identities and their combat values are original Loading Bay demo content.
 
+The schema-15 player vitality, armor absorption, hazard objects, damage/death facts, authored
+restart baseline, and health/armor HUD were authored directly in this repository under Den task
+#6223. The Loading Bay and Relay Annex coolant leaks use the downstream semantic
+`mesh/hazard-pad` primitive identity; they add no copied mesh, texture, sound, sprite, code, or
+level geometry. Rusty Engine contributes only its exact-pinned generic entity-bounds and
+trigger-volume mechanisms; Loading Bay Rust exclusively owns hazard cadence, damage, vitality,
+death, restart receipts, snapshots, and browser projection.
+
 The public `/home/dev/rusty-engine-ui` checkout at exact commit
 `68ddfa5430ec3bc2cf7ca96963982db9511e79ba` supplied the following #6216 downstream shell patterns:
 

@@ -1,14 +1,16 @@
 use core_ids::EntityId;
 use entity_state::EntityDefinition;
 
-use crate::combat::{HealthConfig, WeaponConfig};
+use crate::combat::WeaponConfig;
 use crate::door::DoorConfig;
 use crate::encounter::EncounterConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
+use crate::hazard::HazardConfig;
 use crate::inventory::{InventoryAdmissionError, InventoryConfig};
 use crate::navigation::NavigationConfig;
 use crate::pickup::PickupConfig;
 use crate::player::PlayerControllerConfig;
+use crate::vitality::HealthConfig;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct GameEntityDefinition {
@@ -18,6 +20,7 @@ pub struct GameEntityDefinition {
     pub controls_targets: Vec<EntityId>,
     pub enemy: bool,
     pub health: Option<HealthConfig>,
+    pub hazard: Option<HazardConfig>,
     pub encounter: Option<EncounterConfig>,
     pub extraction_beacon: Option<ExtractionBeaconConfig>,
     pub navigation: Option<NavigationConfig>,
@@ -36,6 +39,7 @@ impl GameEntityDefinition {
             controls_targets: Vec::new(),
             enemy: false,
             health: None,
+            hazard: None,
             encounter: None,
             extraction_beacon: None,
             navigation: None,
@@ -68,6 +72,11 @@ impl GameEntityDefinition {
 
     pub fn with_health(mut self, config: HealthConfig) -> Self {
         self.health = Some(config);
+        self
+    }
+
+    pub fn as_hazard(mut self, config: HazardConfig) -> Self {
+        self.hazard = Some(config);
         self
     }
 
@@ -155,6 +164,21 @@ pub enum GameEntityDefinitionError {
         entity: EntityId,
     },
     InvalidHealthConfig {
+        entity: EntityId,
+    },
+    HazardMissingTransform {
+        entity: EntityId,
+    },
+    HazardMissingBounds {
+        entity: EntityId,
+    },
+    HazardMissingRenderable {
+        entity: EntityId,
+    },
+    InvalidHazardConfig {
+        entity: EntityId,
+    },
+    HazardConflictsWithGameplayOwner {
         entity: EntityId,
     },
     NavigationWithoutEnemy {

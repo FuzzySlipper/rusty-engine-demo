@@ -30,6 +30,10 @@ export type SessionRejectionCode =
   | "weaponNotOwned"
   | "weaponAlreadySelected"
   | "playerDefeated"
+  | "itemNotOwned"
+  | "itemNotUsable"
+  | "healthFull"
+  | "checkpointUnavailable"
   | "paused"
   | "internalDefect";
 
@@ -112,10 +116,11 @@ type ClientGameCommand =
     } & SessionInputIntent)
   | { readonly kind: "interact"; readonly target: number }
   | { readonly kind: "selectWeaponSlot"; readonly slot: number }
+  | { readonly kind: "useItem"; readonly item: string }
   | { readonly kind: "setPaused"; readonly paused: boolean }
   | {
       readonly kind: "restart";
-      readonly mode: "authoredBaseline";
+      readonly mode: "authoredBaseline" | "checkpoint";
     };
 
 interface ClientCommandEnvelope {
@@ -999,6 +1004,11 @@ function isRuntimePlayerState(value: unknown): boolean {
     isFiniteNumber(value.pitchDegrees) &&
     isFiniteNumber(value.moveStepSeconds) &&
     isFiniteNumber(value.lookDegreesPerUnit) &&
+    isFiniteNumber(value.currentHealth) &&
+    isFiniteNumber(value.maxHealth) &&
+    isFiniteNumber(value.armor) &&
+    isFiniteNumber(value.maxArmor) &&
+    (value.vitalityState === "alive" || value.vitalityState === "dead") &&
     [
       "moveForward",
       "moveBackward",
@@ -1054,6 +1064,16 @@ function isRuntimeInventoryState(value: unknown): boolean {
   );
 }
 
+function isRuntimeHazardState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.id) &&
+    isFiniteNumber(value.damage) &&
+    isFiniteNumber(value.cooldownTicks) &&
+    isFiniteNumber(value.readyAtTick)
+  );
+}
+
 function isFiniteVector3(value: unknown): boolean {
   return (
     Array.isArray(value) && value.length === 3 && value.every(isFiniteNumber)
@@ -1077,6 +1097,11 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     isRuntimeWeaponState(value.weapon) &&
     (value.inventory === null || isRuntimeInventoryState(value.inventory)) &&
     Array.isArray(value.pickups) &&
+    Array.isArray(value.hazards) &&
+    value.hazards.every(isRuntimeHazardState) &&
+    isRecord(value.restart) &&
+    typeof value.restart.authoredBaselineAvailable === "boolean" &&
+    typeof value.restart.checkpointAvailable === "boolean" &&
     (value.extractionBeacon === null || isRecord(value.extractionBeacon)) &&
     Array.isArray(value.enemies) &&
     isRecord(value.presentation) &&

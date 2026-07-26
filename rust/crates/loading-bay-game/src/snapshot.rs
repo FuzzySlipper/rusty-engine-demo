@@ -10,11 +10,14 @@ use engine_spatial::{
 use entity_state::{EntityLifecycle, EntityState, EntityStateSnapshot};
 use serde::{Deserialize, Serialize};
 
-use crate::combat::{EnemyComponent, EnemyState, HealthComponent, HealthConfig};
+use crate::combat::{EnemyComponent, EnemyState};
 use crate::door::{DoorComponent, DoorConfig, DoorState};
 use crate::encounter::{EncounterComponent, EncounterConfig, EncounterState};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconState,
+};
+use crate::hazard::{
+    HazardComponent, HazardConfig, HAZARD_TRIGGER_SCOPE, MAX_HAZARD_COOLDOWN_TICKS,
 };
 use crate::interaction::SwitchComponent;
 use crate::inventory::{
@@ -34,8 +37,9 @@ use crate::player::{
 use crate::runtime::GameRuntime;
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
+use crate::vitality::{HealthComponent, HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 13;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 14;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -52,6 +56,8 @@ pub struct GameSnapshot {
     pub controls: Vec<ControlsSnapshot>,
     pub enemies: Vec<EnemySnapshot>,
     pub health: Vec<HealthSnapshot>,
+    #[serde(default)]
+    pub hazards: Vec<HazardSnapshot>,
     pub encounters: Vec<EncounterSnapshot>,
     pub navigations: Vec<NavigationSnapshot>,
     pub player_controllers: Vec<PlayerControllerSnapshot>,
@@ -61,6 +67,8 @@ pub struct GameSnapshot {
     pub pickups: Vec<PickupSnapshot>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pickup_triggers: Option<TriggerVolumeSnapshot>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hazard_triggers: Option<TriggerVolumeSnapshot>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub weapons: Vec<WeaponSnapshot>,
     pub scheduled: Vec<ScheduledSnapshot>,
@@ -286,6 +294,32 @@ pub struct HealthSnapshot {
     pub current: u32,
     pub max: u32,
     pub hitbox_half_extents: [f32; 3],
+    #[serde(default)]
+    pub max_armor: u32,
+    #[serde(default)]
+    pub armor_absorption_percent: u8,
+    #[serde(default)]
+    pub armor: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub armor_item: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub state: Option<SnapshotVitalityState>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotVitalityState {
+    Alive,
+    Dead,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct HazardSnapshot {
+    pub entity: u64,
+    pub damage: u32,
+    pub cooldown_ticks: u64,
+    pub ready_at_tick: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -458,8 +492,22 @@ pub enum GameSnapshotError {
         snapshot_tick: u64,
     },
     InvalidPickupTriggerDefinitions,
+    InvalidHazardTriggerDefinitions,
     FuturePickupStateInLegacySnapshot,
     FutureWeaponStateInLegacySnapshot,
+    FutureVitalityStateInLegacySnapshot,
+    InvalidHazardConfig {
+        entity: u64,
+    },
+    DuplicateHazard {
+        entity: u64,
+    },
+    UnknownHazardEntity {
+        entity: u64,
+    },
+    MissingHazardCapability {
+        entity: u64,
+    },
     InvalidWeaponCooldown {
         owner: u64,
         item: String,
@@ -722,6 +770,28 @@ impl GameRuntime {
                     current: component.current,
                     max: component.config.max,
                     hitbox_half_extents: component.config.hitbox_half_extents.to_array(),
+                    max_armor: component.config.max_armor,
+                    armor_absorption_percent: component.config.armor_absorption_percent,
+                    armor: component.armor,
+                    armor_item: component
+                        .armor_item
+                        .as_ref()
+                        .map(|item| item.as_str().to_owned()),
+                    state: Some(match component.state {
+                        VitalityState::Alive => SnapshotVitalityState::Alive,
+                        VitalityState::Dead => SnapshotVitalityState::Dead,
+                    }),
+                })
+                .collect(),
+            hazards: self
+                .session
+                .hazards
+                .iter()
+                .map(|(entity, component)| HazardSnapshot {
+                    entity: entity.raw(),
+                    damage: component.config.damage,
+                    cooldown_ticks: component.config.cooldown_ticks,
+                    ready_at_tick: component.ready_at_tick.raw(),
                 })
                 .collect(),
             encounters: self
@@ -860,6 +930,7 @@ impl GameRuntime {
                 })
                 .collect(),
             pickup_triggers: Some(self.pickup_triggers.snapshot()),
+            hazard_triggers: Some(self.hazard_triggers.snapshot()),
             weapons: Vec::new(),
             scheduled: self
                 .scheduler
@@ -894,6 +965,17 @@ impl GameRuntime {
             return Err(GameSnapshotError::FuturePickupStateInLegacySnapshot);
         }
         if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION {
+            if snapshot.health.iter().any(|health| {
+                health.max_armor != 0
+                    || health.armor_absorption_percent != 0
+                    || health.armor != 0
+                    || health.armor_item.is_some()
+                    || health.state.is_some()
+            }) || !snapshot.hazards.is_empty()
+                || snapshot.hazard_triggers.is_some()
+            {
+                return Err(GameSnapshotError::FutureVitalityStateInLegacySnapshot);
+            }
             if snapshot_has_inventory_weapon_fields(&snapshot) {
                 return Err(GameSnapshotError::FutureWeaponStateInLegacySnapshot);
             }
@@ -1171,8 +1253,32 @@ impl GameRuntime {
             let config = HealthConfig {
                 max: health_snapshot.max,
                 hitbox_half_extents: array_vec3(health_snapshot.hitbox_half_extents),
+                max_armor: health_snapshot.max_armor,
+                armor_absorption_percent: health_snapshot.armor_absorption_percent,
             };
-            if !config.is_valid() || health_snapshot.current > config.max {
+            let state = match health_snapshot.state {
+                Some(SnapshotVitalityState::Alive) => VitalityState::Alive,
+                Some(SnapshotVitalityState::Dead) => VitalityState::Dead,
+                None if health_snapshot.current == 0 => VitalityState::Dead,
+                None => VitalityState::Alive,
+            };
+            let armor_item = health_snapshot
+                .armor_item
+                .map(parse_snapshot_item_id)
+                .transpose()?;
+            let armor_item_is_valid = match (&armor_item, health_snapshot.armor) {
+                (None, 0) => true,
+                (Some(item), armor) if armor > 0 => item_definitions
+                    .get(item)
+                    .is_some_and(|definition| matches!(definition.kind, ItemKind::Armor { .. })),
+                _ => false,
+            };
+            if !config.is_valid()
+                || health_snapshot.current > config.max
+                || health_snapshot.armor > config.max_armor
+                || !armor_item_is_valid
+                || matches!(state, VitalityState::Alive) != (health_snapshot.current > 0)
+            {
                 return Err(GameSnapshotError::InvalidHealthConfig {
                     entity: health_snapshot.entity,
                 });
@@ -1182,6 +1288,9 @@ impl GameRuntime {
                 HealthComponent {
                     config,
                     current: health_snapshot.current,
+                    armor: health_snapshot.armor,
+                    armor_item,
+                    state,
                 },
             );
         }
@@ -1198,6 +1307,47 @@ impl GameRuntime {
                     entity: entity.raw(),
                 });
             }
+        }
+
+        let mut hazards = BTreeMap::new();
+        let mut hazard_ids = BTreeSet::new();
+        for hazard in snapshot.hazards {
+            if !hazard_ids.insert(hazard.entity) {
+                return Err(GameSnapshotError::DuplicateHazard {
+                    entity: hazard.entity,
+                });
+            }
+            let entity = EntityId::new(hazard.entity);
+            let view =
+                entities
+                    .view(entity)
+                    .map_err(|_| GameSnapshotError::UnknownHazardEntity {
+                        entity: hazard.entity,
+                    })?;
+            if view.transform.is_none() || view.bounds.is_none() || view.renderable.is_none() {
+                return Err(GameSnapshotError::MissingHazardCapability {
+                    entity: hazard.entity,
+                });
+            }
+            let config = HazardConfig {
+                damage: hazard.damage,
+                cooldown_ticks: hazard.cooldown_ticks,
+            };
+            if !config.is_valid()
+                || hazard.cooldown_ticks > MAX_HAZARD_COOLDOWN_TICKS
+                || hazard.ready_at_tick > snapshot.tick.saturating_add(hazard.cooldown_ticks)
+            {
+                return Err(GameSnapshotError::InvalidHazardConfig {
+                    entity: hazard.entity,
+                });
+            }
+            hazards.insert(
+                entity,
+                HazardComponent {
+                    config,
+                    ready_at_tick: Tick::new(hazard.ready_at_tick),
+                },
+            );
         }
 
         let mut navigators = BTreeMap::new();
@@ -1565,6 +1715,42 @@ impl GameRuntime {
         {
             return Err(GameSnapshotError::InvalidPickupTriggerDefinitions);
         }
+        if pickups.len().saturating_add(hazards.len()) > engine_spatial::MAX_TRIGGER_DEFINITIONS {
+            return Err(GameSnapshotError::InvalidHazardTriggerDefinitions);
+        }
+        let hazard_triggers = if source_schema_version >= GAME_SNAPSHOT_SCHEMA_VERSION {
+            TriggerVolumeSystem::from_snapshot(
+                snapshot
+                    .hazard_triggers
+                    .take()
+                    .ok_or(GameSnapshotError::InvalidHazardTriggerDefinitions)?,
+            )
+            .map_err(GameSnapshotError::TriggerVolume)?
+        } else {
+            TriggerVolumeSystem::default()
+        };
+        let expected_hazard_entities = hazards.keys().copied().collect::<Vec<_>>();
+        let actual_hazard_entities = hazard_triggers
+            .definitions()
+            .map(|definition| {
+                let valid = definition.scope == HAZARD_TRIGGER_SCOPE
+                    && definition.tags == ["hazard".to_string()]
+                    && definition.geometry_source()
+                        == engine_spatial::TriggerGeometrySource::EntityBounds;
+                (definition.trigger_id(), valid)
+            })
+            .collect::<Vec<_>>();
+        if actual_hazard_entities.len() != expected_hazard_entities.len()
+            || actual_hazard_entities
+                .iter()
+                .zip(expected_hazard_entities)
+                .any(|((actual, valid), expected)| !valid || *actual != expected)
+            || hazard_triggers.active_overlaps().any(|pair| {
+                !hazards.contains_key(&pair.trigger_id()) || !entities.contains(pair.subject_id())
+            })
+        {
+            return Err(GameSnapshotError::InvalidHazardTriggerDefinitions);
+        }
 
         let mut encounters = BTreeMap::new();
         let mut encounter_ids = BTreeSet::new();
@@ -1655,6 +1841,7 @@ impl GameRuntime {
                 controls,
                 enemies,
                 health,
+                hazards,
                 encounters,
                 extraction_beacons,
                 navigators,
@@ -1669,6 +1856,7 @@ impl GameRuntime {
             journal: Vec::new(),
             collision_scene,
             pickup_triggers,
+            hazard_triggers,
         })
     }
 }

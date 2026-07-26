@@ -11,7 +11,7 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
     let project = decode_stored_project(PROJECT).expect("stored project");
     assert_eq!(project.project_id, "loading-bay");
     assert_eq!(project.entry_scene, "scene/loading-bay");
-    assert_eq!(project.assets.len(), 12);
+    assert_eq!(project.assets.len(), 13);
     assert!(project
         .assets
         .iter()
@@ -50,6 +50,13 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
             .filter(|entity| entity.pickup.is_some())
             .count(),
         7
+    );
+    assert_eq!(
+        entities
+            .iter()
+            .filter(|entity| entity.hazard.is_some())
+            .count(),
+        1
     );
 }
 
@@ -116,6 +123,7 @@ fn stored_project_admits_every_settled_component_family_atomically() {
     assert!(session.health(EntityId::new(4)).is_some());
     assert!(session.navigation(EntityId::new(4)).is_some());
     assert!(session.extraction_beacon(EntityId::new(7)).is_some());
+    assert!(session.hazard(EntityId::new(27)).is_some());
     assert_eq!(
         session
             .switch(EntityId::new(6))

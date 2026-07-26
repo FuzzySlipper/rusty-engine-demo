@@ -15,6 +15,7 @@ use crate::definition::GameEntityDefinitionError;
 use crate::door::{security_door_definitions, DoorService, DoorTransition, SecurityDoorIds};
 use crate::encounter::EncounterService;
 use crate::extraction_beacon::{ExtractionBeaconReceipt, ExtractionBeaconService};
+use crate::hazard::{HazardPhaseReceipt, HazardRejection, HazardService};
 use crate::interaction::InteractionService;
 use crate::inventory::{InventoryCommand, InventoryReceipt, InventoryRejection, InventoryService};
 use crate::navigation::{EnemyNavigationSystem, NavigationPhaseReceipt};
@@ -27,6 +28,7 @@ use crate::project_admission::decode_and_admit_stored_project;
 use crate::runtime_records::{readout, GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
+use crate::vitality::VitalityRejection;
 
 pub const MAX_EVENT_WAVE: usize = 256;
 pub const MAX_TICK_ADVANCE: u64 = 100_000;
@@ -57,6 +59,9 @@ pub enum RuntimeError {
         reason: CombatRejectionReason,
     },
     UnknownPlayerController {
+        player: EntityId,
+    },
+    PlayerDefeated {
         player: EntityId,
     },
     UnknownExtractionBeacon {
@@ -100,6 +105,8 @@ pub enum RuntimeError {
         owner: EntityId,
     },
     Pickup(PickupRejection),
+    Vitality(VitalityRejection),
+    Hazard(HazardRejection),
 }
 
 impl std::fmt::Display for RuntimeError {
@@ -119,11 +126,13 @@ pub struct GameRuntime {
     pub(crate) journal: Vec<JournalEntry>,
     pub(crate) collision_scene: Option<VoxelCollisionScene>,
     pub(crate) pickup_triggers: TriggerVolumeSystem,
+    pub(crate) hazard_triggers: TriggerVolumeSystem,
 }
 
 impl GameRuntime {
     pub fn new(session: GameSession) -> Self {
         let pickup_triggers = PickupService::trigger_system(&session);
+        let hazard_triggers = HazardService::trigger_system(&session);
         Self {
             session,
             tick: Tick::ZERO,
@@ -132,6 +141,7 @@ impl GameRuntime {
             journal: Vec::new(),
             collision_scene: None,
             pickup_triggers,
+            hazard_triggers,
         }
     }
 
@@ -235,6 +245,22 @@ impl GameRuntime {
             self.tick.raw(),
         )
         .map_err(RuntimeError::Pickup)
+    }
+
+    pub(crate) fn run_hazard_phase(
+        &mut self,
+        player: EntityId,
+    ) -> Result<HazardPhaseReceipt, RuntimeError> {
+        let mut receipt = HazardService::reconcile_and_apply(
+            &mut self.session,
+            &mut self.hazard_triggers,
+            player,
+            self.tick,
+        )
+        .map_err(RuntimeError::Hazard)?;
+        self.events.extend(receipt.events.drain(..));
+        receipt.events = self.drain_events()?;
+        Ok(receipt)
     }
 
     /// Run the one centrally scheduled kinematic phase over every configured
@@ -436,7 +462,9 @@ impl GameRuntime {
                         self.queue_door_transition(*exit, transition);
                     }
                 }
-                GameEvent::DoorOpened { .. } | GameEvent::DoorClosed { .. } => {}
+                GameEvent::DoorOpened { .. }
+                | GameEvent::DoorClosed { .. }
+                | GameEvent::PlayerDied { .. } => {}
             }
             processed.push(event);
         }

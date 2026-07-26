@@ -43,6 +43,11 @@ const dynamic = {
       primaryFire: "Mouse0",
       selectWeapon: ["Digit1", "Digit2", "Digit3"],
     },
+    currentHealth: 100,
+    maxHealth: 100,
+    armor: 0,
+    maxArmor: 100,
+    vitalityState: "alive",
   },
   weapon: {
     item: "weapon/arc-pistol",
@@ -71,6 +76,11 @@ const dynamic = {
     ],
   },
   pickups: [],
+  hazards: [],
+  restart: {
+    authoredBaselineAvailable: true,
+    checkpointAvailable: false,
+  },
   extractionBeacon: null,
   enemies: [],
   presentation: { animationStates: [], cues: [] },
@@ -146,6 +156,38 @@ test("legacy projects preserve an absent Rust inventory through browser composit
 
   const applied = applyServerUpdate(null, envelope);
   assert.equal(applied.state.inventory, null);
+});
+
+test("dynamic projection rejects malformed hazard authority at the browser boundary", () => {
+  const malformed = {
+    ...dynamic,
+    hazards: [
+      {
+        id: 27,
+        damage: "20",
+        cooldownTicks: 60,
+        readyAtTick: 1,
+      },
+    ],
+  };
+  assert.throws(
+    () =>
+      applyServerUpdate(null, {
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 1,
+        snapshotSequence: 1,
+        acknowledgedCommandSequence: 0,
+        staticRevision: resources.staticRevision,
+        update: { kind: "full", state: malformed as never },
+        resources,
+        facts: [],
+        metrics,
+      }),
+    (error) =>
+      error instanceof GameSessionError && error.code === "protocolMismatch",
+  );
 });
 
 test("dynamic deltas retain cold resources and reject a sequence gap", () => {

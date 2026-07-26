@@ -45,6 +45,11 @@ export interface RuntimePlayerState {
   readonly moveStepSeconds: number;
   readonly lookDegreesPerUnit: number;
   readonly bindings: RuntimePlayerBindings;
+  readonly currentHealth: number;
+  readonly maxHealth: number;
+  readonly armor: number;
+  readonly maxArmor: number;
+  readonly vitalityState: "alive" | "dead";
 }
 
 export interface RuntimeWeaponState {
@@ -88,6 +93,18 @@ export interface RuntimePickupState {
   readonly collectedBy: number | null;
   readonly collectedAtTick: number | null;
   readonly collectionCause: "overlap" | "interaction" | null;
+}
+
+export interface RuntimeHazardState {
+  readonly id: number;
+  readonly damage: number;
+  readonly cooldownTicks: number;
+  readonly readyAtTick: number;
+}
+
+export interface RuntimeRestartState {
+  readonly authoredBaselineAvailable: boolean;
+  readonly checkpointAvailable: boolean;
 }
 
 export interface RuntimeInputSessionState {
@@ -220,6 +237,8 @@ export interface RuntimeBrowserState {
   readonly weapon: RuntimeWeaponState;
   readonly inventory: RuntimeInventoryState | null;
   readonly pickups: readonly RuntimePickupState[];
+  readonly hazards: readonly RuntimeHazardState[];
+  readonly restart: RuntimeRestartState;
   readonly extractionBeacon: RuntimeExtractionBeaconState | null;
   readonly voxelMeshes: readonly RuntimeVoxelMeshChunk[];
   readonly generatedEnvironment: RuntimeGeneratedEnvironment | null;

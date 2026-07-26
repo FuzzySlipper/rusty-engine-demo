@@ -296,27 +296,28 @@ fn defeated_player_cannot_change_equipped_weapon() {
         .iter_mut()
         .find(|health| health["entity"] == PLAYER.raw())
         .unwrap()["current"] = 0.into();
+    snapshot["health"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|health| health["entity"] == PLAYER.raw())
+        .unwrap()["state"] = "dead".into();
     let defeated = decode_game_snapshot(&snapshot.to_string()).unwrap();
     let before = defeated.session().inventory(PLAYER).unwrap();
     let mut game_loop = LoadingBayGameLoop::new(defeated, PLAYER).unwrap();
     let generation = game_loop.start_connection().connection_generation;
 
-    game_loop
+    let rejection = game_loop
         .submit_edge_command(edge(
             generation,
             1,
             GameLoopEdgeCommandKind::SelectWeaponSlot { slot: 0 },
         ))
-        .unwrap();
-    let receipt = game_loop.run_fixed_tick().unwrap();
-
-    assert!(receipt.facts.iter().any(|fact| matches!(
-        fact,
-        GameLoopFact::EdgeCommandRejected {
-            sequence: 1,
-            reason: loading_bay_game::EdgeCommandRejection::PlayerDefeated,
-        }
-    )));
+        .unwrap_err();
+    assert_eq!(
+        rejection,
+        loading_bay_game::InputCommandRejection::PlayerDefeated
+    );
     assert_eq!(
         game_loop.runtime().session().inventory(PLAYER).unwrap(),
         before

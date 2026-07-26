@@ -12,11 +12,12 @@ use engine_spatial::{
 };
 use entity_state::{EntityDefinition, EntityTransform, Quat, MAX_ABS_TRANSLATION};
 
-use crate::combat::{HealthConfig, WeaponConfig};
+use crate::combat::WeaponConfig;
 use crate::content::AdmittedProject;
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::DoorConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
+use crate::hazard::HazardConfig;
 use crate::inventory::{
     InventoryConfig, InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind, WeaponAttackMode,
     WeaponDefinition,
@@ -31,6 +32,7 @@ use crate::stored_project::{
     StoredItemDefinition, StoredItemKind, StoredMaterialVoxel, StoredMaterialVoxelEnvironment,
     StoredProject, StoredProjectError, StoredScene, StoredVoxelEnvironment,
 };
+use crate::vitality::HealthConfig;
 
 /// Static project data that has passed the same complete semantic admission as
 /// runtime construction. The persistence service accepts only this token and
@@ -563,6 +565,14 @@ fn authored_definition(
         definition = definition.with_health(HealthConfig {
             max: health.max,
             hitbox_half_extents: array_vec3(health.hitbox_half_extents),
+            max_armor: health.max_armor,
+            armor_absorption_percent: health.armor_absorption_percent,
+        });
+    }
+    if let Some(hazard) = authored.hazard {
+        definition = definition.as_hazard(HazardConfig {
+            damage: hazard.damage,
+            cooldown_ticks: hazard.cooldown_ticks,
         });
     }
     if let Some(encounter) = &authored.encounter {
@@ -749,6 +759,14 @@ fn definition_error(
         | Error::InvalidHealthConfig { entity } => (
             diagnostic_code::INVALID_COMPONENT,
             entity_path(scene_index, indexes, *entity, "health"),
+        ),
+        Error::HazardMissingTransform { entity }
+        | Error::HazardMissingBounds { entity }
+        | Error::HazardMissingRenderable { entity }
+        | Error::InvalidHazardConfig { entity }
+        | Error::HazardConflictsWithGameplayOwner { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "hazard"),
         ),
         Error::NavigationWithoutEnemy { entity }
         | Error::NavigationMissingTransform { entity }

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 14,
+  "schemaVersion": 15,
   "projectId": "loading-bay",
   "name": "Loading Bay",
   "entryScene": "scene/loading-bay",
@@ -55,6 +55,9 @@
     },
     {
       "id": "mesh/extraction-beacon"
+    },
+    {
+      "id": "mesh/hazard-pad"
     },
     {
       "id": "mesh/pickup-ammunition"
@@ -260,6 +263,16 @@
               0.25,
               0.25
             ]
+          },
+          "health": {
+            "max": 100,
+            "hitboxHalfExtents": [
+              0.25,
+              0.5,
+              0.25
+            ],
+            "maxArmor": 100,
+            "armorAbsorptionPercent": 50
           },
           "inventory": {
             "capacitySlots": 8,
@@ -670,6 +683,35 @@
           "pickup": {
             "item": "key/maintenance-pass",
             "quantity": 1
+          }
+        },
+        {
+          "id": 27,
+          "name": "coolant-leak",
+          "translation": [
+            1.5,
+            1.5,
+            4.5
+          ],
+          "bounds": {
+            "min": [
+              -0.45,
+              -0.45,
+              -0.45
+            ],
+            "max": [
+              0.45,
+              0.45,
+              0.45
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/hazard-pad",
+            "visible": true
+          },
+          "hazard": {
+            "damage": 20,
+            "cooldownTicks": 60
           }
         }
       ]

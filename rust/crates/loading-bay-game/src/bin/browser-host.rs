@@ -341,7 +341,7 @@ fn start_game_loop_driver(runtime: &Arc<SharedBrowserRuntime>) {
                 Ok(receipt) => {
                     let restart_sequence = receipt.fixed_ticks.iter().find_map(|tick| {
                         tick.facts.iter().find_map(|fact| match fact {
-                            GameLoopFact::RestartRequested { sequence } => Some(*sequence),
+                            GameLoopFact::RestartRequested { sequence, .. } => Some(*sequence),
                             _ => None,
                         })
                     });
@@ -588,6 +588,14 @@ fn drain_game_loop_feedback(
             GameLoopFact::Inventory(_) => {
                 facts.push(("InventoryWeaponSelected".to_owned(), None));
             }
+            GameLoopFact::Vitality(fact) => {
+                facts.push((vitality_fact_name(&fact).to_owned(), None));
+                feedback.extend_vitality(std::slice::from_ref(&fact));
+            }
+            GameLoopFact::Hazard(loading_bay_game::HazardFact::Damage(fact)) => {
+                facts.push((vitality_fact_name(&fact).to_owned(), None));
+                feedback.extend_vitality(std::slice::from_ref(&fact));
+            }
             GameLoopFact::PickupRejected { reason, .. } => {
                 facts.push((pickup_rejection_name(&reason).to_owned(), None));
             }
@@ -636,6 +644,18 @@ fn drain_game_loop_feedback(
                     loading_bay_game::EdgeCommandRejection::InventoryRejected => {
                         "InputEdgeRejectedInventory"
                     }
+                    loading_bay_game::EdgeCommandRejection::ItemNotOwned => {
+                        "InputEdgeRejectedItemNotOwned"
+                    }
+                    loading_bay_game::EdgeCommandRejection::ItemNotUsable => {
+                        "InputEdgeRejectedItemNotUsable"
+                    }
+                    loading_bay_game::EdgeCommandRejection::HealthFull => {
+                        "InputEdgeRejectedHealthFull"
+                    }
+                    loading_bay_game::EdgeCommandRejection::CheckpointUnavailable => {
+                        "InputEdgeRejectedCheckpointUnavailable"
+                    }
                 }
                 .to_owned(),
                 Some(sequence),
@@ -662,6 +682,7 @@ fn pickup_rejection_name(reason: &loading_bay_game::PickupRejection) -> &'static
         loading_bay_game::PickupRejection::Inventory(_) => "PickupRejectedInventory",
         loading_bay_game::PickupRejection::NotOverlapping { .. } => "PickupRejectedNotOverlapping",
         loading_bay_game::PickupRejection::UnknownPickup { .. } => "PickupRejectedUnknown",
+        loading_bay_game::PickupRejection::PlayerDefeated { .. } => "PickupRejectedPlayerDefeated",
         loading_bay_game::PickupRejection::InventorySequenceOverflow { .. } => {
             "PickupRejectedSequenceOverflow"
         }
@@ -669,6 +690,7 @@ fn pickup_rejection_name(reason: &loading_bay_game::PickupRejection) -> &'static
             "PickupRejectedWorldMutation"
         }
         loading_bay_game::PickupRejection::Trigger { .. } => "PickupRejectedTrigger",
+        loading_bay_game::PickupRejection::Vitality(_) => "PickupRejectedVitality",
     }
 }
 
@@ -685,8 +707,24 @@ fn combat_fact_name(fact: &CombatFact) -> &'static str {
             reason: CombatMissReason::WorldBlocked,
             ..
         } => "CombatMissedWorldBlocked",
-        CombatFact::DamageApplied { .. } => "DamageApplied",
+        CombatFact::Vitality(loading_bay_game::VitalityFact::DamageApplied { .. }) => {
+            "DamageApplied"
+        }
+        CombatFact::Vitality(loading_bay_game::VitalityFact::Died { .. }) => "EntityDied",
+        CombatFact::Vitality(loading_bay_game::VitalityFact::ArmorGranted { .. }) => "ArmorGranted",
+        CombatFact::Vitality(loading_bay_game::VitalityFact::HealthRestored { .. }) => {
+            "HealthRestored"
+        }
         CombatFact::EnemyDefeated { .. } => "CombatEnemyDefeated",
+    }
+}
+
+fn vitality_fact_name(fact: &loading_bay_game::VitalityFact) -> &'static str {
+    match fact {
+        loading_bay_game::VitalityFact::DamageApplied { .. } => "DamageApplied",
+        loading_bay_game::VitalityFact::Died { .. } => "EntityDied",
+        loading_bay_game::VitalityFact::ArmorGranted { .. } => "ArmorGranted",
+        loading_bay_game::VitalityFact::HealthRestored { .. } => "HealthRestored",
     }
 }
 
@@ -713,6 +751,7 @@ fn event_name(event: &GameEvent) -> &'static str {
         GameEvent::DoorOpened { .. } => "DoorOpened",
         GameEvent::DoorClosed { .. } => "DoorClosed",
         GameEvent::EnemyDefeated { .. } => "EnemyDefeated",
+        GameEvent::PlayerDied { .. } => "PlayerDied",
         GameEvent::EncounterCleared { .. } => "EncounterCleared",
     }
 }
@@ -884,6 +923,25 @@ mod tests {
     #[test]
     fn authored_restart_replaces_the_runtime_only_after_fixed_tick_consumption() {
         let mut host = stored_browser_runtime();
+        let mut defeated_snapshot: serde_json::Value = serde_json::from_str(
+            &loading_bay_game::encode_game_snapshot(host.runtime.runtime()).unwrap(),
+        )
+        .unwrap();
+        let player_health = defeated_snapshot["health"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|health| health["entity"] == ACTOR.raw())
+            .unwrap();
+        player_health["current"] = 0.into();
+        player_health["armor"] = 50.into();
+        player_health["armorItem"] = "armor/impact-vest".into();
+        player_health["state"] = "dead".into();
+        host.runtime = LoadingBayGameLoop::new(
+            loading_bay_game::decode_game_snapshot(&defeated_snapshot.to_string()).unwrap(),
+            ACTOR,
+        )
+        .unwrap();
         let generation = host.start_browser_connection();
         host.runtime
             .submit_edge_command(loading_bay_game::GameLoopEdgeCommand {
@@ -901,9 +959,10 @@ mod tests {
         assert!(host.replacement_origin.is_none());
 
         let tick = host.runtime.run_fixed_tick().unwrap();
-        assert!(tick
-            .facts
-            .contains(&GameLoopFact::RestartRequested { sequence: 1 }));
+        assert!(tick.facts.contains(&GameLoopFact::RestartRequested {
+            sequence: 1,
+            mode: loading_bay_game::GameRestartMode::AuthoredBaseline,
+        }));
         assert_eq!(
             host.runtime.input_session().connection_generation,
             generation
@@ -912,6 +971,17 @@ mod tests {
         assert!(host.apply_consumed_restart(1));
         let replacement_generation = host.runtime.input_session().connection_generation;
         assert!(replacement_generation > generation);
+        let restarted_health = host.session().health(ACTOR).unwrap();
+        assert_eq!(restarted_health.current, restarted_health.config.max);
+        assert_eq!(restarted_health.armor, 0);
+        assert_eq!(
+            restarted_health.state,
+            loading_bay_game::VitalityState::Alive
+        );
+        assert!(host
+            .session()
+            .hazards()
+            .all(|hazard| hazard.ready_at_tick == core_time::Tick::ZERO));
         assert_eq!(
             host.adopt_consumed_restart(generation, 1),
             Some(replacement_generation)
@@ -995,6 +1065,27 @@ mod tests {
             .expect("animation states")
             .iter()
             .any(|state| state["entity"] == BEACON.raw()));
+    }
+
+    #[test]
+    fn legacy_project_without_player_vitality_keeps_a_neutral_browser_projection() {
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/converted-wall.project.json");
+        let runtime = BrowserRuntime::load(&project).expect("admit legacy converted project");
+
+        assert!(runtime.session().health(ACTOR).is_none());
+        let state = serde_json::to_value(browser_state(
+            &runtime,
+            Vec::new(),
+            BrowserFeedbackProjection::default(),
+        ))
+        .unwrap();
+        assert_eq!(state["player"]["currentHealth"], 0);
+        assert_eq!(state["player"]["maxHealth"], 0);
+        assert_eq!(state["player"]["armor"], 0);
+        assert_eq!(state["player"]["maxArmor"], 0);
+        assert_eq!(state["player"]["vitalityState"], "alive");
+        assert!(runtime.session().health(ACTOR).is_none());
     }
 
     #[test]

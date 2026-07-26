@@ -135,22 +135,56 @@ fn capacity_rejection_leaves_inventory_pickup_and_snapshot_byte_identical() {
 #[test]
 fn every_pickup_family_round_trips_and_authored_restart_restores_availability() {
     let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let mut armor_receipts = None;
     for pickup in [22, 23, 24, 25, 26] {
         runtime = with_overlap(runtime, EntityId::new(pickup));
-        runtime
+        let receipt = runtime
             .collect_pickup(PLAYER, EntityId::new(pickup), 2, pickup)
             .unwrap();
+        if pickup == 25 {
+            armor_receipts = Some(receipt.inventory);
+        }
     }
 
     assert_eq!(quantity(&runtime, "ammo/scatter-shell"), 20);
     assert_eq!(quantity(&runtime, "weapon/breach-scattergun"), 1);
     assert_eq!(quantity(&runtime, "supply/med-patch"), 2);
-    assert_eq!(quantity(&runtime, "armor/impact-vest"), 1);
+    assert_eq!(
+        quantity(&runtime, "armor/impact-vest"),
+        0,
+        "armor pickup is consumed into Rust-owned vitality instead of duplicating authority"
+    );
+    assert_eq!(runtime.session().health(PLAYER).unwrap().armor, 100);
+    let armor_receipts = armor_receipts.unwrap();
+    assert_eq!(armor_receipts.len(), 2);
+    assert!(matches!(
+        armor_receipts[0].action,
+        InventoryAction::Grant { quantity: 1, .. }
+    ));
+    assert_eq!(
+        armor_receipts[0]
+            .after
+            .stacks
+            .iter()
+            .find(|stack| stack.item.as_str() == "armor/impact-vest")
+            .map(|stack| stack.quantity),
+        Some(1)
+    );
+    assert!(matches!(
+        armor_receipts[1].action,
+        InventoryAction::Consume { quantity: 1, .. }
+    ));
+    assert!(armor_receipts[1]
+        .after
+        .stacks
+        .iter()
+        .all(|stack| stack.item.as_str() != "armor/impact-vest"));
     assert_eq!(quantity(&runtime, "key/maintenance-pass"), 1);
     let encoded = encode_game_snapshot(&runtime).unwrap();
     let reopened = decode_game_snapshot(&encoded).unwrap();
     assert_eq!(encode_game_snapshot(&reopened).unwrap(), encoded);
     assert_eq!(quantity(&reopened, "ammo/scatter-shell"), 20);
+    assert_eq!(reopened.session().health(PLAYER).unwrap().armor, 100);
     assert!(reopened
         .session()
         .pickups()
@@ -163,6 +197,7 @@ fn every_pickup_family_round_trips_and_authored_restart_restores_availability() 
         .pickups()
         .all(|pickup| pickup.state == PickupState::Available));
     assert_eq!(quantity(&restarted, "ammo/scatter-shell"), 0);
+    assert_eq!(restarted.session().health(PLAYER).unwrap().armor, 0);
 }
 
 #[test]
@@ -222,6 +257,7 @@ fn schema_eleven_rejects_future_pickup_state_but_migrates_when_fields_are_absent
 
     snapshot.as_object_mut().unwrap().remove("pickups");
     snapshot.as_object_mut().unwrap().remove("pickupTriggers");
+    strip_snapshot_vitality_fields(&mut snapshot);
     strip_snapshot_weapon_item_fields(&mut snapshot);
     let migrated = decode_game_snapshot(&snapshot.to_string()).unwrap();
     assert_eq!(migrated.session().pickups().len(), 0);
@@ -239,9 +275,16 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
         scene["entities"]
             .as_array_mut()
             .unwrap()
-            .retain(|entity| entity.get("pickup").is_none());
+            .retain(|entity| entity.get("pickup").is_none() && entity.get("hazard").is_none());
         for entity in scene["entities"].as_array_mut().unwrap() {
             entity.as_object_mut().unwrap().remove("bounds");
+            if let Some(health) = entity
+                .get_mut("health")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                health.remove("maxArmor");
+                health.remove("armorAbsorptionPercent");
+            }
         }
     }
     strip_project_weapon_item_fields(&mut project);
@@ -253,6 +296,19 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
             .unwrap();
     assert_eq!(runtime.session().pickups().len(), 0);
     assert_eq!(quantity(&runtime, "ammo/energy-cell"), 40);
+}
+
+fn strip_snapshot_vitality_fields(snapshot: &mut serde_json::Value) {
+    snapshot.as_object_mut().unwrap().remove("hazards");
+    snapshot.as_object_mut().unwrap().remove("hazardTriggers");
+    for health in snapshot["health"].as_array_mut().unwrap() {
+        let health = health.as_object_mut().unwrap();
+        health.remove("maxArmor");
+        health.remove("armorAbsorptionPercent");
+        health.remove("armor");
+        health.remove("armorItem");
+        health.remove("state");
+    }
 }
 
 fn strip_snapshot_weapon_item_fields(snapshot: &mut serde_json::Value) {

@@ -38,6 +38,13 @@ export interface ExtractionBeaconDefinition {
 export interface HealthDefinition {
   readonly max: number;
   readonly hitboxHalfExtents: Vec3;
+  readonly maxArmor?: number;
+  readonly armorAbsorptionPercent?: number;
+}
+
+export interface HazardDefinition {
+  readonly damage: number;
+  readonly cooldownTicks: number;
 }
 
 export interface KinematicDefinition {
@@ -161,6 +168,7 @@ export interface EntityDefinition {
   readonly switch?: SwitchDefinition;
   readonly enemy?: true;
   readonly health?: HealthDefinition;
+  readonly hazard?: HazardDefinition;
   readonly encounter?: EncounterDefinition;
   readonly extractionBeacon?: ExtractionBeaconDefinition;
   readonly kinematic?: KinematicDefinition;
@@ -257,7 +265,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 14;
+  readonly schemaVersion: 15;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

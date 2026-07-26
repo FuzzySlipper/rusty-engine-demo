@@ -50,6 +50,11 @@ function state(
         primaryFire: "Mouse0",
         selectWeapon: ["Digit1", "Digit2", "Digit3"],
       },
+      currentHealth: 100,
+      maxHealth: 100,
+      armor: 0,
+      maxArmor: 100,
+      vitalityState: "alive",
     },
     weapon: {
       item: "weapon/arc-pistol",
@@ -78,6 +83,11 @@ function state(
       ],
     },
     pickups: [],
+    hazards: [],
+    restart: {
+      authoredBaselineAvailable: true,
+      checkpointAvailable: false,
+    },
     extractionBeacon: null,
     voxelMeshes: [],
     generatedEnvironment: null,

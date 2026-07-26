@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 14,
+  "schemaVersion": 15,
   "projectId": "relay-annex",
   "name": "Relay Annex",
   "entryScene": "scene/relay-annex",
@@ -37,16 +37,8 @@
         "defaultClip": "idle",
         "materialSlots": [],
         "bounds": {
-          "min": [
-            -0.02,
-            -0.01,
-            0
-          ],
-          "max": [
-            0.02,
-            0.01,
-            0.04
-          ]
+          "min": [-0.02, -0.01, 0],
+          "max": [0.02, 0.01, 0.04]
         }
       }
     },
@@ -55,6 +47,9 @@
     },
     {
       "id": "mesh/extraction-beacon"
+    },
+    {
+      "id": "mesh/hazard-pad"
     },
     {
       "id": "mesh/pickup-ammunition"
@@ -140,11 +135,7 @@
         "cooldownTicks": 2,
         "ammunition": "ammo/energy-cell",
         "ammunitionCost": 1,
-        "muzzleOffset": [
-          0,
-          0,
-          0
-        ],
+        "muzzleOffset": [0, 0, 0],
         "presentation": "arc-pistol"
       }
     },
@@ -159,11 +150,7 @@
         "cooldownTicks": 36,
         "ammunition": "ammo/scatter-shell",
         "ammunitionCost": 2,
-        "muzzleOffset": [
-          0,
-          0,
-          0
-        ],
+        "muzzleOffset": [0, 0, 0],
         "presentation": "breach-scattergun"
       }
     },
@@ -178,11 +165,7 @@
         "cooldownTicks": 1,
         "ammunition": "ammo/energy-cell",
         "ammunitionCost": 1,
-        "muzzleOffset": [
-          0,
-          0,
-          0
-        ],
+        "muzzleOffset": [0, 0, 0],
         "presentation": "rivet-carbine"
       }
     }
@@ -204,11 +187,7 @@
         {
           "id": 1,
           "name": "player",
-          "translation": [
-            2.5,
-            1.5,
-            2.5
-          ],
+          "translation": [2.5, 1.5, 2.5],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -218,16 +197,8 @@
             "visible": true
           },
           "kinematic": {
-            "halfExtents": [
-              0.25,
-              0.25,
-              0.25
-            ],
-            "velocity": [
-              0,
-              0,
-              0
-            ]
+            "halfExtents": [0.25, 0.25, 0.25],
+            "velocity": [0, 0, 0]
           },
           "playerController": {
             "moveSpeedUnitsPerSecond": 4,
@@ -242,24 +213,18 @@
               "moveRight": "KeyD",
               "mouseLook": "pointer",
               "primaryFire": "Mouse0",
-              "selectWeapon": [
-                "Digit1",
-                "Digit2",
-                "Digit3"
-              ]
+              "selectWeapon": ["Digit1", "Digit2", "Digit3"]
             }
           },
           "bounds": {
-            "min": [
-              -0.25,
-              -0.25,
-              -0.25
-            ],
-            "max": [
-              0.25,
-              0.25,
-              0.25
-            ]
+            "min": [-0.25, -0.25, -0.25],
+            "max": [0.25, 0.25, 0.25]
+          },
+          "health": {
+            "max": 100,
+            "hitboxHalfExtents": [0.25, 0.5, 0.25],
+            "maxArmor": 100,
+            "armorAbsorptionPercent": 50
           },
           "inventory": {
             "capacitySlots": 8,
@@ -289,20 +254,14 @@
           "id": 2,
           "name": "relay-annex-encounter",
           "encounter": {
-            "members": [
-              4
-            ],
+            "members": [4],
             "exit": 3
           }
         },
         {
           "id": 3,
           "name": "relay-annex-exit",
-          "translation": [
-            3.5,
-            1,
-            9
-          ],
+          "translation": [3.5, 1, 9],
           "collision": {
             "enabled": true,
             "staticCollider": true
@@ -312,34 +271,18 @@
             "visible": true
           },
           "kinematic": {
-            "halfExtents": [
-              1.2,
-              1.5,
-              0.275
-            ],
-            "velocity": [
-              0,
-              0,
-              0
-            ]
+            "halfExtents": [1.2, 1.5, 0.275],
+            "velocity": [0, 0, 0]
           },
           "door": {
-            "openTranslation": [
-              3.5,
-              4,
-              9
-            ],
+            "openTranslation": [3.5, 4, 9],
             "autoCloseAfterTicks": null
           }
         },
         {
           "id": 4,
           "name": "relay-warden",
-          "translation": [
-            5.5,
-            1.5,
-            6.5
-          ],
+          "translation": [5.5, 1.5, 6.5],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -351,30 +294,14 @@
           "enemy": true,
           "health": {
             "max": 80,
-            "hitboxHalfExtents": [
-              0.55,
-              0.9,
-              0.55
-            ]
+            "hitboxHalfExtents": [0.55, 0.9, 0.55]
           },
           "kinematic": {
-            "halfExtents": [
-              0.25,
-              0.25,
-              0.25
-            ],
-            "velocity": [
-              0,
-              0,
-              0
-            ]
+            "halfExtents": [0.25, 0.25, 0.25],
+            "velocity": [0, 0, 0]
           },
           "navigation": {
-            "goal": [
-              1.5,
-              1.5,
-              6.5
-            ],
+            "goal": [1.5, 1.5, 6.5],
             "speedUnitsPerSecond": 2.5,
             "maxVisited": 512
           }
@@ -382,29 +309,19 @@
         {
           "id": 6,
           "name": "annex-door-control",
-          "translation": [
-            5.5,
-            1.5,
-            8.5
-          ],
+          "translation": [5.5, 1.5, 8.5],
           "renderable": {
             "asset": "mesh/control-panel",
             "visible": true
           },
           "switch": {
-            "controls": [
-              3
-            ]
+            "controls": [3]
           }
         },
         {
           "id": 7,
           "name": "relay-beacon",
-          "translation": [
-            3.5,
-            1.5,
-            4.5
-          ],
+          "translation": [3.5, 1.5, 4.5],
           "renderable": {
             "asset": "mesh/extraction-beacon",
             "visible": true
@@ -416,47 +333,23 @@
         {
           "id": 10,
           "name": "relay-pulse-probe",
-          "translation": [
-            1.5,
-            1.5,
-            7.5
-          ],
+          "translation": [1.5, 1.5, 7.5],
           "renderable": {
             "asset": "mesh/spatial-probe",
             "visible": true
           },
           "kinematic": {
-            "halfExtents": [
-              0.25,
-              0.25,
-              0.25
-            ],
-            "velocity": [
-              3,
-              0,
-              0
-            ]
+            "halfExtents": [0.25, 0.25, 0.25],
+            "velocity": [3, 0, 0]
           }
         },
         {
           "id": 20,
           "name": "energy-cell-cache",
-          "translation": [
-            2.5,
-            1.5,
-            2.5
-          ],
+          "translation": [2.5, 1.5, 2.5],
           "bounds": {
-            "min": [
-              -0.35,
-              -0.35,
-              -0.35
-            ],
-            "max": [
-              0.35,
-              0.35,
-              0.35
-            ]
+            "min": [-0.35, -0.35, -0.35],
+            "max": [0.35, 0.35, 0.35]
           },
           "renderable": {
             "asset": "mesh/pickup-ammunition",
@@ -470,22 +363,10 @@
         {
           "id": 21,
           "name": "energy-cell-overflow-probe",
-          "translation": [
-            3.5,
-            1.5,
-            2.5
-          ],
+          "translation": [3.5, 1.5, 2.5],
           "bounds": {
-            "min": [
-              -0.35,
-              -0.35,
-              -0.35
-            ],
-            "max": [
-              0.35,
-              0.35,
-              0.35
-            ]
+            "min": [-0.35, -0.35, -0.35],
+            "max": [0.35, 0.35, 0.35]
           },
           "renderable": {
             "asset": "mesh/pickup-ammunition",
@@ -499,22 +380,10 @@
         {
           "id": 22,
           "name": "scatter-shell-cache",
-          "translation": [
-            4.5,
-            1.5,
-            2.5
-          ],
+          "translation": [4.5, 1.5, 2.5],
           "bounds": {
-            "min": [
-              -0.35,
-              -0.35,
-              -0.35
-            ],
-            "max": [
-              0.35,
-              0.35,
-              0.35
-            ]
+            "min": [-0.35, -0.35, -0.35],
+            "max": [0.35, 0.35, 0.35]
           },
           "renderable": {
             "asset": "mesh/pickup-ammunition",
@@ -528,22 +397,10 @@
         {
           "id": 23,
           "name": "breach-scattergun-pickup",
-          "translation": [
-            5.5,
-            1.5,
-            2.5
-          ],
+          "translation": [5.5, 1.5, 2.5],
           "bounds": {
-            "min": [
-              -0.35,
-              -0.35,
-              -0.35
-            ],
-            "max": [
-              0.35,
-              0.35,
-              0.35
-            ]
+            "min": [-0.35, -0.35, -0.35],
+            "max": [0.35, 0.35, 0.35]
           },
           "renderable": {
             "asset": "mesh/pickup-weapon",
@@ -561,22 +418,10 @@
         {
           "id": 24,
           "name": "med-patch-pickup",
-          "translation": [
-            5.5,
-            1.5,
-            3.5
-          ],
+          "translation": [5.5, 1.5, 3.5],
           "bounds": {
-            "min": [
-              -0.35,
-              -0.35,
-              -0.35
-            ],
-            "max": [
-              0.35,
-              0.35,
-              0.35
-            ]
+            "min": [-0.35, -0.35, -0.35],
+            "max": [0.35, 0.35, 0.35]
           },
           "renderable": {
             "asset": "mesh/pickup-health",
@@ -590,22 +435,10 @@
         {
           "id": 25,
           "name": "impact-vest-pickup",
-          "translation": [
-            4.5,
-            1.5,
-            3.5
-          ],
+          "translation": [4.5, 1.5, 3.5],
           "bounds": {
-            "min": [
-              -0.35,
-              -0.35,
-              -0.35
-            ],
-            "max": [
-              0.35,
-              0.35,
-              0.35
-            ]
+            "min": [-0.35, -0.35, -0.35],
+            "max": [0.35, 0.35, 0.35]
           },
           "renderable": {
             "asset": "mesh/pickup-armor",
@@ -619,22 +452,10 @@
         {
           "id": 26,
           "name": "maintenance-pass-pickup",
-          "translation": [
-            3.5,
-            1.5,
-            3.5
-          ],
+          "translation": [3.5, 1.5, 3.5],
           "bounds": {
-            "min": [
-              -0.35,
-              -0.35,
-              -0.35
-            ],
-            "max": [
-              0.35,
-              0.35,
-              0.35
-            ]
+            "min": [-0.35, -0.35, -0.35],
+            "max": [0.35, 0.35, 0.35]
           },
           "renderable": {
             "asset": "mesh/pickup-key",
@@ -643,6 +464,23 @@
           "pickup": {
             "item": "key/maintenance-pass",
             "quantity": 1
+          }
+        },
+        {
+          "id": 27,
+          "name": "coolant-leak",
+          "translation": [2.5, 1.5, 4.5],
+          "bounds": {
+            "min": [-0.45, -0.45, -0.45],
+            "max": [0.45, 0.45, 0.45]
+          },
+          "renderable": {
+            "asset": "mesh/hazard-pad",
+            "visible": true
+          },
+          "hazard": {
+            "damage": 20,
+            "cooldownTicks": 60
           }
         }
       ]

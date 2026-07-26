@@ -10,6 +10,7 @@ use crate::inventory::{
     InventoryService, ItemDefinitionId,
 };
 use crate::session::GameSession;
+use crate::vitality::{DamageService, VitalityFact, VitalityRejection};
 
 pub const PICKUP_TRIGGER_SCOPE: &str = "loading-bay.pickup";
 pub const MAX_PICKUP_OVERLAP_SUBJECTS: usize = 128;
@@ -89,6 +90,7 @@ pub enum PickupFact {
         quantity: u32,
         collected_at_tick: u64,
         inventory_facts: Vec<InventoryFact>,
+        vitality_facts: Vec<VitalityFact>,
     },
 }
 
@@ -117,6 +119,7 @@ pub struct PickupReceipt {
     pub entity_facts: Vec<EntityAuthoringFact>,
     pub trigger_facts: Vec<TriggerOverlapFact>,
     pub facts: Vec<PickupFact>,
+    pub vitality_facts: Vec<VitalityFact>,
     pub cues: Vec<PickupPresentationCue>,
 }
 
@@ -124,6 +127,9 @@ pub struct PickupReceipt {
 pub enum PickupRejection {
     UnknownPickup {
         pickup: EntityId,
+    },
+    PlayerDefeated {
+        actor: EntityId,
     },
     NotOverlapping {
         pickup: EntityId,
@@ -134,6 +140,7 @@ pub enum PickupRejection {
         actor: EntityId,
     },
     Inventory(InventoryRejection),
+    Vitality(VitalityRejection),
     WorldMutationFailed {
         pickup: EntityId,
     },
@@ -180,6 +187,11 @@ impl PickupService {
         triggers: &mut TriggerVolumeSystem,
         command: PickupCollectionCommand,
     ) -> Result<PickupReceipt, PickupRejection> {
+        if DamageService::is_dead(session, command.actor) {
+            return Err(PickupRejection::PlayerDefeated {
+                actor: command.actor,
+            });
+        }
         let Some(component) = session.pickups.get(&command.pickup) else {
             return Err(PickupRejection::UnknownPickup {
                 pickup: command.pickup,
@@ -200,6 +212,7 @@ impl PickupService {
                 entity_facts: Vec::new(),
                 trigger_facts: Vec::new(),
                 facts: Vec::new(),
+                vitality_facts: Vec::new(),
                 cues: Vec::new(),
             });
         }
@@ -260,6 +273,23 @@ impl PickupService {
                 .map_err(PickupRejection::Inventory)?,
             );
         }
+        let mut vitality_facts = Vec::new();
+        if candidate_session
+            .item_definitions
+            .get(&component.config.item)
+            .is_some_and(|definition| {
+                matches!(definition.kind, crate::inventory::ItemKind::Armor { .. })
+            })
+        {
+            let vitality = DamageService::grant_armor(
+                &mut candidate_session,
+                command.actor,
+                component.config.item.clone(),
+            )
+            .map_err(PickupRejection::Vitality)?;
+            vitality_facts.extend(vitality.facts);
+            inventory.extend(vitality.inventory);
+        }
         let entity_revision = candidate_session.entities.revision();
         let entity_receipt = EntityAuthoringService
             .destroy(
@@ -312,7 +342,9 @@ impl PickupService {
                 quantity,
                 collected_at_tick: command.tick,
                 inventory_facts,
+                vitality_facts: vitality_facts.clone(),
             }],
+            vitality_facts,
             cues: vec![PickupPresentationCue {
                 pickup: command.pickup,
                 actor: command.actor,

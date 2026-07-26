@@ -639,6 +639,7 @@ pub fn create_scene_object(
                     switch: None,
                     enemy: false,
                     health: None,
+                    hazard: None,
                     encounter: None,
                     extraction_beacon: None,
                     kinematic: object.kinematic,

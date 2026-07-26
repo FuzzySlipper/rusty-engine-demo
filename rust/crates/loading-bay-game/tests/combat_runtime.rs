@@ -3,7 +3,7 @@ use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, CombatFact, CombatMissReason,
     CombatRejectionReason, DoorState, EncounterState, EnemyState, GameEntityDefinitionError,
     GameEvent, GameRuntime, ItemDefinitionId, ProjectContentError, ResolvedAttackAction,
-    RuntimeError,
+    RuntimeError, VitalityFact,
 };
 use serde_json::{json, Value};
 
@@ -26,13 +26,13 @@ fn aimed_attack_hits_live_target_and_applies_typed_damage() {
     )));
     assert!(receipt.facts.iter().any(|fact| matches!(
         fact,
-        CombatFact::DamageApplied {
+        CombatFact::Vitality(VitalityFact::DamageApplied {
             target,
-            amount: 35,
-            before: 100,
-            after: 65,
+            health_damage: 35,
+            health_before: 100,
+            health_after: 65,
             ..
-        } if *target == ENEMY
+        }) if *target == ENEMY
     )));
 }
 

@@ -146,7 +146,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 15, 99] {
+    for schema_version in [0, 5, 16, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -176,6 +176,7 @@ fn migration_rejects_the_ambiguous_legacy_spatial_shape() {
 fn schema_thirteen_multi_scene_weapon_migration_rejects_conflicting_authority() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 13.into();
+    strip_future_vitality(&mut previous);
     strip_current_weapon_fields(&mut previous);
 
     let mut second_scene = previous["scenes"][0].clone();
@@ -268,15 +269,40 @@ fn strip_future_inventory_and_pickups(project: &mut serde_json::Value) {
         scene["entities"]
             .as_array_mut()
             .unwrap()
-            .retain(|entity| entity.get("pickup").is_none());
+            .retain(|entity| entity.get("pickup").is_none() && entity.get("hazard").is_none());
         for entity in scene["entities"].as_array_mut().unwrap() {
             entity.as_object_mut().unwrap().remove("inventory");
             entity.as_object_mut().unwrap().remove("bounds");
+            if let Some(health) = entity
+                .get_mut("health")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                health.remove("maxArmor");
+                health.remove("armorAbsorptionPercent");
+            }
             if let Some(controller) = entity.get_mut("playerController") {
                 controller["bindings"]
                     .as_object_mut()
                     .unwrap()
                     .remove("selectWeapon");
+            }
+        }
+    }
+}
+
+fn strip_future_vitality(project: &mut serde_json::Value) {
+    for scene in project["scenes"].as_array_mut().unwrap() {
+        scene["entities"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|entity| entity.get("hazard").is_none());
+        for entity in scene["entities"].as_array_mut().unwrap() {
+            if let Some(health) = entity
+                .get_mut("health")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                health.remove("maxArmor");
+                health.remove("armorAbsorptionPercent");
             }
         }
     }

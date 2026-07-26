@@ -27,6 +27,9 @@ impl InteractionService {
         if !session.entities.contains(actor) {
             return Err(RuntimeError::UnknownActor { actor });
         }
+        if crate::DamageService::is_dead(session, actor) {
+            return Err(RuntimeError::PlayerDefeated { player: actor });
+        }
         let Some(switch) = session.switches.get_mut(&target) else {
             return Err(RuntimeError::NotInteractable { entity: target });
         };

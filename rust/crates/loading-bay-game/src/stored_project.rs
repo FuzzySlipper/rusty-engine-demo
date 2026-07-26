@@ -20,7 +20,7 @@ use crate::combat::{
 };
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 14;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 15;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -278,6 +278,8 @@ pub struct StoredEntityDefinition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub health: Option<StoredHealth>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub hazard: Option<StoredHazard>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub encounter: Option<StoredEncounter>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extraction_beacon: Option<StoredExtractionBeacon>,
@@ -415,6 +417,17 @@ pub struct StoredExtractionBeacon {
 pub struct StoredHealth {
     pub max: u32,
     pub hitbox_half_extents: [f32; 3],
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    pub max_armor: u32,
+    #[serde(default, skip_serializing_if = "is_zero_u8")]
+    pub armor_absorption_percent: u8,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredHazard {
+    pub damage: u32,
+    pub cooldown_ticks: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -1601,6 +1614,10 @@ fn is_false(value: &bool) -> bool {
 }
 
 fn is_zero_u32(value: &u32) -> bool {
+    *value == 0
+}
+
+fn is_zero_u8(value: &u8) -> bool {
     *value == 0
 }
 

@@ -113,6 +113,7 @@ fn dynamic_blocker_stops_motion_and_removal_allows_replanning() {
                 "collision": { "enabled": true, "staticCollider": false },
                 "renderable": { "asset": "mesh/security-sentry", "visible": true },
                 "enemy": true,
+                "health": { "max": 1, "hitboxHalfExtents": [0.25, 0.25, 0.25] },
                 "kinematic": { "halfExtents": [0.25, 0.25, 0.25], "velocity": [0, 0, 0] }
             }
         ],

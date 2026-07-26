@@ -7,7 +7,7 @@
 use core_ids::EntityId;
 use loading_bay_game::{
     CombatFact, DoorState, EnemyState, ExtractionBeaconFact, ExtractionBeaconState, GameEvent,
-    GameRuntime, NavigationFact, NavigationState, PickupFact, PlayerControlFact,
+    GameRuntime, NavigationFact, NavigationState, PickupFact, PlayerControlFact, VitalityFact,
 };
 use serde::Serialize;
 
@@ -122,24 +122,45 @@ impl BrowserFeedbackProjection {
                     origin: origin.to_array(),
                     direction: direction.to_array(),
                 }),
-                CombatFact::DamageApplied {
-                    attacker,
+                CombatFact::Vitality(VitalityFact::DamageApplied {
+                    source,
                     target,
-                    amount,
-                    after,
+                    health_damage,
+                    health_after,
                     ..
-                } => self.cues.push(BrowserFeedbackCue::Damage {
-                    attacker: attacker.raw(),
+                }) => self.cues.push(BrowserFeedbackCue::Damage {
+                    attacker: source.entity().raw(),
                     target: target.raw(),
-                    amount: *amount,
-                    remaining: *after,
+                    amount: *health_damage,
+                    remaining: *health_after,
                 }),
                 CombatFact::EnemyDefeated {
                     attacker, enemy, ..
                 } => self.push_defeat(Some(*attacker), *enemy),
                 CombatFact::Inventory(_)
+                | CombatFact::Vitality(_)
                 | CombatFact::AttackHit { .. }
                 | CombatFact::AttackMissed { .. } => {}
+            }
+        }
+    }
+
+    pub(super) fn extend_vitality(&mut self, facts: &[VitalityFact]) {
+        for fact in facts {
+            if let VitalityFact::DamageApplied {
+                source,
+                target,
+                health_damage,
+                health_after,
+                ..
+            } = fact
+            {
+                self.cues.push(BrowserFeedbackCue::Damage {
+                    attacker: source.entity().raw(),
+                    target: target.raw(),
+                    amount: *health_damage,
+                    remaining: *health_after,
+                });
             }
         }
     }
@@ -151,6 +172,9 @@ impl BrowserFeedbackProjection {
                 GameEvent::DoorClosed { door, .. } => self.push_door(*door, "closed"),
                 GameEvent::EnemyDefeated { enemy, actor, .. } => {
                     self.push_defeat(Some(*actor), *enemy);
+                }
+                GameEvent::PlayerDied { player, source, .. } => {
+                    self.push_defeat(Some(*source), *player);
                 }
                 GameEvent::SwitchActivated { .. } | GameEvent::EncounterCleared { .. } => {}
             }
@@ -241,7 +265,15 @@ pub(super) fn project_presentation(
     let mut animation_states = Vec::with_capacity(enemies.len() + 3);
     animation_states.push(BrowserAnimationState {
         entity: player.raw(),
-        posture: "idle",
+        posture: if runtime
+            .session()
+            .health(player)
+            .is_some_and(|health| health.state == loading_bay_game::VitalityState::Dead)
+        {
+            "defeated"
+        } else {
+            "idle"
+        },
     });
     if let Some(beacon) = runtime.session().extraction_beacon(beacon) {
         animation_states.push(BrowserAnimationState {
@@ -327,13 +359,20 @@ mod tests {
                 ammo_after: 7,
                 ready_at_tick: core_time::Tick::new(2),
             },
-            CombatFact::DamageApplied {
-                attacker: actor,
+            CombatFact::Vitality(VitalityFact::DamageApplied {
+                source: loading_bay_game::DamageSource::Weapon {
+                    attacker: actor,
+                    weapon: loading_bay_game::ItemDefinitionId::parse("weapon/arc-pistol").unwrap(),
+                },
                 target: enemy,
-                amount: 60,
-                before: 100,
-                after: 40,
-            },
+                incoming: 60,
+                armor_absorbed: 0,
+                health_damage: 60,
+                health_before: 100,
+                health_after: 40,
+                armor_before: 0,
+                armor_after: 0,
+            }),
             CombatFact::EnemyDefeated {
                 attacker: actor,
                 enemy,
@@ -389,5 +428,34 @@ mod tests {
                 },
             ]
         ));
+    }
+
+    #[test]
+    fn hazard_damage_produces_disposable_feedback_without_owning_vitality() {
+        let player = EntityId::new(1);
+        let hazard = EntityId::new(27);
+        let mut projection = BrowserFeedbackProjection::default();
+
+        projection.extend_vitality(&[VitalityFact::DamageApplied {
+            source: loading_bay_game::DamageSource::Hazard { hazard },
+            target: player,
+            incoming: 20,
+            armor_absorbed: 5,
+            health_damage: 15,
+            health_before: 100,
+            health_after: 85,
+            armor_before: 10,
+            armor_after: 5,
+        }]);
+
+        assert_eq!(
+            projection.cues,
+            [BrowserFeedbackCue::Damage {
+                attacker: hazard.raw(),
+                target: player.raw(),
+                amount: 15,
+                remaining: 85,
+            }]
+        );
     }
 }

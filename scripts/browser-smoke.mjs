@@ -63,8 +63,8 @@ try {
     persistedProject,
   );
   if (
-    !currentReceipt.includes("sourceSchema=14") ||
-    !currentReceipt.includes("currentSchema=14")
+    !currentReceipt.includes("sourceSchema=15") ||
+    !currentReceipt.includes("currentSchema=15")
   ) {
     throw new Error(
       `current project persistence receipt was incomplete\n${currentReceipt}`,
@@ -79,7 +79,7 @@ try {
   );
   if (
     !convertedReceipt.includes("sourceSchema=11") ||
-    !convertedReceipt.includes("currentSchema=14")
+    !convertedReceipt.includes("currentSchema=15")
   ) {
     throw new Error(
       `converted project persistence receipt was incomplete\n${convertedReceipt}`,
@@ -94,7 +94,7 @@ try {
   );
   if (
     !migrationReceipt.includes("sourceSchema=6") ||
-    !migrationReceipt.includes("currentSchema=14")
+    !migrationReceipt.includes("currentSchema=15")
   ) {
     throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
   }
@@ -425,10 +425,10 @@ async function runFullBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
-      "sourceSchema=14",
-      "currentSchema=14",
+      "sourceSchema=15",
+      "currentSchema=15",
       "entryScene=scene/loading-bay",
-      "assets=12",
+      "assets=13",
       "scenes=1",
       `entities=${String(expectedEntityCount)}`,
     ]) {
@@ -498,7 +498,7 @@ async function runMigratedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=migrated-v6-project",
-      "currentSchema=14",
+      "currentSchema=15",
       "assets=4",
       "scenes=1",
       "entities=6",
@@ -556,8 +556,8 @@ async function runConvertedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=converted-wall",
-      "sourceSchema=14",
-      "currentSchema=14",
+      "sourceSchema=15",
+      "currentSchema=15",
       "entryScene=scene/converted-wall",
       "assets=10",
       "scenes=1",

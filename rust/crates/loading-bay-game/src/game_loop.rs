@@ -5,9 +5,10 @@ use core_ids::EntityId;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CombatFact, CombatRejectionReason, ExtractionBeaconFact, GameEvent, GameRuntime, InventoryFact,
-    InventoryRejection, InventoryService, NavigationFact, PickupFact, PickupReceipt,
-    PickupRejection, PlayerControlFact, ResolvedAttackAction, RuntimeError,
+    CombatFact, CombatRejectionReason, DamageService, ExtractionBeaconFact, GameEvent, GameRuntime,
+    HazardFact, InventoryFact, InventoryRejection, InventoryService, ItemDefinitionId,
+    NavigationFact, PickupFact, PickupReceipt, PickupRejection, PlayerControlFact,
+    ResolvedAttackAction, RuntimeError, VitalityFact, VitalityRejection,
 };
 
 pub const FIXED_SIMULATION_HZ: u32 = 60;
@@ -20,10 +21,11 @@ pub const MAX_PENDING_GAME_LOOP_FACTS: usize = 256;
 pub const MAX_INPUT_AGE_TICKS: u64 = 2;
 pub const MAX_ACCUMULATED_LOOK_UNITS: f32 = 1.0;
 
-pub const FIXED_TICK_PHASE_ORDER: [GameLoopPhase; 7] = [
+pub const FIXED_TICK_PHASE_ORDER: [GameLoopPhase; 8] = [
     GameLoopPhase::InputConsumption,
     GameLoopPhase::PlayerMotion,
     GameLoopPhase::EnemyIntentAndMotion,
+    GameLoopPhase::Hazards,
     GameLoopPhase::Combat,
     GameLoopPhase::InteractionsAndPickups,
     GameLoopPhase::ScheduledConsequences,
@@ -35,6 +37,7 @@ pub enum GameLoopPhase {
     InputConsumption,
     PlayerMotion,
     EnemyIntentAndMotion,
+    Hazards,
     Combat,
     InteractionsAndPickups,
     ScheduledConsequences,
@@ -74,7 +77,7 @@ pub struct PlayerInputCommand {
     pub intent: PlayerInputIntent,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
@@ -84,11 +87,13 @@ pub struct PlayerInputCommand {
 pub enum GameLoopEdgeCommandKind {
     Interact { target: u64 },
     SelectWeaponSlot { slot: u8 },
+    UseItem { item: String },
     SetPaused { paused: bool },
     RestartAuthoredBaseline,
+    RestartCheckpoint,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct GameLoopEdgeCommand {
     pub connection_generation: u64,
@@ -128,6 +133,7 @@ pub enum InputCommandRejection {
     StaleSequence { acknowledged: u64, actual: u64 },
     InvalidInput,
     EdgeQueueSaturated { capacity: usize },
+    PlayerDefeated,
 }
 
 impl std::fmt::Display for InputCommandRejection {
@@ -149,6 +155,16 @@ pub enum EdgeCommandRejection {
     WeaponAlreadySelected,
     PlayerDefeated,
     InventoryRejected,
+    ItemNotOwned,
+    ItemNotUsable,
+    HealthFull,
+    CheckpointUnavailable,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameRestartMode {
+    AuthoredBaseline,
+    Checkpoint,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -159,6 +175,8 @@ pub enum GameLoopFact {
     ExtractionBeacon(ExtractionBeaconFact),
     Pickup(PickupFact),
     Inventory(InventoryFact),
+    Vitality(VitalityFact),
+    Hazard(HazardFact),
     PickupRejected {
         pickup: EntityId,
         reason: PickupRejection,
@@ -173,6 +191,7 @@ pub enum GameLoopFact {
     },
     RestartRequested {
         sequence: u64,
+        mode: GameRestartMode,
     },
     InputExpired {
         sequence: u64,
@@ -184,7 +203,7 @@ pub struct GameLoopTickReceipt {
     pub driver_tick: u64,
     pub simulation_tick: u64,
     pub simulation_advanced: bool,
-    pub phases: [GameLoopPhase; 7],
+    pub phases: [GameLoopPhase; 8],
     pub acknowledged_sequence: u64,
     pub consumed_sequence: u64,
     pub facts: Vec<GameLoopFact>,
@@ -196,7 +215,7 @@ pub struct GameLoopAdvanceReceipt {
     pub dropped_ticks: u64,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct QueuedEdgeCommand {
     sequence: u64,
     command: GameLoopEdgeCommandKind,
@@ -383,6 +402,9 @@ impl LoadingBayGameLoop {
         if !command.intent.is_valid() {
             return Err(InputCommandRejection::InvalidInput);
         }
+        if DamageService::is_dead(self.runtime.session(), self.player) {
+            return Err(InputCommandRejection::PlayerDefeated);
+        }
         let disposition = self
             .input
             .validate_envelope(command.connection_generation, command.sequence)?;
@@ -409,6 +431,16 @@ impl LoadingBayGameLoop {
         &mut self,
         command: GameLoopEdgeCommand,
     ) -> Result<InputCommandReceipt, InputCommandRejection> {
+        if DamageService::is_dead(self.runtime.session(), self.player)
+            && !matches!(
+                &command.command,
+                GameLoopEdgeCommandKind::SetPaused { .. }
+                    | GameLoopEdgeCommandKind::RestartAuthoredBaseline
+                    | GameLoopEdgeCommandKind::RestartCheckpoint
+            )
+        {
+            return Err(InputCommandRejection::PlayerDefeated);
+        }
         let disposition = self
             .input
             .validate_envelope(command.connection_generation, command.sequence)?;
@@ -465,6 +497,7 @@ impl LoadingBayGameLoop {
             self.runtime.begin_fixed_tick();
             self.run_player_motion_phase(&mut facts)?;
             self.run_enemy_phase(&mut facts)?;
+            self.run_hazard_phase(&mut facts)?;
             self.run_combat_phase(&mut facts)?;
             self.run_interaction_and_pickup_phase(interactions, &mut facts)?;
             let events = self.runtime.run_scheduled_consequence_phase()?;
@@ -520,14 +553,16 @@ impl LoadingBayGameLoop {
 
         while let Some(command) = self.input.edge_commands.pop_front() {
             self.input.consumed_sequence = self.input.consumed_sequence.max(command.sequence);
-            match command.command {
+            match &command.command {
                 GameLoopEdgeCommandKind::SetPaused { paused } => {
-                    self.input.paused = paused;
+                    self.input.paused = *paused;
                     self.input.clear_intent();
                 }
-                GameLoopEdgeCommandKind::RestartAuthoredBaseline => interactions.push(command),
-                GameLoopEdgeCommandKind::Interact { .. } => interactions.push(command),
-                GameLoopEdgeCommandKind::SelectWeaponSlot { .. } => interactions.push(command),
+                GameLoopEdgeCommandKind::RestartAuthoredBaseline
+                | GameLoopEdgeCommandKind::RestartCheckpoint
+                | GameLoopEdgeCommandKind::Interact { .. }
+                | GameLoopEdgeCommandKind::SelectWeaponSlot { .. }
+                | GameLoopEdgeCommandKind::UseItem { .. } => interactions.push(command),
             }
         }
         self.input.consumed_sequence = self
@@ -584,7 +619,10 @@ impl LoadingBayGameLoop {
     }
 
     fn run_combat_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
-        if !self.input.connected || !self.input.primary_fire_held {
+        if !self.input.connected
+            || !self.input.primary_fire_held
+            || DamageService::is_dead(self.runtime.session(), self.player)
+        {
             return Ok(());
         }
         match self
@@ -604,11 +642,45 @@ impl LoadingBayGameLoop {
         }
     }
 
+    fn run_hazard_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
+        let receipt = self.runtime.run_hazard_phase(self.player)?;
+        facts.extend(receipt.facts.into_iter().map(GameLoopFact::Hazard));
+        facts.extend(receipt.events.into_iter().map(GameLoopFact::Event));
+        if DamageService::is_dead(self.runtime.session(), self.player) {
+            self.input.clear_intent();
+        }
+        Ok(())
+    }
+
     fn run_interaction_and_pickup_phase(
         &mut self,
         interactions: Vec<QueuedEdgeCommand>,
         facts: &mut Vec<GameLoopFact>,
     ) -> Result<(), RuntimeError> {
+        if DamageService::is_dead(self.runtime.session(), self.player) {
+            self.input.clear_intent();
+            for command in interactions {
+                match command.command {
+                    GameLoopEdgeCommandKind::RestartAuthoredBaseline => {
+                        facts.push(GameLoopFact::RestartRequested {
+                            sequence: command.sequence,
+                            mode: GameRestartMode::AuthoredBaseline,
+                        });
+                    }
+                    GameLoopEdgeCommandKind::RestartCheckpoint => {
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason: EdgeCommandRejection::CheckpointUnavailable,
+                        });
+                    }
+                    _ => facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::PlayerDefeated,
+                    }),
+                }
+            }
+            return Ok(());
+        }
         let pickup_phase = self.runtime.run_pickup_phase(self.player)?;
         for receipt in pickup_phase.collected {
             extend_pickup_facts(receipt, facts);
@@ -620,11 +692,11 @@ impl LoadingBayGameLoop {
             }
         }));
         for command in interactions {
-            if let GameLoopEdgeCommandKind::SelectWeaponSlot { slot } = command.command {
+            if let GameLoopEdgeCommandKind::SelectWeaponSlot { slot } = &command.command {
                 match InventoryService::select_weapon_slot(
                     &mut self.runtime.session,
                     self.player,
-                    usize::from(slot),
+                    usize::from(*slot),
                 ) {
                     Ok(receipt) => {
                         facts.extend(receipt.facts.into_iter().map(GameLoopFact::Inventory));
@@ -655,15 +727,69 @@ impl LoadingBayGameLoop {
                 }
                 continue;
             }
-            let GameLoopEdgeCommandKind::Interact { target } = command.command else {
-                if matches!(
-                    command.command,
-                    GameLoopEdgeCommandKind::RestartAuthoredBaseline
-                ) {
-                    facts.push(GameLoopFact::RestartRequested {
-                        sequence: command.sequence,
-                    });
+            if let GameLoopEdgeCommandKind::UseItem { item } = &command.command {
+                let item = match ItemDefinitionId::parse(item.clone()) {
+                    Ok(item) => item,
+                    Err(_) => {
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason: EdgeCommandRejection::ItemNotUsable,
+                        });
+                        continue;
+                    }
+                };
+                match DamageService::use_health_supply(&mut self.runtime.session, self.player, item)
+                {
+                    Ok(receipt) => {
+                        facts.extend(receipt.facts.into_iter().map(GameLoopFact::Vitality));
+                        facts.extend(
+                            receipt
+                                .inventory
+                                .into_iter()
+                                .flat_map(|receipt| receipt.facts)
+                                .map(GameLoopFact::Inventory),
+                        );
+                    }
+                    Err(rejection) => {
+                        let reason = match rejection {
+                            VitalityRejection::PlayerDead { .. } => {
+                                EdgeCommandRejection::PlayerDefeated
+                            }
+                            VitalityRejection::HealthFull { .. } => {
+                                EdgeCommandRejection::HealthFull
+                            }
+                            VitalityRejection::ItemNotOwned { .. }
+                            | VitalityRejection::Inventory(
+                                InventoryRejection::QuantityUnderflow { .. },
+                            ) => EdgeCommandRejection::ItemNotOwned,
+                            _ => EdgeCommandRejection::ItemNotUsable,
+                        };
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason,
+                        });
+                    }
                 }
+                continue;
+            }
+            if matches!(
+                &command.command,
+                GameLoopEdgeCommandKind::RestartAuthoredBaseline
+            ) {
+                facts.push(GameLoopFact::RestartRequested {
+                    sequence: command.sequence,
+                    mode: GameRestartMode::AuthoredBaseline,
+                });
+                continue;
+            }
+            if matches!(&command.command, GameLoopEdgeCommandKind::RestartCheckpoint) {
+                facts.push(GameLoopFact::EdgeCommandRejected {
+                    sequence: command.sequence,
+                    reason: EdgeCommandRejection::CheckpointUnavailable,
+                });
+                continue;
+            }
+            let GameLoopEdgeCommandKind::Interact { target } = command.command else {
                 continue;
             };
             let target = EntityId::new(target);
@@ -740,4 +866,10 @@ impl LoadingBayGameLoop {
 
 fn extend_pickup_facts(receipt: PickupReceipt, facts: &mut Vec<GameLoopFact>) {
     facts.extend(receipt.facts.into_iter().map(GameLoopFact::Pickup));
+    facts.extend(
+        receipt
+            .vitality_facts
+            .into_iter()
+            .map(GameLoopFact::Vitality),
+    );
 }

@@ -39,19 +39,21 @@ Version 1 accepts this closed game-specific command family:
 - `setInputIntent { movement, lookDelta, primaryFireHeld }`
 - `interact { target }`
 - `selectWeaponSlot { slot }`
+- `useItem { item }`
 - `setPaused { paused }`
-- `restart { mode: authoredBaseline }`
+- `restart { mode: authoredBaseline | checkpoint }`
 
 Continuous input is latest-wins. The browser retains one in-flight input frame and at most one
 coalesced pending frame, sends at no more than 60 Hz, clamps accumulated look, and caps WebSocket
 buffering at 64 KiB. Pointer-lock loss, blur, visibility loss, disposal, and restart clear pending
 look and submit neutral held state.
 
-Interaction, weapon selection, pause, and restart are must-deliver edges. The browser admits at
+Interaction, item use, weapon selection, pause, and restart are must-deliver edges. The browser admits at
 most 32 pending edges, and Rust independently admits at most 32 queued fixed-tick edges. Saturation
 rejects the new edge as `edgeQueueSaturated` without partial mutation or disturbing accepted
 ordering. A numeric binding resolves to an authored zero-based slot; Rust rejects an invalid slot,
-unowned weapon, already-selected weapon, or defeated player without changing inventory. The server
+unowned weapon, already-selected weapon, unusable/missing item, full health, unavailable checkpoint,
+or defeated player without changing inventory or vitality. The server
 reads at most 32 commands per poll, rejects commands larger than 16 KiB, builds at most one
 synchronous outbound update, caps the transport write buffer at 256 KiB, and uses a bounded write
 deadline.
@@ -69,7 +71,8 @@ navigation-resource hashes are sent only when that identity changes. A session r
 the same identity reuses the browser's immutable resource value rather than retransmitting it.
 
 Dynamic full and delta updates contain the Rust-owned tick, entity revision, retained projection,
-door and encounter state, player/input/equipped-weapon/inventory/pickup state, extraction beacon,
+door and encounter state, player/input/equipped-weapon/inventory/pickup state, player
+health/armor/dead posture, authored hazard cadence, restart availability, extraction beacon,
 enemies, animation posture, and this update's facts/cues. Weapon projection includes the selected
 item definition, its ammunition item and cost, the live quantity, and cooldown eligibility.
 Inventory projection exposes authored slots with owned/selected flags; it does not let TypeScript
@@ -87,7 +90,8 @@ Rejections preserve a closed actionable code and retry disposition. Version 1 di
 `protocolMismatch`, `sessionClosed`, `transportLost`, `staleSequence`,
 `edgeQueueSaturated`, `deltaBaseUnavailable`, `invalidInput`, `unknownTarget`,
 `notInteractable`, `cooldown`, `noAmmo`, `noEquippedWeapon`, `invalidWeaponSlot`,
-`weaponNotOwned`, `weaponAlreadySelected`, `playerDefeated`, `paused`, and `internalDefect`.
+`weaponNotOwned`, `weaponAlreadySelected`, `playerDefeated`, `itemNotOwned`, `itemNotUsable`,
+`healthFull`, `checkpointUnavailable`, `paused`, and `internalDefect`.
 Gameplay or policy rejection does not masquerade as transport loss.
 
 ## Product proof and measurement

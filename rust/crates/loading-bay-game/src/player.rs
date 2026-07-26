@@ -193,6 +193,9 @@ impl PlayerControllerService {
         let Some(component) = session.player_controllers.get(&player).cloned() else {
             return Err(RuntimeError::UnknownPlayerController { player });
         };
+        if crate::DamageService::is_dead(session, player) {
+            return Err(RuntimeError::PlayerDefeated { player });
+        }
         match action {
             ResolvedPlayerAction::Look {
                 yaw_delta,

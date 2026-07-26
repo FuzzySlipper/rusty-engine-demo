@@ -19,7 +19,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 13;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 14;
+const LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION: u32 = 13;
 const LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION: u32 = 12;
 const LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION: u32 = 11;
 const LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION: u32 = 10;
@@ -57,7 +58,8 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v13(decode_legacy_project(input)?)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v14(decode_legacy_project(input)?)?,
+        LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION => migrate_v13(decode_legacy_project(input)?)?,
         LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION => migrate_v12(decode_legacy_project(input)?)?,
         LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION => migrate_v11(decode_legacy_project(input)?)?,
         LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION => migrate_v10(decode_legacy_project(input)?)?,
@@ -70,7 +72,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
                     LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
@@ -78,6 +80,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                     LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -186,11 +189,22 @@ fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectErro
     Ok(document)
 }
 
-fn migrate_v13(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+fn migrate_v14(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_vitality_fields(&legacy)?;
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn migrate_v13(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION
+    );
+    reject_future_vitality_fields(&legacy)?;
     reject_future_weapon_fields(&legacy)?;
     migrate_legacy_weapon_authority(&mut legacy)?;
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
@@ -202,6 +216,7 @@ fn migrate_v12(mut legacy: StoredProject) -> Result<StoredProject, StoredProject
         legacy.schema_version,
         LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_vitality_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
     reject_future_weapon_fields(&legacy)?;
     migrate_legacy_weapon_authority(&mut legacy)?;
@@ -214,6 +229,7 @@ fn migrate_v11(mut legacy: StoredProject) -> Result<StoredProject, StoredProject
         legacy.schema_version,
         LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_vitality_fields(&legacy)?;
     reject_future_inventory_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
     reject_future_weapon_fields(&legacy)?;
@@ -227,6 +243,7 @@ fn migrate_v10(mut legacy: StoredProject) -> Result<StoredProject, StoredProject
         legacy.schema_version,
         LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_vitality_fields(&legacy)?;
     reject_future_inventory_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
     reject_future_weapon_fields(&legacy)?;
@@ -240,6 +257,7 @@ fn migrate_v9(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
         legacy.schema_version,
         LEGACY_V9_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_vitality_fields(&legacy)?;
     reject_future_inventory_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
     reject_future_weapon_fields(&legacy)?;
@@ -254,6 +272,7 @@ fn migrate_v8(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
         legacy.schema_version,
         LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_vitality_fields(&legacy)?;
     reject_future_inventory_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
     reject_future_weapon_fields(&legacy)?;
@@ -268,6 +287,7 @@ fn migrate_v7(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
         legacy.schema_version,
         LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_vitality_fields(&legacy)?;
     reject_future_inventory_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
     reject_future_weapon_fields(&legacy)?;
@@ -292,7 +312,13 @@ fn migrate_v7(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
 fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(legacy.schema_version, PROJECT_CONTENT_SCHEMA_VERSION);
     if legacy.entities.iter().any(|entity| {
-        entity.inventory.is_some() || entity.pickup.is_some() || entity.bounds.is_some()
+        entity.inventory.is_some()
+            || entity.pickup.is_some()
+            || entity.bounds.is_some()
+            || entity.hazard.is_some()
+            || entity
+                .health
+                .is_some_and(|health| health.max_armor != 0 || health.armor_absorption_percent != 0)
     }) {
         return Err(StoredProjectError::new(
             diagnostic_code::MIGRATION,
@@ -357,6 +383,30 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
     };
     migrate_legacy_weapon_authority(&mut migrated)?;
     canonicalize(migrated)
+}
+
+fn reject_future_vitality_fields(legacy: &StoredProject) -> Result<(), StoredProjectError> {
+    if legacy
+        .scenes
+        .iter()
+        .flat_map(|scene| &scene.entities)
+        .any(|entity| {
+            entity.hazard.is_some()
+                || entity.health.is_some_and(|health| {
+                    health.max_armor != 0 || health.armor_absorption_percent != 0
+                })
+        })
+    {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "scenes",
+            format!(
+                "schema {} cannot declare armor vitality or hazard fields",
+                legacy.schema_version
+            ),
+        ));
+    }
+    Ok(())
 }
 
 fn reject_future_weapon_fields(legacy: &StoredProject) -> Result<(), StoredProjectError> {

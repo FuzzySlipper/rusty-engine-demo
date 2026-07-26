@@ -4,7 +4,7 @@ use core_ids::EntityId;
 use core_math::Vec3;
 use loading_bay_game::{
     DoorState, EncounterState, EnemyState, ExtractionBeaconState, GameRuntime, ItemKind,
-    NavigationState, PickupCollectionCause, PickupState, PlayerInputSessionView,
+    NavigationState, PickupCollectionCause, PickupState, PlayerInputSessionView, VitalityState,
 };
 use serde::Serialize;
 
@@ -56,6 +56,27 @@ struct BrowserPlayerState {
     move_step_seconds: f32,
     look_degrees_per_unit: f32,
     bindings: BrowserPlayerBindings,
+    current_health: u32,
+    max_health: u32,
+    armor: u32,
+    max_armor: u32,
+    vitality_state: &'static str,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserHazardState {
+    id: u64,
+    damage: u32,
+    cooldown_ticks: u64,
+    ready_at_tick: u64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserRestartState {
+    authored_baseline_available: bool,
+    checkpoint_available: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -179,6 +200,8 @@ pub(super) struct BrowserDynamicState {
     weapon: BrowserWeaponState,
     inventory: Option<BrowserInventoryState>,
     pickups: Vec<BrowserPickupState>,
+    hazards: Vec<BrowserHazardState>,
+    restart: BrowserRestartState,
     extraction_beacon: Option<BrowserExtractionBeaconState>,
     enemies: Vec<BrowserEnemyState>,
     presentation: BrowserPresentation,
@@ -266,6 +289,21 @@ pub(super) fn browser_dynamic_state(
         .player_controller(ACTOR)
         .expect("browser player controller");
     let bindings = &player.config.bindings;
+    let player_vitality = runtime.session().health(ACTOR);
+    let (current_health, max_health, armor, max_armor, vitality_state) = player_vitality
+        .as_ref()
+        .map_or((0, 0, 0, 0, "alive"), |health| {
+            (
+                health.current,
+                health.config.max,
+                health.armor,
+                health.config.max_armor,
+                match health.state {
+                    VitalityState::Alive => "alive",
+                    VitalityState::Dead => "dead",
+                },
+            )
+        });
     let player_state = BrowserPlayerState {
         id: ACTOR.raw(),
         position: player
@@ -287,6 +325,11 @@ pub(super) fn browser_dynamic_state(
             primary_fire: bindings.primary_fire.clone(),
             select_weapon: bindings.select_weapon.clone(),
         },
+        current_health,
+        max_health,
+        armor,
+        max_armor,
+        vitality_state,
     };
     let weapon = runtime
         .session()
@@ -405,6 +448,16 @@ pub(super) fn browser_dynamic_state(
             activated_at_tick,
         }
     });
+    let hazards = runtime
+        .session()
+        .hazards()
+        .map(|hazard| BrowserHazardState {
+            id: hazard.entity.raw(),
+            damage: hazard.config.damage,
+            cooldown_ticks: hazard.config.cooldown_ticks,
+            ready_at_tick: hazard.ready_at_tick.raw(),
+        })
+        .collect();
     let player_motion_state = if last_events.iter().any(|event| event == "PlayerBlocked") {
         "blocked"
     } else if last_events.iter().any(|event| event == "PlayerMoved") {
@@ -471,6 +524,11 @@ pub(super) fn browser_dynamic_state(
         weapon: weapon_state,
         inventory: inventory_state,
         pickups,
+        hazards,
+        restart: BrowserRestartState {
+            authored_baseline_available: true,
+            checkpoint_available: false,
+        },
         extraction_beacon,
         enemies,
         presentation: project_presentation(

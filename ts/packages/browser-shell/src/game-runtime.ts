@@ -36,9 +36,14 @@ const PRODUCT_EDIT_VOXEL = [4, 1, 6] as const;
 export interface LoadingBayPresentationSnapshot {
   readonly ammoCapacity: number;
   readonly ammoRemaining: number;
+  readonly armor: number;
   readonly encounterState: string;
   readonly events: readonly string[];
+  readonly health: number;
   readonly headingDegrees: number;
+  readonly maxArmor: number;
+  readonly maxHealth: number;
+  readonly vitalityState: "alive" | "dead";
 }
 
 export interface LoadingBayGameOptions {
@@ -213,6 +218,20 @@ export async function mountLoadingBayGame(
     () => {
       void presentationFeedback.activateAudio();
       void enqueueInteraction(7).catch(recordActionRejection);
+    },
+    eventOptions,
+  );
+  requiredElement("use-health-supply", HTMLButtonElement).addEventListener(
+    "click",
+    () => {
+      void presentationFeedback.activateAudio();
+      void session
+        .sendEdge({
+          kind: "useItem",
+          item: "supply/med-patch",
+        })
+        .then(applySessionState)
+        .catch(recordActionRejection);
     },
     eventOptions,
   );
@@ -1084,9 +1103,14 @@ export async function mountLoadingBayGame(
     options.onProjection?.({
       ammoCapacity: state.weapon.ammoCapacity,
       ammoRemaining: state.weapon.ammoRemaining,
+      armor: state.player.armor,
       encounterState: state.encounterState,
       events: [...eventHistory],
+      health: state.player.currentHealth,
       headingDegrees: normalizeDegrees(state.player.yawDegrees),
+      maxArmor: state.player.maxArmor,
+      maxHealth: state.player.maxHealth,
+      vitalityState: state.player.vitalityState,
     });
   }
 
@@ -1336,13 +1360,15 @@ export async function mountLoadingBayGame(
     const available = current.pickups
       .filter((pickup) => pickup.state === "available")
       .map((pickup) => pickup.id);
-    const inventoryExact =
+    const inventoryAndArmorExact =
       inventoryQuantity("ammo/energy-cell") === 200 &&
       inventoryQuantity("ammo/scatter-shell") === 20 &&
       inventoryQuantity("weapon/breach-scattergun") === 1 &&
       inventoryQuantity("supply/med-patch") === 2 &&
-      inventoryQuantity("armor/impact-vest") === 1 &&
-      inventoryQuantity("key/maintenance-pass") === 1;
+      inventoryQuantity("armor/impact-vest") === 0 &&
+      inventoryQuantity("key/maintenance-pass") === 1 &&
+      current.player.armor === 100 &&
+      current.player.armor === current.player.maxArmor;
     const worldExact =
       JSON.stringify(collected) === JSON.stringify([20, 22, 23, 24, 25, 26]) &&
       JSON.stringify(available) === JSON.stringify([21]) &&
@@ -1378,6 +1404,7 @@ export async function mountLoadingBayGame(
       (current.inventory?.stacks ?? [])
         .map((stack) => `${stack.item}:${String(stack.quantity)}`)
         .join(","),
+      `${String(current.player.armor)}/${String(current.player.maxArmor)}`,
       rejectionExact,
       cueProjected,
       selectedPickupWeapon,
@@ -1385,7 +1412,7 @@ export async function mountLoadingBayGame(
     return (
       startedAvailable &&
       walked &&
-      inventoryExact &&
+      inventoryAndArmorExact &&
       worldExact &&
       rejectionExact &&
       factsProjected &&
