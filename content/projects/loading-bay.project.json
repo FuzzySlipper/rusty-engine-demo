@@ -399,9 +399,9 @@
           },
           "kinematic": {
             "halfExtents": [
+              0.45,
               0.25,
-              0.25,
-              0.25
+              0.45
             ],
             "velocity": [
               0,
@@ -475,9 +475,9 @@
           ],
           "kinematic": {
             "halfExtents": [
-              0.25,
+              0.3,
               0.5,
-              0.25
+              0.3
             ],
             "velocity": [
               0,

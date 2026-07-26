@@ -27,6 +27,28 @@ fn authored_archetypes_stay_dormant_until_the_bounded_encounter_activates() {
     assert_eq!(
         runtime
             .session()
+            .entity(MELEE)
+            .unwrap()
+            .kinematic
+            .unwrap()
+            .half_extents
+            .to_array(),
+        [0.45, 0.25, 0.45]
+    );
+    assert_eq!(
+        runtime
+            .session()
+            .entity(RANGED)
+            .unwrap()
+            .kinematic
+            .unwrap()
+            .half_extents
+            .to_array(),
+        [0.3, 0.5, 0.3]
+    );
+    assert_eq!(
+        runtime
+            .session()
             .enemy(MELEE)
             .unwrap()
             .entity_view

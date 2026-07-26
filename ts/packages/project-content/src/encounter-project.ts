@@ -320,9 +320,11 @@ export function loadingBayStoredProject(
           asset: melee ? "mesh/bay-rusher" : "mesh/arc-warden",
           visible: true,
         },
-        kinematic: entity.kinematic ?? {
-          halfExtents: [0.25, 0.5, 0.25] as const,
-          velocity: [0, 0, 0] as const,
+        kinematic: {
+          halfExtents: melee
+            ? ([0.45, 0.25, 0.45] as const)
+            : ([0.3, 0.5, 0.3] as const),
+          velocity: entity.kinematic?.velocity ?? ([0, 0, 0] as const),
         },
         navigation: entity.navigation ?? {
           goal: entity.translation ?? ([1.5, 1.5, 2.5] as const),
