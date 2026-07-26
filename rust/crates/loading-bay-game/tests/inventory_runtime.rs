@@ -497,6 +497,20 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
         .is_none());
 }
 
+#[test]
+fn schema_ten_snapshot_rejects_future_inventory_fields() {
+    let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let mut snapshot: serde_json::Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    snapshot["schemaVersion"] = 10.into();
+
+    let error = decode_game_snapshot(&snapshot.to_string()).unwrap_err();
+    assert!(matches!(
+        error,
+        loading_bay_game::GameSnapshotError::FutureInventoryStateInLegacySnapshot
+    ));
+}
+
 fn apply(
     runtime: &mut GameRuntime,
     sequence: u64,

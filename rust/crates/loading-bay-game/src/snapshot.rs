@@ -344,6 +344,7 @@ pub enum GameSnapshotError {
         value: String,
     },
     Inventory(InventoryAdmissionError),
+    FutureInventoryStateInLegacySnapshot,
     DuplicateInventory {
         owner: u64,
     },
@@ -719,6 +720,11 @@ impl GameRuntime {
             return Err(GameSnapshotError::UnsupportedSchema {
                 actual: snapshot.schema_version,
             });
+        }
+        if snapshot.schema_version < GAME_SNAPSHOT_SCHEMA_VERSION
+            && (!snapshot.item_definitions.is_empty() || !snapshot.inventories.is_empty())
+        {
+            return Err(GameSnapshotError::FutureInventoryStateInLegacySnapshot);
         }
         let collision_scene = snapshot
             .voxel_collision
