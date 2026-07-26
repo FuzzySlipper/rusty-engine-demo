@@ -1431,7 +1431,10 @@ async function runDeadDialogFocusProof(project) {
             running.address,
             (state) => state.player.vitalityState === "dead",
             "enemy-caused dead player projection",
-            30_000,
+            // The player remains outside the coolant hazard here. The authored
+            // ranged sentry deals four damage every 120 ticks, so an enemy-only
+            // death from full health can legitimately require about 50 seconds.
+            65_000,
           );
           await waitForCdp(
             client,
