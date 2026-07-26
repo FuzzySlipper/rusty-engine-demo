@@ -40,8 +40,10 @@ proves lifecycle/correctness only; it is not interactive GPU performance evidenc
 ## 2026-07-26 managed LAN baseline
 
 The headed product ran from the `den-serve` managed LAN URL for 20 seconds of pointer-locked look
-and held WASD input. The exact Demo revision is registered in the #6219 review packet; renderer
-packages were pinned to Engine `2665b74566136fb77e3a26b0766394124c8f58d3`.
+and held WASD input. This table records the single certification run attached to the #6219 review
+request (task message 24922) at exact Demo revision
+`6a4cacf1f130d0b818bb727369c6a8aeb69bf391`; renderer packages were pinned to Engine
+`2665b74566136fb77e3a26b0766394124c8f58d3`.
 
 | Context        | Value                                                                 |
 | -------------- | --------------------------------------------------------------------- |
@@ -49,25 +51,25 @@ packages were pinned to Engine `2665b74566136fb77e3a26b0766394124c8f58d3`.
 | GPU/backend    | AMD Radeon 780M; ANGLE OpenGL ES 3.2; Mesa 26.1.2                     |
 | Browser        | Chromium 148.0.7778.215                                               |
 | Viewport/route | 1600 x 900 product canvas; loading-bay pointer-lock route             |
-| Exercise       | 20 seconds; 195 unique renderer samples; 195 authoritative look facts |
+| Exercise       | 20 seconds; 193 unique renderer samples; 193 authoritative look facts |
 
 | Measurement                         |   p50 |   p95 |   p99 |   max |
 | ----------------------------------- | ----: | ----: | ----: | ----: |
 | Renderer cadence (ms)               |  16.7 |  16.8 |  16.8 |  16.8 |
-| Synchronous backend submission (ms) |   0.1 |   0.3 |   0.5 |   0.6 |
-| Snapshot arrival cadence (ms)       |  19.8 |  22.9 |  23.5 |  23.9 |
-| Command acknowledgement (ms)        |  17.2 |  52.1 |  58.4 |  59.7 |
-| Dynamic payload (bytes)             | 2,476 | 3,099 | 3,113 | 3,115 |
+| Synchronous backend submission (ms) |   0.2 |   0.3 |   0.5 |   0.7 |
+| Snapshot arrival cadence (ms)       |  19.8 |  24.3 |  27.2 |  40.4 |
+| Command acknowledgement (ms)        |  17.2 |  54.3 |  59.0 |  60.8 |
+| Dynamic payload (bytes)             | 2,474 | 3,103 | 3,115 | 3,117 |
 
 The renderer and payload budgets pass. Command acknowledgement remains below the 100 ms maximum but
-misses the 50 ms p95 target by 2.1 ms; this is why the bounded local look presentation offset is
-enabled. The observed offset peaked at 0.30 yaw units and 0.05 pitch units, stayed below its
+misses the 50 ms p95 target by 4.3 ms; this is why the bounded local look presentation offset is
+enabled. The observed offset peaked at 0.30 yaw units and 0.10 pitch units, stayed below its
 two-unit-per-axis bound, and reconciled to exactly zero. Input evidence stayed within two pending
 frames, pointer lock remained active, and the browser reported no runtime error.
 
 ## Camera policy
 
-The hardware-backed LAN baseline measured command acknowledgement p95 at 55.8 ms, just above the
+The hardware-backed LAN certification run measured command acknowledgement p95 at 54.3 ms, just above the
 50 ms interaction budget, while renderer cadence remained within budget. The browser therefore
 presents a local look offset for the admitted portion of at most one in-flight and one coalesced
 pending look frame. Each axis is bounded to two normalized input units. Accepted authoritative
