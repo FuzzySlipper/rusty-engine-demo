@@ -4,7 +4,8 @@ use core_ids::EntityId;
 use core_math::Vec3;
 use loading_bay_game::{
     DoorState, EncounterState, EnemyState, ExtractionBeaconState, GameRuntime, ItemKind,
-    NavigationState, PickupCollectionCause, PickupState, PlayerInputSessionView, VitalityState,
+    LevelExitState, NavigationState, PickupCollectionCause, PickupState, PlayerInputSessionView,
+    RequiredKeyPolicy, SecretRegionState, VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
 };
 use serde::Serialize;
 
@@ -144,6 +145,43 @@ struct BrowserExtractionBeaconState {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct BrowserDoorAccessState {
+    id: u64,
+    state: &'static str,
+    required_key: String,
+    key_policy: &'static str,
+    activation_radius: f32,
+    denied_presentation: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserSecretRegionState {
+    id: u64,
+    state: &'static str,
+    presentation: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserLevelExitState {
+    id: u64,
+    state: &'static str,
+    activation_radius: f32,
+    presentation: String,
+    completed_by: Option<u64>,
+    completed_at_tick: Option<u64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserInteractionState {
+    target: u64,
+    prompt: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct BrowserVoxelMeshGroup {
     material_slot: u16,
     start: u32,
@@ -203,6 +241,11 @@ pub(super) struct BrowserDynamicState {
     hazards: Vec<BrowserHazardState>,
     restart: BrowserRestartState,
     extraction_beacon: Option<BrowserExtractionBeaconState>,
+    door_access: Vec<BrowserDoorAccessState>,
+    secret_regions: Vec<BrowserSecretRegionState>,
+    level_exits: Vec<BrowserLevelExitState>,
+    level_complete: bool,
+    interaction: Option<BrowserInteractionState>,
     enemies: Vec<BrowserEnemyState>,
     presentation: BrowserPresentation,
     pub(super) last_events: Vec<String>,
@@ -402,6 +445,64 @@ pub(super) fn browser_dynamic_state(
                     })
                     .collect(),
             });
+    let door_access = runtime
+        .session()
+        .door_accesses()
+        .map(|access| {
+            let door = runtime
+                .session()
+                .door(access.door)
+                .expect("admitted keyed door");
+            BrowserDoorAccessState {
+                id: access.door.raw(),
+                state: match door.state {
+                    DoorState::Closed => "closed",
+                    DoorState::Open => "open",
+                },
+                required_key: access.config.required_key.as_str().to_owned(),
+                key_policy: match access.config.key_policy {
+                    RequiredKeyPolicy::Retain => "retain",
+                    RequiredKeyPolicy::Consume => "consume",
+                },
+                activation_radius: access.config.activation_radius,
+                denied_presentation: access.config.denied_presentation,
+            }
+        })
+        .collect::<Vec<_>>();
+    let secret_regions = runtime
+        .session()
+        .secret_regions()
+        .map(|secret| BrowserSecretRegionState {
+            id: secret.entity.raw(),
+            state: match secret.state {
+                SecretRegionState::Undiscovered => "undiscovered",
+                SecretRegionState::Discovered { .. } => "discovered",
+            },
+            presentation: secret.config.presentation,
+        })
+        .collect::<Vec<_>>();
+    let level_exits = runtime
+        .session()
+        .level_exits()
+        .map(|exit| {
+            let (state, completed_by, completed_at_tick) = match exit.state {
+                LevelExitState::Available => ("available", None, None),
+                LevelExitState::Completed {
+                    actor,
+                    completed_at,
+                } => ("completed", Some(actor.raw()), Some(completed_at.raw())),
+            };
+            BrowserLevelExitState {
+                id: exit.entity.raw(),
+                state,
+                activation_radius: exit.config.activation_radius,
+                presentation: exit.config.presentation,
+                completed_by,
+                completed_at_tick,
+            }
+        })
+        .collect::<Vec<_>>();
+    let interaction = available_interaction(runtime, &player_state, inventory_state.as_ref());
     let pickups = runtime
         .session()
         .pickups()
@@ -531,6 +632,11 @@ pub(super) fn browser_dynamic_state(
             checkpoint_available: false,
         },
         extraction_beacon,
+        door_access,
+        secret_regions,
+        level_exits,
+        level_complete: runtime.is_level_complete(),
+        interaction,
         enemies,
         presentation: project_presentation(
             runtime,
@@ -542,6 +648,97 @@ pub(super) fn browser_dynamic_state(
         ),
         last_events,
     }
+}
+
+fn available_interaction(
+    runtime: &GameRuntime,
+    player: &BrowserPlayerState,
+    inventory: Option<&BrowserInventoryState>,
+) -> Option<BrowserInteractionState> {
+    if player.vitality_state == "dead" || runtime.is_level_complete() {
+        return None;
+    }
+    let player_position = Vec3::new(player.position[0], player.position[1], player.position[2]);
+    let mut candidates = Vec::new();
+    for access in runtime.session().door_accesses() {
+        let door = runtime
+            .session()
+            .door(access.door)
+            .expect("admitted keyed door");
+        if door.state == DoorState::Open {
+            continue;
+        }
+        let translation = door
+            .entity_view
+            .transform
+            .expect("admitted keyed door transform")
+            .translation;
+        let distance_squared = (player_position - translation).length_squared();
+        if distance_squared > access.config.activation_radius * access.config.activation_radius {
+            continue;
+        }
+        let owns_key = inventory.is_some_and(|inventory| {
+            inventory.stacks.iter().any(|stack| {
+                stack.item == access.config.required_key.as_str() && stack.quantity > 0
+            })
+        });
+        candidates.push((
+            distance_squared,
+            access.door,
+            if owns_key {
+                format!("Open {}", door.entity_view.name.replace('-', " "))
+            } else {
+                access.config.denied_presentation
+            },
+        ));
+    }
+    for interlock in runtime.session().loading_bay_interlocks() {
+        let translation = interlock
+            .entity_view
+            .transform
+            .expect("admitted Loading Bay interlock transform")
+            .translation;
+        let distance_squared = (player_position - translation).length_squared();
+        if distance_squared
+            <= LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS * LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS
+        {
+            candidates.push((
+                distance_squared,
+                interlock.switch,
+                format!("Activate {}", interlock.entity_view.name.replace('-', " ")),
+            ));
+        }
+    }
+    for exit in runtime.session().level_exits() {
+        if exit.state != LevelExitState::Available {
+            continue;
+        }
+        let translation = exit
+            .entity_view
+            .transform
+            .expect("admitted level exit transform")
+            .translation;
+        let distance_squared = (player_position - translation).length_squared();
+        if distance_squared <= exit.config.activation_radius * exit.config.activation_radius {
+            candidates.push((
+                distance_squared,
+                exit.entity,
+                format!("Use {}", exit.entity_view.name.replace('-', " ")),
+            ));
+        }
+    }
+    candidates.sort_by(|left, right| {
+        left.0
+            .total_cmp(&right.0)
+            .then_with(|| left.1.cmp(&right.1))
+    });
+    candidates
+        .into_iter()
+        .next()
+        .map(|(_, target, prompt)| BrowserInteractionState {
+            target: target.raw(),
+            prompt,
+        })
 }
 
 pub(super) fn browser_static_revision(host: &BrowserRuntime) -> String {

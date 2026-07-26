@@ -19,6 +19,7 @@ mod inventory;
 mod navigation;
 mod pickup;
 mod player;
+mod progression;
 mod project_admission;
 mod project_codec;
 mod project_store;
@@ -91,6 +92,15 @@ pub use player::{
     PlayerControllerState, PlayerControllerView, PlayerInputBindings, ResolvedPlayerAction,
     MAX_INPUT_CONTROL_LENGTH, MAX_PLAYER_LOOK_DEGREES_PER_UNIT, MAX_PLAYER_SPEED_UNITS_PER_SECOND,
 };
+pub use progression::{
+    DoorAccessConfig, DoorAccessReceipt, DoorAccessRejection, DoorAccessView, LevelExitComponent,
+    LevelExitConfig, LevelExitRejection, LevelExitState, LevelExitView, LoadingBayInterlockConfig,
+    LoadingBayInterlockRejection, LoadingBayInterlockView, ProgressionFact, RequiredKeyPolicy,
+    SecretPhaseReceipt, SecretRegionComponent, SecretRegionConfig, SecretRegionState,
+    SecretRegionView, SecretRejection, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
+    MAX_PROGRESSION_ACTIVATION_RADIUS, MAX_PROGRESSION_PRESENTATION_BYTES,
+    MAX_SECRET_OVERLAP_SUBJECTS, SECRET_TRIGGER_SCOPE,
+};
 pub use project_admission::{
     admit_stored_project, admit_stored_project_with_document, decode_and_admit_stored_project,
     materialize_stored_project_voxels, AdmittedStoredProject,
@@ -121,14 +131,15 @@ pub use snapshot::{
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset,
     StoredAssetCatalogMetadata, StoredAssetImport, StoredBounds, StoredCollision, StoredDoor,
-    StoredEncounter, StoredEntityDefinition, StoredExtractionBeacon,
+    StoredDoorAccess, StoredEncounter, StoredEntityDefinition, StoredExtractionBeacon,
     StoredGeneratedVoxelEnvironment, StoredHazard, StoredHealth, StoredImportSource,
     StoredInventory, StoredInventoryStack, StoredItemDefinition, StoredItemKind, StoredKinematic,
-    StoredLight, StoredMaterialVoxel, StoredMaterialVoxelEnvironment, StoredNavigation,
-    StoredPickup, StoredPlayerController, StoredPlayerInputBindings, StoredProject,
-    StoredProjectError, StoredRenderable, StoredScene, StoredSolidVoxelEnvironment, StoredSwitch,
-    StoredVoxelEnvironment, StoredVoxelInstance, StoredWeapon, StoredWeaponAttackMode,
-    STORED_PROJECT_SCHEMA_VERSION,
+    StoredLevelExit, StoredLight, StoredLoadingBayInterlock, StoredMaterialVoxel,
+    StoredMaterialVoxelEnvironment, StoredNavigation, StoredPickup, StoredPlayerController,
+    StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable,
+    StoredRequiredKeyPolicy, StoredScene, StoredSecretRegion, StoredSolidVoxelEnvironment,
+    StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance, StoredWeapon,
+    StoredWeaponAttackMode, STORED_PROJECT_SCHEMA_VERSION,
 };
 pub use studio_adapter::{
     AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,

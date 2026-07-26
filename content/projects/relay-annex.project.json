@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 16,
+  "schemaVersion": 17,
   "projectId": "relay-annex",
   "name": "Relay Annex",
   "entryScene": "scene/relay-annex",
@@ -58,6 +58,9 @@
     },
     {
       "id": "mesh/hazard-pad"
+    },
+    {
+      "id": "mesh/level-exit"
     },
     {
       "id": "mesh/pickup-ammunition"
@@ -409,7 +412,11 @@
           "switch": {
             "controls": [
               3
-            ]
+            ],
+            "loadingBayInterlock": {
+              "closeDoor": 30,
+              "openDoor": 3
+            }
           }
         },
         {
@@ -716,6 +723,90 @@
           "pickup": {
             "item": "weapon/rivet-carbine",
             "quantity": 1
+          }
+        },
+        {
+          "id": 30,
+          "name": "maintenance-bulkhead",
+          "translation": [
+            3.5,
+            1.5,
+            4.5
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": true
+          },
+          "renderable": {
+            "asset": "mesh/security-door",
+            "visible": true
+          },
+          "kinematic": {
+            "halfExtents": [
+              3.2,
+              1.5,
+              0.275
+            ],
+            "velocity": [
+              0,
+              0,
+              0
+            ]
+          },
+          "door": {
+            "openTranslation": [
+              3.5,
+              4.5,
+              4.5
+            ],
+            "autoCloseAfterTicks": 90,
+            "access": {
+              "requiredKey": "key/maintenance-pass",
+              "keyPolicy": "retain",
+              "activationRadius": 3,
+              "deniedPresentation": "Maintenance pass required"
+            }
+          }
+        },
+        {
+          "id": 31,
+          "name": "overlook-secret",
+          "translation": [
+            4.5,
+            1.5,
+            6.5
+          ],
+          "bounds": {
+            "min": [
+              -0.6,
+              -0.6,
+              -0.6
+            ],
+            "max": [
+              0.6,
+              0.6,
+              0.6
+            ]
+          },
+          "secretRegion": {
+            "presentation": "Secret overlook discovered"
+          }
+        },
+        {
+          "id": 32,
+          "name": "loading-bay-level-exit",
+          "translation": [
+            3.5,
+            1.5,
+            10.5
+          ],
+          "renderable": {
+            "asset": "mesh/level-exit",
+            "visible": true
+          },
+          "levelExit": {
+            "activationRadius": 2,
+            "presentation": "Loading Bay complete"
           }
         }
       ]

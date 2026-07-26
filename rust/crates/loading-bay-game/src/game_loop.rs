@@ -159,6 +159,9 @@ pub enum EdgeCommandRejection {
     ItemNotUsable,
     HealthFull,
     CheckpointUnavailable,
+    DoorLocked,
+    LevelExitUnavailable,
+    LevelComplete,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -177,6 +180,13 @@ pub enum GameLoopFact {
     Inventory(InventoryFact),
     Vitality(VitalityFact),
     Hazard(HazardFact),
+    Progression(crate::ProgressionFact),
+    DoorAccessRejected {
+        sequence: u64,
+        door: EntityId,
+        required_key: ItemDefinitionId,
+        presentation: String,
+    },
     PickupRejected {
         pickup: EntityId,
         reason: PickupRejection,
@@ -511,7 +521,8 @@ impl LoadingBayGameLoop {
         let mut interactions = Vec::new();
         self.consume_input_phase(&mut facts, &mut interactions)?;
 
-        let simulation_advanced = !self.input.paused;
+        let level_complete = self.runtime.is_level_complete();
+        let simulation_advanced = !self.input.paused && !level_complete;
         if simulation_advanced {
             self.runtime.begin_fixed_tick();
             self.run_player_motion_phase(&mut facts)?;
@@ -521,6 +532,27 @@ impl LoadingBayGameLoop {
             self.run_interaction_and_pickup_phase(interactions, &mut facts)?;
             let events = self.runtime.run_scheduled_consequence_phase()?;
             facts.extend(events.into_iter().map(GameLoopFact::Event));
+        } else if level_complete {
+            for command in interactions {
+                match command.command {
+                    GameLoopEdgeCommandKind::RestartAuthoredBaseline => {
+                        facts.push(GameLoopFact::RestartRequested {
+                            sequence: command.sequence,
+                            mode: GameRestartMode::AuthoredBaseline,
+                        });
+                    }
+                    GameLoopEdgeCommandKind::RestartCheckpoint => {
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason: EdgeCommandRejection::CheckpointUnavailable,
+                        });
+                    }
+                    _ => facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::LevelComplete,
+                    }),
+                }
+            }
         } else {
             for command in interactions {
                 facts.push(GameLoopFact::EdgeCommandRejected {
@@ -589,7 +621,7 @@ impl LoadingBayGameLoop {
             .consumed_sequence
             .max(self.input.acknowledged_sequence);
 
-        if self.input.paused || !self.input.connected {
+        if self.input.paused || !self.input.connected || self.runtime.is_level_complete() {
             self.input.accumulated_look = PlayerInputIntent::NEUTRAL.look_delta;
             return Ok(());
         }
@@ -728,6 +760,13 @@ impl LoadingBayGameLoop {
                 reason: attempt.reason,
             }
         }));
+        let secret_phase = self.runtime.run_secret_phase(self.player)?;
+        facts.extend(
+            secret_phase
+                .facts
+                .into_iter()
+                .map(GameLoopFact::Progression),
+        );
         for command in interactions {
             if let GameLoopEdgeCommandKind::SelectWeaponSlot { slot } = &command.command {
                 match InventoryService::select_weapon_slot(
@@ -863,6 +902,119 @@ impl LoadingBayGameLoop {
                             sequence: command.sequence,
                             reason: EdgeCommandRejection::NotInteractable,
                         });
+                    }
+                    Err(error) => return Err(error),
+                }
+                continue;
+            }
+            if self.runtime.session().door_access(target).is_some() {
+                match self.runtime.open_keyed_door(self.player, target) {
+                    Ok((receipt, events)) => {
+                        if let Some(inventory) = receipt.inventory {
+                            facts.extend(inventory.facts.into_iter().map(GameLoopFact::Inventory));
+                        }
+                        if let Some(fact) = receipt.fact {
+                            facts.push(GameLoopFact::Progression(fact));
+                        }
+                        facts.extend(events.into_iter().map(GameLoopFact::Event));
+                    }
+                    Err(RuntimeError::DoorAccess(
+                        crate::DoorAccessRejection::MissingRequiredKey {
+                            door,
+                            required_key,
+                            presentation,
+                        },
+                    )) => {
+                        facts.push(GameLoopFact::DoorAccessRejected {
+                            sequence: command.sequence,
+                            door,
+                            required_key,
+                            presentation,
+                        });
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason: EdgeCommandRejection::DoorLocked,
+                        });
+                    }
+                    Err(RuntimeError::DoorAccess(crate::DoorAccessRejection::OutOfRange {
+                        ..
+                    })) => {
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason: EdgeCommandRejection::NotInteractable,
+                        });
+                    }
+                    Err(RuntimeError::DoorAccess(crate::DoorAccessRejection::PlayerDefeated {
+                        ..
+                    })) => {
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason: EdgeCommandRejection::PlayerDefeated,
+                        });
+                    }
+                    Err(error) => return Err(error),
+                }
+                continue;
+            }
+            if self
+                .runtime
+                .session()
+                .loading_bay_interlock(target)
+                .is_some()
+            {
+                match self
+                    .runtime
+                    .activate_loading_bay_interlock(self.player, target)
+                {
+                    Ok(receipt) => {
+                        facts.extend(receipt.events.into_iter().map(GameLoopFact::Event));
+                    }
+                    Err(RuntimeError::LoadingBayInterlock(
+                        crate::LoadingBayInterlockRejection::OutOfRange { .. },
+                    )) => facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::NotInteractable,
+                    }),
+                    Err(RuntimeError::LoadingBayInterlock(
+                        crate::LoadingBayInterlockRejection::PlayerDefeated { .. },
+                    )) => facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::PlayerDefeated,
+                    }),
+                    Err(RuntimeError::LoadingBayInterlock(_)) => {
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason: EdgeCommandRejection::NotInteractable,
+                        })
+                    }
+                    Err(error) => return Err(error),
+                }
+                continue;
+            }
+            if self.runtime.session().level_exit(target).is_some() {
+                match self.runtime.complete_level(self.player, target) {
+                    Ok(Some(fact)) => facts.push(GameLoopFact::Progression(fact)),
+                    Ok(None) => facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::LevelComplete,
+                    }),
+                    Err(RuntimeError::LevelExit(crate::LevelExitRejection::OutOfRange {
+                        ..
+                    })) => facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::NotInteractable,
+                    }),
+                    Err(RuntimeError::LevelExit(crate::LevelExitRejection::PlayerDefeated {
+                        ..
+                    })) => facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::PlayerDefeated,
+                    }),
+                    Err(RuntimeError::LevelExit(_)) => {
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason: EdgeCommandRejection::LevelExitUnavailable,
+                        })
                     }
                     Err(error) => return Err(error),
                 }

@@ -260,6 +260,7 @@ fn schema_eleven_rejects_future_pickup_state_but_migrates_when_fields_are_absent
 
     snapshot.as_object_mut().unwrap().remove("pickups");
     snapshot.as_object_mut().unwrap().remove("pickupTriggers");
+    snapshot.as_object_mut().unwrap().remove("progression");
     strip_snapshot_vitality_fields(&mut snapshot);
     strip_snapshot_weapon_item_fields(&mut snapshot);
     let migrated = decode_game_snapshot(&snapshot.to_string()).unwrap();
@@ -281,6 +282,20 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
             .retain(|entity| entity.get("pickup").is_none() && entity.get("hazard").is_none());
         for entity in scene["entities"].as_array_mut().unwrap() {
             entity.as_object_mut().unwrap().remove("bounds");
+            entity.as_object_mut().unwrap().remove("secretRegion");
+            entity.as_object_mut().unwrap().remove("levelExit");
+            if let Some(door) = entity
+                .get_mut("door")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                door.remove("access");
+            }
+            if let Some(switch) = entity
+                .get_mut("switch")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                switch.remove("loadingBayInterlock");
+            }
             if let Some(health) = entity
                 .get_mut("health")
                 .and_then(serde_json::Value::as_object_mut)

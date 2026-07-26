@@ -85,6 +85,8 @@ export interface LoadingBayPresentationSnapshot {
   readonly maxArmor: number;
   readonly maxHealth: number;
   readonly paused: boolean;
+  readonly levelComplete: boolean;
+  readonly levelCompletionPresentation: string | null;
   readonly restartAvailable: boolean;
   readonly vitalityState: "alive" | "dead";
   readonly weaponItem: string;
@@ -617,12 +619,14 @@ export async function mountLoadingBayGame(
       meshFingerprint(current) !== voxelBefore.meshHash &&
       current.generatedEnvironment === null &&
       surface.snapshot().includes("generated-room-chunk");
+    const clearedBulkheadOpened = await openProgressionBulkhead();
     const clearedPassage = await walkPlayerPath([
       [3.5, 5.5],
       [4.5, 5.5],
       [4.5, 7.5],
     ]);
     await performRestart();
+    const restoredBulkheadOpened = await openProgressionBulkhead();
     const blockedByRestoredVoxel = !(await walkPlayerPath([
       [3.5, 5.5],
       [4.5, 5.5],
@@ -630,7 +634,11 @@ export async function mountLoadingBayGame(
     ]));
     await performRestart();
     const voxelEditPassed =
-      editBecameVisibleAndNavigable && clearedPassage && blockedByRestoredVoxel;
+      editBecameVisibleAndNavigable &&
+      clearedBulkheadOpened &&
+      clearedPassage &&
+      restoredBulkheadOpened &&
+      blockedByRestoredVoxel;
     document.body.dataset.voxelEdit = voxelEditPassed ? "pass" : "fail";
     document.body.dataset.voxelRejection = rejectedUnchanged ? "pass" : "fail";
     document.body.dataset.voxelCollision =
@@ -791,6 +799,7 @@ export async function mountLoadingBayGame(
       secondEnemyDamaged &&
       secondEnemyDefeated &&
       eventHistory.includes("CombatHit");
+    const combatBulkheadOpened = await openProgressionBulkhead();
     const openGateTraversed = await walkPlayerPath([
       [1.5, 9.5],
       [4.5, 9.5],
@@ -804,7 +813,10 @@ export async function mountLoadingBayGame(
     }
     document.body.dataset.gatePassage = openGateTraversed ? "pass" : "fail";
     const queueRecovered =
-      singlePressHeld && lookRecoveredAfterRejection && openGateTraversed;
+      singlePressHeld &&
+      lookRecoveredAfterRejection &&
+      combatBulkheadOpened &&
+      openGateTraversed;
     document.body.dataset.queueEvidence = [
       singlePressHeld,
       lookRecoveredAfterRejection,
@@ -1224,7 +1236,6 @@ export async function mountLoadingBayGame(
         return item;
       }),
     );
-    const interaction = availableInteraction(state);
     options.onProjection?.({
       ammoCapacity: state.weapon.ammoCapacity,
       ammoRemaining: state.weapon.ammoRemaining,
@@ -1238,14 +1249,18 @@ export async function mountLoadingBayGame(
       health: state.player.currentHealth,
       headingDegrees: normalizeDegrees(state.player.yawDegrees),
       hostSessionId: state.hostSessionId,
-      interactionPrompt: interaction?.prompt ?? null,
-      interactionTarget: interaction?.target ?? null,
+      interactionPrompt: state.interaction?.prompt ?? null,
+      interactionTarget: state.interaction?.target ?? null,
       inventoryCapacity: state.inventory?.capacitySlots ?? 0,
       inventoryStacks: state.inventory?.stacks ?? [],
       lastRejection: lastActionRejection,
       maxArmor: state.player.maxArmor,
       maxHealth: state.player.maxHealth,
       paused: state.input.paused,
+      levelComplete: state.levelComplete,
+      levelCompletionPresentation:
+        state.levelExits.find((exit) => exit.state === "completed")
+          ?.presentation ?? null,
       restartAvailable: state.restart.authoredBaselineAvailable,
       vitalityState: state.player.vitalityState,
       weaponItem: state.weapon.item,
@@ -1632,13 +1647,16 @@ export async function mountLoadingBayGame(
     primaryFireHeld = false;
     await performInputIntent([0, 0]);
     await presentationFeedback.settled();
+    const automaticAmmunitionSpent =
+      automaticAmmoBefore - current.weapon.ammoRemaining;
     const automaticPassed =
       current.weapon.item === "weapon/rivet-carbine" &&
       current.inventory?.equippedWeapon === "weapon/rivet-carbine" &&
       current.inventory.weapons.find((weapon) => weapon.slot === 2)
         ?.selected === true &&
       automaticShotCount >= 1 &&
-      current.weapon.ammoRemaining === automaticAmmoBefore - 2;
+      automaticAmmunitionSpent >= 2 &&
+      automaticAmmunitionSpent <= 5;
     const weaponFeedbackPassed = includesEvery(
       feedbackAudioStatus.dataset.soundKinds,
       ["spreadShot", "automaticShot"],
@@ -1670,6 +1688,35 @@ export async function mountLoadingBayGame(
       spreadPassed &&
       automaticPassed &&
       weaponFeedbackPassed
+    );
+  }
+
+  async function openProgressionBulkhead(): Promise<boolean> {
+    if (inventoryQuantity("key/maintenance-pass") === 0) {
+      const collected = await walkPlayerPath([
+        [1.5, 3.5],
+        [2.5, 3.5],
+      ]);
+      if (!collected || inventoryQuantity("key/maintenance-pass") !== 1) {
+        return false;
+      }
+    }
+    if (
+      current.doorAccess.some(
+        (door) => door.id === 30 && door.state === "open",
+      )
+    ) {
+      return true;
+    }
+    if (!(await walkPlayerPath([[3.5, 4.5]]))) {
+      return false;
+    }
+    if (current.interaction?.target !== 30) {
+      return false;
+    }
+    await enqueueInteraction(30);
+    return current.doorAccess.some(
+      (door) => door.id === 30 && door.state === "open",
     );
   }
 
@@ -1904,33 +1951,6 @@ export async function mountLoadingBayGame(
     return value !== undefined && Number.isFinite(value)
       ? Math.min(maximum, Math.max(minimum, value))
       : fallback;
-  }
-
-  function availableInteraction(state: RuntimeBrowserState): {
-    readonly prompt: string;
-    readonly target: number;
-  } | null {
-    const beacon = state.extractionBeacon;
-    if (beacon === null || beacon.state !== "standby") {
-      return null;
-    }
-    const position =
-      state.projection.find((node) => node.id === beacon.id)?.translation ??
-      null;
-    if (
-      position === null ||
-      Math.hypot(
-        position[0] - state.player.position[0],
-        position[1] - state.player.position[1],
-        position[2] - state.player.position[2],
-      ) > beacon.activationRadius
-    ) {
-      return null;
-    }
-    return {
-      prompt: "Activate extraction beacon",
-      target: beacon.id,
-    };
   }
 
   function includesEvery(

@@ -708,6 +708,34 @@ function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
           tone: "success",
         },
       };
+    case "doorAccessGranted":
+      return {
+        particle: "door",
+        pulse: "access-granted",
+        sound: "doorOpen",
+        billboard: { text: "ACCESS GRANTED", tone: "success" },
+      };
+    case "doorAccessDenied":
+      return {
+        particle: "blocked",
+        pulse: "access-denied",
+        sound: "blocked",
+        billboard: { text: cue.presentation, tone: "warning" },
+      };
+    case "secretDiscovered":
+      return {
+        particle: "pickup",
+        pulse: "secret-discovered",
+        sound: "pickup",
+        billboard: { text: cue.presentation, tone: "success" },
+      };
+    case "levelCompleted":
+      return {
+        particle: "beacon",
+        pulse: "level-completed",
+        sound: "beacon",
+        billboard: { text: cue.presentation, tone: "success" },
+      };
   }
 }
 
@@ -734,6 +762,12 @@ function cueAnchor(
       return entityAnchor(state, cue.entity);
     case "pickupCollected":
       return entityAnchor(state, cue.actor);
+    case "doorAccessGranted":
+    case "secretDiscovered":
+    case "levelCompleted":
+      return entityAnchor(state, cue.entity);
+    case "doorAccessDenied":
+      return entityAnchor(state, cue.entity);
   }
 }
 
@@ -753,6 +787,11 @@ function cueEntity(cue: RuntimeFeedbackCue): number {
       return cue.entity;
     case "pickupCollected":
       return cue.actor;
+    case "doorAccessGranted":
+    case "doorAccessDenied":
+    case "secretDiscovered":
+    case "levelCompleted":
+      return cue.entity;
   }
 }
 

@@ -21,7 +21,7 @@ use crate::combat::{
 };
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 16;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 17;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -302,6 +302,10 @@ pub struct StoredEntityDefinition {
     pub pickup: Option<StoredPickup>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weapon: Option<StoredWeapon>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub secret_region: Option<StoredSecretRegion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub level_exit: Option<StoredLevelExit>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -393,17 +397,57 @@ pub struct StoredRenderable {
     pub initial_clip: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredDoor {
     pub open_translation: [f32; 3],
     pub auto_close_after_ticks: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub access: Option<StoredDoorAccess>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredDoorAccess {
+    pub required_key: String,
+    pub key_policy: StoredRequiredKeyPolicy,
+    pub activation_radius: f32,
+    pub denied_presentation: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StoredRequiredKeyPolicy {
+    Retain,
+    Consume,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredSwitch {
     pub controls: Vec<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub loading_bay_interlock: Option<StoredLoadingBayInterlock>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredLoadingBayInterlock {
+    pub close_door: u64,
+    pub open_door: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredSecretRegion {
+    pub presentation: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredLevelExit {
+    pub activation_radius: f32,
+    pub presentation: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

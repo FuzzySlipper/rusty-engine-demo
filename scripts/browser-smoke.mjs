@@ -63,8 +63,8 @@ try {
     persistedProject,
   );
   if (
-    !currentReceipt.includes("sourceSchema=16") ||
-    !currentReceipt.includes("currentSchema=16")
+    !currentReceipt.includes("sourceSchema=17") ||
+    !currentReceipt.includes("currentSchema=17")
   ) {
     throw new Error(
       `current project persistence receipt was incomplete\n${currentReceipt}`,
@@ -79,7 +79,7 @@ try {
   );
   if (
     !convertedReceipt.includes("sourceSchema=11") ||
-    !convertedReceipt.includes("currentSchema=16")
+    !convertedReceipt.includes("currentSchema=17")
   ) {
     throw new Error(
       `converted project persistence receipt was incomplete\n${convertedReceipt}`,
@@ -94,7 +94,7 @@ try {
   );
   if (
     !migrationReceipt.includes("sourceSchema=6") ||
-    !migrationReceipt.includes("currentSchema=16")
+    !migrationReceipt.includes("currentSchema=17")
   ) {
     throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
   }
@@ -434,14 +434,15 @@ async function runFullBrowserProduct(project) {
       label: "narrow",
     });
     await runDeadDialogFocusProof(project);
+    await runProgressionRouteProof(project);
     await runHostReplacementContinueProof(project);
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
-      "sourceSchema=16",
-      "currentSchema=16",
+      "sourceSchema=17",
+      "currentSchema=17",
       "entryScene=scene/loading-bay",
-      "assets=13",
+      "assets=14",
       "scenes=1",
       `entities=${String(expectedEntityCount)}`,
     ]) {
@@ -452,6 +453,258 @@ async function runFullBrowserProduct(project) {
   } finally {
     await stopHost(running.host);
   }
+}
+
+async function runProgressionRouteProof(project) {
+  const running = await launchHost(project);
+  try {
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
+    const result = await runChromiumSmoke(
+      `http://${running.address}/#/`,
+      "document.body?.dataset.progressionRoute === 'pass' || document.body?.dataset.progressionRoute === 'fail'",
+      45_000,
+      {
+        viewport: { width: 1440, height: 900 },
+        interactiveSetup: async (client) => {
+          await waitForCdp(
+            client,
+            "document.querySelector('red-main-menu') !== null",
+            "progression main menu",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `[...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "New game",
+            )?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.body.dataset.rendererLifecycle === "mounted" &&
+              document.querySelector(".game-state-overlay") === null`,
+            "progression connected game",
+          );
+
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyS", "KeyD"],
+            (state) =>
+              state.player.position[0] >= 2.25 &&
+              state.player.position[2] >= 3.25,
+            "maintenance-pass pickup",
+          );
+          await waitForHostState(
+            running.address,
+            (state) =>
+              state.inventory?.stacks.some(
+                (stack) =>
+                  stack.item === "key/maintenance-pass" &&
+                  stack.quantity === 1,
+              ) === true &&
+              state.interaction?.target === 30,
+            "key inventory and keyed-door prompt",
+          );
+          await waitForCdp(
+            client,
+            `document.querySelector(".interaction-prompt")?.textContent?.includes("Open maintenance bulkhead") === true`,
+            "rendered keyed-door prompt",
+          );
+          await pressKey(client, "KeyE");
+          await waitForHostState(
+            running.address,
+            (state) =>
+              state.doorAccess?.some(
+                (door) => door.id === 30 && door.state === "open",
+              ) === true,
+            "keyed door opening",
+          );
+
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyS"],
+            (state) => state.player.position[2] >= 7.2,
+            "interlock switch",
+          );
+          await waitForHostState(
+            running.address,
+            (state) => state.interaction?.target === 6,
+            "interlock prompt",
+          );
+          await waitForCdp(
+            client,
+            `document.querySelector(".interaction-prompt")?.textContent?.includes("Activate door control") === true`,
+            "rendered interlock prompt",
+          );
+          await pressKey(client, "KeyE");
+          await waitForHostState(
+            running.address,
+            (state) =>
+              state.doorAccess?.some(
+                (door) => door.id === 30 && door.state === "closed",
+              ) === true && state.doorState === "open",
+            "interlock consequence",
+          );
+
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyD"],
+            (state) => state.player.position[0] >= 6.2,
+            "secret overlook east approach",
+          );
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyS"],
+            (state) => state.player.position[2] >= 8.2,
+            "secret overlook entry",
+          );
+          await waitForHostState(
+            running.address,
+            (state) =>
+              state.secretRegions?.some(
+                (secret) =>
+                  secret.id === 31 && secret.state === "discovered",
+              ) === true,
+            "secret discovery",
+          );
+
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyS", "KeyA"],
+            (state) =>
+              state.player.position[0] <= 4.7 &&
+              state.player.position[2] >= 9.3,
+            "open exit approach",
+          );
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyS"],
+            (state) => state.player.position[2] >= 12.2,
+            "level exit",
+          );
+          await waitForHostState(
+            running.address,
+            (state) => state.interaction?.target === 32,
+            "level-exit prompt",
+          );
+          await waitForCdp(
+            client,
+            `document.querySelector(".interaction-prompt")?.textContent?.includes("Use loading bay level exit") === true`,
+            "rendered level-exit prompt",
+          );
+          await pressKey(client, "KeyE");
+          await waitForHostState(
+            running.address,
+            (state) =>
+              state.levelComplete === true &&
+              state.levelExits?.some(
+                (exit) =>
+                  exit.id === 32 &&
+                  exit.state === "completed" &&
+                  exit.completedBy === 1,
+              ) === true,
+            "authoritative level completion",
+          );
+          await waitForCdp(
+            client,
+            `document.querySelector(".game-state-overlay")?.textContent?.includes("LOADING BAY COMPLETE") === true &&
+              document.activeElement?.textContent?.trim() === "Restart loading bay"`,
+            "completion result dialog",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `document.body.dataset.progressionRoute = "pass"`,
+          });
+        },
+      },
+    );
+    if (
+      result.code !== 0 ||
+      !result.stdout.includes('data-progression-route="pass"')
+    ) {
+      throw new Error(
+        `progression route proof failed\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-8_000)}`,
+      );
+    }
+  } finally {
+    await stopHost(running.host);
+  }
+}
+
+async function waitForHostState(address, predicate, label, timeout = 15_000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const response = await fetch(`http://${address}/api/state`, {
+      cache: "no-store",
+    });
+    const state = await response.json();
+    if (response.ok && predicate(state)) {
+      return state;
+    }
+    await delay(50);
+  }
+  throw new Error(`timed out waiting for ${label}`);
+}
+
+async function holdKeysUntil(
+  client,
+  address,
+  codes,
+  predicate,
+  label,
+  timeout = 15_000,
+) {
+  for (const code of codes) {
+    await dispatchKey(client, "keyDown", code);
+  }
+  try {
+    return await waitForHostState(address, predicate, label, timeout);
+  } finally {
+    for (const code of codes.toReversed()) {
+      await dispatchKey(client, "keyUp", code);
+    }
+  }
+}
+
+async function pressKey(client, code) {
+  await client.send("Runtime.evaluate", {
+    expression: `window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        code: ${JSON.stringify(code)},
+        key: ${JSON.stringify(code.startsWith("Key") ? code.slice(3).toLowerCase() : code)},
+        bubbles: true,
+      }),
+    )`,
+  });
+  await client.send("Runtime.evaluate", {
+    expression: `window.dispatchEvent(
+      new KeyboardEvent("keyup", {
+        code: ${JSON.stringify(code)},
+        key: ${JSON.stringify(code.startsWith("Key") ? code.slice(3).toLowerCase() : code)},
+        bubbles: true,
+      }),
+    )`,
+  });
+}
+
+function dispatchKey(client, type, code) {
+  const key = code.startsWith("Key") ? code.slice(3).toLowerCase() : code;
+  const virtualKeyCode = code.startsWith("Key")
+    ? code.charCodeAt(code.length - 1)
+    : 0;
+  return client.send("Input.dispatchKeyEvent", {
+    type,
+    key,
+    code,
+    windowsVirtualKeyCode: virtualKeyCode,
+    nativeVirtualKeyCode: virtualKeyCode,
+  });
 }
 
 async function runHostReplacementContinueProof(project) {
@@ -640,21 +893,18 @@ async function runDeadDialogFocusProof(project) {
               document.querySelector(".game-state-overlay") === null`,
             "dead-dialog connected game",
           );
-          await client.send("Input.dispatchKeyEvent", {
-            type: "keyDown",
-            key: "s",
-            code: "KeyS",
-            windowsVirtualKeyCode: 83,
-            nativeVirtualKeyCode: 83,
-          });
-          await delay(450);
-          await client.send("Input.dispatchKeyEvent", {
-            type: "keyUp",
-            key: "s",
-            code: "KeyS",
-            windowsVirtualKeyCode: 83,
-            nativeVirtualKeyCode: 83,
-          });
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyS"],
+            (state) => state.player.position[2] >= 4.2,
+            "hazard overlap",
+          );
+          await waitForHostState(
+            running.address,
+            (state) => state.player.vitalityState === "dead",
+            "dead player projection",
+          );
           await waitForCdp(
             client,
             `document.querySelector(".game-state-overlay")?.textContent?.includes("PLAYER DOWN") === true &&
@@ -1041,7 +1291,7 @@ async function runMigratedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=migrated-v6-project",
-      "currentSchema=16",
+      "currentSchema=17",
       "assets=4",
       "scenes=1",
       "entities=6",
@@ -1099,8 +1349,8 @@ async function runConvertedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=converted-wall",
-      "sourceSchema=16",
-      "currentSchema=16",
+      "sourceSchema=17",
+      "currentSchema=17",
       "entryScene=scene/converted-wall",
       "assets=10",
       "scenes=1",

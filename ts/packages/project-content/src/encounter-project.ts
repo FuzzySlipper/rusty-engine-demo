@@ -24,6 +24,9 @@ export const ENCOUNTER_IDS = {
   keyPickup: 26,
   hazard: 27,
   automaticWeaponPickup: 28,
+  keyedBulkhead: 30,
+  secretRegion: 31,
+  levelExit: 32,
 } as const;
 
 export const LOADING_BAY_ITEM_IDS = {
@@ -293,7 +296,7 @@ export function loadingBayStoredProject(
   }
 
   return {
-    schemaVersion: 16,
+    schemaVersion: 17,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",
@@ -302,6 +305,7 @@ export function loadingBayStoredProject(
       { id: "mesh/control-panel" },
       { id: "mesh/extraction-beacon" },
       { id: "mesh/hazard-pad" },
+      { id: "mesh/level-exit" },
       { id: "mesh/pickup-ammunition" },
       { id: "mesh/pickup-armor" },
       { id: "mesh/pickup-health" },
@@ -404,9 +408,15 @@ export function loadingBayStoredProject(
           {
             id: ENCOUNTER_IDS.doorControl,
             name: "door-control",
-            translation: [2.5, 1.5, 10.5],
+            translation: [2.5, 1.5, 7.5],
             renderable: { asset: "mesh/control-panel", visible: true },
-            switch: { controls: [ENCOUNTER_IDS.exit] },
+            switch: {
+              controls: [ENCOUNTER_IDS.exit],
+              loadingBayInterlock: {
+                closeDoor: ENCOUNTER_IDS.keyedBulkhead,
+                openDoor: ENCOUNTER_IDS.exit,
+              },
+            },
           },
           {
             id: ENCOUNTER_IDS.extractionBeacon,
@@ -478,7 +488,7 @@ export function loadingBayStoredProject(
             ENCOUNTER_IDS.keyPickup,
             "maintenance-pass-pickup",
             "mesh/pickup-key",
-            [5.5, 1.5, 3.5],
+            [2.5, 1.5, 3.5],
             LOADING_BAY_ITEM_IDS.maintenancePass,
             1,
           ),
@@ -501,6 +511,53 @@ export function loadingBayStoredProject(
             LOADING_BAY_ITEM_IDS.rivetCarbine,
             1,
           ),
+          {
+            id: ENCOUNTER_IDS.keyedBulkhead,
+            name: "maintenance-bulkhead",
+            translation: [GENERATED_EXIT.centerX, 1.5, 5.5],
+            collision: { enabled: true, staticCollider: true },
+            renderable: { asset: "mesh/security-door", visible: true },
+            kinematic: {
+              halfExtents: [3.2, 1.5, 0.275],
+              velocity: [0, 0, 0],
+            },
+            door: {
+              openTranslation: [GENERATED_EXIT.centerX, 4.5, 5.5],
+              autoCloseAfterTicks: 90,
+              access: {
+                requiredKey: LOADING_BAY_ITEM_IDS.maintenancePass,
+                keyPolicy: "retain",
+                activationRadius: 3,
+                deniedPresentation: "Maintenance pass required",
+              },
+            },
+          },
+          {
+            id: ENCOUNTER_IDS.secretRegion,
+            name: "overlook-secret",
+            translation: [6.5, 1.5, 8.5],
+            bounds: {
+              min: [-0.6, -0.6, -0.6],
+              max: [0.6, 0.6, 0.6],
+            },
+            secretRegion: {
+              presentation: "Secret overlook discovered",
+            },
+          },
+          {
+            id: ENCOUNTER_IDS.levelExit,
+            name: "loading-bay-level-exit",
+            translation: [
+              GENERATED_EXIT.centerX,
+              1.5,
+              GENERATED_EXIT.wallZ + 1.5,
+            ],
+            renderable: { asset: "mesh/level-exit", visible: true },
+            levelExit: {
+              activationRadius: 2,
+              presentation: "Loading Bay complete",
+            },
+          },
         ],
       },
     ],
@@ -582,6 +639,21 @@ export function relayAnnexStoredProject(): StoredProjectContent {
               translation: [5.5, 1.5, 8.5],
             },
           ];
+        case ENCOUNTER_IDS.keyedBulkhead:
+          return [
+            {
+              ...entity,
+              translation: [3.5, 1.5, 4.5],
+              door: {
+                ...entity.door!,
+                openTranslation: [3.5, 4.5, 4.5],
+              },
+            },
+          ];
+        case ENCOUNTER_IDS.secretRegion:
+          return [{ ...entity, translation: [4.5, 1.5, 6.5] }];
+        case ENCOUNTER_IDS.levelExit:
+          return [{ ...entity, translation: [3.5, 1.5, 10.5] }];
         case ENCOUNTER_IDS.extractionBeacon:
           return [
             { ...entity, name: "relay-beacon", translation: [3.5, 1.5, 4.5] },

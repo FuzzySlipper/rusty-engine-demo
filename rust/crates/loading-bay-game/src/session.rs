@@ -25,14 +25,21 @@ use crate::navigation::{
 };
 use crate::pickup::{pickup_view, PickupComponent, PickupState, PickupView};
 use crate::player::{PlayerControllerComponent, PlayerControllerState, PlayerControllerView};
+use crate::progression::{
+    DoorAccessConfig, DoorAccessView, LevelExitComponent, LevelExitState, LevelExitView,
+    LoadingBayInterlockConfig, LoadingBayInterlockView, SecretRegionComponent, SecretRegionState,
+    SecretRegionView,
+};
 use crate::vitality::{HealthComponent, HealthView, VitalityState};
 
 #[derive(Debug, Clone)]
 pub struct GameSession {
     pub(crate) entities: EntityState,
     pub(crate) doors: BTreeMap<EntityId, DoorComponent>,
+    pub(crate) door_access: BTreeMap<EntityId, DoorAccessConfig>,
     pub(crate) switches: BTreeMap<EntityId, SwitchComponent>,
     pub(crate) controls: BTreeMap<EntityId, Vec<EntityId>>,
+    pub(crate) loading_bay_interlocks: BTreeMap<EntityId, LoadingBayInterlockConfig>,
     pub(crate) enemies: BTreeMap<EntityId, EnemyComponent>,
     pub(crate) health: BTreeMap<EntityId, HealthComponent>,
     pub(crate) hazards: BTreeMap<EntityId, HazardComponent>,
@@ -43,6 +50,8 @@ pub struct GameSession {
     pub(crate) item_definitions: BTreeMap<ItemDefinitionId, ItemDefinition>,
     pub(crate) inventories: BTreeMap<EntityId, InventoryComponent>,
     pub(crate) pickups: BTreeMap<EntityId, PickupComponent>,
+    pub(crate) secret_regions: BTreeMap<EntityId, SecretRegionComponent>,
+    pub(crate) level_exits: BTreeMap<EntityId, LevelExitComponent>,
 }
 
 impl GameSession {
@@ -59,7 +68,11 @@ impl GameSession {
         let definitions: Vec<GameEntityDefinition> = definitions.into_iter().collect();
         let trigger_count = definitions
             .iter()
-            .filter(|definition| definition.pickup.is_some() || definition.hazard.is_some())
+            .filter(|definition| {
+                definition.pickup.is_some()
+                    || definition.hazard.is_some()
+                    || definition.secret_region.is_some()
+            })
             .count();
         if trigger_count > MAX_TRIGGER_DEFINITIONS {
             return Err(GameEntityDefinitionError::TooManyPickups {
@@ -77,8 +90,10 @@ impl GameSession {
         .map_err(GameEntityDefinitionError::EntityState)?;
 
         let mut doors = BTreeMap::new();
+        let mut door_access = BTreeMap::new();
         let mut switches = BTreeMap::new();
         let mut controls = BTreeMap::new();
+        let mut loading_bay_interlocks = BTreeMap::new();
         let mut enemies = BTreeMap::new();
         let mut health = BTreeMap::new();
         let mut hazards = BTreeMap::new();
@@ -88,6 +103,8 @@ impl GameSession {
         let mut player_controllers = BTreeMap::new();
         let mut inventories = BTreeMap::new();
         let mut pickups = BTreeMap::new();
+        let mut secret_regions = BTreeMap::new();
+        let mut level_exits = BTreeMap::new();
 
         for definition in &definitions {
             let entity = definition.entity.id;
@@ -121,6 +138,23 @@ impl GameSession {
                     },
                 );
             }
+            if let Some(config) = &definition.door_access {
+                if definition.door.is_none() {
+                    return Err(GameEntityDefinitionError::DoorAccessWithoutDoor { entity });
+                }
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidDoorAccessConfig { entity });
+                }
+                let Some(item) = item_definitions.get(&config.required_key) else {
+                    return Err(GameEntityDefinitionError::DoorAccessKeyMissingDefinition {
+                        entity,
+                    });
+                };
+                if !matches!(item.kind, crate::inventory::ItemKind::AccessKey) {
+                    return Err(GameEntityDefinitionError::DoorAccessKeyNotAccessKey { entity });
+                }
+                door_access.insert(entity, config.clone());
+            }
             if definition.switch {
                 switches.insert(entity, SwitchComponent::default());
             }
@@ -138,6 +172,14 @@ impl GameSession {
                     }
                 }
                 controls.insert(entity, definition.controls_targets.clone());
+            }
+            if let Some(config) = definition.loading_bay_interlock {
+                if !definition.switch {
+                    return Err(
+                        GameEntityDefinitionError::LoadingBayInterlockWithoutSwitch { entity },
+                    );
+                }
+                loading_bay_interlocks.insert(entity, config);
             }
             if definition.enemy {
                 let view = entities.view(entity).expect("definition created entity");
@@ -362,6 +404,44 @@ impl GameSession {
                     },
                 );
             }
+            if let Some(config) = &definition.secret_region {
+                let view = entities.view(entity).expect("definition created entity");
+                if view.transform.is_none() {
+                    return Err(GameEntityDefinitionError::SecretRegionMissingTransform { entity });
+                }
+                if view.bounds.is_none() {
+                    return Err(GameEntityDefinitionError::SecretRegionMissingBounds { entity });
+                }
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidSecretRegionConfig { entity });
+                }
+                secret_regions.insert(
+                    entity,
+                    SecretRegionComponent {
+                        config: config.clone(),
+                        state: SecretRegionState::Undiscovered,
+                    },
+                );
+            }
+            if let Some(config) = &definition.level_exit {
+                let view = entities.view(entity).expect("definition created entity");
+                if view.transform.is_none() {
+                    return Err(GameEntityDefinitionError::LevelExitMissingTransform { entity });
+                }
+                if view.renderable.is_none() {
+                    return Err(GameEntityDefinitionError::LevelExitMissingRenderable { entity });
+                }
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidLevelExitConfig { entity });
+                }
+                level_exits.insert(
+                    entity,
+                    LevelExitComponent {
+                        config: config.clone(),
+                        state: LevelExitState::Available,
+                    },
+                );
+            }
             if definition.weapon.is_some() {
                 return Err(GameEntityDefinitionError::LegacyEntityWeapon { entity });
             }
@@ -429,6 +509,22 @@ impl GameSession {
                 }
             }
         }
+        for (switch, interlock) in &loading_bay_interlocks {
+            for target in [interlock.close_door, interlock.open_door] {
+                if !doors.contains_key(&target) {
+                    return Err(GameEntityDefinitionError::InvalidLoadingBayInterlock {
+                        switch: *switch,
+                        target,
+                    });
+                }
+            }
+            if interlock.close_door == interlock.open_door {
+                return Err(GameEntityDefinitionError::InvalidLoadingBayInterlock {
+                    switch: *switch,
+                    target: interlock.open_door,
+                });
+            }
+        }
 
         let mut encounter_by_enemy = BTreeMap::new();
         for (encounter, component) in &encounters {
@@ -470,8 +566,10 @@ impl GameSession {
         Ok(Self {
             entities,
             doors,
+            door_access,
             switches,
             controls,
+            loading_bay_interlocks,
             enemies,
             health,
             hazards,
@@ -482,6 +580,8 @@ impl GameSession {
             item_definitions,
             inventories,
             pickups,
+            secret_regions,
+            level_exits,
         })
     }
 
@@ -503,6 +603,22 @@ impl GameSession {
         })
     }
 
+    pub fn door_access(&self, entity: EntityId) -> Option<DoorAccessView> {
+        Some(DoorAccessView {
+            door: entity,
+            config: self.door_access.get(&entity)?.clone(),
+        })
+    }
+
+    pub fn door_accesses(&self) -> impl ExactSizeIterator<Item = DoorAccessView> + '_ {
+        self.door_access
+            .iter()
+            .map(|(door, config)| DoorAccessView {
+                door: *door,
+                config: config.clone(),
+            })
+    }
+
     pub fn switch(&self, entity: EntityId) -> Option<SwitchView> {
         let component = self.switches.get(&entity)?;
         Some(SwitchView {
@@ -510,6 +626,29 @@ impl GameSession {
             activation_count: component.activation_count,
             controls_targets: self.controls.get(&entity).cloned().unwrap_or_default(),
         })
+    }
+
+    pub fn loading_bay_interlock(&self, entity: EntityId) -> Option<LoadingBayInterlockView> {
+        Some(LoadingBayInterlockView {
+            switch: entity,
+            config: *self.loading_bay_interlocks.get(&entity)?,
+            entity_view: self.entities.view(entity).ok()?,
+        })
+    }
+
+    pub fn loading_bay_interlocks(
+        &self,
+    ) -> impl ExactSizeIterator<Item = LoadingBayInterlockView> + '_ {
+        self.loading_bay_interlocks
+            .iter()
+            .map(|(switch, config)| LoadingBayInterlockView {
+                switch: *switch,
+                config: *config,
+                entity_view: self
+                    .entities
+                    .view(*switch)
+                    .expect("admitted Loading Bay interlock remains viewable"),
+            })
     }
 
     pub fn enemy(&self, entity: EntityId) -> Option<EnemyView> {
@@ -625,6 +764,60 @@ impl GameSession {
         self.pickups
             .iter()
             .map(|(entity, component)| pickup_view(*entity, component))
+    }
+
+    pub fn secret_region(&self, entity: EntityId) -> Option<SecretRegionView> {
+        let component = self.secret_regions.get(&entity)?;
+        Some(SecretRegionView {
+            entity,
+            config: component.config.clone(),
+            state: component.state.clone(),
+            entity_view: self.entities.view(entity).ok()?,
+        })
+    }
+
+    pub fn secret_regions(&self) -> impl ExactSizeIterator<Item = SecretRegionView> + '_ {
+        self.secret_regions
+            .iter()
+            .map(|(entity, component)| SecretRegionView {
+                entity: *entity,
+                config: component.config.clone(),
+                state: component.state.clone(),
+                entity_view: self
+                    .entities
+                    .view(*entity)
+                    .expect("admitted secret region remains viewable"),
+            })
+    }
+
+    pub fn level_exit(&self, entity: EntityId) -> Option<LevelExitView> {
+        let component = self.level_exits.get(&entity)?;
+        Some(LevelExitView {
+            entity,
+            config: component.config.clone(),
+            state: component.state,
+            entity_view: self.entities.view(entity).ok()?,
+        })
+    }
+
+    pub fn level_exits(&self) -> impl ExactSizeIterator<Item = LevelExitView> + '_ {
+        self.level_exits
+            .iter()
+            .map(|(entity, component)| LevelExitView {
+                entity: *entity,
+                config: component.config.clone(),
+                state: component.state,
+                entity_view: self
+                    .entities
+                    .view(*entity)
+                    .expect("admitted level exit remains viewable"),
+            })
+    }
+
+    pub fn level_complete(&self) -> bool {
+        self.level_exits
+            .values()
+            .any(|component| matches!(component.state, LevelExitState::Completed { .. }))
     }
 
     pub fn weapon(&self, entity: EntityId) -> Option<WeaponView> {

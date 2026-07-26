@@ -648,6 +648,8 @@ pub fn create_scene_object(
                     inventory: None,
                     pickup: None,
                     weapon: None,
+                    secret_region: None,
+                    level_exit: None,
                 });
             Ok(ProjectMutationReceipt::SceneObjectCreated {
                 entity_id: object.entity_id,

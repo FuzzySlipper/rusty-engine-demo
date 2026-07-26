@@ -1087,6 +1087,47 @@ function isRuntimeHazardState(value: unknown): boolean {
   );
 }
 
+function isRuntimeDoorAccessState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.id) &&
+    (value.state === "closed" || value.state === "open") &&
+    typeof value.requiredKey === "string" &&
+    (value.keyPolicy === "retain" || value.keyPolicy === "consume") &&
+    isFiniteNumber(value.activationRadius) &&
+    typeof value.deniedPresentation === "string"
+  );
+}
+
+function isRuntimeSecretRegionState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.id) &&
+    (value.state === "undiscovered" || value.state === "discovered") &&
+    typeof value.presentation === "string"
+  );
+}
+
+function isRuntimeLevelExitState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.id) &&
+    (value.state === "available" || value.state === "completed") &&
+    isFiniteNumber(value.activationRadius) &&
+    typeof value.presentation === "string" &&
+    (value.completedBy === null || isFiniteNumber(value.completedBy)) &&
+    (value.completedAtTick === null || isFiniteNumber(value.completedAtTick))
+  );
+}
+
+function isRuntimeInteractionState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.target) &&
+    typeof value.prompt === "string"
+  );
+}
+
 function isFiniteVector3(value: unknown): boolean {
   return (
     Array.isArray(value) && value.length === 3 && value.every(isFiniteNumber)
@@ -1116,6 +1157,15 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     typeof value.restart.authoredBaselineAvailable === "boolean" &&
     typeof value.restart.checkpointAvailable === "boolean" &&
     (value.extractionBeacon === null || isRecord(value.extractionBeacon)) &&
+    Array.isArray(value.doorAccess) &&
+    value.doorAccess.every(isRuntimeDoorAccessState) &&
+    Array.isArray(value.secretRegions) &&
+    value.secretRegions.every(isRuntimeSecretRegionState) &&
+    Array.isArray(value.levelExits) &&
+    value.levelExits.every(isRuntimeLevelExitState) &&
+    typeof value.levelComplete === "boolean" &&
+    (value.interaction === null ||
+      isRuntimeInteractionState(value.interaction)) &&
     Array.isArray(value.enemies) &&
     isRecord(value.presentation) &&
     Array.isArray(value.lastEvents) &&

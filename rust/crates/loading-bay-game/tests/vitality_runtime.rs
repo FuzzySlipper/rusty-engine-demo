@@ -350,6 +350,14 @@ fn project_and_snapshot_admission_fail_closed_for_future_hazard_state() {
         .as_array_mut()
         .unwrap()
     {
+        entity.as_object_mut().unwrap().remove("secretRegion");
+        entity.as_object_mut().unwrap().remove("levelExit");
+        if let Some(door) = entity.get_mut("door").and_then(Value::as_object_mut) {
+            door.remove("access");
+        }
+        if let Some(switch) = entity.get_mut("switch").and_then(Value::as_object_mut) {
+            switch.remove("loadingBayInterlock");
+        }
         if let Some(health) = entity.get_mut("health").and_then(Value::as_object_mut) {
             health.remove("maxArmor");
             health.remove("armorAbsorptionPercent");

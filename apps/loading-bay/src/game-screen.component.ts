@@ -61,6 +61,8 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
   inventoryCapacity: 0,
   inventoryStacks: [],
   lastRejection: null,
+  levelComplete: false,
+  levelCompletionPresentation: null,
   maxArmor: 0,
   maxHealth: 0,
   paused: false,
@@ -192,7 +194,7 @@ type ConnectionState =
 
         <p class="pointer-help">
           CLICK TO CAPTURE · WASD MOVE · MOUSE LOOK · PRIMARY FIRE · I INVENTORY
-          · ESC PAUSE
+          · E INTERACT · ESC PAUSE
         </p>
         <div
           id="feedback-audio-status"
@@ -239,6 +241,34 @@ type ConnectionState =
             <p>
               Health reached zero. Movement, combat, and inventory mutations
               remain unavailable until an authoritative restart.
+            </p>
+            <button
+              type="button"
+              [disabled]="actionBusy() || !snapshot().restartAvailable"
+              (click)="restartGame()"
+            >
+              Restart loading bay
+            </button>
+            <button type="button" class="quiet" (click)="returnToMenu()">
+              Main menu
+            </button>
+          </section>
+        } @else if (snapshot().levelComplete && panel() === "game") {
+          <section
+            class="game-state-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-live="assertive"
+            tabindex="-1"
+            data-active-modal
+          >
+            <p class="section-label">Rust-owned level result</p>
+            <h1>LOADING BAY COMPLETE</h1>
+            <p>
+              {{
+                snapshot().levelCompletionPresentation ??
+                  "The authored exit has been secured."
+              }}
             </p>
             <button
               type="button"
@@ -532,7 +562,8 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     () =>
       this.connectionState() !== "connected" ||
       this.panel() !== "game" ||
-      this.snapshot().vitalityState === "dead",
+      this.snapshot().vitalityState === "dead" ||
+      this.snapshot().levelComplete,
   );
 
   private readonly documentEffects = browserDocumentEffects();
@@ -574,6 +605,13 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     }
     if (event.code === "Escape") {
       event.preventDefault();
+      if (
+        this.panel() === "game" &&
+        (this.snapshot().vitalityState === "dead" ||
+          this.snapshot().levelComplete)
+      ) {
+        return;
+      }
       if (this.panel() === "game") {
         this.openPause();
       } else if (this.panel() === "inventory") {
@@ -588,6 +626,15 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     if (event.code === "KeyI" && this.panel() === "game") {
       event.preventDefault();
       this.openInventory();
+      return;
+    }
+    if (
+      event.code === "KeyE" &&
+      this.panel() === "game" &&
+      this.snapshot().interactionTarget !== null
+    ) {
+      event.preventDefault();
+      this.activateInteraction();
     }
   }
 
@@ -686,7 +733,8 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
         if (
           !this.destroyed &&
           this.panel() === "game" &&
-          this.snapshot().vitalityState !== "dead"
+          this.snapshot().vitalityState !== "dead" &&
+          !this.snapshot().levelComplete
         ) {
           this.focusViewport();
         }
@@ -746,8 +794,12 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       const handle = await mountLoadingBayGame({
         onProjection: (snapshot) => {
           const wasDead = this.snapshot().vitalityState === "dead";
+          const wasComplete = this.snapshot().levelComplete;
           this.snapshot.set(snapshot);
-          if (!wasDead && snapshot.vitalityState === "dead") {
+          if (
+            (!wasDead && snapshot.vitalityState === "dead") ||
+            (!wasComplete && snapshot.levelComplete)
+          ) {
             this.rememberFocusForModal();
             this.scheduleModalFocus();
           }
@@ -790,7 +842,11 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       );
       this.connectionState.set("connected");
       this.connectionMessage.set("Connected");
-      if (this.panel() === "game" && this.snapshot().vitalityState !== "dead") {
+      if (
+        this.panel() === "game" &&
+        this.snapshot().vitalityState !== "dead" &&
+        !this.snapshot().levelComplete
+      ) {
         this.restoreModalFocus();
       }
       document.body.dataset.rendererLifecycle = "mounted";

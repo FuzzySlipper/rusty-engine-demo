@@ -612,6 +612,33 @@ fn drain_game_loop_feedback(
                 facts.push((vitality_fact_name(&fact).to_owned(), None));
                 feedback.extend_vitality(std::slice::from_ref(&fact));
             }
+            GameLoopFact::Progression(fact) => {
+                facts.push((
+                    match fact {
+                        loading_bay_game::ProgressionFact::DoorAccessGranted { .. } => {
+                            "DoorAccessGranted"
+                        }
+                        loading_bay_game::ProgressionFact::SecretDiscovered { .. } => {
+                            "SecretDiscovered"
+                        }
+                        loading_bay_game::ProgressionFact::LevelCompleted { .. } => {
+                            "LevelCompleted"
+                        }
+                    }
+                    .to_owned(),
+                    None,
+                ));
+                feedback.extend_progression(&fact);
+            }
+            GameLoopFact::DoorAccessRejected {
+                sequence,
+                door,
+                required_key,
+                presentation,
+            } => {
+                facts.push(("DoorAccessRejectedLocked".to_owned(), Some(sequence)));
+                feedback.extend_door_access_denied(door, &required_key, &presentation);
+            }
             GameLoopFact::PickupRejected { reason, .. } => {
                 facts.push((pickup_rejection_name(&reason).to_owned(), None));
             }
@@ -685,6 +712,15 @@ fn drain_game_loop_feedback(
                     }
                     loading_bay_game::EdgeCommandRejection::CheckpointUnavailable => {
                         "InputEdgeRejectedCheckpointUnavailable"
+                    }
+                    loading_bay_game::EdgeCommandRejection::DoorLocked => {
+                        "InputEdgeRejectedDoorLocked"
+                    }
+                    loading_bay_game::EdgeCommandRejection::LevelExitUnavailable => {
+                        "InputEdgeRejectedLevelExitUnavailable"
+                    }
+                    loading_bay_game::EdgeCommandRejection::LevelComplete => {
+                        "InputEdgeRejectedLevelComplete"
                     }
                 }
                 .to_owned(),
@@ -1106,6 +1142,65 @@ mod tests {
             .expect("animation states")
             .iter()
             .any(|state| state["entity"] == BEACON.raw()));
+    }
+
+    #[test]
+    fn state_projects_progression_and_rust_owned_interaction_prompt() {
+        let project_path = default_project_path();
+        let mut project: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(project_path).unwrap()).unwrap();
+        let player = project["scenes"][0]["entities"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|entity| entity["id"] == ACTOR.raw())
+            .unwrap();
+        player["translation"] = serde_json::json!([4.5, 1.5, 4.5]);
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path =
+            std::env::temp_dir().join(format!("loading-bay-progression-{unique}.project.json"));
+        fs::write(&path, serde_json::to_vec_pretty(&project).unwrap()).unwrap();
+
+        let without_key = BrowserRuntime::load(&path).unwrap();
+        let state = serde_json::to_value(browser_state(
+            &without_key,
+            Vec::new(),
+            BrowserFeedbackProjection::default(),
+        ))
+        .unwrap();
+        assert_eq!(state["doorAccess"].as_array().unwrap().len(), 1);
+        assert_eq!(state["secretRegions"].as_array().unwrap().len(), 1);
+        assert_eq!(state["levelExits"].as_array().unwrap().len(), 1);
+        assert_eq!(state["levelComplete"], false);
+        assert_eq!(state["interaction"]["target"], 30);
+        assert_eq!(state["interaction"]["prompt"], "Maintenance pass required");
+
+        project["scenes"][0]["entities"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|entity| entity["id"] == ACTOR.raw())
+            .unwrap()["inventory"]["startingStacks"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({
+                "item": "key/maintenance-pass",
+                "quantity": 1
+            }));
+        fs::write(&path, serde_json::to_vec_pretty(&project).unwrap()).unwrap();
+        let with_key = BrowserRuntime::load(&path).unwrap();
+        let state = serde_json::to_value(browser_state(
+            &with_key,
+            Vec::new(),
+            BrowserFeedbackProjection::default(),
+        ))
+        .unwrap();
+        assert_eq!(state["interaction"]["target"], 30);
+        assert_eq!(state["interaction"]["prompt"], "Open maintenance bulkhead");
+        fs::remove_file(path).unwrap();
     }
 
     #[test]

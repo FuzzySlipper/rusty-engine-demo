@@ -25,6 +25,10 @@ use crate::inventory::{
 use crate::navigation::NavigationConfig;
 use crate::pickup::PickupConfig;
 use crate::player::{PlayerControllerConfig, PlayerInputBindings};
+use crate::progression::{
+    DoorAccessConfig, LevelExitConfig, LoadingBayInterlockConfig, RequiredKeyPolicy,
+    SecretRegionConfig,
+};
 use crate::project_codec::decode_project_document;
 use crate::session::GameSession;
 use crate::stored_project::{
@@ -527,7 +531,7 @@ fn authored_definition(
     }
 
     let mut definition = GameEntityDefinition::new(entity_definition);
-    if let Some(door) = authored.door {
+    if let Some(door) = &authored.door {
         let Some(closed_translation) = initial_translation else {
             return Err(StoredProjectError::new(
                 diagnostic_code::INVALID_COMPONENT,
@@ -559,11 +563,31 @@ fn authored_definition(
             open_translation,
             auto_close_after,
         ));
+        if let Some(access) = &door.access {
+            definition = definition.with_door_access(DoorAccessConfig {
+                required_key: parse_item_id(
+                    &access.required_key,
+                    &path("door.access.requiredKey"),
+                )?,
+                key_policy: match access.key_policy {
+                    crate::StoredRequiredKeyPolicy::Retain => RequiredKeyPolicy::Retain,
+                    crate::StoredRequiredKeyPolicy::Consume => RequiredKeyPolicy::Consume,
+                },
+                activation_radius: access.activation_radius,
+                denied_presentation: access.denied_presentation.clone(),
+            });
+        }
     }
     if let Some(switch) = &authored.switch {
         definition = definition
             .as_switch()
             .controls(switch.controls.iter().copied().map(EntityId::new));
+        if let Some(interlock) = switch.loading_bay_interlock {
+            definition = definition.with_loading_bay_interlock(LoadingBayInterlockConfig {
+                close_door: EntityId::new(interlock.close_door),
+                open_door: EntityId::new(interlock.open_door),
+            });
+        }
     }
     if authored.enemy {
         definition = definition.as_enemy();
@@ -680,6 +704,17 @@ fn authored_definition(
             ),
         );
     }
+    if let Some(secret) = &authored.secret_region {
+        definition = definition.as_secret_region(SecretRegionConfig {
+            presentation: secret.presentation.clone(),
+        });
+    }
+    if let Some(exit) = &authored.level_exit {
+        definition = definition.as_level_exit(LevelExitConfig {
+            activation_radius: exit.activation_radius,
+            presentation: exit.presentation.clone(),
+        });
+    }
     if let Some(weapon) = authored.weapon {
         definition = definition.with_weapon(WeaponConfig {
             damage: weapon.damage,
@@ -756,6 +791,21 @@ fn definition_error(
         | Error::DoorMissingRenderable { entity } => (
             diagnostic_code::INVALID_COMPONENT,
             entity_path(scene_index, indexes, *entity, "door"),
+        ),
+        Error::DoorAccessWithoutDoor { entity }
+        | Error::InvalidDoorAccessConfig { entity }
+        | Error::DoorAccessKeyMissingDefinition { entity }
+        | Error::DoorAccessKeyNotAccessKey { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "door.access"),
+        ),
+        Error::LoadingBayInterlockWithoutSwitch { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "switch.loadingBayInterlock"),
+        ),
+        Error::InvalidLoadingBayInterlock { switch, .. } => (
+            diagnostic_code::INVALID_RELATIONSHIP,
+            entity_path(scene_index, indexes, *switch, "switch.loadingBayInterlock"),
         ),
         Error::EnemyMissingCollision { entity } | Error::EnemyMissingRenderable { entity } => (
             diagnostic_code::INVALID_COMPONENT,
@@ -838,6 +888,18 @@ fn definition_error(
         | Error::InvalidExtractionBeaconConfig { entity } => (
             diagnostic_code::INVALID_COMPONENT,
             entity_path(scene_index, indexes, *entity, "extractionBeacon"),
+        ),
+        Error::SecretRegionMissingTransform { entity }
+        | Error::SecretRegionMissingBounds { entity }
+        | Error::InvalidSecretRegionConfig { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "secretRegion"),
+        ),
+        Error::LevelExitMissingTransform { entity }
+        | Error::LevelExitMissingRenderable { entity }
+        | Error::InvalidLevelExitConfig { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "levelExit"),
         ),
     };
     StoredProjectError::new(code, path, error.to_string())

@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use loading_bay_game::{
     decode_project_document, encode_project_document, StudioAdapterService,
-    MAX_STUDIO_ADAPTER_REQUEST_BYTES,
+    MAX_STUDIO_ADAPTER_REQUEST_BYTES, STORED_PROJECT_SCHEMA_VERSION,
 };
 use serde_json::{json, Value};
 
@@ -31,19 +31,19 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(response["project"]["identity"]["projectId"], "loading-bay");
     assert_eq!(
         response["project"]["inspections"]["catalog"]["entryCount"],
-        13
+        14
     );
-    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 17);
+    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 20);
     assert_eq!(
         response["project"]["inspections"]["entityState"]["entityCount"],
-        17
+        20
     );
     assert_eq!(
         response["project"]["inspections"]["persistence"]["artifactCount"],
         1
     );
     assert_eq!(response["project"]["voxel"]["solidVoxelCount"], 366);
-    assert_eq!(response["project"]["loadingBay"]["doorCount"], 1);
+    assert_eq!(response["project"]["loadingBay"]["doorCount"], 2);
     assert_eq!(response["project"]["loadingBay"]["enemyCount"], 2);
     assert_eq!(response["project"]["sceneHierarchy"]["sceneId"], 1);
     assert_eq!(
@@ -51,7 +51,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        17
+        20
     );
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"][0]["label"],
@@ -67,7 +67,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        41
+        45
     );
     assert_eq!(
         response["project"]["projection"]["ops"][0]["op"],
@@ -262,14 +262,20 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
     );
     assert_eq!(created["type"], "projectCreated", "{created:#}");
     assert_eq!(created["project"]["identity"]["projectId"], "new-project");
-    assert_eq!(created["project"]["identity"]["currentSchemaVersion"], 16);
+    assert_eq!(
+        created["project"]["identity"]["currentSchemaVersion"],
+        STORED_PROJECT_SCHEMA_VERSION
+    );
     let created_path = root
         .path()
         .join("content/projects/new-project.project.json");
     let created_bytes = fs::read(&created_path).unwrap();
     let created_document =
         decode_project_document(std::str::from_utf8(&created_bytes).unwrap()).unwrap();
-    assert_eq!(created_document.source_schema_version, 16);
+    assert_eq!(
+        created_document.source_schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
     assert_eq!(created_document.project.scenes.len(), 1);
 
     let duplicate = send(

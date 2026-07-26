@@ -49,6 +49,7 @@ pub struct DoorView {
     pub entity_view: EntityView,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct DoorTransition {
     pub(crate) event: GameEvent,
     pub(crate) auto_close_after: Option<TickDelta>,

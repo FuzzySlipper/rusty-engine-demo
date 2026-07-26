@@ -124,6 +124,35 @@ export interface RuntimeExtractionBeaconState {
   readonly activatedAtTick: number | null;
 }
 
+export interface RuntimeDoorAccessState {
+  readonly id: number;
+  readonly state: "closed" | "open";
+  readonly requiredKey: string;
+  readonly keyPolicy: "retain" | "consume";
+  readonly activationRadius: number;
+  readonly deniedPresentation: string;
+}
+
+export interface RuntimeSecretRegionState {
+  readonly id: number;
+  readonly state: "undiscovered" | "discovered";
+  readonly presentation: string;
+}
+
+export interface RuntimeLevelExitState {
+  readonly id: number;
+  readonly state: "available" | "completed";
+  readonly activationRadius: number;
+  readonly presentation: string;
+  readonly completedBy: number | null;
+  readonly completedAtTick: number | null;
+}
+
+export interface RuntimeInteractionState {
+  readonly target: number;
+  readonly prompt: string;
+}
+
 export interface DerivedCameraPose {
   readonly position: readonly [number, number, number];
   readonly yawDegrees: number;
@@ -220,6 +249,31 @@ export type RuntimeFeedbackCue =
       readonly actor: number;
       readonly item: string;
       readonly quantity: number;
+    }
+  | {
+      readonly kind: "doorAccessGranted";
+      readonly entity: number;
+      readonly actor: number;
+      readonly requiredKey: string;
+      readonly keyConsumed: boolean;
+    }
+  | {
+      readonly kind: "doorAccessDenied";
+      readonly entity: number;
+      readonly requiredKey: string;
+      readonly presentation: string;
+    }
+  | {
+      readonly kind: "secretDiscovered";
+      readonly entity: number;
+      readonly actor: number;
+      readonly presentation: string;
+    }
+  | {
+      readonly kind: "levelCompleted";
+      readonly entity: number;
+      readonly actor: number;
+      readonly presentation: string;
     };
 
 export interface RuntimePresentationState {
@@ -251,6 +305,11 @@ export interface RuntimeBrowserState {
   readonly hazards: readonly RuntimeHazardState[];
   readonly restart: RuntimeRestartState;
   readonly extractionBeacon: RuntimeExtractionBeaconState | null;
+  readonly doorAccess: readonly RuntimeDoorAccessState[];
+  readonly secretRegions: readonly RuntimeSecretRegionState[];
+  readonly levelExits: readonly RuntimeLevelExitState[];
+  readonly levelComplete: boolean;
+  readonly interaction: RuntimeInteractionState | null;
   readonly voxelMeshes: readonly RuntimeVoxelMeshChunk[];
   readonly generatedEnvironment: RuntimeGeneratedEnvironment | null;
   readonly enemies: readonly RuntimeEnemyState[];

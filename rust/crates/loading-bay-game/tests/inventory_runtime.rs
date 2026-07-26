@@ -449,6 +449,20 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
         .retain(|entity| entity.get("pickup").is_none() && entity.get("hazard").is_none());
     for entity in legacy["scenes"][0]["entities"].as_array_mut().unwrap() {
         entity.as_object_mut().unwrap().remove("bounds");
+        entity.as_object_mut().unwrap().remove("secretRegion");
+        entity.as_object_mut().unwrap().remove("levelExit");
+        if let Some(door) = entity
+            .get_mut("door")
+            .and_then(serde_json::Value::as_object_mut)
+        {
+            door.remove("access");
+        }
+        if let Some(switch) = entity
+            .get_mut("switch")
+            .and_then(serde_json::Value::as_object_mut)
+        {
+            switch.remove("loadingBayInterlock");
+        }
         if let Some(health) = entity
             .get_mut("health")
             .and_then(serde_json::Value::as_object_mut)
@@ -522,6 +536,10 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
         .as_object_mut()
         .unwrap()
         .remove("hazardTriggers");
+    previous_snapshot
+        .as_object_mut()
+        .unwrap()
+        .remove("progression");
     for health in previous_snapshot["health"].as_array_mut().unwrap() {
         let health = health.as_object_mut().unwrap();
         health.remove("maxArmor");

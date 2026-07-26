@@ -19,7 +19,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 15;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 16;
+const LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION: u32 = 15;
 const LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION: u32 = 14;
 const LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION: u32 = 13;
 const LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION: u32 = 12;
@@ -59,7 +60,8 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v15(decode_legacy_project(input)?)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v16(decode_legacy_project(input)?)?,
+        LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION => migrate_v15(decode_legacy_project(input)?)?,
         LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION => migrate_v14(decode_legacy_project(input)?)?,
         LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION => migrate_v13(decode_legacy_project(input)?)?,
         LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION => migrate_v12(decode_legacy_project(input)?)?,
@@ -74,7 +76,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
                     LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
@@ -84,6 +86,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                     LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -189,17 +192,57 @@ fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectErro
             ),
         )
     })?;
+    reject_future_progression_fields(&document)?;
     Ok(document)
+}
+
+fn migrate_v16(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
+    );
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
 }
 
 fn migrate_v15(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
+        LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION
     );
     reject_future_weapon_behavior_fields(&legacy)?;
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
+}
+
+fn reject_future_progression_fields(legacy: &StoredProject) -> Result<(), StoredProjectError> {
+    if legacy
+        .scenes
+        .iter()
+        .flat_map(|scene| &scene.entities)
+        .any(|entity| {
+            entity
+                .door
+                .as_ref()
+                .is_some_and(|door| door.access.is_some())
+                || entity
+                    .switch
+                    .as_ref()
+                    .is_some_and(|switch| switch.loading_bay_interlock.is_some())
+                || entity.secret_region.is_some()
+                || entity.level_exit.is_some()
+        })
+    {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "scenes",
+            format!(
+                "schema {} cannot declare key access, loading-bay interlocks, secrets, or level exits",
+                legacy.schema_version
+            ),
+        ));
+    }
+    Ok(())
 }
 
 fn migrate_v14(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
@@ -330,6 +373,16 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
             || entity.pickup.is_some()
             || entity.bounds.is_some()
             || entity.hazard.is_some()
+            || entity
+                .door
+                .as_ref()
+                .is_some_and(|door| door.access.is_some())
+            || entity
+                .switch
+                .as_ref()
+                .is_some_and(|switch| switch.loading_bay_interlock.is_some())
+            || entity.secret_region.is_some()
+            || entity.level_exit.is_some()
             || entity
                 .health
                 .is_some_and(|health| health.max_armor != 0 || health.armor_absorption_percent != 0)
@@ -844,11 +897,23 @@ fn normalize_numbers(document: &mut StoredProject) -> Result<(), StoredProjectEr
                     &mut component.open_translation,
                     format!("{root}.door.openTranslation"),
                 )?;
+                if let Some(access) = &mut component.access {
+                    normalize_f32(
+                        &mut access.activation_radius,
+                        format!("{root}.door.access.activationRadius"),
+                    )?;
+                }
             }
             if let Some(component) = &mut entity.health {
                 normalize_vec3(
                     &mut component.hitbox_half_extents,
                     format!("{root}.health.hitboxHalfExtents"),
+                )?;
+            }
+            if let Some(component) = &mut entity.level_exit {
+                normalize_f32(
+                    &mut component.activation_radius,
+                    format!("{root}.levelExit.activationRadius"),
                 )?;
             }
             if let Some(component) = &mut entity.kinematic {

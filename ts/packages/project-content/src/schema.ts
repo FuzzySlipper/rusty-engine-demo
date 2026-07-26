@@ -20,10 +20,31 @@ export interface RenderableDefinition {
 export interface DoorDefinition {
   readonly openTranslation: Vec3;
   readonly autoCloseAfterTicks: number | null;
+  readonly access?: DoorAccessDefinition;
+}
+
+export interface DoorAccessDefinition {
+  readonly requiredKey: string;
+  readonly keyPolicy: "retain" | "consume";
+  readonly activationRadius: number;
+  readonly deniedPresentation: string;
 }
 
 export interface SwitchDefinition {
   readonly controls: readonly number[];
+  readonly loadingBayInterlock?: {
+    readonly closeDoor: number;
+    readonly openDoor: number;
+  };
+}
+
+export interface SecretRegionDefinition {
+  readonly presentation: string;
+}
+
+export interface LevelExitDefinition {
+  readonly activationRadius: number;
+  readonly presentation: string;
 }
 
 export interface EncounterDefinition {
@@ -192,6 +213,8 @@ export interface EntityDefinition {
   readonly inventory?: InventoryDefinition;
   readonly pickup?: PickupDefinition;
   readonly weapon?: WeaponDefinition;
+  readonly secretRegion?: SecretRegionDefinition;
+  readonly levelExit?: LevelExitDefinition;
 }
 
 export type LightDefinition =
@@ -280,7 +303,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 16;
+  readonly schemaVersion: 17;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

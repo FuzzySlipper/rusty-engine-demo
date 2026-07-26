@@ -7,7 +7,8 @@
 use core_ids::EntityId;
 use loading_bay_game::{
     CombatFact, DoorState, EnemyState, ExtractionBeaconFact, ExtractionBeaconState, GameEvent,
-    GameRuntime, NavigationFact, NavigationState, PickupFact, PlayerControlFact, VitalityFact,
+    GameRuntime, NavigationFact, NavigationState, PickupFact, PlayerControlFact, ProgressionFact,
+    VitalityFact,
 };
 use serde::Serialize;
 
@@ -77,6 +78,27 @@ enum BrowserFeedbackCue {
         actor: u64,
         item: String,
         quantity: u32,
+    },
+    DoorAccessGranted {
+        entity: u64,
+        actor: u64,
+        required_key: String,
+        key_consumed: bool,
+    },
+    DoorAccessDenied {
+        entity: u64,
+        required_key: String,
+        presentation: String,
+    },
+    SecretDiscovered {
+        entity: u64,
+        actor: u64,
+        presentation: String,
+    },
+    LevelCompleted {
+        entity: u64,
+        actor: u64,
+        presentation: String,
     },
 }
 
@@ -237,6 +259,56 @@ impl BrowserFeedbackProjection {
             actor: actor.raw(),
             item: item.as_str().to_owned(),
             quantity: *quantity,
+        });
+    }
+
+    pub(super) fn extend_progression(&mut self, fact: &ProgressionFact) {
+        match fact {
+            ProgressionFact::DoorAccessGranted {
+                door,
+                actor,
+                required_key,
+                key_policy,
+                ..
+            } => self.cues.push(BrowserFeedbackCue::DoorAccessGranted {
+                entity: door.raw(),
+                actor: actor.raw(),
+                required_key: required_key.as_str().to_owned(),
+                key_consumed: *key_policy == loading_bay_game::RequiredKeyPolicy::Consume,
+            }),
+            ProgressionFact::SecretDiscovered {
+                secret,
+                actor,
+                presentation,
+                ..
+            } => self.cues.push(BrowserFeedbackCue::SecretDiscovered {
+                entity: secret.raw(),
+                actor: actor.raw(),
+                presentation: presentation.clone(),
+            }),
+            ProgressionFact::LevelCompleted {
+                exit,
+                actor,
+                presentation,
+                ..
+            } => self.cues.push(BrowserFeedbackCue::LevelCompleted {
+                entity: exit.raw(),
+                actor: actor.raw(),
+                presentation: presentation.clone(),
+            }),
+        }
+    }
+
+    pub(super) fn extend_door_access_denied(
+        &mut self,
+        door: EntityId,
+        required_key: &loading_bay_game::ItemDefinitionId,
+        presentation: &str,
+    ) {
+        self.cues.push(BrowserFeedbackCue::DoorAccessDenied {
+            entity: door.raw(),
+            required_key: required_key.as_str().to_owned(),
+            presentation: presentation.to_owned(),
         });
     }
 

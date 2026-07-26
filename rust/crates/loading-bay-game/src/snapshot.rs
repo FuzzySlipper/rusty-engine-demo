@@ -34,12 +34,17 @@ use crate::pickup::{
 use crate::player::{
     PlayerControllerComponent, PlayerControllerConfig, PlayerControllerState, PlayerInputBindings,
 };
+use crate::progression::{
+    DoorAccessConfig, LevelExitComponent, LevelExitConfig, LevelExitState,
+    LoadingBayInterlockConfig, RequiredKeyPolicy, SecretRegionComponent, SecretRegionConfig,
+    SecretRegionState, SECRET_TRIGGER_SCOPE,
+};
 use crate::runtime::GameRuntime;
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::{HealthComponent, HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 15;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 16;
 const INVENTORY_WEAPON_SNAPSHOT_SCHEMA_VERSION: u32 = 13;
 const VITALITY_SNAPSHOT_SCHEMA_VERSION: u32 = 14;
 
@@ -73,6 +78,8 @@ pub struct GameSnapshot {
     pub hazard_triggers: Option<TriggerVolumeSnapshot>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub weapons: Vec<WeaponSnapshot>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub progression: Option<ProgressionSnapshot>,
     pub scheduled: Vec<ScheduledSnapshot>,
 }
 
@@ -418,6 +425,80 @@ pub enum ScheduledSnapshotKind {
     CloseDoor { door: u64 },
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct ProgressionSnapshot {
+    pub door_access: Vec<DoorAccessSnapshot>,
+    pub loading_bay_interlocks: Vec<LoadingBayInterlockSnapshot>,
+    pub secret_regions: Vec<SecretRegionSnapshot>,
+    pub level_exits: Vec<LevelExitSnapshot>,
+    pub secret_triggers: TriggerVolumeSnapshot,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct DoorAccessSnapshot {
+    pub door: u64,
+    pub required_key: String,
+    pub key_policy: SnapshotRequiredKeyPolicy,
+    pub activation_radius: f32,
+    pub denied_presentation: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotRequiredKeyPolicy {
+    Retain,
+    Consume,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct LoadingBayInterlockSnapshot {
+    pub switch: u64,
+    pub close_door: u64,
+    pub open_door: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct SecretRegionSnapshot {
+    pub entity: u64,
+    pub presentation: String,
+    pub state: SnapshotSecretRegionState,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "state",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum SnapshotSecretRegionState {
+    Undiscovered,
+    Discovered { actor: u64, discovered_at_tick: u64 },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct LevelExitSnapshot {
+    pub entity: u64,
+    pub activation_radius: f32,
+    pub presentation: String,
+    pub state: SnapshotLevelExitState,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "state",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum SnapshotLevelExitState {
+    Available,
+    Completed { actor: u64, completed_at_tick: u64 },
+}
+
 #[derive(Debug)]
 pub enum GameSnapshotError {
     Encode(serde_json::Error),
@@ -504,6 +585,9 @@ pub enum GameSnapshotError {
     FuturePickupStateInLegacySnapshot,
     FutureWeaponStateInLegacySnapshot,
     FutureVitalityStateInLegacySnapshot,
+    FutureProgressionStateInLegacySnapshot,
+    InvalidProgressionState,
+    InvalidSecretTriggerDefinitions,
     InvalidHazardConfig {
         entity: u64,
     },
@@ -637,6 +721,10 @@ impl std::error::Error for GameSnapshotError {}
 
 impl GameRuntime {
     pub fn snapshot(&self) -> GameSnapshot {
+        let has_progression = !self.session.door_access.is_empty()
+            || !self.session.loading_bay_interlocks.is_empty()
+            || !self.session.secret_regions.is_empty()
+            || !self.session.level_exits.is_empty();
         GameSnapshot {
             schema_version: GAME_SNAPSHOT_SCHEMA_VERSION,
             tick: self.tick.raw(),
@@ -952,6 +1040,75 @@ impl GameRuntime {
             pickup_triggers: Some(self.pickup_triggers.snapshot()),
             hazard_triggers: Some(self.hazard_triggers.snapshot()),
             weapons: Vec::new(),
+            progression: has_progression.then(|| ProgressionSnapshot {
+                door_access: self
+                    .session
+                    .door_access
+                    .iter()
+                    .map(|(door, config)| DoorAccessSnapshot {
+                        door: door.raw(),
+                        required_key: config.required_key.as_str().to_owned(),
+                        key_policy: match config.key_policy {
+                            RequiredKeyPolicy::Retain => SnapshotRequiredKeyPolicy::Retain,
+                            RequiredKeyPolicy::Consume => SnapshotRequiredKeyPolicy::Consume,
+                        },
+                        activation_radius: config.activation_radius,
+                        denied_presentation: config.denied_presentation.clone(),
+                    })
+                    .collect(),
+                loading_bay_interlocks: self
+                    .session
+                    .loading_bay_interlocks
+                    .iter()
+                    .map(|(switch, config)| LoadingBayInterlockSnapshot {
+                        switch: switch.raw(),
+                        close_door: config.close_door.raw(),
+                        open_door: config.open_door.raw(),
+                    })
+                    .collect(),
+                secret_regions: self
+                    .session
+                    .secret_regions
+                    .iter()
+                    .map(|(entity, component)| SecretRegionSnapshot {
+                        entity: entity.raw(),
+                        presentation: component.config.presentation.clone(),
+                        state: match component.state {
+                            SecretRegionState::Undiscovered => {
+                                SnapshotSecretRegionState::Undiscovered
+                            }
+                            SecretRegionState::Discovered {
+                                actor,
+                                discovered_at,
+                            } => SnapshotSecretRegionState::Discovered {
+                                actor: actor.raw(),
+                                discovered_at_tick: discovered_at.raw(),
+                            },
+                        },
+                    })
+                    .collect(),
+                level_exits: self
+                    .session
+                    .level_exits
+                    .iter()
+                    .map(|(entity, component)| LevelExitSnapshot {
+                        entity: entity.raw(),
+                        activation_radius: component.config.activation_radius,
+                        presentation: component.config.presentation.clone(),
+                        state: match component.state {
+                            LevelExitState::Available => SnapshotLevelExitState::Available,
+                            LevelExitState::Completed {
+                                actor,
+                                completed_at,
+                            } => SnapshotLevelExitState::Completed {
+                                actor: actor.raw(),
+                                completed_at_tick: completed_at.raw(),
+                            },
+                        },
+                    })
+                    .collect(),
+                secret_triggers: self.secret_triggers.snapshot(),
+            }),
             scheduled: self
                 .scheduler
                 .entries()
@@ -1009,6 +1166,14 @@ impl GameRuntime {
         {
             return Err(GameSnapshotError::FutureWeaponStateInLegacySnapshot);
         }
+        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION && snapshot.progression.is_some() {
+            return Err(GameSnapshotError::FutureProgressionStateInLegacySnapshot);
+        }
+        let progression_snapshot = if source_schema_version >= GAME_SNAPSHOT_SCHEMA_VERSION {
+            snapshot.progression.take()
+        } else {
+            None
+        };
         let collision_scene = snapshot
             .voxel_collision
             .map(|scene| match scene.generated_room {
@@ -1224,6 +1389,154 @@ impl GameRuntime {
             }
             controls.insert(switch, targets);
         }
+
+        let (
+            door_access,
+            loading_bay_interlocks,
+            secret_regions,
+            level_exits,
+            secret_trigger_snapshot,
+        ) = if let Some(progression) = progression_snapshot {
+            let mut door_access = BTreeMap::new();
+            for access in progression.door_access {
+                let door = EntityId::new(access.door);
+                let required_key = parse_snapshot_item_id(access.required_key)?;
+                let config = DoorAccessConfig {
+                    required_key: required_key.clone(),
+                    key_policy: match access.key_policy {
+                        SnapshotRequiredKeyPolicy::Retain => RequiredKeyPolicy::Retain,
+                        SnapshotRequiredKeyPolicy::Consume => RequiredKeyPolicy::Consume,
+                    },
+                    activation_radius: access.activation_radius,
+                    denied_presentation: access.denied_presentation,
+                };
+                if !doors.contains_key(&door)
+                    || !config.is_valid()
+                    || item_definitions
+                        .get(&required_key)
+                        .is_none_or(|definition| !matches!(definition.kind, ItemKind::AccessKey))
+                    || door_access.insert(door, config).is_some()
+                {
+                    return Err(GameSnapshotError::InvalidProgressionState);
+                }
+            }
+
+            let mut loading_bay_interlocks = BTreeMap::new();
+            for interlock in progression.loading_bay_interlocks {
+                let switch = EntityId::new(interlock.switch);
+                let config = LoadingBayInterlockConfig {
+                    close_door: EntityId::new(interlock.close_door),
+                    open_door: EntityId::new(interlock.open_door),
+                };
+                if !switches.contains_key(&switch)
+                    || config.close_door == config.open_door
+                    || !doors.contains_key(&config.close_door)
+                    || !doors.contains_key(&config.open_door)
+                    || loading_bay_interlocks.insert(switch, config).is_some()
+                {
+                    return Err(GameSnapshotError::InvalidProgressionState);
+                }
+            }
+
+            let mut secret_regions = BTreeMap::new();
+            for secret in progression.secret_regions {
+                let entity = EntityId::new(secret.entity);
+                let view = entities
+                    .view(entity)
+                    .map_err(|_| GameSnapshotError::InvalidProgressionState)?;
+                let config = SecretRegionConfig {
+                    presentation: secret.presentation,
+                };
+                if view.transform.is_none() || view.bounds.is_none() || !config.is_valid() {
+                    return Err(GameSnapshotError::InvalidProgressionState);
+                }
+                let state = match secret.state {
+                    SnapshotSecretRegionState::Undiscovered => SecretRegionState::Undiscovered,
+                    SnapshotSecretRegionState::Discovered {
+                        actor,
+                        discovered_at_tick,
+                    } => {
+                        let actor = EntityId::new(actor);
+                        if discovered_at_tick > snapshot.tick
+                            || entities
+                                .view(actor)
+                                .ok()
+                                .is_none_or(|view| view.transform.is_none())
+                        {
+                            return Err(GameSnapshotError::InvalidProgressionState);
+                        }
+                        SecretRegionState::Discovered {
+                            actor,
+                            discovered_at: Tick::new(discovered_at_tick),
+                        }
+                    }
+                };
+                if secret_regions
+                    .insert(entity, SecretRegionComponent { config, state })
+                    .is_some()
+                {
+                    return Err(GameSnapshotError::InvalidProgressionState);
+                }
+            }
+
+            let mut level_exits = BTreeMap::new();
+            for exit in progression.level_exits {
+                let entity = EntityId::new(exit.entity);
+                let view = entities
+                    .view(entity)
+                    .map_err(|_| GameSnapshotError::InvalidProgressionState)?;
+                let config = LevelExitConfig {
+                    activation_radius: exit.activation_radius,
+                    presentation: exit.presentation,
+                };
+                if view.transform.is_none() || view.renderable.is_none() || !config.is_valid() {
+                    return Err(GameSnapshotError::InvalidProgressionState);
+                }
+                let state = match exit.state {
+                    SnapshotLevelExitState::Available => LevelExitState::Available,
+                    SnapshotLevelExitState::Completed {
+                        actor,
+                        completed_at_tick,
+                    } => {
+                        let actor = EntityId::new(actor);
+                        if completed_at_tick > snapshot.tick
+                            || entities
+                                .view(actor)
+                                .ok()
+                                .is_none_or(|view| view.transform.is_none())
+                        {
+                            return Err(GameSnapshotError::InvalidProgressionState);
+                        }
+                        LevelExitState::Completed {
+                            actor,
+                            completed_at: Tick::new(completed_at_tick),
+                        }
+                    }
+                };
+                if level_exits
+                    .insert(entity, LevelExitComponent { config, state })
+                    .is_some()
+                {
+                    return Err(GameSnapshotError::InvalidProgressionState);
+                }
+            }
+
+            (
+                door_access,
+                loading_bay_interlocks,
+                secret_regions,
+                level_exits,
+                Some(progression.secret_triggers),
+            )
+        } else {
+            (
+                BTreeMap::new(),
+                BTreeMap::new(),
+                BTreeMap::new(),
+                BTreeMap::new(),
+                None,
+            )
+        };
 
         let mut enemies = BTreeMap::new();
         let mut enemy_ids = BTreeSet::new();
@@ -1741,8 +2054,13 @@ impl GameRuntime {
         {
             return Err(GameSnapshotError::InvalidPickupTriggerDefinitions);
         }
-        if pickups.len().saturating_add(hazards.len()) > engine_spatial::MAX_TRIGGER_DEFINITIONS {
-            return Err(GameSnapshotError::InvalidHazardTriggerDefinitions);
+        if pickups
+            .len()
+            .saturating_add(hazards.len())
+            .saturating_add(secret_regions.len())
+            > engine_spatial::MAX_TRIGGER_DEFINITIONS
+        {
+            return Err(GameSnapshotError::InvalidSecretTriggerDefinitions);
         }
         let hazard_triggers = if source_schema_version >= VITALITY_SNAPSHOT_SCHEMA_VERSION {
             TriggerVolumeSystem::from_snapshot(
@@ -1776,6 +2094,34 @@ impl GameRuntime {
             })
         {
             return Err(GameSnapshotError::InvalidHazardTriggerDefinitions);
+        }
+        let secret_triggers = match secret_trigger_snapshot {
+            Some(snapshot) => TriggerVolumeSystem::from_snapshot(snapshot)
+                .map_err(GameSnapshotError::TriggerVolume)?,
+            None => TriggerVolumeSystem::default(),
+        };
+        let expected_secret_entities = secret_regions.keys().copied().collect::<Vec<_>>();
+        let actual_secret_entities = secret_triggers
+            .definitions()
+            .map(|definition| {
+                let valid = definition.scope == SECRET_TRIGGER_SCOPE
+                    && definition.tags == ["secret".to_string()]
+                    && definition.geometry_source()
+                        == engine_spatial::TriggerGeometrySource::EntityBounds;
+                (definition.trigger_id(), valid)
+            })
+            .collect::<Vec<_>>();
+        if actual_secret_entities.len() != expected_secret_entities.len()
+            || actual_secret_entities
+                .iter()
+                .zip(expected_secret_entities)
+                .any(|((actual, valid), expected)| !valid || *actual != expected)
+            || secret_triggers.active_overlaps().any(|pair| {
+                !secret_regions.contains_key(&pair.trigger_id())
+                    || !entities.contains(pair.subject_id())
+            })
+        {
+            return Err(GameSnapshotError::InvalidSecretTriggerDefinitions);
         }
 
         let mut encounters = BTreeMap::new();
@@ -1863,8 +2209,10 @@ impl GameRuntime {
             session: GameSession {
                 entities,
                 doors,
+                door_access,
                 switches,
                 controls,
+                loading_bay_interlocks,
                 enemies,
                 health,
                 hazards,
@@ -1875,6 +2223,8 @@ impl GameRuntime {
                 item_definitions,
                 inventories,
                 pickups,
+                secret_regions,
+                level_exits,
             },
             tick: Tick::new(snapshot.tick),
             scheduler,
@@ -1883,6 +2233,7 @@ impl GameRuntime {
             collision_scene,
             pickup_triggers,
             hazard_triggers,
+            secret_triggers,
         })
     }
 }

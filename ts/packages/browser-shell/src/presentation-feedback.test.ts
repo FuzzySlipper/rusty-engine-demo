@@ -132,6 +132,86 @@ test("shared signal ids are delivery-local and a reset reopens retained host ide
   assert.deepEqual(signalIds(reopened.frame), firstSignals);
 });
 
+test("progression cues remain typed disposable presentation", () => {
+  const state = feedbackState();
+  const projected = new PresentationFeedbackAdapter().project({
+    ...state,
+    projection: [
+      ...state.projection,
+      {
+        id: 30,
+        name: "maintenance-bulkhead",
+        asset: "mesh/security-door",
+        translation: [4.5, 1.5, 5.5],
+        visible: true,
+      },
+      {
+        id: 31,
+        name: "overlook-secret",
+        asset: "",
+        translation: [6.5, 1.5, 8.5],
+        visible: false,
+      },
+      {
+        id: 32,
+        name: "loading-bay-level-exit",
+        asset: "mesh/level-exit",
+        translation: [4.5, 1.5, 12.5],
+        visible: true,
+      },
+    ],
+    presentation: {
+      animationStates: state.presentation.animationStates,
+      cues: [
+        {
+          kind: "doorAccessDenied",
+          entity: 30,
+          requiredKey: "key/maintenance-pass",
+          presentation: "Maintenance pass required",
+        },
+        {
+          kind: "doorAccessGranted",
+          entity: 30,
+          actor: 1,
+          requiredKey: "key/maintenance-pass",
+          keyConsumed: false,
+        },
+        {
+          kind: "secretDiscovered",
+          entity: 31,
+          actor: 1,
+          presentation: "Secret overlook discovered",
+        },
+        {
+          kind: "levelCompleted",
+          entity: 32,
+          actor: 1,
+          presentation: "Loading Bay complete",
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(projected.animationPulses, [
+    "access-denied",
+    "access-granted",
+    "secret-discovered",
+    "level-completed",
+  ]);
+  assert.deepEqual(projected.billboardValues, [
+    "Maintenance pass required",
+    "ACCESS GRANTED",
+    "Secret overlook discovered",
+    "Loading Bay complete",
+  ]);
+  assert.deepEqual(projected.soundKinds, [
+    "blocked",
+    "doorOpen",
+    "pickup",
+    "beacon",
+  ]);
+});
+
 test("host-user effects volume scales disposable audio descriptors only", () => {
   const full = new PresentationFeedbackAdapter().project(feedbackState(), 1);
   const quiet = new PresentationFeedbackAdapter().project(
@@ -293,6 +373,11 @@ function feedbackState(): RuntimeBrowserState {
       activatedBy: 1,
       activatedAtTick: 5,
     },
+    doorAccess: [],
+    secretRegions: [],
+    levelExits: [],
+    levelComplete: false,
+    interaction: null,
     voxelMeshes: [],
     generatedEnvironment: null,
     enemies: [

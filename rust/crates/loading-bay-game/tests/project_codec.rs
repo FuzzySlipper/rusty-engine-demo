@@ -146,7 +146,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 17, 99] {
+    for schema_version in [0, 5, 18, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -213,6 +213,7 @@ fn schema_thirteen_multi_scene_weapon_migration_rejects_conflicting_authority() 
 fn schema_fifteen_rejects_future_weapon_modes_and_migrates_hitscan_only_content() {
     let mut future: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     future["schemaVersion"] = 15.into();
+    strip_future_progression(&mut future);
     let error = decode_project_document(&future.to_string()).unwrap_err();
     assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
     assert_eq!(error.diagnostic().path, "itemDefinitions");
@@ -297,6 +298,20 @@ fn strip_future_inventory_and_pickups(project: &mut serde_json::Value) {
         for entity in scene["entities"].as_array_mut().unwrap() {
             entity.as_object_mut().unwrap().remove("inventory");
             entity.as_object_mut().unwrap().remove("bounds");
+            entity.as_object_mut().unwrap().remove("secretRegion");
+            entity.as_object_mut().unwrap().remove("levelExit");
+            if let Some(door) = entity
+                .get_mut("door")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                door.remove("access");
+            }
+            if let Some(switch) = entity
+                .get_mut("switch")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                switch.remove("loadingBayInterlock");
+            }
             if let Some(health) = entity
                 .get_mut("health")
                 .and_then(serde_json::Value::as_object_mut)
@@ -321,6 +336,20 @@ fn strip_future_vitality(project: &mut serde_json::Value) {
             .unwrap()
             .retain(|entity| entity.get("hazard").is_none());
         for entity in scene["entities"].as_array_mut().unwrap() {
+            entity.as_object_mut().unwrap().remove("secretRegion");
+            entity.as_object_mut().unwrap().remove("levelExit");
+            if let Some(door) = entity
+                .get_mut("door")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                door.remove("access");
+            }
+            if let Some(switch) = entity
+                .get_mut("switch")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                switch.remove("loadingBayInterlock");
+            }
             if let Some(health) = entity
                 .get_mut("health")
                 .and_then(serde_json::Value::as_object_mut)
@@ -371,6 +400,27 @@ fn strip_current_weapon_fields(project: &mut serde_json::Value) {
                 .and_then(serde_json::Value::as_object_mut)
             {
                 pickup.remove("starterAmmunition");
+            }
+        }
+    }
+}
+
+fn strip_future_progression(project: &mut serde_json::Value) {
+    for scene in project["scenes"].as_array_mut().unwrap() {
+        for entity in scene["entities"].as_array_mut().unwrap() {
+            entity.as_object_mut().unwrap().remove("secretRegion");
+            entity.as_object_mut().unwrap().remove("levelExit");
+            if let Some(door) = entity
+                .get_mut("door")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                door.remove("access");
+            }
+            if let Some(switch) = entity
+                .get_mut("switch")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                switch.remove("loadingBayInterlock");
             }
         }
     }

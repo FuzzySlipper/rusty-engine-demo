@@ -24,6 +24,10 @@ use crate::pickup::{
     PickupRejection, PickupService,
 };
 use crate::player::{PlayerControlReceipt, PlayerControllerService, ResolvedPlayerAction};
+use crate::progression::{
+    DoorAccessReceipt, DoorAccessRejection, LevelExitRejection, LoadingBayInterlockRejection,
+    ProgressionFact, ProgressionService, SecretPhaseReceipt, SecretRejection,
+};
 use crate::project_admission::decode_and_admit_stored_project;
 use crate::runtime_records::{readout, GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
@@ -110,6 +114,10 @@ pub enum RuntimeError {
     Pickup(PickupRejection),
     Vitality(VitalityRejection),
     Hazard(HazardRejection),
+    DoorAccess(DoorAccessRejection),
+    LoadingBayInterlock(LoadingBayInterlockRejection),
+    LevelExit(LevelExitRejection),
+    Secret(SecretRejection),
 }
 
 impl std::fmt::Display for RuntimeError {
@@ -130,12 +138,14 @@ pub struct GameRuntime {
     pub(crate) collision_scene: Option<VoxelCollisionScene>,
     pub(crate) pickup_triggers: TriggerVolumeSystem,
     pub(crate) hazard_triggers: TriggerVolumeSystem,
+    pub(crate) secret_triggers: TriggerVolumeSystem,
 }
 
 impl GameRuntime {
     pub fn new(session: GameSession) -> Self {
         let pickup_triggers = PickupService::trigger_system(&session);
         let hazard_triggers = HazardService::trigger_system(&session);
+        let secret_triggers = ProgressionService::secret_trigger_system(&session);
         Self {
             session,
             tick: Tick::ZERO,
@@ -145,6 +155,7 @@ impl GameRuntime {
             collision_scene: None,
             pickup_triggers,
             hazard_triggers,
+            secret_triggers,
         }
     }
 
@@ -352,6 +363,59 @@ impl GameRuntime {
         Ok(self.receipt(events))
     }
 
+    pub fn open_keyed_door(
+        &mut self,
+        actor: EntityId,
+        door: EntityId,
+    ) -> Result<(DoorAccessReceipt, Vec<GameEvent>), RuntimeError> {
+        let receipt = ProgressionService::open_keyed_door(&mut self.session, actor, door)
+            .map_err(RuntimeError::DoorAccess)?;
+        if let Some(transition) = receipt.transition.clone() {
+            self.queue_door_transition(door, transition);
+        }
+        let events = self.drain_events()?;
+        Ok((receipt, events))
+    }
+
+    pub fn activate_loading_bay_interlock(
+        &mut self,
+        actor: EntityId,
+        switch: EntityId,
+    ) -> Result<RuntimeReceipt, RuntimeError> {
+        let event =
+            ProgressionService::activate_loading_bay_interlock(&mut self.session, actor, switch)
+                .map_err(RuntimeError::LoadingBayInterlock)?;
+        self.events.push_back(event);
+        let events = self.drain_events()?;
+        Ok(self.receipt(events))
+    }
+
+    pub fn complete_level(
+        &mut self,
+        actor: EntityId,
+        exit: EntityId,
+    ) -> Result<Option<ProgressionFact>, RuntimeError> {
+        ProgressionService::complete_level(&mut self.session, actor, exit, self.tick)
+            .map_err(RuntimeError::LevelExit)
+    }
+
+    pub(crate) fn run_secret_phase(
+        &mut self,
+        actor: EntityId,
+    ) -> Result<SecretPhaseReceipt, RuntimeError> {
+        ProgressionService::reconcile_secrets(
+            &mut self.session,
+            &mut self.secret_triggers,
+            actor,
+            self.tick,
+        )
+        .map_err(RuntimeError::Secret)
+    }
+
+    pub fn is_level_complete(&self) -> bool {
+        self.session.level_complete()
+    }
+
     pub fn defeat_enemy(
         &mut self,
         actor: EntityId,
@@ -442,6 +506,20 @@ impl GameRuntime {
             });
             match &event {
                 GameEvent::SwitchActivated { switch, .. } => {
+                    if let Some(interlock) =
+                        self.session.loading_bay_interlocks.get(switch).copied()
+                    {
+                        if let Some(event) =
+                            DoorService::close(&mut self.session, interlock.close_door)?
+                        {
+                            self.events.push_back(event);
+                        }
+                        if let Some(transition) =
+                            DoorService::open(&mut self.session, interlock.open_door)?
+                        {
+                            self.queue_door_transition(interlock.open_door, transition);
+                        }
+                    }
                     let targets = self
                         .session
                         .controls

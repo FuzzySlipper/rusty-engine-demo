@@ -10,14 +10,19 @@ use crate::inventory::{InventoryAdmissionError, InventoryConfig};
 use crate::navigation::NavigationConfig;
 use crate::pickup::PickupConfig;
 use crate::player::PlayerControllerConfig;
+use crate::progression::{
+    DoorAccessConfig, LevelExitConfig, LoadingBayInterlockConfig, SecretRegionConfig,
+};
 use crate::vitality::HealthConfig;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct GameEntityDefinition {
     pub entity: EntityDefinition,
     pub door: Option<DoorConfig>,
+    pub door_access: Option<DoorAccessConfig>,
     pub switch: bool,
     pub controls_targets: Vec<EntityId>,
+    pub loading_bay_interlock: Option<LoadingBayInterlockConfig>,
     pub enemy: bool,
     pub health: Option<HealthConfig>,
     pub hazard: Option<HazardConfig>,
@@ -28,6 +33,8 @@ pub struct GameEntityDefinition {
     pub inventory: Option<InventoryConfig>,
     pub pickup: Option<PickupConfig>,
     pub weapon: Option<WeaponConfig>,
+    pub secret_region: Option<SecretRegionConfig>,
+    pub level_exit: Option<LevelExitConfig>,
 }
 
 impl GameEntityDefinition {
@@ -35,8 +42,10 @@ impl GameEntityDefinition {
         Self {
             entity,
             door: None,
+            door_access: None,
             switch: false,
             controls_targets: Vec::new(),
+            loading_bay_interlock: None,
             enemy: false,
             health: None,
             hazard: None,
@@ -47,11 +56,18 @@ impl GameEntityDefinition {
             inventory: None,
             pickup: None,
             weapon: None,
+            secret_region: None,
+            level_exit: None,
         }
     }
 
     pub fn as_door(mut self, config: DoorConfig) -> Self {
         self.door = Some(config);
+        self
+    }
+
+    pub fn with_door_access(mut self, config: DoorAccessConfig) -> Self {
+        self.door_access = Some(config);
         self
     }
 
@@ -62,6 +78,11 @@ impl GameEntityDefinition {
 
     pub fn controls(mut self, targets: impl IntoIterator<Item = EntityId>) -> Self {
         self.controls_targets = targets.into_iter().collect();
+        self
+    }
+
+    pub fn with_loading_bay_interlock(mut self, config: LoadingBayInterlockConfig) -> Self {
+        self.loading_bay_interlock = Some(config);
         self
     }
 
@@ -121,6 +142,16 @@ impl GameEntityDefinition {
         self.weapon = Some(config);
         self
     }
+
+    pub fn as_secret_region(mut self, config: SecretRegionConfig) -> Self {
+        self.secret_region = Some(config);
+        self
+    }
+
+    pub fn as_level_exit(mut self, config: LevelExitConfig) -> Self {
+        self.level_exit = Some(config);
+        self
+    }
 }
 
 #[derive(Debug)]
@@ -150,6 +181,25 @@ pub enum GameEntityDefinitionError {
     },
     DoorMissingRenderable {
         entity: EntityId,
+    },
+    DoorAccessWithoutDoor {
+        entity: EntityId,
+    },
+    InvalidDoorAccessConfig {
+        entity: EntityId,
+    },
+    DoorAccessKeyMissingDefinition {
+        entity: EntityId,
+    },
+    DoorAccessKeyNotAccessKey {
+        entity: EntityId,
+    },
+    LoadingBayInterlockWithoutSwitch {
+        entity: EntityId,
+    },
+    InvalidLoadingBayInterlock {
+        switch: EntityId,
+        target: EntityId,
     },
     EnemyMissingCollision {
         entity: EntityId,
@@ -235,6 +285,24 @@ pub enum GameEntityDefinitionError {
         entity: EntityId,
     },
     InvalidPickupQuantity {
+        entity: EntityId,
+    },
+    SecretRegionMissingTransform {
+        entity: EntityId,
+    },
+    SecretRegionMissingBounds {
+        entity: EntityId,
+    },
+    InvalidSecretRegionConfig {
+        entity: EntityId,
+    },
+    LevelExitMissingTransform {
+        entity: EntityId,
+    },
+    LevelExitMissingRenderable {
+        entity: EntityId,
+    },
+    InvalidLevelExitConfig {
         entity: EntityId,
     },
     TooManyPickups {
