@@ -612,7 +612,13 @@ async function waitForHealth(url, process, output) {
     }
     try {
       const response = await fetch(url);
-      if (response.ok && (await response.text()).trim() === "ok") {
+      const health = await response.json();
+      if (
+        response.ok &&
+        response.headers.get("x-den-project") === "rusty-engine-demo" &&
+        health?.project === "rusty-engine-demo" &&
+        health?.status === "ok"
+      ) {
         return;
       }
     } catch {

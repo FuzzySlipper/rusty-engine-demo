@@ -33,6 +33,17 @@ Then open `http://127.0.0.1:8787`. The default project is
 project. `content/projects/relay-annex.project.json` is a second, entirely TypeScript-authored
 arrangement using the same settled demo meanings.
 
+For a managed LAN-facing session, use the repository manifest:
+
+```bash
+den-serve up rusty-engine-demo -repo /absolute/path/to/rusty-engine-demo
+```
+
+The launcher builds the browser shell, starts the Rust host on the broker-selected LAN bind and
+port, and reports the local and LAN URLs. Set `RUSTY_ENGINE_DEMO_PROJECT` to another project path
+before `den-serve up` when needed. The process group remains owned by `den-serve`; use its `status`,
+`logs`, and `stop` commands with the same project and repository arguments.
+
 The complete product gate is:
 
 ```bash

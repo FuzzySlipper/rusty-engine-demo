@@ -8,6 +8,7 @@
     "build:shell": "pnpm --filter @rusty-engine-demo/browser-shell build",
     "check:content": "pnpm --filter @rusty-engine-demo/project-content check",
     "generate:content": "pnpm --filter @rusty-engine-demo/project-content generate",
+    "serve:den": "bash scripts/serve-den.sh",
     "test:shell": "pnpm --filter @rusty-engine-demo/browser-shell test",
     "test:browser": "node scripts/browser-smoke.mjs",
     "test:ts": "pnpm --filter @rusty-engine-demo/project-content test",

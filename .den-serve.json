@@ -1,0 +1,12 @@
+{
+  "project": "rusty-engine-demo",
+  "serve": {
+    "command": "pnpm run serve:den -- --host {host} --port {port}",
+    "preferredPort": 8787,
+    "healthUrl": "/health",
+    "readyText": "\"project\":\"rusty-engine-demo\"",
+    "identityHeader": "X-Den-Project",
+    "reusePolicy": "broker_owned",
+    "startupTimeout": "180s"
+  }
+}

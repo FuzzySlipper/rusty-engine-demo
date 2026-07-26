@@ -23,7 +23,8 @@ mod state;
 use presentation::BrowserFeedbackProjection;
 use state::{browser_state, BrowserState};
 
-const DEFAULT_ADDRESS: &str = "127.0.0.1:37881";
+const DEFAULT_ADDRESS: &str = "127.0.0.1:8787";
+const DEN_PROJECT: &str = "rusty-engine-demo";
 const ACTOR: EntityId = EntityId::new(1);
 const BEACON: EntityId = EntityId::new(7);
 const ENCOUNTER: EntityId = EntityId::new(2);
@@ -312,7 +313,10 @@ fn route(
     dist: &Path,
 ) -> (u16, &'static str, Vec<u8>) {
     match (method, path) {
-        ("GET", "/health") => (200, "text/plain; charset=utf-8", b"ok\n".to_vec()),
+        ("GET", "/health") => json_response(
+            200,
+            serde_json::json!({ "project": DEN_PROJECT, "status": "ok" }),
+        ),
         ("GET", "/api/state") => {
             let runtime = runtime.lock().expect("runtime lock");
             json_response(
@@ -700,7 +704,7 @@ fn write_response(
     };
     write!(
         stream,
-        "HTTP/1.1 {status} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n",
+        "HTTP/1.1 {status} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nX-Den-Project: {DEN_PROJECT}\r\nConnection: close\r\n\r\n",
         body.len()
     )?;
     stream.write_all(&body)
@@ -716,6 +720,18 @@ mod tests {
 
     fn shared_browser_runtime() -> Arc<Mutex<BrowserRuntime>> {
         Arc::new(Mutex::new(stored_browser_runtime()))
+    }
+
+    #[test]
+    fn health_identifies_the_managed_demo_host() {
+        let runtime = shared_browser_runtime();
+        let response = route("GET", "/health", &[], &runtime, Path::new("."));
+        assert_eq!(response.0, 200);
+        assert_eq!(response.1, "application/json; charset=utf-8");
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(&response.2).unwrap(),
+            serde_json::json!({ "project": DEN_PROJECT, "status": "ok" })
+        );
     }
 
     fn response_json(response: (u16, &'static str, Vec<u8>)) -> serde_json::Value {
