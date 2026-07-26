@@ -210,6 +210,9 @@ async function runFullBrowserProduct(project) {
       'data-renderer-single-loop="pass"',
       'data-renderer-telemetry-refresh="pass"',
       'data-renderer-telemetry-reset="pass"',
+      'data-weapon-viewmodel="pass"',
+      'data-weapon-viewmodel-layer="viewmodel"',
+      'data-weapon-viewmodel-behavior="pass"',
       "PASS · Rust facts reached retained WebGL and disposable feedback",
       "EnemyDefeated",
       "EncounterCleared",
@@ -421,6 +424,7 @@ async function runFullBrowserProduct(project) {
     }
     const lifecycleRequired = [
       'data-renderer-lifecycle="disposed"',
+      'data-weapon-viewmodel-lifecycle="disposed"',
       'data-route-disposal="pass"',
       'data-smoke-status="pass"',
       "Shared surface released",
@@ -433,6 +437,7 @@ async function runFullBrowserProduct(project) {
         `browser lifecycle smoke missing ${missingLifecycle.join(", ")}\n${lifecycleResult.stdout.slice(-6_000)}`,
       );
     }
+    await runViewmodelResizeProof(project);
     await runIsolatedGameShellProof(project, {
       width: 1440,
       height: 900,
@@ -1200,6 +1205,132 @@ async function runIsolatedGameShellProof(project, viewport) {
   }
 }
 
+async function runViewmodelResizeProof(project) {
+  const running = await launchHost(project);
+  try {
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
+    const result = await runChromiumSmoke(
+      `http://${running.address}/#/`,
+      "document.body?.dataset.weaponViewmodelResize === 'pass' || document.body?.dataset.weaponViewmodelResize === 'fail'",
+      30_000,
+      {
+        viewport: { width: 1280, height: 720 },
+        interactiveSetup: async (client) => {
+          await waitForCdp(
+            client,
+            "document.querySelector('red-main-menu') !== null",
+            "viewmodel resize main menu",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `[...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "New game",
+            )?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.body.dataset.weaponViewmodel === "pass" &&
+              document.body.dataset.weaponViewmodelLayer === "viewmodel" &&
+              document.body.dataset.weaponViewmodelLifecycle === "mounted" &&
+              document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7"`,
+            "initial retained viewmodel",
+          );
+          for (const viewport of [
+            { width: 1024, height: 600 },
+            { width: 390, height: 844 },
+          ]) {
+            await client.send("Emulation.setDeviceMetricsOverride", {
+              width: viewport.width,
+              height: viewport.height,
+              deviceScaleFactor: 1,
+              mobile: viewport.width < 600,
+            });
+            await client.send("Runtime.evaluate", {
+              expression: `window.dispatchEvent(new Event("resize"))`,
+            });
+            await waitForCdp(
+              client,
+              `(() => {
+                const rect = document.querySelector("#viewport")?.getBoundingClientRect();
+                return rect !== undefined &&
+                  innerWidth === ${String(viewport.width)} &&
+                  rect.width >= document.documentElement.clientWidth - 2 &&
+                  document.body.dataset.weaponViewmodel === "pass" &&
+                  document.body.dataset.weaponViewmodelLifecycle === "mounted" &&
+                  document.querySelector("#feedback-layer")?.dataset.viewmodelStatus === "active" &&
+                  document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7";
+              })()`,
+              `viewmodel at ${String(viewport.width)}x${String(viewport.height)}`,
+            );
+          }
+          await client.send("Runtime.evaluate", {
+            expression: `[...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "Pause",
+            )?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector(".simulation-state")?.textContent?.includes("PAUSED") === true`,
+            "viewmodel pause menu",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `[...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "Main menu",
+            )?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector("red-main-menu") !== null &&
+              document.body.dataset.rendererLifecycle === "disposed" &&
+              document.body.dataset.weaponViewmodelLifecycle === "disposed"`,
+            "viewmodel disposal",
+          );
+          await waitForCdp(
+            client,
+            `[...document.querySelectorAll("button")].some(
+              (button) =>
+                button.textContent?.trim() === "Continue" &&
+                button.disabled === false,
+            )`,
+            "viewmodel Continue availability",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `[...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "Continue",
+            )?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.body.dataset.rendererLifecycle === "mounted" &&
+              document.body.dataset.weaponViewmodelLifecycle === "mounted" &&
+              document.querySelector("#feedback-layer")?.dataset.viewmodelStatus === "active" &&
+              document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7"`,
+            "viewmodel remount",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `document.body.dataset.weaponViewmodelResize = "pass";
+              document.body.dataset.weaponViewmodelRemount = "pass"`,
+          });
+        },
+      },
+    );
+    if (
+      result.code !== 0 ||
+      !result.stdout.includes('data-weapon-viewmodel-resize="pass"') ||
+      !result.stdout.includes('data-weapon-viewmodel-remount="pass"')
+    ) {
+      throw new Error(
+        `viewmodel resize/lifecycle proof failed\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-8_000)}`,
+      );
+    }
+  } finally {
+    await stopHost(running.host);
+  }
+}
+
 async function runGameShellProof(address, viewport) {
   const result = await runChromiumSmoke(
     `http://${address}/#/`,
@@ -1226,6 +1357,9 @@ async function runGameShellProof(address, viewport) {
     'data-game-shell-settings="pass"',
     'data-game-shell-aiming="pass"',
     'data-game-shell-overflow="pass"',
+    'data-weapon-viewmodel="pass"',
+    'data-weapon-viewmodel-layer="viewmodel"',
+    'data-weapon-viewmodel-lifecycle="mounted"',
   ];
   const missing = required.filter((marker) => !result.stdout.includes(marker));
   if (missing.length > 0) {
@@ -1302,7 +1436,10 @@ async function runDeadDialogFocusProof(project) {
           await waitForCdp(
             client,
             `document.querySelector(".game-state-overlay")?.textContent?.includes("PLAYER DOWN") === true &&
-              document.activeElement?.textContent?.trim() === "Restart loading bay"`,
+              document.activeElement?.textContent?.trim() === "Restart loading bay" &&
+              document.querySelector("#feedback-layer")?.dataset.viewmodelStatus === "hidden" &&
+              document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7" &&
+              document.body.dataset.weaponViewmodelLifecycle === "mounted"`,
             "focused dead dialog",
           );
           await client.send("Input.dispatchKeyEvent", {
@@ -1341,7 +1478,10 @@ async function runDeadDialogFocusProof(project) {
           });
           await waitForCdp(
             client,
-            `document.querySelector(".game-state-overlay") === null`,
+            `document.querySelector(".game-state-overlay") === null &&
+              document.querySelector("#feedback-layer")?.dataset.viewmodelStatus === "active" &&
+              document.querySelector("#feedback-layer")?.dataset.viewmodelWeapon === "weapon/arc-pistol" &&
+              document.querySelector("#feedback-layer")?.dataset.viewmodelImpulse === "idle"`,
             "dead-dialog restart",
           );
           await delay(100);
@@ -1360,6 +1500,7 @@ async function runDeadDialogFocusProof(project) {
           }
           await client.send("Runtime.evaluate", {
             expression: `document.body.dataset.enemyCombatDeath = "pass";
+              document.body.dataset.weaponViewmodelDeathReset = "pass";
               document.body.dataset.deadDialogFocus = "pass"`,
           });
         },
@@ -1368,7 +1509,8 @@ async function runDeadDialogFocusProof(project) {
     if (
       result.code !== 0 ||
       !result.stdout.includes('data-dead-dialog-focus="pass"') ||
-      !result.stdout.includes('data-enemy-combat-death="pass"')
+      !result.stdout.includes('data-enemy-combat-death="pass"') ||
+      !result.stdout.includes('data-weapon-viewmodel-death-reset="pass"')
     ) {
       throw new Error(
         `dead-dialog focus proof failed\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-6_000)}`,

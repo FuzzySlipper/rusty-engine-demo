@@ -21,6 +21,7 @@ import {
   type RuntimeSaveSlotId,
   type RuntimeSaveSlotSummary,
 } from "./projection.js";
+import { WeaponViewmodelAdapter } from "./weapon-viewmodel.js";
 
 type VoxelEditOperation =
   | {
@@ -232,6 +233,7 @@ export async function mountLoadingBayGame(
     readState: () => current,
     surface,
     telemetryLayer,
+    viewmodel: new WeaponViewmodelAdapter(),
   });
   presentationFeedback.setAudioLevel(hostPreferences.sfxVolume);
   telemetryLayer.hidden = !hostPreferences.telemetryVisible;
@@ -709,7 +711,11 @@ export async function mountLoadingBayGame(
         "1:idle",
         "3:closed",
       ]) &&
-      resetEnemyPostureRebuilt;
+      resetEnemyPostureRebuilt &&
+      feedbackLayer.dataset.viewmodelImpulse === "idle" &&
+      feedbackLayer.dataset.viewmodelWeapon === "weapon/arc-pistol" &&
+      feedbackLayer.dataset.viewmodelNodes === "7" &&
+      document.body.dataset.weaponViewmodelLifecycle === "mounted";
     document.body.dataset.feedbackResetResult = [
       current.presentation.cues.length,
       feedbackLayer.dataset.activeEffects ?? "none",
@@ -1396,6 +1402,9 @@ export async function mountLoadingBayGame(
     feedbackLayer.dataset.lastCueCount = String(receipt.cueCount);
     feedbackLayer.dataset.failedOperations = String(receipt.failedOperations);
     feedbackLayer.dataset.scheduledSounds = String(receipt.scheduledSounds);
+    feedbackLayer.dataset.viewmodelOperations = String(
+      receipt.viewmodelOperations,
+    );
     rendererTelemetryRefreshObserved ||=
       Number(telemetryLayer.dataset.rendererSampleSequence ?? "0") > 1;
     document.body.dataset.rendererTelemetryRefresh =
@@ -1663,6 +1672,28 @@ export async function mountLoadingBayGame(
 
   async function proveWorldPickups(): Promise<boolean> {
     await presentationFeedback.activateAudio();
+    await presentationFeedback.settled();
+    const initialViewmodelFingerprint = viewmodelFingerprint();
+    const initialViewmodelNodes = surface
+      .projectionSnapshot()
+      .nodes.filter((node) => node.layer === "viewmodel");
+    const retainedViewmodel =
+      initialViewmodelNodes.length === 7 &&
+      initialViewmodelNodes.every((node) => node.layer === "viewmodel");
+    const viewmodelPickExcluded =
+      surface.pick({
+        ray: { kind: "viewport", point: [0, 0] },
+        filter: { layers: ["viewmodel"] },
+      }).hint === null;
+    const yawBeforeViewmodelProof = current.player.yawDegrees;
+    await performInputIntent([0.25, 0]);
+    await presentationFeedback.settled();
+    const cameraMoved =
+      Math.abs(current.player.yawDegrees - yawBeforeViewmodelProof) > 0.01;
+    const viewmodelCameraRelative =
+      cameraMoved && viewmodelFingerprint() === initialViewmodelFingerprint;
+    await performInputIntent([-0.25, 0]);
+    await presentationFeedback.settled();
     const pickupIds = current.pickups.map((pickup) => pickup.id);
     const initiallyAvailable = current.pickups
       .filter((pickup) => pickup.state === "available")
@@ -1807,6 +1838,8 @@ export async function mountLoadingBayGame(
     if (spreadSelection?.kind === "selectWeaponSlot") {
       await enqueueWeaponSelection(spreadSelection.slot);
     }
+    await presentationFeedback.settled();
+    const scatterViewmodelFingerprint = viewmodelFingerprint();
     const selectedSpreadWeapon =
       current.weapon.item === "weapon/breach-scattergun" &&
       current.weapon.ammunition === "ammo/scatter-shell" &&
@@ -1836,6 +1869,8 @@ export async function mountLoadingBayGame(
     if (automaticSelection?.kind === "selectWeaponSlot") {
       await enqueueWeaponSelection(automaticSelection.slot);
     }
+    await presentationFeedback.settled();
+    const automaticViewmodelFingerprint = viewmodelFingerprint();
     const automaticAmmoBefore = current.weapon.ammoRemaining;
     let automaticShotCount = 0;
     primaryFireHeld = true;
@@ -1865,6 +1900,34 @@ export async function mountLoadingBayGame(
       feedbackAudioStatus.dataset.soundKinds,
       ["spreadShot", "automaticShot"],
     );
+    const viewmodelPresentationPassed =
+      retainedViewmodel &&
+      viewmodelPickExcluded &&
+      viewmodelCameraRelative &&
+      initialViewmodelFingerprint !== scatterViewmodelFingerprint &&
+      scatterViewmodelFingerprint !== automaticViewmodelFingerprint &&
+      includesEvery(feedbackLayer.dataset.viewmodelWeapons, [
+        "weapon/arc-pistol",
+        "weapon/breach-scattergun",
+        "weapon/rivet-carbine",
+      ]) &&
+      includesEvery(feedbackLayer.dataset.viewmodelImpulses, ["attack"]) &&
+      feedbackLayer.dataset.viewmodelStatus === "active" &&
+      feedbackLayer.dataset.viewmodelNodes === "7";
+    document.body.dataset.weaponViewmodelBehavior = viewmodelPresentationPassed
+      ? "pass"
+      : "fail";
+    document.body.dataset.weaponViewmodelEvidence = [
+      retainedViewmodel,
+      viewmodelPickExcluded,
+      viewmodelCameraRelative,
+      initialViewmodelFingerprint !== scatterViewmodelFingerprint,
+      scatterViewmodelFingerprint !== automaticViewmodelFingerprint,
+      feedbackLayer.dataset.viewmodelWeapons ?? "none",
+      feedbackLayer.dataset.viewmodelImpulses ?? "none",
+      feedbackLayer.dataset.viewmodelStatus ?? "none",
+      feedbackLayer.dataset.viewmodelNodes ?? "none",
+    ].join("|");
     document.body.dataset.pickupEvidence = [
       pickupIds.join(","),
       initiallyAvailable.join(","),
@@ -1885,6 +1948,7 @@ export async function mountLoadingBayGame(
       spreadPassed,
       automaticPassed,
       weaponFeedbackPassed,
+      viewmodelPresentationPassed,
     ].join("|");
     return (
       startedAvailable &&
@@ -1901,7 +1965,8 @@ export async function mountLoadingBayGame(
       selectedSpreadWeapon &&
       spreadPassed &&
       automaticPassed &&
-      weaponFeedbackPassed
+      weaponFeedbackPassed &&
+      viewmodelPresentationPassed
     );
   }
 
@@ -2020,6 +2085,24 @@ export async function mountLoadingBayGame(
         ? timing.frameIntervalStatus
         : `${timing.frameIntervalMs.toFixed(2)} ms cadence`;
     rendererStatus.textContent = `${surface.kind} · ${String(projection.trackedEntityCount)} entities · ${String(projection.trackedMeshCount)} voxel meshes · ${cadence}`;
+  }
+
+  function viewmodelFingerprint(): string {
+    return JSON.stringify(
+      surface
+        .projectionSnapshot()
+        .nodes.filter((node) => node.layer === "viewmodel")
+        .map((node) => ({
+          handle: node.handle,
+          parent: node.parent,
+          kind: node.kind,
+          transform: node.transform,
+          visible: node.visible,
+          material: node.material,
+          label: node.metadata.label,
+          tags: node.metadata.tags,
+        })),
+    );
   }
 
   function updateSessionDiagnostics(): void {

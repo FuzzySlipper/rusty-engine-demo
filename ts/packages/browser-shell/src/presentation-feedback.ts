@@ -24,6 +24,10 @@ import type {
   RuntimeBrowserState,
   RuntimeFeedbackCue,
 } from "./projection.js";
+import type {
+  WeaponViewmodelAdapter,
+  WeaponViewmodelPlan,
+} from "./weapon-viewmodel.js";
 
 export type FeedbackParticleKind =
   | "movement"
@@ -59,6 +63,7 @@ export interface FeedbackApplicationReceipt {
   readonly cueCount: number;
   readonly failedOperations: number;
   readonly scheduledSounds: number;
+  readonly viewmodelOperations: number;
 }
 
 export interface ProjectedPresentationFeedback {
@@ -197,6 +202,7 @@ export interface BrowserPresentationFeedbackOptions {
   readonly readState: () => RuntimeBrowserState;
   readonly surface: RendererSurface;
   readonly telemetryLayer: HTMLElement;
+  readonly viewmodel: WeaponViewmodelAdapter;
 }
 
 interface SharedPresentationHosts {
@@ -212,6 +218,7 @@ interface SharedPresentationHosts {
 /** Browser composition over the shared renderer-host package. */
 export class BrowserPresentationFeedback {
   readonly #adapter = new PresentationFeedbackAdapter();
+  readonly #viewmodel: WeaponViewmodelAdapter;
   readonly #audioStatus: HTMLElement;
   readonly #layer: HTMLElement;
   readonly #readState: () => RuntimeBrowserState;
@@ -225,6 +232,8 @@ export class BrowserPresentationFeedback {
   #soundAttempts = 0;
   #scheduledSounds = 0;
   #audioLevel = 1;
+  #viewmodelImpulseGeneration = 0;
+  #disposed = false;
 
   constructor(options: BrowserPresentationFeedbackOptions) {
     this.#audioStatus = options.audioStatus;
@@ -232,6 +241,7 @@ export class BrowserPresentationFeedback {
     this.#readState = options.readState;
     this.#surface = options.surface;
     this.#telemetryLayer = options.telemetryLayer;
+    this.#viewmodel = options.viewmodel;
     this.#hosts = this.#createHosts();
     this.#surface.setPresentationHosts(this.#hosts.set);
     this.#setAudioStatus("inactive");
@@ -241,6 +251,7 @@ export class BrowserPresentationFeedback {
     this.#layer.dataset.maxActiveEffects = String(MAX_ACTIVE_EFFECTS);
     this.#layer.dataset.sharedRendererHosts =
       "audio,billboard,particle,telemetry";
+    this.#layer.dataset.viewmodelOwner = "shared-renderer";
   }
 
   async activateAudio(): Promise<"running" | "blocked" | "unavailable"> {
@@ -268,9 +279,22 @@ export class BrowserPresentationFeedback {
     renderDiffCount = 0,
   ): Promise<FeedbackApplicationReceipt> {
     const cueCount = state.presentation.cues.length;
+    if (this.#disposed) {
+      return Promise.resolve({
+        cueCount,
+        failedOperations: 0,
+        scheduledSounds: 0,
+        viewmodelOperations: 0,
+      });
+    }
     const attempt = this.#tail
       .then(() => this.#applyNow(state, reset, renderDiffCount))
-      .catch(() => ({ cueCount, failedOperations: 1, scheduledSounds: 0 }));
+      .catch(() => ({
+        cueCount,
+        failedOperations: 1,
+        scheduledSounds: 0,
+        viewmodelOperations: 0,
+      }));
     this.#tail = attempt.then(() => undefined);
     return attempt;
   }
@@ -284,8 +308,27 @@ export class BrowserPresentationFeedback {
     reset: boolean,
     renderDiffCount: number,
   ): Promise<FeedbackApplicationReceipt> {
+    if (this.#disposed) {
+      return {
+        cueCount: state.presentation.cues.length,
+        failedOperations: 0,
+        scheduledSounds: 0,
+        viewmodelOperations: 0,
+      };
+    }
     if (reset) {
       await this.#resetTransient();
+    }
+    const viewmodel = this.#applyViewmodel(
+      this.#viewmodel.project(state, reset),
+    );
+    const impulse = state.presentation.cues.some(
+      (cue) =>
+        (cue.kind === "attack" || cue.kind === "dryFire") &&
+        cue.attacker === state.player.id,
+    );
+    if (viewmodel.failedOperations === 0 && impulse) {
+      this.#scheduleViewmodelImpulseClear();
     }
     const projected = this.#adapter.project(state, this.#audioLevel);
     projected.animationStates.forEach((animation) =>
@@ -332,7 +375,7 @@ export class BrowserPresentationFeedback {
     const telemetry = captureRendererTelemetry(
       this.#surface,
       state,
-      renderDiffCount,
+      renderDiffCount + viewmodel.appliedOperations,
     );
     const snapshot = this.#hosts.telemetry.sampleSurface(
       telemetry,
@@ -347,12 +390,19 @@ export class BrowserPresentationFeedback {
     );
     return {
       cueCount: projected.cueCount,
-      failedOperations: receipt.diagnostics.length,
+      failedOperations: receipt.diagnostics.length + viewmodel.failedOperations,
       scheduledSounds,
+      viewmodelOperations: viewmodel.appliedOperations,
     };
   }
 
   async dispose(): Promise<void> {
+    if (this.#disposed) {
+      return;
+    }
+    this.#viewmodelImpulseGeneration += 1;
+    this.#applyViewmodel(this.#viewmodel.destroy());
+    this.#disposed = true;
     this.#surface.setPresentationHosts(null);
     this.#clearTimersAndPulses();
     this.#hosts.billboard.dispose();
@@ -365,6 +415,7 @@ export class BrowserPresentationFeedback {
   }
 
   async #resetTransient(): Promise<void> {
+    this.#viewmodelImpulseGeneration += 1;
     this.#surface.setPresentationHosts(null);
     this.#clearTimersAndPulses();
     this.#hosts.billboard.dispose();
@@ -391,10 +442,87 @@ export class BrowserPresentationFeedback {
       "particleKinds",
       "billboardValues",
       "animationPulses",
+      "viewmodelWeapons",
+      "viewmodelImpulses",
     ] as const) {
       delete this.#layer.dataset[key];
     }
     this.#updateActiveEffects();
+  }
+
+  #applyViewmodel(plan: WeaponViewmodelPlan): {
+    readonly appliedOperations: number;
+    readonly failedOperations: number;
+  } {
+    if (plan.ops.length === 0) {
+      plan.commit();
+      this.#publishViewmodelEvidence(0);
+      return { appliedOperations: 0, failedOperations: 0 };
+    }
+    try {
+      const receipt = this.#surface.applyFrame(plan);
+      if (!receipt.applied) {
+        this.#layer.dataset.viewmodelStatus = "unavailable";
+        this.#layer.dataset.viewmodelDiagnostics = receipt.diagnostics
+          .map((diagnostic) => diagnostic.message)
+          .join(";");
+        return {
+          appliedOperations: 0,
+          failedOperations: Math.max(1, receipt.diagnostics.length),
+        };
+      }
+      plan.commit();
+      delete this.#layer.dataset.viewmodelDiagnostics;
+      this.#publishViewmodelEvidence(plan.ops.length);
+      return { appliedOperations: plan.ops.length, failedOperations: 0 };
+    } catch (error) {
+      this.#layer.dataset.viewmodelStatus = "unavailable";
+      this.#layer.dataset.viewmodelDiagnostics =
+        error instanceof Error ? error.message : String(error);
+      return { appliedOperations: 0, failedOperations: 1 };
+    }
+  }
+
+  #scheduleViewmodelImpulseClear(): void {
+    this.#viewmodelImpulseGeneration += 1;
+    const generation = this.#viewmodelImpulseGeneration;
+    this.#schedule(() => {
+      if (generation === this.#viewmodelImpulseGeneration) {
+        this.#applyViewmodel(this.#viewmodel.clearImpulse());
+      }
+    }, VIEWMODEL_IMPULSE_LIFETIME_MILLISECONDS);
+  }
+
+  #publishViewmodelEvidence(appliedOperations: number): void {
+    const readout = this.#viewmodel.readout();
+    const retained = this.#surface
+      .projectionSnapshot()
+      .nodes.filter((node) => node.layer === "viewmodel");
+    const coherent =
+      retained.length === readout.liveNodeCount &&
+      (readout.mounted || retained.length === 0);
+    this.#layer.dataset.viewmodelStatus = coherent
+      ? readout.visible
+        ? "active"
+        : readout.mounted
+          ? "hidden"
+          : "unmounted"
+      : "unavailable";
+    this.#layer.dataset.viewmodelWeapon = readout.weapon ?? "none";
+    this.#layer.dataset.viewmodelImpulse = readout.impulse;
+    this.#layer.dataset.viewmodelNodes = String(retained.length);
+    this.#layer.dataset.viewmodelLastOperations = String(appliedOperations);
+    this.#record("viewmodelWeapons", readout.weapon ?? "none");
+    this.#record("viewmodelImpulses", readout.impulse);
+    document.body.dataset.weaponViewmodel = coherent ? "pass" : "fail";
+    document.body.dataset.weaponViewmodelLayer = retained.every(
+      (node) => node.layer === "viewmodel",
+    )
+      ? "viewmodel"
+      : "invalid";
+    document.body.dataset.weaponViewmodelLifecycle = readout.mounted
+      ? "mounted"
+      : "disposed";
   }
 
   #createHosts(): SharedPresentationHosts {
@@ -595,7 +723,9 @@ export class BrowserPresentationFeedback {
       | "animationPulses"
       | "cueKinds"
       | "particleKinds"
-      | "billboardValues",
+      | "billboardValues"
+      | "viewmodelWeapons"
+      | "viewmodelImpulses",
     value: string,
   ): void {
     const values = new Set(
@@ -1194,3 +1324,4 @@ const MAX_ACTIVE_EFFECTS = 24;
 const BILLBOARD_LIFETIME_MILLISECONDS = 1_100;
 const PULSE_LIFETIME_MILLISECONDS = 420;
 const ACTIVE_SOUND_EVIDENCE_MILLISECONDS = 400;
+const VIEWMODEL_IMPULSE_LIFETIME_MILLISECONDS = 90;

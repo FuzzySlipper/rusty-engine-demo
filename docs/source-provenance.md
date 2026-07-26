@@ -6,7 +6,7 @@ Rusty Engine Demo was originally extracted from
 
 The current Rust dependencies resolve from exact reviewed authoring revision
 `464dd5e16bb023ad8d81515eabeaac9bb75df74d`; browser render packages resolve from exact review-fix
-revision `2665b74566136fb77e3a26b0766394124c8f58d3`. The older revision below remains the historical
+revision `e622c941671bc0f167206b049ab94ea63495a86d`. The older revisions below remain historical
 extraction point, not an active dependency pin.
 
 ## M10A Rust transfer
@@ -137,7 +137,11 @@ sidearm, spread, automatic, and dry-fire sounds are synthesized at runtime from 
 frequency/envelope profiles in `ts/packages/browser-shell/src/presentation-feedback.ts`; there are
 no imported audio files. Rust exclusively owns selection, cadence, deterministic spread seeds and
 rays, occlusion, ammunition, damage, and facts. Browser pulses, particles, synthesized audio, and
-the pending shared-renderer viewmodel are disposable presentation and cannot alter aim or damage.
+the shared-renderer viewmodel are disposable presentation and cannot alter aim or damage. The three
+viewmodel silhouettes are original arrangements of renderer-neutral cube and sphere primitives
+authored in `weapon-viewmodel.ts`; they contain no imported model, texture, sprite, animation, or
+other asset. Bob, recoil, and muzzle flash are bounded local descriptor offsets derived from
+accepted Rust movement and attack facts.
 
 The schema-17 key-gated door, Loading Bay interlock, secret region, level exit, and their original
 presentation strings were authored directly in this repository under Den task #6226. They reuse
@@ -190,6 +194,9 @@ shared renderer rather than donor fixtures or a fake transport.
 
 Rusty Engine task #6213 produced the renderer-owned timing seam at public SHA
 `2665b74566136fb77e3a26b0766394124c8f58d3`. That SHA is recorded here as reviewed-upstream
-integration evidence and is the active exact browser-renderer dependency pin adopted by #6219.
+integration evidence adopted by #6219. Rusty Engine task #6263 then produced the bounded
+camera-relative `viewmodel` layer and explicit world/depth-clear/viewmodel composition at public SHA
+`e622c941671bc0f167206b049ab94ea63495a86d`, which is the active exact browser-renderer dependency
+pin adopted by #6224.
 The downstream call site reads `surface.timing()` from the shared auto-started surface; no demo
-frame scheduler, backend clock, or private renderer access was introduced.
+frame scheduler, backend clock, renderer object access, or private renderer was introduced.
