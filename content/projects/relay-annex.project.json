@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "projectId": "relay-annex",
   "name": "Relay Annex",
   "entryScene": "scene/relay-annex",
@@ -69,6 +69,76 @@
       "id": "mesh/spatial-probe"
     }
   ],
+  "itemDefinitions": [
+    {
+      "id": "weapon/arc-pistol",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "weapon",
+        "ammunition": "ammo/energy-cell"
+      }
+    },
+    {
+      "id": "weapon/breach-scattergun",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "weapon",
+        "ammunition": "ammo/scatter-shell"
+      }
+    },
+    {
+      "id": "weapon/rivet-carbine",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "weapon",
+        "ammunition": "ammo/energy-cell"
+      }
+    },
+    {
+      "id": "ammo/energy-cell",
+      "maxQuantity": 200,
+      "kind": {
+        "kind": "ammunition"
+      }
+    },
+    {
+      "id": "ammo/scatter-shell",
+      "maxQuantity": 50,
+      "kind": {
+        "kind": "ammunition"
+      }
+    },
+    {
+      "id": "key/maintenance-pass",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "accessKey"
+      }
+    },
+    {
+      "id": "supply/med-patch",
+      "maxQuantity": 5,
+      "kind": {
+        "kind": "healthSupply",
+        "restoreHealth": 25
+      }
+    },
+    {
+      "id": "armor/impact-vest",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "armor",
+        "protection": 100
+      }
+    },
+    {
+      "id": "key/inert-inspection-tag",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "accessKey"
+      }
+    }
+  ],
   "scenes": [
     {
       "id": "scene/relay-annex",
@@ -136,6 +206,24 @@
               0,
               0
             ]
+          },
+          "inventory": {
+            "capacitySlots": 8,
+            "startingStacks": [
+              {
+                "item": "weapon/arc-pistol",
+                "quantity": 1
+              },
+              {
+                "item": "ammo/energy-cell",
+                "quantity": 40
+              },
+              {
+                "item": "supply/med-patch",
+                "quantity": 1
+              }
+            ],
+            "initiallyEquippedWeapon": "weapon/arc-pistol"
           }
         },
         {

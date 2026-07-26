@@ -72,6 +72,30 @@ export interface WeaponDefinition {
   readonly muzzleOffset: Vec3;
 }
 
+export type ItemKindDefinition =
+  | { readonly kind: "weapon"; readonly ammunition: string }
+  | { readonly kind: "ammunition" }
+  | { readonly kind: "accessKey" }
+  | { readonly kind: "healthSupply"; readonly restoreHealth: number }
+  | { readonly kind: "armor"; readonly protection: number };
+
+export interface ItemDefinition {
+  readonly id: string;
+  readonly maxQuantity: number;
+  readonly kind: ItemKindDefinition;
+}
+
+export interface InventoryStackDefinition {
+  readonly item: string;
+  readonly quantity: number;
+}
+
+export interface InventoryDefinition {
+  readonly capacitySlots: number;
+  readonly startingStacks: readonly InventoryStackDefinition[];
+  readonly initiallyEquippedWeapon: string | null;
+}
+
 export interface VoxelCollisionDefinition {
   readonly voxelSize: number;
   readonly chunkSize: number;
@@ -118,6 +142,7 @@ export interface EntityDefinition {
   readonly kinematic?: KinematicDefinition;
   readonly navigation?: NavigationDefinition;
   readonly playerController?: PlayerControllerDefinition;
+  readonly inventory?: InventoryDefinition;
   readonly weapon?: WeaponDefinition;
 }
 
@@ -207,10 +232,11 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 11;
+  readonly schemaVersion: 12;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;
   readonly assets: readonly StoredAssetDefinition[];
+  readonly itemDefinitions: readonly ItemDefinition[];
   readonly scenes: readonly StoredSceneDefinition[];
 }

@@ -18,7 +18,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 10;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 11;
+const LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION: u32 = 10;
 const LEGACY_V9_STORED_PROJECT_SCHEMA_VERSION: u32 = 9;
 const LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION: u32 = 8;
 const LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION: u32 = 7;
@@ -53,7 +54,8 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v10(decode_legacy_project(input)?)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v11(decode_legacy_project(input)?)?,
+        LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION => migrate_v10(decode_legacy_project(input)?)?,
         LEGACY_V9_STORED_PROJECT_SCHEMA_VERSION => migrate_v9(decode_legacy_project(input)?)?,
         LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION => migrate_v8(decode_legacy_project(input)?)?,
         LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION => migrate_v7(decode_legacy_project(input)?)?,
@@ -63,11 +65,12 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
                     LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V9_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -176,11 +179,22 @@ fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectErro
     Ok(document)
 }
 
-fn migrate_v10(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+fn migrate_v11(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_inventory_fields(&legacy)?;
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn migrate_v10(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION
+    );
+    reject_future_inventory_fields(&legacy)?;
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
 }
@@ -190,6 +204,7 @@ fn migrate_v9(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
         legacy.schema_version,
         LEGACY_V9_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_inventory_fields(&legacy)?;
     assign_legacy_child_order(&mut legacy);
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
@@ -200,6 +215,7 @@ fn migrate_v8(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
         legacy.schema_version,
         LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_inventory_fields(&legacy)?;
     assign_legacy_child_order(&mut legacy);
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
@@ -210,6 +226,7 @@ fn migrate_v7(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
         legacy.schema_version,
         LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_inventory_fields(&legacy)?;
     if legacy.scenes.iter().any(|scene| {
         scene
             .entities
@@ -229,6 +246,17 @@ fn migrate_v7(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
 
 fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(legacy.schema_version, PROJECT_CONTENT_SCHEMA_VERSION);
+    if legacy
+        .entities
+        .iter()
+        .any(|entity| entity.inventory.is_some())
+    {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "entities",
+            "schema 6 cannot declare inventory",
+        ));
+    }
     let voxel_environment = match (
         legacy.voxel_collision.take(),
         legacy.generated_voxel_environment.take(),
@@ -275,6 +303,7 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
                 material: None,
             })
             .collect(),
+        item_definitions: Vec::new(),
         scenes: vec![StoredScene {
             id: MIGRATED_V6_SCENE_ID.to_string(),
             name: "Migrated Schema 6 Entry".to_string(),
@@ -283,6 +312,32 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
             entities: legacy.entities,
         }],
     })
+}
+
+fn reject_future_inventory_fields(legacy: &StoredProject) -> Result<(), StoredProjectError> {
+    if !legacy.item_definitions.is_empty() {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "itemDefinitions",
+            format!(
+                "schema {} cannot declare item definitions",
+                legacy.schema_version
+            ),
+        ));
+    }
+    if legacy
+        .scenes
+        .iter()
+        .flat_map(|scene| &scene.entities)
+        .any(|entity| entity.inventory.is_some())
+    {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "scenes",
+            format!("schema {} cannot declare inventory", legacy.schema_version),
+        ));
+    }
+    Ok(())
 }
 
 fn assign_legacy_child_order(project: &mut StoredProject) {
@@ -320,6 +375,9 @@ fn canonicalize(mut document: StoredProject) -> Result<StoredProject, StoredProj
     }
     document
         .assets
+        .sort_by(|left, right| left.id.cmp(&right.id));
+    document
+        .item_definitions
         .sort_by(|left, right| left.id.cmp(&right.id));
     document
         .scenes

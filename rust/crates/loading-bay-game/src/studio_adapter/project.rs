@@ -419,6 +419,7 @@ pub fn create_project(
         name,
         entry_scene: entry_scene.clone(),
         assets: Vec::new(),
+        item_definitions: Vec::new(),
         scenes: vec![StoredScene {
             id: entry_scene,
             name: entry_scene_name,
@@ -642,6 +643,7 @@ pub fn create_scene_object(
                     kinematic: object.kinematic,
                     navigation: None,
                     player_controller: None,
+                    inventory: None,
                     weapon: None,
                 });
             Ok(ProjectMutationReceipt::SceneObjectCreated {

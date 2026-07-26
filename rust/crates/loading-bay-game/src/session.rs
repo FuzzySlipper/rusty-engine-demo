@@ -16,6 +16,10 @@ use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconState, ExtractionBeaconView,
 };
 use crate::interaction::{SwitchComponent, SwitchView};
+use crate::inventory::{
+    admit_item_definitions, inventory_from_config, inventory_view, InventoryComponent,
+    InventoryView, ItemDefinition, ItemDefinitionId, ItemDefinitionView,
+};
 use crate::navigation::{
     NavigationComponent, NavigationState, NavigationView, MAX_NAVIGATION_QUERY_BUDGET,
     MAX_NAVIGATION_SPEED_UNITS_PER_SECOND,
@@ -34,6 +38,8 @@ pub struct GameSession {
     pub(crate) extraction_beacons: BTreeMap<EntityId, ExtractionBeaconComponent>,
     pub(crate) navigators: BTreeMap<EntityId, NavigationComponent>,
     pub(crate) player_controllers: BTreeMap<EntityId, PlayerControllerComponent>,
+    pub(crate) item_definitions: BTreeMap<ItemDefinitionId, ItemDefinition>,
+    pub(crate) inventories: BTreeMap<EntityId, InventoryComponent>,
     pub(crate) weapons: BTreeMap<EntityId, WeaponComponent>,
 }
 
@@ -41,7 +47,16 @@ impl GameSession {
     pub fn from_definitions(
         definitions: impl IntoIterator<Item = GameEntityDefinition>,
     ) -> Result<Self, GameEntityDefinitionError> {
+        Self::from_item_and_entity_definitions([], definitions)
+    }
+
+    pub fn from_item_and_entity_definitions(
+        item_definitions: impl IntoIterator<Item = ItemDefinition>,
+        definitions: impl IntoIterator<Item = GameEntityDefinition>,
+    ) -> Result<Self, GameEntityDefinitionError> {
         let definitions: Vec<GameEntityDefinition> = definitions.into_iter().collect();
+        let item_definitions = admit_item_definitions(item_definitions)
+            .map_err(GameEntityDefinitionError::Inventory)?;
         let entities = EntityState::from_definitions(
             definitions
                 .iter()
@@ -58,6 +73,7 @@ impl GameSession {
         let mut extraction_beacons = BTreeMap::new();
         let mut navigators = BTreeMap::new();
         let mut player_controllers = BTreeMap::new();
+        let mut inventories = BTreeMap::new();
         let mut weapons = BTreeMap::new();
 
         for definition in &definitions {
@@ -206,6 +222,20 @@ impl GameSession {
                     },
                 );
             }
+            if let Some(config) = &definition.inventory {
+                if definition.player_controller.is_none() {
+                    return Err(GameEntityDefinitionError::Inventory(
+                        crate::inventory::InventoryAdmissionError::InventoryWithoutPlayerController {
+                            owner: entity,
+                        },
+                    ));
+                }
+                inventories.insert(
+                    entity,
+                    inventory_from_config(entity, config, &item_definitions)
+                        .map_err(GameEntityDefinitionError::Inventory)?,
+                );
+            }
             if let Some(config) = definition.weapon {
                 if definition.player_controller.is_none() {
                     return Err(GameEntityDefinitionError::WeaponWithoutPlayerController {
@@ -339,6 +369,8 @@ impl GameSession {
             extraction_beacons,
             navigators,
             player_controllers,
+            item_definitions,
+            inventories,
             weapons,
         })
     }
@@ -426,6 +458,31 @@ impl GameSession {
             state: component.state,
             entity_view: self.entities.view(entity).ok()?,
         })
+    }
+
+    pub fn item_definition(&self, item: &ItemDefinitionId) -> Option<ItemDefinitionView> {
+        let definition = self.item_definitions.get(item)?;
+        Some(ItemDefinitionView {
+            id: definition.id.clone(),
+            kind: definition.kind.clone(),
+            max_quantity: definition.max_quantity,
+        })
+    }
+
+    pub fn item_definitions(&self) -> impl ExactSizeIterator<Item = ItemDefinitionView> + '_ {
+        self.item_definitions
+            .values()
+            .map(|definition| ItemDefinitionView {
+                id: definition.id.clone(),
+                kind: definition.kind.clone(),
+                max_quantity: definition.max_quantity,
+            })
+    }
+
+    pub fn inventory(&self, owner: EntityId) -> Option<InventoryView> {
+        self.inventories
+            .get(&owner)
+            .map(|component| inventory_view(owner, component))
     }
 
     pub fn weapon(&self, entity: EntityId) -> Option<WeaponView> {

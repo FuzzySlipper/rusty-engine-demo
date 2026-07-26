@@ -17,6 +17,18 @@ export const ENCOUNTER_IDS = {
   motionProbe: 10,
 } as const;
 
+export const LOADING_BAY_ITEM_IDS = {
+  arcPistol: "weapon/arc-pistol",
+  breachScattergun: "weapon/breach-scattergun",
+  rivetCarbine: "weapon/rivet-carbine",
+  energyCell: "ammo/energy-cell",
+  scatterShell: "ammo/scatter-shell",
+  maintenancePass: "key/maintenance-pass",
+  medPatch: "supply/med-patch",
+  impactVest: "armor/impact-vest",
+  inertInspectionTag: "key/inert-inspection-tag",
+} as const;
+
 export interface EncounterProjectOptions {
   readonly navigationGoal?: Vec3;
   readonly navigationSpeedUnitsPerSecond?: number;
@@ -54,7 +66,8 @@ const ANIMATED_CHARACTER_ASSET = {
   animatedMesh: {
     asset: "mesh-animation/kenney-retro-character-medium",
     runtimeFormat: "glb",
-    contentHash: "sha256:c71255a41c0373f0d2ef52593369d5fd9d2f6220ae548aff8cd6bf5edb403674",
+    contentHash:
+      "sha256:c71255a41c0373f0d2ef52593369d5fd9d2f6220ae548aff8cd6bf5edb403674",
     clips: [
       { id: "idle", name: "Idle", durationSeconds: 1.04166662693024 },
       { id: "run", name: "Run", durationSeconds: 0.666666686534882 },
@@ -146,10 +159,17 @@ export function encounterGateProject(
       {
         id: ENCOUNTER_IDS.exit,
         name: "loading-bay-exit",
-        translation: [GENERATED_EXIT.centerX, GENERATED_EXIT.centerY, GENERATED_EXIT.wallZ],
+        translation: [
+          GENERATED_EXIT.centerX,
+          GENERATED_EXIT.centerY,
+          GENERATED_EXIT.wallZ,
+        ],
         collision: { enabled: true, staticCollider: true },
         renderable: { asset: "mesh/security-door", visible: true },
-        kinematic: { halfExtents: GENERATED_EXIT.collisionHalfExtents, velocity: [0, 0, 0] },
+        kinematic: {
+          halfExtents: GENERATED_EXIT.collisionHalfExtents,
+          velocity: [0, 0, 0],
+        },
         door: {
           openTranslation: [
             GENERATED_EXIT.centerX,
@@ -176,7 +196,10 @@ export function encounterGateProject(
 }
 
 export const generatedEncounterProjects = {
-  "encounter-gate.project.json": encounterGateProject(["sentry-alpha", "sentry-beta"]),
+  "encounter-gate.project.json": encounterGateProject([
+    "sentry-alpha",
+    "sentry-beta",
+  ]),
   "encounter-gate-solo.project.json": encounterGateProject(["sentry-alpha"]),
 } as const;
 
@@ -187,7 +210,10 @@ export function loadingBayStoredProject(
   const legacy = encounterGateProject(["sentry-alpha", "sentry-beta"], options);
   const entities = legacy.entities.map((entity) => {
     const renderable = entity.renderable;
-    if (renderable === undefined || !renderable.asset.startsWith("primitive/")) {
+    if (
+      renderable === undefined ||
+      !renderable.asset.startsWith("primitive/")
+    ) {
       return entity;
     }
     return {
@@ -198,13 +224,36 @@ export function loadingBayStoredProject(
       },
     };
   });
-  const probe = entities.at(-1);
-  if (probe?.id !== ENCOUNTER_IDS.motionProbe || legacy.generatedVoxelEnvironment === undefined) {
+  const player = entities.find((entity) => entity.id === ENCOUNTER_IDS.actor);
+  if (player === undefined) {
+    throw new Error("loading-bay player source is missing");
+  }
+  const entitiesWithInventory = entities.map((entity) =>
+    entity.id === ENCOUNTER_IDS.actor
+      ? {
+          ...entity,
+          inventory: {
+            capacitySlots: 8,
+            startingStacks: [
+              { item: LOADING_BAY_ITEM_IDS.arcPistol, quantity: 1 },
+              { item: LOADING_BAY_ITEM_IDS.energyCell, quantity: 40 },
+              { item: LOADING_BAY_ITEM_IDS.medPatch, quantity: 1 },
+            ],
+            initiallyEquippedWeapon: LOADING_BAY_ITEM_IDS.arcPistol,
+          },
+        }
+      : entity,
+  );
+  const probe = entitiesWithInventory.at(-1);
+  if (
+    probe?.id !== ENCOUNTER_IDS.motionProbe ||
+    legacy.generatedVoxelEnvironment === undefined
+  ) {
     throw new Error("loading-bay source composition is incomplete");
   }
 
   return {
-    schemaVersion: 11,
+    schemaVersion: 12,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",
@@ -217,13 +266,63 @@ export function loadingBayStoredProject(
       { id: "mesh/security-sentry" },
       { id: "mesh/spatial-probe" },
     ],
+    itemDefinitions: [
+      {
+        id: LOADING_BAY_ITEM_IDS.arcPistol,
+        maxQuantity: 1,
+        kind: { kind: "weapon", ammunition: LOADING_BAY_ITEM_IDS.energyCell },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.breachScattergun,
+        maxQuantity: 1,
+        kind: { kind: "weapon", ammunition: LOADING_BAY_ITEM_IDS.scatterShell },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.rivetCarbine,
+        maxQuantity: 1,
+        kind: { kind: "weapon", ammunition: LOADING_BAY_ITEM_IDS.energyCell },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.energyCell,
+        maxQuantity: 200,
+        kind: { kind: "ammunition" },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.scatterShell,
+        maxQuantity: 50,
+        kind: { kind: "ammunition" },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.maintenancePass,
+        maxQuantity: 1,
+        kind: { kind: "accessKey" },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.medPatch,
+        maxQuantity: 5,
+        kind: { kind: "healthSupply", restoreHealth: 25 },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.impactVest,
+        maxQuantity: 1,
+        kind: { kind: "armor", protection: 100 },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.inertInspectionTag,
+        maxQuantity: 1,
+        kind: { kind: "accessKey" },
+      },
+    ],
     scenes: [
       {
         id: "scene/loading-bay",
         name: "Loading Bay",
-        voxelEnvironment: { kind: "generatedRoom", ...legacy.generatedVoxelEnvironment },
+        voxelEnvironment: {
+          kind: "generatedRoom",
+          ...legacy.generatedVoxelEnvironment,
+        },
         entities: [
-          ...entities.slice(0, -1),
+          ...entitiesWithInventory.slice(0, -1),
           {
             id: ENCOUNTER_IDS.doorControl,
             name: "door-control",
@@ -234,7 +333,11 @@ export function loadingBayStoredProject(
           {
             id: ENCOUNTER_IDS.extractionBeacon,
             name: "extraction-beacon",
-            translation: [GENERATED_EXIT.centerX, 1.5, GENERATED_EXIT.wallZ + 1.5],
+            translation: [
+              GENERATED_EXIT.centerX,
+              1.5,
+              GENERATED_EXIT.wallZ + 1.5,
+            ],
             renderable: { asset: "mesh/extraction-beacon", visible: true },
             extractionBeacon: {
               activationRadius: options.beaconActivationRadius ?? 16,
@@ -262,54 +365,70 @@ export function relayAnnexStoredProject(): StoredProjectContent {
     throw new Error("loading-bay source scene is missing");
   }
 
-  const entities = sourceScene.entities.flatMap((entity): readonly EntityDefinition[] => {
-    switch (entity.id) {
-      case ENCOUNTER_IDS.actor:
-        return [{ ...entity, translation: [2.5, 1.5, 2.5] }];
-      case ENCOUNTER_IDS.encounter:
-        return [
-          {
-            ...entity,
-            name: "relay-annex-encounter",
-            encounter: { members: [ENCOUNTER_IDS.firstEnemy], exit: ENCOUNTER_IDS.exit },
-          },
-        ];
-      case ENCOUNTER_IDS.exit:
-        return [
-          {
-            ...entity,
-            name: "relay-annex-exit",
-            translation: [3.5, 1, 9],
-            door: { openTranslation: [3.5, 4, 9], autoCloseAfterTicks: null },
-          },
-        ];
-      case ENCOUNTER_IDS.firstEnemy:
-        return [
-          {
-            ...entity,
-            name: "relay-warden",
-            translation: [5.5, 1.5, 6.5],
-          },
-        ];
-      case ENCOUNTER_IDS.firstEnemy + 1:
-        return [];
-      case ENCOUNTER_IDS.doorControl:
-        return [{ ...entity, name: "annex-door-control", translation: [5.5, 1.5, 8.5] }];
-      case ENCOUNTER_IDS.extractionBeacon:
-        return [{ ...entity, name: "relay-beacon", translation: [3.5, 1.5, 4.5] }];
-      case ENCOUNTER_IDS.motionProbe:
-        return [
-          {
-            ...entity,
-            name: "relay-pulse-probe",
-            translation: [1.5, 1.5, 7.5],
-            kinematic: { halfExtents: [0.25, 0.25, 0.25], velocity: [3, 0, 0] },
-          },
-        ];
-      default:
-        throw new Error(`unexpected loading-bay entity ${entity.id}`);
-    }
-  });
+  const entities = sourceScene.entities.flatMap(
+    (entity): readonly EntityDefinition[] => {
+      switch (entity.id) {
+        case ENCOUNTER_IDS.actor:
+          return [{ ...entity, translation: [2.5, 1.5, 2.5] }];
+        case ENCOUNTER_IDS.encounter:
+          return [
+            {
+              ...entity,
+              name: "relay-annex-encounter",
+              encounter: {
+                members: [ENCOUNTER_IDS.firstEnemy],
+                exit: ENCOUNTER_IDS.exit,
+              },
+            },
+          ];
+        case ENCOUNTER_IDS.exit:
+          return [
+            {
+              ...entity,
+              name: "relay-annex-exit",
+              translation: [3.5, 1, 9],
+              door: { openTranslation: [3.5, 4, 9], autoCloseAfterTicks: null },
+            },
+          ];
+        case ENCOUNTER_IDS.firstEnemy:
+          return [
+            {
+              ...entity,
+              name: "relay-warden",
+              translation: [5.5, 1.5, 6.5],
+            },
+          ];
+        case ENCOUNTER_IDS.firstEnemy + 1:
+          return [];
+        case ENCOUNTER_IDS.doorControl:
+          return [
+            {
+              ...entity,
+              name: "annex-door-control",
+              translation: [5.5, 1.5, 8.5],
+            },
+          ];
+        case ENCOUNTER_IDS.extractionBeacon:
+          return [
+            { ...entity, name: "relay-beacon", translation: [3.5, 1.5, 4.5] },
+          ];
+        case ENCOUNTER_IDS.motionProbe:
+          return [
+            {
+              ...entity,
+              name: "relay-pulse-probe",
+              translation: [1.5, 1.5, 7.5],
+              kinematic: {
+                halfExtents: [0.25, 0.25, 0.25],
+                velocity: [3, 0, 0],
+              },
+            },
+          ];
+        default:
+          throw new Error(`unexpected loading-bay entity ${entity.id}`);
+      }
+    },
+  );
 
   return {
     ...source,

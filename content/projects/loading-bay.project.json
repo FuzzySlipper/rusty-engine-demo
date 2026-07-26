@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "projectId": "loading-bay",
   "name": "Loading Bay",
   "entryScene": "scene/loading-bay",
@@ -10,7 +10,8 @@
         "version": 1,
         "hash": "c71255a41c0373f0d2ef52593369d5fd9d2f6220ae548aff8cd6bf5edb403674",
         "sourcePath": "content/assets/kenney-retro-character-medium.glb",
-        "label": "Kenney Retro Character"
+        "label": "Kenney Retro Character",
+        "dependencies": []
       },
       "animatedMesh": {
         "asset": "mesh-animation/kenney-retro-character-medium",
@@ -20,12 +21,12 @@
           {
             "id": "idle",
             "name": "Idle",
-            "durationSeconds": 1.0416666
+            "durationSeconds": 1.04166662693024
           },
           {
             "id": "run",
             "name": "Run",
-            "durationSeconds": 0.6666667
+            "durationSeconds": 0.666666686534882
           },
           {
             "id": "jump",
@@ -39,7 +40,7 @@
           "min": [
             -0.02,
             -0.01,
-            0.0
+            0
           ],
           "max": [
             0.02,
@@ -68,6 +69,76 @@
       "id": "mesh/spatial-probe"
     }
   ],
+  "itemDefinitions": [
+    {
+      "id": "weapon/arc-pistol",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "weapon",
+        "ammunition": "ammo/energy-cell"
+      }
+    },
+    {
+      "id": "weapon/breach-scattergun",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "weapon",
+        "ammunition": "ammo/scatter-shell"
+      }
+    },
+    {
+      "id": "weapon/rivet-carbine",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "weapon",
+        "ammunition": "ammo/energy-cell"
+      }
+    },
+    {
+      "id": "ammo/energy-cell",
+      "maxQuantity": 200,
+      "kind": {
+        "kind": "ammunition"
+      }
+    },
+    {
+      "id": "ammo/scatter-shell",
+      "maxQuantity": 50,
+      "kind": {
+        "kind": "ammunition"
+      }
+    },
+    {
+      "id": "key/maintenance-pass",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "accessKey"
+      }
+    },
+    {
+      "id": "supply/med-patch",
+      "maxQuantity": 5,
+      "kind": {
+        "kind": "healthSupply",
+        "restoreHealth": 25
+      }
+    },
+    {
+      "id": "armor/impact-vest",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "armor",
+        "protection": 100
+      }
+    },
+    {
+      "id": "key/inert-inspection-tag",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "accessKey"
+      }
+    }
+  ],
   "scenes": [
     {
       "id": "scene/loading-bay",
@@ -75,7 +146,7 @@
       "voxelEnvironment": {
         "kind": "generatedRoom",
         "seed": 4,
-        "voxelSize": 1.0,
+        "voxelSize": 1,
         "chunkSize": 16,
         "width": 7,
         "height": 4,
@@ -105,17 +176,17 @@
               0.25
             ],
             "velocity": [
-              0.0,
-              0.0,
-              0.0
+              0,
+              0,
+              0
             ]
           },
           "playerController": {
-            "moveSpeedUnitsPerSecond": 4.0,
+            "moveSpeedUnitsPerSecond": 4,
             "moveStepSeconds": 0.1,
-            "lookDegreesPerUnit": 12.0,
-            "initialYawDegrees": 0.0,
-            "initialPitchDegrees": -10.0,
+            "lookDegreesPerUnit": 12,
+            "initialYawDegrees": 0,
+            "initialPitchDegrees": -10,
             "bindings": {
               "moveForward": "KeyW",
               "moveBackward": "KeyS",
@@ -127,14 +198,32 @@
           },
           "weapon": {
             "damage": 60,
-            "maxDistance": 20.0,
+            "maxDistance": 20,
             "cooldownTicks": 2,
             "ammoCapacity": 8,
             "muzzleOffset": [
-              0.0,
-              0.0,
-              0.0
+              0,
+              0,
+              0
             ]
+          },
+          "inventory": {
+            "capacitySlots": 8,
+            "startingStacks": [
+              {
+                "item": "weapon/arc-pistol",
+                "quantity": 1
+              },
+              {
+                "item": "ammo/energy-cell",
+                "quantity": 40
+              },
+              {
+                "item": "supply/med-patch",
+                "quantity": 1
+              }
+            ],
+            "initiallyEquippedWeapon": "weapon/arc-pistol"
           }
         },
         {
@@ -153,8 +242,8 @@
           "name": "loading-bay-exit",
           "translation": [
             4.5,
-            1.0,
-            11.0
+            1,
+            11
           ],
           "collision": {
             "enabled": true,
@@ -164,14 +253,6 @@
             "asset": "mesh/security-door",
             "visible": true
           },
-          "door": {
-            "openTranslation": [
-              4.5,
-              4.0,
-              11.0
-            ],
-            "autoCloseAfterTicks": null
-          },
           "kinematic": {
             "halfExtents": [
               1.2,
@@ -179,10 +260,18 @@
               0.275
             ],
             "velocity": [
-              0.0,
-              0.0,
-              0.0
+              0,
+              0,
+              0
             ]
+          },
+          "door": {
+            "openTranslation": [
+              4.5,
+              4,
+              11
+            ],
+            "autoCloseAfterTicks": null
           }
         },
         {
@@ -217,9 +306,9 @@
               0.25
             ],
             "velocity": [
-              0.0,
-              0.0,
-              0.0
+              0,
+              0,
+              0
             ]
           },
           "navigation": {
@@ -228,7 +317,7 @@
               1.5,
               6.5
             ],
-            "speedUnitsPerSecond": 4.0,
+            "speedUnitsPerSecond": 4,
             "maxVisited": 512
           }
         },
@@ -289,7 +378,7 @@
             "visible": true
           },
           "extractionBeacon": {
-            "activationRadius": 16.0
+            "activationRadius": 16
           }
         },
         {
@@ -311,9 +400,9 @@
               0.25
             ],
             "velocity": [
-              5.0,
-              0.0,
-              0.0
+              5,
+              0,
+              0
             ]
           }
         },
@@ -321,18 +410,18 @@
           "id": 11,
           "name": "New Entity",
           "translation": [
-            0.0,
-            0.0,
-            0.0
+            0,
+            0,
+            0
           ],
           "light": {
             "kind": "directional",
             "color": [
-              1.0,
-              1.0,
-              1.0
+              1,
+              1,
+              1
             ],
-            "intensity": 1.0,
+            "intensity": 1,
             "enabled": true,
             "shadows": false
           }

@@ -63,6 +63,7 @@ fn real_schema_six_project_migrates_into_the_current_admitted_shape() {
 fn schema_seven_project_migrates_without_minting_new_beacon_meaning() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 7.into();
+    strip_schema_twelve_inventory(&mut previous);
     previous["assets"]
         .as_array_mut()
         .unwrap()
@@ -91,6 +92,7 @@ fn schema_seven_project_migrates_without_minting_new_beacon_meaning() {
 fn schema_eight_project_migrates_with_empty_voxel_authoring_collections() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 8.into();
+    strip_schema_twelve_inventory(&mut previous);
 
     let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
 
@@ -117,6 +119,10 @@ fn schema_eight_project_migrates_with_empty_voxel_authoring_collections() {
 fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_transforms() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 9.into();
+    strip_schema_twelve_inventory(&mut previous);
+    for entity in previous["scenes"][0]["entities"].as_array_mut().unwrap() {
+        entity.as_object_mut().unwrap().remove("light");
+    }
 
     let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
 
@@ -140,7 +146,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 12, 99] {
+    for schema_version in [0, 5, 13, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -217,5 +223,14 @@ fn contains_object_key(value: &serde_json::Value, needle: &str) -> bool {
                     .any(|value| contains_object_key(value, needle))
         }
         _ => false,
+    }
+}
+
+fn strip_schema_twelve_inventory(project: &mut serde_json::Value) {
+    project.as_object_mut().unwrap().remove("itemDefinitions");
+    for scene in project["scenes"].as_array_mut().unwrap() {
+        for entity in scene["entities"].as_array_mut().unwrap() {
+            entity.as_object_mut().unwrap().remove("inventory");
+        }
     }
 }

@@ -14,6 +14,7 @@ mod encounter;
 mod extraction_beacon;
 mod game_loop;
 mod interaction;
+mod inventory;
 mod navigation;
 mod player;
 mod project_admission;
@@ -61,6 +62,13 @@ pub use game_loop::{
     MAX_INPUT_AGE_TICKS, MAX_PENDING_GAME_LOOP_FACTS, MAX_RETAINED_COMMAND_SEQUENCES,
 };
 pub use interaction::{SwitchComponent, SwitchView};
+pub use inventory::{
+    InventoryAction, InventoryAdmissionError, InventoryCommand, InventoryComponent,
+    InventoryConfig, InventoryFact, InventoryReceipt, InventoryRejection, InventoryService,
+    InventoryStack, InventoryView, ItemDefinition, ItemDefinitionId, ItemDefinitionIdError,
+    ItemDefinitionView, ItemKind, MAX_INVENTORY_SLOTS, MAX_ITEM_DEFINITION_ID_BYTES,
+    MAX_ITEM_QUANTITY,
+};
 pub use navigation::{
     NavigationComponent, NavigationConfig, NavigationFact, NavigationFailure,
     NavigationPhaseReceipt, NavigationState, NavigationView, MAX_NAVIGATION_QUERY_BUDGET,
@@ -90,16 +98,18 @@ pub use session::GameSession;
 pub use snapshot::{
     decode_game_snapshot, encode_game_snapshot, EncounterSnapshot, EnemySnapshot,
     ExtractionBeaconSnapshot, GameSnapshot, GameSnapshotError, GeneratedRoomSnapshot,
-    HealthSnapshot, MaterialVoxelSnapshot, NavigationSnapshot, PlayerControllerSnapshot,
+    HealthSnapshot, InventorySnapshot, InventoryStackSnapshot, ItemDefinitionSnapshot,
+    MaterialVoxelSnapshot, NavigationSnapshot, PlayerControllerSnapshot,
     PlayerInputBindingsSnapshot, SnapshotEncounterState, SnapshotEnemyState,
-    SnapshotExtractionBeaconState, SnapshotNavigationState, VoxelCollisionSnapshot, WeaponSnapshot,
-    GAME_SNAPSHOT_SCHEMA_VERSION,
+    SnapshotExtractionBeaconState, SnapshotItemKind, SnapshotNavigationState,
+    VoxelCollisionSnapshot, WeaponSnapshot, GAME_SNAPSHOT_SCHEMA_VERSION,
 };
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset,
     StoredAssetCatalogMetadata, StoredAssetImport, StoredCollision, StoredDoor, StoredEncounter,
     StoredEntityDefinition, StoredExtractionBeacon, StoredGeneratedVoxelEnvironment, StoredHealth,
-    StoredImportSource, StoredKinematic, StoredLight, StoredMaterialVoxel,
+    StoredImportSource, StoredInventory, StoredInventoryStack, StoredItemDefinition,
+    StoredItemKind, StoredKinematic, StoredLight, StoredMaterialVoxel,
     StoredMaterialVoxelEnvironment, StoredNavigation, StoredPlayerController,
     StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable, StoredScene,
     StoredSolidVoxelEnvironment, StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance,

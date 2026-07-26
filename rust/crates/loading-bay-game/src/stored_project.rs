@@ -15,7 +15,9 @@ use serde::{Deserialize, Serialize};
 use voxel_annotation::{validate_annotation_layer, VoxelAnnotationLayer, VoxelAnnotationLimits};
 use voxel_asset::VoxelAsset;
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 11;
+use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
+
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 12;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -27,6 +29,9 @@ pub mod diagnostic_code {
     pub const INVALID_ASSET_ID: &str = "project.invalidAssetId";
     pub const WRONG_ASSET_KIND: &str = "project.wrongAssetKind";
     pub const DUPLICATE_ASSET: &str = "project.duplicateAsset";
+    pub const DUPLICATE_ITEM_DEFINITION: &str = "project.duplicateItemDefinition";
+    pub const DUPLICATE_INVENTORY_STACK: &str = "project.duplicateInventoryStack";
+    pub const MISSING_ITEM_DEFINITION: &str = "project.missingItemDefinition";
     pub const DUPLICATE_SCENE: &str = "project.duplicateScene";
     pub const MISSING_ENTRY_SCENE: &str = "project.missingEntryScene";
     pub const MISSING_ASSET: &str = "project.missingAsset";
@@ -50,7 +55,32 @@ pub struct StoredProject {
     pub name: String,
     pub entry_scene: String,
     pub assets: Vec<StoredAsset>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub item_definitions: Vec<StoredItemDefinition>,
     pub scenes: Vec<StoredScene>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredItemDefinition {
+    pub id: String,
+    pub max_quantity: u32,
+    pub kind: StoredItemKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum StoredItemKind {
+    Weapon { ammunition: String },
+    Ammunition,
+    AccessKey,
+    HealthSupply { restore_health: u32 },
+    Armor { protection: u32 },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -227,7 +257,24 @@ pub struct StoredEntityDefinition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub player_controller: Option<StoredPlayerController>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub inventory: Option<StoredInventory>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub weapon: Option<StoredWeapon>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredInventory {
+    pub capacity_slots: usize,
+    pub starting_stacks: Vec<StoredInventoryStack>,
+    pub initially_equipped_weapon: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredInventoryStack {
+    pub item: String,
+    pub quantity: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -457,6 +504,74 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             "name",
             "project name must not be empty",
         ));
+    }
+
+    let mut item_definitions = BTreeMap::new();
+    for (index, definition) in document.item_definitions.iter().enumerate() {
+        let path = format!("itemDefinitions[{index}]");
+        let id = ItemDefinitionId::parse(definition.id.clone()).map_err(|error| {
+            failure(
+                diagnostic_code::INVALID_VALUE,
+                format!("{path}.id"),
+                error.to_string(),
+            )
+        })?;
+        if definition.max_quantity == 0
+            || definition.max_quantity > MAX_ITEM_QUANTITY
+            || matches!(
+                definition.kind,
+                StoredItemKind::Weapon { .. } | StoredItemKind::AccessKey
+            ) && definition.max_quantity != 1
+            || matches!(
+                definition.kind,
+                StoredItemKind::HealthSupply { restore_health: 0 }
+                    | StoredItemKind::Armor { protection: 0 }
+            )
+        {
+            return Err(failure(
+                diagnostic_code::INVALID_VALUE,
+                format!("{path}.maxQuantity"),
+                "item quantity and effect values must be within their concrete kind limits",
+            ));
+        }
+        if let Some(first) = item_definitions.insert(id.as_str().to_string(), index) {
+            return Err(failure(
+                diagnostic_code::DUPLICATE_ITEM_DEFINITION,
+                format!("{path}.id"),
+                format!(
+                    "item definition `{id}` was already declared at itemDefinitions[{first}].id"
+                ),
+            ));
+        }
+    }
+    for (index, definition) in document.item_definitions.iter().enumerate() {
+        let StoredItemKind::Weapon { ammunition } = &definition.kind else {
+            continue;
+        };
+        ItemDefinitionId::parse(ammunition.clone()).map_err(|error| {
+            failure(
+                diagnostic_code::INVALID_VALUE,
+                format!("itemDefinitions[{index}].kind.ammunition"),
+                error.to_string(),
+            )
+        })?;
+        let Some(ammunition_index) = item_definitions.get(ammunition).copied() else {
+            return Err(failure(
+                diagnostic_code::MISSING_ITEM_DEFINITION,
+                format!("itemDefinitions[{index}].kind.ammunition"),
+                format!("weapon references missing ammunition `{ammunition}`"),
+            ));
+        };
+        if !matches!(
+            document.item_definitions[ammunition_index].kind,
+            StoredItemKind::Ammunition
+        ) {
+            return Err(failure(
+                diagnostic_code::INVALID_VALUE,
+                format!("itemDefinitions[{index}].kind.ammunition"),
+                "weapon ammunition must reference an ammunition item definition",
+            ));
+        }
     }
 
     let entry_scene = parse_asset_id(&document.entry_scene, "entryScene")?;
@@ -854,6 +969,87 @@ fn validate_scene_entities(
         }
         if let Some(light) = entity.light {
             validate_stored_light(light, entity.scale, &format!("{root}.light"))?;
+        }
+        if let Some(inventory) = &entity.inventory {
+            if inventory.capacity_slots == 0 || inventory.capacity_slots > MAX_INVENTORY_SLOTS {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.inventory.capacitySlots"),
+                    "inventory capacity must be within the bounded slot limit",
+                ));
+            }
+            if inventory.starting_stacks.len() > inventory.capacity_slots {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.inventory.startingStacks"),
+                    "starting stacks exceed inventory capacity",
+                ));
+            }
+            let mut stacks = BTreeSet::new();
+            for (stack_index, stack) in inventory.starting_stacks.iter().enumerate() {
+                let stack_path = format!("{root}.inventory.startingStacks[{stack_index}]");
+                ItemDefinitionId::parse(stack.item.clone()).map_err(|error| {
+                    failure(
+                        diagnostic_code::INVALID_VALUE,
+                        format!("{stack_path}.item"),
+                        error.to_string(),
+                    )
+                })?;
+                let Some(definition_index) = project
+                    .item_definitions
+                    .iter()
+                    .position(|item| item.id == stack.item)
+                else {
+                    return Err(failure(
+                        diagnostic_code::MISSING_ITEM_DEFINITION,
+                        format!("{stack_path}.item"),
+                        format!("starting stack references missing item `{}`", stack.item),
+                    ));
+                };
+                if !stacks.insert(&stack.item) {
+                    return Err(failure(
+                        diagnostic_code::DUPLICATE_INVENTORY_STACK,
+                        format!("{stack_path}.item"),
+                        "an inventory can contain at most one stack per item definition",
+                    ));
+                }
+                let definition = &project.item_definitions[definition_index];
+                if stack.quantity == 0 || stack.quantity > definition.max_quantity {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{stack_path}.quantity"),
+                        format!(
+                            "starting quantity must be between 1 and {}",
+                            definition.max_quantity
+                        ),
+                    ));
+                }
+            }
+            if let Some(equipped) = &inventory.initially_equipped_weapon {
+                let Some(definition) = project
+                    .item_definitions
+                    .iter()
+                    .find(|definition| definition.id == *equipped)
+                else {
+                    return Err(failure(
+                        diagnostic_code::MISSING_ITEM_DEFINITION,
+                        format!("{root}.inventory.initiallyEquippedWeapon"),
+                        format!("equipped weapon references missing item `{equipped}`"),
+                    ));
+                };
+                if !matches!(definition.kind, StoredItemKind::Weapon { .. })
+                    || !inventory
+                        .starting_stacks
+                        .iter()
+                        .any(|stack| stack.item == *equipped)
+                {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{root}.inventory.initiallyEquippedWeapon"),
+                        "equipped weapon must be an owned weapon item",
+                    ));
+                }
+            }
         }
     }
 

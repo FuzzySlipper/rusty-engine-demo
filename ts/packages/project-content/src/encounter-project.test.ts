@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   ENCOUNTER_IDS,
+  LOADING_BAY_ITEM_IDS,
   encounterGateProject,
   loadingBayStoredProject,
   relayAnnexStoredProject,
@@ -11,7 +12,9 @@ import {
 
 test("encounter membership and exit relationships are explicit authored content", () => {
   const project = encounterGateProject(["alpha", "beta"]);
-  const encounter = project.entities.find((entity) => entity.id === ENCOUNTER_IDS.encounter);
+  const encounter = project.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.encounter,
+  );
   assert.deepEqual(encounter?.encounter, {
     members: [ENCOUNTER_IDS.firstEnemy, ENCOUNTER_IDS.firstEnemy + 1],
     exit: ENCOUNTER_IDS.exit,
@@ -20,16 +23,22 @@ test("encounter membership and exit relationships are explicit authored content"
 
 test("enemy count is a content-only variation", () => {
   const project = encounterGateProject(["only-enemy"]);
-  assert.equal(project.entities.filter((entity) => entity.enemy === true).length, 1);
+  assert.equal(
+    project.entities.filter((entity) => entity.enemy === true).length,
+    1,
+  );
   assert.deepEqual(
-    project.entities.find((entity) => entity.id === ENCOUNTER_IDS.encounter)?.encounter?.members,
+    project.entities.find((entity) => entity.id === ENCOUNTER_IDS.encounter)
+      ?.encounter?.members,
     [ENCOUNTER_IDS.firstEnemy],
   );
 });
 
 test("loading bay composes a kinematic probe over one generated voxel environment", () => {
   const project = encounterGateProject(["only-enemy"]);
-  const probe = project.entities.find((entity) => entity.id === ENCOUNTER_IDS.motionProbe);
+  const probe = project.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.motionProbe,
+  );
 
   assert.deepEqual(probe?.kinematic, {
     halfExtents: [0.25, 0.25, 0.25],
@@ -48,7 +57,9 @@ test("loading bay composes a kinematic probe over one generated voxel environmen
 
 test("player controller and physical bindings are explicit content", () => {
   const project = encounterGateProject(["guard"]);
-  const player = project.entities.find((entity) => entity.id === ENCOUNTER_IDS.actor);
+  const player = project.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.actor,
+  );
 
   assert.deepEqual(player?.playerController, {
     moveSpeedUnitsPerSecond: 4,
@@ -78,7 +89,9 @@ test("keyboard bindings vary as content without changing controller behavior", (
     primaryFire: "Space",
   } as const;
   const project = encounterGateProject(["guard"], { playerBindings: bindings });
-  const player = project.entities.find((entity) => entity.id === ENCOUNTER_IDS.actor);
+  const player = project.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.actor,
+  );
 
   assert.deepEqual(player?.playerController?.bindings, bindings);
   assert.equal(player?.playerController?.moveSpeedUnitsPerSecond, 4);
@@ -91,8 +104,12 @@ test("health and weapon configuration stay on their responsible entities", () =>
     weaponDamage: 35,
     weaponCooldownTicks: 3,
   });
-  const player = project.entities.find((entity) => entity.id === ENCOUNTER_IDS.actor);
-  const enemy = project.entities.find((entity) => entity.id === ENCOUNTER_IDS.firstEnemy);
+  const player = project.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.actor,
+  );
+  const enemy = project.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.firstEnemy,
+  );
 
   assert.deepEqual(enemy?.health, {
     max: 140,
@@ -109,7 +126,9 @@ test("health and weapon configuration stay on their responsible entities", () =>
 
 test("autonomous navigation is explicit data on the responsible enemy", () => {
   const project = encounterGateProject(["pathfinder", "guard"]);
-  const navigator = project.entities.find((entity) => entity.id === ENCOUNTER_IDS.firstEnemy);
+  const navigator = project.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.firstEnemy,
+  );
 
   assert.deepEqual(navigator?.navigation, {
     goal: [7.5, 1.5, 6.5],
@@ -133,7 +152,9 @@ test("navigation target and speed are content-only variations", () => {
     navigationGoal: [1.5, 0.5, 7.5],
     navigationSpeedUnitsPerSecond: 2,
   });
-  const navigator = project.entities.find((entity) => entity.id === ENCOUNTER_IDS.firstEnemy);
+  const navigator = project.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.firstEnemy,
+  );
 
   assert.deepEqual(navigator?.navigation, {
     goal: [1.5, 0.5, 7.5],
@@ -145,12 +166,54 @@ test("navigation target and speed are content-only variations", () => {
 test("optional TypeScript authoring materializes the checked-in stored-project candidate", () => {
   const artifact = JSON.parse(
     readFileSync(
-      new URL("../../../../content/projects/loading-bay.project.json", import.meta.url),
+      new URL(
+        "../../../../content/projects/loading-bay.project.json",
+        import.meta.url,
+      ),
       "utf8",
     ),
   );
 
   assert.deepEqual(loadingBayStoredProject(), artifact);
+});
+
+test("stored item definitions and starting inventory remain immutable authored data", () => {
+  const project = loadingBayStoredProject();
+  const player = project.scenes[0]?.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.actor,
+  );
+
+  assert.deepEqual(player?.inventory, {
+    capacitySlots: 8,
+    startingStacks: [
+      { item: LOADING_BAY_ITEM_IDS.arcPistol, quantity: 1 },
+      { item: LOADING_BAY_ITEM_IDS.energyCell, quantity: 40 },
+      { item: LOADING_BAY_ITEM_IDS.medPatch, quantity: 1 },
+    ],
+    initiallyEquippedWeapon: LOADING_BAY_ITEM_IDS.arcPistol,
+  });
+  assert.deepEqual(
+    project.itemDefinitions.find(
+      (definition) => definition.id === LOADING_BAY_ITEM_IDS.arcPistol,
+    ),
+    {
+      id: LOADING_BAY_ITEM_IDS.arcPistol,
+      maxQuantity: 1,
+      kind: { kind: "weapon", ammunition: LOADING_BAY_ITEM_IDS.energyCell },
+    },
+  );
+  assert.equal(
+    project.itemDefinitions.some(
+      (definition) => definition.id === LOADING_BAY_ITEM_IDS.inertInspectionTag,
+    ),
+    true,
+  );
+  assert.equal(
+    player?.inventory?.startingStacks.some(
+      (stack) => (stack.item as string) === LOADING_BAY_ITEM_IDS.inertInspectionTag,
+    ),
+    false,
+  );
 });
 
 test("the extraction beacon is game-owned data on its responsible entity", () => {
@@ -174,16 +237,25 @@ test("stored-project seed remains a candidate-only variation", () => {
 
   assert.equal(first.scenes[0]?.voxelEnvironment?.kind, "generatedRoom");
   assert.equal(second.scenes[0]?.voxelEnvironment?.kind, "generatedRoom");
-  assert.notDeepEqual(first.scenes[0]?.voxelEnvironment, second.scenes[0]?.voxelEnvironment);
+  assert.notDeepEqual(
+    first.scenes[0]?.voxelEnvironment,
+    second.scenes[0]?.voxelEnvironment,
+  );
   assert.deepEqual(first.scenes[0]?.entities, second.scenes[0]?.entities);
 });
 
 test("relay annex is a distinct content-only composition with settled demo meanings", () => {
   const project = relayAnnexStoredProject();
   const scene = project.scenes[0];
-  const encounter = scene?.entities.find((entity) => entity.id === ENCOUNTER_IDS.encounter);
-  const player = scene?.entities.find((entity) => entity.id === ENCOUNTER_IDS.actor);
-  const beacon = scene?.entities.find((entity) => entity.id === ENCOUNTER_IDS.extractionBeacon);
+  const encounter = scene?.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.encounter,
+  );
+  const player = scene?.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.actor,
+  );
+  const beacon = scene?.entities.find(
+    (entity) => entity.id === ENCOUNTER_IDS.extractionBeacon,
+  );
 
   assert.equal(project.projectId, "relay-annex");
   assert.deepEqual(scene?.voxelEnvironment, {
@@ -196,7 +268,12 @@ test("relay annex is a distinct content-only composition with settled demo meani
     length: 8,
   });
   assert.deepEqual(encounter?.encounter?.members, [ENCOUNTER_IDS.firstEnemy]);
-  assert.equal(scene?.entities.some((entity) => entity.id === ENCOUNTER_IDS.firstEnemy + 1), false);
+  assert.equal(
+    scene?.entities.some(
+      (entity) => entity.id === ENCOUNTER_IDS.firstEnemy + 1,
+    ),
+    false,
+  );
   assert.deepEqual(player?.translation, [2.5, 1.5, 2.5]);
   assert.deepEqual(beacon?.translation, [3.5, 1.5, 4.5]);
   assert.deepEqual(beacon?.extractionBeacon, { activationRadius: 4 });
@@ -205,7 +282,10 @@ test("relay annex is a distinct content-only composition with settled demo meani
 test("relay annex authoring materializes its checked project artifact", () => {
   const artifact = JSON.parse(
     readFileSync(
-      new URL("../../../../content/projects/relay-annex.project.json", import.meta.url),
+      new URL(
+        "../../../../content/projects/relay-annex.project.json",
+        import.meta.url,
+      ),
       "utf8",
     ),
   );

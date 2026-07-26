@@ -16,6 +16,7 @@ use crate::door::{security_door_definitions, DoorService, DoorTransition, Securi
 use crate::encounter::EncounterService;
 use crate::extraction_beacon::{ExtractionBeaconReceipt, ExtractionBeaconService};
 use crate::interaction::InteractionService;
+use crate::inventory::{InventoryCommand, InventoryReceipt, InventoryRejection, InventoryService};
 use crate::navigation::{EnemyNavigationSystem, NavigationPhaseReceipt};
 use crate::player::{PlayerControlReceipt, PlayerControllerService, ResolvedPlayerAction};
 use crate::project_admission::decode_and_admit_stored_project;
@@ -89,6 +90,7 @@ pub enum RuntimeError {
         source: NavigationStepError,
     },
     VoxelEdit(VoxelEditApplyError),
+    Inventory(InventoryRejection),
 }
 
 impl std::fmt::Display for RuntimeError {
@@ -177,6 +179,14 @@ impl GameRuntime {
             .as_mut()
             .ok_or(RuntimeError::MissingCollisionScene)?;
         VoxelEditService::apply(scene, transaction).map_err(RuntimeError::VoxelEdit)
+    }
+
+    pub fn apply_inventory_command(
+        &mut self,
+        owner: EntityId,
+        command: InventoryCommand,
+    ) -> Result<InventoryReceipt, RuntimeError> {
+        InventoryService::apply(&mut self.session, owner, command).map_err(RuntimeError::Inventory)
     }
 
     /// Run the one centrally scheduled kinematic phase over every configured

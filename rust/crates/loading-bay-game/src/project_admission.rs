@@ -17,14 +17,17 @@ use crate::content::AdmittedProject;
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::DoorConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
+use crate::inventory::{
+    InventoryConfig, InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind,
+};
 use crate::navigation::NavigationConfig;
 use crate::player::{PlayerControllerConfig, PlayerInputBindings};
 use crate::project_codec::decode_project_document;
 use crate::session::GameSession;
 use crate::stored_project::{
     diagnostic_code, validate_stored_project, StoredAsset, StoredEntityDefinition,
-    StoredMaterialVoxel, StoredMaterialVoxelEnvironment, StoredProject, StoredProjectError,
-    StoredScene, StoredVoxelEnvironment,
+    StoredItemDefinition, StoredItemKind, StoredMaterialVoxel, StoredMaterialVoxelEnvironment,
+    StoredProject, StoredProjectError, StoredScene, StoredVoxelEnvironment,
 };
 
 /// Static project data that has passed the same complete semantic admission as
@@ -67,10 +70,16 @@ pub fn admit_stored_project_with_document(
         .position(|scene| scene.id == document.entry_scene)
         .expect("validated entry scene");
     let catalog = ProjectAssetCatalog::new(&document);
+    let item_definitions = document
+        .item_definitions
+        .iter()
+        .enumerate()
+        .map(|(index, definition)| authored_item_definition(definition, index))
+        .collect::<Result<Vec<_>, _>>()?;
 
     let mut entry_scene = None;
     for (scene_index, scene) in document.scenes.iter().enumerate() {
-        let admitted = admit_scene(scene, scene_index, &catalog)?;
+        let admitted = admit_scene(scene, scene_index, &catalog, &item_definitions)?;
         if scene_index == entry_scene_index {
             entry_scene = Some(admitted);
         }
@@ -95,6 +104,7 @@ fn admit_scene(
     scene: &StoredScene,
     scene_index: usize,
     catalog: &ProjectAssetCatalog<'_>,
+    item_definitions: &[ItemDefinition],
 ) -> Result<AdmittedScene, StoredProjectError> {
     catalog.validate_scene(scene, scene_index)?;
 
@@ -107,13 +117,38 @@ fn admit_scene(
         .enumerate()
         .map(|(entity_index, entity)| authored_definition(entity, scene_index, entity_index))
         .collect::<Result<Vec<_>, _>>()?;
-    let session = GameSession::from_definitions(definitions)
-        .map_err(|error| definition_error(error, scene_index, &entity_indexes))?;
+    let session = GameSession::from_item_and_entity_definitions(
+        item_definitions.iter().cloned(),
+        definitions,
+    )
+    .map_err(|error| definition_error(error, scene_index, &entity_indexes))?;
 
     Ok(AdmittedScene {
         session,
         collision_scene,
     })
+}
+
+fn authored_item_definition(
+    authored: &StoredItemDefinition,
+    index: usize,
+) -> Result<ItemDefinition, StoredProjectError> {
+    let path = format!("itemDefinitions[{index}]");
+    let id = parse_item_id(&authored.id, &format!("{path}.id"))?;
+    let kind = match &authored.kind {
+        StoredItemKind::Weapon { ammunition } => ItemKind::Weapon {
+            ammunition: parse_item_id(ammunition, &format!("{path}.kind.ammunition"))?,
+        },
+        StoredItemKind::Ammunition => ItemKind::Ammunition,
+        StoredItemKind::AccessKey => ItemKind::AccessKey,
+        StoredItemKind::HealthSupply { restore_health } => ItemKind::HealthSupply {
+            restore_health: *restore_health,
+        },
+        StoredItemKind::Armor { protection } => ItemKind::Armor {
+            protection: *protection,
+        },
+    };
+    Ok(ItemDefinition::new(id, kind, authored.max_quantity))
 }
 
 /// Materialize the runtime's accepted voxel authority into one explicit static
@@ -534,6 +569,35 @@ fn authored_definition(
             ),
         });
     }
+    if let Some(inventory) = &authored.inventory {
+        definition = definition.with_inventory(InventoryConfig::new(
+            inventory.capacity_slots,
+            inventory
+                .starting_stacks
+                .iter()
+                .enumerate()
+                .map(|(stack_index, stack)| {
+                    Ok(InventoryStack::new(
+                        parse_item_id(
+                            &stack.item,
+                            &format!("{}.startingStacks[{stack_index}].item", path("inventory")),
+                        )?,
+                        stack.quantity,
+                    ))
+                })
+                .collect::<Result<Vec<_>, StoredProjectError>>()?,
+            inventory
+                .initially_equipped_weapon
+                .as_deref()
+                .map(|item| {
+                    parse_item_id(
+                        item,
+                        &format!("{}.initiallyEquippedWeapon", path("inventory")),
+                    )
+                })
+                .transpose()?,
+        ));
+    }
     if let Some(weapon) = authored.weapon {
         definition = definition.with_weapon(WeaponConfig {
             damage: weapon.damage,
@@ -554,6 +618,7 @@ fn definition_error(
     use GameEntityDefinitionError as Error;
 
     let (code, path) = match &error {
+        Error::Inventory(source) => inventory_error_path(source, scene_index, indexes),
         Error::EntityState(source) => match source {
             entity_state::EntityDefinitionError::DuplicateEntity { entity } => (
                 diagnostic_code::DUPLICATE_ENTITY,
@@ -668,6 +733,38 @@ fn definition_error(
         ),
     };
     StoredProjectError::new(code, path, error.to_string())
+}
+
+fn inventory_error_path(
+    error: &crate::inventory::InventoryAdmissionError,
+    scene_index: usize,
+    indexes: &BTreeMap<EntityId, usize>,
+) -> (&'static str, String) {
+    let owner = match error {
+        crate::inventory::InventoryAdmissionError::InventoryWithoutPlayerController { owner }
+        | crate::inventory::InventoryAdmissionError::InvalidCapacity { owner, .. }
+        | crate::inventory::InventoryAdmissionError::TooManyStartingStacks { owner, .. }
+        | crate::inventory::InventoryAdmissionError::DuplicateStartingStack { owner, .. }
+        | crate::inventory::InventoryAdmissionError::MissingStartingDefinition { owner, .. }
+        | crate::inventory::InventoryAdmissionError::InvalidStartingQuantity { owner, .. }
+        | crate::inventory::InventoryAdmissionError::InvalidInitialSelection { owner, .. } => {
+            Some(*owner)
+        }
+        _ => None,
+    };
+    (
+        diagnostic_code::INVALID_COMPONENT,
+        owner.map_or_else(
+            || "itemDefinitions".to_string(),
+            |owner| entity_path(scene_index, indexes, owner, "inventory"),
+        ),
+    )
+}
+
+fn parse_item_id(value: &str, path: &str) -> Result<ItemDefinitionId, StoredProjectError> {
+    ItemDefinitionId::parse(value.to_string()).map_err(|error| {
+        StoredProjectError::new(diagnostic_code::INVALID_VALUE, path, error.to_string())
+    })
 }
 
 fn entity_path(

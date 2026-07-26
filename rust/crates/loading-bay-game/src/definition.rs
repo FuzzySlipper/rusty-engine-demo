@@ -5,6 +5,7 @@ use crate::combat::{HealthConfig, WeaponConfig};
 use crate::door::DoorConfig;
 use crate::encounter::EncounterConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
+use crate::inventory::{InventoryAdmissionError, InventoryConfig};
 use crate::navigation::NavigationConfig;
 use crate::player::PlayerControllerConfig;
 
@@ -20,6 +21,7 @@ pub struct GameEntityDefinition {
     pub extraction_beacon: Option<ExtractionBeaconConfig>,
     pub navigation: Option<NavigationConfig>,
     pub player_controller: Option<PlayerControllerConfig>,
+    pub inventory: Option<InventoryConfig>,
     pub weapon: Option<WeaponConfig>,
 }
 
@@ -36,6 +38,7 @@ impl GameEntityDefinition {
             extraction_beacon: None,
             navigation: None,
             player_controller: None,
+            inventory: None,
             weapon: None,
         }
     }
@@ -92,6 +95,11 @@ impl GameEntityDefinition {
         self
     }
 
+    pub fn with_inventory(mut self, config: InventoryConfig) -> Self {
+        self.inventory = Some(config);
+        self
+    }
+
     pub fn with_weapon(mut self, config: WeaponConfig) -> Self {
         self.weapon = Some(config);
         self
@@ -101,6 +109,7 @@ impl GameEntityDefinition {
 #[derive(Debug)]
 pub enum GameEntityDefinitionError {
     EntityState(entity_state::EntityDefinitionError),
+    Inventory(InventoryAdmissionError),
     DuplicateControlTarget {
         switch: EntityId,
         target: EntityId,

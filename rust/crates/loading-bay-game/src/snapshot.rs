@@ -20,6 +20,10 @@ use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconState,
 };
 use crate::interaction::SwitchComponent;
+use crate::inventory::{
+    admit_item_definitions, inventory_from_config, InventoryAdmissionError, InventoryConfig,
+    InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind,
+};
 use crate::navigation::{
     NavigationComponent, NavigationConfig, NavigationState, MAX_NAVIGATION_QUERY_BUDGET,
     MAX_NAVIGATION_SPEED_UNITS_PER_SECOND,
@@ -31,7 +35,8 @@ use crate::runtime::GameRuntime;
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 10;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 11;
+const PREVIOUS_GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 10;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -39,6 +44,8 @@ pub struct GameSnapshot {
     pub schema_version: u32,
     pub tick: u64,
     pub entities: EntityStateSnapshot,
+    #[serde(default)]
+    pub item_definitions: Vec<ItemDefinitionSnapshot>,
     pub voxel_collision: Option<VoxelCollisionSnapshot>,
     pub doors: Vec<DoorSnapshot>,
     pub switches: Vec<SwitchSnapshot>,
@@ -49,6 +56,8 @@ pub struct GameSnapshot {
     pub encounters: Vec<EncounterSnapshot>,
     pub navigations: Vec<NavigationSnapshot>,
     pub player_controllers: Vec<PlayerControllerSnapshot>,
+    #[serde(default)]
+    pub inventories: Vec<InventorySnapshot>,
     pub weapons: Vec<WeaponSnapshot>,
     pub scheduled: Vec<ScheduledSnapshot>,
 }
@@ -62,6 +71,45 @@ pub struct VoxelCollisionSnapshot {
     pub authority_hash: u64,
     pub material_voxels: Vec<MaterialVoxelSnapshot>,
     pub generated_room: Option<GeneratedRoomSnapshot>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct ItemDefinitionSnapshot {
+    pub id: String,
+    pub max_quantity: u32,
+    pub kind: SnapshotItemKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum SnapshotItemKind {
+    Weapon { ammunition: String },
+    Ammunition,
+    AccessKey,
+    HealthSupply { restore_health: u32 },
+    Armor { protection: u32 },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct InventorySnapshot {
+    pub owner: u64,
+    pub capacity_slots: usize,
+    pub stacks: Vec<InventoryStackSnapshot>,
+    pub equipped_weapon: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct InventoryStackSnapshot {
+    pub item: String,
+    pub quantity: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -292,6 +340,16 @@ pub enum GameSnapshotError {
     DuplicateWeapon {
         entity: u64,
     },
+    InvalidItemDefinitionId {
+        value: String,
+    },
+    Inventory(InventoryAdmissionError),
+    DuplicateInventory {
+        owner: u64,
+    },
+    UnknownInventoryEntity {
+        owner: u64,
+    },
     UnknownDoorEntity {
         entity: u64,
     },
@@ -413,6 +471,30 @@ impl GameRuntime {
             schema_version: GAME_SNAPSHOT_SCHEMA_VERSION,
             tick: self.tick.raw(),
             entities: self.session.entities.snapshot(),
+            item_definitions: self
+                .session
+                .item_definitions
+                .values()
+                .map(|definition| ItemDefinitionSnapshot {
+                    id: definition.id.as_str().to_string(),
+                    max_quantity: definition.max_quantity,
+                    kind: match &definition.kind {
+                        ItemKind::Weapon { ammunition } => SnapshotItemKind::Weapon {
+                            ammunition: ammunition.as_str().to_string(),
+                        },
+                        ItemKind::Ammunition => SnapshotItemKind::Ammunition,
+                        ItemKind::AccessKey => SnapshotItemKind::AccessKey,
+                        ItemKind::HealthSupply { restore_health } => {
+                            SnapshotItemKind::HealthSupply {
+                                restore_health: *restore_health,
+                            }
+                        }
+                        ItemKind::Armor { protection } => SnapshotItemKind::Armor {
+                            protection: *protection,
+                        },
+                    },
+                })
+                .collect(),
             voxel_collision: self
                 .collision_scene
                 .as_ref()
@@ -578,6 +660,27 @@ impl GameRuntime {
                     },
                 })
                 .collect(),
+            inventories: self
+                .session
+                .inventories
+                .iter()
+                .map(|(owner, component)| InventorySnapshot {
+                    owner: owner.raw(),
+                    capacity_slots: component.capacity_slots,
+                    stacks: component
+                        .stacks
+                        .iter()
+                        .map(|stack| InventoryStackSnapshot {
+                            item: stack.item.as_str().to_string(),
+                            quantity: stack.quantity,
+                        })
+                        .collect(),
+                    equipped_weapon: component
+                        .equipped_weapon
+                        .as_ref()
+                        .map(|item| item.as_str().to_string()),
+                })
+                .collect(),
             weapons: self
                 .session
                 .weapons
@@ -609,7 +712,10 @@ impl GameRuntime {
     }
 
     pub fn from_snapshot(snapshot: GameSnapshot) -> Result<Self, GameSnapshotError> {
-        if snapshot.schema_version != GAME_SNAPSHOT_SCHEMA_VERSION {
+        if !matches!(
+            snapshot.schema_version,
+            GAME_SNAPSHOT_SCHEMA_VERSION | PREVIOUS_GAME_SNAPSHOT_SCHEMA_VERSION
+        ) {
             return Err(GameSnapshotError::UnsupportedSchema {
                 actual: snapshot.schema_version,
             });
@@ -685,6 +791,14 @@ impl GameRuntime {
             .transpose()?;
         let entities = EntityState::from_snapshot(snapshot.entities)
             .map_err(GameSnapshotError::EntityState)?;
+        let item_definitions = admit_item_definitions(
+            snapshot
+                .item_definitions
+                .into_iter()
+                .map(snapshot_item_definition)
+                .collect::<Result<Vec<_>, _>>()?,
+        )
+        .map_err(GameSnapshotError::Inventory)?;
         let mut doors = BTreeMap::new();
         let mut door_ids = BTreeSet::new();
         for door in snapshot.doors {
@@ -1070,6 +1184,43 @@ impl GameRuntime {
             );
         }
 
+        let mut inventories = BTreeMap::new();
+        for inventory in snapshot.inventories {
+            let owner = EntityId::new(inventory.owner);
+            if inventories.contains_key(&owner) {
+                return Err(GameSnapshotError::DuplicateInventory {
+                    owner: inventory.owner,
+                });
+            }
+            if !entities.contains(owner) || !player_controllers.contains_key(&owner) {
+                return Err(GameSnapshotError::UnknownInventoryEntity {
+                    owner: inventory.owner,
+                });
+            }
+            let config = InventoryConfig::new(
+                inventory.capacity_slots,
+                inventory
+                    .stacks
+                    .into_iter()
+                    .map(|stack| {
+                        Ok(InventoryStack::new(
+                            parse_snapshot_item_id(stack.item)?,
+                            stack.quantity,
+                        ))
+                    })
+                    .collect::<Result<Vec<_>, GameSnapshotError>>()?,
+                inventory
+                    .equipped_weapon
+                    .map(parse_snapshot_item_id)
+                    .transpose()?,
+            );
+            inventories.insert(
+                owner,
+                inventory_from_config(owner, &config, &item_definitions)
+                    .map_err(GameSnapshotError::Inventory)?,
+            );
+        }
+
         let mut encounters = BTreeMap::new();
         let mut encounter_ids = BTreeSet::new();
         let mut encounter_by_enemy = BTreeMap::new();
@@ -1163,6 +1314,8 @@ impl GameRuntime {
                 extraction_beacons,
                 navigators,
                 player_controllers,
+                item_definitions,
+                inventories,
                 weapons,
             },
             tick: Tick::new(snapshot.tick),
@@ -1189,4 +1342,27 @@ fn array_vec3(value: [f32; 3]) -> Vec3 {
 
 fn vec3_is_finite(value: Vec3) -> bool {
     value.x.is_finite() && value.y.is_finite() && value.z.is_finite()
+}
+
+fn snapshot_item_definition(
+    snapshot: ItemDefinitionSnapshot,
+) -> Result<ItemDefinition, GameSnapshotError> {
+    let id = parse_snapshot_item_id(snapshot.id)?;
+    let kind = match snapshot.kind {
+        SnapshotItemKind::Weapon { ammunition } => ItemKind::Weapon {
+            ammunition: parse_snapshot_item_id(ammunition)?,
+        },
+        SnapshotItemKind::Ammunition => ItemKind::Ammunition,
+        SnapshotItemKind::AccessKey => ItemKind::AccessKey,
+        SnapshotItemKind::HealthSupply { restore_health } => {
+            ItemKind::HealthSupply { restore_health }
+        }
+        SnapshotItemKind::Armor { protection } => ItemKind::Armor { protection },
+    };
+    Ok(ItemDefinition::new(id, kind, snapshot.max_quantity))
+}
+
+fn parse_snapshot_item_id(value: String) -> Result<ItemDefinitionId, GameSnapshotError> {
+    ItemDefinitionId::parse(value.clone())
+        .map_err(|_| GameSnapshotError::InvalidItemDefinitionId { value })
 }
