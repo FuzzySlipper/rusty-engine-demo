@@ -32,6 +32,15 @@ fn authored_save_stays_static_while_independent_snapshot_reopens_live_values() {
         .as_mut()
         .unwrap()
         .activation_radius = None;
+    decoded.project.scenes[0]
+        .entities
+        .iter_mut()
+        .find(|entity| entity.id == 30)
+        .unwrap()
+        .collision
+        .as_mut()
+        .unwrap()
+        .enabled = false;
     let (authored, admitted) = admit_stored_project_with_document(decoded.project).unwrap();
     let mut runtime = GameRuntime::from_admitted_project(admitted);
 

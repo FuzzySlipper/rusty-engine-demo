@@ -1,7 +1,7 @@
 use core_ids::EntityId;
 use core_math::Vec3;
 use core_time::{Tick, TickDelta};
-use engine_spatial::VoxelCollisionScene;
+use engine_spatial::{SpatialOcclusionQuery, SpatialOcclusionService, VoxelCollisionScene};
 use entity_state::EntityView;
 use serde::{Deserialize, Serialize};
 
@@ -307,13 +307,26 @@ impl CombatService {
                 direction,
                 weapon.max_distance,
             );
-            let world_blocker = scene
-                .raycast(
-                    [origin.x as f64, origin.y as f64, origin.z as f64],
-                    [direction.x as f64, direction.y as f64, direction.z as f64],
-                    weapon.max_distance as f64,
+            let ignored_entities =
+                target.map_or([attacker, attacker], |hit| [attacker, hit.entity]);
+            let ignored_entities = if target.is_some() {
+                &ignored_entities[..]
+            } else {
+                &ignored_entities[..1]
+            };
+            let world_blocker = SpatialOcclusionService
+                .cast_ray(
+                    scene,
+                    &candidate_session.entities,
+                    SpatialOcclusionQuery {
+                        origin: [origin.x as f64, origin.y as f64, origin.z as f64],
+                        direction: [direction.x as f64, direction.y as f64, direction.z as f64],
+                        max_distance: weapon.max_distance as f64,
+                        ignored_entities,
+                    },
                 )
-                .map(|hit| hit.distance as f32);
+                .map_err(RuntimeError::SpatialOcclusion)?
+                .map(|hit| hit.distance() as f32);
             match target {
                 Some(hit)
                     if world_blocker.is_none_or(|distance| hit.distance + 0.000_1 < distance) =>
