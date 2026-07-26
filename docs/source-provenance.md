@@ -99,3 +99,22 @@ checked-in product asset rather than an Engine fixture:
 
 The project catalog admits that exact content hash and its named `idle`, `run`, and `jump` clips;
 Studio resolves the bytes through its bounded trusted-host resource path and the shared renderer.
+
+## Proper FPS campaign design
+
+The product architecture, protocol targets, content vocabulary, and original level route in
+`docs/fps-product-architecture.md` were authored directly in this repository under Den task #6215.
+They are not transferred Doom content and do not copy another game's code, map, geometry, names,
+sounds, textures, sprites, or trade dress.
+
+The public `/home/dev/rusty-engine-ui` checkout at commit `68ddfa5` was inspected as a potential
+donor. At #6215 no donor files have been imported. Task #6216 may substantially adopt its Angular/Nx
+foundation, boundary tooling, theme tokens, platform ports, browser evidence harness, and
+presentational UI components; every actual transfer or adaptation must be added to this document
+when it occurs. Its fake transport, placeholder actions, and UI-owned inventory/equipment state are
+not eligible for transfer.
+
+Rusty Engine task #6213 produced the renderer-owned timing seam at public SHA
+`2665b74566136fb77e3a26b0766394124c8f58d3`. That SHA is recorded here as reviewed-upstream
+integration evidence, not as an active dependency pin: task #6219 owns the later exact pin and
+downstream call-site change after its dependencies are ready.
