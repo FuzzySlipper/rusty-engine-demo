@@ -38,10 +38,7 @@ pub struct EncounterView {
 pub(crate) struct EncounterService;
 
 impl EncounterService {
-    pub(crate) fn activate_for_player(
-        session: &mut GameSession,
-        player: EntityId,
-    ) -> Vec<GameEvent> {
+    pub(crate) fn activation_candidates(session: &GameSession, player: EntityId) -> Vec<EntityId> {
         let Some(player_position) = session
             .entities
             .view(player)
@@ -58,27 +55,38 @@ impl EncounterService {
                 (encounter.state == EncounterState::Dormant).then_some((*entity, radius))
             })
             .collect::<Vec<_>>();
-        let mut events = Vec::new();
-        for (encounter, radius) in candidates {
-            let Some(position) = session
-                .entities
-                .view(encounter)
-                .ok()
-                .and_then(|view| view.transform.map(|transform| transform.translation))
-            else {
-                continue;
-            };
-            if (position - player_position).length() > radius {
-                continue;
-            }
-            session
-                .encounters
-                .get_mut(&encounter)
-                .expect("activation candidate remains attached")
-                .state = EncounterState::Active;
-            events.push(GameEvent::EncounterActivated { encounter, player });
-        }
-        events
+        candidates
+            .into_iter()
+            .filter_map(|(encounter, radius)| {
+                let position = session
+                    .entities
+                    .view(encounter)
+                    .ok()
+                    .and_then(|view| view.transform.map(|transform| transform.translation))?;
+                ((position - player_position).length() <= radius).then_some(encounter)
+            })
+            .collect()
+    }
+
+    pub(crate) fn activate(
+        session: &mut GameSession,
+        player: EntityId,
+        candidates: &[EntityId],
+    ) -> Vec<GameEvent> {
+        candidates
+            .iter()
+            .map(|encounter| {
+                session
+                    .encounters
+                    .get_mut(encounter)
+                    .expect("activation candidate remains attached")
+                    .state = EncounterState::Active;
+                GameEvent::EncounterActivated {
+                    encounter: *encounter,
+                    player,
+                }
+            })
+            .collect()
     }
 
     pub(crate) fn enemy_is_active(session: &GameSession, enemy: EntityId) -> bool {

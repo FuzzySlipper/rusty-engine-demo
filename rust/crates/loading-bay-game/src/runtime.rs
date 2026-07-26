@@ -321,9 +321,21 @@ impl GameRuntime {
         &mut self,
         player: EntityId,
     ) -> Result<Vec<GameEvent>, RuntimeError> {
-        self.events.extend(EncounterService::activate_for_player(
+        let candidates = EncounterService::activation_candidates(&self.session, player);
+        if self
+            .events
+            .len()
+            .checked_add(candidates.len())
+            .is_none_or(|pending| pending > MAX_EVENT_WAVE)
+        {
+            return Err(RuntimeError::EventWaveLimit {
+                limit: MAX_EVENT_WAVE,
+            });
+        }
+        self.events.extend(EncounterService::activate(
             &mut self.session,
             player,
+            &candidates,
         ));
         self.drain_events()
     }

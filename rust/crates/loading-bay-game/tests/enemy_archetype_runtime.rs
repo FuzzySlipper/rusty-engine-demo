@@ -3,6 +3,7 @@ use loading_bay_game::{
     decode_game_snapshot, diagnostic_code, encode_game_snapshot, CombatFact, EncounterState,
     EnemyAttackKind, EnemyDropState, EnemyState, GameEvent, GameLoopFact, GameRuntime,
     LoadingBayGameLoop, PickupFact, PickupState, ResolvedAttackAction, RuntimeError,
+    MAX_EVENT_WAVE,
 };
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
@@ -307,6 +308,103 @@ fn snapshot_rejects_a_dormant_pickup_without_its_drop_authority() {
             pickup
         }) if pickup == MELEE_DROP.raw()
     ));
+}
+
+#[test]
+fn encounter_activation_delivers_the_bounded_wave_exactly_once() {
+    let project = project_with_overlapping_encounters(MAX_EVENT_WAVE);
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
+
+    let first = game_loop.run_fixed_tick().unwrap();
+    let activated = first
+        .facts
+        .iter()
+        .filter_map(|fact| match fact {
+            GameLoopFact::Event(GameEvent::EncounterActivated { encounter, player })
+                if *player == PLAYER =>
+            {
+                Some(*encounter)
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(activated.len(), MAX_EVENT_WAVE);
+    assert_eq!(
+        activated
+            .iter()
+            .copied()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        MAX_EVENT_WAVE
+    );
+    assert!(activated.iter().all(|encounter| {
+        game_loop
+            .runtime()
+            .session()
+            .encounter(*encounter)
+            .is_some_and(|component| component.state == EncounterState::Active)
+    }));
+
+    let second = game_loop.run_fixed_tick().unwrap();
+    assert!(!second.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::Event(GameEvent::EncounterActivated { .. })
+    )));
+}
+
+#[test]
+fn encounter_activation_overflow_preserves_all_encounters_and_the_journal() {
+    let project = project_with_overlapping_encounters(MAX_EVENT_WAVE + 1);
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let encounter_ids = (0..=MAX_EVENT_WAVE)
+        .map(|index| EntityId::new(10_000 + index as u64))
+        .collect::<Vec<_>>();
+    let journal_before = runtime.readout().journal;
+    let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
+
+    assert!(matches!(
+        game_loop.run_fixed_tick(),
+        Err(RuntimeError::EventWaveLimit {
+            limit: MAX_EVENT_WAVE
+        })
+    ));
+    assert!(encounter_ids.iter().all(|encounter| {
+        game_loop
+            .runtime()
+            .session()
+            .encounter(*encounter)
+            .is_some_and(|component| component.state == EncounterState::Dormant)
+    }));
+    assert_eq!(game_loop.runtime().readout().journal, journal_before);
+}
+
+fn project_with_overlapping_encounters(count: usize) -> serde_json::Value {
+    let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    entity_mut(&mut project, PLAYER)["translation"] = serde_json::json!([1.5, 1.5, 3.5]);
+    let encounter = entity_mut(&mut project, ENCOUNTER).clone();
+    let enemy = entity_mut(&mut project, MELEE).clone();
+    let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
+    entities.retain(|entity| entity["encounter"].is_null());
+    for index in 0..count {
+        let enemy_id = 20_000 + index as u64;
+        let mut member = enemy.clone();
+        member["id"] = enemy_id.into();
+        member["name"] = format!("bounded-member-{index}").into();
+        member["translation"] = serde_json::json!([20_000.0 + index as f64, 1.5, 20_000.0]);
+        let member = member.as_object_mut().unwrap();
+        for component in ["defeatDrop", "enemyCombat", "navigation"] {
+            member.remove(component);
+        }
+        entities.push(serde_json::Value::Object(member.clone()));
+
+        let mut instance = encounter.clone();
+        instance["id"] = (10_000 + index as u64).into();
+        instance["name"] = format!("bounded-encounter-{index}").into();
+        instance["encounter"]["members"] = serde_json::json!([enemy_id]);
+        entities.push(instance);
+    }
+    project
 }
 
 fn single_melee_project() -> serde_json::Value {
