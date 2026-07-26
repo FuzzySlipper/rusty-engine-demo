@@ -497,7 +497,8 @@ footer {
   animation: posture-moving 0.55s ease-in-out infinite alternate;
 }
 
-[data-animation-pulse="attack"],
+[data-animation-pulse$="-attack"],
+[data-animation-pulse$="-dry"],
 [data-animation-pulse="damage"],
 [data-animation-pulse="blocked"] {
   animation: posture-impact 0.18s ease-out 2 alternate;

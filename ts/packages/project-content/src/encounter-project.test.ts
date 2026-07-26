@@ -217,6 +217,41 @@ test("stored item definitions and starting inventory remain immutable authored d
       },
     },
   );
+  assert.deepEqual(
+    project.itemDefinitions.find(
+      (definition) =>
+        definition.id === LOADING_BAY_ITEM_IDS.breachScattergun,
+    )?.kind,
+    {
+      kind: "weapon",
+      attackMode: "spread",
+      pelletCount: 7,
+      spreadDegrees: 7,
+      damage: 14,
+      maxDistance: 12,
+      cooldownTicks: 36,
+      ammunition: LOADING_BAY_ITEM_IDS.scatterShell,
+      ammunitionCost: 1,
+      muzzleOffset: [0, 0, 0],
+      presentation: "breach-scattergun",
+    },
+  );
+  assert.deepEqual(
+    project.itemDefinitions.find(
+      (definition) => definition.id === LOADING_BAY_ITEM_IDS.rivetCarbine,
+    )?.kind,
+    {
+      kind: "weapon",
+      attackMode: "automatic",
+      damage: 18,
+      maxDistance: 25,
+      cooldownTicks: 4,
+      ammunition: LOADING_BAY_ITEM_IDS.energyCell,
+      ammunitionCost: 1,
+      muzzleOffset: [0, 0, 0],
+      presentation: "rivet-carbine",
+    },
+  );
   assert.equal(
     project.itemDefinitions.some(
       (definition) => definition.id === LOADING_BAY_ITEM_IDS.inertInspectionTag,
@@ -246,6 +281,15 @@ test("stored item definitions and starting inventory remain immutable authored d
         item: LOADING_BAY_ITEM_IDS.scatterShell,
         quantity: 8,
       },
+    },
+  );
+  assert.deepEqual(
+    project.scenes[0]?.entities.find(
+      (entity) => entity.id === ENCOUNTER_IDS.automaticWeaponPickup,
+    )?.pickup,
+    {
+      item: LOADING_BAY_ITEM_IDS.rivetCarbine,
+      quantity: 1,
     },
   );
 });

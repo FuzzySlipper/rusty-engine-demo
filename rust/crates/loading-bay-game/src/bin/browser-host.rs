@@ -603,20 +603,34 @@ fn drain_game_loop_feedback(
                 facts.push((event_name(&event).to_owned(), None));
                 feedback.extend_events(std::slice::from_ref(&event));
             }
-            GameLoopFact::CombatRejected { reason } => facts.push((
-                match reason {
-                    loading_bay_game::CombatRejectionReason::Cooldown => "CombatRejectedCooldown",
-                    loading_bay_game::CombatRejectionReason::NoAmmo => "CombatRejectedNoAmmo",
-                    loading_bay_game::CombatRejectionReason::NoEquippedWeapon => {
-                        "CombatRejectedNoEquippedWeapon"
-                    }
-                    loading_bay_game::CombatRejectionReason::AttackerDefeated => {
-                        "CombatRejectedPlayerDefeated"
+            GameLoopFact::CombatRejected {
+                attacker,
+                weapon,
+                presentation,
+                reason,
+            } => {
+                if reason == loading_bay_game::CombatRejectionReason::NoAmmo {
+                    if let (Some(weapon), Some(presentation)) = (&weapon, &presentation) {
+                        feedback.extend_dry_fire(attacker, weapon, presentation);
                     }
                 }
-                .to_owned(),
-                None,
-            )),
+                facts.push((
+                    match reason {
+                        loading_bay_game::CombatRejectionReason::Cooldown => {
+                            "CombatRejectedCooldown"
+                        }
+                        loading_bay_game::CombatRejectionReason::NoAmmo => "CombatRejectedNoAmmo",
+                        loading_bay_game::CombatRejectionReason::NoEquippedWeapon => {
+                            "CombatRejectedNoEquippedWeapon"
+                        }
+                        loading_bay_game::CombatRejectionReason::AttackerDefeated => {
+                            "CombatRejectedPlayerDefeated"
+                        }
+                    }
+                    .to_owned(),
+                    None,
+                ))
+            }
             GameLoopFact::EdgeCommandRejected { sequence, reason } => facts.push((
                 match reason {
                     loading_bay_game::EdgeCommandRejection::Paused => "InputEdgeRejectedPaused",

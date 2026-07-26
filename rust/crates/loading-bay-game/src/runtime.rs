@@ -377,7 +377,7 @@ impl GameRuntime {
             .ok_or(RuntimeError::MissingCollisionScene)?;
         let resolution =
             CombatService::attack(&mut self.session, scene, self.tick, attacker, action)?;
-        if let Some(event) = resolution.event {
+        for event in resolution.events {
             self.events.push_back(event);
         }
         let events = self.drain_events()?;

@@ -16,11 +16,12 @@ use voxel_annotation::{validate_annotation_layer, VoxelAnnotationLayer, VoxelAnn
 use voxel_asset::VoxelAsset;
 
 use crate::combat::{
-    MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_RANGE,
+    MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_PELLETS,
+    MAX_WEAPON_RANGE, MAX_WEAPON_SPREAD_DEGREES,
 };
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 15;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 16;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -84,6 +85,10 @@ pub enum StoredItemKind {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         attack_mode: Option<StoredWeaponAttackMode>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
+        pellet_count: Option<u8>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        spread_degrees: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         damage: Option<u32>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         max_distance: Option<f32>,
@@ -110,6 +115,8 @@ pub enum StoredItemKind {
 #[serde(rename_all = "camelCase")]
 pub enum StoredWeaponAttackMode {
     Hitscan,
+    Spread,
+    Automatic,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -614,6 +621,8 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
         let StoredItemKind::Weapon {
             ammunition,
             attack_mode,
+            pellet_count,
+            spread_degrees,
             damage,
             max_distance,
             cooldown_ticks,
@@ -624,7 +633,19 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
         else {
             continue;
         };
-        let valid_weapon = attack_mode.is_some()
+        let valid_attack_mode = match attack_mode {
+            Some(StoredWeaponAttackMode::Hitscan | StoredWeaponAttackMode::Automatic) => {
+                pellet_count.is_none() && spread_degrees.is_none()
+            }
+            Some(StoredWeaponAttackMode::Spread) => {
+                pellet_count.is_some_and(|value| (2..=MAX_WEAPON_PELLETS).contains(&value))
+                    && spread_degrees.is_some_and(|value| {
+                        value.is_finite() && value > 0.0 && value <= MAX_WEAPON_SPREAD_DEGREES
+                    })
+            }
+            None => false,
+        };
+        let valid_weapon = valid_attack_mode
             && damage.is_some_and(|value| (1..=MAX_WEAPON_DAMAGE).contains(&value))
             && max_distance
                 .is_some_and(|value| value.is_finite() && value > 0.0 && value <= MAX_WEAPON_RANGE)

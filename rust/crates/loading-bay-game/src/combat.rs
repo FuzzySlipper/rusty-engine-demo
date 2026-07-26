@@ -30,6 +30,8 @@ pub const MAX_WEAPON_AMMO: u32 = 1_000_000;
 pub const MAX_WEAPON_RANGE: f32 = 100_000.0;
 pub const MAX_WEAPON_COOLDOWN_TICKS: u64 = 100_000;
 pub const MAX_WEAPON_MUZZLE_OFFSET: f32 = 100_000.0;
+pub const MAX_WEAPON_PELLETS: u8 = 32;
+pub const MAX_WEAPON_SPREAD_DEGREES: f32 = 45.0;
 
 /// Legacy schema-6/entity authoring shape. Current projects store these
 /// semantics on the responsible weapon item definition instead.
@@ -88,9 +90,13 @@ pub enum CombatFact {
     AttackFired {
         attacker: EntityId,
         weapon: ItemDefinitionId,
+        presentation: String,
+        attack_mode: crate::WeaponAttackMode,
         ammunition: ItemDefinitionId,
         origin: Vec3,
         direction: Vec3,
+        ray_count: u8,
+        spread_seed: u64,
         ammo_before: u32,
         ammo_after: u32,
         ready_at_tick: Tick,
@@ -98,10 +104,15 @@ pub enum CombatFact {
     AttackHit {
         attacker: EntityId,
         target: EntityId,
+        ray_index: u8,
+        direction: Vec3,
         distance: f32,
+        damage: u32,
     },
     AttackMissed {
         attacker: EntityId,
+        ray_index: u8,
+        direction: Vec3,
         reason: CombatMissReason,
     },
     Vitality(VitalityFact),
@@ -139,7 +150,7 @@ pub(crate) struct CombatService;
 pub(crate) struct CombatResolution {
     pub(crate) action: ResolvedAttackAction,
     pub(crate) facts: Vec<CombatFact>,
-    pub(crate) event: Option<GameEvent>,
+    pub(crate) events: Vec<GameEvent>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -229,15 +240,13 @@ impl CombatService {
         let direction = aim_direction(controller.state.yaw_degrees, controller.state.pitch_degrees);
         let origin =
             transform + local_aim_offset(weapon.muzzle_offset, controller.state.yaw_degrees);
-        let target =
-            nearest_combat_target(session, attacker, origin, direction, weapon.max_distance);
-        let world_blocker = scene
-            .raycast(
-                [origin.x as f64, origin.y as f64, origin.z as f64],
-                [direction.x as f64, direction.y as f64, direction.z as f64],
-                weapon.max_distance as f64,
-            )
-            .map(|hit| hit.distance as f32);
+        let spread_seed = shot_seed(tick, attacker, &weapon_item);
+        let directions = attack_directions(
+            direction,
+            controller.state.yaw_degrees,
+            weapon.attack_mode,
+            spread_seed,
+        );
         let ammo_after = ammo_before - weapon.ammunition_cost;
         let ready_at_tick = tick.advance(TickDelta::new(weapon.cooldown_ticks));
         let mut candidate_session = session.clone();
@@ -268,9 +277,13 @@ impl CombatService {
         let mut facts = vec![CombatFact::AttackFired {
             attacker,
             weapon: weapon_item.clone(),
+            presentation: weapon.presentation.clone(),
+            attack_mode: weapon.attack_mode,
             ammunition: weapon.ammunition.clone(),
             origin,
             direction,
+            ray_count: directions.len() as u8,
+            spread_seed,
             ammo_before,
             ammo_after,
             ready_at_tick,
@@ -281,51 +294,78 @@ impl CombatService {
                 .into_iter()
                 .map(CombatFact::Inventory),
         );
-        let mut event = None;
-
-        match target {
-            Some(hit) if world_blocker.is_none_or(|distance| hit.distance + 0.000_1 < distance) => {
-                facts.push(CombatFact::AttackHit {
-                    attacker,
-                    target: hit.entity,
-                    distance: hit.distance,
-                });
-                let damage = DamageService::apply(
-                    &mut candidate_session,
-                    DamageCommand {
-                        source: DamageSource::Weapon {
-                            attacker,
-                            weapon: weapon_item.clone(),
-                        },
-                        target: hit.entity,
-                        amount: weapon.damage,
-                    },
+        let mut events = Vec::new();
+        for (ray_index, direction) in directions.into_iter().enumerate() {
+            let ray_index = ray_index as u8;
+            let target = nearest_combat_target(
+                &candidate_session,
+                attacker,
+                origin,
+                direction,
+                weapon.max_distance,
+            );
+            let world_blocker = scene
+                .raycast(
+                    [origin.x as f64, origin.y as f64, origin.z as f64],
+                    [direction.x as f64, direction.y as f64, direction.z as f64],
+                    weapon.max_distance as f64,
                 )
-                .map_err(RuntimeError::Vitality)?;
-                facts.extend(damage.facts.into_iter().map(CombatFact::Vitality));
-                facts.extend(
-                    damage
-                        .inventory
-                        .into_iter()
-                        .flat_map(|receipt| receipt.facts)
-                        .map(CombatFact::Inventory),
-                );
-                if damage.event.is_some() {
-                    facts.push(CombatFact::EnemyDefeated {
+                .map(|hit| hit.distance as f32);
+            match target {
+                Some(hit)
+                    if world_blocker.is_none_or(|distance| hit.distance + 0.000_1 < distance) =>
+                {
+                    facts.push(CombatFact::AttackHit {
                         attacker,
-                        enemy: hit.entity,
+                        target: hit.entity,
+                        ray_index,
+                        direction,
+                        distance: hit.distance,
+                        damage: weapon.damage,
                     });
+                    let damage = DamageService::apply(
+                        &mut candidate_session,
+                        DamageCommand {
+                            source: DamageSource::Weapon {
+                                attacker,
+                                weapon: weapon_item.clone(),
+                            },
+                            target: hit.entity,
+                            amount: weapon.damage,
+                        },
+                    )
+                    .map_err(RuntimeError::Vitality)?;
+                    facts.extend(damage.facts.into_iter().map(CombatFact::Vitality));
+                    facts.extend(
+                        damage
+                            .inventory
+                            .into_iter()
+                            .flat_map(|receipt| receipt.facts)
+                            .map(CombatFact::Inventory),
+                    );
+                    if let Some(event) = damage.event {
+                        if matches!(event, GameEvent::EnemyDefeated { .. }) {
+                            facts.push(CombatFact::EnemyDefeated {
+                                attacker,
+                                enemy: hit.entity,
+                            });
+                        }
+                        events.push(event);
+                    }
                 }
-                event = damage.event;
+                Some(_) => facts.push(CombatFact::AttackMissed {
+                    attacker,
+                    ray_index,
+                    direction,
+                    reason: CombatMissReason::WorldBlocked,
+                }),
+                None => facts.push(CombatFact::AttackMissed {
+                    attacker,
+                    ray_index,
+                    direction,
+                    reason: CombatMissReason::NoTarget,
+                }),
             }
-            Some(_) => facts.push(CombatFact::AttackMissed {
-                attacker,
-                reason: CombatMissReason::WorldBlocked,
-            }),
-            None => facts.push(CombatFact::AttackMissed {
-                attacker,
-                reason: CombatMissReason::NoTarget,
-            }),
         }
 
         candidate_session
@@ -338,7 +378,7 @@ impl CombatService {
         Ok(CombatResolution {
             action,
             facts,
-            event,
+            events,
         })
     }
 
@@ -379,6 +419,65 @@ fn aim_direction(yaw_degrees: f32, pitch_degrees: f32) -> Vec3 {
         pitch.sin(),
         -yaw.cos() * horizontal,
     )
+}
+
+fn attack_directions(
+    forward: Vec3,
+    yaw_degrees: f32,
+    attack_mode: crate::WeaponAttackMode,
+    spread_seed: u64,
+) -> Vec<Vec3> {
+    let crate::WeaponAttackMode::Spread {
+        pellet_count,
+        spread_degrees,
+    } = attack_mode
+    else {
+        return vec![forward];
+    };
+    let yaw = yaw_degrees.to_radians();
+    let right = Vec3::new(yaw.cos(), 0.0, -yaw.sin());
+    let up = right.cross(forward);
+    let max_offset = spread_degrees.to_radians().tan();
+    let rotation = seed_unit(spread_seed) * std::f32::consts::TAU;
+    let mut directions = Vec::with_capacity(pellet_count as usize);
+    directions.push(forward);
+    for index in 1..pellet_count {
+        let sample = index as f32 / (pellet_count - 1) as f32;
+        let radius = sample.sqrt() * max_offset;
+        let angle = rotation + index as f32 * 2.399_963_1;
+        directions.push(normalize_direction(
+            forward + right * (angle.cos() * radius) + up * (angle.sin() * radius),
+        ));
+    }
+    directions
+}
+
+fn normalize_direction(direction: Vec3) -> Vec3 {
+    let length = direction.length();
+    if length > f32::EPSILON {
+        direction * length.recip()
+    } else {
+        direction
+    }
+}
+
+fn shot_seed(tick: Tick, attacker: EntityId, weapon: &ItemDefinitionId) -> u64 {
+    let mut hash = 0xcbf2_9ce4_8422_2325u64;
+    for byte in tick
+        .raw()
+        .to_le_bytes()
+        .into_iter()
+        .chain(attacker.raw().to_le_bytes())
+        .chain(weapon.as_str().bytes())
+    {
+        hash ^= u64::from(byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    hash
+}
+
+fn seed_unit(seed: u64) -> f32 {
+    ((seed >> 40) as f32) / ((1u32 << 24) - 1) as f32
 }
 
 fn local_aim_offset(offset: Vec3, yaw_degrees: f32) -> Vec3 {

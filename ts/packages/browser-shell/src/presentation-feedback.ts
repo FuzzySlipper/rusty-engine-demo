@@ -28,6 +28,7 @@ import type {
 export type FeedbackParticleKind =
   | "movement"
   | "blocked"
+  | "dry"
   | "muzzle"
   | "impact"
   | "defeat"
@@ -38,6 +39,10 @@ export type FeedbackSoundKind =
   | "step"
   | "blocked"
   | "shot"
+  | "sidearmShot"
+  | "spreadShot"
+  | "automaticShot"
+  | "dryFire"
   | "hit"
   | "defeat"
   | "doorOpen"
@@ -535,9 +540,10 @@ export class BrowserPresentationFeedback {
       target.dataset.animationPulse = name;
       this.#pulseTargets.add(target);
       this.#schedule(() => {
-        if (target.dataset.animationPulse === name)
+        if (target.dataset.animationPulse === name) {
           delete target.dataset.animationPulse;
-        this.#pulseTargets.delete(target);
+          this.#pulseTargets.delete(target);
+        }
       }, PULSE_LIFETIME_MILLISECONDS);
     }
     this.#record("animationPulses", name);
@@ -636,7 +642,18 @@ function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
         billboard: { text: "BLOCKED", tone: "warning" },
       };
     case "attack":
-      return { particle: "muzzle", pulse: "attack", sound: "shot" };
+      return {
+        particle: "muzzle",
+        pulse: `${cue.presentation}-attack`,
+        sound: weaponShotSound(cue.presentation),
+      };
+    case "dryFire":
+      return {
+        particle: "dry",
+        pulse: `${cue.presentation}-dry`,
+        sound: "dryFire",
+        billboard: { text: "EMPTY", tone: "warning" },
+      };
     case "damage":
       return {
         particle: "impact",
@@ -690,6 +707,8 @@ function cueAnchor(
       return { entity: cue.entity, position: cue.to };
     case "attack":
       return { entity: cue.attacker, position: cue.origin };
+    case "dryFire":
+      return entityAnchor(state, cue.attacker);
     case "movementBlocked":
       return entityAnchor(state, cue.entity);
     case "damage":
@@ -711,6 +730,7 @@ function cueEntity(cue: RuntimeFeedbackCue): number {
     case "movementBlocked":
       return cue.entity;
     case "attack":
+    case "dryFire":
       return cue.attacker;
     case "damage":
       return cue.target;
@@ -720,6 +740,19 @@ function cueEntity(cue: RuntimeFeedbackCue): number {
       return cue.entity;
     case "pickupCollected":
       return cue.actor;
+  }
+}
+
+function weaponShotSound(presentation: string): FeedbackSoundKind {
+  switch (presentation) {
+    case "arc-pistol":
+      return "sidearmShot";
+    case "breach-scattergun":
+      return "spreadShot";
+    case "rivet-carbine":
+      return "automaticShot";
+    default:
+      return "shot";
   }
 }
 
@@ -886,6 +919,30 @@ const SOUND_PROFILES: Record<
   step: { frequency: 95, frequencyEnd: 70, duration: 0.05, volume: 0.12 },
   blocked: { frequency: 120, frequencyEnd: 55, duration: 0.11, volume: 0.18 },
   shot: { frequency: 220, frequencyEnd: 48, duration: 0.13, volume: 0.2 },
+  sidearmShot: {
+    frequency: 260,
+    frequencyEnd: 58,
+    duration: 0.12,
+    volume: 0.18,
+  },
+  spreadShot: {
+    frequency: 150,
+    frequencyEnd: 36,
+    duration: 0.2,
+    volume: 0.24,
+  },
+  automaticShot: {
+    frequency: 340,
+    frequencyEnd: 92,
+    duration: 0.08,
+    volume: 0.15,
+  },
+  dryFire: {
+    frequency: 1_100,
+    frequencyEnd: 680,
+    duration: 0.045,
+    volume: 0.11,
+  },
   hit: { frequency: 440, frequencyEnd: 180, duration: 0.09, volume: 0.16 },
   defeat: { frequency: 180, frequencyEnd: 48, duration: 0.3, volume: 0.18 },
   doorOpen: { frequency: 150, frequencyEnd: 310, duration: 0.24, volume: 0.15 },
@@ -1002,6 +1059,7 @@ const PARTICLE_COLORS: Record<
 > = {
   movement: [0.5, 0.78, 0.84, 0.9],
   blocked: [0.94, 0.68, 0.4, 1],
+  dry: [0.72, 0.68, 0.58, 0.9],
   muzzle: [1, 0.94, 0.64, 1],
   impact: [1, 0.44, 0.37, 1],
   defeat: [0.91, 0.37, 0.32, 1],

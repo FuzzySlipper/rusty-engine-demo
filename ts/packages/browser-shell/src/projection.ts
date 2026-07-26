@@ -179,8 +179,18 @@ export type RuntimeFeedbackCue =
   | {
       readonly kind: "attack";
       readonly attacker: number;
+      readonly weapon: string;
+      readonly presentation: string;
+      readonly attackMode: "hitscan" | "spread" | "automatic";
+      readonly rayCount: number;
       readonly origin: readonly [number, number, number];
       readonly direction: readonly [number, number, number];
+    }
+  | {
+      readonly kind: "dryFire";
+      readonly attacker: number;
+      readonly weapon: string;
+      readonly presentation: string;
     }
   | {
       readonly kind: "damage";

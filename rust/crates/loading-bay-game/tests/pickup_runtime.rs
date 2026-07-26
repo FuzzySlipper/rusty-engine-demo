@@ -17,7 +17,7 @@ fn authored_pickups_are_visible_non_solid_objects_with_explicit_item_quantities(
     let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
     let pickups = runtime.session().pickups().collect::<Vec<_>>();
 
-    assert_eq!(pickups.len(), 7);
+    assert_eq!(pickups.len(), 8);
     assert_eq!(
         pickups
             .iter()
@@ -35,6 +35,7 @@ fn authored_pickups_are_visible_non_solid_objects_with_explicit_item_quantities(
             (24, "supply/med-patch", 1),
             (25, "armor/impact-vest", 1),
             (26, "key/maintenance-pass", 1),
+            (28, "weapon/rivet-carbine", 1),
         ]
     );
     for pickup in pickups {
@@ -136,7 +137,7 @@ fn capacity_rejection_leaves_inventory_pickup_and_snapshot_byte_identical() {
 fn every_pickup_family_round_trips_and_authored_restart_restores_availability() {
     let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
     let mut armor_receipts = None;
-    for pickup in [22, 23, 24, 25, 26] {
+    for pickup in [22, 23, 24, 25, 26, 28] {
         runtime = with_overlap(runtime, EntityId::new(pickup));
         let receipt = runtime
             .collect_pickup(PLAYER, EntityId::new(pickup), 2, pickup)
@@ -148,6 +149,8 @@ fn every_pickup_family_round_trips_and_authored_restart_restores_availability() 
 
     assert_eq!(quantity(&runtime, "ammo/scatter-shell"), 20);
     assert_eq!(quantity(&runtime, "weapon/breach-scattergun"), 1);
+    assert_eq!(quantity(&runtime, "weapon/rivet-carbine"), 1);
+    assert_eq!(quantity(&runtime, "ammo/energy-cell"), 40);
     assert_eq!(quantity(&runtime, "supply/med-patch"), 2);
     assert_eq!(
         quantity(&runtime, "armor/impact-vest"),

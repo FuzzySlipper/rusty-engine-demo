@@ -88,7 +88,22 @@ export interface WeaponDefinition {
 export type ItemKindDefinition =
   | {
       readonly kind: "weapon";
-      readonly attackMode: "hitscan";
+      readonly attackMode: "hitscan" | "automatic";
+      readonly pelletCount?: never;
+      readonly spreadDegrees?: never;
+      readonly damage: number;
+      readonly maxDistance: number;
+      readonly cooldownTicks: number;
+      readonly ammunition: string;
+      readonly ammunitionCost: number;
+      readonly muzzleOffset: Vec3;
+      readonly presentation: string;
+    }
+  | {
+      readonly kind: "weapon";
+      readonly attackMode: "spread";
+      readonly pelletCount: number;
+      readonly spreadDegrees: number;
       readonly damage: number;
       readonly maxDistance: number;
       readonly cooldownTicks: number;
@@ -265,7 +280,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 15;
+  readonly schemaVersion: 16;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

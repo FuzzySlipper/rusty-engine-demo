@@ -5,7 +5,8 @@ use core_math::Vec3;
 use core_time::Tick;
 
 use crate::combat::{
-    MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_RANGE,
+    MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_PELLETS,
+    MAX_WEAPON_RANGE, MAX_WEAPON_SPREAD_DEGREES,
 };
 
 pub const MAX_ITEM_DEFINITION_ID_BYTES: usize = 96;
@@ -64,9 +65,20 @@ impl std::fmt::Display for ItemDefinitionIdError {
 
 impl std::error::Error for ItemDefinitionIdError {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WeaponAttackMode {
     Hitscan,
+    Spread {
+        pellet_count: u8,
+        spread_degrees: f32,
+    },
+    Automatic,
+}
+
+impl WeaponAttackMode {
+    pub fn is_automatic(self) -> bool {
+        matches!(self, Self::Automatic)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -83,7 +95,20 @@ pub struct WeaponDefinition {
 
 impl WeaponDefinition {
     pub(crate) fn is_valid(&self) -> bool {
-        (1..=MAX_WEAPON_DAMAGE).contains(&self.damage)
+        let valid_attack_mode = match self.attack_mode {
+            WeaponAttackMode::Hitscan | WeaponAttackMode::Automatic => true,
+            WeaponAttackMode::Spread {
+                pellet_count,
+                spread_degrees,
+            } => {
+                (2..=MAX_WEAPON_PELLETS).contains(&pellet_count)
+                    && spread_degrees.is_finite()
+                    && spread_degrees > 0.0
+                    && spread_degrees <= MAX_WEAPON_SPREAD_DEGREES
+            }
+        };
+        valid_attack_mode
+            && (1..=MAX_WEAPON_DAMAGE).contains(&self.damage)
             && self.max_distance.is_finite()
             && self.max_distance > 0.0
             && self.max_distance <= MAX_WEAPON_RANGE

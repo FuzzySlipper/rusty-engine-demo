@@ -582,7 +582,7 @@ export async function mountLoadingBayGame(
     await performInputIntent([0, 0]);
     await presentationFeedback.settled();
     const resetStartedWithConcreteTransients =
-      playerMotionState.dataset.animationPulse === "attack" &&
+      playerMotionState.dataset.animationPulse === "arc-pistol-attack" &&
       Number(feedbackLayer.dataset.activeEffects ?? "0") > 0 &&
       Number(feedbackAudioStatus.dataset.activeSounds ?? "0") > 0;
     document.body.dataset.feedbackResetStart = [
@@ -597,7 +597,7 @@ export async function mountLoadingBayGame(
     const resetFeedbackRebuilt =
       resetStartedWithConcreteTransients &&
       resetCuesBelongToFreshSimulation &&
-      playerMotionState.dataset.animationPulse !== "attack" &&
+      playerMotionState.dataset.animationPulse !== "arc-pistol-attack" &&
       includesEvery(feedbackLayer.dataset.animationStates, [
         "1:idle",
         "3:closed",
@@ -621,7 +621,7 @@ export async function mountLoadingBayGame(
     const initialPlayerYaw = current.player.yawDegrees;
     const heldCode = current.player.bindings.moveForward;
     window.dispatchEvent(new KeyboardEvent("keydown", { code: heldCode }));
-    await delay(current.player.moveStepSeconds * 8_000);
+    await delay(1_200);
     window.dispatchEvent(new KeyboardEvent("keyup", { code: heldCode }));
     await performInputIntent([0, 0]);
     const playerMoved = vectorChanged(
@@ -685,33 +685,37 @@ export async function mountLoadingBayGame(
     const healthBeforeCooldownProbe = current.enemies.find(
       (enemy) => enemy.id === 4,
     )?.currentHealth;
-    const rejectionsBeforeCooldown = eventHistory.filter(
-      (event) => event === "CombatRejectedCooldown",
-    ).length;
+    const ammoBeforeSinglePress = current.weapon.ammoRemaining;
     primaryFireHeld = true;
     await performInputIntent([0, 0]);
     const healthAfterFirstShot = current.enemies.find(
       (enemy) => enemy.id === 4,
     )?.currentHealth;
+    const ammoAfterFirstShot = current.weapon.ammoRemaining;
     await performInputIntent([0, 0]);
     const healthAfterRepeatedHeldFire = current.enemies.find(
       (enemy) => enemy.id === 4,
     )?.currentHealth;
+    const ammoAfterRepeatedHeldFire = current.weapon.ammoRemaining;
     primaryFireHeld = false;
     await performInputIntent([0, 0]);
-    const rejectionsAfterCooldown = eventHistory.filter(
-      (event) => event === "CombatRejectedCooldown",
-    ).length;
-    const cooldownRejected = rejectionsAfterCooldown > rejectionsBeforeCooldown;
+    const singlePressHeld =
+      ammoAfterFirstShot === ammoBeforeSinglePress - 1 &&
+      ammoAfterRepeatedHeldFire === ammoAfterFirstShot &&
+      healthAfterRepeatedHeldFire === healthAfterFirstShot;
     document.body.dataset.cooldownEvidence = [
       healthBeforeCooldownProbe ?? "missing",
       healthAfterFirstShot ?? "missing",
       healthAfterRepeatedHeldFire ?? "missing",
-      rejectionsBeforeCooldown,
-      rejectionsAfterCooldown,
+      ammoBeforeSinglePress,
+      ammoAfterFirstShot,
+      ammoAfterRepeatedHeldFire,
     ].join(":");
     const movingTargetDamaged =
-      cooldownRejected || (await damageEnemyTo(4, 40));
+      (healthBeforeCooldownProbe !== undefined &&
+        healthAfterFirstShot !== undefined &&
+        healthAfterFirstShot < healthBeforeCooldownProbe) ||
+      (await damageEnemyTo(4, 40));
     const yawBeforeRecovery = current.player.yawDegrees;
     await enqueuePlayerAction({ kind: "look", yawDelta: 0.25, pitchDelta: 0 });
     const lookRecoveredAfterRejection =
@@ -738,14 +742,14 @@ export async function mountLoadingBayGame(
     }
     document.body.dataset.gatePassage = openGateTraversed ? "pass" : "fail";
     const queueRecovered =
-      cooldownRejected && lookRecoveredAfterRejection && openGateTraversed;
+      singlePressHeld && lookRecoveredAfterRejection && openGateTraversed;
     document.body.dataset.queueEvidence = [
-      cooldownRejected,
+      singlePressHeld,
       lookRecoveredAfterRejection,
       openGateTraversed,
     ].join(":");
     document.body.dataset.queueRecovery = queueRecovered ? "pass" : "fail";
-    const cooldownRecovered = cooldownRejected && firstEnemyDefeated;
+    const cooldownRecovered = singlePressHeld && firstEnemyDefeated;
     document.body.dataset.cooldown = cooldownRecovered ? "pass" : "fail";
     await enqueueInteraction(7);
     await presentationFeedback.settled();
@@ -757,6 +761,8 @@ export async function mountLoadingBayGame(
       beaconState.dataset.posture === "active" &&
       surface.snapshot().includes("extraction-beacon");
     document.body.dataset.beaconActivation = beaconActivated ? "pass" : "fail";
+    const dryFirePassed = await proveDryFire();
+    document.body.dataset.dryFire = dryFirePassed ? "pass" : "fail";
     await presentationFeedback.settled();
     const door = current.projection.find((node) => node.id === 3);
     const gameplayPassed =
@@ -775,6 +781,7 @@ export async function mountLoadingBayGame(
       cooldownRecovered &&
       current.generatedEnvironment?.seed === 4 &&
       combatHit &&
+      dryFirePassed &&
       openGateTraversed &&
       current.enemies.every((enemy) => enemy.currentHealth === 0) &&
       beaconActivated &&
@@ -787,7 +794,8 @@ export async function mountLoadingBayGame(
       includesEvery(feedbackLayer.dataset.animationPulses, [
         "movement",
         "blocked",
-        "attack",
+        "arc-pistol-attack",
+        "arc-pistol-dry",
         "damage",
         "defeat",
         "open",
@@ -797,6 +805,7 @@ export async function mountLoadingBayGame(
         "movement",
         "blocked",
         "muzzle",
+        "dry",
         "impact",
         "defeat",
         "door",
@@ -804,6 +813,7 @@ export async function mountLoadingBayGame(
       ]) &&
       includesEvery(feedbackLayer.dataset.billboardValues, [
         "BLOCKED",
+        "EMPTY",
         "-60",
         "DEFEATED",
         "EXIT OPEN",
@@ -820,7 +830,11 @@ export async function mountLoadingBayGame(
     ].join("|");
     const audioFeedbackPassed =
       Number(feedbackAudioStatus.dataset.attempted ?? "0") > 0 &&
-      Number(feedbackAudioStatus.dataset.scheduled ?? "0") > 0;
+      Number(feedbackAudioStatus.dataset.scheduled ?? "0") > 0 &&
+      includesEvery(feedbackAudioStatus.dataset.soundKinds, [
+        "sidearmShot",
+        "dryFire",
+      ]);
     document.body.dataset.audioFeedback = audioFeedbackPassed ? "pass" : "fail";
 
     latestMovement = { kind: "move", forward: -1, right: 0 };
@@ -1307,6 +1321,53 @@ export async function mountLoadingBayGame(
     await enqueueAttackAction(action);
   }
 
+  async function proveDryFire(): Promise<boolean> {
+    const startedWithSidearm = current.weapon.item === "weapon/arc-pistol";
+    let acceptedShots = 0;
+    while (current.weapon.ammoRemaining > 0 && acceptedShots < 64) {
+      await firePrimary();
+      acceptedShots += 1;
+    }
+    const rejectionsBefore = eventHistory.filter(
+      (event) => event === "CombatRejectedNoAmmo",
+    ).length;
+    primaryFireHeld = true;
+    await performInputIntent([0, 0]);
+    const cue = current.presentation.cues.find(
+      (candidate) => candidate.kind === "dryFire",
+    );
+    primaryFireHeld = false;
+    await performInputIntent([0, 0]);
+    await presentationFeedback.settled();
+    const rejectionObserved =
+      eventHistory.filter((event) => event === "CombatRejectedNoAmmo").length >
+      rejectionsBefore;
+    const feedbackObserved =
+      cue?.kind === "dryFire" &&
+      cue.weapon === "weapon/arc-pistol" &&
+      cue.presentation === "arc-pistol" &&
+      includesEvery(feedbackLayer.dataset.animationPulses, [
+        "arc-pistol-dry",
+      ]) &&
+      includesEvery(feedbackLayer.dataset.particleKinds, ["dry"]) &&
+      includesEvery(feedbackLayer.dataset.billboardValues, ["EMPTY"]) &&
+      includesEvery(feedbackAudioStatus.dataset.soundKinds, ["dryFire"]);
+    document.body.dataset.dryFireEvidence = [
+      startedWithSidearm,
+      acceptedShots,
+      current.weapon.ammoRemaining,
+      rejectionObserved,
+      feedbackObserved,
+    ].join(":");
+    return (
+      startedWithSidearm &&
+      acceptedShots <= 40 &&
+      current.weapon.ammoRemaining === 0 &&
+      rejectionObserved &&
+      feedbackObserved
+    );
+  }
+
   async function damageEnemyTo(
     enemyId: number,
     targetHealth: number,
@@ -1340,12 +1401,14 @@ export async function mountLoadingBayGame(
   }
 
   async function proveWorldPickups(): Promise<boolean> {
+    await presentationFeedback.activateAudio();
     const pickupIds = current.pickups.map((pickup) => pickup.id);
     const startedAvailable =
-      pickupIds.length === 7 &&
+      pickupIds.length === 8 &&
       current.pickups.every((pickup) => pickup.state === "available");
     const walked = await walkPlayerPath([
       [2.5, 2.5],
+      [2.5, 3.5],
       [3.5, 2.5],
       [4.5, 2.5],
       [5.5, 2.5],
@@ -1364,13 +1427,15 @@ export async function mountLoadingBayGame(
       inventoryQuantity("ammo/energy-cell") === 200 &&
       inventoryQuantity("ammo/scatter-shell") === 20 &&
       inventoryQuantity("weapon/breach-scattergun") === 1 &&
+      inventoryQuantity("weapon/rivet-carbine") === 1 &&
       inventoryQuantity("supply/med-patch") === 2 &&
       inventoryQuantity("armor/impact-vest") === 0 &&
       inventoryQuantity("key/maintenance-pass") === 1 &&
       current.player.armor === 100 &&
       current.player.armor === current.player.maxArmor;
     const worldExact =
-      JSON.stringify(collected) === JSON.stringify([20, 22, 23, 24, 25, 26]) &&
+      JSON.stringify(collected) ===
+        JSON.stringify([20, 22, 23, 24, 25, 26, 28]) &&
       JSON.stringify(available) === JSON.stringify([21]) &&
       !current.projection.some((node) => collected.includes(node.id)) &&
       current.projection.some((node) => node.id === 21);
@@ -1378,25 +1443,73 @@ export async function mountLoadingBayGame(
       "PickupRejectedQuantityOverflow",
     );
     const factsProjected =
-      eventHistory.filter((event) => event === "PickupCollected").length >= 6;
+      eventHistory.filter((event) => event === "PickupCollected").length >= 7;
     const cueProjected =
       includesEvery(feedbackLayer.dataset.animationPulses, ["pickup"]) &&
       includesEvery(feedbackLayer.dataset.particleKinds, ["pickup"]) &&
       includesEvery(feedbackAudioStatus.dataset.soundKinds, ["pickup"]);
-    const numericSelection = resolveKeyboardAction(
+    const spreadSelection = resolveKeyboardAction(
       "Digit2",
       current.player.bindings,
     );
-    if (numericSelection?.kind === "selectWeaponSlot") {
-      await enqueueWeaponSelection(numericSelection.slot);
+    if (spreadSelection?.kind === "selectWeaponSlot") {
+      await enqueueWeaponSelection(spreadSelection.slot);
     }
-    const selectedPickupWeapon =
+    const selectedSpreadWeapon =
       current.weapon.item === "weapon/breach-scattergun" &&
       current.weapon.ammunition === "ammo/scatter-shell" &&
       current.weapon.ammoRemaining === 20 &&
       current.inventory?.equippedWeapon === "weapon/breach-scattergun" &&
       current.inventory.weapons.find((weapon) => weapon.slot === 1)
         ?.selected === true;
+    const spreadAmmoBefore = current.weapon.ammoRemaining;
+    primaryFireHeld = true;
+    await performInputIntent([0, 0]);
+    const spreadCue = current.presentation.cues.find(
+      (cue) => cue.kind === "attack",
+    );
+    primaryFireHeld = false;
+    await performInputIntent([0, 0]);
+    const spreadPassed =
+      spreadCue?.kind === "attack" &&
+      spreadCue.weapon === "weapon/breach-scattergun" &&
+      spreadCue.attackMode === "spread" &&
+      spreadCue.rayCount === 7 &&
+      current.weapon.ammoRemaining === spreadAmmoBefore - 1;
+
+    const automaticSelection = resolveKeyboardAction(
+      "Digit3",
+      current.player.bindings,
+    );
+    if (automaticSelection?.kind === "selectWeaponSlot") {
+      await enqueueWeaponSelection(automaticSelection.slot);
+    }
+    const automaticAmmoBefore = current.weapon.ammoRemaining;
+    let automaticShotCount = 0;
+    primaryFireHeld = true;
+    for (let frame = 0; frame < 5; frame += 1) {
+      await performInputIntent([0, 0]);
+      automaticShotCount += current.presentation.cues.filter(
+        (cue) =>
+          cue.kind === "attack" &&
+          cue.weapon === "weapon/rivet-carbine" &&
+          cue.attackMode === "automatic",
+      ).length;
+    }
+    primaryFireHeld = false;
+    await performInputIntent([0, 0]);
+    await presentationFeedback.settled();
+    const automaticPassed =
+      current.weapon.item === "weapon/rivet-carbine" &&
+      current.inventory?.equippedWeapon === "weapon/rivet-carbine" &&
+      current.inventory.weapons.find((weapon) => weapon.slot === 2)
+        ?.selected === true &&
+      automaticShotCount >= 1 &&
+      current.weapon.ammoRemaining === automaticAmmoBefore - 2;
+    const weaponFeedbackPassed = includesEvery(
+      feedbackAudioStatus.dataset.soundKinds,
+      ["spreadShot", "automaticShot"],
+    );
     document.body.dataset.pickupEvidence = [
       pickupIds.join(","),
       collected.join(","),
@@ -1407,7 +1520,10 @@ export async function mountLoadingBayGame(
       `${String(current.player.armor)}/${String(current.player.maxArmor)}`,
       rejectionExact,
       cueProjected,
-      selectedPickupWeapon,
+      selectedSpreadWeapon,
+      spreadPassed,
+      automaticPassed,
+      weaponFeedbackPassed,
     ].join("|");
     return (
       startedAvailable &&
@@ -1417,7 +1533,10 @@ export async function mountLoadingBayGame(
       rejectionExact &&
       factsProjected &&
       cueProjected &&
-      selectedPickupWeapon
+      selectedSpreadWeapon &&
+      spreadPassed &&
+      automaticPassed &&
+      weaponFeedbackPassed
     );
   }
 

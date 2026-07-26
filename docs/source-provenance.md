@@ -129,6 +129,16 @@ level geometry. Rusty Engine contributes only its exact-pinned generic entity-bo
 trigger-volume mechanisms; Loading Bay Rust exclusively owns hazard cadence, damage, vitality,
 death, restart receipts, snapshots, and browser projection.
 
+The schema-16 single-shot, bounded deterministic spread, and held-automatic weapon behavior,
+the rivet-carbine pickup, per-weapon shot feedback, and dry-fire feedback were authored directly in
+this repository under Den task #6224. They reuse the existing downstream primitive pickup and
+feedback-sprite identities and add no copied mesh, texture, sound, sprite, code, or level data. The
+sidearm, spread, automatic, and dry-fire sounds are synthesized at runtime from the original
+frequency/envelope profiles in `ts/packages/browser-shell/src/presentation-feedback.ts`; there are
+no imported audio files. Rust exclusively owns selection, cadence, deterministic spread seeds and
+rays, occlusion, ammunition, damage, and facts. Browser pulses, particles, synthesized audio, and
+the pending shared-renderer viewmodel are disposable presentation and cannot alter aim or damage.
+
 The public `/home/dev/rusty-engine-ui` checkout at exact commit
 `68ddfa5430ec3bc2cf7ca96963982db9511e79ba` supplied the following #6216 downstream shell patterns:
 

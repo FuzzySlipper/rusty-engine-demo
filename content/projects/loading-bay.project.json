@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 15,
+  "schemaVersion": 16,
   "projectId": "loading-bay",
   "name": "Loading Bay",
   "entryScene": "scene/loading-bay",
@@ -156,12 +156,14 @@
       "maxQuantity": 1,
       "kind": {
         "kind": "weapon",
-        "attackMode": "hitscan",
-        "damage": 90,
+        "attackMode": "spread",
+        "pelletCount": 7,
+        "spreadDegrees": 7,
+        "damage": 14,
         "maxDistance": 12,
         "cooldownTicks": 36,
         "ammunition": "ammo/scatter-shell",
-        "ammunitionCost": 2,
+        "ammunitionCost": 1,
         "muzzleOffset": [
           0,
           0,
@@ -175,10 +177,10 @@
       "maxQuantity": 1,
       "kind": {
         "kind": "weapon",
-        "attackMode": "hitscan",
-        "damage": 30,
+        "attackMode": "automatic",
+        "damage": 18,
         "maxDistance": 25,
-        "cooldownTicks": 1,
+        "cooldownTicks": 4,
         "ammunition": "ammo/energy-cell",
         "ammunitionCost": 1,
         "muzzleOffset": [
@@ -712,6 +714,35 @@
           "hazard": {
             "damage": 20,
             "cooldownTicks": 60
+          }
+        },
+        {
+          "id": 28,
+          "name": "rivet-carbine-pickup",
+          "translation": [
+            2.5,
+            1.5,
+            3.5
+          ],
+          "bounds": {
+            "min": [
+              -0.35,
+              -0.35,
+              -0.35
+            ],
+            "max": [
+              0.35,
+              0.35,
+              0.35
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/pickup-weapon",
+            "visible": true
+          },
+          "pickup": {
+            "item": "weapon/rivet-carbine",
+            "quantity": 1
           }
         }
       ]

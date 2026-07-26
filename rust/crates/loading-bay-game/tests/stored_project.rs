@@ -49,7 +49,7 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
             .iter()
             .filter(|entity| entity.pickup.is_some())
             .count(),
-        7
+        8
     );
     assert_eq!(
         entities

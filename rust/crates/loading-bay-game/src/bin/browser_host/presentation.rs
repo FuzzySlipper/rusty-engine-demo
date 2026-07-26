@@ -42,8 +42,17 @@ enum BrowserFeedbackCue {
     },
     Attack {
         attacker: u64,
+        weapon: String,
+        presentation: String,
+        attack_mode: &'static str,
+        ray_count: u8,
         origin: [f32; 3],
         direction: [f32; 3],
+    },
+    DryFire {
+        attacker: u64,
+        weapon: String,
+        presentation: String,
     },
     Damage {
         attacker: u64,
@@ -114,11 +123,23 @@ impl BrowserFeedbackProjection {
             match fact {
                 CombatFact::AttackFired {
                     attacker,
+                    weapon,
+                    presentation,
+                    attack_mode,
+                    ray_count,
                     origin,
                     direction,
                     ..
                 } => self.cues.push(BrowserFeedbackCue::Attack {
                     attacker: attacker.raw(),
+                    weapon: weapon.as_str().to_owned(),
+                    presentation: presentation.clone(),
+                    attack_mode: match attack_mode {
+                        loading_bay_game::WeaponAttackMode::Hitscan => "hitscan",
+                        loading_bay_game::WeaponAttackMode::Spread { .. } => "spread",
+                        loading_bay_game::WeaponAttackMode::Automatic => "automatic",
+                    },
+                    ray_count: *ray_count,
                     origin: origin.to_array(),
                     direction: direction.to_array(),
                 }),
@@ -188,6 +209,19 @@ impl BrowserFeedbackProjection {
                 entity: beacon.raw(),
                 actor: actor.raw(),
             });
+    }
+
+    pub(super) fn extend_dry_fire(
+        &mut self,
+        attacker: EntityId,
+        weapon: &loading_bay_game::ItemDefinitionId,
+        presentation: &str,
+    ) {
+        self.cues.push(BrowserFeedbackCue::DryFire {
+            attacker: attacker.raw(),
+            weapon: weapon.as_str().to_owned(),
+            presentation: presentation.to_owned(),
+        });
     }
 
     pub(super) fn extend_pickup(&mut self, fact: &PickupFact) {
@@ -351,10 +385,14 @@ mod tests {
         projection.extend_combat(&[
             CombatFact::AttackFired {
                 attacker: actor,
-                weapon,
+                weapon: weapon.clone(),
+                presentation: "arc-pistol".to_owned(),
+                attack_mode: loading_bay_game::WeaponAttackMode::Hitscan,
                 ammunition,
                 origin: Vec3::new(2.0, 1.0, 0.0),
                 direction: Vec3::new(0.0, 0.0, -1.0),
+                ray_count: 1,
+                spread_seed: 17,
                 ammo_before: 8,
                 ammo_after: 7,
                 ready_at_tick: core_time::Tick::new(2),
@@ -378,6 +416,7 @@ mod tests {
                 enemy,
             },
         ]);
+        projection.extend_dry_fire(actor, &weapon, "arc-pistol");
         projection.extend_events(&[
             GameEvent::EnemyDefeated {
                 enemy,
@@ -395,7 +434,7 @@ mod tests {
             tick: core_time::Tick::new(2),
         });
 
-        assert_eq!(projection.cues.len(), 6);
+        assert_eq!(projection.cues.len(), 7);
         assert_eq!(
             projection.cues[0],
             BrowserFeedbackCue::Movement {
@@ -418,6 +457,11 @@ mod tests {
                     ..
                 },
                 BrowserFeedbackCue::Defeat { entity: 4, .. },
+                BrowserFeedbackCue::DryFire {
+                    attacker: 1,
+                    presentation,
+                    ..
+                },
                 BrowserFeedbackCue::DoorChanged {
                     entity: 3,
                     state: "open"
@@ -426,7 +470,7 @@ mod tests {
                     entity: 7,
                     actor: 1
                 },
-            ]
+            ] if presentation == "arc-pistol"
         ));
     }
 

@@ -23,6 +23,7 @@ export const ENCOUNTER_IDS = {
   armorPickup: 25,
   keyPickup: 26,
   hazard: 27,
+  automaticWeaponPickup: 28,
 } as const;
 
 export const LOADING_BAY_ITEM_IDS = {
@@ -292,7 +293,7 @@ export function loadingBayStoredProject(
   }
 
   return {
-    schemaVersion: 15,
+    schemaVersion: 16,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",
@@ -362,12 +363,14 @@ export function loadingBayStoredProject(
         maxQuantity: 1,
         kind: {
           kind: "weapon",
-          attackMode: "hitscan",
-          damage: 90,
+          attackMode: "spread",
+          pelletCount: 7,
+          spreadDegrees: 7,
+          damage: 14,
           maxDistance: 12,
           cooldownTicks: 36,
           ammunition: LOADING_BAY_ITEM_IDS.scatterShell,
-          ammunitionCost: 2,
+          ammunitionCost: 1,
           muzzleOffset: [0, 0, 0],
           presentation: "breach-scattergun",
         },
@@ -377,10 +380,10 @@ export function loadingBayStoredProject(
         maxQuantity: 1,
         kind: {
           kind: "weapon",
-          attackMode: "hitscan",
-          damage: 30,
+          attackMode: "automatic",
+          damage: 18,
           maxDistance: 25,
-          cooldownTicks: 1,
+          cooldownTicks: 4,
           ammunition: LOADING_BAY_ITEM_IDS.energyCell,
           ammunitionCost: 1,
           muzzleOffset: [0, 0, 0],
@@ -490,6 +493,14 @@ export function loadingBayStoredProject(
             renderable: { asset: "mesh/hazard-pad", visible: true },
             hazard: { damage: 20, cooldownTicks: 60 },
           },
+          pickupEntity(
+            ENCOUNTER_IDS.automaticWeaponPickup,
+            "rivet-carbine-pickup",
+            "mesh/pickup-weapon",
+            [2.5, 1.5, 3.5],
+            LOADING_BAY_ITEM_IDS.rivetCarbine,
+            1,
+          ),
         ],
       },
     ],
@@ -519,6 +530,7 @@ export function relayAnnexStoredProject(): StoredProjectContent {
           [ENCOUNTER_IDS.energyOverflowPickup]: [3.5, 1.5, 2.5],
           [ENCOUNTER_IDS.ammunitionPickup]: [4.5, 1.5, 2.5],
           [ENCOUNTER_IDS.weaponPickup]: [5.5, 1.5, 2.5],
+          [ENCOUNTER_IDS.automaticWeaponPickup]: [2.5, 1.5, 3.5],
           [ENCOUNTER_IDS.healthPickup]: [5.5, 1.5, 3.5],
           [ENCOUNTER_IDS.armorPickup]: [4.5, 1.5, 3.5],
           [ENCOUNTER_IDS.keyPickup]: [3.5, 1.5, 3.5],

@@ -2,7 +2,7 @@ use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, CombatFact, CombatRejectionReason, GameEvent,
     GameRuntime, GameSnapshotError, InventoryAction, InventoryCommand, ItemDefinitionId,
-    ResolvedAttackAction, ResolvedPlayerAction, RuntimeError,
+    ResolvedAttackAction, ResolvedPlayerAction, RuntimeError, WeaponAttackMode,
 };
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
@@ -24,6 +24,22 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
     let mut uninterrupted = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     aim_at(&mut uninterrupted, ENEMY);
 
+    assert_eq!(
+        weapon_mode(&uninterrupted, "weapon/arc-pistol"),
+        WeaponAttackMode::Hitscan
+    );
+    assert_eq!(
+        weapon_mode(&uninterrupted, "weapon/breach-scattergun"),
+        WeaponAttackMode::Spread {
+            pellet_count: 7,
+            spread_degrees: 7.0,
+        }
+    );
+    assert_eq!(
+        weapon_mode(&uninterrupted, "weapon/rivet-carbine"),
+        WeaponAttackMode::Automatic
+    );
+
     apply(
         &mut uninterrupted,
         1,
@@ -39,11 +55,20 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
             item: item("weapon/rivet-carbine"),
         },
     );
-    uninterrupted
+    let automatic = uninterrupted
         .attack(PLAYER, ResolvedAttackAction::Attack)
         .unwrap();
     assert_eq!(quantity(&uninterrupted, "ammo/energy-cell"), 39);
-    assert_eq!(uninterrupted.session().health(ENEMY).unwrap().current, 70);
+    assert_eq!(uninterrupted.session().health(ENEMY).unwrap().current, 82);
+    assert!(automatic.facts.iter().any(|fact| matches!(
+        fact,
+        CombatFact::AttackFired {
+            attack_mode: WeaponAttackMode::Automatic,
+            presentation,
+            ray_count: 1,
+            ..
+        } if presentation == "rivet-carbine"
+    )));
 
     apply(
         &mut uninterrupted,
@@ -52,11 +77,20 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
             item: item("weapon/arc-pistol"),
         },
     );
-    uninterrupted
+    let single = uninterrupted
         .attack(PLAYER, ResolvedAttackAction::Attack)
         .unwrap();
     assert_eq!(quantity(&uninterrupted, "ammo/energy-cell"), 38);
-    assert_eq!(uninterrupted.session().health(ENEMY).unwrap().current, 10);
+    assert_eq!(uninterrupted.session().health(ENEMY).unwrap().current, 22);
+    assert!(single.facts.iter().any(|fact| matches!(
+        fact,
+        CombatFact::AttackFired {
+            attack_mode: WeaponAttackMode::Hitscan,
+            presentation,
+            ray_count: 1,
+            ..
+        } if presentation == "arc-pistol"
+    )));
 
     apply(
         &mut uninterrupted,
@@ -118,8 +152,51 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
         .attack(PLAYER, ResolvedAttackAction::Attack)
         .unwrap();
     assert_eq!(actual_lethal, expected_lethal);
-    assert_eq!(quantity(&uninterrupted, "ammo/scatter-shell"), 2);
+    assert_eq!(quantity(&uninterrupted, "ammo/scatter-shell"), 3);
     assert_eq!(quantity(&uninterrupted, "ammo/energy-cell"), 38);
+    assert!(expected_lethal.facts.iter().any(|fact| matches!(
+        fact,
+        CombatFact::AttackFired {
+            attack_mode:
+                WeaponAttackMode::Spread {
+                    pellet_count,
+                    spread_degrees,
+                },
+            presentation,
+            ray_count: 7,
+            ..
+        } if *pellet_count == 7
+            && *spread_degrees == 7.0
+            && presentation == "breach-scattergun"
+    )));
+    let ray_directions = expected_lethal
+        .facts
+        .iter()
+        .filter_map(|fact| match fact {
+            CombatFact::AttackHit {
+                ray_index,
+                direction,
+                ..
+            }
+            | CombatFact::AttackMissed {
+                ray_index,
+                direction,
+                ..
+            } => Some((*ray_index, *direction)),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        ray_directions
+            .iter()
+            .map(|(index, _)| *index)
+            .collect::<Vec<_>>(),
+        (0..7).collect::<Vec<_>>()
+    );
+    assert!(ray_directions
+        .iter()
+        .skip(1)
+        .any(|(_, direction)| *direction != ray_directions[0].1));
     assert_eq!(
         expected_lethal
             .events
@@ -158,8 +235,18 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
         .iter()
         .all(|fact| !matches!(fact, CombatFact::EnemyDefeated { .. })));
     assert!(expected_miss.events.is_empty());
-    assert_eq!(quantity(&uninterrupted, "ammo/scatter-shell"), 0);
+    assert_eq!(quantity(&uninterrupted, "ammo/scatter-shell"), 2);
 
+    for expected_remaining in [1, 0] {
+        uninterrupted.advance_by(36).unwrap();
+        uninterrupted
+            .attack(PLAYER, ResolvedAttackAction::Attack)
+            .unwrap();
+        assert_eq!(
+            quantity(&uninterrupted, "ammo/scatter-shell"),
+            expected_remaining
+        );
+    }
     uninterrupted.advance_by(36).unwrap();
     let before_no_ammo = encode_game_snapshot(&uninterrupted).unwrap();
     assert!(matches!(
@@ -199,6 +286,19 @@ fn snapshot_rejects_weapon_cooldown_beyond_authored_cadence() {
     ));
 }
 
+#[test]
+fn schema_fourteen_snapshot_rejects_future_spread_and_automatic_definitions() {
+    let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let mut snapshot: serde_json::Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    snapshot["schemaVersion"] = 14.into();
+
+    assert!(matches!(
+        decode_game_snapshot(&snapshot.to_string()).unwrap_err(),
+        GameSnapshotError::FutureWeaponStateInLegacySnapshot
+    ));
+}
+
 fn apply(runtime: &mut GameRuntime, sequence: u64, action: InventoryAction) {
     runtime
         .apply_inventory_command(PLAYER, InventoryCommand { sequence, action })
@@ -215,6 +315,14 @@ fn quantity(runtime: &GameRuntime, item_id: &str) -> u32 {
         .into_iter()
         .find(|stack| stack.item == item)
         .map_or(0, |stack| stack.quantity)
+}
+
+fn weapon_mode(runtime: &GameRuntime, item_id: &str) -> WeaponAttackMode {
+    let definition = runtime.session().item_definition(&item(item_id)).unwrap();
+    let loading_bay_game::ItemKind::Weapon(weapon) = definition.kind else {
+        panic!("{item_id} is not a weapon");
+    };
+    weapon.attack_mode
 }
 
 fn item(value: &str) -> ItemDefinitionId {

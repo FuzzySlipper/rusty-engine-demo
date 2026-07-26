@@ -332,6 +332,20 @@ fn project_and_snapshot_admission_fail_closed_for_future_hazard_state() {
         .as_array_mut()
         .unwrap()
         .retain(|entity| entity.get("hazard").is_none());
+    for definition in legacy_project["itemDefinitions"].as_array_mut().unwrap() {
+        if let Some(weapon) = definition
+            .get_mut("kind")
+            .and_then(Value::as_object_mut)
+            .filter(|kind| kind.get("kind") == Some(&Value::String("weapon".to_string())))
+        {
+            weapon.insert(
+                "attackMode".to_string(),
+                Value::String("hitscan".to_string()),
+            );
+            weapon.remove("pelletCount");
+            weapon.remove("spreadDegrees");
+        }
+    }
     for entity in legacy_project["scenes"][0]["entities"]
         .as_array_mut()
         .unwrap()

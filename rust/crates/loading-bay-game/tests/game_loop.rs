@@ -2,10 +2,11 @@ use std::time::Duration;
 
 use core_ids::EntityId;
 use loading_bay_game::{
-    decode_game_snapshot, encode_game_snapshot, GameLoopEdgeCommand, GameLoopEdgeCommandKind,
-    GameLoopFact, GameRuntime, InputCommandDisposition, InputCommandRejection, InventoryAction,
-    InventoryCommand, InventoryFact, ItemDefinitionId, LoadingBayGameLoop, PlayerInputCommand,
-    PlayerInputIntent, FIXED_STEP_DURATION, FIXED_TICK_PHASE_ORDER, MAX_CATCH_UP_TICKS,
+    decode_game_snapshot, encode_game_snapshot, CombatFact, CombatRejectionReason,
+    GameLoopEdgeCommand, GameLoopEdgeCommandKind, GameLoopFact, GameRuntime,
+    InputCommandDisposition, InputCommandRejection, InventoryAction, InventoryCommand,
+    InventoryFact, ItemDefinitionId, LoadingBayGameLoop, PlayerInputCommand, PlayerInputIntent,
+    WeaponAttackMode, FIXED_STEP_DURATION, FIXED_TICK_PHASE_ORDER, MAX_CATCH_UP_TICKS,
     MAX_EDGE_COMMANDS,
 };
 
@@ -278,6 +279,121 @@ fn weapon_slot_edges_reject_precisely_and_select_only_owned_items_on_fixed_ticks
         game_loop.runtime().session().inventory(PLAYER).unwrap(),
         selected_inventory
     );
+}
+
+#[test]
+fn single_press_automatic_hold_and_dry_fire_have_distinct_fixed_tick_semantics() {
+    let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: ItemDefinitionId::parse("weapon/rivet-carbine").unwrap(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 2,
+                action: InventoryAction::SelectWeapon {
+                    item: ItemDefinitionId::parse("weapon/rivet-carbine").unwrap(),
+                },
+            },
+        )
+        .unwrap();
+    let mut automatic = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
+    let generation = automatic.start_connection().connection_generation;
+    let mut automatic_fired = Vec::new();
+    for sequence in 1..=5 {
+        automatic
+            .submit_input(input(generation, sequence, [0.0, 0.0], [0.0, 0.0], true))
+            .unwrap();
+        automatic_fired.extend(
+            automatic
+                .run_fixed_tick()
+                .unwrap()
+                .facts
+                .into_iter()
+                .filter(|fact| {
+                    matches!(
+                        fact,
+                        GameLoopFact::Combat(CombatFact::AttackFired {
+                            attack_mode: WeaponAttackMode::Automatic,
+                            ..
+                        })
+                    )
+                }),
+        );
+    }
+    assert_eq!(automatic_fired.len(), 2);
+    assert_eq!(ammunition(&automatic, "ammo/energy-cell"), 38);
+
+    let mut single = game_loop();
+    let generation = single.start_connection().connection_generation;
+    for sequence in 1..=5 {
+        single
+            .submit_input(input(generation, sequence, [0.0, 0.0], [0.0, 0.0], true))
+            .unwrap();
+        single.run_fixed_tick().unwrap();
+    }
+    assert_eq!(ammunition(&single, "ammo/energy-cell"), 39);
+    single
+        .submit_input(input(generation, 6, [0.0, 0.0], [0.0, 0.0], false))
+        .unwrap();
+    single.run_fixed_tick().unwrap();
+    single
+        .submit_input(input(generation, 7, [0.0, 0.0], [0.0, 0.0], true))
+        .unwrap();
+    assert!(single
+        .run_fixed_tick()
+        .unwrap()
+        .facts
+        .iter()
+        .any(|fact| matches!(
+            fact,
+            GameLoopFact::Combat(CombatFact::AttackFired {
+                attack_mode: WeaponAttackMode::Hitscan,
+                ..
+            })
+        )));
+    assert_eq!(ammunition(&single, "ammo/energy-cell"), 38);
+
+    single
+        .runtime_mut()
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 3,
+                action: InventoryAction::Consume {
+                    item: ItemDefinitionId::parse("ammo/energy-cell").unwrap(),
+                    quantity: 38,
+                },
+            },
+        )
+        .unwrap();
+    single
+        .submit_input(input(generation, 8, [0.0, 0.0], [0.0, 0.0], false))
+        .unwrap();
+    single.run_fixed_tick().unwrap();
+    single
+        .submit_input(input(generation, 9, [0.0, 0.0], [0.0, 0.0], true))
+        .unwrap();
+    assert!(single
+        .run_fixed_tick()
+        .unwrap()
+        .facts
+        .contains(&GameLoopFact::CombatRejected {
+            attacker: PLAYER,
+            weapon: Some(ItemDefinitionId::parse("weapon/arc-pistol").unwrap()),
+            presentation: Some("arc-pistol".to_owned()),
+            reason: CombatRejectionReason::NoAmmo,
+        }));
 }
 
 #[test]
@@ -613,4 +729,16 @@ fn pause_and_session_replacement_clear_intent_without_resurrection() {
         game_loop.submit_input(input(generation, 5, [1.0, 0.0], [0.0, 0.0], false)),
         Err(InputCommandRejection::WrongConnectionGeneration { .. })
     ));
+}
+
+fn ammunition(game_loop: &LoadingBayGameLoop, item: &str) -> u32 {
+    game_loop
+        .runtime()
+        .session()
+        .inventory(PLAYER)
+        .unwrap()
+        .stacks
+        .into_iter()
+        .find(|stack| stack.item.as_str() == item)
+        .map_or(0, |stack| stack.quantity)
 }

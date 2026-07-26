@@ -19,7 +19,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 14;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 15;
+const LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION: u32 = 14;
 const LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION: u32 = 13;
 const LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION: u32 = 12;
 const LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION: u32 = 11;
@@ -58,7 +59,8 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v14(decode_legacy_project(input)?)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v15(decode_legacy_project(input)?)?,
+        LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION => migrate_v14(decode_legacy_project(input)?)?,
         LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION => migrate_v13(decode_legacy_project(input)?)?,
         LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION => migrate_v12(decode_legacy_project(input)?)?,
         LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION => migrate_v11(decode_legacy_project(input)?)?,
@@ -72,7 +74,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
                     LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
@@ -81,6 +83,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                     LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -189,11 +192,22 @@ fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectErro
     Ok(document)
 }
 
-fn migrate_v14(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+fn migrate_v15(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_weapon_behavior_fields(&legacy)?;
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn migrate_v14(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION
+    );
+    reject_future_weapon_behavior_fields(&legacy)?;
     reject_future_vitality_fields(&legacy)?;
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
@@ -385,6 +399,36 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
     canonicalize(migrated)
 }
 
+fn reject_future_weapon_behavior_fields(legacy: &StoredProject) -> Result<(), StoredProjectError> {
+    if legacy.item_definitions.iter().any(|definition| {
+        matches!(
+            &definition.kind,
+            StoredItemKind::Weapon {
+                attack_mode: Some(
+                    StoredWeaponAttackMode::Spread | StoredWeaponAttackMode::Automatic
+                ),
+                ..
+            } | StoredItemKind::Weapon {
+                pellet_count: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                spread_degrees: Some(_),
+                ..
+            }
+        )
+    }) {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "itemDefinitions",
+            format!(
+                "schema {} cannot declare spread or automatic weapon behavior",
+                legacy.schema_version
+            ),
+        ));
+    }
+    Ok(())
+}
+
 fn reject_future_vitality_fields(legacy: &StoredProject) -> Result<(), StoredProjectError> {
     if legacy
         .scenes
@@ -569,6 +613,8 @@ fn migrate_legacy_weapon_authority(project: &mut StoredProject) -> Result<(), St
         let StoredItemKind::Weapon {
             ammunition,
             attack_mode,
+            pellet_count,
+            spread_degrees,
             damage,
             max_distance,
             cooldown_ticks,
@@ -580,6 +626,8 @@ fn migrate_legacy_weapon_authority(project: &mut StoredProject) -> Result<(), St
             continue;
         };
         *attack_mode = Some(StoredWeaponAttackMode::Hitscan);
+        *pellet_count = None;
+        *spread_degrees = None;
         *damage = Some(damage.unwrap_or(40));
         *max_distance = Some(max_distance.unwrap_or(20.0));
         *cooldown_ticks = Some(cooldown_ticks.unwrap_or(6));
@@ -629,6 +677,8 @@ fn legacy_weapon_item_kind(
     StoredItemKind::Weapon {
         ammunition,
         attack_mode: Some(StoredWeaponAttackMode::Hitscan),
+        pellet_count: None,
+        spread_degrees: None,
         damage: Some(weapon.damage),
         max_distance: Some(weapon.max_distance),
         cooldown_ticks: Some(weapon.cooldown_ticks),

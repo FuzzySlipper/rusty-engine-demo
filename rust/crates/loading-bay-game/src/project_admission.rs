@@ -143,6 +143,8 @@ fn authored_item_definition(
         StoredItemKind::Weapon {
             ammunition,
             attack_mode,
+            pellet_count,
+            spread_degrees,
             damage,
             max_distance,
             cooldown_ticks,
@@ -152,6 +154,11 @@ fn authored_item_definition(
         } => ItemKind::Weapon(WeaponDefinition {
             attack_mode: match attack_mode.expect("validated current weapon attack mode") {
                 crate::StoredWeaponAttackMode::Hitscan => WeaponAttackMode::Hitscan,
+                crate::StoredWeaponAttackMode::Spread => WeaponAttackMode::Spread {
+                    pellet_count: pellet_count.expect("validated current weapon pellet count"),
+                    spread_degrees: spread_degrees.expect("validated current weapon spread angle"),
+                },
+                crate::StoredWeaponAttackMode::Automatic => WeaponAttackMode::Automatic,
             },
             damage: damage.expect("validated current weapon damage"),
             max_distance: max_distance.expect("validated current weapon range"),

@@ -146,7 +146,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 16, 99] {
+    for schema_version in [0, 5, 17, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -207,6 +207,30 @@ fn schema_thirteen_multi_scene_weapon_migration_rejects_conflicting_authority() 
     assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
     assert_eq!(error.diagnostic().path, "scenes[1].entities[0].weapon");
     assert!(error.diagnostic().message.contains("conflicts"));
+}
+
+#[test]
+fn schema_fifteen_rejects_future_weapon_modes_and_migrates_hitscan_only_content() {
+    let mut future: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    future["schemaVersion"] = 15.into();
+    let error = decode_project_document(&future.to_string()).unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
+    assert_eq!(error.diagnostic().path, "itemDefinitions");
+
+    for definition in future["itemDefinitions"].as_array_mut().unwrap() {
+        let kind = definition["kind"].as_object_mut().unwrap();
+        if kind.get("kind").and_then(serde_json::Value::as_str) == Some("weapon") {
+            kind.insert("attackMode".to_owned(), "hitscan".into());
+            kind.remove("pelletCount");
+            kind.remove("spreadDegrees");
+        }
+    }
+    let migrated = decode_project_document(&future.to_string()).unwrap();
+    assert_eq!(migrated.source_schema_version, 15);
+    assert_eq!(
+        migrated.project.schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
 }
 
 #[test]
@@ -314,6 +338,8 @@ fn strip_current_weapon_fields(project: &mut serde_json::Value) {
         if kind.get("kind").and_then(serde_json::Value::as_str) == Some("weapon") {
             for field in [
                 "attackMode",
+                "pelletCount",
+                "spreadDegrees",
                 "damage",
                 "maxDistance",
                 "cooldownTicks",

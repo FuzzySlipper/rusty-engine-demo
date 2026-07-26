@@ -183,6 +183,9 @@ pub enum GameLoopFact {
     },
     Event(GameEvent),
     CombatRejected {
+        attacker: EntityId,
+        weapon: Option<ItemDefinitionId>,
+        presentation: Option<String>,
         reason: CombatRejectionReason,
     },
     EdgeCommandRejected {
@@ -232,6 +235,7 @@ struct PlayerInputSession {
     movement: [f32; 2],
     accumulated_look: [f32; 2],
     primary_fire_held: bool,
+    primary_fire_pressed: bool,
     last_input_driver_tick: Option<u64>,
     edge_commands: VecDeque<QueuedEdgeCommand>,
 }
@@ -248,6 +252,7 @@ impl Default for PlayerInputSession {
             movement: PlayerInputIntent::NEUTRAL.movement,
             accumulated_look: PlayerInputIntent::NEUTRAL.look_delta,
             primary_fire_held: false,
+            primary_fire_pressed: false,
             last_input_driver_tick: None,
             edge_commands: VecDeque::new(),
         }
@@ -270,6 +275,7 @@ impl PlayerInputSession {
         self.movement = PlayerInputIntent::NEUTRAL.movement;
         self.accumulated_look = PlayerInputIntent::NEUTRAL.look_delta;
         self.primary_fire_held = false;
+        self.primary_fire_pressed = false;
         self.last_input_driver_tick = None;
     }
 
@@ -431,6 +437,9 @@ impl LoadingBayGameLoop {
         {
             *accumulated = (*accumulated + delta)
                 .clamp(-MAX_ACCUMULATED_LOOK_UNITS, MAX_ACCUMULATED_LOOK_UNITS);
+        }
+        if !self.input.primary_fire_held && command.intent.primary_fire_held {
+            self.input.primary_fire_pressed = true;
         }
         self.input.primary_fire_held = command.intent.primary_fire_held;
         self.input.last_input_driver_tick = Some(self.driver_tick);
@@ -629,12 +638,22 @@ impl LoadingBayGameLoop {
     }
 
     fn run_combat_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
-        if !self.input.connected
-            || !self.input.primary_fire_held
-            || DamageService::is_dead(self.runtime.session(), self.player)
-        {
+        let primary_fire_pressed = std::mem::take(&mut self.input.primary_fire_pressed);
+        if !self.input.connected || DamageService::is_dead(self.runtime.session(), self.player) {
             return Ok(());
         }
+        let automatic_held = self.input.primary_fire_held
+            && self
+                .runtime
+                .session()
+                .weapon(self.player)
+                .is_some_and(|weapon| weapon.definition.attack_mode.is_automatic());
+        if !primary_fire_pressed && !automatic_held {
+            return Ok(());
+        }
+        let equipped = self.runtime.session().weapon(self.player);
+        let weapon = equipped.as_ref().map(|weapon| weapon.item.clone());
+        let presentation = equipped.map(|weapon| weapon.definition.presentation);
         match self
             .runtime
             .attack(self.player, ResolvedAttackAction::Attack)
@@ -644,8 +663,16 @@ impl LoadingBayGameLoop {
                 facts.extend(receipt.events.into_iter().map(GameLoopFact::Event));
                 Ok(())
             }
-            Err(RuntimeError::CombatRejected { reason, .. }) => {
-                facts.push(GameLoopFact::CombatRejected { reason });
+            Err(RuntimeError::CombatRejected {
+                entity: attacker,
+                reason,
+            }) => {
+                facts.push(GameLoopFact::CombatRejected {
+                    attacker,
+                    weapon,
+                    presentation,
+                    reason,
+                });
                 Ok(())
             }
             Err(error) => Err(error),

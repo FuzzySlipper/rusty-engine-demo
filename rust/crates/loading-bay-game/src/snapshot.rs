@@ -39,7 +39,9 @@ use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::{HealthComponent, HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 14;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 15;
+const INVENTORY_WEAPON_SNAPSHOT_SCHEMA_VERSION: u32 = 13;
+const VITALITY_SNAPSHOT_SCHEMA_VERSION: u32 = 14;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -106,6 +108,10 @@ pub enum SnapshotItemKind {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         attack_mode: Option<SnapshotWeaponAttackMode>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
+        pellet_count: Option<u8>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        spread_degrees: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         damage: Option<u32>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         max_distance: Option<f32>,
@@ -132,6 +138,8 @@ pub enum SnapshotItemKind {
 #[serde(rename_all = "camelCase")]
 pub enum SnapshotWeaponAttackMode {
     Hitscan,
+    Spread,
+    Automatic,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -645,7 +653,19 @@ impl GameRuntime {
                             ammunition: weapon.ammunition.as_str().to_string(),
                             attack_mode: Some(match weapon.attack_mode {
                                 WeaponAttackMode::Hitscan => SnapshotWeaponAttackMode::Hitscan,
+                                WeaponAttackMode::Spread { .. } => SnapshotWeaponAttackMode::Spread,
+                                WeaponAttackMode::Automatic => SnapshotWeaponAttackMode::Automatic,
                             }),
+                            pellet_count: match weapon.attack_mode {
+                                WeaponAttackMode::Spread { pellet_count, .. } => Some(pellet_count),
+                                WeaponAttackMode::Hitscan | WeaponAttackMode::Automatic => None,
+                            },
+                            spread_degrees: match weapon.attack_mode {
+                                WeaponAttackMode::Spread { spread_degrees, .. } => {
+                                    Some(spread_degrees)
+                                }
+                                WeaponAttackMode::Hitscan | WeaponAttackMode::Automatic => None,
+                            },
                             damage: Some(weapon.damage),
                             max_distance: Some(weapon.max_distance),
                             cooldown_ticks: Some(weapon.cooldown_ticks),
@@ -964,23 +984,29 @@ impl GameRuntime {
         {
             return Err(GameSnapshotError::FuturePickupStateInLegacySnapshot);
         }
-        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION {
-            if snapshot.health.iter().any(|health| {
+        if source_schema_version < VITALITY_SNAPSHOT_SCHEMA_VERSION
+            && (snapshot.health.iter().any(|health| {
                 health.max_armor != 0
                     || health.armor_absorption_percent != 0
                     || health.armor != 0
                     || health.armor_item.is_some()
                     || health.state.is_some()
             }) || !snapshot.hazards.is_empty()
-                || snapshot.hazard_triggers.is_some()
-            {
-                return Err(GameSnapshotError::FutureVitalityStateInLegacySnapshot);
-            }
+                || snapshot.hazard_triggers.is_some())
+        {
+            return Err(GameSnapshotError::FutureVitalityStateInLegacySnapshot);
+        }
+        if source_schema_version < INVENTORY_WEAPON_SNAPSHOT_SCHEMA_VERSION {
             if snapshot_has_inventory_weapon_fields(&snapshot) {
                 return Err(GameSnapshotError::FutureWeaponStateInLegacySnapshot);
             }
             migrate_legacy_snapshot_weapon_authority(&mut snapshot)?;
         } else if !snapshot.weapons.is_empty() {
+            return Err(GameSnapshotError::FutureWeaponStateInLegacySnapshot);
+        }
+        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION
+            && snapshot_has_future_weapon_behavior_fields(&snapshot)
+        {
             return Err(GameSnapshotError::FutureWeaponStateInLegacySnapshot);
         }
         let collision_scene = snapshot
@@ -1718,7 +1744,7 @@ impl GameRuntime {
         if pickups.len().saturating_add(hazards.len()) > engine_spatial::MAX_TRIGGER_DEFINITIONS {
             return Err(GameSnapshotError::InvalidHazardTriggerDefinitions);
         }
-        let hazard_triggers = if source_schema_version >= GAME_SNAPSHOT_SCHEMA_VERSION {
+        let hazard_triggers = if source_schema_version >= VITALITY_SNAPSHOT_SCHEMA_VERSION {
             TriggerVolumeSystem::from_snapshot(
                 snapshot
                     .hazard_triggers
@@ -1886,6 +1912,8 @@ fn snapshot_item_definition(
         SnapshotItemKind::Weapon {
             ammunition,
             attack_mode,
+            pellet_count,
+            spread_degrees,
             damage,
             max_distance,
             cooldown_ticks,
@@ -1898,7 +1926,33 @@ fn snapshot_item_definition(
                     value: format!("{}:missing-attack-mode", id.as_str()),
                 }
             })? {
-                SnapshotWeaponAttackMode::Hitscan => WeaponAttackMode::Hitscan,
+                SnapshotWeaponAttackMode::Hitscan
+                    if pellet_count.is_none() && spread_degrees.is_none() =>
+                {
+                    WeaponAttackMode::Hitscan
+                }
+                SnapshotWeaponAttackMode::Automatic
+                    if pellet_count.is_none() && spread_degrees.is_none() =>
+                {
+                    WeaponAttackMode::Automatic
+                }
+                SnapshotWeaponAttackMode::Spread => WeaponAttackMode::Spread {
+                    pellet_count: pellet_count.ok_or_else(|| {
+                        GameSnapshotError::InvalidItemDefinitionId {
+                            value: format!("{}:missing-pellet-count", id.as_str()),
+                        }
+                    })?,
+                    spread_degrees: spread_degrees.ok_or_else(|| {
+                        GameSnapshotError::InvalidItemDefinitionId {
+                            value: format!("{}:missing-spread-degrees", id.as_str()),
+                        }
+                    })?,
+                },
+                _ => {
+                    return Err(GameSnapshotError::InvalidItemDefinitionId {
+                        value: format!("{}:incompatible-attack-mode-fields", id.as_str()),
+                    });
+                }
             },
             damage: damage.ok_or_else(|| GameSnapshotError::InvalidItemDefinitionId {
                 value: format!("{}:missing-damage", id.as_str()),
@@ -1938,6 +1992,26 @@ fn snapshot_item_definition(
         SnapshotItemKind::Armor { protection } => ItemKind::Armor { protection },
     };
     Ok(ItemDefinition::new(id, kind, snapshot.max_quantity))
+}
+
+fn snapshot_has_future_weapon_behavior_fields(snapshot: &GameSnapshot) -> bool {
+    snapshot.item_definitions.iter().any(|definition| {
+        matches!(
+            definition.kind,
+            SnapshotItemKind::Weapon {
+                attack_mode: Some(
+                    SnapshotWeaponAttackMode::Spread | SnapshotWeaponAttackMode::Automatic
+                ),
+                ..
+            } | SnapshotItemKind::Weapon {
+                pellet_count: Some(_),
+                ..
+            } | SnapshotItemKind::Weapon {
+                spread_degrees: Some(_),
+                ..
+            }
+        )
+    })
 }
 
 fn snapshot_has_inventory_weapon_fields(snapshot: &GameSnapshot) -> bool {
@@ -2062,6 +2136,8 @@ fn migrate_legacy_snapshot_weapon_authority(
     for definition in &mut snapshot.item_definitions {
         let SnapshotItemKind::Weapon {
             attack_mode,
+            pellet_count,
+            spread_degrees,
             damage,
             max_distance,
             cooldown_ticks,
@@ -2074,6 +2150,8 @@ fn migrate_legacy_snapshot_weapon_authority(
             continue;
         };
         *attack_mode = Some(SnapshotWeaponAttackMode::Hitscan);
+        *pellet_count = None;
+        *spread_degrees = None;
         *damage = Some(damage.unwrap_or(40));
         *max_distance = Some(max_distance.unwrap_or(20.0));
         *cooldown_ticks = Some(cooldown_ticks.unwrap_or(6));
@@ -2135,6 +2213,8 @@ fn legacy_snapshot_weapon_kind(
     SnapshotItemKind::Weapon {
         ammunition,
         attack_mode: Some(SnapshotWeaponAttackMode::Hitscan),
+        pellet_count: None,
+        spread_degrees: None,
         damage: Some(weapon.damage),
         max_distance: Some(weapon.max_distance),
         cooldown_ticks: Some(weapon.cooldown_ticks),
