@@ -374,7 +374,8 @@ impl ProgressionService {
         actor: EntityId,
         tick: Tick,
     ) -> Result<SecretPhaseReceipt, SecretRejection> {
-        let trigger_receipt = triggers
+        let mut candidate_triggers = triggers.clone();
+        let trigger_receipt = candidate_triggers
             .reconcile(
                 &session.entities,
                 tick.raw(),
@@ -393,7 +394,7 @@ impl ProgressionService {
             if component.state != SecretRegionState::Undiscovered {
                 continue;
             }
-            let overlaps = triggers
+            let overlaps = candidate_triggers
                 .current_overlaps(secret, MAX_SECRET_OVERLAP_SUBJECTS)
                 .map_err(|error| SecretRejection::Trigger {
                     diagnostics: error.diagnostics,
@@ -401,22 +402,35 @@ impl ProgressionService {
             if !overlaps.subjects.contains(&actor) {
                 continue;
             }
-            let presentation = component.config.presentation.clone();
-            session
-                .secret_regions
-                .get_mut(&secret)
-                .expect("secret remains admitted")
-                .state = SecretRegionState::Discovered {
-                actor,
-                discovered_at: tick,
-            };
             facts.push(ProgressionFact::SecretDiscovered {
                 secret,
                 actor,
                 discovered_at: tick,
-                presentation,
+                presentation: component.config.presentation.clone(),
             });
         }
+        let mut candidate_session = session.clone();
+        for fact in &facts {
+            let ProgressionFact::SecretDiscovered {
+                secret,
+                actor,
+                discovered_at,
+                ..
+            } = fact
+            else {
+                unreachable!("secret reconciliation only stages secret facts");
+            };
+            candidate_session
+                .secret_regions
+                .get_mut(secret)
+                .expect("staged secret remains admitted")
+                .state = SecretRegionState::Discovered {
+                actor: *actor,
+                discovered_at: *discovered_at,
+            };
+        }
+        *session = candidate_session;
+        *triggers = candidate_triggers;
         Ok(SecretPhaseReceipt {
             trigger_facts: trigger_receipt.facts,
             facts,

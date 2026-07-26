@@ -277,6 +277,71 @@ fn secret_discovery_is_first_entry_only_and_survives_snapshot_reopen() {
 }
 
 #[test]
+fn later_over_cap_secret_query_commits_no_earlier_discovery() {
+    let mut project = project_at([6.5, 1.5, 8.5]);
+    let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
+    entities.push(serde_json::json!({
+        "id": 33,
+        "name": "over-cap-secret",
+        "translation": [6.5, 1.5, 8.5],
+        "bounds": {
+            "min": [-0.6, -0.6, -0.6],
+            "max": [0.6, 0.6, 0.6]
+        },
+        "secretRegion": {
+            "presentation": "Over-cap secret"
+        }
+    }));
+    for offset in 0..129 {
+        entities.push(serde_json::json!({
+            "id": 1_000 + offset,
+            "name": format!("secret-overlap-subject-{offset}"),
+            "translation": [6.5, 1.5, 8.5],
+            "bounds": {
+                "min": [-0.1, -0.1, -0.1],
+                "max": [0.1, 0.1, 0.1]
+            },
+            "collision": {
+                "enabled": true,
+                "staticCollider": false
+            }
+        }));
+    }
+
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let before: serde_json::Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    let before_triggers = before["progression"]["secretTriggers"].clone();
+    let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
+
+    assert!(matches!(
+        game_loop.run_fixed_tick(),
+        Err(loading_bay_game::RuntimeError::Secret(_))
+    ));
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .secret_region(SECRET)
+            .unwrap()
+            .state,
+        SecretRegionState::Undiscovered
+    );
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .secret_region(EntityId::new(33))
+            .unwrap()
+            .state,
+        SecretRegionState::Undiscovered
+    );
+    let after: serde_json::Value =
+        serde_json::from_str(&encode_game_snapshot(game_loop.runtime()).unwrap()).unwrap();
+    assert_eq!(after["progression"]["secretTriggers"], before_triggers);
+}
+
+#[test]
 fn level_completion_stops_simulation_across_reconnect_and_allows_only_authored_restart() {
     let project = project_at([4.5, 1.5, 12.5]);
     let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
