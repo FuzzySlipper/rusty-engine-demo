@@ -31,7 +31,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(response["project"]["identity"]["projectId"], "loading-bay");
     assert_eq!(
         response["project"]["inspections"]["catalog"]["entryCount"],
-        6
+        7
     );
     assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 8);
     assert_eq!(
@@ -67,7 +67,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        19
+        20
     );
     assert_eq!(
         response["project"]["projection"]["ops"][0]["op"],
@@ -84,6 +84,14 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(
         response["project"]["projectionReadout"]["diagnostics"],
         json!([])
+    );
+    assert_eq!(
+        response["project"]["animatedMeshResources"][0]["asset"],
+        "mesh-animation/kenney-retro-character-medium"
+    );
+    assert_eq!(
+        response["project"]["animatedMeshResources"][0]["clipIds"],
+        json!(["idle", "run", "jump"])
     );
 
     for canonical in [
@@ -443,7 +451,67 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         mesh_instance["instance"]["transform"]["scale"],
         json!([2.0, 1.5, 0.5])
     );
-    hash = owner_version(&appeared).0;
+    (hash, revision) = owner_version(&appeared);
+
+    let animated = send(
+        &mut service,
+        json!({
+            "type": "setSceneObjectAppearance",
+            "protocolVersion": 6,
+            "requestId": "animated-appearance",
+            "expectedProjectHash": hash,
+            "expectedSceneRevision": revision,
+            "entityId": 50,
+            "appearance": {
+                "kind": "animatedMesh",
+                "asset": "mesh-animation/kenney-retro-character-medium",
+                "visible": true,
+                "clip": "run"
+            }
+        }),
+    );
+    assert_eq!(animated["type"], "projectMutationApplied", "{animated:#}");
+    assert_eq!(
+        animated["project"]["animatedMeshResources"][0]["clipIds"],
+        json!(["idle", "run", "jump"])
+    );
+    assert!(animated["project"]["projection"]["ops"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|operation| operation["op"] == "defineAnimatedMesh"));
+    let animated_instance = animated["project"]["projection"]["ops"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|operation| {
+            operation["op"] == "createAnimatedMeshInstance"
+                && operation["instance"]["metadata"]["sourceEntity"] == 50
+        })
+        .unwrap();
+    assert_eq!(animated_instance["instance"]["playback"]["clip"], "run");
+    assert_eq!(animated_instance["instance"]["playback"]["loop"], "repeat");
+    (hash, revision) = owner_version(&animated);
+    let before_invalid_clip = fs::read(root.project_file()).unwrap();
+    let invalid_clip = send(
+        &mut service,
+        json!({
+            "type": "setSceneObjectAppearance",
+            "protocolVersion": 6,
+            "requestId": "invalid-animation-clip",
+            "expectedProjectHash": hash,
+            "expectedSceneRevision": revision,
+            "entityId": 50,
+            "appearance": {
+                "kind": "animatedMesh",
+                "asset": "mesh-animation/kenney-retro-character-medium",
+                "visible": true,
+                "clip": "missing"
+            }
+        }),
+    );
+    assert_eq!(invalid_clip["type"], "rejected");
+    assert_eq!(fs::read(root.project_file()).unwrap(), before_invalid_clip);
 
     let collision = send(
         &mut service,

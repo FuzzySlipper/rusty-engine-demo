@@ -21,7 +21,13 @@ fn canonical_encode_is_a_byte_stable_fixed_point() {
     assert_eq!(first, second);
     assert!(first.ends_with('\n'));
     assert!(first.find("mesh/control-panel").unwrap() < first.find("mesh/player-marker").unwrap());
-    assert!(!first.contains("-0.0"));
+    let contains_negative_zero = first.match_indices("-0.0").any(|(index, _)| {
+        first
+            .as_bytes()
+            .get(index + "-0.0".len())
+            .is_none_or(|next| !next.is_ascii_digit())
+    });
+    assert!(!contains_negative_zero);
     assert_eq!(decoded.source_schema_version, STORED_PROJECT_SCHEMA_VERSION);
     assert!(!decoded.was_migrated());
 }

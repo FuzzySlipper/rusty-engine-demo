@@ -2,6 +2,7 @@ import type {
   EntityDefinition,
   PlayerInputBindingsDefinition,
   ProjectContent,
+  StoredAssetDefinition,
   StoredProjectContent,
   Vec3,
 } from "./schema.js";
@@ -40,6 +41,33 @@ const GENERATED_EXIT = {
   wallZ: GENERATED_ROOM.length + 1,
   collisionHalfExtents: [1.2, 1.5, 0.275] as const,
 } as const;
+
+const ANIMATED_CHARACTER_ASSET = {
+  id: "mesh-animation/kenney-retro-character-medium",
+  catalog: {
+    version: 1,
+    hash: "c71255a41c0373f0d2ef52593369d5fd9d2f6220ae548aff8cd6bf5edb403674",
+    sourcePath: "content/assets/kenney-retro-character-medium.glb",
+    label: "Kenney Retro Character",
+    dependencies: [],
+  },
+  animatedMesh: {
+    asset: "mesh-animation/kenney-retro-character-medium",
+    runtimeFormat: "glb",
+    contentHash: "sha256:c71255a41c0373f0d2ef52593369d5fd9d2f6220ae548aff8cd6bf5edb403674",
+    clips: [
+      { id: "idle", name: "Idle", durationSeconds: 1.04166662693024 },
+      { id: "run", name: "Run", durationSeconds: 0.666666686534882 },
+      { id: "jump", name: "Jump", durationSeconds: 0.5 },
+    ],
+    defaultClip: "idle",
+    materialSlots: [],
+    bounds: {
+      min: [-0.02, -0.01, 0],
+      max: [0.02, 0.01, 0.04],
+    },
+  },
+} as const satisfies StoredAssetDefinition;
 
 export function encounterGateProject(
   enemyNames: readonly string[],
@@ -181,6 +209,7 @@ export function loadingBayStoredProject(
     name: "Loading Bay",
     entryScene: "scene/loading-bay",
     assets: [
+      ANIMATED_CHARACTER_ASSET,
       { id: "mesh/control-panel" },
       { id: "mesh/extraction-beacon" },
       { id: "mesh/player-marker" },

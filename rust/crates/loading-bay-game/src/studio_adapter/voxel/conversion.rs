@@ -154,6 +154,7 @@ pub(crate) fn apply_prepared_conversion(
                     id: target_asset_id.clone(),
                     catalog: None,
                     static_mesh: None,
+                    animated_mesh: None,
                     import: None,
                     voxel_volume: Some(candidate),
                     voxel_edit_history: None,

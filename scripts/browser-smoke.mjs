@@ -223,7 +223,7 @@ async function runFullBrowserProduct(project) {
       "sourceSchema=11",
       "currentSchema=11",
       "entryScene=scene/loading-bay",
-      "assets=6",
+      "assets=7",
       "scenes=1",
       "entities=8",
     ]) {
@@ -319,7 +319,7 @@ async function runConvertedBrowserProduct(project) {
       "sourceSchema=11",
       "currentSchema=11",
       "entryScene=scene/converted-wall",
-      "assets=9",
+      "assets=10",
       "scenes=1",
       "entities=7",
     ]) {

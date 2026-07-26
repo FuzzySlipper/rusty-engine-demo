@@ -174,11 +174,14 @@ impl<'a> ProjectAssetCatalog<'a> {
             let id = AssetId::parse(&renderable.asset).map_err(|error| {
                 StoredProjectError::new(diagnostic_code::INVALID_ASSET_ID, &path, error.to_string())
             })?;
-            if id.kind() != AssetKind::StaticMesh {
+            if !matches!(id.kind(), AssetKind::StaticMesh | AssetKind::AnimatedMesh) {
                 return Err(StoredProjectError::new(
                     diagnostic_code::WRONG_ASSET_KIND,
                     path,
-                    format!("renderable requires `mesh` identity, found `{}`", id.kind()),
+                    format!(
+                        "renderable requires static or animated mesh identity, found `{}`",
+                        id.kind()
+                    ),
                 ));
             }
             let Some(asset) = self.assets.get(id.as_str()) else {
@@ -191,11 +194,11 @@ impl<'a> ProjectAssetCatalog<'a> {
             let kind = AssetId::parse(&asset.id)
                 .expect("validated catalog identity")
                 .kind();
-            if kind != AssetKind::StaticMesh {
+            if !matches!(kind, AssetKind::StaticMesh | AssetKind::AnimatedMesh) {
                 return Err(StoredProjectError::new(
                     diagnostic_code::WRONG_ASSET_KIND,
                     path,
-                    format!("catalog entry `{id}` is `{kind}`, expected `mesh`"),
+                    format!("catalog entry `{id}` is `{kind}`, expected static or animated mesh"),
                 ));
             }
         }

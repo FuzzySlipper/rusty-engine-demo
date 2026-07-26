@@ -4,7 +4,7 @@ use engine_inspector::{
     VoxelAssetInspection, VoxelStateInspection,
 };
 use engine_spatial::{VoxelEditDelta, VoxelPrimitiveRequest, VoxelTemplateRequest};
-use render_model::RenderFrameDiff;
+use render_model::{RenderFrameDiff, Transform};
 use serde::{Deserialize, Serialize};
 use voxel_annotation::{
     VoxelAnnotationEditTransaction, VoxelAnnotationLayerDraft, VoxelAnnotationQuery,
@@ -711,8 +711,18 @@ pub struct StudioSceneObjectDraft {
 )]
 pub enum StudioSceneAppearance {
     Empty,
-    StaticMesh { asset: String, visible: bool },
-    Light { light: StoredLight },
+    StaticMesh {
+        asset: String,
+        visible: bool,
+    },
+    AnimatedMesh {
+        asset: String,
+        visible: bool,
+        clip: String,
+    },
+    Light {
+        light: StoredLight,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -879,9 +889,19 @@ pub struct StudioProjectReadout {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel: Option<VoxelStateInspection>,
     pub voxel_authoring: VoxelAuthoringReadout,
+    pub animated_mesh_resources: Vec<AnimatedMeshResourceReadout>,
     pub loading_bay: LoadingBayDomainReadout,
     pub projection: RenderFrameDiff,
     pub projection_readout: ProjectionReadout,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnimatedMeshResourceReadout {
+    pub asset: String,
+    pub content_hash: String,
+    pub clip_ids: Vec<String>,
+    pub source_path: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -1320,6 +1340,11 @@ pub struct VoxelPickReadout {
     pub instance_local_point: [f64; 3],
     pub world_point: [f64; 3],
     pub world_distance: f64,
+    /// Exact world-space unit-cell transforms for the two authority-approved
+    /// mutation targets. Presentation may enlarge these for a brush radius,
+    /// but must preserve their center, rotation, and anisotropic scale.
+    pub hit_preview_transform: Transform,
+    pub place_preview_transform: Transform,
 }
 
 #[derive(Debug, Serialize)]

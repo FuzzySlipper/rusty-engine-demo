@@ -166,6 +166,32 @@ export interface ProjectContent {
 
 export interface StoredAssetDefinition {
   readonly id: string;
+  readonly catalog?: {
+    readonly version: 1;
+    readonly hash: string;
+    readonly sourcePath: string;
+    readonly label: string | null;
+    readonly dependencies: readonly string[];
+  };
+  readonly animatedMesh?: {
+    readonly asset: string;
+    readonly runtimeFormat: "glb";
+    readonly contentHash: string | null;
+    readonly clips: readonly {
+      readonly id: string;
+      readonly name: string | null;
+      readonly durationSeconds: number | null;
+    }[];
+    readonly defaultClip: string | null;
+    readonly materialSlots: readonly {
+      readonly slot: number;
+      readonly material: string;
+    }[];
+    readonly bounds: {
+      readonly min: Vec3;
+      readonly max: Vec3;
+    };
+  };
 }
 
 export type StoredVoxelEnvironmentDefinition =

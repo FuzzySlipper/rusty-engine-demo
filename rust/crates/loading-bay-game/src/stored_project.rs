@@ -7,9 +7,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use asset_catalog::{StoredAssetReference, StoredMaterialDefinition};
+use content_store::is_safe_relative_path;
 use core_assets::{AssetId, AssetKind};
 use engine_spatial::{decode_voxel_edit_history, MaterialVoxel, VoxelEditHistoryLimits};
-use render_model::StaticMeshAsset;
+use render_model::{AnimatedMeshAsset, StaticMeshAsset};
 use serde::{Deserialize, Serialize};
 use voxel_annotation::{validate_annotation_layer, VoxelAnnotationLayer, VoxelAnnotationLimits};
 use voxel_asset::VoxelAsset;
@@ -60,6 +61,8 @@ pub struct StoredAsset {
     pub catalog: Option<StoredAssetCatalogMetadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub static_mesh: Option<StaticMeshAsset>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub animated_mesh: Option<AnimatedMeshAsset>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub import: Option<StoredAssetImport>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -279,6 +282,8 @@ pub struct StoredCollision {
 pub struct StoredRenderable {
     pub asset: String,
     pub visible: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initial_clip: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -483,6 +488,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     || asset.voxel_edit_history.is_some()
                     || !asset.voxel_annotations.is_empty()
                     || asset.static_mesh.is_some()
+                    || asset.animated_mesh.is_some()
                     || asset.import.is_some()
                 {
                     return Err(failure(
@@ -519,6 +525,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     || asset.voxel_edit_history.is_some()
                     || !asset.voxel_annotations.is_empty()
                     || asset.material.is_some()
+                    || asset.animated_mesh.is_some()
                 {
                     return Err(failure(
                         diagnostic_code::WRONG_ASSET_KIND,
@@ -530,12 +537,67 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     validate_stored_import(import, &asset.id, index)?;
                 }
             }
+            AssetKind::AnimatedMesh => {
+                let Some(mesh) = &asset.animated_mesh else {
+                    return Err(failure(
+                        diagnostic_code::INVALID_IMPORT,
+                        format!("assets[{index}].animatedMesh"),
+                        "an animated mesh requires its canonical render-model descriptor",
+                    ));
+                };
+                if mesh.asset != asset.id {
+                    return Err(failure(
+                        diagnostic_code::INVALID_IMPORT,
+                        format!("assets[{index}].animatedMesh.asset"),
+                        "animated mesh descriptor identity must match the stored asset identity",
+                    ));
+                }
+                mesh.validate().map_err(|error| {
+                    failure(
+                        diagnostic_code::INVALID_IMPORT,
+                        format!("assets[{index}].animatedMesh"),
+                        format!("animated mesh descriptor is invalid: {error:?}"),
+                    )
+                })?;
+                if mesh.content_hash.is_none() {
+                    return Err(failure(
+                        diagnostic_code::INVALID_IMPORT,
+                        format!("assets[{index}].animatedMesh.contentHash"),
+                        "animated mesh resources require a pinned content hash",
+                    ));
+                }
+                let source_path = asset
+                    .catalog
+                    .as_ref()
+                    .and_then(|metadata| metadata.source_path.as_deref());
+                if !source_path.is_some_and(is_safe_relative_path) {
+                    return Err(failure(
+                        diagnostic_code::INVALID_IMPORT,
+                        format!("assets[{index}].catalog.sourcePath"),
+                        "animated mesh resources require a safe project-relative source path",
+                    ));
+                }
+                if asset.voxel_volume.is_some()
+                    || asset.voxel_edit_history.is_some()
+                    || !asset.voxel_annotations.is_empty()
+                    || asset.material.is_some()
+                    || asset.static_mesh.is_some()
+                    || asset.import.is_some()
+                {
+                    return Err(failure(
+                        diagnostic_code::WRONG_ASSET_KIND,
+                        format!("assets[{index}]"),
+                        "animated mesh assets cannot carry unrelated payloads",
+                    ));
+                }
+            }
             _ => {
                 if asset.voxel_volume.is_some()
                     || asset.voxel_edit_history.is_some()
                     || !asset.voxel_annotations.is_empty()
                     || asset.material.is_some()
                     || asset.static_mesh.is_some()
+                    || asset.animated_mesh.is_some()
                     || asset.import.is_some()
                 {
                     return Err(failure(
@@ -643,7 +705,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             }
             validate_voxel_instance_transform(instance, &instance_path)?;
         }
-        validate_scene_entities(scene, index)?;
+        validate_scene_entities(scene, index, document, &assets)?;
     }
     if !scenes.contains_key(entry_scene.as_str()) {
         return Err(failure(
@@ -706,6 +768,8 @@ fn validate_stored_import(
 fn validate_scene_entities(
     scene: &StoredScene,
     scene_index: usize,
+    project: &StoredProject,
+    assets: &BTreeMap<String, usize>,
 ) -> Result<(), StoredProjectError> {
     let mut entities = BTreeMap::new();
     for (entity_index, entity) in scene.entities.iter().enumerate() {
@@ -741,6 +805,52 @@ fn validate_scene_entities(
                 root,
                 "a scene object cannot be both a light and a renderable mesh",
             ));
+        }
+        if let Some(renderable) = &entity.renderable {
+            let Some(asset_index) = assets.get(&renderable.asset).copied() else {
+                return Err(failure(
+                    diagnostic_code::MISSING_ASSET,
+                    format!("{root}.renderable.asset"),
+                    format!("renderable references missing asset `{}`", renderable.asset),
+                ));
+            };
+            let asset = &project.assets[asset_index];
+            if let Some(animated) = &asset.animated_mesh {
+                let clip = renderable
+                    .initial_clip
+                    .as_ref()
+                    .or(animated.default_clip.as_ref());
+                let Some(clip) = clip else {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{root}.renderable.initialClip"),
+                        "animated renderables require an initial clip or asset default clip",
+                    ));
+                };
+                if !animated.clips.iter().any(|candidate| candidate.id == *clip) {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{root}.renderable.initialClip"),
+                        format!("animated mesh has no clip `{clip}`"),
+                    ));
+                }
+            } else if parse_asset_id(&asset.id, &format!("{root}.renderable.asset"))?.kind()
+                == AssetKind::StaticMesh
+            {
+                if renderable.initial_clip.is_some() {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{root}.renderable.initialClip"),
+                        "static meshes cannot select animation clips",
+                    ));
+                }
+            } else {
+                return Err(failure(
+                    diagnostic_code::WRONG_ASSET_KIND,
+                    format!("{root}.renderable.asset"),
+                    "renderable must reference a static or animated mesh asset",
+                ));
+            }
         }
         if let Some(light) = entity.light {
             validate_stored_light(light, entity.scale, &format!("{root}.light"))?;

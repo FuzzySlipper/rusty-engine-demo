@@ -364,6 +364,7 @@ fn install_imported_assets(
                 dependencies: entry.dependencies,
             }),
             static_mesh: is_mesh.then(|| imported.static_mesh.clone()),
+            animated_mesh: None,
             import: is_mesh.then(|| import.clone()),
             voxel_volume: None,
             voxel_edit_history: None,

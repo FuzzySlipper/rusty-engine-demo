@@ -427,6 +427,22 @@ fn shared_projection_pick_model_and_durable_history_use_engine_owners() {
     assert_eq!(pick["anchor"]["hitVoxel"], json!([0, 0, 0]));
     assert_eq!(pick["anchor"]["placeVoxel"], json!([0, 0, -1]));
     assert_eq!(pick["anchor"]["authorityHitVoxel"], json!([4, 0, 6]));
+    assert_eq!(
+        pick["anchor"]["hitPreviewTransform"],
+        json!({
+            "translation": [4.5, 0.5, 6.5],
+            "rotation": [0.0, 0.0, 0.0, 1.0],
+            "scale": [1.0, 1.0, 1.0]
+        })
+    );
+    assert_eq!(
+        pick["anchor"]["placePreviewTransform"],
+        json!({
+            "translation": [4.5, 0.5, 5.5],
+            "rotation": [0.0, 0.0, 0.0, 1.0],
+            "scale": [1.0, 1.0, 1.0]
+        })
+    );
 
     let erased = send(
         &mut service,

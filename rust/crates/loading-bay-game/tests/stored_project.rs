@@ -11,7 +11,11 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
     let project = decode_stored_project(PROJECT).expect("stored project");
     assert_eq!(project.project_id, "loading-bay");
     assert_eq!(project.entry_scene, "scene/loading-bay");
-    assert_eq!(project.assets.len(), 6);
+    assert_eq!(project.assets.len(), 7);
+    assert!(project
+        .assets
+        .iter()
+        .any(|asset| asset.id.as_str() == "mesh-animation/kenney-retro-character-medium"));
     assert_eq!(project.scenes.len(), 1);
 
     let entities = &project.scenes[0].entities;
@@ -105,9 +109,14 @@ fn stored_project_admits_every_settled_component_family_atomically() {
 }
 
 #[test]
-fn renderables_require_declared_static_mesh_assets() {
+fn renderables_require_declared_mesh_assets() {
     let wrong_kind = mutate(|project| {
-        project["assets"][0]["id"] = "audio/control-panel".into();
+        let assets = project["assets"].as_array_mut().unwrap();
+        let control_panel = assets
+            .iter()
+            .position(|asset| asset["id"] == "mesh/control-panel")
+            .expect("control panel asset");
+        assets[control_panel]["id"] = "audio/control-panel".into();
         project["scenes"][0]["entities"][5]["renderable"]["asset"] = "audio/control-panel".into();
     });
     let wrong_kind = admission_diagnostic(&wrong_kind);

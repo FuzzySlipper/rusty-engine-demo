@@ -1,6 +1,7 @@
 use content_store::ContentHash;
 use core_space::{Direction6, Face};
 use engine_spatial::{VoxelPickHint, VoxelPickService};
+use render_model::Transform;
 use voxel_annotation::{export_annotation_layer, query_annotation_layer, VoxelAnnotationQuery};
 use voxel_convert::{
     query_model_info, query_model_window, VoxelModelInfoRequest, VoxelModelWindowRequest,
@@ -61,6 +62,7 @@ pub(crate) fn validate_pick(
     .map_err(|error| reject("voxel.pickRejected", error.to_string()))?;
     let hit_voxel = authority_to_local(asset.grid.origin, anchor.local.hit_voxel)?;
     let place_voxel = authority_to_local(asset.grid.origin, anchor.local.place_voxel)?;
+    let transform = entity_transform(instance);
     Ok(VoxelPickReadout {
         scene_id: scene_id.to_string(),
         instance_id: instance_id.to_string(),
@@ -73,7 +75,45 @@ pub(crate) fn validate_pick(
         instance_local_point: anchor.local.point,
         world_point: anchor.world_point,
         world_distance: anchor.world_distance,
+        hit_preview_transform: preview_transform(
+            transform,
+            anchor.local.hit_voxel,
+            asset.grid.cell_size,
+        ),
+        place_preview_transform: preview_transform(
+            transform,
+            anchor.local.place_voxel,
+            asset.grid.cell_size,
+        ),
     })
+}
+
+fn preview_transform(
+    instance: entity_state::EntityTransform,
+    authority_voxel: [i64; 3],
+    cell_size: f64,
+) -> Transform {
+    let local_center = core_math::Vec3::new(
+        ((authority_voxel[0] as f64 + 0.5) * cell_size) as f32,
+        ((authority_voxel[1] as f64 + 0.5) * cell_size) as f32,
+        ((authority_voxel[2] as f64 + 0.5) * cell_size) as f32,
+    );
+    let center = instance.transform_point(local_center);
+    let cell_size = cell_size as f32;
+    Transform {
+        translation: [center.x, center.y, center.z],
+        rotation: [
+            instance.rotation.x,
+            instance.rotation.y,
+            instance.rotation.z,
+            instance.rotation.w,
+        ],
+        scale: [
+            instance.scale.x * cell_size,
+            instance.scale.y * cell_size,
+            instance.scale.z * cell_size,
+        ],
+    }
 }
 
 fn authority_to_local(origin: [i64; 3], authority: [i64; 3]) -> Result<[i64; 3], AdapterRejection> {
@@ -221,5 +261,28 @@ pub(crate) const fn readout_face(face: Face) -> VoxelPickFace {
         Direction6::PosY => VoxelPickFace::PositiveY,
         Direction6::NegZ => VoxelPickFace::NegativeZ,
         Direction6::PosZ => VoxelPickFace::PositiveZ,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use entity_state::Quat;
+
+    #[test]
+    fn preview_transform_preserves_translated_rotated_anisotropic_instance_geometry() {
+        let transform = entity_state::EntityTransform {
+            translation: core_math::Vec3::new(-3.0, 0.0, 2.0),
+            rotation: Quat::new(0.0, 0.382_683_43, 0.0, 0.923_879_5),
+            scale: core_math::Vec3::new(0.75, 1.25, 0.5),
+        };
+
+        let preview = preview_transform(transform, [4, 0, 6], 1.0);
+
+        assert!((preview.translation[0] - 1.684_582).abs() < 0.000_01);
+        assert!((preview.translation[1] - 0.625).abs() < 0.000_01);
+        assert!((preview.translation[2] - 1.911_612).abs() < 0.000_01);
+        assert_eq!(preview.rotation, [0.0, 0.382_683_43, 0.0, 0.923_879_5]);
+        assert_eq!(preview.scale, [0.75, 1.25, 0.5]);
     }
 }

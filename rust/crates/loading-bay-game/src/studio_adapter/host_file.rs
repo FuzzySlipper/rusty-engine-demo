@@ -24,6 +24,17 @@ pub(crate) struct HostFileWriteReceipt {
     pub replaced_existing: bool,
 }
 
+#[derive(Clone, Copy)]
+struct PostCommitMaintenance {
+    remove_pending: fn(&Path) -> std::io::Result<()>,
+    sync_directory: fn(&Path) -> std::io::Result<()>,
+}
+
+const POST_COMMIT_MAINTENANCE: PostCommitMaintenance = PostCommitMaintenance {
+    remove_pending,
+    sync_directory,
+};
+
 pub(crate) fn read_host_file(
     requested: &str,
     max_bytes: usize,
@@ -73,6 +84,20 @@ pub(crate) fn write_host_file_atomic(
     requested: &str,
     bytes: &[u8],
     expected_target_sha256: Option<&str>,
+) -> Result<HostFileWriteReceipt, AdapterRejection> {
+    write_host_file_atomic_with_maintenance(
+        requested,
+        bytes,
+        expected_target_sha256,
+        POST_COMMIT_MAINTENANCE,
+    )
+}
+
+fn write_host_file_atomic_with_maintenance(
+    requested: &str,
+    bytes: &[u8],
+    expected_target_sha256: Option<&str>,
+    maintenance: PostCommitMaintenance,
 ) -> Result<HostFileWriteReceipt, AdapterRejection> {
     let path = checked_absolute_path(requested)?;
     let parent = path.parent().ok_or_else(|| {
@@ -154,12 +179,15 @@ pub(crate) fn write_host_file_atomic(
         } else {
             fs::hard_link(&pending, &path)
                 .map_err(|error| io_rejection("install new host file", &path, error))?;
-            fs::remove_file(&pending)
-                .map_err(|error| io_rejection("remove installed pending file", &pending, error))?;
+            // The target becomes authoritative at the successful hard link.
+            // Pending-file cleanup is maintenance and cannot truthfully turn
+            // that committed publication into a rejected operation.
+            let _ = (maintenance.remove_pending)(&pending);
         }
-        File::open(parent)
-            .and_then(|directory| directory.sync_all())
-            .map_err(|error| io_rejection("sync host directory", parent, error))?;
+        // Rename/hard-link is the explicit commit point. A later directory
+        // sync failure cannot be reported as rejection once readers can
+        // observe the requested bytes at the target path.
+        let _ = (maintenance.sync_directory)(parent);
         Ok::<_, AdapterRejection>(())
     })();
     if let Err(error) = write_result {
@@ -172,6 +200,14 @@ pub(crate) fn write_host_file_atomic(
         sha256: source_sha256(bytes),
         replaced_existing: prior.is_some(),
     })
+}
+
+fn sync_directory(path: &Path) -> std::io::Result<()> {
+    File::open(path).and_then(|directory| directory.sync_all())
+}
+
+fn remove_pending(path: &Path) -> std::io::Result<()> {
+    fs::remove_file(path)
 }
 
 fn checked_absolute_path(requested: &str) -> Result<PathBuf, AdapterRejection> {
@@ -266,4 +302,70 @@ fn io_rejection(operation: &str, path: &Path, error: std::io::Error) -> AdapterR
 
 fn reject_path(code: &str, path: &Path, message: impl Into<String>) -> AdapterRejection {
     AdapterRejection::new(code, message).at_path(path.display().to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static NEXT_ROOT: AtomicU64 = AtomicU64::new(1);
+
+    fn test_root(label: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!(
+            "rusty-engine-host-file-{label}-{}-{}",
+            std::process::id(),
+            NEXT_ROOT.fetch_add(1, Ordering::Relaxed),
+        ));
+        fs::create_dir(&root).unwrap();
+        root
+    }
+
+    fn fail_maintenance(_: &Path) -> std::io::Result<()> {
+        Err(std::io::Error::other("injected post-commit failure"))
+    }
+
+    #[test]
+    fn new_target_reports_success_after_hard_link_even_when_cleanup_and_sync_fail() {
+        let root = test_root("new");
+        let target = root.join("asset.json");
+        let receipt = write_host_file_atomic_with_maintenance(
+            target.to_str().unwrap(),
+            b"new bytes",
+            None,
+            PostCommitMaintenance {
+                remove_pending: fail_maintenance,
+                sync_directory: fail_maintenance,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(fs::read(&target).unwrap(), b"new bytes");
+        assert!(!receipt.replaced_existing);
+        assert_eq!(receipt.sha256, source_sha256(b"new bytes"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn replacement_reports_success_after_rename_even_when_directory_sync_fails() {
+        let root = test_root("replacement");
+        let target = root.join("asset.json");
+        fs::write(&target, b"old bytes").unwrap();
+        let expected = source_sha256(b"old bytes");
+        let receipt = write_host_file_atomic_with_maintenance(
+            target.to_str().unwrap(),
+            b"replacement bytes",
+            Some(&expected),
+            PostCommitMaintenance {
+                remove_pending: fail_maintenance,
+                sync_directory: fail_maintenance,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(fs::read(&target).unwrap(), b"replacement bytes");
+        assert!(receipt.replaced_existing);
+        assert_eq!(receipt.sha256, source_sha256(b"replacement bytes"));
+        let _ = fs::remove_dir_all(root);
+    }
 }

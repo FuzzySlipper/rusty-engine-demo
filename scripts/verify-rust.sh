@@ -15,7 +15,7 @@ fi
 
 cargo metadata --format-version 1 --locked --no-deps > /dev/null
 
-EXPECTED_ENGINE_SOURCE='git+https://github.com/FuzzySlipper/rusty-engine.git?rev=b2ef146904082178f5edcd943af95fa4e7c5ce22#b2ef146904082178f5edcd943af95fa4e7c5ce22'
+EXPECTED_ENGINE_SOURCE='git+https://github.com/FuzzySlipper/rusty-engine.git?rev=fb0d091ba5a5465ffb8eb46b1962d0415c257a71#fb0d091ba5a5465ffb8eb46b1962d0415c257a71'
 RESOLVED_GIT_SOURCES="$(sed -n 's/^source = "\(git+[^\"]*\)"$/\1/p' Cargo.lock | sort -u)"
 if [[ "$RESOLVED_GIT_SOURCES" != "$EXPECTED_ENGINE_SOURCE" ]]; then
   echo "Cargo.lock does not resolve exactly the reviewed Rusty Engine revision" >&2

@@ -26,11 +26,11 @@ use engine_inspector::{
 };
 use entity_state::{encode_durable_snapshot, EntityState, EntityTransform, Quat};
 use render_model::{
-    LightDescriptor, LightShadowIntent, MaterialUvStrategy, MeshAttribute, MeshAttributeKind,
-    MeshAttributeName, MeshBoundsDescriptor, MeshBufferLayout, MeshCollisionPolicy,
-    MeshGroupDescriptor, MeshIndexWidth, MeshMaterialSlot, MeshPayloadDescriptor,
-    MeshPayloadSource, MeshProvenance, RenderAssetKind, RenderDiff, RenderFrameDiff,
-    RenderMaterialDescriptor, ResolvedRenderAsset, StaticMeshAsset,
+    AnimatedMeshPlaybackCommand, AnimationLoopMode, LightDescriptor, LightShadowIntent,
+    MaterialUvStrategy, MeshAttribute, MeshAttributeKind, MeshAttributeName, MeshBoundsDescriptor,
+    MeshBufferLayout, MeshCollisionPolicy, MeshGroupDescriptor, MeshIndexWidth, MeshMaterialSlot,
+    MeshPayloadDescriptor, MeshPayloadSource, MeshProvenance, RenderAssetKind, RenderDiff,
+    RenderFrameDiff, RenderMaterialDescriptor, ResolvedRenderAsset, StaticMeshAsset,
 };
 use render_projection::{
     AppearanceLight, AppearanceScene, EntityProjectionDiagnostic, EntityRenderProjector,
@@ -48,8 +48,8 @@ use crate::{
 use super::host_file::read_host_file;
 use super::path::ProjectLocation;
 use super::protocol::{
-    AdapterRejection, AssetBrowserReadout, AssetEntryReadout, AssetImportReadout,
-    AssetLockEntryReadout, CanonicalOwnerContent, EntityTranslationReceipt,
+    AdapterRejection, AnimatedMeshResourceReadout, AssetBrowserReadout, AssetEntryReadout,
+    AssetImportReadout, AssetLockEntryReadout, CanonicalOwnerContent, EntityTranslationReceipt,
     LoadingBayDomainReadout, OwnerInspections, ProjectMutationReceipt, ProjectionDiagnosticReadout,
     ProjectionReadout, SceneHierarchyNodeReadout, SceneHierarchyReadout, StudioProjectIdentity,
     StudioProjectReadout, StudioSceneAppearance, StudioSceneObjectDraft, TransformReadout,
@@ -179,10 +179,11 @@ impl OpenedOwnerProject {
             .iter()
             .filter(|node| matches!(node.kind, SceneNodeKind::Light(_)))
             .count();
+        let entity_projection = install_animation_playback(project, projected.frame)?;
         let projection = complete_projection(
             project,
             &self.catalog,
-            projected.frame,
+            entity_projection,
             light_projection,
             voxel_projected.frame,
         )?;
@@ -220,6 +221,7 @@ impl OpenedOwnerProject {
                 .as_ref()
                 .map(inspect_voxel_state),
             voxel_authoring: voxel_authoring_readout(project)?,
+            animated_mesh_resources: animated_mesh_resources(project)?,
             loading_bay: loading_bay_readout(entry_scene),
             projection,
             projection_readout: ProjectionReadout {
@@ -902,6 +904,21 @@ fn appearance_kind(appearance: &StudioSceneAppearance) -> Result<SceneNodeKind, 
                 None,
             )))
         }
+        StudioSceneAppearance::AnimatedMesh { asset, .. } => {
+            let id = AssetId::parse(asset)
+                .map_err(|error| reject("scene.invalidAsset", error.to_string()))?;
+            if id.kind() != AssetKind::AnimatedMesh {
+                return Err(reject(
+                    "scene.wrongAssetKind",
+                    format!("appearance requires an animated mesh, found {}", id.kind()),
+                ));
+            }
+            Ok(SceneNodeKind::AnimatedMesh(AssetReference::new(
+                id,
+                AssetVersionReq::Exact(1),
+                None,
+            )))
+        }
         StudioSceneAppearance::Light { light } => Ok(SceneNodeKind::Light(stored_light(*light))),
     }
 }
@@ -911,9 +928,26 @@ fn stored_appearance(
 ) -> (Option<StoredRenderable>, Option<StoredLight>) {
     match appearance {
         StudioSceneAppearance::Empty => (None, None),
-        StudioSceneAppearance::StaticMesh { asset, visible } => {
-            (Some(StoredRenderable { asset, visible }), None)
-        }
+        StudioSceneAppearance::StaticMesh { asset, visible } => (
+            Some(StoredRenderable {
+                asset,
+                visible,
+                initial_clip: None,
+            }),
+            None,
+        ),
+        StudioSceneAppearance::AnimatedMesh {
+            asset,
+            visible,
+            clip,
+        } => (
+            Some(StoredRenderable {
+                asset,
+                visible,
+                initial_clip: Some(clip),
+            }),
+            None,
+        ),
         StudioSceneAppearance::Light { light } => (None, Some(light)),
     }
 }
@@ -1088,6 +1122,13 @@ fn complete_projection(
             }
         });
         operations.push(RenderDiff::DefineStaticMesh { asset: mesh });
+    }
+    for asset in project
+        .assets
+        .iter()
+        .filter_map(|stored| stored.animated_mesh.clone())
+    {
+        operations.push(RenderDiff::DefineAnimatedMesh { asset });
     }
     operations.extend(voxels.ops);
     operations.extend(lights.ops);
@@ -1501,9 +1542,19 @@ fn project_scene(
             (None, Some(renderable)) => {
                 let id = AssetId::parse(&renderable.asset)
                     .map_err(|error| reject("scene.invalidAsset", error.to_string()))?;
+                let kind = id.kind();
                 let reference = AssetReference::new(id, AssetVersionReq::Exact(1), None);
                 dependencies.insert(renderable.asset.clone(), reference.clone());
-                SceneNodeKind::StaticMesh(reference)
+                match kind {
+                    AssetKind::StaticMesh => SceneNodeKind::StaticMesh(reference),
+                    AssetKind::AnimatedMesh => SceneNodeKind::AnimatedMesh(reference),
+                    _ => {
+                        return Err(reject(
+                            "scene.wrongAssetKind",
+                            format!("renderable requires a mesh, found {kind}"),
+                        ))
+                    }
+                }
             }
             (None, None) => SceneNodeKind::EmptyGroup,
             (Some(_), Some(_)) => unreachable!("stored-project validation rejects mixed kinds"),
@@ -1658,17 +1709,105 @@ fn validate_owner_admission(
 fn resolved_render_assets(catalog: &AssetCatalog) -> BTreeMap<String, ResolvedRenderAsset> {
     catalog
         .iter()
-        .filter(|entry| entry.kind() == AssetKind::StaticMesh)
+        .filter(|entry| {
+            matches!(
+                entry.kind(),
+                AssetKind::StaticMesh | AssetKind::AnimatedMesh
+            )
+        })
         .map(|entry| {
             (
                 entry.id.as_str().to_string(),
                 ResolvedRenderAsset {
                     id: entry.id.as_str().to_string(),
-                    kind: RenderAssetKind::StaticMesh,
+                    kind: match entry.kind() {
+                        AssetKind::StaticMesh => RenderAssetKind::StaticMesh,
+                        AssetKind::AnimatedMesh => RenderAssetKind::AnimatedMesh,
+                        _ => unreachable!("render asset filter is closed"),
+                    },
                     content_hash: entry.hash.as_ref().map(|hash| hash.as_str().to_string()),
                     version: entry.version,
                 },
             )
+        })
+        .collect()
+}
+
+fn install_animation_playback(
+    project: &StoredProject,
+    mut frame: RenderFrameDiff,
+) -> Result<RenderFrameDiff, AdapterRejection> {
+    let scene = entry_scene(project);
+    for operation in &mut frame.ops {
+        let RenderDiff::CreateAnimatedMeshInstance { instance, .. } = operation else {
+            continue;
+        };
+        let entity_id = instance.metadata.source_entity.ok_or_else(|| {
+            reject(
+                "projection.animationMissingEntity",
+                "animated instance has no source entity",
+            )
+        })?;
+        let entity = scene
+            .entities
+            .iter()
+            .find(|entity| entity.id == entity_id)
+            .ok_or_else(|| {
+                reject(
+                    "projection.animationMissingEntity",
+                    format!("missing source entity {entity_id}"),
+                )
+            })?;
+        let renderable = entity.renderable.as_ref().ok_or_else(|| {
+            reject(
+                "projection.animationMissingRenderable",
+                format!("entity {entity_id} has no renderable"),
+            )
+        })?;
+        let asset = project
+            .assets
+            .iter()
+            .find(|asset| asset.id == renderable.asset)
+            .and_then(|asset| asset.animated_mesh.as_ref())
+            .ok_or_else(|| reject("projection.animationMissingAsset", &renderable.asset))?;
+        let clip = renderable
+            .initial_clip
+            .as_ref()
+            .or(asset.default_clip.as_ref())
+            .ok_or_else(|| reject("projection.animationMissingClip", &renderable.asset))?;
+        instance.playback = Some(AnimatedMeshPlaybackCommand::Play {
+            clip: clip.clone(),
+            r#loop: AnimationLoopMode::Repeat,
+            speed: 1.0,
+            weight: 1.0,
+            restart: true,
+            fade_seconds: None,
+        });
+    }
+    Ok(frame)
+}
+
+fn animated_mesh_resources(
+    project: &StoredProject,
+) -> Result<Vec<AnimatedMeshResourceReadout>, AdapterRejection> {
+    project
+        .assets
+        .iter()
+        .filter_map(|stored| stored.animated_mesh.as_ref().map(|asset| (stored, asset)))
+        .map(|(stored, asset)| {
+            Ok(AnimatedMeshResourceReadout {
+                asset: asset.asset.clone(),
+                content_hash: asset
+                    .content_hash
+                    .clone()
+                    .ok_or_else(|| reject("projection.animationMissingHash", &asset.asset))?,
+                clip_ids: asset.clips.iter().map(|clip| clip.id.clone()).collect(),
+                source_path: stored
+                    .catalog
+                    .as_ref()
+                    .and_then(|metadata| metadata.source_path.clone())
+                    .ok_or_else(|| reject("projection.animationMissingSource", &asset.asset))?,
+            })
         })
         .collect()
 }
