@@ -198,7 +198,7 @@ CommandRejection {
 The closed `RejectionCode` family distinguishes:
 
 - `protocolMismatch`, `sessionClosed`, `transportLost`
-- `staleSequence`, `deltaBaseUnavailable`, `contentRevisionMismatch`
+- `staleSequence`, `edgeQueueSaturated`, `deltaBaseUnavailable`, `contentRevisionMismatch`
 - `invalidInput`, `unknownTarget`, `notInteractable`
 - `weaponNotOwned`, `weaponUnavailable`, `noAmmo`, `cooldown`
 - `inventoryFull`, `itemUnavailable`, `accessDenied`
@@ -206,9 +206,11 @@ The closed `RejectionCode` family distinguishes:
 - `saveUnavailable`, `snapshotIncompatible`
 - `internalDefect`
 
-An ordinary policy or gameplay rejection is not a transport failure. A failed or rejected command
-does not partially mutate state, consume ammunition, duplicate a pickup, or block later valid
-commands.
+An ordinary policy or gameplay rejection is not a transport failure. `edgeQueueSaturated` means
+the 32-command must-deliver edge queue was already at capacity: the new edge was not accepted or
+enqueued, every previously accepted edge remains ordered, and continuous latest-wins input remains
+independent. A failed or rejected command does not partially mutate state, consume ammunition,
+duplicate a pickup, or block later valid commands.
 
 ### Queue, cancellation, and stale-state rules
 
@@ -280,7 +282,7 @@ interactive performance machine.
 |---|---|
 | Simulation | Fixed 60 Hz; no more than five catch-up ticks; no browser-event-driven advancement |
 | Continuous input | At most 60 submitted input frames/second, one latest pending frame, no promise tail |
-| Edge commands | At most 32 queued; overflow is a visible typed rejection, never silent loss |
+| Edge commands | At most 32 queued; the next edge is rejected as `edgeQueueSaturated`, with no silent loss or partial mutation |
 | Input acknowledgement | Local-LAN p95 at most 50 ms and no sample above 100 ms during the 60-second stress route |
 | Steady dynamic payload | p95 at most 4 KiB/update during ordinary movement/look |
 | Full dynamic resync | At most 32 KiB for the campaign level, excluding separately hashed static resources |
@@ -304,7 +306,7 @@ cross-language changes.
 |---|---|
 | Architecture boundary | `pnpm run audit:boundary`; exact public Git pins; no sibling path, private renderer, generic bridge, or TypeScript gameplay store |
 | Fixed loop | Deterministic Rust tests for cadence independence, phase order, catch-up bound, stale intent, disconnect, pause, death, and restart |
-| Protocol | Codec tests, sequence/ack/idempotence tests, queue overflow, reconnect/full resync, typed failures, payload-size instrumentation |
+| Protocol | Codec tests, sequence/ack/idempotence tests, queue overflow yielding exactly `edgeQueueSaturated` with no silent loss or partial mutation, reconnect/full resync, typed failures, payload-size instrumentation |
 | Inventory/combat | Atomic grant/consume/equip/fire tests, weapon ownership, distinct ammo, cooldown, spread determinism, death and reopen |
 | World progression | Pickup idempotence, key denial/success, switch/door scheduling, secret first-discovery, checkpoint, exit completion |
 | Renderer/presentation | Shared-surface lifecycle, no double loop, resource retention, real timing, disposable feedback reset |
