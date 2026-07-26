@@ -5,12 +5,7 @@
   "prefix": "red",
   "sourceRoot": "apps/loading-bay/src",
   "tags": ["type:app", "scope:shell"],
-  "implicitDependencies": [
-    "browser-game-runtime",
-    "platform",
-    "ui-combat-log",
-    "ui-compass"
-  ],
+  "implicitDependencies": ["theme"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",

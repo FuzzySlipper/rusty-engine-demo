@@ -38,6 +38,7 @@ const depConstraints = [
     onlyDependOnLibsWithTags: [
       "scope:feature",
       "scope:platform",
+      "scope:components",
       "scope:theme",
     ],
   },

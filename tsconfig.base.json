@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
@@ -14,6 +15,14 @@
     "declarationMap": true,
     "sourceMap": true,
     "composite": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "@rusty-engine-demo/game-runtime": [
+        "ts/packages/browser-shell/src/game-runtime.ts"
+      ],
+      "@rusty-engine-demo/platform": ["libs/platform/src/index.ts"],
+      "@rusty-engine-demo/ui-combat-log": ["libs/ui-combat-log/src/index.ts"],
+      "@rusty-engine-demo/ui-compass": ["libs/ui-compass/src/index.ts"]
+    }
   }
 }
