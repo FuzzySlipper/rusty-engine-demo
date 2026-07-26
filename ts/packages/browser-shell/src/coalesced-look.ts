@@ -40,7 +40,6 @@ export class CoalescedLookInput {
   #inFlight = false;
   #timer: unknown = null;
   #lastSentAt = Number.NEGATIVE_INFINITY;
-  #generation = 0;
   #disposed = false;
   #settlement: Promise<void> | null = null;
   #resolveSettlement: (() => void) | null = null;
@@ -79,7 +78,6 @@ export class CoalescedLookInput {
   }
 
   clear(): void {
-    this.#generation += 1;
     this.#pendingYaw = 0;
     this.#pendingPitch = 0;
     if (this.#timer !== null) {
@@ -131,7 +129,6 @@ export class CoalescedLookInput {
       this.#finishIfIdle();
       return;
     }
-    const generation = this.#generation;
     const action: CoalescedLookAction = {
       kind: "look",
       yawDelta: this.#pendingYaw,
@@ -145,9 +142,7 @@ export class CoalescedLookInput {
       await this.#dispatch(action);
     } finally {
       this.#inFlight = false;
-      if (generation === this.#generation) {
-        this.#schedule();
-      }
+      this.#schedule();
       this.#finishIfIdle();
     }
   }

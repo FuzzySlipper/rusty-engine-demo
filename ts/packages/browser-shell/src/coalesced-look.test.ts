@@ -83,6 +83,46 @@ test("small look deltas coalesce without quantization loss", async () => {
   ]);
 });
 
+test("a stale dispatch settlement schedules only post-clear pending look", async () => {
+  const scheduler = new FakeScheduler();
+  const dispatched: CoalescedLookAction[] = [];
+  let releaseFirst!: () => void;
+  const blockedFirst = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  const look = new CoalescedLookInput({
+    scheduler,
+    dispatch: async (action) => {
+      dispatched.push(action);
+      if (dispatched.length === 1) {
+        await blockedFirst;
+      }
+    },
+  });
+
+  look.push(0.5, -0.5);
+  scheduler.run();
+  await Promise.resolve();
+  assert.deepEqual(dispatched, [
+    { kind: "look", yawDelta: 0.5, pitchDelta: -0.5 },
+  ]);
+
+  look.clear();
+  look.push(-0.25, 0.75);
+  assert.equal(look.pendingFrameCount, 2);
+  releaseFirst();
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.notEqual(scheduler.callback, null);
+  scheduler.run();
+  await look.settled();
+
+  assert.deepEqual(dispatched, [
+    { kind: "look", yawDelta: 0.5, pitchDelta: -0.5 },
+    { kind: "look", yawDelta: -0.25, pitchDelta: 0.75 },
+  ]);
+  assert.equal(look.pendingFrameCount, 0);
+});
+
 test("push reports only the bounded delta admitted to the pending frame", () => {
   const scheduler = new FakeScheduler();
   const input = new CoalescedLookInput({
