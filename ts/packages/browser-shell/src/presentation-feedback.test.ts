@@ -201,6 +201,7 @@ function audioVolumes(
 
 function feedbackState(): RuntimeBrowserState {
   return {
+    hostSessionId: "host-a",
     tick: 5,
     entityRevision: 8,
     voxelRevision: 0,

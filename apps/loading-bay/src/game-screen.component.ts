@@ -55,6 +55,7 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
   events: [],
   health: 0,
   headingDegrees: 0,
+  hostSessionId: "",
   interactionPrompt: null,
   interactionTarget: null,
   inventoryCapacity: 0,
@@ -101,6 +102,7 @@ type ConnectionState =
           width="1600"
           height="900"
           tabindex="0"
+          [attr.inert]="modalActive() ? '' : null"
           aria-label="Loading Bay first-person viewport. Click to capture the pointer."
         ></canvas>
         <div
@@ -111,7 +113,7 @@ type ConnectionState =
         <div class="viewport-vignette" aria-hidden="true"></div>
         <div class="reticle" aria-hidden="true"></div>
 
-        <header class="hud-top">
+        <header class="hud-top" [attr.inert]="modalActive() ? '' : null">
           <div class="mission">
             <p>Loading Bay 03</p>
             <strong id="encounter-state">LOADING</strong>
@@ -127,11 +129,11 @@ type ConnectionState =
           </nav>
         </header>
 
-        <div class="hud-left">
+        <div class="hud-left" [attr.inert]="modalActive() ? '' : null">
           <red-combat-log [entries]="combatEntries()" />
         </div>
 
-        <div class="hud-right">
+        <div class="hud-right" [attr.inert]="modalActive() ? '' : null">
           <div
             class="vitality"
             [attr.data-state]="snapshot().vitalityState"
@@ -164,7 +166,7 @@ type ConnectionState =
           </div>
         </div>
 
-        <div class="hud-hotbar">
+        <div class="hud-hotbar" [attr.inert]="modalActive() ? '' : null">
           <red-game-hotbar
             [slots]="hotbarSlots()"
             [disabled]="
@@ -180,6 +182,7 @@ type ConnectionState =
           <button
             type="button"
             class="interaction-prompt"
+            [attr.inert]="modalActive() ? '' : null"
             [disabled]="actionBusy()"
             (click)="activateInteraction()"
           >
@@ -202,6 +205,10 @@ type ConnectionState =
         @if (connectionState() !== "connected") {
           <section
             class="game-state-overlay"
+            role="dialog"
+            aria-modal="true"
+            tabindex="-1"
+            data-active-modal
             [attr.aria-busy]="
               connectionState() === 'connecting' ||
               connectionState() === 'reconnecting'
@@ -219,7 +226,14 @@ type ConnectionState =
             }
           </section>
         } @else if (snapshot().vitalityState === "dead" && panel() === "game") {
-          <section class="game-state-overlay" aria-live="assertive">
+          <section
+            class="game-state-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-live="assertive"
+            tabindex="-1"
+            data-active-modal
+          >
             <p class="section-label">Rust-owned vitality</p>
             <h1>PLAYER DOWN</h1>
             <p>
@@ -254,6 +268,8 @@ type ConnectionState =
             class="game-panel-overlay"
             role="dialog"
             aria-modal="true"
+            tabindex="-1"
+            data-active-modal
             [attr.aria-label]="panelTitle()"
           >
             <article class="game-panel">
@@ -333,7 +349,10 @@ type ConnectionState =
         }
       </section>
 
-      <details class="diagnostic-drawer">
+      <details
+        class="diagnostic-drawer"
+        [attr.inert]="modalActive() ? '' : null"
+      >
         <summary>Runtime diagnostics and authored-content actions</summary>
         <div class="operations">
           <article class="status-panel">
@@ -509,16 +528,24 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       })),
     ];
   });
+  protected readonly modalActive = computed(
+    () =>
+      this.connectionState() !== "connected" ||
+      this.panel() !== "game" ||
+      this.snapshot().vitalityState === "dead",
+  );
 
   private readonly documentEffects = browserDocumentEffects();
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private destroyed = false;
+  private focusReturnTarget: HTMLElement | null = null;
   private handle: LoadingBayGameHandle | null = null;
 
   ngAfterViewInit(): void {
     this.documentEffects.setTitle("Rusty Engine — Loading Bay");
     this.documentEffects.setRootClass("game-route-active", true);
+    this.scheduleModalFocus();
     void this.mountRuntime();
   }
 
@@ -535,7 +562,14 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
 
   @HostListener("window:keydown", ["$event"])
   protected onWindowKeydown(event: KeyboardEvent): void {
-    if (event.defaultPrevented || isTextEntry(event.target)) {
+    if (event.defaultPrevented) {
+      return;
+    }
+    if (event.code === "Tab" && this.modalActive()) {
+      this.containModalFocus(event);
+      return;
+    }
+    if (isTextEntry(event.target)) {
       return;
     }
     if (event.code === "Escape") {
@@ -575,9 +609,11 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   }
 
   protected openPause(): void {
+    this.rememberFocusForModal();
     void this.withAction(async (handle) => {
       await handle.setPaused(true);
       this.panel.set("pause");
+      this.scheduleModalFocus();
     });
   }
 
@@ -586,8 +622,10 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     if (handle === null) {
       return;
     }
+    this.rememberFocusForModal();
     handle.releaseInput();
     this.panel.set("inventory");
+    this.scheduleModalFocus();
   }
 
   protected showInventoryFromPause(): void {
@@ -595,20 +633,23 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       await handle.setPaused(false);
       handle.releaseInput();
       this.panel.set("inventory");
+      this.scheduleModalFocus();
     });
   }
 
   protected closeInventory(): void {
     this.panel.set("game");
-    this.focusViewport();
+    this.restoreModalFocus();
   }
 
   protected showSettings(): void {
     this.panel.set("settings");
+    this.scheduleModalFocus();
   }
 
   protected showPausePanel(): void {
     this.panel.set("pause");
+    this.scheduleModalFocus();
   }
 
   protected resumeGame(): void {
@@ -617,7 +658,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
         await handle.setPaused(false);
       }
       this.panel.set("game");
-      this.focusViewport();
+      this.restoreModalFocus();
     });
   }
 
@@ -696,10 +737,16 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       const handle = await mountLoadingBayGame({
         onProjection: (snapshot) => {
           this.snapshot.set(snapshot);
+          if (snapshot.vitalityState === "dead") {
+            this.rememberFocusForModal();
+            this.scheduleModalFocus();
+          }
         },
         onConnectionFailure: (message) => {
           this.connectionState.set("unavailable");
           this.connectionMessage.set(message);
+          this.rememberFocusForModal();
+          this.scheduleModalFocus();
         },
         preferences: runtimePreferences(this.settings()),
       });
@@ -715,11 +762,27 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
         }
         await handle.restart();
       } else if (entryMode === "continue") {
+        if (
+          !this.settingsRepository.hasContinueSession(
+            this.snapshot().hostSessionId,
+          )
+        ) {
+          await handle.dispose();
+          this.handle = null;
+          throw new Error(
+            "That Rust host session is no longer available. Start a new game.",
+          );
+        }
         await handle.setPaused(false);
       }
-      this.settingsRepository.markContinueSessionAvailable();
+      this.settingsRepository.markContinueSessionAvailable(
+        this.snapshot().hostSessionId,
+      );
       this.connectionState.set("connected");
       this.connectionMessage.set("Connected");
+      if (this.panel() === "game" && this.snapshot().vitalityState !== "dead") {
+        this.restoreModalFocus();
+      }
       document.body.dataset.rendererLifecycle = "mounted";
       if (new URLSearchParams(location.search).has("lifecycle-smoke")) {
         await this.router.navigateByUrl("/diagnostics");
@@ -728,6 +791,8 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       const message = error instanceof Error ? error.message : String(error);
       this.connectionState.set("unavailable");
       this.connectionMessage.set(message);
+      this.rememberFocusForModal();
+      this.scheduleModalFocus();
       document.body.dataset.rendererLifecycle = "failed";
       document.body.dataset.runtimeError = message;
     }
@@ -753,7 +818,73 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   private focusViewport(): void {
     document.getElementById("viewport")?.focus();
   }
+
+  private rememberFocusForModal(): void {
+    if (this.focusReturnTarget !== null) {
+      return;
+    }
+    const active = document.activeElement;
+    this.focusReturnTarget = active instanceof HTMLElement ? active : null;
+  }
+
+  private scheduleModalFocus(): void {
+    globalThis.setTimeout(() => {
+      if (this.destroyed || !this.modalActive()) {
+        return;
+      }
+      const modal = document.querySelector<HTMLElement>("[data-active-modal]");
+      if (modal === null) {
+        return;
+      }
+      const first = modal.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      (first ?? modal).focus();
+    }, 0);
+  }
+
+  private containModalFocus(event: KeyboardEvent): void {
+    const modal = document.querySelector<HTMLElement>("[data-active-modal]");
+    if (modal === null) {
+      return;
+    }
+    const focusable = Array.from(
+      modal.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    );
+    if (focusable.length === 0) {
+      event.preventDefault();
+      modal.focus();
+      return;
+    }
+    const active = document.activeElement;
+    const index = active instanceof HTMLElement ? focusable.indexOf(active) : -1;
+    if (index === -1) {
+      event.preventDefault();
+      focusable[event.shiftKey ? focusable.length - 1 : 0]?.focus();
+      return;
+    }
+    if (!event.shiftKey && index === focusable.length - 1) {
+      event.preventDefault();
+      focusable[0]?.focus();
+    } else if (event.shiftKey && index === 0) {
+      event.preventDefault();
+      focusable.at(-1)?.focus();
+    }
+  }
+
+  private restoreModalFocus(): void {
+    queueMicrotask(() => {
+      const target = this.focusReturnTarget;
+      this.focusReturnTarget = null;
+      if (target?.isConnected) {
+        target.focus();
+      } else {
+        this.focusViewport();
+      }
+    });
+  }
 }
+
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function severityFor(event: string): CombatLogEntryView["severity"] {
   if (event.includes("Rejected") || event.includes("Blocked")) {

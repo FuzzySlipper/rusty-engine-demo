@@ -14,8 +14,8 @@ export interface HostUserSettings {
 export interface HostUserSettingsRepository {
   readonly read: () => HostUserSettings;
   readonly write: (settings: HostUserSettings) => HostUserSettings;
-  readonly hasContinueSession: () => boolean;
-  readonly markContinueSessionAvailable: () => void;
+  readonly hasContinueSession: (hostSessionId: string) => boolean;
+  readonly markContinueSessionAvailable: (hostSessionId: string) => void;
 }
 
 export interface StringStoragePort {
@@ -101,16 +101,22 @@ export function hostUserSettingsRepository(
       }
       return normalized;
     },
-    hasContinueSession: () => {
+    hasContinueSession: (hostSessionId) => {
       try {
-        return storage.getItem(CONTINUE_SESSION_STORAGE_KEY) === "available";
+        return (
+          hostSessionId.length > 0 &&
+          storage.getItem(CONTINUE_SESSION_STORAGE_KEY) === hostSessionId
+        );
       } catch {
         return false;
       }
     },
-    markContinueSessionAvailable: () => {
+    markContinueSessionAvailable: (hostSessionId) => {
+      if (hostSessionId.length === 0) {
+        return;
+      }
       try {
-        storage.setItem(CONTINUE_SESSION_STORAGE_KEY, "available");
+        storage.setItem(CONTINUE_SESSION_STORAGE_KEY, hostSessionId);
       } catch {
         // The current game remains usable when durable host preferences fail.
       }

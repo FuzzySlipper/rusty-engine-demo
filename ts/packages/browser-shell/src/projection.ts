@@ -228,6 +228,7 @@ export interface RuntimePresentationState {
 }
 
 export interface RuntimeBrowserState {
+  readonly hostSessionId: string;
   readonly tick: number;
   readonly entityRevision: number;
   readonly voxelRevision: number;

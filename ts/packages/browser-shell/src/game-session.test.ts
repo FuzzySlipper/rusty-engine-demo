@@ -88,6 +88,7 @@ const dynamic = {
 } as const;
 
 const resources = {
+  hostSessionId: "host-a",
   staticRevision: "1:abc",
   voxelRevision: 1,
   voxelAuthorityHash: "abc",

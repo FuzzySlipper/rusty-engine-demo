@@ -58,6 +58,7 @@ export interface SessionMetrics {
 }
 
 type StaticStateKey =
+  | "hostSessionId"
   | "voxelRevision"
   | "voxelAuthorityHash"
   | "voxelSolidCount"
@@ -992,6 +993,7 @@ function isRuntimeStaticResources(
   return (
     isRecord(value) &&
     typeof value.staticRevision === "string" &&
+    typeof value.hostSessionId === "string" &&
     isFiniteNumber(value.voxelRevision) &&
     typeof value.voxelAuthorityHash === "string" &&
     isFiniteNumber(value.voxelSolidCount) &&
@@ -1135,6 +1137,7 @@ function runtimeStateResources(
   resources: RuntimeStaticResources,
 ): Pick<RuntimeBrowserState, StaticStateKey> {
   return {
+    hostSessionId: resources.hostSessionId,
     voxelRevision: resources.voxelRevision,
     voxelAuthorityHash: resources.voxelAuthorityHash,
     voxelSolidCount: resources.voxelSolidCount,

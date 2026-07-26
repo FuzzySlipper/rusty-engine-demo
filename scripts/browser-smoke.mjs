@@ -433,6 +433,7 @@ async function runFullBrowserProduct(project) {
       height: 844,
       label: "narrow",
     });
+    await runHostReplacementContinueProof(project);
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
@@ -449,6 +450,112 @@ async function runFullBrowserProduct(project) {
     }
   } finally {
     await stopHost(running.host);
+  }
+}
+
+async function runHostReplacementContinueProof(project) {
+  const address = `127.0.0.1:${String(await reservePort())}`;
+  const profileDirectory = mkdtempSync(
+    join(tmpdir(), "rusty-engine-host-continuity-"),
+  );
+  let running = await launchHost(project, address);
+  try {
+    await waitForHealth(
+      `http://${address}/health`,
+      running.host,
+      running.output,
+    );
+    const first = await runChromiumSmoke(
+      `http://${address}/#/`,
+      "document.body?.dataset.hostContinuitySeed === 'pass'",
+      15_000,
+      {
+        profileDirectory,
+        setupExpression: `(async () => {
+          const state = await fetch("/api/state", { cache: "no-store" }).then(
+            (response) => response.json(),
+          );
+          localStorage.setItem(
+            "rusty-engine-demo.continue-session.v1",
+            state.hostSessionId,
+          );
+          document.body.dataset.hostContinuitySeed =
+            typeof state.hostSessionId === "string" &&
+            state.hostSessionId.length > 0
+              ? "pass"
+              : "fail";
+        })()`,
+      },
+    );
+    if (
+      first.code !== 0 ||
+      !first.stdout.includes('data-host-continuity-seed="pass"')
+    ) {
+      throw new Error(
+        `host continuity seed failed\n${first.stderr}\n${first.stdout.slice(-4_000)}`,
+      );
+    }
+    await stopHost(running.host);
+    running = await launchHost(project, address);
+    await waitForHealth(
+      `http://${address}/health`,
+      running.host,
+      running.output,
+    );
+    const replacement = await runChromiumSmoke(
+      `http://${address}/#/`,
+      "document.body?.dataset.hostReplacementContinue === 'pass' || document.body?.dataset.hostReplacementContinue === 'fail'",
+      15_000,
+      {
+        profileDirectory,
+        setupExpression: `(async () => {
+          const delay = (milliseconds) =>
+            new Promise((resolve) => setTimeout(resolve, milliseconds));
+          const deadline = Date.now() + 10000;
+          while (Date.now() < deadline) {
+            const button = [...document.querySelectorAll("button")].find(
+              (element) => element.textContent?.trim() === "Continue",
+            );
+            const message =
+              document.querySelector(".availability")?.textContent ?? "";
+            if (
+              button instanceof HTMLButtonElement &&
+              !message.includes("Checking")
+            ) {
+              const state = await fetch("/api/state", {
+                cache: "no-store",
+              }).then((response) => response.json());
+              const stale =
+                localStorage.getItem(
+                  "rusty-engine-demo.continue-session.v1",
+                ) !== state.hostSessionId;
+              document.body.dataset.hostReplacementContinue =
+                stale &&
+                button.disabled &&
+                message.includes("No resumable game exists")
+                  ? "pass"
+                  : "fail";
+              return;
+            }
+            await delay(50);
+          }
+          document.body.dataset.hostReplacementContinue = "fail";
+        })()`,
+      },
+    );
+    if (
+      replacement.code !== 0 ||
+      !replacement.stdout.includes(
+        'data-host-replacement-continue="pass"',
+      )
+    ) {
+      throw new Error(
+        `replacement host exposed stale Continue\n${replacement.stderr}\n${replacement.stdout.slice(-6_000)}`,
+      );
+    }
+  } finally {
+    await stopHost(running.host);
+    rmSync(profileDirectory, { recursive: true, force: true });
   }
 }
 
@@ -487,6 +594,7 @@ async function runGameShellProof(address, viewport) {
     'data-game-shell-menu="pass"',
     'data-game-shell-continue="pass"',
     'data-game-shell-pause="pass"',
+    'data-game-shell-focus="pass"',
     'data-game-shell-inventory="pass"',
     'data-game-shell-settings="pass"',
     'data-game-shell-aiming="pass"',
@@ -564,6 +672,20 @@ function gameShellScenario(viewportLabel) {
         () => document.querySelector(".game-panel")?.textContent?.includes("Inventory") === true,
         "inventory panel",
       );
+      const inventoryOverlay = document.querySelector(".game-panel-overlay");
+      const inventoryFocusEntered =
+        inventoryOverlay?.contains(document.activeElement) === true;
+      const inventoryFocusable = inventoryOverlay === null
+        ? []
+        : [...inventoryOverlay.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          )];
+      inventoryFocusable.at(-1)?.focus();
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { code: "Tab", bubbles: true }),
+      );
+      const inventoryFocusContained =
+        inventoryOverlay?.contains(document.activeElement) === true;
       const inventoryPanel = document.querySelector(".game-panel");
       const inventoryLive =
         inventoryPanel?.textContent?.includes("SIMULATION LIVE") === true &&
@@ -592,6 +714,27 @@ function gameShellScenario(viewportLabel) {
         () => document.querySelector(".simulation-state")?.textContent?.includes("PAUSED") === true,
         "Rust pause acknowledgement",
       );
+      const pauseOverlay = document.querySelector(".game-panel-overlay");
+      const pauseFocusEntered =
+        pauseOverlay?.contains(document.activeElement) === true;
+      const pauseFocusable = pauseOverlay === null
+        ? []
+        : [...pauseOverlay.querySelectorAll("button:not([disabled])")];
+      pauseFocusable.at(-1)?.focus();
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { code: "Tab", bubbles: true }),
+      );
+      const pauseFocusContained =
+        pauseOverlay?.contains(document.activeElement) === true;
+      const backgroundInert =
+        document.querySelector("#viewport")?.hasAttribute("inert") === true &&
+        document.querySelector(".hud-top")?.hasAttribute("inert") === true;
+      const focusPassed =
+        inventoryFocusEntered &&
+        inventoryFocusContained &&
+        pauseFocusEntered &&
+        pauseFocusContained &&
+        backgroundInert;
       const pausePassed =
         document.querySelector(".game-panel")?.textContent?.includes("Restart loading bay") === true;
       byText(".pause-actions button", "Settings")?.click();
@@ -676,6 +819,14 @@ function gameShellScenario(viewportLabel) {
       document.body.dataset.gameShellMenu = menuPassed ? "pass" : "fail";
       document.body.dataset.gameShellContinue = continuePassed ? "pass" : "fail";
       document.body.dataset.gameShellPause = pausePassed ? "pass" : "fail";
+      document.body.dataset.gameShellFocus = focusPassed ? "pass" : "fail";
+      document.body.dataset.gameShellFocusEvidence = [
+        inventoryFocusEntered,
+        inventoryFocusContained,
+        pauseFocusEntered,
+        pauseFocusContained,
+        backgroundInert,
+      ].join(":");
       document.body.dataset.gameShellInventoryEvidence =
         String(inventoryLive) +
         ":" +
@@ -693,6 +844,7 @@ function gameShellScenario(viewportLabel) {
         menuPassed &&
         continuePassed &&
         pausePassed &&
+        focusPassed &&
         inventoryLive &&
         typedItemRequest &&
         hotbarPassed &&
@@ -1264,9 +1416,10 @@ async function runPersistedVoxelEditProduct(project) {
   }
 }
 
-async function launchHost(project) {
-  const port = await reservePort();
-  const address = `127.0.0.1:${String(port)}`;
+async function launchHost(project, requestedAddress) {
+  const address =
+    requestedAddress ??
+    `127.0.0.1:${String(await reservePort())}`;
   const host = spawn(
     "cargo",
     [
@@ -1375,9 +1528,10 @@ async function runChromiumSmoke(
   options = {},
 ) {
   const debuggingPort = await reservePort();
-  const profileDirectory = mkdtempSync(
-    join(tmpdir(), "rusty-engine-chromium-"),
-  );
+  const ownsProfile = options.profileDirectory === undefined;
+  const profileDirectory =
+    options.profileDirectory ??
+    mkdtempSync(join(tmpdir(), "rusty-engine-chromium-"));
   const browser = spawn(
     chromium,
     [
@@ -1494,7 +1648,9 @@ async function runChromiumSmoke(
     if (browser.exitCode === null) {
       browser.kill("SIGKILL");
     }
-    rmSync(profileDirectory, { recursive: true, force: true });
+    if (ownsProfile) {
+      rmSync(profileDirectory, { recursive: true, force: true });
+    }
   }
 }
 

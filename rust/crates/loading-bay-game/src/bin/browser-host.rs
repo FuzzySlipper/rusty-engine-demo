@@ -3,8 +3,9 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::ops::{Deref, DerefMut};
 use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, LockResult, Mutex, MutexGuard};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use core_ids::EntityId;
 use loading_bay_game::{
@@ -49,6 +50,7 @@ struct BrowserProjectSummary {
 
 #[derive(Debug)]
 struct BrowserRuntime {
+    host_session_id: String,
     runtime: LoadingBayGameLoop,
     authored: AdmittedStoredProject,
     project_path: PathBuf,
@@ -97,6 +99,7 @@ impl BrowserRuntime {
         let (authored, admitted) = admit_stored_project_with_document(decoded.project)
             .map_err(|error| format!("project admission failed: {error}"))?;
         Ok(Self {
+            host_session_id: new_host_session_id(),
             runtime: LoadingBayGameLoop::new(GameRuntime::from_admitted_project(admitted), ACTOR)
                 .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?,
             authored,
@@ -117,8 +120,11 @@ impl BrowserRuntime {
         &mut self,
         connection_generation: u64,
         sequence: u64,
-        replacement: BrowserRuntime,
+        mut replacement: BrowserRuntime,
     ) {
+        replacement
+            .host_session_id
+            .clone_from(&self.host_session_id);
         self.pending_restart = Some(PendingRestart {
             identity: RestartIdentity {
                 connection_generation,
@@ -194,6 +200,16 @@ impl BrowserRuntime {
         }
         self.runtime.disconnect(connection_generation);
     }
+}
+
+fn new_host_session_id() -> String {
+    static SEQUENCE: AtomicU64 = AtomicU64::new(1);
+    let time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    let sequence = SEQUENCE.fetch_add(1, Ordering::Relaxed);
+    format!("{:x}-{:x}-{sequence:x}", std::process::id(), time)
 }
 
 impl Deref for BrowserRuntime {
@@ -937,6 +953,7 @@ mod tests {
     #[test]
     fn authored_restart_replaces_the_runtime_only_after_fixed_tick_consumption() {
         let mut host = stored_browser_runtime();
+        let host_session_id = host.host_session_id.clone();
         let mut defeated_snapshot: serde_json::Value = serde_json::from_str(
             &loading_bay_game::encode_game_snapshot(host.runtime.runtime()).unwrap(),
         )
@@ -983,6 +1000,7 @@ mod tests {
         );
 
         assert!(host.apply_consumed_restart(1));
+        assert_eq!(host.host_session_id, host_session_id);
         let replacement_generation = host.runtime.input_session().connection_generation;
         assert!(replacement_generation > generation);
         let restarted_health = host.session().health(ACTOR).unwrap();
@@ -1001,6 +1019,15 @@ mod tests {
             Some(replacement_generation)
         );
         assert!(host.replacement_origin.is_none());
+    }
+
+    #[test]
+    fn independent_host_loads_have_distinct_continuity_identities() {
+        let first = stored_browser_runtime();
+        let second = stored_browser_runtime();
+
+        assert!(!first.host_session_id.is_empty());
+        assert_ne!(first.host_session_id, second.host_session_id);
     }
 
     #[test]

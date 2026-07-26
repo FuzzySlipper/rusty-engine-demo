@@ -49,10 +49,11 @@ test("host-user repository persists presentation preferences and session availab
   });
   assert.deepEqual(repository.read(), written);
   assert.equal(values.has(HOST_USER_SETTINGS_STORAGE_KEY), true);
-  assert.equal(repository.hasContinueSession(), false);
-  repository.markContinueSessionAvailable();
-  assert.equal(values.get(CONTINUE_SESSION_STORAGE_KEY), "available");
-  assert.equal(repository.hasContinueSession(), true);
+  assert.equal(repository.hasContinueSession("host-a"), false);
+  repository.markContinueSessionAvailable("host-a");
+  assert.equal(values.get(CONTINUE_SESSION_STORAGE_KEY), "host-a");
+  assert.equal(repository.hasContinueSession("host-a"), true);
+  assert.equal(repository.hasContinueSession("host-b"), false);
 });
 
 test("host-user repository fails safe when host storage is unavailable", () => {
@@ -67,12 +68,14 @@ test("host-user repository fails safe when host storage is unavailable", () => {
   const repository = hostUserSettingsRepository(storage);
 
   assert.deepEqual(repository.read(), DEFAULT_HOST_USER_SETTINGS);
-  assert.equal(repository.hasContinueSession(), false);
+  assert.equal(repository.hasContinueSession("host-a"), false);
   assert.doesNotThrow(() =>
     repository.write({
       ...DEFAULT_HOST_USER_SETTINGS,
       invertY: true,
     }),
   );
-  assert.doesNotThrow(() => repository.markContinueSessionAvailable());
+  assert.doesNotThrow(() =>
+    repository.markContinueSessionAvailable("host-a"),
+  );
 });

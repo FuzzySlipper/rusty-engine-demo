@@ -12,6 +12,7 @@ function state(
   projection: RuntimeBrowserState["projection"],
 ): RuntimeBrowserState {
   return {
+    hostSessionId: "host-a",
     tick: 0,
     entityRevision: 0,
     voxelRevision: 0,

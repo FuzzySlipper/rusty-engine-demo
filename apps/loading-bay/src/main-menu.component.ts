@@ -48,7 +48,7 @@ import {
 
         @if (!continueAvailable()) {
           <p class="availability">
-            Continue becomes available after a game session connects.
+            {{ continueMessage() }}
           </p>
         } @else {
           <p class="availability">
@@ -66,6 +66,9 @@ import {
 })
 export class MainMenuComponent {
   protected readonly continueAvailable = signal(false);
+  protected readonly continueMessage = signal(
+    "Checking the live Rust-owned session…",
+  );
 
   private readonly documentEffects = browserDocumentEffects();
   private readonly repository = browserHostUserSettingsRepository();
@@ -73,7 +76,7 @@ export class MainMenuComponent {
 
   constructor() {
     this.documentEffects.setTitle("Loading Bay — Main menu");
-    this.continueAvailable.set(this.repository.hasContinueSession());
+    void this.resolveContinueAvailability();
   }
 
   protected newGame(): void {
@@ -89,5 +92,34 @@ export class MainMenuComponent {
     void this.router.navigate(["/game"], {
       queryParams: { mode: "continue" },
     });
+  }
+
+  private async resolveContinueAvailability(): Promise<void> {
+    try {
+      const response = await fetch("/api/state", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`host state returned ${String(response.status)}`);
+      }
+      const value: unknown = await response.json();
+      const hostSessionId =
+        typeof value === "object" &&
+        value !== null &&
+        "hostSessionId" in value &&
+        typeof value.hostSessionId === "string"
+          ? value.hostSessionId
+          : "";
+      const available = this.repository.hasContinueSession(hostSessionId);
+      this.continueAvailable.set(available);
+      this.continueMessage.set(
+        available
+          ? "Continue reconnects to the current Rust-owned host session."
+          : "No resumable game exists for this Rust host session. Start a new game.",
+      );
+    } catch {
+      this.continueAvailable.set(false);
+      this.continueMessage.set(
+        "Continue is unavailable while the Rust host session cannot be verified.",
+      );
+    }
   }
 }
