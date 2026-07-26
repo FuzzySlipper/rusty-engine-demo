@@ -670,6 +670,8 @@ impl LoadingBayGameLoop {
     }
 
     fn run_enemy_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
+        let activation_events = self.runtime.run_encounter_activation_phase(self.player)?;
+        facts.extend(activation_events.into_iter().map(GameLoopFact::Event));
         let receipt = self
             .runtime
             .run_enemy_intent_and_motion_phase(self.player, FIXED_STEP_SECONDS)?;

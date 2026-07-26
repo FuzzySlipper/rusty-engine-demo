@@ -351,8 +351,12 @@ fn project_and_snapshot_admission_fail_closed_for_future_hazard_state() {
         .unwrap()
     {
         entity.as_object_mut().unwrap().remove("enemyCombat");
+        entity.as_object_mut().unwrap().remove("defeatDrop");
         entity.as_object_mut().unwrap().remove("secretRegion");
         entity.as_object_mut().unwrap().remove("levelExit");
+        if let Some(encounter) = entity.get_mut("encounter").and_then(Value::as_object_mut) {
+            encounter.remove("activationRadius");
+        }
         if let Some(door) = entity.get_mut("door").and_then(Value::as_object_mut) {
             door.remove("access");
         }

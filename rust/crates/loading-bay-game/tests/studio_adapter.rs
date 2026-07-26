@@ -31,12 +31,12 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(response["project"]["identity"]["projectId"], "loading-bay");
     assert_eq!(
         response["project"]["inspections"]["catalog"]["entryCount"],
-        14
+        15
     );
-    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 20);
+    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 22);
     assert_eq!(
         response["project"]["inspections"]["entityState"]["entityCount"],
-        20
+        22
     );
     assert_eq!(
         response["project"]["inspections"]["persistence"]["artifactCount"],
@@ -51,7 +51,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        20
+        22
     );
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"][0]["label"],
@@ -67,7 +67,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        45
+        49
     );
     assert_eq!(
         response["project"]["projection"]["ops"][0]["op"],

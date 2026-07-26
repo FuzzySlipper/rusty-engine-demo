@@ -525,6 +525,7 @@ pub(super) fn browser_dynamic_state(
         .pickups()
         .map(|pickup| {
             let (state, collected_by, collected_at_tick, collection_cause) = match pickup.state {
+                PickupState::Dormant => ("dormant", None, None, None),
                 PickupState::Available => ("available", None, None, None),
                 PickupState::Collected {
                     actor,
@@ -608,6 +609,7 @@ pub(super) fn browser_dynamic_state(
             .expect("browser encounter")
             .state
         {
+            EncounterState::Dormant => "dormant",
             EncounterState::Active => "active",
             EncounterState::Cleared => "cleared",
         },

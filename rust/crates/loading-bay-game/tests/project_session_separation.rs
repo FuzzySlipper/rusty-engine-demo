@@ -22,7 +22,16 @@ const SWITCH: EntityId = EntityId::new(6);
 fn authored_save_stays_static_while_independent_snapshot_reopens_live_values() {
     let directory = TestDirectory::new();
     let project_path = directory.path().join("loading-bay.project.json");
-    let decoded = decode_project_document(CURRENT_PROJECT).unwrap();
+    let mut decoded = decode_project_document(CURRENT_PROJECT).unwrap();
+    decoded.project.scenes[0]
+        .entities
+        .iter_mut()
+        .find(|entity| entity.id == 2)
+        .unwrap()
+        .encounter
+        .as_mut()
+        .unwrap()
+        .activation_radius = None;
     let (authored, admitted) = admit_stored_project_with_document(decoded.project).unwrap();
     let mut runtime = GameRuntime::from_admitted_project(admitted);
 

@@ -9,10 +9,13 @@ use entity_state::{EntityState, EntityView};
 use crate::combat::{EnemyComponent, EnemyState, EnemyView, WeaponState, WeaponView};
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::{DoorComponent, DoorState, DoorView};
-use crate::encounter::{EncounterComponent, EncounterState, EncounterView};
+use crate::encounter::{
+    EncounterComponent, EncounterState, EncounterView, MAX_ENCOUNTER_ACTIVATION_RADIUS,
+};
 use crate::enemy_combat::{
     EnemyCombatComponent, EnemyCombatPosture, EnemyCombatState, EnemyCombatView,
 };
+use crate::enemy_drop::{EnemyDropComponent, EnemyDropState, EnemyDropView};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconState, ExtractionBeaconView,
 };
@@ -45,6 +48,7 @@ pub struct GameSession {
     pub(crate) loading_bay_interlocks: BTreeMap<EntityId, LoadingBayInterlockConfig>,
     pub(crate) enemies: BTreeMap<EntityId, EnemyComponent>,
     pub(crate) enemy_combat: BTreeMap<EntityId, EnemyCombatComponent>,
+    pub(crate) enemy_drops: BTreeMap<EntityId, EnemyDropComponent>,
     pub(crate) health: BTreeMap<EntityId, HealthComponent>,
     pub(crate) hazards: BTreeMap<EntityId, HazardComponent>,
     pub(crate) encounters: BTreeMap<EntityId, EncounterComponent>,
@@ -100,6 +104,7 @@ impl GameSession {
         let mut loading_bay_interlocks = BTreeMap::new();
         let mut enemies = BTreeMap::new();
         let mut enemy_combat = BTreeMap::new();
+        let mut enemy_drops = BTreeMap::new();
         let mut health = BTreeMap::new();
         let mut hazards = BTreeMap::new();
         let mut encounters = BTreeMap::new();
@@ -227,6 +232,18 @@ impl GameSession {
                             ready_at_tick: Tick::ZERO,
                             last_known_target_position: None,
                         },
+                    },
+                );
+            }
+            if let Some(config) = definition.enemy_drop {
+                if !definition.enemy {
+                    return Err(GameEntityDefinitionError::EnemyDropWithoutEnemy { entity });
+                }
+                enemy_drops.insert(
+                    entity,
+                    EnemyDropComponent {
+                        config,
+                        state: EnemyDropState::Armed,
                     },
                 );
             }
@@ -492,11 +509,39 @@ impl GameSession {
                         });
                     }
                 }
+                if let Some(radius) = config.activation_radius {
+                    if !radius.is_finite()
+                        || radius <= 0.0
+                        || radius > MAX_ENCOUNTER_ACTIVATION_RADIUS
+                    {
+                        return Err(
+                            GameEntityDefinitionError::InvalidEncounterActivationRadius {
+                                encounter: entity,
+                            },
+                        );
+                    }
+                    if entities
+                        .view(entity)
+                        .expect("encounter definition created entity")
+                        .transform
+                        .is_none()
+                    {
+                        return Err(
+                            GameEntityDefinitionError::EncounterActivationMissingTransform {
+                                encounter: entity,
+                            },
+                        );
+                    }
+                }
                 encounters.insert(
                     entity,
                     EncounterComponent {
                         config: config.clone(),
-                        state: EncounterState::Active,
+                        state: if config.activation_radius.is_some() {
+                            EncounterState::Dormant
+                        } else {
+                            EncounterState::Active
+                        },
                     },
                 );
             }
@@ -597,6 +642,42 @@ impl GameSession {
             }
         }
 
+        let mut enemy_by_drop_pickup = BTreeMap::new();
+        for (enemy, drop) in &enemy_drops {
+            if !entities.contains(drop.config.pickup) {
+                return Err(GameEntityDefinitionError::UnknownEnemyDropPickup {
+                    enemy: *enemy,
+                    pickup: drop.config.pickup,
+                });
+            }
+            let Some(pickup) = pickups.get_mut(&drop.config.pickup) else {
+                return Err(GameEntityDefinitionError::EnemyDropTargetIsNotPickup {
+                    enemy: *enemy,
+                    pickup: drop.config.pickup,
+                });
+            };
+            if let Some(first) = enemy_by_drop_pickup.insert(drop.config.pickup, *enemy) {
+                return Err(GameEntityDefinitionError::PickupUsedByMultipleEnemyDrops {
+                    pickup: drop.config.pickup,
+                    first,
+                    second: *enemy,
+                });
+            }
+            if entities
+                .view(drop.config.pickup)
+                .expect("drop pickup definition created entity")
+                .renderable
+                .as_ref()
+                .is_some_and(|renderable| renderable.visible)
+            {
+                return Err(GameEntityDefinitionError::EnemyDropPickupVisibleAtStart {
+                    enemy: *enemy,
+                    pickup: drop.config.pickup,
+                });
+            }
+            pickup.state = PickupState::Dormant;
+        }
+
         Ok(Self {
             entities,
             doors,
@@ -606,6 +687,7 @@ impl GameSession {
             loading_bay_interlocks,
             enemies,
             enemy_combat,
+            enemy_drops,
             health,
             hazards,
             encounters,
@@ -714,6 +796,15 @@ impl GameSession {
             })
     }
 
+    pub fn enemy_drop(&self, enemy: EntityId) -> Option<EnemyDropView> {
+        let component = self.enemy_drops.get(&enemy)?;
+        Some(EnemyDropView {
+            enemy,
+            pickup: component.config.pickup,
+            state: component.state,
+        })
+    }
+
     pub fn health(&self, entity: EntityId) -> Option<HealthView> {
         let component = self.health.get(&entity)?;
         Some(HealthView {
@@ -749,6 +840,7 @@ impl GameSession {
             entity,
             members: component.config.members.clone(),
             exit: component.config.exit,
+            activation_radius: component.config.activation_radius,
             state: component.state,
         })
     }

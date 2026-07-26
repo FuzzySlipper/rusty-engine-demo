@@ -53,6 +53,7 @@ pub enum PickupCollectionCause {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PickupState {
+    Dormant,
     Available,
     Collected {
         actor: EntityId,
@@ -128,6 +129,9 @@ pub enum PickupRejection {
     UnknownPickup {
         pickup: EntityId,
     },
+    NotMaterialized {
+        pickup: EntityId,
+    },
     PlayerDefeated {
         actor: EntityId,
     },
@@ -198,7 +202,17 @@ impl PickupService {
             });
         };
         let before = pickup_view(command.pickup, component);
-        if let PickupState::Collected { actor, cause, .. } = &component.state {
+        if component.state == PickupState::Dormant {
+            return Err(PickupRejection::NotMaterialized {
+                pickup: command.pickup,
+            });
+        }
+        if let PickupState::Collected {
+            actor,
+            collected_at_tick: _,
+            cause,
+        } = &component.state
+        {
             let disposition = if *actor == command.actor && *cause == command.cause {
                 PickupDisposition::Repeated
             } else {
@@ -375,7 +389,10 @@ impl PickupService {
             .filter(|fact| {
                 fact.kind == engine_spatial::TriggerOverlapFactKind::Enter
                     && fact.pair.subject_id() == actor
-                    && session.pickups.contains_key(&fact.pair.trigger_id())
+                    && session
+                        .pickups
+                        .get(&fact.pair.trigger_id())
+                        .is_some_and(|pickup| pickup.state == PickupState::Available)
             })
             .map(|fact| fact.pair.trigger_id())
             .collect::<Vec<_>>();

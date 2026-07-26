@@ -639,6 +639,7 @@ pub fn create_scene_object(
                     switch: None,
                     enemy: false,
                     enemy_combat: None,
+                    defeat_drop: None,
                     health: None,
                     hazard: None,
                     encounter: None,

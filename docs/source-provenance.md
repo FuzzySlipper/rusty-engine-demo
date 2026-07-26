@@ -154,6 +154,15 @@ activation, pursuit intent, canonical voxel occlusion, cadence, attacks, player 
 facts, and snapshot state. Browser alert/attack/miss/damage cues and posture labels are disposable
 presentation and cannot select targets or alter damage.
 
+The schema-19 Bay Rusher and Arc Warden archetype identities, distinct primitive silhouettes,
+bounded encounter activation, deterministic defeat-drop relationships, and drop/activation
+feedback were authored directly in this repository under Den task #6228. They reuse existing
+downstream primitive geometry, pickup identities, feedback sprites, and synthesized audio; they
+add no copied mesh, texture, sound, sprite, code, or level data. Rust exclusively owns dormant,
+active, and cleared encounter state plus exact-once pickup materialization and snapshot state.
+Browser silhouette materials, particles, billboards, synthesized audio, and posture labels remain
+disposable presentation.
+
 The public `/home/dev/rusty-engine-ui` checkout at exact commit
 `68ddfa5430ec3bc2cf7ca96963982db9511e79ba` supplied the following #6216 downstream shell patterns:
 

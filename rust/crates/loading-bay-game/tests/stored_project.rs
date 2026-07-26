@@ -11,7 +11,7 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
     let project = decode_stored_project(PROJECT).expect("stored project");
     assert_eq!(project.project_id, "loading-bay");
     assert_eq!(project.entry_scene, "scene/loading-bay");
-    assert_eq!(project.assets.len(), 14);
+    assert_eq!(project.assets.len(), 15);
     assert!(project
         .assets
         .iter()
@@ -39,6 +39,13 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
     assert!(entities.iter().any(|entity| entity.navigation.is_some()));
     assert!(entities.iter().any(|entity| entity.health.is_some()));
     assert!(entities.iter().any(|entity| entity.encounter.is_some()));
+    assert_eq!(
+        entities
+            .iter()
+            .filter(|entity| entity.defeat_drop.is_some())
+            .count(),
+        2
+    );
     assert!(entities.iter().any(|entity| entity.door.is_some()));
     assert!(entities.iter().any(|entity| entity.switch.is_some()));
     assert!(entities
@@ -49,7 +56,7 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
             .iter()
             .filter(|entity| entity.pickup.is_some())
             .count(),
-        8
+        10
     );
     assert_eq!(
         entities

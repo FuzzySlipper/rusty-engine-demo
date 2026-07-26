@@ -317,6 +317,17 @@ impl GameRuntime {
     /// its transient pursuit goals into the canonical bounded Engine navigation
     /// and collision-aware motion seams. The candidate session commits only
     /// after both phases succeed.
+    pub(crate) fn run_encounter_activation_phase(
+        &mut self,
+        player: EntityId,
+    ) -> Result<Vec<GameEvent>, RuntimeError> {
+        self.events.extend(EncounterService::activate_for_player(
+            &mut self.session,
+            player,
+        ));
+        self.drain_events()
+    }
+
     pub fn run_enemy_intent_and_motion_phase(
         &mut self,
         player: EntityId,
@@ -598,6 +609,7 @@ impl GameRuntime {
                 }
                 GameEvent::DoorOpened { .. }
                 | GameEvent::DoorClosed { .. }
+                | GameEvent::EncounterActivated { .. }
                 | GameEvent::PlayerDied { .. } => {}
             }
             processed.push(event);

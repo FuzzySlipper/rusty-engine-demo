@@ -7,6 +7,7 @@ use engine_spatial::{SpatialOcclusionQuery, SpatialOcclusionService, VoxelCollis
 use entity_state::EntityState;
 
 use crate::combat::EnemyState;
+use crate::encounter::EncounterService;
 use crate::navigation::NavigationPhaseReceipt;
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
@@ -186,6 +187,9 @@ impl EnemyCombatService {
         let mut navigation_goals = BTreeMap::new();
 
         for enemy in enemies {
+            if !EncounterService::enemy_is_active(session, enemy) {
+                continue;
+            }
             let enemy_state = session
                 .enemies
                 .get(&enemy)
@@ -290,6 +294,9 @@ impl EnemyCombatService {
         let mut events = Vec::new();
 
         for enemy in enemies {
+            if !EncounterService::enemy_is_active(session, enemy) {
+                continue;
+            }
             if DamageService::is_dead(session, player) {
                 break;
             }

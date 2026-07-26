@@ -19,6 +19,7 @@ use crate::door::DoorConfig;
 use crate::enemy_combat::{
     EnemyAttackConfig, EnemyAttackKind, EnemyCombatConfig, EnemyPerceptionConfig,
 };
+use crate::enemy_drop::EnemyDropConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::hazard::HazardConfig;
 use crate::inventory::{
@@ -614,6 +615,11 @@ fn authored_definition(
             },
         });
     }
+    if let Some(drop) = authored.defeat_drop {
+        definition = definition.with_enemy_drop(EnemyDropConfig {
+            pickup: EntityId::new(drop.pickup),
+        });
+    }
     if let Some(health) = authored.health {
         definition = definition.with_health(HealthConfig {
             max: health.max,
@@ -633,6 +639,7 @@ fn authored_definition(
             encounter.members.iter().copied().map(EntityId::new),
             EntityId::new(encounter.exit),
         );
+        definition = definition.with_encounter_activation_radius(encounter.activation_radius);
     }
     if let Some(beacon) = authored.extraction_beacon {
         definition = definition
@@ -898,6 +905,8 @@ fn definition_error(
             entity_path(scene_index, indexes, *entity, "pickup.starterAmmunition"),
         ),
         Error::EmptyEncounter { encounter }
+        | Error::EncounterActivationMissingTransform { encounter }
+        | Error::InvalidEncounterActivationRadius { encounter }
         | Error::DuplicateEncounterMember { encounter, .. }
         | Error::UnknownEncounterMember { encounter, .. }
         | Error::EncounterMemberIsNotEnemy { encounter, .. } => (
@@ -912,6 +921,20 @@ fn definition_error(
         Error::EnemyInMultipleEncounters { second, .. } => (
             diagnostic_code::INVALID_RELATIONSHIP,
             entity_path(scene_index, indexes, *second, "encounter.members"),
+        ),
+        Error::EnemyDropWithoutEnemy { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "defeatDrop"),
+        ),
+        Error::UnknownEnemyDropPickup { enemy, .. }
+        | Error::EnemyDropTargetIsNotPickup { enemy, .. }
+        | Error::EnemyDropPickupVisibleAtStart { enemy, .. } => (
+            diagnostic_code::INVALID_RELATIONSHIP,
+            entity_path(scene_index, indexes, *enemy, "defeatDrop.pickup"),
+        ),
+        Error::PickupUsedByMultipleEnemyDrops { second, .. } => (
+            diagnostic_code::INVALID_RELATIONSHIP,
+            entity_path(scene_index, indexes, *second, "defeatDrop.pickup"),
         ),
         Error::ExtractionBeaconMissingTransform { entity }
         | Error::ExtractionBeaconMissingRenderable { entity }

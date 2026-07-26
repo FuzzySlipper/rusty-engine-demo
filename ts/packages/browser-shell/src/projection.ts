@@ -97,7 +97,7 @@ export interface RuntimePickupState {
   readonly id: number;
   readonly item: string;
   readonly quantity: number;
-  readonly state: "available" | "collected";
+  readonly state: "dormant" | "available" | "collected";
   readonly collectedBy: number | null;
   readonly collectedAtTick: number | null;
   readonly collectionCause: "overlap" | "interaction" | null;
@@ -265,6 +265,19 @@ export type RuntimeFeedbackCue =
       readonly entity: number;
     }
   | {
+      readonly kind: "enemyDropMaterialized";
+      readonly enemy: number;
+      readonly pickup: number;
+      readonly item: string;
+      readonly quantity: number;
+      readonly position: readonly [number, number, number];
+    }
+  | {
+      readonly kind: "encounterActivated";
+      readonly entity: number;
+      readonly player: number;
+    }
+  | {
       readonly kind: "doorChanged";
       readonly entity: number;
       readonly state: "open" | "closed";
@@ -323,7 +336,7 @@ export interface RuntimeBrowserState {
   readonly voxelProbePathLength: number;
   readonly projection: readonly RuntimeProjectionNode[];
   readonly doorState: "closed" | "open";
-  readonly encounterState: "active" | "cleared";
+  readonly encounterState: "dormant" | "active" | "cleared";
   readonly motionState: "moving" | "blocked";
   readonly navigationState: "following" | "arrived" | "blocked" | "unreachable";
   readonly playerMotionState: "idle" | "moved" | "blocked";
@@ -569,6 +582,8 @@ function projectedNode(
   const wall = node.asset.includes("voxel-wall");
   const player = node.asset.includes("player-marker");
   const pickup = node.asset.includes("pickup-");
+  const bayRusher = node.asset.includes("bay-rusher");
+  const arcWarden = node.asset.includes("arc-warden");
   const scale: readonly [number, number, number] = door
     ? [2.4, 3.4, 0.55]
     : beacon
@@ -581,7 +596,11 @@ function projectedNode(
             ? [0.7, 1.4, 0.7]
             : pickup
               ? [0.55, 0.55, 0.55]
-              : [1.1, 1.8, 1.1];
+              : bayRusher
+                ? [1.45, 1.25, 1.45]
+                : arcWarden
+                  ? [0.85, 2.35, 0.85]
+                  : [1.1, 1.8, 1.1];
   const authored = node.translation ?? [0, 0, 0];
   const translation: readonly [number, number, number] = [
     authored[0],
@@ -602,11 +621,15 @@ function projectedNode(
             ? { color: [0.24, 0.74, 0.91, 1], wireframe: false }
             : pickup
               ? pickupMaterial(node.asset)
-              : { color: [0.82, 0.18, 0.14, 1], wireframe: false };
+              : bayRusher
+                ? { color: [0.95, 0.34, 0.12, 1], wireframe: false }
+                : arcWarden
+                  ? { color: [0.55, 0.25, 0.95, 1], wireframe: false }
+                  : { color: [0.82, 0.18, 0.14, 1], wireframe: false };
   return primitiveNode(
     node.name,
     node.id,
-    probe || player || pickup ? "sphere" : "cube",
+    probe || player || pickup || arcWarden ? "sphere" : "cube",
     translation,
     scale,
     color,

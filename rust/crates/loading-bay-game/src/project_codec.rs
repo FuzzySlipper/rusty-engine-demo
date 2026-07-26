@@ -19,7 +19,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 17;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 18;
+const LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION: u32 = 17;
 const LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION: u32 = 16;
 const LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION: u32 = 15;
 const LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION: u32 = 14;
@@ -61,7 +62,8 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v17(decode_legacy_project(input)?)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v18(decode_legacy_project(input)?)?,
+        LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION => migrate_v17(decode_legacy_project(input)?)?,
         LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION => migrate_v16(decode_legacy_project(input)?)?,
         LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION => migrate_v15(decode_legacy_project(input)?)?,
         LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION => migrate_v14(decode_legacy_project(input)?)?,
@@ -78,7 +80,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
                     LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
@@ -90,6 +92,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                     LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -198,14 +201,26 @@ fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectErro
     if document.schema_version <= LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION {
         reject_future_progression_fields(&document)?;
     }
-    reject_future_enemy_combat_fields(&document)?;
+    if document.schema_version <= LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION {
+        reject_future_enemy_combat_fields(&document)?;
+    }
+    reject_future_enemy_archetype_fields(&document)?;
     Ok(document)
+}
+
+fn migrate_v18(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
+    );
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
 }
 
 fn migrate_v17(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
+        LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION
     );
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
@@ -232,6 +247,31 @@ fn reject_future_enemy_combat_fields(legacy: &StoredProject) -> Result<(), Store
             "scenes",
             format!(
                 "schema {} cannot declare enemyCombat",
+                legacy.schema_version
+            ),
+        ));
+    }
+    Ok(())
+}
+
+fn reject_future_enemy_archetype_fields(legacy: &StoredProject) -> Result<(), StoredProjectError> {
+    if legacy
+        .scenes
+        .iter()
+        .flat_map(|scene| &scene.entities)
+        .any(|entity| {
+            entity.defeat_drop.is_some()
+                || entity
+                    .encounter
+                    .as_ref()
+                    .is_some_and(|encounter| encounter.activation_radius.is_some())
+        })
+    {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "scenes",
+            format!(
+                "schema {} cannot declare defeatDrop or encounter activationRadius",
                 legacy.schema_version
             ),
         ));

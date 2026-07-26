@@ -700,6 +700,23 @@ function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
         sound: "defeat",
         billboard: { text: "DEFEATED", tone: "neutral" },
       };
+    case "enemyDropMaterialized":
+      return {
+        particle: "pickup",
+        pulse: "drop-materialized",
+        sound: "pickup",
+        billboard: {
+          text: `DROP +${String(cue.quantity)} ${cue.item}`,
+          tone: "success",
+        },
+      };
+    case "encounterActivated":
+      return {
+        particle: "beacon",
+        pulse: "encounter-activated",
+        sound: "beacon",
+        billboard: { text: "ENCOUNTER ACTIVE", tone: "warning" },
+      };
     case "doorChanged":
       return {
         particle: "door",
@@ -781,6 +798,10 @@ function cueAnchor(
       return entityAnchor(state, cue.target);
     case "defeat":
       return entityAnchor(state, cue.entity);
+    case "enemyDropMaterialized":
+      return { entity: cue.pickup, position: cue.position };
+    case "encounterActivated":
+      return entityAnchor(state, cue.entity);
     case "doorChanged":
       return entityAnchor(state, cue.entity);
     case "extractionBeaconActivated":
@@ -812,9 +833,12 @@ function cueEntity(cue: RuntimeFeedbackCue): number {
     case "enemyAttackMissed":
       return cue.attacker;
     case "defeat":
+    case "encounterActivated":
     case "doorChanged":
     case "extractionBeaconActivated":
       return cue.entity;
+    case "enemyDropMaterialized":
+      return cue.pickup;
     case "pickupCollected":
       return cue.actor;
     case "doorAccessGranted":

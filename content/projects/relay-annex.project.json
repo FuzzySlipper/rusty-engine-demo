@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 18,
+  "schemaVersion": 19,
   "projectId": "relay-annex",
   "name": "Relay Annex",
   "entryScene": "scene/relay-annex",
@@ -51,6 +51,12 @@
       }
     },
     {
+      "id": "mesh/arc-warden"
+    },
+    {
+      "id": "mesh/bay-rusher"
+    },
+    {
       "id": "mesh/control-panel"
     },
     {
@@ -82,9 +88,6 @@
     },
     {
       "id": "mesh/security-door"
-    },
-    {
-      "id": "mesh/security-sentry"
     },
     {
       "id": "mesh/spatial-probe"
@@ -310,8 +313,14 @@
             "members": [
               4
             ],
-            "exit": 3
-          }
+            "exit": 3,
+            "activationRadius": 4.5
+          },
+          "translation": [
+            3.5,
+            1.5,
+            6.5
+          ]
         },
         {
           "id": 3,
@@ -375,7 +384,7 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/security-sentry",
+            "asset": "mesh/bay-rusher",
             "visible": true
           },
           "enemy": true,
@@ -408,6 +417,11 @@
             "speedUnitsPerSecond": 2.5,
             "maxVisited": 512
           },
+          "scale": [
+            1.15,
+            0.85,
+            1.15
+          ],
           "enemyCombat": {
             "sightRange": 7,
             "hearingRange": 2.5,
@@ -423,6 +437,9 @@
               ],
               "presentation": "sentry-strike"
             }
+          },
+          "defeatDrop": {
+            "pickup": 33
           }
         },
         {
@@ -847,6 +864,35 @@
           "levelExit": {
             "activationRadius": 2,
             "presentation": "Loading Bay complete"
+          }
+        },
+        {
+          "id": 33,
+          "name": "bay-rusher-field-drop",
+          "translation": [
+            -32,
+            -32,
+            -32
+          ],
+          "bounds": {
+            "min": [
+              -0.35,
+              -0.35,
+              -0.35
+            ],
+            "max": [
+              0.35,
+              0.35,
+              0.35
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/pickup-health",
+            "visible": false
+          },
+          "pickup": {
+            "item": "supply/med-patch",
+            "quantity": 1
           }
         }
       ]

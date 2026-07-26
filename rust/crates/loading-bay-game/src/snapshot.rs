@@ -12,11 +12,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::combat::{EnemyComponent, EnemyState};
 use crate::door::{DoorComponent, DoorConfig, DoorState};
-use crate::encounter::{EncounterComponent, EncounterConfig, EncounterState};
+use crate::encounter::{
+    EncounterComponent, EncounterConfig, EncounterState, MAX_ENCOUNTER_ACTIVATION_RADIUS,
+};
 use crate::enemy_combat::{
     EnemyAttackConfig, EnemyAttackKind, EnemyCombatComponent, EnemyCombatConfig,
     EnemyCombatPosture, EnemyCombatState, EnemyPerceptionConfig,
 };
+use crate::enemy_drop::{EnemyDropComponent, EnemyDropConfig, EnemyDropState};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconState,
 };
@@ -48,10 +51,11 @@ use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::{HealthComponent, HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 17;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 18;
 const INVENTORY_WEAPON_SNAPSHOT_SCHEMA_VERSION: u32 = 13;
 const VITALITY_SNAPSHOT_SCHEMA_VERSION: u32 = 14;
 const PROGRESSION_SNAPSHOT_SCHEMA_VERSION: u32 = 16;
+const ENEMY_COMBAT_SNAPSHOT_SCHEMA_VERSION: u32 = 17;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -69,6 +73,8 @@ pub struct GameSnapshot {
     pub enemies: Vec<EnemySnapshot>,
     #[serde(default)]
     pub enemy_combat: Vec<EnemyCombatSnapshot>,
+    #[serde(default)]
+    pub enemy_drops: Vec<EnemyDropSnapshot>,
     pub health: Vec<HealthSnapshot>,
     #[serde(default)]
     pub hazards: Vec<HazardSnapshot>,
@@ -202,6 +208,7 @@ pub struct PickupSnapshot {
     deny_unknown_fields
 )]
 pub enum SnapshotPickupState {
+    Dormant,
     Available,
     Collected {
         actor: u64,
@@ -344,6 +351,21 @@ pub enum SnapshotEnemyCombatPosture {
     Dead,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct EnemyDropSnapshot {
+    pub enemy: u64,
+    pub pickup: u64,
+    pub state: SnapshotEnemyDropState,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotEnemyDropState {
+    Armed,
+    Materialized,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct HealthSnapshot {
@@ -379,18 +401,21 @@ pub struct HazardSnapshot {
     pub ready_at_tick: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct EncounterSnapshot {
     pub entity: u64,
     pub state: SnapshotEncounterState,
     pub members: Vec<u64>,
     pub exit: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub activation_radius: Option<f32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum SnapshotEncounterState {
+    Dormant,
     Active,
     Cleared,
 }
@@ -632,6 +657,7 @@ pub enum GameSnapshotError {
     FutureVitalityStateInLegacySnapshot,
     FutureProgressionStateInLegacySnapshot,
     FutureEnemyCombatStateInLegacySnapshot,
+    FutureEnemyArchetypeStateInLegacySnapshot,
     InvalidProgressionState,
     InvalidSecretTriggerDefinitions,
     InvalidHazardConfig {
@@ -751,6 +777,22 @@ pub enum GameSnapshotError {
     },
     InvalidEnemyCombatState {
         entity: u64,
+    },
+    DuplicateEnemyDrop {
+        enemy: u64,
+    },
+    DuplicateEnemyDropPickup {
+        pickup: u64,
+    },
+    InvalidEnemyDropState {
+        enemy: u64,
+        pickup: u64,
+    },
+    DormantPickupMissingEnemyDrop {
+        pickup: u64,
+    },
+    InvalidEncounterActivation {
+        encounter: u64,
     },
     DuplicateEncounterMember {
         encounter: u64,
@@ -955,6 +997,19 @@ impl GameRuntime {
                         .map(Vec3::to_array),
                 })
                 .collect(),
+            enemy_drops: self
+                .session
+                .enemy_drops
+                .iter()
+                .map(|(enemy, component)| EnemyDropSnapshot {
+                    enemy: enemy.raw(),
+                    pickup: component.config.pickup.raw(),
+                    state: match component.state {
+                        EnemyDropState::Armed => SnapshotEnemyDropState::Armed,
+                        EnemyDropState::Materialized => SnapshotEnemyDropState::Materialized,
+                    },
+                })
+                .collect(),
             health: self
                 .session
                 .health
@@ -995,6 +1050,7 @@ impl GameRuntime {
                 .map(|(entity, component)| EncounterSnapshot {
                     entity: entity.raw(),
                     state: match component.state {
+                        EncounterState::Dormant => SnapshotEncounterState::Dormant,
                         EncounterState::Active => SnapshotEncounterState::Active,
                         EncounterState::Cleared => SnapshotEncounterState::Cleared,
                     },
@@ -1005,6 +1061,7 @@ impl GameRuntime {
                         .map(|member| member.raw())
                         .collect(),
                     exit: component.config.exit.raw(),
+                    activation_radius: component.config.activation_radius,
                 })
                 .collect(),
             navigations: self
@@ -1097,6 +1154,7 @@ impl GameRuntime {
                         },
                     ),
                     state: match &component.state {
+                        PickupState::Dormant => SnapshotPickupState::Dormant,
                         PickupState::Available => SnapshotPickupState::Available,
                         PickupState::Collected {
                             actor,
@@ -1257,9 +1315,23 @@ impl GameRuntime {
         {
             return Err(GameSnapshotError::FutureProgressionStateInLegacySnapshot);
         }
-        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION && !snapshot.enemy_combat.is_empty()
+        if source_schema_version < ENEMY_COMBAT_SNAPSHOT_SCHEMA_VERSION
+            && !snapshot.enemy_combat.is_empty()
         {
             return Err(GameSnapshotError::FutureEnemyCombatStateInLegacySnapshot);
+        }
+        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION
+            && (!snapshot.enemy_drops.is_empty()
+                || snapshot.encounters.iter().any(|encounter| {
+                    encounter.activation_radius.is_some()
+                        || encounter.state == SnapshotEncounterState::Dormant
+                })
+                || snapshot
+                    .pickups
+                    .iter()
+                    .any(|pickup| pickup.state == SnapshotPickupState::Dormant))
+        {
+            return Err(GameSnapshotError::FutureEnemyArchetypeStateInLegacySnapshot);
         }
         let progression_snapshot = if source_schema_version >= PROGRESSION_SNAPSHOT_SCHEMA_VERSION {
             snapshot.progression.take()
@@ -2133,6 +2205,21 @@ impl GameRuntime {
                 }
             }
             let state = match pickup.state {
+                SnapshotPickupState::Dormant => {
+                    if view.lifecycle != EntityLifecycle::Active
+                        || view.transform.is_none()
+                        || view.bounds.is_none()
+                        || view
+                            .renderable
+                            .as_ref()
+                            .is_none_or(|renderable| renderable.visible)
+                    {
+                        return Err(GameSnapshotError::InvalidPickup {
+                            entity: pickup.entity,
+                        });
+                    }
+                    PickupState::Dormant
+                }
                 SnapshotPickupState::Available => {
                     if view.lifecycle != EntityLifecycle::Active
                         || view.transform.is_none()
@@ -2308,6 +2395,70 @@ impl GameRuntime {
             return Err(GameSnapshotError::InvalidSecretTriggerDefinitions);
         }
 
+        let mut enemy_drops = BTreeMap::new();
+        let mut drop_pickups = BTreeSet::new();
+        for drop in snapshot.enemy_drops {
+            let enemy = EntityId::new(drop.enemy);
+            let pickup = EntityId::new(drop.pickup);
+            if enemy_drops.contains_key(&enemy) {
+                return Err(GameSnapshotError::DuplicateEnemyDrop { enemy: drop.enemy });
+            }
+            if !drop_pickups.insert(pickup) {
+                return Err(GameSnapshotError::DuplicateEnemyDropPickup {
+                    pickup: drop.pickup,
+                });
+            }
+            let Some(enemy_component) = enemies.get(&enemy) else {
+                return Err(GameSnapshotError::InvalidEnemyDropState {
+                    enemy: drop.enemy,
+                    pickup: drop.pickup,
+                });
+            };
+            let Some(pickup_component) = pickups.get(&pickup) else {
+                return Err(GameSnapshotError::InvalidEnemyDropState {
+                    enemy: drop.enemy,
+                    pickup: drop.pickup,
+                });
+            };
+            let state = match drop.state {
+                SnapshotEnemyDropState::Armed
+                    if enemy_component.state == EnemyState::Alive
+                        && pickup_component.state == PickupState::Dormant =>
+                {
+                    EnemyDropState::Armed
+                }
+                SnapshotEnemyDropState::Materialized
+                    if enemy_component.state == EnemyState::Defeated
+                        && matches!(
+                            pickup_component.state,
+                            PickupState::Available | PickupState::Collected { .. }
+                        ) =>
+                {
+                    EnemyDropState::Materialized
+                }
+                _ => {
+                    return Err(GameSnapshotError::InvalidEnemyDropState {
+                        enemy: drop.enemy,
+                        pickup: drop.pickup,
+                    });
+                }
+            };
+            enemy_drops.insert(
+                enemy,
+                EnemyDropComponent {
+                    config: EnemyDropConfig { pickup },
+                    state,
+                },
+            );
+        }
+        if let Some((pickup, _)) = pickups.iter().find(|(pickup, component)| {
+            component.state == PickupState::Dormant && !drop_pickups.contains(pickup)
+        }) {
+            return Err(GameSnapshotError::DormantPickupMissingEnemyDrop {
+                pickup: pickup.raw(),
+            });
+        }
+
         let mut encounters = BTreeMap::new();
         let mut encounter_ids = BTreeSet::new();
         let mut encounter_by_enemy = BTreeMap::new();
@@ -2317,9 +2468,22 @@ impl GameRuntime {
                     entity: encounter.entity,
                 });
             }
-            if !entities.contains(EntityId::new(encounter.entity)) {
-                return Err(GameSnapshotError::UnknownEncounterEntity {
+            let encounter_entity = EntityId::new(encounter.entity);
+            let encounter_view = entities.view(encounter_entity).map_err(|_| {
+                GameSnapshotError::UnknownEncounterEntity {
                     entity: encounter.entity,
+                }
+            })?;
+            if encounter.activation_radius.is_some_and(|radius| {
+                !radius.is_finite()
+                    || radius <= 0.0
+                    || radius > MAX_ENCOUNTER_ACTIVATION_RADIUS
+                    || encounter_view.transform.is_none()
+            }) || (encounter.state == SnapshotEncounterState::Dormant
+                && encounter.activation_radius.is_none())
+            {
+                return Err(GameSnapshotError::InvalidEncounterActivation {
+                    encounter: encounter.entity,
                 });
             }
             if !doors.contains_key(&EntityId::new(encounter.exit)) {
@@ -2353,13 +2517,15 @@ impl GameRuntime {
                 members.push(EntityId::new(member));
             }
             encounters.insert(
-                EntityId::new(encounter.entity),
+                encounter_entity,
                 EncounterComponent {
                     config: EncounterConfig {
                         members,
                         exit: EntityId::new(encounter.exit),
+                        activation_radius: encounter.activation_radius,
                     },
                     state: match encounter.state {
+                        SnapshotEncounterState::Dormant => EncounterState::Dormant,
                         SnapshotEncounterState::Active => EncounterState::Active,
                         SnapshotEncounterState::Cleared => EncounterState::Cleared,
                     },
@@ -2399,6 +2565,7 @@ impl GameRuntime {
                 loading_bay_interlocks,
                 enemies,
                 enemy_combat,
+                enemy_drops,
                 health,
                 hazards,
                 encounters,

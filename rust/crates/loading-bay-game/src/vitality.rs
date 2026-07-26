@@ -3,6 +3,7 @@ use core_math::Vec3;
 use entity_state::{EntityCommand, EntityCommandBatch};
 
 use crate::combat::EnemyState;
+use crate::enemy_drop::{EnemyDropFact, EnemyDropRejection, EnemyDropService};
 use crate::inventory::{
     InventoryAction, InventoryCommand, InventoryReceipt, InventoryRejection, InventoryService,
     ItemDefinitionId, ItemKind,
@@ -153,6 +154,7 @@ pub struct DamageCommand {
 pub struct VitalityReceipt {
     pub disposition: DamageDisposition,
     pub facts: Vec<VitalityFact>,
+    pub enemy_drops: Vec<EnemyDropFact>,
     pub inventory: Vec<InventoryReceipt>,
     pub event: Option<GameEvent>,
 }
@@ -200,6 +202,7 @@ pub enum VitalityRejection {
     },
     Inventory(InventoryRejection),
     EntityMutation(entity_state::BatchRejection),
+    EnemyDrop(EnemyDropRejection),
 }
 
 impl std::fmt::Display for VitalityRejection {
@@ -235,6 +238,7 @@ impl DamageService {
             return Ok(VitalityReceipt {
                 disposition: DamageDisposition::AlreadyDead,
                 facts: Vec::new(),
+                enemy_drops: Vec::new(),
                 inventory: Vec::new(),
                 event: None,
             });
@@ -267,6 +271,7 @@ impl DamageService {
         }
 
         let mut event = None;
+        let mut enemy_drops = Vec::new();
         if died {
             let mut commands = Vec::new();
             let view = candidate
@@ -288,6 +293,15 @@ impl DamageService {
                     entity: command.target,
                     visible: false,
                 });
+                if let Some(fact) = EnemyDropService::stage_materialization(
+                    &mut candidate,
+                    command.target,
+                    &mut commands,
+                )
+                .map_err(VitalityRejection::EnemyDrop)?
+                {
+                    enemy_drops.push(fact);
+                }
             }
             let entity_facts = if commands.is_empty() {
                 Vec::new()
@@ -339,6 +353,7 @@ impl DamageService {
         Ok(VitalityReceipt {
             disposition: DamageDisposition::Applied,
             facts,
+            enemy_drops,
             inventory: Vec::new(),
             event,
         })
@@ -417,6 +432,7 @@ impl DamageService {
                 before: before.armor,
                 after,
             }],
+            enemy_drops: Vec::new(),
             inventory: vec![inventory],
             event: None,
         })
@@ -476,6 +492,7 @@ impl DamageService {
                 before: before.current,
                 after,
             }],
+            enemy_drops: Vec::new(),
             inventory: vec![inventory],
             event: None,
         })

@@ -50,6 +50,11 @@ export interface LevelExitDefinition {
 export interface EncounterDefinition {
   readonly members: readonly number[];
   readonly exit: number;
+  readonly activationRadius?: number;
+}
+
+export interface EnemyDropDefinition {
+  readonly pickup: number;
 }
 
 export interface ExtractionBeaconDefinition {
@@ -217,6 +222,7 @@ export interface EntityDefinition {
   readonly switch?: SwitchDefinition;
   readonly enemy?: true;
   readonly enemyCombat?: EnemyCombatDefinition;
+  readonly defeatDrop?: EnemyDropDefinition;
   readonly health?: HealthDefinition;
   readonly hazard?: HazardDefinition;
   readonly encounter?: EncounterDefinition;
@@ -317,7 +323,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 18;
+  readonly schemaVersion: 19;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

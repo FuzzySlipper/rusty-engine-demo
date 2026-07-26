@@ -351,6 +351,7 @@ fn alerted_enemy_tracks_moving_player_through_transient_navigation_goal() {
 #[test]
 fn simultaneous_attacks_apply_in_entity_order_and_kill_once() {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    activate_encounter_immediately(&mut project);
     for enemy in [MELEE, RANGED] {
         let entity = entity_mut(&mut project, enemy);
         entity["translation"] = serde_json::json!([1.5 + enemy.raw() as f32 * 0.1, 1.5, 4.5]);
@@ -546,6 +547,7 @@ fn single_enemy_project(enemy: EntityId) -> serde_json::Value {
         .as_object_mut()
         .unwrap()
         .remove("bounds");
+    activate_encounter_immediately(&mut project);
     project["scenes"][0]["entities"]
         .as_array_mut()
         .unwrap()
@@ -564,6 +566,11 @@ fn single_enemy_project(enemy: EntityId) -> serde_json::Value {
         .find(|entity| entity["id"] == 2)
         .unwrap()["encounter"]["members"] = serde_json::json!([enemy.raw()]);
     project
+}
+
+fn activate_encounter_immediately(project: &mut serde_json::Value) {
+    entity_mut(project, EntityId::new(2))["encounter"]["activationRadius"] =
+        serde_json::Value::Null;
 }
 
 fn entity_mut(project: &mut serde_json::Value, id: EntityId) -> &mut serde_json::Value {

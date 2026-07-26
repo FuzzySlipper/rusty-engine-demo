@@ -22,6 +22,7 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
         .unwrap();
     enemy.remove("navigation");
     enemy.remove("enemyCombat");
+    activate_encounter_immediately(&mut project);
     let mut uninterrupted = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     aim_at(&mut uninterrupted, ENEMY);
 
@@ -263,6 +264,16 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
         encode_game_snapshot(&uninterrupted).unwrap(),
         before_no_ammo
     );
+}
+
+fn activate_encounter_immediately(project: &mut serde_json::Value) {
+    let encounter = project["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity.get("encounter").is_some())
+        .unwrap();
+    encounter["encounter"]["activationRadius"] = serde_json::Value::Null;
 }
 
 #[test]

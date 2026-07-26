@@ -105,6 +105,59 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
   );
 });
 
+test("encounter activation and exact enemy drops remain disposable presentation", () => {
+  const state = feedbackState();
+  const projected = new PresentationFeedbackAdapter().project({
+    ...state,
+    projection: [
+      ...state.projection,
+      {
+        id: 2,
+        name: "loading-bay-encounter",
+        asset: "",
+        translation: [4.5, 1.5, 7.5],
+        visible: false,
+      },
+      {
+        id: 33,
+        name: "bay-rusher-field-drop",
+        asset: "mesh/pickup-health",
+        translation: [1.5, 1.5, 6.5],
+        visible: true,
+      },
+    ],
+    presentation: {
+      animationStates: state.presentation.animationStates,
+      cues: [
+        {
+          kind: "encounterActivated",
+          entity: 2,
+          player: 1,
+        },
+        {
+          kind: "enemyDropMaterialized",
+          enemy: 4,
+          pickup: 33,
+          item: "supply/med-patch",
+          quantity: 1,
+          position: [1.5, 1.5, 6.5],
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(projected.animationPulses, [
+    "encounter-activated",
+    "drop-materialized",
+  ]);
+  assert.deepEqual(projected.particleKinds, ["beacon", "pickup"]);
+  assert.deepEqual(projected.soundKinds, ["beacon", "pickup"]);
+  assert.deepEqual(projected.billboardValues, [
+    "ENCOUNTER ACTIVE",
+    "DROP +1 supply/med-patch",
+  ]);
+});
+
 test("shared signal ids are delivery-local and a reset reopens retained host identities", () => {
   const adapter = new PresentationFeedbackAdapter();
   const first = adapter.project(feedbackState());

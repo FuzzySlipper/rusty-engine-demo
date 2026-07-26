@@ -27,6 +27,8 @@ export const ENCOUNTER_IDS = {
   keyedBulkhead: 30,
   secretRegion: 31,
   levelExit: 32,
+  meleeDropPickup: 33,
+  rangedDropPickup: 34,
 } as const;
 
 export const LOADING_BAY_ITEM_IDS = {
@@ -287,6 +289,17 @@ export function loadingBayStoredProject(
         },
       };
     }
+    if (entity.id === ENCOUNTER_IDS.encounter) {
+      return {
+        ...entity,
+        translation: [4.5, 1.5, 7.5] as const,
+        encounter: {
+          members: [ENCOUNTER_IDS.firstEnemy, ENCOUNTER_IDS.firstEnemy + 1],
+          exit: ENCOUNTER_IDS.exit,
+          activationRadius: 5.25,
+        },
+      };
+    }
     if (entity.id === ENCOUNTER_IDS.exit) {
       return {
         ...entity,
@@ -300,6 +313,13 @@ export function loadingBayStoredProject(
       const melee = entity.id === ENCOUNTER_IDS.firstEnemy;
       return {
         ...entity,
+        scale: melee
+          ? ([1.15, 0.85, 1.15] as const)
+          : ([0.75, 1.35, 0.75] as const),
+        renderable: {
+          asset: melee ? "mesh/bay-rusher" : "mesh/arc-warden",
+          visible: true,
+        },
         kinematic: entity.kinematic ?? {
           halfExtents: [0.25, 0.5, 0.25] as const,
           velocity: [0, 0, 0] as const,
@@ -330,6 +350,11 @@ export function loadingBayStoredProject(
                 presentation: "sentry-pulse",
               },
         },
+        defeatDrop: {
+          pickup: melee
+            ? ENCOUNTER_IDS.meleeDropPickup
+            : ENCOUNTER_IDS.rangedDropPickup,
+        },
       };
     }
     return entity;
@@ -343,12 +368,14 @@ export function loadingBayStoredProject(
   }
 
   return {
-    schemaVersion: 18,
+    schemaVersion: 19,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",
     assets: [
       ANIMATED_CHARACTER_ASSET,
+      { id: "mesh/arc-warden" },
+      { id: "mesh/bay-rusher" },
       { id: "mesh/control-panel" },
       { id: "mesh/extraction-beacon" },
       { id: "mesh/hazard-pad" },
@@ -360,7 +387,6 @@ export function loadingBayStoredProject(
       { id: "mesh/pickup-weapon" },
       { id: "mesh/player-marker" },
       { id: "mesh/security-door" },
-      { id: "mesh/security-sentry" },
       { id: "mesh/spatial-probe" },
     ],
     itemDefinitions: [
@@ -609,6 +635,28 @@ export function loadingBayStoredProject(
               presentation: "Loading Bay complete",
             },
           },
+          {
+            ...pickupEntity(
+              ENCOUNTER_IDS.meleeDropPickup,
+              "bay-rusher-field-drop",
+              "mesh/pickup-health",
+              [-32, -32, -32],
+              LOADING_BAY_ITEM_IDS.medPatch,
+              1,
+            ),
+            renderable: { asset: "mesh/pickup-health", visible: false },
+          },
+          {
+            ...pickupEntity(
+              ENCOUNTER_IDS.rangedDropPickup,
+              "arc-warden-field-drop",
+              "mesh/pickup-ammunition",
+              [-32, -32, -31],
+              LOADING_BAY_ITEM_IDS.energyCell,
+              20,
+            ),
+            renderable: { asset: "mesh/pickup-ammunition", visible: false },
+          },
         ],
       },
     ],
@@ -633,6 +681,12 @@ export function relayAnnexStoredProject(): StoredProjectContent {
   const entities = sourceScene.entities.flatMap(
     (entity): readonly EntityDefinition[] => {
       if (entity.pickup !== undefined) {
+        if (entity.id === ENCOUNTER_IDS.rangedDropPickup) {
+          return [];
+        }
+        if (entity.id === ENCOUNTER_IDS.meleeDropPickup) {
+          return [entity];
+        }
         const positions: Readonly<Record<number, Vec3>> = {
           [ENCOUNTER_IDS.energyFillPickup]: [2.5, 1.5, 2.5],
           [ENCOUNTER_IDS.energyOverflowPickup]: [3.5, 1.5, 2.5],
@@ -657,9 +711,11 @@ export function relayAnnexStoredProject(): StoredProjectContent {
             {
               ...entity,
               name: "relay-annex-encounter",
+              translation: [3.5, 1.5, 6.5],
               encounter: {
                 members: [ENCOUNTER_IDS.firstEnemy],
                 exit: ENCOUNTER_IDS.exit,
+                activationRadius: 4.5,
               },
             },
           ];
@@ -690,17 +746,21 @@ export function relayAnnexStoredProject(): StoredProjectContent {
               translation: [5.5, 1.5, 8.5],
             },
           ];
-        case ENCOUNTER_IDS.keyedBulkhead:
+        case ENCOUNTER_IDS.keyedBulkhead: {
+          if (entity.door === undefined) {
+            throw new Error("authored keyed bulkhead is missing its door");
+          }
           return [
             {
               ...entity,
               translation: [3.5, 1.5, 4.5],
               door: {
-                ...entity.door!,
+                ...entity.door,
                 openTranslation: [3.5, 4.5, 4.5],
               },
             },
           ];
+        }
         case ENCOUNTER_IDS.secretRegion:
           return [{ ...entity, translation: [4.5, 1.5, 6.5] }];
         case ENCOUNTER_IDS.levelExit:

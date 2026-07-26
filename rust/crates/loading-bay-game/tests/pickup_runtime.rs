@@ -17,7 +17,7 @@ fn authored_pickups_are_visible_non_solid_objects_with_explicit_item_quantities(
     let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
     let pickups = runtime.session().pickups().collect::<Vec<_>>();
 
-    assert_eq!(pickups.len(), 8);
+    assert_eq!(pickups.len(), 10);
     assert_eq!(
         pickups
             .iter()
@@ -36,11 +36,19 @@ fn authored_pickups_are_visible_non_solid_objects_with_explicit_item_quantities(
             (25, "armor/impact-vest", 1),
             (26, "key/maintenance-pass", 1),
             (28, "weapon/rivet-carbine", 1),
+            (33, "supply/med-patch", 1),
+            (34, "ammo/energy-cell", 20),
         ]
     );
     for pickup in pickups {
         let entity = runtime.session().entity(pickup.entity).unwrap();
-        assert_eq!(pickup.state, PickupState::Available);
+        if pickup.entity.raw() >= 33 {
+            assert_eq!(pickup.state, PickupState::Dormant);
+            assert!(!entity.renderable.as_ref().unwrap().visible);
+        } else {
+            assert_eq!(pickup.state, PickupState::Available);
+            assert!(entity.renderable.as_ref().unwrap().visible);
+        }
         assert!(entity.transform.is_some());
         assert!(entity.bounds.is_some());
         assert!(entity.renderable.is_some());
@@ -191,14 +199,18 @@ fn every_pickup_family_round_trips_and_authored_restart_restores_availability() 
     assert!(reopened
         .session()
         .pickups()
-        .filter(|pickup| pickup.entity.raw() >= 22)
+        .filter(|pickup| (22..33).contains(&pickup.entity.raw()))
         .all(|pickup| matches!(pickup.state, PickupState::Collected { .. })));
 
     let restarted = GameRuntime::from_stored_project(PROJECT).unwrap();
     assert!(restarted
         .session()
         .pickups()
-        .all(|pickup| pickup.state == PickupState::Available));
+        .all(|pickup| if pickup.entity.raw() >= 33 {
+            pickup.state == PickupState::Dormant
+        } else {
+            pickup.state == PickupState::Available
+        }));
     assert_eq!(quantity(&restarted, "ammo/scatter-shell"), 0);
     assert_eq!(restarted.session().health(PLAYER).unwrap().armor, 0);
 }
@@ -262,6 +274,7 @@ fn schema_eleven_rejects_future_pickup_state_but_migrates_when_fields_are_absent
     snapshot.as_object_mut().unwrap().remove("pickupTriggers");
     snapshot.as_object_mut().unwrap().remove("progression");
     snapshot.as_object_mut().unwrap().remove("enemyCombat");
+    strip_snapshot_enemy_archetype_fields(&mut snapshot);
     strip_snapshot_vitality_fields(&mut snapshot);
     strip_snapshot_weapon_item_fields(&mut snapshot);
     let migrated = decode_game_snapshot(&snapshot.to_string()).unwrap();
@@ -284,8 +297,15 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
         for entity in scene["entities"].as_array_mut().unwrap() {
             entity.as_object_mut().unwrap().remove("bounds");
             entity.as_object_mut().unwrap().remove("enemyCombat");
+            entity.as_object_mut().unwrap().remove("defeatDrop");
             entity.as_object_mut().unwrap().remove("secretRegion");
             entity.as_object_mut().unwrap().remove("levelExit");
+            if let Some(encounter) = entity
+                .get_mut("encounter")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                encounter.remove("activationRadius");
+            }
             if let Some(door) = entity
                 .get_mut("door")
                 .and_then(serde_json::Value::as_object_mut)
@@ -316,6 +336,17 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
             .unwrap();
     assert_eq!(runtime.session().pickups().len(), 0);
     assert_eq!(quantity(&runtime, "ammo/energy-cell"), 40);
+}
+
+fn strip_snapshot_enemy_archetype_fields(snapshot: &mut serde_json::Value) {
+    snapshot.as_object_mut().unwrap().remove("enemyDrops");
+    for encounter in snapshot["encounters"].as_array_mut().unwrap() {
+        encounter
+            .as_object_mut()
+            .unwrap()
+            .remove("activationRadius");
+        encounter["state"] = "active".into();
+    }
 }
 
 fn strip_snapshot_vitality_fields(snapshot: &mut serde_json::Value) {

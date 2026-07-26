@@ -83,6 +83,17 @@ enum BrowserFeedbackCue {
         attacker: Option<u64>,
         entity: u64,
     },
+    EnemyDropMaterialized {
+        enemy: u64,
+        pickup: u64,
+        item: String,
+        quantity: u32,
+        position: [f32; 3],
+    },
+    EncounterActivated {
+        entity: u64,
+        player: u64,
+    },
     DoorChanged {
         entity: u64,
         state: &'static str,
@@ -198,6 +209,15 @@ impl BrowserFeedbackProjection {
                 CombatFact::EnemyDefeated {
                     attacker, enemy, ..
                 } => self.push_defeat(Some(*attacker), *enemy),
+                CombatFact::EnemyDrop(drop) => {
+                    self.cues.push(BrowserFeedbackCue::EnemyDropMaterialized {
+                        enemy: drop.enemy.raw(),
+                        pickup: drop.pickup.raw(),
+                        item: drop.item.as_str().to_owned(),
+                        quantity: drop.quantity,
+                        position: drop.position.to_array(),
+                    });
+                }
                 CombatFact::Inventory(_)
                 | CombatFact::Vitality(_)
                 | CombatFact::AttackHit { .. }
@@ -305,6 +325,12 @@ impl BrowserFeedbackProjection {
                 }
                 GameEvent::PlayerDied { player, source, .. } => {
                     self.push_defeat(Some(*source), *player);
+                }
+                GameEvent::EncounterActivated { encounter, player } => {
+                    self.cues.push(BrowserFeedbackCue::EncounterActivated {
+                        entity: encounter.raw(),
+                        player: player.raw(),
+                    });
                 }
                 GameEvent::SwitchActivated { .. } | GameEvent::EncounterCleared { .. } => {}
             }

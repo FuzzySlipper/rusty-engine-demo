@@ -5,6 +5,7 @@ use engine_spatial::VoxelCollisionScene;
 use entity_state::EntityView;
 use serde::{Deserialize, Serialize};
 
+use crate::encounter::EncounterService;
 use crate::inventory::{
     InventoryAction, InventoryCommand, InventoryFact, InventoryRejection, InventoryService,
     ItemDefinitionId, ItemKind, WeaponDefinition,
@@ -13,6 +14,7 @@ use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
 use crate::vitality::{DamageCommand, DamageService, DamageSource, VitalityFact, VitalityState};
+use crate::EnemyDropFact;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EnemyState {
@@ -116,6 +118,7 @@ pub enum CombatFact {
         reason: CombatMissReason,
     },
     Vitality(VitalityFact),
+    EnemyDrop(EnemyDropFact),
     EnemyDefeated {
         attacker: EntityId,
         enemy: EntityId,
@@ -336,6 +339,7 @@ impl CombatService {
                     )
                     .map_err(RuntimeError::Vitality)?;
                     facts.extend(damage.facts.into_iter().map(CombatFact::Vitality));
+                    facts.extend(damage.enemy_drops.into_iter().map(CombatFact::EnemyDrop));
                     facts.extend(
                         damage
                             .inventory
@@ -496,7 +500,10 @@ fn nearest_combat_target(
 ) -> Option<CombatTargetHit> {
     let mut best = None;
     for (entity, enemy) in &session.enemies {
-        if *entity == attacker || enemy.state != EnemyState::Alive {
+        if *entity == attacker
+            || enemy.state != EnemyState::Alive
+            || !EncounterService::enemy_is_active(session, *entity)
+        {
             continue;
         }
         let Some(health) = session.health.get(entity) else {

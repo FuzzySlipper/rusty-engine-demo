@@ -763,6 +763,9 @@ fn pickup_rejection_name(reason: &loading_bay_game::PickupRejection) -> &'static
         loading_bay_game::PickupRejection::Inventory(_) => "PickupRejectedInventory",
         loading_bay_game::PickupRejection::NotOverlapping { .. } => "PickupRejectedNotOverlapping",
         loading_bay_game::PickupRejection::UnknownPickup { .. } => "PickupRejectedUnknown",
+        loading_bay_game::PickupRejection::NotMaterialized { .. } => {
+            "PickupRejectedNotMaterialized"
+        }
         loading_bay_game::PickupRejection::PlayerDefeated { .. } => "PickupRejectedPlayerDefeated",
         loading_bay_game::PickupRejection::InventorySequenceOverflow { .. } => {
             "PickupRejectedSequenceOverflow"
@@ -797,6 +800,7 @@ fn combat_fact_name(fact: &CombatFact) -> &'static str {
             "HealthRestored"
         }
         CombatFact::EnemyDefeated { .. } => "CombatEnemyDefeated",
+        CombatFact::EnemyDrop(_) => "EnemyDropMaterialized",
     }
 }
 
@@ -833,6 +837,7 @@ fn event_name(event: &GameEvent) -> &'static str {
         GameEvent::DoorClosed { .. } => "DoorClosed",
         GameEvent::EnemyDefeated { .. } => "EnemyDefeated",
         GameEvent::PlayerDied { .. } => "PlayerDied",
+        GameEvent::EncounterActivated { .. } => "EncounterActivated",
         GameEvent::EncounterCleared { .. } => "EncounterCleared",
     }
 }

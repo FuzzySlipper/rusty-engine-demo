@@ -762,9 +762,11 @@ export async function mountLoadingBayGame(
     const playerLooked =
       normalizeDegrees(current.player.yawDegrees - initialPlayerYaw) < 0 &&
       current.player.pitchDegrees > initialPlayerPitch;
+    const combatBulkheadOpenedBeforeProbe = await openProgressionBulkhead();
     await delay(100);
     current = await requestState("/api/state");
     const enemyCombatEvidence = [
+      combatBulkheadOpenedBeforeProbe,
       eventHistory.includes("EnemyAlerted") ||
         includesEvery(feedbackLayer.dataset.animationPulses, [
           "enemy-alert-sight",
@@ -903,12 +905,14 @@ export async function mountLoadingBayGame(
       includesEvery(feedbackLayer.dataset.animationPulses, [
         "movement",
         "blocked",
+        "encounter-activated",
         "enemy-alert-sight",
         "sentry-pulse-attack",
         "arc-pistol-attack",
         "arc-pistol-dry",
         "damage",
         "defeat",
+        "drop-materialized",
         "open",
         "active",
       ]) &&
@@ -919,6 +923,7 @@ export async function mountLoadingBayGame(
         "dry",
         "impact",
         "defeat",
+        "pickup",
         "door",
         "beacon",
       ]) &&
@@ -928,6 +933,8 @@ export async function mountLoadingBayGame(
         "EMPTY",
         "-60",
         "DEFEATED",
+        "DROP +1 supply/med-patch",
+        "DROP +20 ammo/energy-cell",
         "EXIT OPEN",
         "EXTRACTION ONLINE",
       ]) &&
@@ -1594,9 +1601,30 @@ export async function mountLoadingBayGame(
   async function proveWorldPickups(): Promise<boolean> {
     await presentationFeedback.activateAudio();
     const pickupIds = current.pickups.map((pickup) => pickup.id);
+    const initiallyAvailable = current.pickups
+      .filter((pickup) => pickup.state === "available")
+      .map((pickup) => pickup.id);
+    const initiallyDormant = current.pickups
+      .filter((pickup) => pickup.state === "dormant")
+      .map((pickup) => pickup.id);
     const startedAvailable =
-      pickupIds.length === 8 &&
-      current.pickups.every((pickup) => pickup.state === "available");
+      pickupIds.length === 10 &&
+      JSON.stringify(initiallyAvailable) ===
+        JSON.stringify([20, 21, 22, 23, 24, 25, 26, 28]) &&
+      JSON.stringify(initiallyDormant) === JSON.stringify([33, 34]);
+    const bayRusher = current.projection.find((node) => node.id === 4);
+    const arcWarden = current.projection.find((node) => node.id === 5);
+    const archetypesDistinct =
+      bayRusher?.asset === "mesh/bay-rusher" &&
+      arcWarden?.asset === "mesh/arc-warden" &&
+      current.enemies.find((enemy) => enemy.id === 4)?.attackKind === "melee" &&
+      current.enemies.find((enemy) => enemy.id === 5)?.attackKind ===
+        "rangedHitscan" &&
+      surface.snapshot().includes("sentry-alpha") &&
+      surface.snapshot().includes("sentry-beta");
+    document.body.dataset.enemyArchetypes = archetypesDistinct
+      ? "pass"
+      : "fail";
     const capacityWalked = await walkPlayerPath([
       [2.5, 2.5],
       [3.5, 2.5],
@@ -1646,6 +1674,24 @@ export async function mountLoadingBayGame(
       firstEnemyDefeated &&
       secondEnemyDefeated &&
       current.player.vitalityState === "alive";
+    await presentationFeedback.settled();
+    const materializedDrops = current.pickups
+      .filter((pickup) => pickup.state === "available")
+      .map((pickup) => pickup.id)
+      .filter((pickup) => pickup === 33 || pickup === 34);
+    const dropFacts = eventHistory.filter(
+      (event) => event === "EnemyDropMaterialized",
+    ).length;
+    const dropsMaterialized =
+      JSON.stringify(materializedDrops) === JSON.stringify([33, 34]) &&
+      current.projection.some(
+        (node) => node.id === 33 && node.asset === "mesh/pickup-health",
+      ) &&
+      current.projection.some(
+        (node) => node.id === 34 && node.asset === "mesh/pickup-ammunition",
+      ) &&
+      dropFacts === 2;
+    document.body.dataset.enemyDrops = dropsMaterialized ? "pass" : "fail";
     const energyAfterFight = inventoryQuantity("ammo/energy-cell");
     const walked =
       capacityWalked &&
@@ -1677,9 +1723,11 @@ export async function mountLoadingBayGame(
     const worldExact =
       JSON.stringify(collected) ===
         JSON.stringify([20, 22, 23, 24, 25, 26, 28]) &&
-      JSON.stringify(available) === JSON.stringify([21]) &&
+      JSON.stringify(available) === JSON.stringify([21, 33, 34]) &&
       !current.projection.some((node) => collected.includes(node.id)) &&
-      current.projection.some((node) => node.id === 21);
+      [21, 33, 34].every((pickup) =>
+        current.projection.some((node) => node.id === pickup),
+      );
     const rejectionExact = eventHistory.includes(
       "PickupRejectedQuantityOverflow",
     );
@@ -1756,6 +1804,8 @@ export async function mountLoadingBayGame(
     );
     document.body.dataset.pickupEvidence = [
       pickupIds.join(","),
+      initiallyAvailable.join(","),
+      initiallyDormant.join(","),
       collected.join(","),
       available.join(","),
       (current.inventory?.stacks ?? [])
@@ -1763,6 +1813,9 @@ export async function mountLoadingBayGame(
         .join(","),
       `${String(current.player.armor)}/${String(current.player.maxArmor)}`,
       pickupFightPassed,
+      archetypesDistinct,
+      materializedDrops.join(","),
+      dropFacts,
       rejectionExact,
       cueProjected,
       selectedSpreadWeapon,
@@ -1772,8 +1825,10 @@ export async function mountLoadingBayGame(
     ].join("|");
     return (
       startedAvailable &&
+      archetypesDistinct &&
       entityOcclusionPassed &&
       pickupFightPassed &&
+      dropsMaterialized &&
       walked &&
       inventoryAndArmorExact &&
       worldExact &&

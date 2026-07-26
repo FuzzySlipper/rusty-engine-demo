@@ -63,8 +63,8 @@ try {
     persistedProject,
   );
   if (
-    !currentReceipt.includes("sourceSchema=18") ||
-    !currentReceipt.includes("currentSchema=18")
+    !currentReceipt.includes("sourceSchema=19") ||
+    !currentReceipt.includes("currentSchema=19")
   ) {
     throw new Error(
       `current project persistence receipt was incomplete\n${currentReceipt}`,
@@ -79,7 +79,7 @@ try {
   );
   if (
     !convertedReceipt.includes("sourceSchema=11") ||
-    !convertedReceipt.includes("currentSchema=18")
+    !convertedReceipt.includes("currentSchema=19")
   ) {
     throw new Error(
       `converted project persistence receipt was incomplete\n${convertedReceipt}`,
@@ -94,7 +94,7 @@ try {
   );
   if (
     !migrationReceipt.includes("sourceSchema=6") ||
-    !migrationReceipt.includes("currentSchema=18")
+    !migrationReceipt.includes("currentSchema=19")
   ) {
     throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
   }
@@ -181,6 +181,8 @@ async function runFullBrowserProduct(project) {
       'data-local-look-offset="pass"',
       'data-local-look-presentation="bounded-disposable"',
       'data-enemy-combat="pass"',
+      'data-enemy-archetypes="pass"',
+      'data-enemy-drops="pass"',
       'data-entity-occlusion="pass"',
       'data-entity-occlusion-evidence="true:true:true:true"',
       'data-pickups="pass"',
@@ -350,6 +352,12 @@ async function runFullBrowserProduct(project) {
       beforeReload.doorState !== "open" ||
       beforeReload.extractionBeacon?.state !== "active" ||
       !beforeReload.enemies?.every((enemy) => enemy.state === "defeated") ||
+      ![33, 34].every((pickupId) => {
+        const state = beforeReload.pickups?.find(
+          (pickup) => pickup.id === pickupId,
+        )?.state;
+        return state === "available" || state === "collected";
+      }) ||
       beforeReload.presentation?.cues?.length !== 0
     ) {
       throw new Error(
@@ -441,10 +449,10 @@ async function runFullBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
-      "sourceSchema=18",
-      "currentSchema=18",
+      "sourceSchema=19",
+      "currentSchema=19",
       "entryScene=scene/loading-bay",
-      "assets=14",
+      "assets=15",
       "scenes=1",
       `entities=${String(expectedEntityCount)}`,
     ]) {
@@ -1561,7 +1569,7 @@ async function runMigratedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=migrated-v6-project",
-      "currentSchema=18",
+      "currentSchema=19",
       "assets=4",
       "scenes=1",
       "entities=6",
@@ -1619,8 +1627,8 @@ async function runConvertedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=converted-wall",
-      "sourceSchema=18",
-      "currentSchema=18",
+      "sourceSchema=19",
+      "currentSchema=19",
       "entryScene=scene/converted-wall",
       "assets=10",
       "scenes=1",

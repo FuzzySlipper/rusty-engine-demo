@@ -281,7 +281,7 @@ fn later_over_cap_secret_query_commits_no_earlier_discovery() {
     let mut project = project_at([6.5, 1.5, 8.5]);
     let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
     entities.push(serde_json::json!({
-        "id": 33,
+        "id": 333,
         "name": "over-cap-secret",
         "translation": [8.5, 1.5, 8.5],
         "bounds": {
@@ -331,7 +331,7 @@ fn later_over_cap_secret_query_commits_no_earlier_discovery() {
         game_loop
             .runtime()
             .session()
-            .secret_region(EntityId::new(33))
+            .secret_region(EntityId::new(333))
             .unwrap()
             .state,
         SecretRegionState::Undiscovered

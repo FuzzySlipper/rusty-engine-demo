@@ -142,6 +142,37 @@ test("whole Rust readouts become create update and destroy diffs", () => {
   assert.equal(adapter.trackedEntityCount, 0);
 });
 
+test("enemy archetype assets project distinct silhouettes and materials", () => {
+  const plan = new RuntimeProjectionAdapter().apply(
+    state([
+      {
+        id: 4,
+        name: "sentry-alpha",
+        asset: "mesh/bay-rusher",
+        translation: [1.5, 1.5, 6.5],
+        visible: true,
+      },
+      {
+        id: 5,
+        name: "sentry-beta",
+        asset: "mesh/arc-warden",
+        translation: [6.5, 1.5, 2.5],
+        visible: true,
+      },
+    ]),
+  );
+  const nodes = plan.ops.flatMap((operation) =>
+    operation.op === "create" ? [operation.node] : [],
+  );
+
+  assert.equal(nodes[0]?.geometry.kind, "cube");
+  assert.deepEqual(nodes[0]?.transform.scale, [1.45, 1.25, 1.45]);
+  assert.deepEqual(nodes[0]?.material.color, [0.95, 0.34, 0.12, 1]);
+  assert.equal(nodes[1]?.geometry.kind, "sphere");
+  assert.deepEqual(nodes[1]?.transform.scale, [0.85, 2.35, 0.85]);
+  assert.deepEqual(nodes[1]?.material.color, [0.55, 0.25, 0.95, 1]);
+});
+
 test("collecting a pickup destroys only its retained entity handle", () => {
   const adapter = new RuntimeProjectionAdapter();
   const door = {

@@ -21,7 +21,7 @@ use crate::combat::{
 };
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 18;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 19;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -285,6 +285,8 @@ pub struct StoredEntityDefinition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enemy_combat: Option<StoredEnemyCombat>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub defeat_drop: Option<StoredEnemyDrop>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub health: Option<StoredHealth>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hazard: Option<StoredHazard>,
@@ -452,11 +454,19 @@ pub struct StoredLevelExit {
     pub presentation: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredEncounter {
     pub members: Vec<u64>,
     pub exit: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub activation_radius: Option<f32>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredEnemyDrop {
+    pub pickup: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]

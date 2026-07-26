@@ -5,6 +5,7 @@ use crate::combat::WeaponConfig;
 use crate::door::DoorConfig;
 use crate::encounter::EncounterConfig;
 use crate::enemy_combat::EnemyCombatConfig;
+use crate::enemy_drop::EnemyDropConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::hazard::HazardConfig;
 use crate::inventory::{InventoryAdmissionError, InventoryConfig};
@@ -26,6 +27,7 @@ pub struct GameEntityDefinition {
     pub loading_bay_interlock: Option<LoadingBayInterlockConfig>,
     pub enemy: bool,
     pub enemy_combat: Option<EnemyCombatConfig>,
+    pub enemy_drop: Option<EnemyDropConfig>,
     pub health: Option<HealthConfig>,
     pub hazard: Option<HazardConfig>,
     pub encounter: Option<EncounterConfig>,
@@ -50,6 +52,7 @@ impl GameEntityDefinition {
             loading_bay_interlock: None,
             enemy: false,
             enemy_combat: None,
+            enemy_drop: None,
             health: None,
             hazard: None,
             encounter: None,
@@ -99,6 +102,11 @@ impl GameEntityDefinition {
         self
     }
 
+    pub fn with_enemy_drop(mut self, config: EnemyDropConfig) -> Self {
+        self.enemy_drop = Some(config);
+        self
+    }
+
     pub fn with_health(mut self, config: HealthConfig) -> Self {
         self.health = Some(config);
         self
@@ -117,7 +125,15 @@ impl GameEntityDefinition {
         self.encounter = Some(EncounterConfig {
             members: members.into_iter().collect(),
             exit,
+            activation_radius: None,
         });
+        self
+    }
+
+    pub fn with_encounter_activation_radius(mut self, activation_radius: Option<f32>) -> Self {
+        if let Some(encounter) = &mut self.encounter {
+            encounter.activation_radius = activation_radius;
+        }
         self
     }
 
@@ -350,6 +366,12 @@ pub enum GameEntityDefinitionError {
     EmptyEncounter {
         encounter: EntityId,
     },
+    EncounterActivationMissingTransform {
+        encounter: EntityId,
+    },
+    InvalidEncounterActivationRadius {
+        encounter: EntityId,
+    },
     DuplicateEncounterMember {
         encounter: EntityId,
         member: EntityId,
@@ -383,6 +405,26 @@ pub enum GameEntityDefinitionError {
     },
     InvalidExtractionBeaconConfig {
         entity: EntityId,
+    },
+    EnemyDropWithoutEnemy {
+        entity: EntityId,
+    },
+    UnknownEnemyDropPickup {
+        enemy: EntityId,
+        pickup: EntityId,
+    },
+    EnemyDropTargetIsNotPickup {
+        enemy: EntityId,
+        pickup: EntityId,
+    },
+    EnemyDropPickupVisibleAtStart {
+        enemy: EntityId,
+        pickup: EntityId,
+    },
+    PickupUsedByMultipleEnemyDrops {
+        pickup: EntityId,
+        first: EntityId,
+        second: EntityId,
     },
 }
 
