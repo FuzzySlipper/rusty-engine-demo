@@ -61,6 +61,9 @@ pub enum RuntimeError {
     UnknownPlayerController {
         player: EntityId,
     },
+    HazardPlayerMissingVitality {
+        player: EntityId,
+    },
     PlayerDefeated {
         player: EntityId,
     },

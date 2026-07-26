@@ -341,10 +341,20 @@ pub struct LoadingBayGameLoop {
 }
 
 impl LoadingBayGameLoop {
-    pub fn new(runtime: GameRuntime, player: EntityId) -> Result<Self, RuntimeError> {
+    pub fn validate_runtime(runtime: &GameRuntime, player: EntityId) -> Result<(), RuntimeError> {
         if runtime.session().player_controller(player).is_none() {
             return Err(RuntimeError::UnknownPlayerController { player });
         }
+        if runtime.session().health(player).is_none()
+            && runtime.session().hazards().next().is_some()
+        {
+            return Err(RuntimeError::HazardPlayerMissingVitality { player });
+        }
+        Ok(())
+    }
+
+    pub fn new(runtime: GameRuntime, player: EntityId) -> Result<Self, RuntimeError> {
+        Self::validate_runtime(&runtime, player)?;
         Ok(Self {
             runtime,
             player,

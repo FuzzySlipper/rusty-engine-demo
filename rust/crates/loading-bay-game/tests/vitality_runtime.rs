@@ -366,6 +366,38 @@ fn project_and_snapshot_admission_fail_closed_for_future_hazard_state() {
     ));
 }
 
+#[test]
+fn overlapping_hazard_without_player_health_is_rejected_before_loop_mutation() {
+    let mut project: Value = serde_json::from_str(PROJECT).unwrap();
+    let hazard_translation = entity(&project, HAZARD.raw())["translation"].clone();
+    let player = entity_mut(&mut project, PLAYER.raw());
+    player["translation"] = hazard_translation;
+    player.as_object_mut().unwrap().remove("health");
+
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let before = encode_game_snapshot(&runtime).unwrap();
+    assert!(matches!(
+        LoadingBayGameLoop::validate_runtime(&runtime, PLAYER),
+        Err(loading_bay_game::RuntimeError::HazardPlayerMissingVitality { player: PLAYER })
+    ));
+    assert_eq!(runtime.tick().raw(), 0);
+    assert_eq!(encode_game_snapshot(&runtime).unwrap(), before);
+    assert!(matches!(
+        LoadingBayGameLoop::new(runtime, PLAYER),
+        Err(loading_bay_game::RuntimeError::HazardPlayerMissingVitality { player: PLAYER })
+    ));
+
+    project["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|entity| entity.get("hazard").is_none());
+    LoadingBayGameLoop::new(
+        GameRuntime::from_stored_project(&project.to_string()).unwrap(),
+        PLAYER,
+    )
+    .unwrap();
+}
+
 fn hazard_loop(damage: u32, cooldown_ticks: u64, max_health: u32) -> LoadingBayGameLoop {
     let mut project: Value = serde_json::from_str(PROJECT).unwrap();
     let hazard_translation = entity(&project, HAZARD.raw())["translation"].clone();
