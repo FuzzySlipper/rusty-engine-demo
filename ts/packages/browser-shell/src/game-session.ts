@@ -623,6 +623,10 @@ export class LoadingBayGameSession {
         const edge = this.#pendingEdges.get(fact.commandSequence);
         edge?.reject(error);
         this.#pendingEdges.delete(fact.commandSequence);
+        if (this.#restart?.sequence === fact.commandSequence) {
+          this.#restart.reject(error);
+          this.#restart = null;
+        }
       }
       this.#onFailure?.(error);
     }

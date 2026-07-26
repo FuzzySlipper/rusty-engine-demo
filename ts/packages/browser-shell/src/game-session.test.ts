@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   GameSessionError,
+  LoadingBayGameSession,
   applyServerUpdate,
   coalesceSessionLook,
   type ServerUpdateEnvelope,
@@ -266,3 +267,160 @@ test("coalesced look remains within the authoritative input envelope", () => {
     [0.375, -0.375],
   );
 });
+
+test("a fixed-tick restart rejection settles and releases the restart slot", async () => {
+  const originalLocation = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "location",
+  );
+  const originalWebSocket = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "WebSocket",
+  );
+
+  Object.defineProperty(globalThis, "location", {
+    configurable: true,
+    value: { host: "loading-bay.test", protocol: "http:" },
+  });
+  Object.defineProperty(globalThis, "WebSocket", {
+    configurable: true,
+    value: RestartRejectionSocket,
+  });
+
+  try {
+    const session = await LoadingBayGameSession.connect();
+    await assert.rejects(
+      session.sendEdge({ kind: "restart", mode: "authoredBaseline" }),
+      (error) => error instanceof GameSessionError && error.code === "paused",
+    );
+
+    const restarted = await session.sendEdge({
+      kind: "restart",
+      mode: "authoredBaseline",
+    });
+    assert.equal(restarted.tick, 0);
+    assert.equal(restarted.input.connectionGeneration, 2);
+    await session.close();
+  } finally {
+    restoreGlobal("location", originalLocation);
+    restoreGlobal("WebSocket", originalWebSocket);
+  }
+});
+
+class RestartRejectionSocket extends EventTarget {
+  static readonly OPEN = 1;
+  readonly bufferedAmount = 0;
+  readyState = RestartRejectionSocket.OPEN;
+  sentRestartCount = 0;
+
+  constructor() {
+    super();
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 1,
+        snapshotSequence: 1,
+        acknowledgedCommandSequence: 0,
+        staticRevision: resources.staticRevision,
+        update: { kind: "full", state: dynamic },
+        resources,
+        facts: [],
+        metrics,
+      });
+    });
+  }
+
+  send(payload: string): void {
+    const command = JSON.parse(payload) as {
+      readonly sequence: number;
+      readonly command: { readonly kind: string };
+    };
+    assert.equal(command.command.kind, "restart");
+    this.sentRestartCount += 1;
+
+    if (this.sentRestartCount === 1) {
+      queueMicrotask(() => {
+        this.#emit({
+          protocolVersion: 1,
+          sessionId: "loading-bay-1",
+          connectionGeneration: 1,
+          serverTick: 2,
+          snapshotSequence: 2,
+          acknowledgedCommandSequence: command.sequence,
+          staticRevision: resources.staticRevision,
+          update: {
+            kind: "delta",
+            baseSnapshotSequence: 1,
+            changes: {
+              tick: 2,
+              input: {
+                ...dynamic.input,
+                acknowledgedSequence: command.sequence,
+                consumedSequence: command.sequence,
+                paused: true,
+              },
+            },
+          },
+          facts: [
+            {
+              kind: "InputEdgeRejectedPaused",
+              code: "paused",
+              commandSequence: command.sequence,
+            },
+          ],
+          metrics,
+        });
+      });
+      return;
+    }
+
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-2",
+        connectionGeneration: 2,
+        serverTick: 0,
+        snapshotSequence: 1,
+        acknowledgedCommandSequence: 0,
+        staticRevision: resources.staticRevision,
+        update: {
+          kind: "full",
+          state: {
+            ...dynamic,
+            tick: 0,
+            input: {
+              ...dynamic.input,
+              connectionGeneration: 2,
+            },
+          },
+        },
+        facts: [],
+        metrics,
+      });
+    });
+  }
+
+  close(): void {
+    this.readyState = 3;
+    this.dispatchEvent(new Event("close"));
+  }
+
+  #emit(envelope: ServerUpdateEnvelope): void {
+    this.dispatchEvent(
+      new MessageEvent("message", { data: JSON.stringify(envelope) }),
+    );
+  }
+}
+
+function restoreGlobal(
+  name: "location" | "WebSocket",
+  descriptor: PropertyDescriptor | undefined,
+): void {
+  if (descriptor === undefined) {
+    Reflect.deleteProperty(globalThis, name);
+  } else {
+    Object.defineProperty(globalThis, name, descriptor);
+  }
+}
