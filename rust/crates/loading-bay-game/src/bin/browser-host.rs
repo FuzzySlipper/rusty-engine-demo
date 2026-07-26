@@ -9,8 +9,8 @@ use std::time::{Duration, Instant};
 use core_ids::EntityId;
 use loading_bay_game::{
     admit_stored_project_with_document, materialize_stored_project_voxels, AdmittedStoredProject,
-    CombatFact, CombatMissReason, GameEvent, GameLoopFact, GameRuntime, InputCommandRejection,
-    LoadingBayGameLoop, MotionFact, NavigationFact, NavigationState, PlayerControlFact,
+    CombatFact, CombatMissReason, GameEvent, GameLoopEdgeCommand, GameLoopFact, GameRuntime,
+    InputCommandRejection, LoadingBayGameLoop, NavigationFact, PlayerControlFact,
     PlayerInputCommand, ProjectSaveMode, ProjectStore, VoxelEdit, VoxelEditTransaction,
     VoxelSourceRevision,
 };
@@ -33,8 +33,6 @@ const EXIT: EntityId = EntityId::new(3);
 const FIRST_ENEMY: u64 = 4;
 const SECOND_ENEMY: u64 = 5;
 const MOTION_PROBE: EntityId = EntityId::new(10);
-const PRODUCT_MOTION_PHASES: usize = 120;
-const PRODUCT_MOTION_DELTA_SECONDS: f32 = 1.0 / 60.0;
 const INPUT_ACK_WAIT: Duration = Duration::from_millis(100);
 
 #[derive(Debug)]
@@ -416,6 +414,22 @@ fn route(
             let (facts, feedback) = drain_game_loop_feedback(&mut runtime.runtime);
             json_response(200, browser_state(&runtime, facts, feedback))
         }
+        ("POST", "/api/input-edge") => {
+            let command: GameLoopEdgeCommand = match serde_json::from_slice(body) {
+                Ok(command) => command,
+                Err(error) => return error_json(400, &format!("invalid input edge: {error}")),
+            };
+            {
+                let mut runtime = runtime.lock().expect("runtime lock");
+                if let Err(rejection) = runtime.runtime.submit_edge_command(command) {
+                    return input_rejection_json(rejection);
+                }
+            }
+            wait_for_input_consumption(runtime, command.connection_generation, command.sequence);
+            let mut runtime = runtime.lock().expect("runtime lock");
+            let (facts, feedback) = drain_game_loop_feedback(&mut runtime.runtime);
+            json_response(200, browser_state(&runtime, facts, feedback))
+        }
         ("POST", "/api/reset") => {
             let mut runtime = runtime.lock().expect("runtime lock");
             let project_path = runtime.project_path.clone();
@@ -430,116 +444,6 @@ fn route(
                 200,
                 browser_state(&runtime, Vec::new(), BrowserFeedbackProjection::default()),
             )
-        }
-        ("POST", "/api/motion-phase") => {
-            let mut runtime = runtime.lock().expect("runtime lock");
-            let mut moved = false;
-            let mut blocked = false;
-            let mut feedback = BrowserFeedbackProjection::default();
-            for _ in 0..PRODUCT_MOTION_PHASES {
-                match runtime.run_motion_phase(PRODUCT_MOTION_DELTA_SECONDS) {
-                    Ok(receipt) => {
-                        feedback.extend_motion(&receipt.facts);
-                        moved |= receipt
-                            .facts
-                            .iter()
-                            .any(|fact| matches!(fact, MotionFact::Moved { .. }));
-                        blocked |= receipt
-                            .facts
-                            .iter()
-                            .any(|fact| matches!(fact, MotionFact::Blocked { .. }));
-                    }
-                    Err(error) => return error_json(409, &format!("{error}")),
-                }
-            }
-            let mut facts = Vec::new();
-            if moved {
-                facts.push("KinematicMoved".to_owned());
-            }
-            if blocked {
-                facts.push("KinematicBlocked".to_owned());
-            }
-            json_response(200, browser_state(&runtime, facts, feedback))
-        }
-        ("POST", "/api/navigation-step") => {
-            let mut runtime = runtime.lock().expect("runtime lock");
-            match runtime.run_navigation_phase(PRODUCT_MOTION_DELTA_SECONDS) {
-                Ok(receipt) => {
-                    let mut feedback = BrowserFeedbackProjection::default();
-                    feedback.extend_navigation(&receipt.facts);
-                    let facts = receipt
-                        .facts
-                        .iter()
-                        .map(navigation_fact_name)
-                        .map(str::to_owned)
-                        .collect();
-                    json_response(200, browser_state(&runtime, facts, feedback))
-                }
-                Err(error) => error_json(409, &format!("{error}")),
-            }
-        }
-        ("POST", "/api/navigation-phase") => {
-            let mut runtime = runtime.lock().expect("runtime lock");
-            let mut advanced = false;
-            let mut arrived = false;
-            let mut blocked = false;
-            let mut unreachable = false;
-            let mut feedback = BrowserFeedbackProjection::default();
-            for _ in 0..240 {
-                match runtime.run_navigation_phase(PRODUCT_MOTION_DELTA_SECONDS) {
-                    Ok(receipt) => {
-                        feedback.extend_navigation(&receipt.facts);
-                        for fact in &receipt.facts {
-                            match fact {
-                                NavigationFact::Advanced { .. } => advanced = true,
-                                NavigationFact::Arrived { .. } => arrived = true,
-                                NavigationFact::Blocked { .. } => blocked = true,
-                                NavigationFact::Unreachable { .. } => unreachable = true,
-                            }
-                        }
-                        if runtime
-                            .session()
-                            .navigation(EntityId::new(FIRST_ENEMY))
-                            .is_some_and(|view| view.state != NavigationState::Following)
-                        {
-                            break;
-                        }
-                    }
-                    Err(error) => return error_json(409, &format!("{error}")),
-                }
-            }
-            let mut facts = Vec::new();
-            if advanced {
-                facts.push("NavigationAdvanced".to_owned());
-            }
-            if arrived {
-                facts.push("NavigationArrived".to_owned());
-            }
-            if blocked {
-                facts.push("NavigationBlocked".to_owned());
-            }
-            if unreachable {
-                facts.push("NavigationUnreachable".to_owned());
-            }
-            json_response(200, browser_state(&runtime, facts, feedback))
-        }
-        ("POST", "/api/extraction-beacon/activate") => {
-            let mut runtime = runtime.lock().expect("runtime lock");
-            match runtime.activate_extraction_beacon(ACTOR, BEACON) {
-                Ok(receipt) => {
-                    let mut feedback = BrowserFeedbackProjection::default();
-                    feedback.extend_extraction_beacon(receipt.fact);
-                    json_response(
-                        200,
-                        browser_state(
-                            &runtime,
-                            vec!["ExtractionBeaconActivated".to_owned()],
-                            feedback,
-                        ),
-                    )
-                }
-                Err(error) => error_json(409, &format!("{error}")),
-            }
         }
         ("POST", "/api/voxel-edit") => {
             let request: BrowserVoxelEditRequest = match serde_json::from_slice(body) {
@@ -664,6 +568,10 @@ fn drain_game_loop_feedback(
                 names.push(combat_fact_name(&fact).to_owned());
                 feedback.extend_combat(std::slice::from_ref(&fact));
             }
+            GameLoopFact::ExtractionBeacon(fact) => {
+                names.push("ExtractionBeaconActivated".to_owned());
+                feedback.extend_extraction_beacon(fact);
+            }
             GameLoopFact::Event(event) => {
                 names.push(event_name(&event).to_owned());
                 feedback.extend_events(std::slice::from_ref(&event));
@@ -675,9 +583,18 @@ fn drain_game_loop_feedback(
                 }
                 .to_owned(),
             ),
-            GameLoopFact::EdgeCommandRejected { .. } => {
-                names.push("InputEdgeRejected".to_owned());
-            }
+            GameLoopFact::EdgeCommandRejected { reason, .. } => names.push(
+                match reason {
+                    loading_bay_game::EdgeCommandRejection::Paused => "InputEdgeRejectedPaused",
+                    loading_bay_game::EdgeCommandRejection::UnknownTarget => {
+                        "InputEdgeRejectedUnknownTarget"
+                    }
+                    loading_bay_game::EdgeCommandRejection::NotInteractable => {
+                        "InputEdgeRejectedNotInteractable"
+                    }
+                }
+                .to_owned(),
+            ),
             GameLoopFact::InputExpired { .. } => names.push("InputExpired".to_owned()),
         }
     }
@@ -932,6 +849,65 @@ mod tests {
             .0,
             409
         );
+    }
+
+    #[test]
+    fn host_gameplay_edges_wait_for_the_fixed_tick_and_legacy_phase_routes_are_inert() {
+        let runtime = shared_browser_runtime();
+        let connected = response_json(route(
+            "POST",
+            "/api/input/connect",
+            &[],
+            &runtime,
+            Path::new("."),
+        ));
+        let generation = connected["input"]["connectionGeneration"]
+            .as_u64()
+            .expect("connection generation");
+        let tick_before = connected["tick"].as_u64().expect("tick");
+
+        for path in [
+            "/api/motion-phase",
+            "/api/navigation-step",
+            "/api/navigation-phase",
+            "/api/extraction-beacon/activate",
+        ] {
+            assert_eq!(
+                route("POST", path, &[], &runtime, Path::new(".")).0,
+                405,
+                "{path} must not bypass the game loop"
+            );
+        }
+        assert_eq!(
+            response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")))["tick"],
+            tick_before
+        );
+
+        let pause = serde_json::to_vec(&GameLoopEdgeCommand {
+            connection_generation: generation,
+            sequence: 1,
+            command: loading_bay_game::GameLoopEdgeCommandKind::SetPaused { paused: true },
+        })
+        .unwrap();
+        let queued = response_json(route(
+            "POST",
+            "/api/input-edge",
+            &pause,
+            &runtime,
+            Path::new("."),
+        ));
+        assert_eq!(queued["tick"], tick_before);
+        assert_eq!(queued["input"]["queuedEdgeCommands"], 1);
+        assert_eq!(queued["input"]["consumedSequence"], 0);
+        assert_eq!(queued["input"]["paused"], false);
+
+        let receipt = runtime.lock().unwrap().runtime.run_fixed_tick().unwrap();
+        assert!(!receipt.simulation_advanced);
+        let consumed = response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")));
+        assert_eq!(consumed["tick"], tick_before);
+        assert_eq!(consumed["input"]["queuedEdgeCommands"], 0);
+        assert_eq!(consumed["input"]["consumedSequence"], 1);
+        assert_eq!(consumed["input"]["paused"], true);
     }
 
     #[test]

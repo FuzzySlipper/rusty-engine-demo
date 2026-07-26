@@ -7,7 +7,7 @@
 use core_ids::EntityId;
 use loading_bay_game::{
     CombatFact, DoorState, EnemyState, ExtractionBeaconFact, ExtractionBeaconState, GameEvent,
-    GameRuntime, MotionFact, NavigationFact, NavigationState, PlayerControlFact,
+    GameRuntime, NavigationFact, NavigationState, PlayerControlFact,
 };
 use serde::Serialize;
 
@@ -73,19 +73,6 @@ pub(super) struct BrowserFeedbackProjection {
 }
 
 impl BrowserFeedbackProjection {
-    pub(super) fn extend_motion(&mut self, facts: &[MotionFact]) {
-        for fact in facts {
-            match fact {
-                MotionFact::Moved {
-                    entity,
-                    before,
-                    after,
-                } => self.push_movement(*entity, before.to_array(), after.to_array()),
-                MotionFact::Blocked { entity, .. } => self.push_blocked(*entity),
-            }
-        }
-    }
-
     pub(super) fn extend_navigation(&mut self, facts: &[NavigationFact]) {
         for fact in facts {
             match fact {

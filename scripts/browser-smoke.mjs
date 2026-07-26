@@ -186,7 +186,6 @@ async function runFullBrowserProduct(project) {
       "EnemyDefeated",
       "EncounterCleared",
       "DoorOpened",
-      "KinematicBlocked",
       "NavigationAdvanced",
       "PlayerMoved",
       "PlayerBlocked",

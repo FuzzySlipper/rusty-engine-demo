@@ -133,11 +133,9 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
           </article>
 
           <article class="control-panel">
-            <p class="section-label">Concrete host actions</p>
+            <p class="section-label">Player and authoring actions</p>
             <div class="button-row">
               <button type="button" id="primary-fire">Fire Primary</button>
-              <button type="button" id="run-motion">Run Spatial Phase</button>
-              <button type="button" id="run-navigation">Run Navigation</button>
               <button type="button" id="activate-beacon">
                 Activate Extraction
               </button>

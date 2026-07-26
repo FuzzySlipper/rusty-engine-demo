@@ -1,6 +1,7 @@
 import { mountRendererSurface } from "@rusty-engine/renderer-host";
 
 import { SerializedActionQueue } from "./action-queue.js";
+import { CoalescedLookInput } from "./coalesced-look.js";
 import { HeldMovementInput } from "./held-movement.js";
 import {
   clampInputUnit,
@@ -91,10 +92,23 @@ export async function mountLoadingBayGame(
   let inputSequence = current.input.acknowledgedSequence;
   let latestMovement = { kind: "move" as const, forward: 0, right: 0 };
   let primaryFireHeld = false;
+  let lookGeneration = 0;
+  let disposed = false;
   const heldMovement = new HeldMovementInput({
     bindings: () => current.player.bindings,
     intervalMilliseconds: () => 1_000 / 60,
     dispatch: enqueueMovementIntent,
+  });
+  const lookInput = new CoalescedLookInput({
+    dispatch: (action) => {
+      const generation = lookGeneration;
+      return actionQueue.enqueue(async () => {
+        if (generation !== lookGeneration || disposed) {
+          return;
+        }
+        await performPlayerAction(action);
+      });
+    },
   });
   const initialFrame = projection.apply(current);
   const initialCamera = derivePlayerCameraPose(current.player);
@@ -118,7 +132,6 @@ export async function mountLoadingBayGame(
     surface,
     telemetryLayer,
   });
-  let disposed = false;
   const dispose = async (): Promise<void> => {
     if (disposed) {
       return;
@@ -126,16 +139,17 @@ export async function mountLoadingBayGame(
     disposed = true;
     eventController.abort();
     heldMovement.clear(false);
+    lookGeneration += 1;
+    lookInput.dispose();
     latestMovement = { kind: "move", forward: 0, right: 0 };
     primaryFireHeld = false;
     if (document.pointerLockElement === canvas) {
       document.exitPointerLock();
     }
-    await actionQueue.settled();
-    await disconnectInput();
+    const disconnected = disconnectInput();
     const feedbackDisposed = presentationFeedback.dispose();
     surface.dispose();
-    await feedbackDisposed;
+    await Promise.all([disconnected, feedbackDisposed]);
   };
   renderReadout(current);
   await applyPresentationFeedback(true, initialFrame.ops.length);
@@ -154,25 +168,11 @@ export async function mountLoadingBayGame(
     () => {
       void presentationFeedback.activateAudio();
       heldMovement.clear(false);
+      lookGeneration += 1;
+      lookInput.clear();
       latestMovement = { kind: "move", forward: 0, right: 0 };
       primaryFireHeld = false;
       void perform("/api/reset");
-    },
-    eventOptions,
-  );
-  requiredElement("run-motion", HTMLButtonElement).addEventListener(
-    "click",
-    () => {
-      void presentationFeedback.activateAudio();
-      void perform("/api/motion-phase");
-    },
-    eventOptions,
-  );
-  requiredElement("run-navigation", HTMLButtonElement).addEventListener(
-    "click",
-    () => {
-      void presentationFeedback.activateAudio();
-      void perform("/api/navigation-phase");
     },
     eventOptions,
   );
@@ -180,7 +180,7 @@ export async function mountLoadingBayGame(
     "click",
     () => {
       void presentationFeedback.activateAudio();
-      void perform("/api/extraction-beacon/activate");
+      void enqueueInteraction(7);
     },
     eventOptions,
   );
@@ -326,8 +326,8 @@ export async function mountLoadingBayGame(
         event.movementY,
         current.player.bindings,
       );
-      if (action !== null) {
-        enqueuePlayerAction(action);
+      if (action?.kind === "look") {
+        lookInput.push(action.yawDelta, action.pitchDelta);
       }
     },
     eventOptions,
@@ -567,6 +567,7 @@ export async function mountLoadingBayGame(
     window.dispatchEvent(
       new MouseEvent("mousemove", { movementX: 20, movementY: -10 }),
     );
+    await lookInput.settled();
     await actionQueue.settled();
     const playerLooked =
       normalizeDegrees(current.player.yawDegrees - initialPlayerYaw) < 0 &&
@@ -574,7 +575,8 @@ export async function mountLoadingBayGame(
     const initialEnemyPosition = current.enemies.find(
       (enemy) => enemy.id === 4,
     )?.position;
-    await perform("/api/navigation-step");
+    await delay(100);
+    current = await requestState("/api/state");
     const movingEnemyPosition = current.enemies.find(
       (enemy) => enemy.id === 4,
     )?.position;
@@ -617,7 +619,6 @@ export async function mountLoadingBayGame(
     await enqueuePlayerAction({ kind: "look", yawDelta: 0.25, pitchDelta: 0 });
     const lookRecoveredAfterRejection =
       current.player.yawDegrees !== yawBeforeRecovery;
-    await perform("/api/navigation-phase");
     const firstEnemyDefeated = await damageEnemyTo(4, 0);
     const secondEnemyDamaged = await damageEnemyTo(5, 40);
     await enqueuePlayerAction({ kind: "look", yawDelta: 0.25, pitchDelta: 0 });
@@ -649,7 +650,7 @@ export async function mountLoadingBayGame(
     document.body.dataset.queueRecovery = queueRecovered ? "pass" : "fail";
     const cooldownRecovered = cooldownRejected && firstEnemyDefeated;
     document.body.dataset.cooldown = cooldownRecovered ? "pass" : "fail";
-    await perform("/api/extraction-beacon/activate");
+    await enqueueInteraction(7);
     await presentationFeedback.settled();
     surface.renderOnce();
     const beaconActivated =
@@ -660,7 +661,6 @@ export async function mountLoadingBayGame(
       beaconState.dataset.posture === "active" &&
       surface.snapshot().includes("extraction-beacon");
     document.body.dataset.beaconActivation = beaconActivated ? "pass" : "fail";
-    await perform("/api/motion-phase");
     await presentationFeedback.settled();
     surface.renderOnce();
     const door = current.projection.find((node) => node.id === 3);
@@ -669,7 +669,6 @@ export async function mountLoadingBayGame(
       current.doorState === "open" &&
       door?.translation?.[1] === 4 &&
       current.enemies.every((enemy) => enemy.state === "defeated") &&
-      current.motionState === "blocked" &&
       playerMoved &&
       playerBlocked &&
       playerStopped &&
@@ -678,8 +677,6 @@ export async function mountLoadingBayGame(
       movingTargetDamaged &&
       queueRecovered &&
       cooldownRecovered &&
-      (current.projection.find((node) => node.id === 10)?.translation?.[0] ??
-        -4) > 2 &&
       current.generatedEnvironment?.seed === 4 &&
       combatHit &&
       openGateTraversed &&
@@ -761,6 +758,13 @@ export async function mountLoadingBayGame(
       refreshed.presentation.cues.length === 0 &&
       neutralResponse.input.consumedSequence === inputSequence &&
       refreshed.input.consumedSequence === inputSequence;
+    document.body.dataset.feedbackDropEvidence = [
+      droppedHadTransientCue,
+      refreshed.presentation.cues.length,
+      neutralResponse.input.consumedSequence,
+      refreshed.input.consumedSequence,
+      inputSequence,
+    ].join(":");
     current = refreshed;
     const refreshFrame = projection.apply(current);
     applyRendererFrame(refreshFrame);
@@ -768,7 +772,7 @@ export async function mountLoadingBayGame(
     renderReadout(current);
     void applyPresentationFeedback(false, refreshFrame.ops.length);
     await enqueuePlayerAction({ kind: "move", forward: -1, right: 0 });
-    await presentationFeedback.settled();
+    await delay(0);
     const restartStartedWithConcreteTransients =
       playerMotionState.dataset.animationPulse !== undefined &&
       Number(feedbackLayer.dataset.activeEffects ?? "0") > 0 &&
@@ -981,6 +985,12 @@ export async function mountLoadingBayGame(
     return actionQueue.enqueue(() => performAttackAction(action));
   }
 
+  function enqueueInteraction(target: number): Promise<void> {
+    return actionQueue.enqueue(() =>
+      performInputEdge({ kind: "interact", target }),
+    );
+  }
+
   async function performPlayerAction(
     action: ResolvedPlayerAction,
   ): Promise<void> {
@@ -1018,6 +1028,28 @@ export async function mountLoadingBayGame(
     updateRendererStatus();
   }
 
+  async function performInputEdge(
+    command:
+      | { readonly kind: "interact"; readonly target: number }
+      | { readonly kind: "setPaused"; readonly paused: boolean },
+  ): Promise<void> {
+    inputSequence += 1;
+    current = await requestState("/api/input-edge", "POST", {
+      connectionGeneration: current.input.connectionGeneration,
+      sequence: inputSequence,
+      command,
+    });
+    lastActionRejection = null;
+    eventHistory.push(...current.lastEvents);
+    const frame = projection.apply(current);
+    applyRendererFrame(frame);
+    surface.setCameraPose(derivePlayerCameraPose(current.player));
+    surface.renderOnce();
+    renderReadout(current);
+    void applyPresentationFeedback(false, frame.ops.length);
+    updateRendererStatus();
+  }
+
   async function performAttackAction(
     action: ResolvedAttackAction,
   ): Promise<void> {
@@ -1028,8 +1060,11 @@ export async function mountLoadingBayGame(
   }
 
   function clearActiveInput(): void {
-    const changed = heldMovement.active || primaryFireHeld;
+    const changed =
+      heldMovement.active || primaryFireHeld || lookInput.pendingFrameCount > 0;
     heldMovement.clear(false);
+    lookGeneration += 1;
+    lookInput.clear();
     latestMovement = { kind: "move", forward: 0, right: 0 };
     primaryFireHeld = false;
     if (changed && current.input.connected) {

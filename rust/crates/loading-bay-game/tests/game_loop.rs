@@ -150,6 +150,85 @@ fn look_is_coalesced_without_losing_small_deltas_and_rejects_invalid_input() {
 }
 
 #[test]
+fn coalesced_look_clamps_at_the_action_boundary_in_both_directions() {
+    let mut positive = game_loop();
+    let positive_generation = positive.start_connection().connection_generation;
+    let positive_before = positive
+        .runtime()
+        .session()
+        .player_controller(PLAYER)
+        .unwrap()
+        .state
+        .yaw_degrees;
+    positive
+        .submit_input(input(
+            positive_generation,
+            1,
+            [0.0, 0.0],
+            [0.75, 0.0],
+            false,
+        ))
+        .unwrap();
+    positive
+        .submit_input(input(
+            positive_generation,
+            2,
+            [0.0, 0.0],
+            [0.75, 0.0],
+            false,
+        ))
+        .unwrap();
+    positive.run_fixed_tick().unwrap();
+    let positive_after = positive
+        .runtime()
+        .session()
+        .player_controller(PLAYER)
+        .unwrap()
+        .state
+        .yaw_degrees;
+    assert!((positive_after - positive_before - 12.0).abs() < 0.000_1);
+    assert_eq!(positive.input_session().consumed_sequence, 2);
+
+    let mut negative = game_loop();
+    let negative_generation = negative.start_connection().connection_generation;
+    let negative_before = negative
+        .runtime()
+        .session()
+        .player_controller(PLAYER)
+        .unwrap()
+        .state
+        .yaw_degrees;
+    negative
+        .submit_input(input(
+            negative_generation,
+            1,
+            [0.0, 0.0],
+            [-0.75, 0.0],
+            false,
+        ))
+        .unwrap();
+    negative
+        .submit_input(input(
+            negative_generation,
+            2,
+            [0.0, 0.0],
+            [-0.75, 0.0],
+            false,
+        ))
+        .unwrap();
+    negative.run_fixed_tick().unwrap();
+    let negative_after = negative
+        .runtime()
+        .session()
+        .player_controller(PLAYER)
+        .unwrap()
+        .state
+        .yaw_degrees;
+    assert!((negative_after - negative_before + 12.0).abs() < 0.000_1);
+    assert_eq!(negative.input_session().consumed_sequence, 2);
+}
+
+#[test]
 fn disconnect_stale_input_and_reconnect_cannot_stick_or_resurrect_movement() {
     let mut game_loop = game_loop();
     let first_generation = game_loop.start_connection().connection_generation;

@@ -5,8 +5,8 @@ use core_ids::EntityId;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CombatFact, CombatRejectionReason, GameEvent, GameRuntime, NavigationFact, PlayerControlFact,
-    ResolvedAttackAction, RuntimeError,
+    CombatFact, CombatRejectionReason, ExtractionBeaconFact, GameEvent, GameRuntime,
+    NavigationFact, PlayerControlFact, ResolvedAttackAction, RuntimeError,
 };
 
 pub const FIXED_SIMULATION_HZ: u32 = 60;
@@ -17,7 +17,7 @@ pub const MAX_EDGE_COMMANDS: usize = 32;
 pub const MAX_RETAINED_COMMAND_SEQUENCES: usize = 64;
 pub const MAX_PENDING_GAME_LOOP_FACTS: usize = 256;
 pub const MAX_INPUT_AGE_TICKS: u64 = 2;
-pub const MAX_ACCUMULATED_LOOK_UNITS: f32 = 2.0;
+pub const MAX_ACCUMULATED_LOOK_UNITS: f32 = 1.0;
 
 pub const FIXED_TICK_PHASE_ORDER: [GameLoopPhase; 7] = [
     GameLoopPhase::InputConsumption,
@@ -147,6 +147,7 @@ pub enum GameLoopFact {
     PlayerControl(PlayerControlFact),
     Navigation(NavigationFact),
     Combat(CombatFact),
+    ExtractionBeacon(ExtractionBeaconFact),
     Event(GameEvent),
     CombatRejected {
         reason: CombatRejectionReason,
@@ -592,7 +593,24 @@ impl LoadingBayGameLoop {
             let GameLoopEdgeCommandKind::Interact { target } = command.command else {
                 continue;
             };
-            match self.runtime.interact(self.player, EntityId::new(target)) {
+            let target = EntityId::new(target);
+            if self.runtime.session().extraction_beacon(target).is_some() {
+                match self.runtime.activate_extraction_beacon(self.player, target) {
+                    Ok(receipt) => {
+                        facts.push(GameLoopFact::ExtractionBeacon(receipt.fact));
+                    }
+                    Err(RuntimeError::ExtractionBeaconAlreadyActive { .. })
+                    | Err(RuntimeError::ExtractionBeaconOutOfRange { .. }) => {
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason: EdgeCommandRejection::NotInteractable,
+                        });
+                    }
+                    Err(error) => return Err(error),
+                }
+                continue;
+            }
+            match self.runtime.interact(self.player, target) {
                 Ok(receipt) => {
                     facts.extend(receipt.events.into_iter().map(GameLoopFact::Event));
                 }
