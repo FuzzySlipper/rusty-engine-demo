@@ -103,10 +103,10 @@ are printed by the browser proof so review evidence records payload sizes, updat
 bounded queue maxima, and command round-trip latency together.
 
 The final local Chromium run on 2026-07-26 measured a 98,458-byte equivalent whole state, a
-100,734-byte cold bootstrap, 844-byte last and 3,239-byte maximum steady updates, and a
+100,680-byte cold bootstrap, 794-byte last and 3,241-byte maximum steady updates, and a
 99,225-byte deliberate static-resource refresh. Under the complete mouse, held-movement, combat,
-edit, and restart proof, the maximum command round trip was 60.3 ms and maximum server update
-build time was 16.702 ms. Client input peaked at two frames, client edges at one, server outbound
+edit, and restart proof, the maximum command round trip was 62.6 ms and maximum server update
+build time was 19.020 ms. Client input peaked at two frames, client edges at one, server outbound
 updates at one, and dropped facts at zero. These are loopback diagnostic values rather than
 cross-machine guarantees; the executable relative-size and bounded-growth budgets are the durable
 acceptance criteria.
