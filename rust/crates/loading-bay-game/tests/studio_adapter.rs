@@ -51,7 +51,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        8
+        15
     );
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"][0]["label"],
