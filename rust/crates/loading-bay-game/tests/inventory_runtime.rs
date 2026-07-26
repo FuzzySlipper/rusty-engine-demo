@@ -322,7 +322,13 @@ fn capacity_and_authored_definition_failures_leave_no_partial_runtime() {
     );
 
     let missing_ammo = mutate(|project| {
-        project["itemDefinitions"][0]["kind"]["ammunition"] = "ammo/not-defined".into();
+        let arc_pistol = project["itemDefinitions"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|definition| definition["id"] == "weapon/arc-pistol")
+            .unwrap();
+        arc_pistol["kind"]["ammunition"] = "ammo/not-defined".into();
     });
     let error = GameRuntime::from_stored_project(&missing_ammo).unwrap_err();
     assert_eq!(
