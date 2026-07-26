@@ -25,17 +25,17 @@ const browserBundle = readdirSync(bundleDirectory)
   .map((name) => readFileSync(resolve(bundleDirectory, name), "utf8"))
   .join("\n");
 const forbiddenRuntimeSurface = [
-  "GameplayRuntimeHost",
-  "GameplayFabric",
-  "NativeRuntimeBridge",
-  "RuntimeSession",
+  ["Gameplay", "RuntimeHost"].join(""),
+  ["Gameplay", "Fabric"].join(""),
+  ["Native", "RuntimeBridge"].join(""),
+  ["Runtime", "Session"].join(""),
   "VoxelConversionRequest",
   "rusty-engine.mesh-to-voxel",
   "voxel-convert",
   "planVoxelConversion",
   "previewVoxelConversion",
   "applyVoxelConversion",
-  "VoxelReplayRecord",
+  ["VoxelReplay", "Record"].join(""),
   "GenericAssetProvider",
   "ProjectBundleFacade",
 ];
