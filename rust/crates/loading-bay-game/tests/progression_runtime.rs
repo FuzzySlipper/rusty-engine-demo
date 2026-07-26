@@ -283,7 +283,7 @@ fn later_over_cap_secret_query_commits_no_earlier_discovery() {
     entities.push(serde_json::json!({
         "id": 33,
         "name": "over-cap-secret",
-        "translation": [6.5, 1.5, 8.5],
+        "translation": [8.5, 1.5, 8.5],
         "bounds": {
             "min": [-0.6, -0.6, -0.6],
             "max": [0.6, 0.6, 0.6]
@@ -296,7 +296,7 @@ fn later_over_cap_secret_query_commits_no_earlier_discovery() {
         entities.push(serde_json::json!({
             "id": 1_000 + offset,
             "name": format!("secret-overlap-subject-{offset}"),
-            "translation": [6.5, 1.5, 8.5],
+            "translation": [8.5, 1.5, 8.5],
             "bounds": {
                 "min": [-0.1, -0.1, -0.1],
                 "max": [0.1, 0.1, 0.1]
