@@ -130,6 +130,7 @@ async function persistProject(input, output) {
 }
 
 async function runFullBrowserProduct(project) {
+  const expectedEntityCount = storedProjectEntityCount(project);
   const running = await launchHost(project);
   try {
     await waitForHealth(
@@ -299,7 +300,7 @@ async function runFullBrowserProduct(project) {
       "entryScene=scene/loading-bay",
       "assets=7",
       "scenes=1",
-      "entities=9",
+      `entities=${String(expectedEntityCount)}`,
     ]) {
       if (!startup.includes(marker)) {
         throw new Error(`browser host startup missing ${marker}\n${startup}`);
@@ -308,6 +309,19 @@ async function runFullBrowserProduct(project) {
   } finally {
     await stopHost(running.host);
   }
+}
+
+function storedProjectEntityCount(project) {
+  const value = JSON.parse(readFileSync(project, "utf8"));
+  if (!Array.isArray(value.scenes)) {
+    throw new Error(`stored project ${project} has no scenes`);
+  }
+  return value.scenes.reduce((total, scene) => {
+    if (!Array.isArray(scene.entities)) {
+      throw new Error(`stored project ${project} has a scene without entities`);
+    }
+    return total + scene.entities.length;
+  }, 0);
 }
 
 async function runMigratedBrowserProduct(project) {
