@@ -3,15 +3,16 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::ops::{Deref, DerefMut};
 use std::path::{Component, Path, PathBuf};
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::sync::{Arc, Condvar, LockResult, Mutex, MutexGuard};
+use std::time::{Duration, Instant};
 
 use core_ids::EntityId;
 use loading_bay_game::{
     admit_stored_project_with_document, materialize_stored_project_voxels, AdmittedStoredProject,
-    CombatFact, CombatMissReason, GameEvent, GameRuntime, MotionFact, NavigationFact,
-    NavigationState, PlayerControlFact, ProjectSaveMode, ProjectStore, ResolvedAttackAction,
-    ResolvedPlayerAction, VoxelEdit, VoxelEditTransaction, VoxelSourceRevision,
+    CombatFact, CombatMissReason, GameEvent, GameLoopFact, GameRuntime, InputCommandRejection,
+    LoadingBayGameLoop, MotionFact, NavigationFact, NavigationState, PlayerControlFact,
+    PlayerInputCommand, ProjectSaveMode, ProjectStore, VoxelEdit, VoxelEditTransaction,
+    VoxelSourceRevision,
 };
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +35,7 @@ const SECOND_ENEMY: u64 = 5;
 const MOTION_PROBE: EntityId = EntityId::new(10);
 const PRODUCT_MOTION_PHASES: usize = 120;
 const PRODUCT_MOTION_DELTA_SECONDS: f32 = 1.0 / 60.0;
-const PRODUCT_ACTION_TICKS: u64 = 1;
+const INPUT_ACK_WAIT: Duration = Duration::from_millis(100);
 
 #[derive(Debug)]
 struct BrowserProjectSummary {
@@ -49,7 +50,7 @@ struct BrowserProjectSummary {
 
 #[derive(Debug)]
 struct BrowserRuntime {
-    runtime: GameRuntime,
+    runtime: LoadingBayGameLoop,
     authored: AdmittedStoredProject,
     project_path: PathBuf,
     project: BrowserProjectSummary,
@@ -83,7 +84,8 @@ impl BrowserRuntime {
         let (authored, admitted) = admit_stored_project_with_document(decoded.project)
             .map_err(|error| format!("project admission failed: {error}"))?;
         Ok(Self {
-            runtime: GameRuntime::from_admitted_project(admitted),
+            runtime: LoadingBayGameLoop::new(GameRuntime::from_admitted_project(admitted), ACTOR)
+                .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?,
             authored,
             project_path,
             project,
@@ -95,14 +97,41 @@ impl Deref for BrowserRuntime {
     type Target = GameRuntime;
 
     fn deref(&self) -> &Self::Target {
-        &self.runtime
+        self.runtime.runtime()
     }
 }
 
 impl DerefMut for BrowserRuntime {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.runtime
+        self.runtime.runtime_mut()
     }
+}
+
+#[derive(Debug)]
+struct SharedBrowserRuntime {
+    runtime: Mutex<BrowserRuntime>,
+    advanced: Condvar,
+    automatic_driver: bool,
+}
+
+impl SharedBrowserRuntime {
+    fn new(runtime: BrowserRuntime, automatic_driver: bool) -> Self {
+        Self {
+            runtime: Mutex::new(runtime),
+            advanced: Condvar::new(),
+            automatic_driver,
+        }
+    }
+
+    fn lock(&self) -> LockResult<MutexGuard<'_, BrowserRuntime>> {
+        self.runtime.lock()
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct BrowserDisconnectRequest {
+    connection_generation: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -187,7 +216,8 @@ fn main() {
         runtime.project.entity_count,
         runtime.project_path.display()
     );
-    let runtime = Arc::new(Mutex::new(runtime));
+    let runtime = Arc::new(SharedBrowserRuntime::new(runtime, true));
+    start_game_loop_driver(&runtime);
     let listener = TcpListener::bind(&address)
         .unwrap_or_else(|error| panic!("cannot bind browser host at {address}: {error}"));
     println!("browser-host listening at http://{address}");
@@ -202,6 +232,28 @@ fn main() {
             Err(error) => eprintln!("browser-host accept error: {error}"),
         }
     }
+}
+
+fn start_game_loop_driver(runtime: &Arc<SharedBrowserRuntime>) {
+    let runtime = Arc::clone(runtime);
+    std::thread::spawn(move || {
+        let mut previous = Instant::now();
+        loop {
+            std::thread::sleep(Duration::from_millis(4));
+            let now = Instant::now();
+            let elapsed = now.saturating_duration_since(previous);
+            previous = now;
+            let result = runtime
+                .lock()
+                .expect("runtime lock")
+                .runtime
+                .advance_elapsed(elapsed);
+            if let Err(error) = result {
+                eprintln!("browser-host fixed game loop error: {error}");
+            }
+            runtime.advanced.notify_all();
+        }
+    });
 }
 
 fn arguments() -> (String, PathBuf, PathBuf) {
@@ -228,7 +280,7 @@ fn default_project_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/projects/loading-bay.project.json")
 }
 
-fn handle_connection(mut stream: TcpStream, runtime: &Arc<Mutex<BrowserRuntime>>, dist: &Path) {
+fn handle_connection(mut stream: TcpStream, runtime: &Arc<SharedBrowserRuntime>, dist: &Path) {
     let _ = stream.set_read_timeout(Some(Duration::from_secs(3)));
     let request = match read_request(&mut stream) {
         Ok(request) => request,
@@ -309,7 +361,7 @@ fn route(
     method: &str,
     path: &str,
     body: &[u8],
-    runtime: &Arc<Mutex<BrowserRuntime>>,
+    runtime: &Arc<SharedBrowserRuntime>,
     dist: &Path,
 ) -> (u16, &'static str, Vec<u8>) {
     match (method, path) {
@@ -324,48 +376,60 @@ fn route(
                 browser_state(&runtime, Vec::new(), BrowserFeedbackProjection::default()),
             )
         }
-        ("POST", "/api/reset") => {
+        ("POST", "/api/input/connect") => {
             let mut runtime = runtime.lock().expect("runtime lock");
-            let project_path = runtime.project_path.clone();
-            *runtime = BrowserRuntime::load(&project_path).expect("reset stored browser project");
+            runtime.runtime.start_connection();
             json_response(
                 200,
                 browser_state(&runtime, Vec::new(), BrowserFeedbackProjection::default()),
             )
         }
-        ("POST", "/api/attack") => {
-            let action: ResolvedAttackAction = match serde_json::from_slice(body) {
-                Ok(action) => action,
-                Err(error) => return error_json(400, &format!("invalid attack action: {error}")),
+        ("POST", "/api/input/disconnect") => {
+            let request: BrowserDisconnectRequest = match serde_json::from_slice(body) {
+                Ok(request) => request,
+                Err(error) => {
+                    return error_json(400, &format!("invalid disconnect request: {error}"));
+                }
             };
             let mut runtime = runtime.lock().expect("runtime lock");
-            let advanced_events = match advance_product_action(&mut runtime) {
-                Ok(events) => events,
-                Err(error) => return error_json(409, &format!("{error}")),
-            };
-            let mut feedback = BrowserFeedbackProjection::default();
-            feedback.extend_events(&advanced_events);
-            let mut facts = advanced_events
-                .iter()
-                .map(event_name)
-                .map(str::to_owned)
-                .collect::<Vec<_>>();
-            match runtime.attack(ACTOR, action) {
-                Ok(receipt) => {
-                    feedback.extend_combat(&receipt.facts);
-                    feedback.extend_events(&receipt.events);
-                    facts.extend(
-                        receipt
-                            .facts
-                            .iter()
-                            .map(combat_fact_name)
-                            .map(str::to_owned),
-                    );
-                    facts.extend(receipt.events.iter().map(event_name).map(str::to_owned));
-                    json_response(200, browser_state(&runtime, facts, feedback))
-                }
-                Err(error) => error_json(409, &format!("{error}")),
+            if !runtime.runtime.disconnect(request.connection_generation) {
+                return error_json(409, "sessionClosed: connection generation is not active");
             }
+            json_response(
+                200,
+                browser_state(&runtime, Vec::new(), BrowserFeedbackProjection::default()),
+            )
+        }
+        ("POST", "/api/input-intent") => {
+            let command: PlayerInputCommand = match serde_json::from_slice(body) {
+                Ok(command) => command,
+                Err(error) => return error_json(400, &format!("invalid input intent: {error}")),
+            };
+            {
+                let mut runtime = runtime.lock().expect("runtime lock");
+                if let Err(rejection) = runtime.runtime.submit_input(command) {
+                    return input_rejection_json(rejection);
+                }
+            }
+            wait_for_input_consumption(runtime, command.connection_generation, command.sequence);
+            let mut runtime = runtime.lock().expect("runtime lock");
+            let (facts, feedback) = drain_game_loop_feedback(&mut runtime.runtime);
+            json_response(200, browser_state(&runtime, facts, feedback))
+        }
+        ("POST", "/api/reset") => {
+            let mut runtime = runtime.lock().expect("runtime lock");
+            let project_path = runtime.project_path.clone();
+            let previous_generation = runtime.runtime.input_session().connection_generation;
+            let mut replacement =
+                BrowserRuntime::load(&project_path).expect("reset stored browser project");
+            replacement
+                .runtime
+                .start_connection_after(previous_generation);
+            *runtime = replacement;
+            json_response(
+                200,
+                browser_state(&runtime, Vec::new(), BrowserFeedbackProjection::default()),
+            )
         }
         ("POST", "/api/motion-phase") => {
             let mut runtime = runtime.lock().expect("runtime lock");
@@ -459,38 +523,6 @@ fn route(
             }
             json_response(200, browser_state(&runtime, facts, feedback))
         }
-        ("POST", "/api/player-action") => {
-            let action: ResolvedPlayerAction = match serde_json::from_slice(body) {
-                Ok(action) => action,
-                Err(error) => return error_json(400, &format!("invalid resolved action: {error}")),
-            };
-            let mut runtime = runtime.lock().expect("runtime lock");
-            let advanced_events = match advance_product_action(&mut runtime) {
-                Ok(events) => events,
-                Err(error) => return error_json(409, &format!("{error}")),
-            };
-            let mut feedback = BrowserFeedbackProjection::default();
-            feedback.extend_events(&advanced_events);
-            let mut facts = advanced_events
-                .iter()
-                .map(event_name)
-                .map(str::to_owned)
-                .collect::<Vec<_>>();
-            match runtime.apply_player_action(ACTOR, action) {
-                Ok(receipt) => {
-                    feedback.extend_player_control(&receipt.facts);
-                    facts.extend(
-                        receipt
-                            .facts
-                            .iter()
-                            .map(player_fact_name)
-                            .map(str::to_owned),
-                    );
-                    json_response(200, browser_state(&runtime, facts, feedback))
-                }
-                Err(error) => error_json(409, &format!("{error}")),
-            }
-        }
         ("POST", "/api/extraction-beacon/activate") => {
             let mut runtime = runtime.lock().expect("runtime lock");
             match runtime.activate_extraction_beacon(ACTOR, BEACON) {
@@ -521,8 +553,8 @@ fn route(
                 .map(BrowserVoxelEdit::into_edit)
                 .collect();
             let mut runtime = runtime.lock().expect("runtime lock");
-            let before = runtime.runtime.snapshot();
-            let receipt = match runtime.runtime.apply_voxel_edits(VoxelEditTransaction {
+            let before = runtime.snapshot();
+            let receipt = match runtime.apply_voxel_edits(VoxelEditTransaction {
                 expected_revision: VoxelSourceRevision::new(request.expected_revision),
                 edits: &edits,
             }) {
@@ -533,13 +565,12 @@ fn route(
                 let candidate = match materialize_stored_project_voxels(
                     &runtime.authored,
                     runtime
-                        .runtime
                         .collision_scene()
                         .expect("edited browser collision scene"),
                 ) {
                     Ok(candidate) => candidate,
                     Err(error) => {
-                        runtime.runtime = GameRuntime::from_snapshot(before)
+                        *runtime.runtime.runtime_mut() = GameRuntime::from_snapshot(before)
                             .expect("pre-edit browser snapshot remains valid");
                         return error_json(
                             409,
@@ -552,7 +583,7 @@ fn route(
                     &candidate,
                     ProjectSaveMode::ReplaceExisting,
                 ) {
-                    runtime.runtime = GameRuntime::from_snapshot(before)
+                    *runtime.runtime.runtime_mut() = GameRuntime::from_snapshot(before)
                         .expect("pre-edit browser snapshot remains valid");
                     return error_json(500, &format!("project save failed: {error}"));
                 }
@@ -583,11 +614,74 @@ fn route(
     }
 }
 
-fn advance_product_action(
-    runtime: &mut GameRuntime,
-) -> Result<Vec<GameEvent>, loading_bay_game::RuntimeError> {
-    let receipt = runtime.advance_by(PRODUCT_ACTION_TICKS)?;
-    Ok(receipt.events)
+fn wait_for_input_consumption(
+    runtime: &Arc<SharedBrowserRuntime>,
+    connection_generation: u64,
+    sequence: u64,
+) {
+    if !runtime.automatic_driver {
+        return;
+    }
+    let guard = runtime.lock().expect("runtime lock");
+    let _ = runtime
+        .advanced
+        .wait_timeout_while(guard, INPUT_ACK_WAIT, |runtime| {
+            let input = runtime.runtime.input_session();
+            input.connection_generation == connection_generation
+                && input.connected
+                && input.consumed_sequence < sequence
+        })
+        .expect("runtime input wait");
+}
+
+fn input_rejection_json(rejection: InputCommandRejection) -> (u16, &'static str, Vec<u8>) {
+    let (status, code) = match rejection {
+        InputCommandRejection::InvalidInput => (400, "invalidInput"),
+        InputCommandRejection::SessionDisconnected
+        | InputCommandRejection::WrongConnectionGeneration { .. } => (409, "sessionClosed"),
+        InputCommandRejection::StaleSequence { .. } => (409, "staleSequence"),
+        InputCommandRejection::EdgeQueueSaturated { .. } => (409, "edgeQueueSaturated"),
+    };
+    error_json(status, &format!("{code}: {rejection}"))
+}
+
+fn drain_game_loop_feedback(
+    game_loop: &mut LoadingBayGameLoop,
+) -> (Vec<String>, BrowserFeedbackProjection) {
+    let mut names = Vec::new();
+    let mut feedback = BrowserFeedbackProjection::default();
+    for fact in game_loop.drain_pending_facts() {
+        match fact {
+            GameLoopFact::PlayerControl(fact) => {
+                names.push(player_fact_name(&fact).to_owned());
+                feedback.extend_player_control(std::slice::from_ref(&fact));
+            }
+            GameLoopFact::Navigation(fact) => {
+                names.push(navigation_fact_name(&fact).to_owned());
+                feedback.extend_navigation(std::slice::from_ref(&fact));
+            }
+            GameLoopFact::Combat(fact) => {
+                names.push(combat_fact_name(&fact).to_owned());
+                feedback.extend_combat(std::slice::from_ref(&fact));
+            }
+            GameLoopFact::Event(event) => {
+                names.push(event_name(&event).to_owned());
+                feedback.extend_events(std::slice::from_ref(&event));
+            }
+            GameLoopFact::CombatRejected { reason } => names.push(
+                match reason {
+                    loading_bay_game::CombatRejectionReason::Cooldown => "CombatRejectedCooldown",
+                    loading_bay_game::CombatRejectionReason::NoAmmo => "CombatRejectedNoAmmo",
+                }
+                .to_owned(),
+            ),
+            GameLoopFact::EdgeCommandRejected { .. } => {
+                names.push("InputEdgeRejected".to_owned());
+            }
+            GameLoopFact::InputExpired { .. } => names.push("InputExpired".to_owned()),
+        }
+    }
+    (names, feedback)
 }
 
 fn combat_fact_name(fact: &CombatFact) -> &'static str {
@@ -718,8 +812,8 @@ mod tests {
         BrowserRuntime::load(&default_project_path()).expect("admit stored browser project")
     }
 
-    fn shared_browser_runtime() -> Arc<Mutex<BrowserRuntime>> {
-        Arc::new(Mutex::new(stored_browser_runtime()))
+    fn shared_browser_runtime() -> Arc<SharedBrowserRuntime> {
+        Arc::new(SharedBrowserRuntime::new(stored_browser_runtime(), false))
     }
 
     #[test]
@@ -768,28 +862,59 @@ mod tests {
     }
 
     #[test]
-    fn serialized_browser_actions_advance_cooldown_and_become_eligible_again() {
+    fn input_routes_preserve_generation_sequence_and_disconnect_identity() {
         let runtime = shared_browser_runtime();
-        let attack = serde_json::to_vec(&ResolvedAttackAction::Attack).unwrap();
-        let look = serde_json::to_vec(&ResolvedPlayerAction::Look {
-            yaw_delta: 0.25,
-            pitch_delta: 0.0,
+        let connected = response_json(route(
+            "POST",
+            "/api/input/connect",
+            &[],
+            &runtime,
+            Path::new("."),
+        ));
+        let generation = connected["input"]["connectionGeneration"]
+            .as_u64()
+            .expect("connection generation");
+        let command = serde_json::to_vec(&PlayerInputCommand {
+            connection_generation: generation,
+            sequence: 1,
+            intent: loading_bay_game::PlayerInputIntent {
+                movement: [1.0, 0.0],
+                look_delta: [0.25, 0.0],
+                primary_fire_held: false,
+            },
         })
         .unwrap();
+        let accepted = response_json(route(
+            "POST",
+            "/api/input-intent",
+            &command,
+            &runtime,
+            Path::new("."),
+        ));
+        assert_eq!(accepted["input"]["acknowledgedSequence"], 1);
+        assert_eq!(accepted["input"]["consumedSequence"], 0);
 
-        assert_eq!(
-            route("POST", "/api/attack", &attack, &runtime, Path::new(".")).0,
-            200
+        runtime.lock().unwrap().runtime.run_fixed_tick().unwrap();
+        let advanced = response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")));
+        assert_eq!(advanced["input"]["consumedSequence"], 1);
+        assert_ne!(
+            advanced["player"]["position"],
+            connected["player"]["position"]
         );
-        assert_eq!(
-            route("POST", "/api/attack", &attack, &runtime, Path::new(".")).0,
-            409
+        assert_ne!(
+            advanced["player"]["yawDegrees"],
+            connected["player"]["yawDegrees"]
         );
+
+        let disconnect = serde_json::to_vec(&BrowserDisconnectRequest {
+            connection_generation: generation,
+        })
+        .unwrap();
         assert_eq!(
             route(
                 "POST",
-                "/api/player-action",
-                &look,
+                "/api/input/disconnect",
+                &disconnect,
                 &runtime,
                 Path::new(".")
             )
@@ -797,20 +922,15 @@ mod tests {
             200
         );
         assert_eq!(
-            route("POST", "/api/attack", &attack, &runtime, Path::new(".")).0,
-            200
-        );
-
-        let runtime = runtime.lock().expect("runtime lock");
-        assert_eq!(runtime.tick().raw(), 4);
-        assert_eq!(
-            runtime
-                .session()
-                .weapon(ACTOR)
-                .unwrap()
-                .state
-                .ammo_remaining,
-            6
+            route(
+                "POST",
+                "/api/input-intent",
+                &command,
+                &runtime,
+                Path::new(".")
+            )
+            .0,
+            409
         );
     }
 
@@ -906,20 +1026,19 @@ mod tests {
     #[test]
     fn presentation_projection_cannot_change_authoritative_snapshot() {
         let stored = stored_browser_runtime();
-        let runtime = &stored.runtime;
         let before =
-            loading_bay_game::encode_game_snapshot(runtime).expect("snapshot before projection");
+            loading_bay_game::encode_game_snapshot(&stored).expect("snapshot before projection");
         let mut feedback = BrowserFeedbackProjection::default();
         feedback.extend_events(&[GameEvent::DoorOpened {
             door: EXIT,
             entity_facts: Vec::new(),
         }]);
 
-        let state = browser_state(runtime, vec!["DoorOpened".to_owned()], feedback);
+        let state = browser_state(&stored, vec!["DoorOpened".to_owned()], feedback);
 
         assert_eq!(state.last_events, ["DoorOpened"]);
         assert_eq!(
-            loading_bay_game::encode_game_snapshot(runtime).expect("snapshot after projection"),
+            loading_bay_game::encode_game_snapshot(&stored).expect("snapshot after projection"),
             before
         );
     }
@@ -928,23 +1047,50 @@ mod tests {
     fn dropped_response_feedback_is_not_replayed_and_does_not_change_outcome() {
         let first = shared_browser_runtime();
         let second = shared_browser_runtime();
-        let movement = serde_json::to_vec(&ResolvedPlayerAction::Move {
-            forward: 1.0,
-            right: 0.0,
+        for runtime in [&first, &second] {
+            response_json(route(
+                "POST",
+                "/api/input/connect",
+                &[],
+                runtime,
+                Path::new("."),
+            ));
+            let movement = serde_json::to_vec(&PlayerInputCommand {
+                connection_generation: 1,
+                sequence: 1,
+                intent: loading_bay_game::PlayerInputIntent {
+                    movement: [1.0, 0.0],
+                    look_delta: [0.0, 0.0],
+                    primary_fire_held: false,
+                },
+            })
+            .unwrap();
+            response_json(route(
+                "POST",
+                "/api/input-intent",
+                &movement,
+                runtime,
+                Path::new("."),
+            ));
+            runtime.lock().unwrap().runtime.run_fixed_tick().unwrap();
+        }
+        let neutral = serde_json::to_vec(&PlayerInputCommand {
+            connection_generation: 1,
+            sequence: 2,
+            intent: loading_bay_game::PlayerInputIntent::NEUTRAL,
         })
-        .expect("movement JSON");
-
+        .unwrap();
         let delivered = response_json(route(
             "POST",
-            "/api/player-action",
-            &movement,
+            "/api/input-intent",
+            &neutral,
             &first,
             Path::new("."),
         ));
         let dropped = route(
             "POST",
-            "/api/player-action",
-            &movement,
+            "/api/input-intent",
+            &neutral,
             &second,
             Path::new("."),
         );

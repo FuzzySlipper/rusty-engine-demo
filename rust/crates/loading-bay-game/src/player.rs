@@ -163,6 +163,21 @@ impl PlayerControllerService {
         player: EntityId,
         action: ResolvedPlayerAction,
     ) -> Result<PlayerControlReceipt, RuntimeError> {
+        let move_delta_seconds = session
+            .player_controllers
+            .get(&player)
+            .map(|component| component.config.move_step_seconds)
+            .ok_or(RuntimeError::UnknownPlayerController { player })?;
+        Self::apply_with_motion_delta(session, scene, player, action, move_delta_seconds)
+    }
+
+    pub(crate) fn apply_with_motion_delta(
+        session: &mut GameSession,
+        scene: &VoxelCollisionScene,
+        player: EntityId,
+        action: ResolvedPlayerAction,
+        move_delta_seconds: f32,
+    ) -> Result<PlayerControlReceipt, RuntimeError> {
         if !player_action_is_valid(action) {
             return Err(RuntimeError::InvalidPlayerAction { action });
         }
@@ -225,7 +240,7 @@ impl PlayerControllerService {
                 let motion_result = KinematicMotionSystem::run_selected(
                     &mut session.entities,
                     scene,
-                    component.config.move_step_seconds,
+                    move_delta_seconds,
                     &selected,
                 );
                 session

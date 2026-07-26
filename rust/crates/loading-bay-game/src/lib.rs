@@ -12,6 +12,7 @@ mod definition;
 mod door;
 mod encounter;
 mod extraction_beacon;
+mod game_loop;
 mod interaction;
 mod navigation;
 mod player;
@@ -50,6 +51,14 @@ pub use extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconFact,
     ExtractionBeaconReceipt, ExtractionBeaconState, ExtractionBeaconView,
     MAX_EXTRACTION_BEACON_ACTIVATION_RADIUS,
+};
+pub use game_loop::{
+    EdgeCommandRejection, GameLoopAdvanceReceipt, GameLoopEdgeCommand, GameLoopEdgeCommandKind,
+    GameLoopFact, GameLoopPhase, GameLoopTickReceipt, InputCommandDisposition, InputCommandReceipt,
+    InputCommandRejection, LoadingBayGameLoop, PlayerInputCommand, PlayerInputIntent,
+    PlayerInputSessionView, FIXED_SIMULATION_HZ, FIXED_STEP_DURATION, FIXED_STEP_SECONDS,
+    FIXED_TICK_PHASE_ORDER, MAX_ACCUMULATED_LOOK_UNITS, MAX_CATCH_UP_TICKS, MAX_EDGE_COMMANDS,
+    MAX_INPUT_AGE_TICKS, MAX_PENDING_GAME_LOOP_FACTS, MAX_RETAINED_COMMAND_SEQUENCES,
 };
 pub use interaction::{SwitchComponent, SwitchView};
 pub use navigation::{

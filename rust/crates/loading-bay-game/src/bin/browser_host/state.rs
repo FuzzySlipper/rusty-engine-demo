@@ -4,11 +4,14 @@ use core_ids::EntityId;
 use core_math::Vec3;
 use loading_bay_game::{
     DoorState, EncounterState, EnemyState, ExtractionBeaconState, GameRuntime, NavigationState,
+    PlayerInputSessionView,
 };
 use serde::Serialize;
 
 use super::presentation::{project_presentation, BrowserFeedbackProjection, BrowserPresentation};
-use super::{ACTOR, BEACON, ENCOUNTER, EXIT, FIRST_ENEMY, MOTION_PROBE, SECOND_ENEMY};
+use super::{
+    BrowserRuntime, ACTOR, BEACON, ENCOUNTER, EXIT, FIRST_ENEMY, MOTION_PROBE, SECOND_ENEMY,
+};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -122,6 +125,7 @@ pub(super) struct BrowserState {
     navigation_state: &'static str,
     player_motion_state: &'static str,
     combat_state: &'static str,
+    input: PlayerInputSessionView,
     player: BrowserPlayerState,
     weapon: BrowserWeaponState,
     extraction_beacon: Option<BrowserExtractionBeaconState>,
@@ -133,10 +137,11 @@ pub(super) struct BrowserState {
 }
 
 pub(super) fn browser_state(
-    runtime: &GameRuntime,
+    host: &BrowserRuntime,
     last_events: Vec<String>,
     feedback: BrowserFeedbackProjection,
 ) -> BrowserState {
+    let runtime: &GameRuntime = host.runtime.runtime();
     let readout = runtime.readout();
     let projection = readout
         .projection
@@ -346,6 +351,7 @@ pub(super) fn browser_state(
         },
         player_motion_state,
         combat_state,
+        input: host.runtime.input_session(),
         player: player_state,
         weapon: weapon_state,
         extraction_beacon,

@@ -11,9 +11,12 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
   const projected = adapter.project(feedbackState());
 
   assert.equal(decodePresentationFrameDiff(projected.frame).ops.length, 20);
-  assert.deepEqual(projected.animationStates.map(
-    (state) => `${String(state.entity)}:${state.posture}`,
-  ), ["1:idle", "4:defeated", "3:open"]);
+  assert.deepEqual(
+    projected.animationStates.map(
+      (state) => `${String(state.entity)}:${state.posture}`,
+    ),
+    ["1:idle", "4:defeated", "3:open"],
+  );
   assert.deepEqual(projected.animationPulses, [
     "movement",
     "blocked",
@@ -50,7 +53,10 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
   ]);
 
   const domains = projected.frame.ops.map((operation) => operation.domain);
-  assert.equal(domains.filter((domain) => domain === "telemetryOverlay").length, 1);
+  assert.equal(
+    domains.filter((domain) => domain === "telemetryOverlay").length,
+    1,
+  );
   assert.equal(domains.filter((domain) => domain === "particle").length, 7);
   assert.equal(domains.filter((domain) => domain === "audio").length, 7);
   assert.equal(domains.filter((domain) => domain === "billboard").length, 5);
@@ -59,22 +65,27 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
     projected.frame.ops.map((_, index) => index),
   );
 
-  const damageBillboard = projected.frame.ops.find((operation) =>
-    operation.domain === "billboard"
-    && operation.op.op === "create"
-    && operation.op.descriptor.content.kind === "text"
-    && operation.op.descriptor.content.fallbackText === "-60");
+  const damageBillboard = projected.frame.ops.find(
+    (operation) =>
+      operation.domain === "billboard" &&
+      operation.op.op === "create" &&
+      operation.op.descriptor.content.kind === "text" &&
+      operation.op.descriptor.content.fallbackText === "-60",
+  );
   assert.deepEqual(
-    damageBillboard?.domain === "billboard" && damageBillboard.op.op === "create"
+    damageBillboard?.domain === "billboard" &&
+      damageBillboard.op.op === "create"
       ? damageBillboard.op.descriptor.anchor
       : null,
     { kind: "world", position: [7.5, 0, 5.5] },
   );
-  const doorBillboard = projected.frame.ops.find((operation) =>
-    operation.domain === "billboard"
-    && operation.op.op === "create"
-    && operation.op.descriptor.content.kind === "text"
-    && operation.op.descriptor.content.fallbackText === "EXIT OPEN");
+  const doorBillboard = projected.frame.ops.find(
+    (operation) =>
+      operation.domain === "billboard" &&
+      operation.op.op === "create" &&
+      operation.op.descriptor.content.kind === "text" &&
+      operation.op.descriptor.content.fallbackText === "EXIT OPEN",
+  );
   assert.deepEqual(
     doorBillboard?.domain === "billboard" && doorBillboard.op.op === "create"
       ? doorBillboard.op.descriptor.anchor
@@ -91,8 +102,16 @@ test("shared signal ids are delivery-local and a reset reopens retained host ide
   const secondSignals = signalIds(second.frame);
 
   assert.equal(first.frame.ops[0]?.domain, "telemetryOverlay");
-  assert.equal(second.frame.ops.some((operation) => operation.domain === "telemetryOverlay"), false);
-  assert.equal(firstSignals.some((signal) => secondSignals.includes(signal)), false);
+  assert.equal(
+    second.frame.ops.some(
+      (operation) => operation.domain === "telemetryOverlay",
+    ),
+    false,
+  );
+  assert.equal(
+    firstSignals.some((signal) => secondSignals.includes(signal)),
+    false,
+  );
   assert.notDeepEqual(first.billboardHandles, second.billboardHandles);
 
   adapter.reset();
@@ -102,11 +121,13 @@ test("shared signal ids are delivery-local and a reset reopens retained host ide
   assert.deepEqual(signalIds(reopened.frame), firstSignals);
 });
 
-function signalIds(frame: ReturnType<PresentationFeedbackAdapter["project"]>["frame"]): string[] {
+function signalIds(
+  frame: ReturnType<PresentationFeedbackAdapter["project"]>["frame"],
+): string[] {
   return frame.ops.flatMap((operation) => {
     if (
-      (operation.domain === "audio" || operation.domain === "particle")
-      && operation.op.op === "emit"
+      (operation.domain === "audio" || operation.domain === "particle") &&
+      operation.op.op === "emit"
     ) {
       return [operation.op.signalId];
     }
@@ -124,7 +145,13 @@ function feedbackState(): RuntimeBrowserState {
     voxelNavigationHash: "0000000000000000",
     voxelProbePathLength: 0,
     projection: [
-      { id: 3, name: "exit", asset: "mesh/security-door", translation: [4.5, 4, 10.5], visible: true },
+      {
+        id: 3,
+        name: "exit",
+        asset: "mesh/security-door",
+        translation: [4.5, 4, 10.5],
+        visible: true,
+      },
     ],
     doorState: "open",
     encounterState: "cleared",
@@ -132,6 +159,14 @@ function feedbackState(): RuntimeBrowserState {
     navigationState: "arrived",
     playerMotionState: "moved",
     combatState: "hit",
+    input: {
+      connectionGeneration: 1,
+      connected: true,
+      paused: false,
+      acknowledgedSequence: 4,
+      consumedSequence: 4,
+      queuedEdgeCommands: 0,
+    },
     player: {
       id: 1,
       position: [2, 0, 3],
@@ -159,7 +194,14 @@ function feedbackState(): RuntimeBrowserState {
     voxelMeshes: [],
     generatedEnvironment: null,
     enemies: [
-      { id: 4, name: "sentry", state: "defeated", position: [7.5, 0, 5.5], currentHealth: 0, maxHealth: 100 },
+      {
+        id: 4,
+        name: "sentry",
+        state: "defeated",
+        position: [7.5, 0, 5.5],
+        currentHealth: 0,
+        maxHealth: 100,
+      },
     ],
     presentation: {
       animationStates: [
@@ -170,7 +212,12 @@ function feedbackState(): RuntimeBrowserState {
       cues: [
         { kind: "movement", entity: 1, from: [1, 0, 3], to: [2, 0, 3] },
         { kind: "movementBlocked", entity: 1 },
-        { kind: "attack", attacker: 1, origin: [2, 1, 3], direction: [0, 0, -1] },
+        {
+          kind: "attack",
+          attacker: 1,
+          origin: [2, 1, 3],
+          direction: [0, 0, -1],
+        },
         { kind: "damage", attacker: 1, target: 4, amount: 60, remaining: 40 },
         { kind: "defeat", attacker: 1, entity: 4 },
         { kind: "doorChanged", entity: 3, state: "open" },

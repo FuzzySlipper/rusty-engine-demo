@@ -27,7 +27,9 @@ const browserScheduler: RepeatingScheduler = {
   schedule: (callback, intervalMilliseconds) =>
     globalThis.setInterval(callback, intervalMilliseconds),
   cancel: (handle) => {
-    globalThis.clearInterval(handle as ReturnType<typeof globalThis.setInterval>);
+    globalThis.clearInterval(
+      handle as ReturnType<typeof globalThis.setInterval>,
+    );
   },
 };
 
@@ -43,6 +45,7 @@ export class HeldMovementInput {
   readonly #scheduler: RepeatingScheduler;
   #intervalHandle: unknown = null;
   #dispatchPending = false;
+  #dispatchAgain = false;
 
   constructor(options: HeldMovementInputOptions) {
     this.#bindings = options.bindings;
@@ -57,8 +60,8 @@ export class HeldMovementInput {
     }
     const wasEmpty = this.#heldCodes.size === 0;
     this.#heldCodes.add(code);
+    void this.#emitCurrentIntent();
     if (wasEmpty) {
-      void this.#emitCurrentIntent();
       this.#intervalHandle = this.#scheduler.schedule(
         () => void this.#emitCurrentIntent(),
         boundedInterval(this.#intervalMilliseconds()),
@@ -72,32 +75,41 @@ export class HeldMovementInput {
       return false;
     }
     this.#heldCodes.delete(code);
+    void this.#emitCurrentIntent();
     if (this.#heldCodes.size === 0) {
       this.#cancelInterval();
     }
     return true;
   }
 
-  clear(): void {
+  clear(dispatch = true): void {
+    const hadHeldInput = this.#heldCodes.size > 0;
     this.#heldCodes.clear();
     this.#cancelInterval();
+    if (dispatch && hadHeldInput) {
+      void this.#emitCurrentIntent();
+    }
   }
 
   get active(): boolean {
     return this.#heldCodes.size > 0;
   }
 
+  get current(): ResolvedMovementAction {
+    return resolveHeldMovementAction(this.#heldCodes, this.#bindings());
+  }
+
   async #emitCurrentIntent(): Promise<void> {
     if (this.#dispatchPending) {
-      return;
-    }
-    const action = resolveHeldMovementAction(this.#heldCodes, this.#bindings());
-    if (action === null) {
+      this.#dispatchAgain = true;
       return;
     }
     this.#dispatchPending = true;
     try {
-      await this.#dispatch(action);
+      do {
+        this.#dispatchAgain = false;
+        await this.#dispatch(this.current);
+      } while (this.#dispatchAgain);
     } finally {
       this.#dispatchPending = false;
     }
@@ -114,19 +126,23 @@ export class HeldMovementInput {
 export function resolveHeldMovementAction(
   heldCodes: ReadonlySet<string>,
   bindings: HeldMovementBindings,
-): ResolvedMovementAction | null {
-  const forward = Number(heldCodes.has(bindings.moveForward))
-    - Number(heldCodes.has(bindings.moveBackward));
-  const right = Number(heldCodes.has(bindings.moveRight))
-    - Number(heldCodes.has(bindings.moveLeft));
-  return forward === 0 && right === 0 ? null : { kind: "move", forward, right };
+): ResolvedMovementAction {
+  const forward =
+    Number(heldCodes.has(bindings.moveForward)) -
+    Number(heldCodes.has(bindings.moveBackward));
+  const right =
+    Number(heldCodes.has(bindings.moveRight)) -
+    Number(heldCodes.has(bindings.moveLeft));
+  return { kind: "move", forward, right };
 }
 
 function isMovementCode(code: string, bindings: HeldMovementBindings): boolean {
-  return code === bindings.moveForward
-    || code === bindings.moveBackward
-    || code === bindings.moveLeft
-    || code === bindings.moveRight;
+  return (
+    code === bindings.moveForward ||
+    code === bindings.moveBackward ||
+    code === bindings.moveLeft ||
+    code === bindings.moveRight
+  );
 }
 
 function boundedInterval(value: number): number {

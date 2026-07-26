@@ -1,0 +1,626 @@
+use std::collections::VecDeque;
+use std::time::Duration;
+
+use core_ids::EntityId;
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    CombatFact, CombatRejectionReason, GameEvent, GameRuntime, NavigationFact, PlayerControlFact,
+    ResolvedAttackAction, RuntimeError,
+};
+
+pub const FIXED_SIMULATION_HZ: u32 = 60;
+pub const FIXED_STEP_SECONDS: f32 = 1.0 / FIXED_SIMULATION_HZ as f32;
+pub const FIXED_STEP_DURATION: Duration = Duration::from_nanos(16_666_667);
+pub const MAX_CATCH_UP_TICKS: usize = 5;
+pub const MAX_EDGE_COMMANDS: usize = 32;
+pub const MAX_RETAINED_COMMAND_SEQUENCES: usize = 64;
+pub const MAX_PENDING_GAME_LOOP_FACTS: usize = 256;
+pub const MAX_INPUT_AGE_TICKS: u64 = 2;
+pub const MAX_ACCUMULATED_LOOK_UNITS: f32 = 2.0;
+
+pub const FIXED_TICK_PHASE_ORDER: [GameLoopPhase; 7] = [
+    GameLoopPhase::InputConsumption,
+    GameLoopPhase::PlayerMotion,
+    GameLoopPhase::EnemyIntentAndMotion,
+    GameLoopPhase::Combat,
+    GameLoopPhase::InteractionsAndPickups,
+    GameLoopPhase::ScheduledConsequences,
+    GameLoopPhase::ProjectionAndFactDrain,
+];
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameLoopPhase {
+    InputConsumption,
+    PlayerMotion,
+    EnemyIntentAndMotion,
+    Combat,
+    InteractionsAndPickups,
+    ScheduledConsequences,
+    ProjectionAndFactDrain,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PlayerInputIntent {
+    /// `[forward, right]`, with each axis in `[-1, 1]`.
+    pub movement: [f32; 2],
+    /// `[yaw, pitch]`, accumulated only until the next fixed tick.
+    pub look_delta: [f32; 2],
+    pub primary_fire_held: bool,
+}
+
+impl PlayerInputIntent {
+    pub const NEUTRAL: Self = Self {
+        movement: [0.0, 0.0],
+        look_delta: [0.0, 0.0],
+        primary_fire_held: false,
+    };
+
+    fn is_valid(self) -> bool {
+        self.movement
+            .into_iter()
+            .chain(self.look_delta)
+            .all(|value| value.is_finite() && (-1.0..=1.0).contains(&value))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PlayerInputCommand {
+    pub connection_generation: u64,
+    pub sequence: u64,
+    pub intent: PlayerInputIntent,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum GameLoopEdgeCommandKind {
+    Interact { target: u64 },
+    SetPaused { paused: bool },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GameLoopEdgeCommand {
+    pub connection_generation: u64,
+    pub sequence: u64,
+    pub command: GameLoopEdgeCommandKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InputCommandDisposition {
+    Accepted,
+    Repeated,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InputCommandReceipt {
+    pub connection_generation: u64,
+    pub acknowledged_sequence: u64,
+    pub consumed_sequence: u64,
+    pub disposition: InputCommandDisposition,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerInputSessionView {
+    pub connection_generation: u64,
+    pub connected: bool,
+    pub paused: bool,
+    pub acknowledged_sequence: u64,
+    pub consumed_sequence: u64,
+    pub queued_edge_commands: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InputCommandRejection {
+    SessionDisconnected,
+    WrongConnectionGeneration { expected: u64, actual: u64 },
+    StaleSequence { acknowledged: u64, actual: u64 },
+    InvalidInput,
+    EdgeQueueSaturated { capacity: usize },
+}
+
+impl std::fmt::Display for InputCommandRejection {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{self:?}")
+    }
+}
+
+impl std::error::Error for InputCommandRejection {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EdgeCommandRejection {
+    Paused,
+    UnknownTarget,
+    NotInteractable,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum GameLoopFact {
+    PlayerControl(PlayerControlFact),
+    Navigation(NavigationFact),
+    Combat(CombatFact),
+    Event(GameEvent),
+    CombatRejected {
+        reason: CombatRejectionReason,
+    },
+    EdgeCommandRejected {
+        sequence: u64,
+        reason: EdgeCommandRejection,
+    },
+    InputExpired {
+        sequence: u64,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct GameLoopTickReceipt {
+    pub driver_tick: u64,
+    pub simulation_tick: u64,
+    pub simulation_advanced: bool,
+    pub phases: [GameLoopPhase; 7],
+    pub acknowledged_sequence: u64,
+    pub consumed_sequence: u64,
+    pub facts: Vec<GameLoopFact>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct GameLoopAdvanceReceipt {
+    pub fixed_ticks: Vec<GameLoopTickReceipt>,
+    pub dropped_ticks: u64,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct QueuedEdgeCommand {
+    sequence: u64,
+    command: GameLoopEdgeCommandKind,
+}
+
+#[derive(Debug)]
+struct PlayerInputSession {
+    connection_generation: u64,
+    connected: bool,
+    paused: bool,
+    acknowledged_sequence: u64,
+    consumed_sequence: u64,
+    retained_sequences: VecDeque<u64>,
+    movement: [f32; 2],
+    accumulated_look: [f32; 2],
+    primary_fire_held: bool,
+    last_input_driver_tick: Option<u64>,
+    edge_commands: VecDeque<QueuedEdgeCommand>,
+}
+
+impl Default for PlayerInputSession {
+    fn default() -> Self {
+        Self {
+            connection_generation: 0,
+            connected: false,
+            paused: false,
+            acknowledged_sequence: 0,
+            consumed_sequence: 0,
+            retained_sequences: VecDeque::new(),
+            movement: PlayerInputIntent::NEUTRAL.movement,
+            accumulated_look: PlayerInputIntent::NEUTRAL.look_delta,
+            primary_fire_held: false,
+            last_input_driver_tick: None,
+            edge_commands: VecDeque::new(),
+        }
+    }
+}
+
+impl PlayerInputSession {
+    fn view(&self) -> PlayerInputSessionView {
+        PlayerInputSessionView {
+            connection_generation: self.connection_generation,
+            connected: self.connected,
+            paused: self.paused,
+            acknowledged_sequence: self.acknowledged_sequence,
+            consumed_sequence: self.consumed_sequence,
+            queued_edge_commands: self.edge_commands.len(),
+        }
+    }
+
+    fn clear_intent(&mut self) {
+        self.movement = PlayerInputIntent::NEUTRAL.movement;
+        self.accumulated_look = PlayerInputIntent::NEUTRAL.look_delta;
+        self.primary_fire_held = false;
+        self.last_input_driver_tick = None;
+    }
+
+    fn clear_generation(&mut self) {
+        self.clear_intent();
+        self.acknowledged_sequence = 0;
+        self.consumed_sequence = 0;
+        self.retained_sequences.clear();
+        self.edge_commands.clear();
+        self.paused = false;
+    }
+
+    fn validate_envelope(
+        &self,
+        connection_generation: u64,
+        sequence: u64,
+    ) -> Result<InputCommandDisposition, InputCommandRejection> {
+        if !self.connected {
+            return Err(InputCommandRejection::SessionDisconnected);
+        }
+        if connection_generation != self.connection_generation {
+            return Err(InputCommandRejection::WrongConnectionGeneration {
+                expected: self.connection_generation,
+                actual: connection_generation,
+            });
+        }
+        if self.retained_sequences.contains(&sequence) {
+            return Ok(InputCommandDisposition::Repeated);
+        }
+        if sequence == 0 || sequence <= self.acknowledged_sequence {
+            return Err(InputCommandRejection::StaleSequence {
+                acknowledged: self.acknowledged_sequence,
+                actual: sequence,
+            });
+        }
+        Ok(InputCommandDisposition::Accepted)
+    }
+
+    fn accept_sequence(&mut self, sequence: u64) {
+        self.acknowledged_sequence = sequence;
+        self.retained_sequences.push_back(sequence);
+        while self.retained_sequences.len() > MAX_RETAINED_COMMAND_SEQUENCES {
+            self.retained_sequences.pop_front();
+        }
+    }
+
+    fn receipt(&self, disposition: InputCommandDisposition) -> InputCommandReceipt {
+        InputCommandReceipt {
+            connection_generation: self.connection_generation,
+            acknowledged_sequence: self.acknowledged_sequence,
+            consumed_sequence: self.consumed_sequence,
+            disposition,
+        }
+    }
+}
+
+/// Downstream Loading Bay authority for transient input, fixed-step scheduling,
+/// and the game's explicit phase order. `GameRuntime` remains the durable
+/// world/session owner and Rusty Engine remains a mechanism provider.
+#[derive(Debug)]
+pub struct LoadingBayGameLoop {
+    runtime: GameRuntime,
+    player: EntityId,
+    input: PlayerInputSession,
+    accumulator: Duration,
+    driver_tick: u64,
+    pending_facts: VecDeque<GameLoopFact>,
+    dropped_fact_count: u64,
+}
+
+impl LoadingBayGameLoop {
+    pub fn new(runtime: GameRuntime, player: EntityId) -> Result<Self, RuntimeError> {
+        if runtime.session().player_controller(player).is_none() {
+            return Err(RuntimeError::UnknownPlayerController { player });
+        }
+        Ok(Self {
+            runtime,
+            player,
+            input: PlayerInputSession::default(),
+            accumulator: Duration::ZERO,
+            driver_tick: 0,
+            pending_facts: VecDeque::new(),
+            dropped_fact_count: 0,
+        })
+    }
+
+    pub fn runtime(&self) -> &GameRuntime {
+        &self.runtime
+    }
+
+    pub fn runtime_mut(&mut self) -> &mut GameRuntime {
+        &mut self.runtime
+    }
+
+    pub fn into_runtime(self) -> GameRuntime {
+        self.runtime
+    }
+
+    pub fn input_session(&self) -> PlayerInputSessionView {
+        self.input.view()
+    }
+
+    pub fn start_connection(&mut self) -> PlayerInputSessionView {
+        self.input.connection_generation =
+            self.input.connection_generation.saturating_add(1).max(1);
+        self.input.clear_generation();
+        self.input.connected = true;
+        self.input.view()
+    }
+
+    pub fn start_connection_after(&mut self, previous_generation: u64) -> PlayerInputSessionView {
+        self.input.connection_generation = previous_generation;
+        self.start_connection()
+    }
+
+    pub fn disconnect(&mut self, connection_generation: u64) -> bool {
+        if !self.input.connected || self.input.connection_generation != connection_generation {
+            return false;
+        }
+        self.input.connected = false;
+        self.input.clear_intent();
+        self.input.edge_commands.clear();
+        true
+    }
+
+    pub fn submit_input(
+        &mut self,
+        command: PlayerInputCommand,
+    ) -> Result<InputCommandReceipt, InputCommandRejection> {
+        if !command.intent.is_valid() {
+            return Err(InputCommandRejection::InvalidInput);
+        }
+        let disposition = self
+            .input
+            .validate_envelope(command.connection_generation, command.sequence)?;
+        if disposition == InputCommandDisposition::Repeated {
+            return Ok(self.input.receipt(disposition));
+        }
+        self.input.accept_sequence(command.sequence);
+        self.input.movement = command.intent.movement;
+        for (accumulated, delta) in self
+            .input
+            .accumulated_look
+            .iter_mut()
+            .zip(command.intent.look_delta)
+        {
+            *accumulated = (*accumulated + delta)
+                .clamp(-MAX_ACCUMULATED_LOOK_UNITS, MAX_ACCUMULATED_LOOK_UNITS);
+        }
+        self.input.primary_fire_held = command.intent.primary_fire_held;
+        self.input.last_input_driver_tick = Some(self.driver_tick);
+        Ok(self.input.receipt(disposition))
+    }
+
+    pub fn submit_edge_command(
+        &mut self,
+        command: GameLoopEdgeCommand,
+    ) -> Result<InputCommandReceipt, InputCommandRejection> {
+        let disposition = self
+            .input
+            .validate_envelope(command.connection_generation, command.sequence)?;
+        if disposition == InputCommandDisposition::Repeated {
+            return Ok(self.input.receipt(disposition));
+        }
+        if self.input.edge_commands.len() == MAX_EDGE_COMMANDS {
+            return Err(InputCommandRejection::EdgeQueueSaturated {
+                capacity: MAX_EDGE_COMMANDS,
+            });
+        }
+        self.input.accept_sequence(command.sequence);
+        self.input.edge_commands.push_back(QueuedEdgeCommand {
+            sequence: command.sequence,
+            command: command.command,
+        });
+        Ok(self.input.receipt(disposition))
+    }
+
+    pub fn advance_elapsed(
+        &mut self,
+        elapsed: Duration,
+    ) -> Result<GameLoopAdvanceReceipt, RuntimeError> {
+        self.accumulator = self.accumulator.saturating_add(elapsed);
+        let fixed_nanos = FIXED_STEP_DURATION.as_nanos();
+        let due = self.accumulator.as_nanos() / fixed_nanos;
+        let steps = due.min(MAX_CATCH_UP_TICKS as u128) as usize;
+        let dropped_ticks = due.saturating_sub(steps as u128).min(u64::MAX as u128) as u64;
+        let remainder = self.accumulator.as_nanos() % fixed_nanos;
+        self.accumulator = if dropped_ticks > 0 {
+            Duration::from_nanos(remainder as u64)
+        } else {
+            self.accumulator
+                .saturating_sub(FIXED_STEP_DURATION.saturating_mul(steps as u32))
+        };
+        let mut fixed_ticks = Vec::with_capacity(steps);
+        for _ in 0..steps {
+            fixed_ticks.push(self.run_fixed_tick()?);
+        }
+        Ok(GameLoopAdvanceReceipt {
+            fixed_ticks,
+            dropped_ticks,
+        })
+    }
+
+    pub fn run_fixed_tick(&mut self) -> Result<GameLoopTickReceipt, RuntimeError> {
+        self.driver_tick = self.driver_tick.saturating_add(1);
+        let mut facts = Vec::new();
+        let mut interactions = Vec::new();
+        self.consume_input_phase(&mut facts, &mut interactions)?;
+
+        let simulation_advanced = !self.input.paused;
+        if simulation_advanced {
+            self.runtime.begin_fixed_tick();
+            self.run_player_motion_phase(&mut facts)?;
+            self.run_enemy_phase(&mut facts)?;
+            self.run_combat_phase(&mut facts)?;
+            self.run_interaction_phase(interactions, &mut facts)?;
+            let events = self.runtime.run_scheduled_consequence_phase()?;
+            facts.extend(events.into_iter().map(GameLoopFact::Event));
+        } else {
+            for command in interactions {
+                facts.push(GameLoopFact::EdgeCommandRejected {
+                    sequence: command.sequence,
+                    reason: EdgeCommandRejection::Paused,
+                });
+            }
+        }
+
+        for fact in &facts {
+            self.push_pending_fact(fact.clone());
+        }
+        Ok(GameLoopTickReceipt {
+            driver_tick: self.driver_tick,
+            simulation_tick: self.runtime.tick().raw(),
+            simulation_advanced,
+            phases: FIXED_TICK_PHASE_ORDER,
+            acknowledged_sequence: self.input.acknowledged_sequence,
+            consumed_sequence: self.input.consumed_sequence,
+            facts,
+        })
+    }
+
+    pub fn drain_pending_facts(&mut self) -> Vec<GameLoopFact> {
+        self.pending_facts.drain(..).collect()
+    }
+
+    pub fn dropped_fact_count(&self) -> u64 {
+        self.dropped_fact_count
+    }
+
+    fn consume_input_phase(
+        &mut self,
+        facts: &mut Vec<GameLoopFact>,
+        interactions: &mut Vec<QueuedEdgeCommand>,
+    ) -> Result<(), RuntimeError> {
+        if self.input.connected
+            && self
+                .input
+                .last_input_driver_tick
+                .is_some_and(|accepted_at| {
+                    self.driver_tick.saturating_sub(accepted_at) > MAX_INPUT_AGE_TICKS
+                })
+        {
+            let sequence = self.input.acknowledged_sequence;
+            self.input.clear_intent();
+            facts.push(GameLoopFact::InputExpired { sequence });
+        }
+
+        while let Some(command) = self.input.edge_commands.pop_front() {
+            self.input.consumed_sequence = self.input.consumed_sequence.max(command.sequence);
+            match command.command {
+                GameLoopEdgeCommandKind::SetPaused { paused } => {
+                    self.input.paused = paused;
+                    self.input.clear_intent();
+                }
+                GameLoopEdgeCommandKind::Interact { .. } => interactions.push(command),
+            }
+        }
+        self.input.consumed_sequence = self
+            .input
+            .consumed_sequence
+            .max(self.input.acknowledged_sequence);
+
+        if self.input.paused || !self.input.connected {
+            self.input.accumulated_look = PlayerInputIntent::NEUTRAL.look_delta;
+            return Ok(());
+        }
+        let [yaw_delta, pitch_delta] = std::mem::replace(
+            &mut self.input.accumulated_look,
+            PlayerInputIntent::NEUTRAL.look_delta,
+        );
+        if yaw_delta != 0.0 || pitch_delta != 0.0 {
+            let receipt = self.runtime.apply_player_action(
+                self.player,
+                crate::ResolvedPlayerAction::Look {
+                    yaw_delta,
+                    pitch_delta,
+                },
+            )?;
+            facts.extend(receipt.facts.into_iter().map(GameLoopFact::PlayerControl));
+        }
+        Ok(())
+    }
+
+    fn run_player_motion_phase(
+        &mut self,
+        facts: &mut Vec<GameLoopFact>,
+    ) -> Result<(), RuntimeError> {
+        if !self.input.connected {
+            return Ok(());
+        }
+        let [forward, right] = self.input.movement;
+        if forward == 0.0 && right == 0.0 {
+            return Ok(());
+        }
+        let receipt = self.runtime.integrate_player_motion(
+            self.player,
+            forward,
+            right,
+            FIXED_STEP_SECONDS,
+        )?;
+        facts.extend(receipt.facts.into_iter().map(GameLoopFact::PlayerControl));
+        Ok(())
+    }
+
+    fn run_enemy_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
+        let receipt = self.runtime.run_navigation_phase(FIXED_STEP_SECONDS)?;
+        facts.extend(receipt.facts.into_iter().map(GameLoopFact::Navigation));
+        Ok(())
+    }
+
+    fn run_combat_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
+        if !self.input.connected || !self.input.primary_fire_held {
+            return Ok(());
+        }
+        match self
+            .runtime
+            .attack(self.player, ResolvedAttackAction::Attack)
+        {
+            Ok(receipt) => {
+                facts.extend(receipt.facts.into_iter().map(GameLoopFact::Combat));
+                facts.extend(receipt.events.into_iter().map(GameLoopFact::Event));
+                Ok(())
+            }
+            Err(RuntimeError::CombatRejected { reason, .. }) => {
+                facts.push(GameLoopFact::CombatRejected { reason });
+                Ok(())
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    fn run_interaction_phase(
+        &mut self,
+        interactions: Vec<QueuedEdgeCommand>,
+        facts: &mut Vec<GameLoopFact>,
+    ) -> Result<(), RuntimeError> {
+        for command in interactions {
+            let GameLoopEdgeCommandKind::Interact { target } = command.command else {
+                continue;
+            };
+            match self.runtime.interact(self.player, EntityId::new(target)) {
+                Ok(receipt) => {
+                    facts.extend(receipt.events.into_iter().map(GameLoopFact::Event));
+                }
+                Err(RuntimeError::NotInteractable { .. }) => {
+                    facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::NotInteractable,
+                    });
+                }
+                Err(RuntimeError::UnknownDoor { .. })
+                | Err(RuntimeError::UnknownEnemy { .. })
+                | Err(RuntimeError::UnknownActor { .. }) => {
+                    facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::UnknownTarget,
+                    });
+                }
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(())
+    }
+
+    fn push_pending_fact(&mut self, fact: GameLoopFact) {
+        if self.pending_facts.len() == MAX_PENDING_GAME_LOOP_FACTS {
+            self.pending_facts.pop_front();
+            self.dropped_fact_count = self.dropped_fact_count.saturating_add(1);
+        }
+        self.pending_facts.push_back(fact);
+    }
+}

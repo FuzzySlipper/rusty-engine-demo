@@ -63,8 +63,9 @@ test("held movement emits at a bounded cadence until keyup without key repeat", 
   assert.equal(input.release("KeyW"), true);
   assert.equal(input.active, false);
   assert.equal(scheduler.cancelCount, 1);
+  await Promise.resolve();
   scheduler.tick();
-  assert.equal(actions.length, 3);
+  assert.deepEqual(actions.at(-1), { kind: "move", forward: 0, right: 0 });
 });
 
 test("held movement combines physical keys and ignores unrelated input", async () => {
@@ -95,9 +96,44 @@ test("held movement combines physical keys and ignores unrelated input", async (
   input.clear();
 });
 
-test("opposing held keys resolve to no movement intent", () => {
-  assert.equal(
+test("opposing held keys resolve to an explicit neutral movement intent", () => {
+  assert.deepEqual(
     resolveHeldMovementAction(new Set(["KeyW", "KeyS"]), bindings),
-    null,
+    { kind: "move", forward: 0, right: 0 },
   );
+});
+
+test("transitions coalesce behind one in-flight dispatch and still deliver keyup", async () => {
+  const scheduler = new ManualScheduler();
+  const actions: ResolvedMovementAction[] = [];
+  let releaseDispatch = (): void => {
+    throw new Error("first dispatch was not pending");
+  };
+  let dispatchPending = false;
+  const input = new HeldMovementInput({
+    bindings: () => bindings,
+    intervalMilliseconds: () => 16,
+    dispatch: async (action) => {
+      actions.push(action);
+      if (actions.length === 1) {
+        await new Promise<void>((resolve) => {
+          releaseDispatch = resolve;
+          dispatchPending = true;
+        });
+      }
+    },
+    scheduler,
+  });
+
+  input.press("KeyW");
+  input.release("KeyW");
+  assert.deepEqual(actions, [{ kind: "move", forward: 1, right: 0 }]);
+  assert.equal(dispatchPending, true);
+  releaseDispatch();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.deepEqual(actions, [
+    { kind: "move", forward: 1, right: 0 },
+    { kind: "move", forward: 0, right: 0 },
+  ]);
 });

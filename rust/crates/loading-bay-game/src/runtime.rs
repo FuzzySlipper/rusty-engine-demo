@@ -223,6 +223,26 @@ impl GameRuntime {
         PlayerControllerService::apply(&mut self.session, scene, player, action)
     }
 
+    pub(crate) fn integrate_player_motion(
+        &mut self,
+        player: EntityId,
+        forward: f32,
+        right: f32,
+        delta_seconds: f32,
+    ) -> Result<PlayerControlReceipt, RuntimeError> {
+        let scene = self
+            .collision_scene
+            .as_ref()
+            .ok_or(RuntimeError::MissingCollisionScene)?;
+        PlayerControllerService::apply_with_motion_delta(
+            &mut self.session,
+            scene,
+            player,
+            ResolvedPlayerAction::Move { forward, right },
+            delta_seconds,
+        )
+    }
+
     /// Activate one game-owned extraction beacon through its named service.
     /// This direct entry point returns a typed fact and does not route through
     /// a generic event bus or method-name bridge.
@@ -290,13 +310,23 @@ impl GameRuntime {
         }
         let mut processed = Vec::new();
         for _ in 0..ticks {
-            self.tick = self.tick.next();
-            for intent in self.scheduler.drain_due(self.tick) {
-                self.handle_scheduled_intent(intent)?;
-            }
-            processed.extend(self.drain_events()?);
+            self.begin_fixed_tick();
+            processed.extend(self.run_scheduled_consequence_phase()?);
         }
         Ok(self.receipt(processed))
+    }
+
+    pub(crate) fn begin_fixed_tick(&mut self) {
+        self.tick = self.tick.next();
+    }
+
+    pub(crate) fn run_scheduled_consequence_phase(
+        &mut self,
+    ) -> Result<Vec<GameEvent>, RuntimeError> {
+        for intent in self.scheduler.drain_due(self.tick) {
+            self.handle_scheduled_intent(intent)?;
+        }
+        self.drain_events()
     }
 
     fn handle_scheduled_intent(&mut self, intent: ScheduledIntent) -> Result<(), RuntimeError> {

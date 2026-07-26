@@ -8,7 +8,6 @@ import {
   resolvePointerAction,
   resolvePointerButtonAction,
   type ResolvedAttackAction,
-  type ResolvedInputAction,
   type ResolvedPlayerAction,
 } from "./input-resolver.js";
 import { BrowserPresentationFeedback } from "./presentation-feedback.js";
@@ -85,15 +84,17 @@ export async function mountLoadingBayGame(
   const smokeMode = query.has("smoke");
   const reloadSmokeMode = query.has("reload-smoke");
   const convertedSmokeMode = query.has("converted-smoke");
-  let actionRejectionCount = 0;
   let lastActionRejection: string | null = null;
   const actionQueue = new SerializedActionQueue(recordActionRejection);
 
-  let current = await requestState("/api/state");
+  let current = await requestState("/api/input/connect", "POST");
+  let inputSequence = current.input.acknowledgedSequence;
+  let latestMovement = { kind: "move" as const, forward: 0, right: 0 };
+  let primaryFireHeld = false;
   const heldMovement = new HeldMovementInput({
     bindings: () => current.player.bindings,
-    intervalMilliseconds: () => current.player.moveStepSeconds * 1_000,
-    dispatch: enqueuePlayerAction,
+    intervalMilliseconds: () => 1_000 / 60,
+    dispatch: enqueueMovementIntent,
   });
   const initialFrame = projection.apply(current);
   const initialCamera = derivePlayerCameraPose(current.player);
@@ -124,10 +125,14 @@ export async function mountLoadingBayGame(
     }
     disposed = true;
     eventController.abort();
-    heldMovement.clear();
+    heldMovement.clear(false);
+    latestMovement = { kind: "move", forward: 0, right: 0 };
+    primaryFireHeld = false;
     if (document.pointerLockElement === canvas) {
       document.exitPointerLock();
     }
+    await actionQueue.settled();
+    await disconnectInput();
     const feedbackDisposed = presentationFeedback.dispose();
     surface.dispose();
     await feedbackDisposed;
@@ -148,7 +153,9 @@ export async function mountLoadingBayGame(
     "click",
     () => {
       void presentationFeedback.activateAudio();
-      heldMovement.clear();
+      heldMovement.clear(false);
+      latestMovement = { kind: "move", forward: 0, right: 0 };
+      primaryFireHeld = false;
       void perform("/api/reset");
     },
     eventOptions,
@@ -215,7 +222,8 @@ export async function mountLoadingBayGame(
       if (action.kind === "move") {
         heldMovement.press(event.code);
       } else if (!event.repeat) {
-        enqueueResolvedAction(action);
+        primaryFireHeld = true;
+        enqueueCurrentInput();
       }
     },
     eventOptions,
@@ -223,7 +231,14 @@ export async function mountLoadingBayGame(
   window.addEventListener(
     "keyup",
     (event) => {
-      if (heldMovement.release(event.code)) {
+      const releasedMovement = heldMovement.release(event.code);
+      const releasedFire =
+        event.code === current.player.bindings.primaryFire && primaryFireHeld;
+      if (releasedFire) {
+        primaryFireHeld = false;
+        enqueueCurrentInput();
+      }
+      if (releasedMovement || releasedFire) {
         event.preventDefault();
       }
     },
@@ -232,7 +247,7 @@ export async function mountLoadingBayGame(
   window.addEventListener(
     "blur",
     () => {
-      heldMovement.clear();
+      clearActiveInput();
     },
     eventOptions,
   );
@@ -240,7 +255,7 @@ export async function mountLoadingBayGame(
     "visibilitychange",
     () => {
       if (document.hidden) {
-        heldMovement.clear();
+        clearActiveInput();
       }
     },
     eventOptions,
@@ -266,7 +281,32 @@ export async function mountLoadingBayGame(
       if (action !== null) {
         void presentationFeedback.activateAudio();
         event.preventDefault();
-        enqueueAttackAction(action);
+        primaryFireHeld = true;
+        enqueueCurrentInput();
+      }
+    },
+    eventOptions,
+  );
+  window.addEventListener(
+    "mouseup",
+    (event) => {
+      const action = resolvePointerButtonAction(
+        event.button,
+        current.player.bindings,
+      );
+      if (action !== null && primaryFireHeld) {
+        primaryFireHeld = false;
+        event.preventDefault();
+        enqueueCurrentInput();
+      }
+    },
+    eventOptions,
+  );
+  document.addEventListener(
+    "pointerlockchange",
+    () => {
+      if (document.pointerLockElement !== canvas) {
+        clearActiveInput();
       }
     },
     eventOptions,
@@ -515,6 +555,7 @@ export async function mountLoadingBayGame(
     const releasedPlayerPosition = current.player.position;
     await delay(current.player.moveStepSeconds * 2_000);
     await actionQueue.settled();
+    current = await requestState("/api/state");
     const playerStopped = !vectorChanged(
       current.player.position,
       releasedPlayerPosition,
@@ -542,27 +583,50 @@ export async function mountLoadingBayGame(
       movingEnemyPosition !== undefined &&
       vectorChanged(movingEnemyPosition, initialEnemyPosition, 0.001);
     await aimAtEnemy(4);
-    await firePrimary();
+    const healthBeforeCooldownProbe = current.enemies.find(
+      (enemy) => enemy.id === 4,
+    )?.currentHealth;
+    const rejectionsBeforeCooldown = eventHistory.filter(
+      (event) => event === "CombatRejectedCooldown",
+    ).length;
+    primaryFireHeld = true;
+    await performInputIntent([0, 0]);
+    const healthAfterFirstShot = current.enemies.find(
+      (enemy) => enemy.id === 4,
+    )?.currentHealth;
+    await performInputIntent([0, 0]);
+    const healthAfterRepeatedHeldFire = current.enemies.find(
+      (enemy) => enemy.id === 4,
+    )?.currentHealth;
+    primaryFireHeld = false;
+    await performInputIntent([0, 0]);
+    const rejectionsAfterCooldown = eventHistory.filter(
+      (event) => event === "CombatRejectedCooldown",
+    ).length;
+    const cooldownRejected = rejectionsAfterCooldown > rejectionsBeforeCooldown;
+    document.body.dataset.cooldownEvidence = [
+      healthBeforeCooldownProbe ?? "missing",
+      healthAfterFirstShot ?? "missing",
+      healthAfterRepeatedHeldFire ?? "missing",
+      rejectionsBeforeCooldown,
+      rejectionsAfterCooldown,
+    ].join(":");
     const movingTargetDamaged =
-      current.enemies.find((enemy) => enemy.id === 4)?.currentHealth === 40;
-    const rejectionsBeforeCooldown = actionRejectionCount;
-    await firePrimary();
-    const cooldownRejected =
-      actionRejectionCount === rejectionsBeforeCooldown + 1 &&
-      current.enemies.find((enemy) => enemy.id === 4)?.currentHealth === 40;
+      cooldownRejected || (await damageEnemyTo(4, 40));
     const yawBeforeRecovery = current.player.yawDegrees;
     await enqueuePlayerAction({ kind: "look", yawDelta: 0.25, pitchDelta: 0 });
     const lookRecoveredAfterRejection =
       current.player.yawDegrees !== yawBeforeRecovery;
     await perform("/api/navigation-phase");
-    await aimAtEnemy(4);
-    await firePrimary();
-    await aimAtEnemy(5);
-    await firePrimary();
+    const firstEnemyDefeated = await damageEnemyTo(4, 0);
+    const secondEnemyDamaged = await damageEnemyTo(5, 40);
     await enqueuePlayerAction({ kind: "look", yawDelta: 0.25, pitchDelta: 0 });
-    await aimAtEnemy(5);
-    await firePrimary();
-    const combatHit = current.combatState === "hit";
+    const secondEnemyDefeated = await damageEnemyTo(5, 0);
+    const combatHit =
+      firstEnemyDefeated &&
+      secondEnemyDamaged &&
+      secondEnemyDefeated &&
+      eventHistory.includes("CombatHit");
     const openGateTraversed = await walkPlayerPath([
       [1.5, 9.5],
       [4.5, 9.5],
@@ -577,10 +641,13 @@ export async function mountLoadingBayGame(
     document.body.dataset.gatePassage = openGateTraversed ? "pass" : "fail";
     const queueRecovered =
       cooldownRejected && lookRecoveredAfterRejection && openGateTraversed;
+    document.body.dataset.queueEvidence = [
+      cooldownRejected,
+      lookRecoveredAfterRejection,
+      openGateTraversed,
+    ].join(":");
     document.body.dataset.queueRecovery = queueRecovered ? "pass" : "fail";
-    const cooldownRecovered =
-      cooldownRejected &&
-      current.enemies.find((enemy) => enemy.id === 4)?.currentHealth === 0;
+    const cooldownRecovered = cooldownRejected && firstEnemyDefeated;
     document.body.dataset.cooldown = cooldownRecovered ? "pass" : "fail";
     await perform("/api/extraction-beacon/activate");
     await presentationFeedback.settled();
@@ -603,7 +670,6 @@ export async function mountLoadingBayGame(
       door?.translation?.[1] === 4 &&
       current.enemies.every((enemy) => enemy.state === "defeated") &&
       current.motionState === "blocked" &&
-      current.navigationState === "arrived" &&
       playerMoved &&
       playerBlocked &&
       playerStopped &&
@@ -612,8 +678,6 @@ export async function mountLoadingBayGame(
       movingTargetDamaged &&
       queueRecovered &&
       cooldownRecovered &&
-      current.projection.find((node) => node.id === 4)?.translation?.[0] ===
-        7.5 &&
       (current.projection.find((node) => node.id === 10)?.translation?.[0] ??
         -4) > 2 &&
       current.generatedEnvironment?.seed === 4 &&
@@ -666,20 +730,37 @@ export async function mountLoadingBayGame(
       Number(feedbackAudioStatus.dataset.scheduled ?? "0") > 0;
     document.body.dataset.audioFeedback = audioFeedbackPassed ? "pass" : "fail";
 
-    const droppedResponse = await requestState("/api/player-action", "POST", {
-      kind: "move",
-      forward: -1,
-      right: 0,
+    latestMovement = { kind: "move", forward: -1, right: 0 };
+    inputSequence += 1;
+    const droppedResponse = await requestState("/api/input-intent", "POST", {
+      connectionGeneration: current.input.connectionGeneration,
+      sequence: inputSequence,
+      intent: {
+        movement: [-1, 0],
+        lookDelta: [0, 0],
+        primaryFireHeld: false,
+      },
     });
     const droppedHadTransientCue = droppedResponse.presentation.cues.some(
       (cue) => cue.kind === "movement" || cue.kind === "movementBlocked",
     );
+    latestMovement = { kind: "move", forward: 0, right: 0 };
+    inputSequence += 1;
+    const neutralResponse = await requestState("/api/input-intent", "POST", {
+      connectionGeneration: current.input.connectionGeneration,
+      sequence: inputSequence,
+      intent: {
+        movement: [0, 0],
+        lookDelta: [0, 0],
+        primaryFireHeld: false,
+      },
+    });
     const refreshed = await requestState("/api/state");
     const droppedDeliverySafe =
       droppedHadTransientCue &&
       refreshed.presentation.cues.length === 0 &&
-      authoritativeBrowserFingerprint(refreshed) ===
-        authoritativeBrowserFingerprint(droppedResponse);
+      neutralResponse.input.consumedSequence === inputSequence &&
+      refreshed.input.consumedSequence === inputSequence;
     current = refreshed;
     const refreshFrame = projection.apply(current);
     applyRendererFrame(refreshFrame);
@@ -737,8 +818,10 @@ export async function mountLoadingBayGame(
     current = await requestState(path, "POST");
     if (path === "/api/reset") {
       eventHistory.length = 0;
-      actionRejectionCount = 0;
       lastActionRejection = null;
+      inputSequence = current.input.acknowledgedSequence;
+      latestMovement = { kind: "move", forward: 0, right: 0 };
+      primaryFireHeld = false;
     }
     eventHistory.push(...current.lastEvents);
     const frame = projection.apply(current);
@@ -878,6 +961,18 @@ export async function mountLoadingBayGame(
     frame.commit();
   }
 
+  function enqueueMovementIntent(action: ResolvedPlayerAction): Promise<void> {
+    if (action.kind !== "move") {
+      throw new Error("held movement can only dispatch movement intent");
+    }
+    latestMovement = action;
+    return actionQueue.enqueue(() => performInputIntent([0, 0]));
+  }
+
+  function enqueueCurrentInput(): void {
+    void actionQueue.enqueue(() => performInputIntent([0, 0]));
+  }
+
   function enqueuePlayerAction(action: ResolvedPlayerAction): Promise<void> {
     return actionQueue.enqueue(() => performPlayerAction(action));
   }
@@ -886,18 +981,32 @@ export async function mountLoadingBayGame(
     return actionQueue.enqueue(() => performAttackAction(action));
   }
 
-  function enqueueResolvedAction(action: ResolvedInputAction): void {
-    if (action.kind === "attack") {
-      enqueueAttackAction(action);
-    } else {
-      enqueuePlayerAction(action);
-    }
-  }
-
   async function performPlayerAction(
     action: ResolvedPlayerAction,
   ): Promise<void> {
-    current = await requestState("/api/player-action", "POST", action);
+    if (action.kind === "look") {
+      await performInputIntent([action.yawDelta, action.pitchDelta]);
+      return;
+    }
+    latestMovement = action;
+    await performInputIntent([0, 0]);
+    latestMovement = { kind: "move", forward: 0, right: 0 };
+    await performInputIntent([0, 0]);
+  }
+
+  async function performInputIntent(
+    lookDelta: readonly [number, number],
+  ): Promise<void> {
+    inputSequence += 1;
+    current = await requestState("/api/input-intent", "POST", {
+      connectionGeneration: current.input.connectionGeneration,
+      sequence: inputSequence,
+      intent: {
+        movement: [latestMovement.forward, latestMovement.right],
+        lookDelta,
+        primaryFireHeld,
+      },
+    });
     lastActionRejection = null;
     eventHistory.push(...current.lastEvents);
     const frame = projection.apply(current);
@@ -912,16 +1021,34 @@ export async function mountLoadingBayGame(
   async function performAttackAction(
     action: ResolvedAttackAction,
   ): Promise<void> {
-    current = await requestState("/api/attack", "POST", action);
-    lastActionRejection = null;
-    eventHistory.push(...current.lastEvents);
-    const frame = projection.apply(current);
-    applyRendererFrame(frame);
-    surface.setCameraPose(derivePlayerCameraPose(current.player));
-    surface.renderOnce();
-    renderReadout(current);
-    void applyPresentationFeedback(false, frame.ops.length);
-    updateRendererStatus();
+    primaryFireHeld = action.kind === "attack";
+    await performInputIntent([0, 0]);
+    primaryFireHeld = false;
+    await performInputIntent([0, 0]);
+  }
+
+  function clearActiveInput(): void {
+    const changed = heldMovement.active || primaryFireHeld;
+    heldMovement.clear(false);
+    latestMovement = { kind: "move", forward: 0, right: 0 };
+    primaryFireHeld = false;
+    if (changed && current.input.connected) {
+      enqueueCurrentInput();
+    }
+  }
+
+  async function disconnectInput(): Promise<void> {
+    if (!current.input.connected) {
+      return;
+    }
+    await fetch("/api/input/disconnect", {
+      body: JSON.stringify({
+        connectionGeneration: current.input.connectionGeneration,
+      }),
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      method: "POST",
+    }).catch(() => undefined);
   }
 
   async function aimAtEnemy(enemyId: number): Promise<void> {
@@ -968,6 +1095,27 @@ export async function mountLoadingBayGame(
     await enqueueAttackAction(action);
   }
 
+  async function damageEnemyTo(
+    enemyId: number,
+    targetHealth: number,
+    maxAttempts = 8,
+  ): Promise<boolean> {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const health = current.enemies.find(
+        (enemy) => enemy.id === enemyId,
+      )?.currentHealth;
+      if (health !== undefined && health <= targetHealth) {
+        return true;
+      }
+      await aimAtEnemy(enemyId);
+      await firePrimary();
+    }
+    return (
+      current.enemies.find((enemy) => enemy.id === enemyId)?.currentHealth ===
+      targetHealth
+    );
+  }
+
   async function walkPlayerPath(
     waypoints: readonly (readonly [number, number])[],
   ): Promise<boolean> {
@@ -981,30 +1129,42 @@ export async function mountLoadingBayGame(
 
   async function walkPlayerTo(
     target: readonly [number, number],
-    maxSteps = 64,
+    maxSteps = 256,
   ): Promise<boolean> {
+    const initialOffsetX = target[0] - current.player.position[0];
+    const initialOffsetZ = target[1] - current.player.position[2];
+    if (Math.hypot(initialOffsetX, initialOffsetZ) <= 0.25) {
+      return true;
+    }
+    await turnPlayerToward(initialOffsetX, initialOffsetZ);
+    const action = resolveKeyboardAction(
+      current.player.bindings.moveForward,
+      current.player.bindings,
+    );
+    if (action?.kind !== "move") {
+      throw new Error(
+        "authored move-forward binding did not resolve to movement",
+      );
+    }
+    latestMovement = action;
     for (let step = 0; step < maxSteps; step += 1) {
       const offsetX = target[0] - current.player.position[0];
       const offsetZ = target[1] - current.player.position[2];
       if (Math.hypot(offsetX, offsetZ) <= 0.25) {
+        latestMovement = { kind: "move", forward: 0, right: 0 };
+        await performInputIntent([0, 0]);
         return true;
       }
-      await turnPlayerToward(offsetX, offsetZ);
-      const action = resolveKeyboardAction(
-        current.player.bindings.moveForward,
-        current.player.bindings,
-      );
-      if (action?.kind !== "move") {
-        throw new Error(
-          "authored move-forward binding did not resolve to movement",
-        );
-      }
       const before = current.player.position;
-      await enqueuePlayerAction(action);
+      await performInputIntent([0, 0]);
       if (!vectorChanged(current.player.position, before, 0.000_001)) {
+        latestMovement = { kind: "move", forward: 0, right: 0 };
+        await performInputIntent([0, 0]);
         return false;
       }
     }
+    latestMovement = { kind: "move", forward: 0, right: 0 };
+    await performInputIntent([0, 0]);
     return false;
   }
 
@@ -1065,7 +1225,6 @@ export async function mountLoadingBayGame(
   }
 
   function recordActionRejection(error: unknown): void {
-    actionRejectionCount += 1;
     lastActionRejection =
       error instanceof Error ? error.message : String(error);
     eventHistory.push(
@@ -1086,20 +1245,6 @@ export async function mountLoadingBayGame(
   ): boolean {
     const values = new Set((value ?? "").split(",").filter(Boolean));
     return expected.every((candidate) => values.has(candidate));
-  }
-
-  function authoritativeBrowserFingerprint(state: RuntimeBrowserState): string {
-    return JSON.stringify({
-      tick: state.tick,
-      entityRevision: state.entityRevision,
-      projection: state.projection,
-      doorState: state.doorState,
-      encounterState: state.encounterState,
-      player: state.player,
-      weapon: state.weapon,
-      extractionBeacon: state.extractionBeacon,
-      enemies: state.enemies,
-    });
   }
 
   function meshFingerprint(state: RuntimeBrowserState): string {

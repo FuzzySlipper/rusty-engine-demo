@@ -53,6 +53,15 @@ export interface RuntimeWeaponState {
   readonly readyAtTick: number;
 }
 
+export interface RuntimeInputSessionState {
+  readonly connectionGeneration: number;
+  readonly connected: boolean;
+  readonly paused: boolean;
+  readonly acknowledgedSequence: number;
+  readonly consumedSequence: number;
+  readonly queuedEdgeCommands: number;
+}
+
 export interface RuntimeExtractionBeaconState {
   readonly id: number;
   readonly state: "standby" | "active";
@@ -95,7 +104,14 @@ export interface RuntimeGeneratedEnvironment {
 
 export interface RuntimeAnimationState {
   readonly entity: number;
-  readonly posture: "idle" | "moving" | "defeated" | "open" | "closed" | "standby" | "active";
+  readonly posture:
+    | "idle"
+    | "moving"
+    | "defeated"
+    | "open"
+    | "closed"
+    | "standby"
+    | "active";
 }
 
 export type RuntimeFeedbackCue =
@@ -119,9 +135,21 @@ export type RuntimeFeedbackCue =
       readonly amount: number;
       readonly remaining: number;
     }
-  | { readonly kind: "defeat"; readonly attacker: number | null; readonly entity: number }
-  | { readonly kind: "doorChanged"; readonly entity: number; readonly state: "open" | "closed" }
-  | { readonly kind: "extractionBeaconActivated"; readonly entity: number; readonly actor: number };
+  | {
+      readonly kind: "defeat";
+      readonly attacker: number | null;
+      readonly entity: number;
+    }
+  | {
+      readonly kind: "doorChanged";
+      readonly entity: number;
+      readonly state: "open" | "closed";
+    }
+  | {
+      readonly kind: "extractionBeaconActivated";
+      readonly entity: number;
+      readonly actor: number;
+    };
 
 export interface RuntimePresentationState {
   readonly animationStates: readonly RuntimeAnimationState[];
@@ -143,6 +171,7 @@ export interface RuntimeBrowserState {
   readonly navigationState: "following" | "arrived" | "blocked" | "unreachable";
   readonly playerMotionState: "idle" | "moved" | "blocked";
   readonly combatState: "ready" | "hit" | "missed";
+  readonly input: RuntimeInputSessionState;
   readonly player: RuntimePlayerState;
   readonly weapon: RuntimeWeaponState;
   readonly extractionBeacon: RuntimeExtractionBeaconState | null;
@@ -196,7 +225,10 @@ export interface RuntimeProjectionPlan extends RenderFrameDiff {
 export class RuntimeProjectionAdapter {
   readonly #known = new Map<
     number,
-    { readonly node: RuntimeProjectionNode; readonly beaconState: "standby" | "active" | null }
+    {
+      readonly node: RuntimeProjectionNode;
+      readonly beaconState: "standby" | "active" | null;
+    }
   >();
   readonly #meshHashes = new Map<string, string>();
   readonly #meshHandles = new Map<string, RenderHandle>();
@@ -234,7 +266,11 @@ export class RuntimeProjectionAdapter {
         });
       }
       if (nextMeshHashes.get(key) !== mesh.contentHash) {
-        ops.push({ op: "replaceMeshPayload", handle, payload: meshPayload(mesh) });
+        ops.push({
+          op: "replaceMeshPayload",
+          handle,
+          payload: meshPayload(mesh),
+        });
         nextMeshHashes.set(key, mesh.contentHash);
       }
     }
@@ -250,9 +286,10 @@ export class RuntimeProjectionAdapter {
     for (const node of state.projection) {
       incoming.add(node.id);
       const known = nextKnown.get(node.id);
-      const beaconState = state.extractionBeacon?.id === node.id
-        ? state.extractionBeacon.state
-        : null;
+      const beaconState =
+        state.extractionBeacon?.id === node.id
+          ? state.extractionBeacon.state
+          : null;
       if (known === undefined) {
         ops.push({
           op: "create",
@@ -260,7 +297,10 @@ export class RuntimeProjectionAdapter {
           parent: null,
           node: projectedNode(node, beaconState),
         });
-      } else if (!sameProjectionNode(known.node, node) || known.beaconState !== beaconState) {
+      } else if (
+        !sameProjectionNode(known.node, node) ||
+        known.beaconState !== beaconState
+      ) {
         const next = projectedNode(node, beaconState);
         ops.push({
           op: "update",
@@ -341,8 +381,14 @@ function meshPayload(mesh: RuntimeVoxelMeshChunk): MeshPayloadDescriptor {
 }
 
 export function entityHandle(id: number): RenderHandle {
-  if (!Number.isSafeInteger(id) || id < 0 || id > Number.MAX_SAFE_INTEGER - ENTITY_HANDLE_OFFSET) {
-    throw new RangeError("projection entity id is outside the browser-safe integer range");
+  if (
+    !Number.isSafeInteger(id) ||
+    id < 0 ||
+    id > Number.MAX_SAFE_INTEGER - ENTITY_HANDLE_OFFSET
+  ) {
+    throw new RangeError(
+      "projection entity id is outside the browser-safe integer range",
+    );
   }
   return renderHandle(ENTITY_HANDLE_OFFSET + id);
 }
@@ -360,13 +406,13 @@ function projectedNode(
     ? [2.4, 3.4, 0.55]
     : beacon
       ? [0.8, 2.4, 0.8]
-    : probe
-      ? [0.5, 0.5, 0.5]
-      : wall
-        ? [1, 1, 1]
-        : player
-          ? [0.7, 1.4, 0.7]
-          : [1.1, 1.8, 1.1];
+      : probe
+        ? [0.5, 0.5, 0.5]
+        : wall
+          ? [1, 1, 1]
+          : player
+            ? [0.7, 1.4, 0.7]
+            : [1.1, 1.8, 1.1];
   const authored = node.translation ?? [0, 0, 0];
   const translation: readonly [number, number, number] = [
     authored[0],
@@ -379,13 +425,13 @@ function projectedNode(
       ? beaconState === "active"
         ? { color: [0.22, 0.95, 0.72, 1], wireframe: false }
         : { color: [0.85, 0.54, 0.18, 1], wireframe: false }
-    : probe
-      ? { color: [0.26, 0.85, 0.68, 1], wireframe: false }
-      : wall
-        ? { color: [0.22, 0.38, 0.43, 1], wireframe: false }
-        : player
-          ? { color: [0.24, 0.74, 0.91, 1], wireframe: false }
-          : { color: [0.82, 0.18, 0.14, 1], wireframe: false };
+      : probe
+        ? { color: [0.26, 0.85, 0.68, 1], wireframe: false }
+        : wall
+          ? { color: [0.22, 0.38, 0.43, 1], wireframe: false }
+          : player
+            ? { color: [0.24, 0.74, 0.91, 1], wireframe: false }
+            : { color: [0.82, 0.18, 0.14, 1], wireframe: false };
   return primitiveNode(
     node.name,
     node.id,
@@ -428,7 +474,10 @@ function identityTransform(
   return { translation, rotation: [0, 0, 0, 1], scale };
 }
 
-function sameProjectionNode(left: RuntimeProjectionNode, right: RuntimeProjectionNode): boolean {
+function sameProjectionNode(
+  left: RuntimeProjectionNode,
+  right: RuntimeProjectionNode,
+): boolean {
   return (
     left.name === right.name &&
     left.asset === right.asset &&

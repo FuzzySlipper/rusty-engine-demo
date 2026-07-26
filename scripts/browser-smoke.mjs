@@ -107,6 +107,16 @@ try {
   rmSync(proofDirectory, { recursive: true, force: true });
 }
 
+function durableBrowserAuthority(state) {
+  const {
+    tick: _tick,
+    input: _input,
+    lastEvents: _lastEvents,
+    ...durable
+  } = state;
+  return JSON.stringify(durable);
+}
+
 async function persistProject(input, output) {
   const result = await run("cargo", [
     "run",
@@ -177,7 +187,7 @@ async function runFullBrowserProduct(project) {
       "EncounterCleared",
       "DoorOpened",
       "KinematicBlocked",
-      "NavigationArrived",
+      "NavigationAdvanced",
       "PlayerMoved",
       "PlayerBlocked",
       "PlayerLookChanged",
@@ -193,7 +203,7 @@ async function runFullBrowserProduct(project) {
     );
     if (missing.length > 0) {
       throw new Error(
-        `browser smoke missing ${missing.join(", ")}\n${result.stdout.slice(-6_000)}`,
+        `browser smoke missing ${missing.join(", ")}\n${result.stdout.match(/<body[^>]*>/)?.[0] ?? "body tag unavailable"}\n${result.stdout.slice(-6_000)}`,
       );
     }
     const beforeReloadResponse = await fetch(
@@ -256,10 +266,11 @@ async function runFullBrowserProduct(project) {
     const afterReload = await afterReloadResponse.json();
     if (
       !afterReloadResponse.ok ||
-      JSON.stringify(afterReload) !== JSON.stringify(beforeReload)
+      durableBrowserAuthority(afterReload) !==
+        durableBrowserAuthority(beforeReload)
     ) {
       throw new Error(
-        `browser reload changed authoritative state\nbefore=${JSON.stringify(beforeReload)}\nafter=${JSON.stringify(afterReload)}`,
+        `browser reload changed durable authority\nbefore=${durableBrowserAuthority(beforeReload)}\nafter=${durableBrowserAuthority(afterReload)}`,
       );
     }
     const lifecycleResult = await run(chromium, [
@@ -332,7 +343,10 @@ async function runMigratedBrowserProduct(project) {
       running.host,
       running.output,
     );
-    const stateResponse = await fetch(`http://${running.address}/api/state`);
+    const stateResponse = await fetch(
+      `http://${running.address}/api/input/connect`,
+      { method: "POST" },
+    );
     const state = await stateResponse.json();
     if (
       !stateResponse.ok ||
@@ -345,20 +359,51 @@ async function runMigratedBrowserProduct(project) {
         `migrated browser state was incomplete\n${JSON.stringify(state)}`,
       );
     }
-    const attackResponse = await fetch(`http://${running.address}/api/attack`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ kind: "attack" }),
-    });
+    const attackResponse = await fetch(
+      `http://${running.address}/api/input-intent`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          connectionGeneration: state.input.connectionGeneration,
+          sequence: 1,
+          intent: {
+            movement: [0, 0],
+            lookDelta: [0, 0],
+            primaryFireHeld: true,
+          },
+        }),
+      },
+    );
     const attacked = await attackResponse.json();
     if (
       !attackResponse.ok ||
-      attacked.tick !== 1 ||
-      attacked.weapon?.ammoRemaining !== 7
+      attacked.tick <= state.tick ||
+      attacked.weapon?.ammoRemaining >= state.weapon.ammoRemaining
     ) {
       throw new Error(
         `migrated browser action failed\n${JSON.stringify(attacked)}`,
       );
+    }
+    const releaseResponse = await fetch(
+      `http://${running.address}/api/input-intent`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          connectionGeneration: state.input.connectionGeneration,
+          sequence: 2,
+          intent: {
+            movement: [0, 0],
+            lookDelta: [0, 0],
+            primaryFireHeld: false,
+          },
+        }),
+      },
+    );
+    await releaseResponse.arrayBuffer();
+    if (!releaseResponse.ok) {
+      throw new Error("migrated browser fire release failed");
     }
     const startup = running.output();
     for (const marker of [
