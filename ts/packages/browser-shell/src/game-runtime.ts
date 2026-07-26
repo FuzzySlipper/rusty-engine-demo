@@ -18,6 +18,8 @@ import {
   RuntimeProjectionAdapter,
   derivePlayerCameraPose,
   type RuntimeBrowserState,
+  type RuntimeSaveSlotId,
+  type RuntimeSaveSlotSummary,
 } from "./projection.js";
 
 type VoxelEditOperation =
@@ -39,6 +41,9 @@ export interface LoadingBayHostPresentationPreferences {
   readonly sfxVolume: number;
   readonly telemetryVisible: boolean;
 }
+
+export type LoadingBaySaveSlotId = RuntimeSaveSlotId;
+export type LoadingBaySaveSlot = RuntimeSaveSlotSummary;
 
 export interface LoadingBayInventoryStack {
   readonly item: string;
@@ -88,6 +93,7 @@ export interface LoadingBayPresentationSnapshot {
   readonly levelComplete: boolean;
   readonly levelCompletionPresentation: string | null;
   readonly restartAvailable: boolean;
+  readonly saveSlots: readonly LoadingBaySaveSlot[];
   readonly vitalityState: "alive" | "dead";
   readonly weaponItem: string;
   readonly weaponPresentation: string;
@@ -103,8 +109,17 @@ export interface LoadingBayGameOptions {
 export interface LoadingBayGameHandle {
   readonly dispose: () => Promise<void>;
   readonly interact: (target: number) => Promise<void>;
+  readonly loadGame: (
+    slot: LoadingBaySaveSlotId,
+    expectedStorageRevision: string | null,
+  ) => Promise<void>;
   readonly releaseInput: () => void;
   readonly restart: () => Promise<void>;
+  readonly saveGame: (
+    slot: LoadingBaySaveSlotId,
+    overwrite: boolean,
+    expectedStorageRevision: string | null,
+  ) => Promise<void>;
   readonly selectWeaponSlot: (slot: number) => Promise<void>;
   readonly setPaused: (paused: boolean) => Promise<void>;
   readonly updatePreferences: (
@@ -1092,8 +1107,14 @@ export async function mountLoadingBayGame(
   return {
     dispose,
     interact: (target) => runUiAction(() => enqueueInteraction(target)),
+    loadGame: (slot, expectedStorageRevision) =>
+      runUiAction(() => performLoadGame(slot, expectedStorageRevision)),
     releaseInput: releaseCapturedInput,
     restart: () => runUiAction(performRestart),
+    saveGame: (slot, overwrite, expectedStorageRevision) =>
+      runUiAction(() =>
+        performSaveGame(slot, overwrite, expectedStorageRevision),
+      ),
     selectWeaponSlot: (slot) => runUiAction(() => enqueueWeaponSelection(slot)),
     setPaused: (paused) => runUiAction(() => performSetPaused(paused)),
     updatePreferences,
@@ -1101,6 +1122,35 @@ export async function mountLoadingBayGame(
   };
 
   async function performRestart(): Promise<void> {
+    await performSessionReplacement({
+      kind: "restart",
+      mode: "authoredBaseline",
+    });
+  }
+
+  async function performLoadGame(
+    slot: LoadingBaySaveSlotId,
+    expectedStorageRevision: string | null,
+  ): Promise<void> {
+    await performSessionReplacement({
+      kind: "loadGame",
+      slot,
+      expectedStorageRevision,
+    });
+  }
+
+  async function performSessionReplacement(
+    command:
+      | {
+          readonly kind: "restart";
+          readonly mode: "authoredBaseline" | "checkpoint";
+        }
+      | {
+          readonly kind: "loadGame";
+          readonly slot: LoadingBaySaveSlotId;
+          readonly expectedStorageRevision: string | null;
+        },
+  ): Promise<void> {
     heldMovement.clear(false);
     lookGeneration += 1;
     lookInput.clear();
@@ -1111,10 +1161,7 @@ export async function mountLoadingBayGame(
     const telemetrySamplesBeforeRestart = Number(
       telemetryLayer.dataset.rendererSampleSequence ?? "0",
     );
-    current = await session.sendEdge({
-      kind: "restart",
-      mode: "authoredBaseline",
-    });
+    current = await session.sendEdge(command);
     eventHistory.length = 0;
     lastActionRejection = null;
     const frame = projection.apply(current);
@@ -1128,6 +1175,21 @@ export async function mountLoadingBayGame(
     document.body.dataset.rendererTelemetryReset =
       rendererTelemetryResetObserved ? "pass" : "pending";
     updateRendererStatus();
+  }
+
+  async function performSaveGame(
+    slot: LoadingBaySaveSlotId,
+    overwrite: boolean,
+    expectedStorageRevision: string | null,
+  ): Promise<void> {
+    current = await session.sendEdge({
+      kind: "saveGame",
+      slot,
+      overwrite,
+      expectedStorageRevision,
+    });
+    lastActionRejection = null;
+    renderReadout(current);
   }
 
   async function performSetPaused(paused: boolean): Promise<void> {
@@ -1312,6 +1374,7 @@ export async function mountLoadingBayGame(
         state.levelExits.find((exit) => exit.state === "completed")
           ?.presentation ?? null,
       restartAvailable: state.restart.authoredBaselineAvailable,
+      saveSlots: state.saveSlots,
       vitalityState: state.player.vitalityState,
       weaponItem: state.weapon.item,
       weaponPresentation: state.weapon.presentation,

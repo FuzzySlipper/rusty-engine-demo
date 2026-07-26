@@ -6,7 +6,7 @@ use loading_bay_game::{
     GameLoopEdgeCommand, GameLoopEdgeCommandKind, GameLoopFact, GameRuntime,
     InputCommandDisposition, InputCommandRejection, InventoryAction, InventoryCommand,
     InventoryFact, ItemDefinitionId, LoadingBayGameLoop, PlayerInputCommand, PlayerInputIntent,
-    WeaponAttackMode, FIXED_STEP_DURATION, FIXED_TICK_PHASE_ORDER, MAX_CATCH_UP_TICKS,
+    SaveSlotId, WeaponAttackMode, FIXED_STEP_DURATION, FIXED_TICK_PHASE_ORDER, MAX_CATCH_UP_TICKS,
     MAX_EDGE_COMMANDS,
 };
 
@@ -740,6 +740,107 @@ fn pause_and_session_replacement_clear_intent_without_resurrection() {
         game_loop.submit_input(input(generation, 5, [1.0, 0.0], [0.0, 0.0], false)),
         Err(InputCommandRejection::WrongConnectionGeneration { .. })
     ));
+}
+
+#[test]
+fn save_and_load_edges_have_fixed_tick_meaning_while_live_paused_dead_or_complete() {
+    let mut live = game_loop();
+    let generation = live.start_connection().connection_generation;
+    live.submit_edge_command(edge(
+        generation,
+        1,
+        GameLoopEdgeCommandKind::SaveGame {
+            slot: SaveSlotId::Slot1,
+        },
+    ))
+    .unwrap();
+    let receipt = live.run_fixed_tick().unwrap();
+    assert!(receipt.simulation_advanced);
+    assert!(receipt.facts.contains(&GameLoopFact::SaveRequested {
+        sequence: 1,
+        slot: SaveSlotId::Slot1,
+    }));
+
+    live.submit_edge_command(edge(
+        generation,
+        2,
+        GameLoopEdgeCommandKind::SetPaused { paused: true },
+    ))
+    .unwrap();
+    live.run_fixed_tick().unwrap();
+    live.submit_edge_command(edge(
+        generation,
+        3,
+        GameLoopEdgeCommandKind::SaveGame {
+            slot: SaveSlotId::Checkpoint,
+        },
+    ))
+    .unwrap();
+    let paused = live.run_fixed_tick().unwrap();
+    assert!(!paused.simulation_advanced);
+    assert!(paused.facts.contains(&GameLoopFact::SaveRequested {
+        sequence: 3,
+        slot: SaveSlotId::Checkpoint,
+    }));
+
+    let mut dead_snapshot: serde_json::Value =
+        serde_json::from_str(&encode_game_snapshot(game_loop().runtime()).unwrap()).unwrap();
+    let health = dead_snapshot["health"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|health| health["entity"] == PLAYER.raw())
+        .unwrap();
+    health["current"] = 0.into();
+    health["state"] = "dead".into();
+    let mut dead = LoadingBayGameLoop::new(
+        decode_game_snapshot(&dead_snapshot.to_string()).unwrap(),
+        PLAYER,
+    )
+    .unwrap();
+    let generation = dead.start_connection().connection_generation;
+    dead.submit_edge_command(edge(
+        generation,
+        1,
+        GameLoopEdgeCommandKind::LoadGame {
+            slot: SaveSlotId::Checkpoint,
+        },
+    ))
+    .unwrap();
+    let receipt = dead.run_fixed_tick().unwrap();
+    assert!(receipt.facts.contains(&GameLoopFact::LoadRequested {
+        sequence: 1,
+        slot: SaveSlotId::Checkpoint,
+    }));
+
+    let mut complete_snapshot: serde_json::Value =
+        serde_json::from_str(&encode_game_snapshot(game_loop().runtime()).unwrap()).unwrap();
+    complete_snapshot["progression"]["levelExits"][0]["state"] = serde_json::json!({
+        "state": "completed",
+        "actor": PLAYER.raw(),
+        "completedAtTick": 0
+    });
+    let mut complete = LoadingBayGameLoop::new(
+        decode_game_snapshot(&complete_snapshot.to_string()).unwrap(),
+        PLAYER,
+    )
+    .unwrap();
+    let generation = complete.start_connection().connection_generation;
+    complete
+        .submit_edge_command(edge(
+            generation,
+            1,
+            GameLoopEdgeCommandKind::SaveGame {
+                slot: SaveSlotId::Slot3,
+            },
+        ))
+        .unwrap();
+    let receipt = complete.run_fixed_tick().unwrap();
+    assert!(!receipt.simulation_advanced);
+    assert!(receipt.facts.contains(&GameLoopFact::SaveRequested {
+        sequence: 1,
+        slot: SaveSlotId::Slot3,
+    }));
 }
 
 fn ammunition(game_loop: &LoadingBayGameLoop, item: &str) -> u32 {

@@ -34,6 +34,11 @@ export type SessionRejectionCode =
   | "itemNotUsable"
   | "healthFull"
   | "checkpointUnavailable"
+  | "saveUnavailable"
+  | "saveOverwriteRequired"
+  | "saveStale"
+  | "snapshotCorrupt"
+  | "snapshotIncompatible"
   | "paused"
   | "internalDefect";
 
@@ -122,6 +127,17 @@ type ClientGameCommand =
   | {
       readonly kind: "restart";
       readonly mode: "authoredBaseline" | "checkpoint";
+    }
+  | {
+      readonly kind: "saveGame";
+      readonly slot: "checkpoint" | "slot1" | "slot2" | "slot3";
+      readonly overwrite: boolean;
+      readonly expectedStorageRevision: string | null;
+    }
+  | {
+      readonly kind: "loadGame";
+      readonly slot: "checkpoint" | "slot1" | "slot2" | "slot3";
+      readonly expectedStorageRevision: string | null;
     };
 
 interface ClientCommandEnvelope {
@@ -492,11 +508,11 @@ export class LoadingBayGameSession {
         ),
       );
     }
-    if (command.kind === "restart" && this.#restart !== null) {
+    if (this.#restart !== null) {
       return Promise.reject(
         new GameSessionError(
           "edgeQueueSaturated",
-          "an authored-baseline restart is already pending",
+          "the current session is waiting for authoritative replacement",
         ),
       );
     }
@@ -512,7 +528,7 @@ export class LoadingBayGameSession {
     const sequence = this.#nextSequence();
     return new Promise<RuntimeBrowserState>((resolve, reject) => {
       const pending = { sequence, resolve, reject };
-      if (command.kind === "restart") {
+      if (replacesSession(command)) {
         this.#restart = pending;
       } else {
         this.#pendingEdges.set(sequence, pending);
@@ -1177,6 +1193,8 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     isRecord(value.restart) &&
     typeof value.restart.authoredBaselineAvailable === "boolean" &&
     typeof value.restart.checkpointAvailable === "boolean" &&
+    Array.isArray(value.saveSlots) &&
+    value.saveSlots.every(isRuntimeSaveSlotSummary) &&
     (value.extractionBeacon === null || isRecord(value.extractionBeacon)) &&
     Array.isArray(value.doorAccess) &&
     value.doorAccess.every(isRuntimeDoorAccessState) &&
@@ -1193,6 +1211,55 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     Array.isArray(value.lastEvents) &&
     value.lastEvents.every((event) => typeof event === "string")
   );
+}
+
+function isRuntimeSaveSlotSummary(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    (value.slot === "checkpoint" ||
+      value.slot === "slot1" ||
+      value.slot === "slot2" ||
+      value.slot === "slot3") &&
+    (value.compatibility === "empty" ||
+      value.compatibility === "available" ||
+      value.compatibility === "corrupt" ||
+      value.compatibility === "incompatible") &&
+    (value.storageRevision === null ||
+      typeof value.storageRevision === "string") &&
+    (value.metadata === null || isRuntimeSaveGameMetadata(value.metadata)) &&
+    (value.project === null || isRuntimeSaveProjectIdentity(value.project)) &&
+    (value.diagnostic === null || typeof value.diagnostic === "string")
+  );
+}
+
+function isRuntimeSaveGameMetadata(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.revision) &&
+    isFiniteNumber(value.savedAtUnixMilliseconds) &&
+    typeof value.displayName === "string" &&
+    isFiniteNumber(value.tick) &&
+    isFiniteNumber(value.snapshotSchemaVersion) &&
+    (value.playerState === "alive" ||
+      value.playerState === "dead" ||
+      value.playerState === "unavailable") &&
+    typeof value.levelComplete === "boolean"
+  );
+}
+
+function isRuntimeSaveProjectIdentity(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.projectId === "string" &&
+    typeof value.entryScene === "string" &&
+    isFiniteNumber(value.playerEntity) &&
+    isFiniteNumber(value.projectSchemaVersion) &&
+    typeof value.contentRevision === "string"
+  );
+}
+
+function replacesSession(command: ClientGameCommand): boolean {
+  return command.kind === "restart" || command.kind === "loadGame";
 }
 
 export function coalesceSessionLook(

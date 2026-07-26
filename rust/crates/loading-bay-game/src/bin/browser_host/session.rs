@@ -6,8 +6,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use loading_bay_game::{
-    GameLoopEdgeCommand, GameLoopEdgeCommandKind, InputCommandRejection, PlayerInputCommand,
-    PlayerInputIntent,
+    GameLoopEdgeCommand, GameLoopEdgeCommandKind, InputCommandDisposition, InputCommandRejection,
+    PlayerInputCommand, PlayerInputIntent, SaveGameError, SaveLoadRequest, SaveSlotId,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -71,6 +71,15 @@ enum BrowserGameCommand {
     Restart {
         mode: RestartMode,
     },
+    SaveGame {
+        slot: SaveSlotId,
+        overwrite: bool,
+        expected_storage_revision: Option<String>,
+    },
+    LoadGame {
+        slot: SaveSlotId,
+        expected_storage_revision: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -104,6 +113,11 @@ pub(super) enum RejectionCode {
     ItemNotUsable,
     HealthFull,
     CheckpointUnavailable,
+    SaveUnavailable,
+    SaveOverwriteRequired,
+    SaveStale,
+    SnapshotCorrupt,
+    SnapshotIncompatible,
     Paused,
     InternalDefect,
 }
@@ -472,102 +486,261 @@ fn process_command(
     }
 
     let mut host = runtime.lock().expect("runtime lock");
-    let result = match envelope.command {
-        BrowserGameCommand::SetInputIntent {
-            movement,
-            look_delta,
-            primary_fire_held,
-        } => host.runtime.submit_input(PlayerInputCommand {
-            connection_generation: context.connection_generation,
-            sequence: envelope.sequence,
-            intent: PlayerInputIntent {
+    let result = if host.pending_restart.is_some()
+        && !host.staged_restart_matches(context.connection_generation, envelope.sequence)
+    {
+        Err(InputCommandRejection::EdgeQueueSaturated { capacity: 1 })
+    } else {
+        match envelope.command {
+            BrowserGameCommand::SetInputIntent {
                 movement,
                 look_delta,
                 primary_fire_held,
-            },
-        }),
-        BrowserGameCommand::Interact { target } => {
-            host.runtime.submit_edge_command(GameLoopEdgeCommand {
+            } => host.runtime.submit_input(PlayerInputCommand {
                 connection_generation: context.connection_generation,
                 sequence: envelope.sequence,
-                command: GameLoopEdgeCommandKind::Interact { target },
-            })
-        }
-        BrowserGameCommand::SelectWeaponSlot { slot } => {
-            host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                connection_generation: context.connection_generation,
-                sequence: envelope.sequence,
-                command: GameLoopEdgeCommandKind::SelectWeaponSlot { slot },
-            })
-        }
-        BrowserGameCommand::UseItem { item } => {
-            host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                connection_generation: context.connection_generation,
-                sequence: envelope.sequence,
-                command: GameLoopEdgeCommandKind::UseItem { item },
-            })
-        }
-        BrowserGameCommand::SetPaused { paused } => {
-            host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                connection_generation: context.connection_generation,
-                sequence: envelope.sequence,
-                command: GameLoopEdgeCommandKind::SetPaused { paused },
-            })
-        }
-        BrowserGameCommand::Restart {
-            mode: RestartMode::AuthoredBaseline,
-        } => {
-            if let Some(pending) = host.pending_restart.as_ref() {
-                if pending.identity.connection_generation == context.connection_generation
-                    && pending.identity.sequence == envelope.sequence
-                {
-                    host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                intent: PlayerInputIntent {
+                    movement,
+                    look_delta,
+                    primary_fire_held,
+                },
+            }),
+            BrowserGameCommand::Interact { target } => {
+                host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                    connection_generation: context.connection_generation,
+                    sequence: envelope.sequence,
+                    command: GameLoopEdgeCommandKind::Interact { target },
+                })
+            }
+            BrowserGameCommand::SelectWeaponSlot { slot } => {
+                host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                    connection_generation: context.connection_generation,
+                    sequence: envelope.sequence,
+                    command: GameLoopEdgeCommandKind::SelectWeaponSlot { slot },
+                })
+            }
+            BrowserGameCommand::UseItem { item } => {
+                host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                    connection_generation: context.connection_generation,
+                    sequence: envelope.sequence,
+                    command: GameLoopEdgeCommandKind::UseItem { item },
+                })
+            }
+            BrowserGameCommand::SetPaused { paused } => {
+                host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                    connection_generation: context.connection_generation,
+                    sequence: envelope.sequence,
+                    command: GameLoopEdgeCommandKind::SetPaused { paused },
+                })
+            }
+            BrowserGameCommand::Restart {
+                mode: RestartMode::AuthoredBaseline,
+            } => {
+                if let Some(pending) = host.pending_restart.as_ref() {
+                    if pending.identity.connection_generation == context.connection_generation
+                        && pending.identity.sequence == envelope.sequence
+                    {
+                        host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                            connection_generation: context.connection_generation,
+                            sequence: envelope.sequence,
+                            command: GameLoopEdgeCommandKind::RestartAuthoredBaseline,
+                        })
+                    } else {
+                        Err(InputCommandRejection::EdgeQueueSaturated { capacity: 1 })
+                    }
+                } else {
+                    let project_path = host.project_path.clone();
+                    let save_root = host.save_store.root().to_path_buf();
+                    let replacement =
+                        match BrowserRuntime::load_with_save_root(&project_path, &save_root) {
+                            Ok(replacement) => replacement,
+                            Err(error) => {
+                                drop(host);
+                                return send_rejection(
+                                    websocket,
+                                    context,
+                                    Some(envelope.sequence),
+                                    RejectionCode::InternalDefect,
+                                    RetryDisposition::Never,
+                                    &format!("restart failed before mutation: {error}"),
+                                );
+                            }
+                        };
+                    let receipt = host.runtime.submit_edge_command(GameLoopEdgeCommand {
                         connection_generation: context.connection_generation,
                         sequence: envelope.sequence,
                         command: GameLoopEdgeCommandKind::RestartAuthoredBaseline,
+                    });
+                    if receipt.is_ok() {
+                        host.stage_restart(
+                            context.connection_generation,
+                            envelope.sequence,
+                            replacement,
+                        );
+                        context.pending_restart_sequence = Some(envelope.sequence);
+                    }
+                    receipt
+                }
+            }
+            BrowserGameCommand::Restart {
+                mode: RestartMode::Checkpoint,
+            } => {
+                if host.staged_restart_matches(context.connection_generation, envelope.sequence) {
+                    host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                        connection_generation: context.connection_generation,
+                        sequence: envelope.sequence,
+                        command: GameLoopEdgeCommandKind::LoadGame {
+                            slot: SaveSlotId::Checkpoint,
+                        },
                     })
                 } else {
-                    Err(InputCommandRejection::EdgeQueueSaturated { capacity: 1 })
+                    let loaded = match host.save_store.load(
+                        &host.save_identity,
+                        SaveLoadRequest {
+                            slot: SaveSlotId::Checkpoint,
+                            expected_storage_revision: None,
+                        },
+                    ) {
+                        Ok(loaded) => loaded,
+                        Err(error) => {
+                            let (code, retry) = save_rejection_identity(&error);
+                            drop(host);
+                            return send_rejection(
+                                websocket,
+                                context,
+                                Some(envelope.sequence),
+                                code,
+                                retry,
+                                &error.to_string(),
+                            );
+                        }
+                    };
+                    let replacement = match host.replacement_from_runtime(loaded.runtime) {
+                        Ok(replacement) => replacement,
+                        Err(error) => {
+                            drop(host);
+                            return send_rejection(
+                                websocket,
+                                context,
+                                Some(envelope.sequence),
+                                RejectionCode::InternalDefect,
+                                RetryDisposition::Never,
+                                &error,
+                            );
+                        }
+                    };
+                    let receipt = host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                        connection_generation: context.connection_generation,
+                        sequence: envelope.sequence,
+                        command: GameLoopEdgeCommandKind::LoadGame {
+                            slot: SaveSlotId::Checkpoint,
+                        },
+                    });
+                    if receipt.as_ref().is_ok_and(|receipt| {
+                        receipt.disposition == InputCommandDisposition::Accepted
+                    }) {
+                        host.stage_restart(
+                            context.connection_generation,
+                            envelope.sequence,
+                            replacement,
+                        );
+                        context.pending_restart_sequence = Some(envelope.sequence);
+                    }
+                    receipt
                 }
-            } else {
-                let project_path = host.project_path.clone();
-                let replacement = match BrowserRuntime::load(&project_path) {
-                    Ok(replacement) => replacement,
-                    Err(error) => {
-                        drop(host);
-                        return send_rejection(
-                            websocket,
-                            context,
-                            Some(envelope.sequence),
-                            RejectionCode::InternalDefect,
-                            RetryDisposition::Never,
-                            &format!("restart failed before mutation: {error}"),
+            }
+            BrowserGameCommand::SaveGame {
+                slot,
+                overwrite,
+                expected_storage_revision,
+            } => {
+                if host.pending_restart.is_some() {
+                    Err(InputCommandRejection::EdgeQueueSaturated { capacity: 1 })
+                } else {
+                    let receipt = host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                        connection_generation: context.connection_generation,
+                        sequence: envelope.sequence,
+                        command: GameLoopEdgeCommandKind::SaveGame { slot },
+                    });
+                    if receipt.as_ref().is_ok_and(|receipt| {
+                        receipt.disposition == InputCommandDisposition::Accepted
+                    }) {
+                        host.stage_save(
+                            context.connection_generation,
+                            envelope.sequence,
+                            slot,
+                            overwrite,
+                            expected_storage_revision,
                         );
                     }
-                };
-                let receipt = host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                    connection_generation: context.connection_generation,
-                    sequence: envelope.sequence,
-                    command: GameLoopEdgeCommandKind::RestartAuthoredBaseline,
-                });
-                if receipt.is_ok() {
-                    host.stage_restart(
-                        context.connection_generation,
-                        envelope.sequence,
-                        replacement,
-                    );
-                    context.pending_restart_sequence = Some(envelope.sequence);
+                    receipt
                 }
-                receipt
+            }
+            BrowserGameCommand::LoadGame {
+                slot,
+                expected_storage_revision,
+            } => {
+                if host.staged_restart_matches(context.connection_generation, envelope.sequence) {
+                    host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                        connection_generation: context.connection_generation,
+                        sequence: envelope.sequence,
+                        command: GameLoopEdgeCommandKind::LoadGame { slot },
+                    })
+                } else {
+                    let loaded = match host.save_store.load(
+                        &host.save_identity,
+                        SaveLoadRequest {
+                            slot,
+                            expected_storage_revision,
+                        },
+                    ) {
+                        Ok(loaded) => loaded,
+                        Err(error) => {
+                            let (code, retry) = save_rejection_identity(&error);
+                            drop(host);
+                            return send_rejection(
+                                websocket,
+                                context,
+                                Some(envelope.sequence),
+                                code,
+                                retry,
+                                &error.to_string(),
+                            );
+                        }
+                    };
+                    let replacement = match host.replacement_from_runtime(loaded.runtime) {
+                        Ok(replacement) => replacement,
+                        Err(error) => {
+                            drop(host);
+                            return send_rejection(
+                                websocket,
+                                context,
+                                Some(envelope.sequence),
+                                RejectionCode::InternalDefect,
+                                RetryDisposition::Never,
+                                &error,
+                            );
+                        }
+                    };
+                    let receipt = host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                        connection_generation: context.connection_generation,
+                        sequence: envelope.sequence,
+                        command: GameLoopEdgeCommandKind::LoadGame { slot },
+                    });
+                    if receipt.as_ref().is_ok_and(|receipt| {
+                        receipt.disposition == InputCommandDisposition::Accepted
+                    }) {
+                        host.stage_restart(
+                            context.connection_generation,
+                            envelope.sequence,
+                            replacement,
+                        );
+                        context.pending_restart_sequence = Some(envelope.sequence);
+                    }
+                    receipt
+                }
             }
         }
-        BrowserGameCommand::Restart {
-            mode: RestartMode::Checkpoint,
-        } => host.runtime.submit_edge_command(GameLoopEdgeCommand {
-            connection_generation: context.connection_generation,
-            sequence: envelope.sequence,
-            command: GameLoopEdgeCommandKind::RestartCheckpoint,
-        }),
     };
     drop(host);
 
@@ -619,13 +792,14 @@ fn send_latest_update(
         }
     }
 
-    let dropped_facts = host.runtime.dropped_fact_count();
+    let dropped_facts = host.dropped_fact_count();
     context.acknowledged_command_sequence = active.acknowledged_sequence;
     if dropped_facts != context.metrics.dropped_fact_count {
         context.force_full = true;
         context.metrics.dropped_fact_count = dropped_facts;
     }
-    let (fact_projection, feedback) = drain_game_loop_feedback(&mut host.runtime);
+    let (mut fact_projection, feedback) = drain_game_loop_feedback(&mut host.runtime);
+    fact_projection.extend(host.drain_session_facts());
     if let Some(sequence) = context.pending_restart_sequence {
         let restart_rejected = fact_projection.iter().any(|(kind, command_sequence)| {
             *command_sequence == Some(sequence) && kind == "InputEdgeRejectedPaused"
@@ -792,6 +966,23 @@ fn rejection_identity(rejection: InputCommandRejection) -> (RejectionCode, Retry
     }
 }
 
+fn save_rejection_identity(error: &SaveGameError) -> (RejectionCode, RetryDisposition) {
+    (
+        match error {
+            SaveGameError::Empty { .. } | SaveGameError::Io { .. } | SaveGameError::Encode(_) => {
+                RejectionCode::SaveUnavailable
+            }
+            SaveGameError::OverwriteRequired { .. } => RejectionCode::SaveOverwriteRequired,
+            SaveGameError::Stale { .. } => RejectionCode::SaveStale,
+            SaveGameError::Corrupt { .. } | SaveGameError::TooLarge { .. } => {
+                RejectionCode::SnapshotCorrupt
+            }
+            SaveGameError::Incompatible { .. } => RejectionCode::SnapshotIncompatible,
+        },
+        RetryDisposition::Never,
+    )
+}
+
 fn fact_rejection_code(kind: &str) -> Option<RejectionCode> {
     match kind {
         "InputEdgeRejectedUnknownTarget" => Some(RejectionCode::UnknownTarget),
@@ -802,6 +993,11 @@ fn fact_rejection_code(kind: &str) -> Option<RejectionCode> {
         "InputEdgeRejectedItemNotUsable" => Some(RejectionCode::ItemNotUsable),
         "InputEdgeRejectedHealthFull" => Some(RejectionCode::HealthFull),
         "InputEdgeRejectedCheckpointUnavailable" => Some(RejectionCode::CheckpointUnavailable),
+        "SaveRejectedUnavailable" => Some(RejectionCode::SaveUnavailable),
+        "SaveRejectedOverwriteRequired" => Some(RejectionCode::SaveOverwriteRequired),
+        "SaveRejectedStale" => Some(RejectionCode::SaveStale),
+        "SaveRejectedSnapshotCorrupt" => Some(RejectionCode::SnapshotCorrupt),
+        "SaveRejectedSnapshotIncompatible" => Some(RejectionCode::SnapshotIncompatible),
         "CombatRejectedCooldown" => Some(RejectionCode::Cooldown),
         "CombatRejectedNoAmmo" => Some(RejectionCode::NoAmmo),
         "CombatRejectedNoEquippedWeapon" => Some(RejectionCode::NoEquippedWeapon),

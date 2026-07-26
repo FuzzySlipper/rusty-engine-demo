@@ -325,6 +325,41 @@ export interface RuntimePresentationState {
   readonly cues: readonly RuntimeFeedbackCue[];
 }
 
+export type RuntimeSaveSlotId = "checkpoint" | "slot1" | "slot2" | "slot3";
+
+export type RuntimeSaveSlotCompatibility =
+  | "empty"
+  | "available"
+  | "corrupt"
+  | "incompatible";
+
+export interface RuntimeSaveGameMetadata {
+  readonly revision: number;
+  readonly savedAtUnixMilliseconds: number;
+  readonly displayName: string;
+  readonly tick: number;
+  readonly snapshotSchemaVersion: number;
+  readonly playerState: "alive" | "dead" | "unavailable";
+  readonly levelComplete: boolean;
+}
+
+export interface RuntimeSaveProjectIdentity {
+  readonly projectId: string;
+  readonly entryScene: string;
+  readonly playerEntity: number;
+  readonly projectSchemaVersion: number;
+  readonly contentRevision: string;
+}
+
+export interface RuntimeSaveSlotSummary {
+  readonly slot: RuntimeSaveSlotId;
+  readonly compatibility: RuntimeSaveSlotCompatibility;
+  readonly storageRevision: string | null;
+  readonly metadata: RuntimeSaveGameMetadata | null;
+  readonly project: RuntimeSaveProjectIdentity | null;
+  readonly diagnostic: string | null;
+}
+
 export interface RuntimeBrowserState {
   readonly hostSessionId: string;
   readonly tick: number;
@@ -348,6 +383,7 @@ export interface RuntimeBrowserState {
   readonly pickups: readonly RuntimePickupState[];
   readonly hazards: readonly RuntimeHazardState[];
   readonly restart: RuntimeRestartState;
+  readonly saveSlots: readonly RuntimeSaveSlotSummary[];
   readonly extractionBeacon: RuntimeExtractionBeaconState | null;
   readonly doorAccess: readonly RuntimeDoorAccessState[];
   readonly secretRegions: readonly RuntimeSecretRegionState[];

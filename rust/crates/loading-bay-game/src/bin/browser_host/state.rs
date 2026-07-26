@@ -6,7 +6,8 @@ use loading_bay_game::{
     DoorState, EncounterState, EnemyAttackKind, EnemyCombatPosture, EnemyState,
     ExtractionBeaconState, GameRuntime, ItemKind, LevelExitState, NavigationState,
     PickupCollectionCause, PickupState, PlayerInputSessionView, RequiredKeyPolicy,
-    SecretRegionState, VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
+    SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretRegionState, VitalityState,
+    LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
 };
 use serde::Serialize;
 
@@ -243,6 +244,7 @@ pub(super) struct BrowserDynamicState {
     pickups: Vec<BrowserPickupState>,
     hazards: Vec<BrowserHazardState>,
     restart: BrowserRestartState,
+    save_slots: Vec<SaveSlotSummary>,
     extraction_beacon: Option<BrowserExtractionBeaconState>,
     door_access: Vec<BrowserDoorAccessState>,
     secret_regions: Vec<BrowserSecretRegionState>,
@@ -648,8 +650,12 @@ pub(super) fn browser_dynamic_state(
         hazards,
         restart: BrowserRestartState {
             authored_baseline_available: true,
-            checkpoint_available: false,
+            checkpoint_available: host.save_slots.iter().any(|slot| {
+                slot.slot == SaveSlotId::Checkpoint
+                    && slot.compatibility == SaveSlotCompatibility::Available
+            }),
         },
+        save_slots: host.save_slots.clone(),
         extraction_beacon,
         door_access,
         secret_regions,

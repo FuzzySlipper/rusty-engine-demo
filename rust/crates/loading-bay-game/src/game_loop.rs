@@ -8,7 +8,8 @@ use crate::{
     CombatFact, CombatRejectionReason, DamageService, EnemyCombatFact, ExtractionBeaconFact,
     GameEvent, GameRuntime, HazardFact, InventoryFact, InventoryRejection, InventoryService,
     ItemDefinitionId, NavigationFact, PickupFact, PickupReceipt, PickupRejection,
-    PlayerControlFact, ResolvedAttackAction, RuntimeError, VitalityFact, VitalityRejection,
+    PlayerControlFact, ResolvedAttackAction, RuntimeError, SaveSlotId, VitalityFact,
+    VitalityRejection,
 };
 
 pub const FIXED_SIMULATION_HZ: u32 = 60;
@@ -91,6 +92,8 @@ pub enum GameLoopEdgeCommandKind {
     SetPaused { paused: bool },
     RestartAuthoredBaseline,
     RestartCheckpoint,
+    SaveGame { slot: SaveSlotId },
+    LoadGame { slot: SaveSlotId },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -206,6 +209,14 @@ pub enum GameLoopFact {
     RestartRequested {
         sequence: u64,
         mode: GameRestartMode,
+    },
+    SaveRequested {
+        sequence: u64,
+        slot: SaveSlotId,
+    },
+    LoadRequested {
+        sequence: u64,
+        slot: SaveSlotId,
     },
     InputExpired {
         sequence: u64,
@@ -472,6 +483,8 @@ impl LoadingBayGameLoop {
                 GameLoopEdgeCommandKind::SetPaused { .. }
                     | GameLoopEdgeCommandKind::RestartAuthoredBaseline
                     | GameLoopEdgeCommandKind::RestartCheckpoint
+                    | GameLoopEdgeCommandKind::SaveGame { .. }
+                    | GameLoopEdgeCommandKind::LoadGame { .. }
             )
         {
             return Err(InputCommandRejection::PlayerDefeated);
@@ -540,31 +553,21 @@ impl LoadingBayGameLoop {
             facts.extend(events.into_iter().map(GameLoopFact::Event));
         } else if level_complete {
             for command in interactions {
-                match command.command {
-                    GameLoopEdgeCommandKind::RestartAuthoredBaseline => {
-                        facts.push(GameLoopFact::RestartRequested {
-                            sequence: command.sequence,
-                            mode: GameRestartMode::AuthoredBaseline,
-                        });
-                    }
-                    GameLoopEdgeCommandKind::RestartCheckpoint => {
-                        facts.push(GameLoopFact::EdgeCommandRejected {
-                            sequence: command.sequence,
-                            reason: EdgeCommandRejection::CheckpointUnavailable,
-                        });
-                    }
-                    _ => facts.push(GameLoopFact::EdgeCommandRejected {
+                if !extend_session_operation_fact(&command, &mut facts) {
+                    facts.push(GameLoopFact::EdgeCommandRejected {
                         sequence: command.sequence,
                         reason: EdgeCommandRejection::LevelComplete,
-                    }),
+                    });
                 }
             }
         } else {
             for command in interactions {
-                facts.push(GameLoopFact::EdgeCommandRejected {
-                    sequence: command.sequence,
-                    reason: EdgeCommandRejection::Paused,
-                });
+                if !extend_session_operation_fact(&command, &mut facts) {
+                    facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::Paused,
+                    });
+                }
             }
         }
 
@@ -617,6 +620,8 @@ impl LoadingBayGameLoop {
                 }
                 GameLoopEdgeCommandKind::RestartAuthoredBaseline
                 | GameLoopEdgeCommandKind::RestartCheckpoint
+                | GameLoopEdgeCommandKind::SaveGame { .. }
+                | GameLoopEdgeCommandKind::LoadGame { .. }
                 | GameLoopEdgeCommandKind::Interact { .. }
                 | GameLoopEdgeCommandKind::SelectWeaponSlot { .. }
                 | GameLoopEdgeCommandKind::UseItem { .. } => interactions.push(command),
@@ -758,23 +763,11 @@ impl LoadingBayGameLoop {
         if DamageService::is_dead(self.runtime.session(), self.player) {
             self.input.clear_intent();
             for command in interactions {
-                match command.command {
-                    GameLoopEdgeCommandKind::RestartAuthoredBaseline => {
-                        facts.push(GameLoopFact::RestartRequested {
-                            sequence: command.sequence,
-                            mode: GameRestartMode::AuthoredBaseline,
-                        });
-                    }
-                    GameLoopEdgeCommandKind::RestartCheckpoint => {
-                        facts.push(GameLoopFact::EdgeCommandRejected {
-                            sequence: command.sequence,
-                            reason: EdgeCommandRejection::CheckpointUnavailable,
-                        });
-                    }
-                    _ => facts.push(GameLoopFact::EdgeCommandRejected {
+                if !extend_session_operation_fact(&command, facts) {
+                    facts.push(GameLoopFact::EdgeCommandRejected {
                         sequence: command.sequence,
                         reason: EdgeCommandRejection::PlayerDefeated,
-                    }),
+                    });
                 }
             }
             return Ok(());
@@ -797,6 +790,9 @@ impl LoadingBayGameLoop {
                 .map(GameLoopFact::Progression),
         );
         for command in interactions {
+            if extend_session_operation_fact(&command, facts) {
+                continue;
+            }
             if let GameLoopEdgeCommandKind::SelectWeaponSlot { slot } = &command.command {
                 match InventoryService::select_weapon_slot(
                     &mut self.runtime.session,
@@ -875,23 +871,6 @@ impl LoadingBayGameLoop {
                         });
                     }
                 }
-                continue;
-            }
-            if matches!(
-                &command.command,
-                GameLoopEdgeCommandKind::RestartAuthoredBaseline
-            ) {
-                facts.push(GameLoopFact::RestartRequested {
-                    sequence: command.sequence,
-                    mode: GameRestartMode::AuthoredBaseline,
-                });
-                continue;
-            }
-            if matches!(&command.command, GameLoopEdgeCommandKind::RestartCheckpoint) {
-                facts.push(GameLoopFact::EdgeCommandRejected {
-                    sequence: command.sequence,
-                    reason: EdgeCommandRejection::CheckpointUnavailable,
-                });
                 continue;
             }
             let GameLoopEdgeCommandKind::Interact { target } = command.command else {
@@ -1080,6 +1059,33 @@ impl LoadingBayGameLoop {
         }
         self.pending_facts.push_back(fact);
     }
+}
+
+fn extend_session_operation_fact(
+    command: &QueuedEdgeCommand,
+    facts: &mut Vec<GameLoopFact>,
+) -> bool {
+    let fact = match command.command {
+        GameLoopEdgeCommandKind::RestartAuthoredBaseline => GameLoopFact::RestartRequested {
+            sequence: command.sequence,
+            mode: GameRestartMode::AuthoredBaseline,
+        },
+        GameLoopEdgeCommandKind::RestartCheckpoint => GameLoopFact::EdgeCommandRejected {
+            sequence: command.sequence,
+            reason: EdgeCommandRejection::CheckpointUnavailable,
+        },
+        GameLoopEdgeCommandKind::SaveGame { slot } => GameLoopFact::SaveRequested {
+            sequence: command.sequence,
+            slot,
+        },
+        GameLoopEdgeCommandKind::LoadGame { slot } => GameLoopFact::LoadRequested {
+            sequence: command.sequence,
+            slot,
+        },
+        _ => return false,
+    };
+    facts.push(fact);
+    true
 }
 
 fn extend_pickup_facts(receipt: PickupReceipt, facts: &mut Vec<GameLoopFact>) {

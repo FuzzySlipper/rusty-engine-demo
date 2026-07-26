@@ -27,6 +27,7 @@ mod project_codec;
 mod project_store;
 mod runtime;
 mod runtime_records;
+mod save_game;
 mod scheduler;
 mod session;
 mod snapshot;
@@ -131,6 +132,11 @@ pub use project_store::{
 };
 pub use runtime::{GameRuntime, RuntimeError, MAX_EVENT_WAVE, MAX_TICK_ADVANCE};
 pub use runtime_records::{GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
+pub use save_game::{
+    LoadedSaveGame, SaveGameError, SaveGameMetadata, SaveGameStore, SaveLoadRequest,
+    SavePlayerState, SaveProjectIdentity, SaveSlotCompatibility, SaveSlotId, SaveSlotSummary,
+    SaveWriteRequest, MAX_SAVE_GAME_BYTES, MAX_SAVE_SLOTS, SAVE_GAME_SCHEMA_VERSION,
+};
 pub use scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 pub use session::GameSession;
 pub use snapshot::{

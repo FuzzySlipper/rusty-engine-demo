@@ -342,6 +342,73 @@ a {
   margin-top: 1rem;
 }
 
+.save-slot-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.save-slot {
+  align-items: center;
+  background: rgb(3 13 15 / 72%);
+  border: 1px solid var(--rusty-engine-border);
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0.8rem;
+}
+
+.save-slot[data-compatibility="available"] {
+  border-color: color-mix(
+    in srgb,
+    var(--rusty-engine-accent) 55%,
+    var(--rusty-engine-border)
+  );
+}
+
+.save-slot[data-compatibility="corrupt"],
+.save-slot[data-compatibility="incompatible"] {
+  border-color: color-mix(
+    in srgb,
+    var(--rusty-engine-danger) 60%,
+    var(--rusty-engine-border)
+  );
+}
+
+.save-slot > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.save-slot strong {
+  color: var(--rusty-engine-text);
+}
+
+.save-slot span,
+.save-slot small {
+  color: var(--rusty-engine-muted);
+  overflow-wrap: anywhere;
+}
+
+.save-slot-confirm {
+  align-items: end;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.save-slot-confirm > span {
+  color: var(--rusty-engine-warn);
+  font-size: 0.68rem;
+  text-align: right;
+}
+
+.slot-status {
+  border-left: 2px solid var(--rusty-engine-accent);
+  color: var(--rusty-engine-muted);
+  margin: 0.8rem 0 0;
+  padding-left: 0.65rem;
+}
+
 .action-rejection {
   border-left: 2px solid var(--rusty-engine-danger);
   color: var(--rusty-engine-danger);
@@ -873,6 +940,13 @@ footer {
   .game-panel {
     border-inline: 0;
     max-height: 100dvh;
+  }
+  .save-slot {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+  .save-slot-confirm > span {
+    text-align: left;
   }
   .main-menu-screen > footer {
     position: static;

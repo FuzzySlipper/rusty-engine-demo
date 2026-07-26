@@ -81,6 +81,40 @@ const dynamic = {
     authoredBaselineAvailable: true,
     checkpointAvailable: false,
   },
+  saveSlots: [
+    {
+      slot: "checkpoint",
+      compatibility: "empty",
+      storageRevision: null,
+      metadata: null,
+      project: null,
+      diagnostic: null,
+    },
+    {
+      slot: "slot1",
+      compatibility: "empty",
+      storageRevision: null,
+      metadata: null,
+      project: null,
+      diagnostic: null,
+    },
+    {
+      slot: "slot2",
+      compatibility: "empty",
+      storageRevision: null,
+      metadata: null,
+      project: null,
+      diagnostic: null,
+    },
+    {
+      slot: "slot3",
+      compatibility: "empty",
+      storageRevision: null,
+      metadata: null,
+      project: null,
+      diagnostic: null,
+    },
+  ],
   extractionBeacon: null,
   doorAccess: [],
   secretRegions: [],
@@ -478,6 +512,54 @@ test("a fixed-tick restart rejection settles and releases the restart slot", asy
   }
 });
 
+test("load commands settle only from the replacement authoritative session", async () => {
+  const originalLocation = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "location",
+  );
+  const originalWebSocket = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "WebSocket",
+  );
+
+  Object.defineProperty(globalThis, "location", {
+    configurable: true,
+    value: { host: "loading-bay.test", protocol: "http:" },
+  });
+  Object.defineProperty(globalThis, "WebSocket", {
+    configurable: true,
+    value: LoadReplacementSocket,
+  });
+
+  try {
+    const session = await LoadingBayGameSession.connect();
+    const loading = session.sendEdge({
+      kind: "loadGame",
+      slot: "slot1",
+      expectedStorageRevision: "fnv1a64:save",
+    });
+    await assert.rejects(
+      session.sendEdge({
+        kind: "saveGame",
+        slot: "slot2",
+        overwrite: false,
+        expectedStorageRevision: null,
+      }),
+      (error) =>
+        error instanceof GameSessionError &&
+        error.code === "edgeQueueSaturated",
+    );
+    const loaded = await loading;
+    assert.equal(loaded.tick, 37);
+    assert.equal(loaded.input.connectionGeneration, 2);
+    assert.equal(session.pendingEdgeCount, 0);
+    await session.close();
+  } finally {
+    restoreGlobal("location", originalLocation);
+    restoreGlobal("WebSocket", originalWebSocket);
+  }
+});
+
 test("typed weapon-slot edges settle from the authoritative equipped projection", async () => {
   const originalLocation = Object.getOwnPropertyDescriptor(
     globalThis,
@@ -864,6 +946,82 @@ class RestartRejectionSocket extends EventTarget {
           state: {
             ...dynamic,
             tick: 0,
+            input: {
+              ...dynamic.input,
+              connectionGeneration: 2,
+            },
+          },
+        },
+        facts: [],
+        metrics,
+      });
+    });
+  }
+
+  close(): void {
+    this.readyState = 3;
+    this.dispatchEvent(new Event("close"));
+  }
+
+  #emit(envelope: ServerUpdateEnvelope): void {
+    this.dispatchEvent(
+      new MessageEvent("message", { data: JSON.stringify(envelope) }),
+    );
+  }
+}
+
+class LoadReplacementSocket extends EventTarget {
+  static readonly OPEN = 1;
+  readonly bufferedAmount = 0;
+  readyState = LoadReplacementSocket.OPEN;
+
+  constructor() {
+    super();
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 1,
+        snapshotSequence: 1,
+        acknowledgedCommandSequence: 0,
+        staticRevision: resources.staticRevision,
+        update: { kind: "full", state: dynamic },
+        resources,
+        facts: [],
+        metrics,
+      });
+    });
+  }
+
+  send(payload: string): void {
+    const command = JSON.parse(payload) as {
+      readonly sequence: number;
+      readonly command: {
+        readonly kind: string;
+        readonly slot: string;
+        readonly expectedStorageRevision: string | null;
+      };
+    };
+    assert.deepEqual(command.command, {
+      kind: "loadGame",
+      slot: "slot1",
+      expectedStorageRevision: "fnv1a64:save",
+    });
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-2",
+        connectionGeneration: 2,
+        serverTick: 37,
+        snapshotSequence: 1,
+        acknowledgedCommandSequence: 0,
+        staticRevision: resources.staticRevision,
+        update: {
+          kind: "full",
+          state: {
+            ...dynamic,
+            tick: 37,
             input: {
               ...dynamic.input,
               connectionGeneration: 2,

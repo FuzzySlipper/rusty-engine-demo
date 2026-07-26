@@ -5,6 +5,10 @@ import {
   signal,
 } from "@angular/core";
 import { Router, RouterLink } from "@angular/router";
+import type {
+  LoadingBaySaveSlot,
+  LoadingBaySaveSlotId,
+} from "@rusty-engine-demo/game-runtime";
 import {
   browserDocumentEffects,
   browserHostUserSettingsRepository,
@@ -46,15 +50,9 @@ import {
           <a routerLink="/settings">Settings</a>
         </nav>
 
-        @if (!continueAvailable()) {
-          <p class="availability">
-            {{ continueMessage() }}
-          </p>
-        } @else {
-          <p class="availability">
-            Continue reconnects to the current Rust-owned host session.
-          </p>
-        }
+        <p class="availability">
+          {{ continueMessage() }}
+        </p>
       </section>
       <footer>
         <span>WASD + mouse</span>
@@ -73,6 +71,7 @@ export class MainMenuComponent {
   private readonly documentEffects = browserDocumentEffects();
   private readonly repository = browserHostUserSettingsRepository();
   private readonly router = inject(Router);
+  private readonly continueTarget = signal<ContinueTarget | null>(null);
 
   constructor() {
     this.documentEffects.setTitle("Loading Bay — Main menu");
@@ -86,12 +85,22 @@ export class MainMenuComponent {
   }
 
   protected continueGame(): void {
-    if (!this.continueAvailable()) {
+    const target = this.continueTarget();
+    if (target === null) {
       return;
     }
-    void this.router.navigate(["/game"], {
-      queryParams: { mode: "continue" },
-    });
+    void this.router.navigate(
+      ["/game"],
+      target.kind === "live"
+        ? { queryParams: { mode: "continue" } }
+        : {
+            queryParams: {
+              mode: "load",
+              revision: target.storageRevision,
+              slot: target.slot,
+            },
+          },
+    );
   }
 
   private async resolveContinueAvailability(): Promise<void> {
@@ -108,18 +117,96 @@ export class MainMenuComponent {
         typeof value.hostSessionId === "string"
           ? value.hostSessionId
           : "";
-      const available = this.repository.hasContinueSession(hostSessionId);
-      this.continueAvailable.set(available);
+      const live = this.repository.hasContinueSession(hostSessionId);
+      if (live) {
+        this.continueTarget.set({ kind: "live" });
+        this.continueAvailable.set(true);
+        this.continueMessage.set(
+          "Continue reconnects to the verified live Rust-owned session.",
+        );
+        return;
+      }
+      const save = newestAvailableSave(value);
+      if (save !== null && save.storageRevision !== null) {
+        this.continueTarget.set({
+          kind: "save",
+          slot: save.slot,
+          storageRevision: save.storageRevision,
+        });
+        this.continueAvailable.set(true);
+        this.continueMessage.set(
+          `Continue restores ${save.metadata?.displayName ?? saveSlotLabel(save.slot)} at tick ${String(save.metadata?.tick ?? 0)} from Rust-owned storage.`,
+        );
+        return;
+      }
+      this.continueTarget.set(null);
+      this.continueAvailable.set(false);
       this.continueMessage.set(
-        available
-          ? "Continue reconnects to the current Rust-owned host session."
-          : "No resumable game exists for this Rust host session. Start a new game.",
+        "No verified live session or compatible save exists. Start a new game.",
       );
     } catch {
+      this.continueTarget.set(null);
       this.continueAvailable.set(false);
       this.continueMessage.set(
         "Continue is unavailable while the Rust host session cannot be verified.",
       );
     }
+  }
+}
+
+type ContinueTarget =
+  | { readonly kind: "live" }
+  | {
+      readonly kind: "save";
+      readonly slot: LoadingBaySaveSlotId;
+      readonly storageRevision: string;
+    };
+
+function newestAvailableSave(value: unknown): LoadingBaySaveSlot | null {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("saveSlots" in value) ||
+    !Array.isArray(value.saveSlots)
+  ) {
+    return null;
+  }
+  const available = value.saveSlots
+    .filter(isAvailableSave)
+    .sort(
+      (left, right) =>
+        (right.metadata?.savedAtUnixMilliseconds ?? 0) -
+        (left.metadata?.savedAtUnixMilliseconds ?? 0),
+    );
+  return available[0] ?? null;
+}
+
+function isAvailableSave(value: unknown): value is LoadingBaySaveSlot {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "slot" in value &&
+    (value.slot === "checkpoint" ||
+      value.slot === "slot1" ||
+      value.slot === "slot2" ||
+      value.slot === "slot3") &&
+    "compatibility" in value &&
+    value.compatibility === "available" &&
+    "storageRevision" in value &&
+    typeof value.storageRevision === "string" &&
+    "metadata" in value
+  );
+}
+
+function saveSlotLabel(slot: LoadingBaySaveSlotId): string {
+  switch (slot) {
+    case "checkpoint":
+      return "Checkpoint";
+    case "slot1":
+      return "Manual save 1";
+    case "slot2":
+      return "Manual save 2";
+    case "slot3":
+      return "Manual save 3";
   }
 }

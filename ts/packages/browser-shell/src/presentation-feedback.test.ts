@@ -480,6 +480,7 @@ function feedbackState(): RuntimeBrowserState {
       authoredBaselineAvailable: true,
       checkpointAvailable: false,
     },
+    saveSlots: [],
     extractionBeacon: {
       id: 7,
       state: "active",

@@ -13,6 +13,8 @@ import {
   mountLoadingBayGame,
   type LoadingBayGameHandle,
   type LoadingBayPresentationSnapshot,
+  type LoadingBaySaveSlot,
+  type LoadingBaySaveSlotId,
 } from "@rusty-engine-demo/game-runtime";
 import {
   browserDocumentEffects,
@@ -67,13 +69,14 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
   maxHealth: 0,
   paused: false,
   restartAvailable: false,
+  saveSlots: [],
   vitalityState: "alive",
   weaponItem: "",
   weaponPresentation: "",
   weaponSlots: [],
 };
 
-type GamePanel = "game" | "inventory" | "pause" | "settings";
+type GamePanel = "game" | "inventory" | "load" | "pause" | "save" | "settings";
 type ConnectionState =
   | "connecting"
   | "connected"
@@ -244,6 +247,13 @@ type ConnectionState =
             </p>
             <button
               type="button"
+              [disabled]="actionBusy() || checkpointSlot() === null"
+              (click)="restoreCheckpoint()"
+            >
+              Restore checkpoint
+            </button>
+            <button
+              type="button"
               [disabled]="actionBusy() || !snapshot().restartAvailable"
               (click)="restartGame()"
             >
@@ -252,6 +262,11 @@ type ConnectionState =
             <button type="button" class="quiet" (click)="returnToMenu()">
               Main menu
             </button>
+            @if (slotStatus() !== null) {
+              <p class="action-rejection" role="alert">
+                {{ slotStatus() }}
+              </p>
+            }
           </section>
         } @else if (snapshot().levelComplete && panel() === "game") {
           <section
@@ -276,6 +291,16 @@ type ConnectionState =
               (click)="restartGame()"
             >
               Restart loading bay
+            </button>
+            <button
+              type="button"
+              [disabled]="actionBusy() || !loadAvailable()"
+              (click)="openLoadPanel()"
+            >
+              Load save
+            </button>
+            <button type="button" (click)="openSavePanel()">
+              Save completed run
             </button>
             <button type="button" class="quiet" (click)="returnToMenu()">
               Main menu
@@ -322,6 +347,16 @@ type ConnectionState =
                   <button type="button" (click)="showSettings()">
                     Settings
                   </button>
+                  <button type="button" (click)="openSavePanel()">
+                    Save game
+                  </button>
+                  <button
+                    type="button"
+                    [disabled]="!loadAvailable()"
+                    (click)="openLoadPanel()"
+                  >
+                    Load game
+                  </button>
                   <button
                     type="button"
                     [disabled]="actionBusy() || !snapshot().restartAvailable"
@@ -331,6 +366,82 @@ type ConnectionState =
                   </button>
                   <button type="button" class="quiet" (click)="returnToMenu()">
                     Main menu
+                  </button>
+                </div>
+              } @else if (panel() === "save" || panel() === "load") {
+                <div class="save-slot-list" [attr.aria-busy]="actionBusy()">
+                  @for (slot of snapshot().saveSlots; track slot.slot) {
+                    <article
+                      class="save-slot"
+                      [attr.data-compatibility]="slot.compatibility"
+                    >
+                      <div>
+                        <strong>{{ saveSlotLabel(slot) }}</strong>
+                        <span>{{ saveSlotSummary(slot) }}</span>
+                        @if (slot.diagnostic !== null) {
+                          <small>{{ slot.diagnostic }}</small>
+                        }
+                      </div>
+                      @if (panel() === "save") {
+                        @if (overwritePendingSlot() === slot.slot) {
+                          <div class="save-slot-confirm">
+                            <span>Replace this slot?</span>
+                            <button
+                              type="button"
+                              [disabled]="actionBusy()"
+                              (click)="saveToSlot(slot, true)"
+                            >
+                              Confirm overwrite
+                            </button>
+                            <button
+                              type="button"
+                              class="quiet"
+                              [disabled]="actionBusy()"
+                              (click)="cancelOverwrite()"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        } @else {
+                          <button
+                            type="button"
+                            [disabled]="actionBusy()"
+                            (click)="saveToSlot(slot, false)"
+                          >
+                            {{
+                              slot.compatibility === "empty"
+                                ? "Save here"
+                                : "Overwrite…"
+                            }}
+                          </button>
+                        }
+                      } @else {
+                        <button
+                          type="button"
+                          [disabled]="
+                            actionBusy() || slot.compatibility !== 'available'
+                          "
+                          (click)="loadFromSlot(slot)"
+                        >
+                          Load
+                        </button>
+                      }
+                    </article>
+                  }
+                </div>
+                @if (slotStatus() !== null) {
+                  <p class="slot-status" role="status">
+                    {{ slotStatus() }}
+                  </p>
+                }
+                <div class="panel-actions">
+                  <button
+                    type="button"
+                    class="quiet"
+                    [disabled]="actionBusy()"
+                    (click)="showPausePanel()"
+                  >
+                    Back to pause menu
                   </button>
                 </div>
               } @else if (panel() === "inventory") {
@@ -483,6 +594,10 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   protected readonly settings = signal(this.settingsRepository.read());
   protected readonly panel = signal<GamePanel>("game");
   protected readonly actionBusy = signal(false);
+  protected readonly slotStatus = signal<string | null>(null);
+  protected readonly overwritePendingSlot = signal<LoadingBaySaveSlotId | null>(
+    null,
+  );
   protected readonly connectionState = signal<ConnectionState>("connecting");
   protected readonly connectionMessage = signal(
     "Connecting to the Rust-owned fixed simulation…",
@@ -517,6 +632,18 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     this.snapshot()
       .inventoryStacks.filter((stack) => stack.item.startsWith("key/"))
       .map((stack) => stack.item),
+  );
+  protected readonly checkpointSlot = computed(
+    () =>
+      this.snapshot().saveSlots.find(
+        (slot) =>
+          slot.slot === "checkpoint" && slot.compatibility === "available",
+      ) ?? null,
+  );
+  protected readonly loadAvailable = computed(() =>
+    this.snapshot().saveSlots.some(
+      (slot) => slot.compatibility === "available",
+    ),
   );
   protected readonly inventoryStacks = computed<readonly InventoryStackView[]>(
     () =>
@@ -616,7 +743,11 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
         this.openPause();
       } else if (this.panel() === "inventory") {
         this.closeInventory();
-      } else if (this.panel() === "settings") {
+      } else if (
+        this.panel() === "settings" ||
+        this.panel() === "save" ||
+        this.panel() === "load"
+      ) {
         this.showPausePanel();
       } else {
         this.resumeGame();
@@ -642,8 +773,12 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     switch (this.panel()) {
       case "inventory":
         return "Inventory";
+      case "load":
+        return "Load game";
       case "pause":
         return "Paused";
+      case "save":
+        return "Save game";
       case "settings":
         return "Settings";
       case "game":
@@ -657,6 +792,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
 
   protected openPause(): void {
     this.rememberFocusForModal();
+    this.clearSlotOperationState();
     void this.withAction(async (handle) => {
       await handle.setPaused(true);
       this.panel.set("pause");
@@ -690,13 +826,95 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   }
 
   protected showSettings(): void {
+    this.clearSlotOperationState();
     this.panel.set("settings");
     this.scheduleModalFocus();
   }
 
   protected showPausePanel(): void {
+    this.clearSlotOperationState();
     this.panel.set("pause");
     this.scheduleModalFocus();
+  }
+
+  protected openSavePanel(): void {
+    this.clearSlotOperationState();
+    this.panel.set("save");
+    this.scheduleModalFocus();
+  }
+
+  protected openLoadPanel(): void {
+    this.clearSlotOperationState();
+    this.panel.set("load");
+    this.scheduleModalFocus();
+  }
+
+  protected cancelOverwrite(): void {
+    this.overwritePendingSlot.set(null);
+    this.slotStatus.set("Overwrite cancelled.");
+  }
+
+  protected saveSlotLabel(slot: LoadingBaySaveSlot): string {
+    return slot.metadata?.displayName ?? slotLabel(slot.slot);
+  }
+
+  protected saveSlotSummary(slot: LoadingBaySaveSlot): string {
+    const metadata = slot.metadata;
+    if (slot.compatibility === "empty") {
+      return "Empty slot";
+    }
+    if (slot.compatibility === "corrupt") {
+      return "Corrupt save — overwrite only";
+    }
+    if (slot.compatibility === "incompatible") {
+      return "Incompatible with this authored project";
+    }
+    if (metadata === null) {
+      return "Available save";
+    }
+    const posture =
+      metadata.playerState === "dead"
+        ? "player down"
+        : metadata.levelComplete
+          ? "level complete"
+          : "in progress";
+    return `Tick ${String(metadata.tick)} · ${posture} · ${formatSaveTime(metadata.savedAtUnixMilliseconds)}`;
+  }
+
+  protected saveToSlot(slot: LoadingBaySaveSlot, overwrite: boolean): void {
+    if (slot.compatibility !== "empty" && !overwrite) {
+      this.overwritePendingSlot.set(slot.slot);
+      this.slotStatus.set(
+        `${this.saveSlotLabel(slot)} already contains data. Confirm to replace it.`,
+      );
+      this.scheduleModalFocus();
+      return;
+    }
+    void this.withSlotAction(async (handle) => {
+      await handle.saveGame(slot.slot, overwrite, slot.storageRevision);
+      this.overwritePendingSlot.set(null);
+      this.slotStatus.set(`${this.saveSlotLabel(slot)} saved.`);
+    });
+  }
+
+  protected loadFromSlot(slot: LoadingBaySaveSlot): void {
+    if (slot.compatibility !== "available") {
+      return;
+    }
+    void this.withSlotAction(async (handle) => {
+      await handle.loadGame(slot.slot, slot.storageRevision);
+      this.panel.set("game");
+      this.focusReturnTarget = null;
+      this.slotStatus.set(null);
+      globalThis.setTimeout(() => this.focusViewport(), 0);
+    });
+  }
+
+  protected restoreCheckpoint(): void {
+    const checkpoint = this.checkpointSlot();
+    if (checkpoint !== null) {
+      this.loadFromSlot(checkpoint);
+    }
   }
 
   protected resumeGame(): void {
@@ -823,6 +1041,16 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
           await handle.setPaused(false);
         }
         await handle.restart();
+      } else if (entryMode === "load") {
+        const slot = parseSaveSlotId(
+          this.route.snapshot.queryParamMap.get("slot"),
+        );
+        const storageRevision =
+          this.route.snapshot.queryParamMap.get("revision");
+        if (slot === null || storageRevision === null) {
+          throw new Error("The selected save slot is no longer available.");
+        }
+        await handle.loadGame(slot, storageRevision);
       } else if (entryMode === "continue") {
         if (
           !this.settingsRepository.hasContinueSession(
@@ -879,6 +1107,31 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     } finally {
       this.actionBusy.set(false);
     }
+  }
+
+  private async withSlotAction(
+    operation: (handle: LoadingBayGameHandle) => Promise<void>,
+  ): Promise<void> {
+    const handle = this.handle;
+    if (handle === null || this.actionBusy()) {
+      return;
+    }
+    this.actionBusy.set(true);
+    this.slotStatus.set("Waiting for the Rust-owned fixed tick…");
+    try {
+      await operation(handle);
+    } catch (error) {
+      this.slotStatus.set(
+        error instanceof Error ? error.message : String(error),
+      );
+    } finally {
+      this.actionBusy.set(false);
+    }
+  }
+
+  private clearSlotOperationState(): void {
+    this.overwritePendingSlot.set(null);
+    this.slotStatus.set(null);
   }
 
   private focusViewport(): void {
@@ -975,6 +1228,39 @@ function itemLabel(item: string): string {
       part.length === 0 ? part : part[0]?.toUpperCase() + part.slice(1),
     )
     .join(" ");
+}
+
+function slotLabel(slot: LoadingBaySaveSlotId): string {
+  switch (slot) {
+    case "checkpoint":
+      return "Checkpoint";
+    case "slot1":
+      return "Manual save 1";
+    case "slot2":
+      return "Manual save 2";
+    case "slot3":
+      return "Manual save 3";
+  }
+}
+
+function parseSaveSlotId(value: string | null): LoadingBaySaveSlotId | null {
+  return value === "checkpoint" ||
+    value === "slot1" ||
+    value === "slot2" ||
+    value === "slot3"
+    ? value
+    : null;
+}
+
+function formatSaveTime(unixMilliseconds: number): string {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(unixMilliseconds));
+  } catch {
+    return "unknown time";
+  }
 }
 
 function itemCategory(item: string): InventoryStackView["category"] {

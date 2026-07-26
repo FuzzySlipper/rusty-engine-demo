@@ -89,6 +89,7 @@ function state(
       authoredBaselineAvailable: true,
       checkpointAvailable: false,
     },
+    saveSlots: [],
     extractionBeacon: null,
     doorAccess: [],
     secretRegions: [],

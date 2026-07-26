@@ -466,7 +466,9 @@ async function runFullBrowserProduct(project) {
 }
 
 async function runProgressionRouteProof(project) {
-  const running = await launchHost(project);
+  const saveRoot = resolve(proofDirectory, "progression-save-slots");
+  const running = await launchHost(project, undefined, saveRoot);
+  let firstHostStopped = false;
   try {
     await waitForHealth(
       `http://${running.address}/health`,
@@ -681,21 +683,176 @@ async function runProgressionRouteProof(project) {
             "completion result dialog",
           );
           await client.send("Runtime.evaluate", {
-            expression: `document.body.dataset.progressionRoute = "pass"`,
+            expression: `[...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "Save completed run",
+            )?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector(".game-panel")?.textContent?.includes("Save game") === true`,
+            "completion save panel",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `[...document.querySelectorAll(".save-slot")]
+              .find((slot) => slot.textContent?.includes("Manual save 3"))
+              ?.querySelector("button")?.click()`,
+          });
+          await waitForHostState(
+            running.address,
+            (state) =>
+              state.saveSlots?.some(
+                (slot) =>
+                  slot.slot === "slot3" &&
+                  slot.compatibility === "available" &&
+                  slot.metadata?.levelComplete === true,
+              ) === true,
+            "completed save publication",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `document.body.dataset.progressionRoute = "pass";
+              document.body.dataset.completedSave = "pass"`,
           });
         },
       },
     );
     if (
       result.code !== 0 ||
-      !result.stdout.includes('data-progression-route="pass"')
+      !result.stdout.includes('data-progression-route="pass"') ||
+      !result.stdout.includes('data-completed-save="pass"')
     ) {
       throw new Error(
         `progression route proof failed\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-8_000)}`,
       );
     }
-  } finally {
+    const completed = await waitForHostState(
+      running.address,
+      (state) =>
+        state.levelComplete === true &&
+        state.saveSlots?.some(
+          (slot) =>
+            slot.slot === "slot3" &&
+            slot.compatibility === "available" &&
+            slot.metadata?.levelComplete === true,
+        ) === true,
+      "completed state before fresh host",
+    );
     await stopHost(running.host);
+    firstHostStopped = true;
+
+    const reopened = await launchHost(project, undefined, saveRoot);
+    try {
+      await waitForHealth(
+        `http://${reopened.address}/health`,
+        reopened.host,
+        reopened.output,
+      );
+      const fresh = await waitForHostState(
+        reopened.address,
+        (state) =>
+          state.hostSessionId !== completed.hostSessionId &&
+          state.levelComplete === false &&
+          state.saveSlots?.some(
+            (slot) =>
+              slot.slot === "slot3" &&
+              slot.compatibility === "available" &&
+              slot.metadata?.levelComplete === true,
+          ) === true,
+        "fresh host with compatible completed save",
+      );
+      if (
+        fresh.player.position.join(",") === completed.player.position.join(",")
+      ) {
+        throw new Error("fresh host started from saved runtime before load");
+      }
+      const restore = await runChromiumSmoke(
+        `http://${reopened.address}/#/`,
+        "document.body?.dataset.completedSaveRestore === 'pass' || document.body?.dataset.completedSaveRestore === 'fail'",
+        30_000,
+        {
+          viewport: { width: 1440, height: 900 },
+          interactiveSetup: async (client) => {
+            await waitForCdp(
+              client,
+              `document.querySelector("red-main-menu") !== null`,
+              "fresh-host saved main menu",
+            );
+            await waitForCdp(
+              client,
+              `(() => {
+                const button = [...document.querySelectorAll("button")].find(
+                  (candidate) => candidate.textContent?.trim() === "Continue",
+                );
+                return button?.disabled === false &&
+                  document.querySelector(".availability")?.textContent?.includes(
+                    "Rust-owned storage",
+                  ) === true;
+              })()`,
+              "persisted Continue availability",
+            );
+            const continueState = await client.send("Runtime.evaluate", {
+              expression: `(() => {
+                const button = [...document.querySelectorAll("button")].find(
+                  (candidate) => candidate.textContent?.trim() === "Continue",
+                );
+                return {
+                  disabled: button?.disabled,
+                  message: document.querySelector(".availability")?.textContent,
+                };
+              })()`,
+              returnByValue: true,
+            });
+            if (
+              continueState?.result?.value?.disabled !== false ||
+              !String(continueState?.result?.value?.message).includes(
+                "Rust-owned storage",
+              )
+            ) {
+              throw new Error(
+                `fresh host did not offer persisted Continue: ${JSON.stringify(continueState?.result?.value)}`,
+              );
+            }
+            await client.send("Runtime.evaluate", {
+              expression: `[...document.querySelectorAll("button")].find(
+                (button) => button.textContent?.trim() === "Continue",
+              )?.click()`,
+            });
+            await waitForHostState(
+              reopened.address,
+              (state) =>
+                state.levelComplete === true &&
+                state.levelExits?.some(
+                  (exit) => exit.id === 32 && exit.state === "completed",
+                ) === true &&
+                state.player.position.join(",") ===
+                  completed.player.position.join(","),
+              "completed save restoration",
+            );
+            await waitForCdp(
+              client,
+              `document.querySelector(".game-state-overlay")?.textContent?.includes("LOADING BAY COMPLETE") === true`,
+              "restored completion dialog",
+            );
+            await client.send("Runtime.evaluate", {
+              expression: `document.body.dataset.completedSaveRestore = "pass"`,
+            });
+          },
+        },
+      );
+      if (
+        restore.code !== 0 ||
+        !restore.stdout.includes('data-completed-save-restore="pass"')
+      ) {
+        throw new Error(
+          `fresh-process completed-save restore failed\n${restore.stderr.slice(-4_000)}\n${restore.stdout.slice(-8_000)}`,
+        );
+      }
+    } finally {
+      await stopHost(reopened.host);
+    }
+  } finally {
+    if (!firstHostStopped) {
+      await stopHost(running.host);
+    }
   }
 }
 
@@ -1002,7 +1159,9 @@ async function runHostReplacementContinueProof(project) {
               document.body.dataset.hostReplacementContinue =
                 stale &&
                 button.disabled &&
-                message.includes("No resumable game exists")
+                message.includes(
+                  "No verified live session or compatible save exists",
+                )
                   ? "pass"
                   : "fail";
               return;
@@ -2067,7 +2226,11 @@ async function runPersistedVoxelEditProduct(project) {
   }
 }
 
-async function launchHost(project, requestedAddress) {
+async function launchHost(
+  project,
+  requestedAddress,
+  saveRoot = resolve(proofDirectory, "save-slots"),
+) {
   const address =
     requestedAddress ?? `127.0.0.1:${String(await reservePort())}`;
   const host = spawn(
@@ -2084,6 +2247,8 @@ async function launchHost(project, requestedAddress) {
       address,
       "--project",
       project,
+      "--save-root",
+      saveRoot,
     ],
     { cwd: repoRoot, stdio: ["ignore", "pipe", "pipe"] },
   );
