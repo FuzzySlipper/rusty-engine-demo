@@ -1,0 +1,69 @@
+{
+  "name": "loading-bay",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "red",
+  "sourceRoot": "apps/loading-bay/src",
+  "tags": ["type:app", "scope:shell"],
+  "implicitDependencies": [
+    "browser-game-runtime",
+    "platform",
+    "ui-combat-log",
+    "ui-compass"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/loading-bay",
+        "browser": "apps/loading-bay/src/main.ts",
+        "index": "apps/loading-bay/src/index.html",
+        "tsConfig": "apps/loading-bay/tsconfig.app.json",
+        "styles": [
+          "libs/theme/src/tokens.css",
+          "apps/loading-bay/src/styles.css"
+        ]
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1100kb",
+              "maximumError": "1400kb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "14kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "defaultConfiguration": "development",
+      "configurations": {
+        "production": { "buildTarget": "loading-bay:build:production" },
+        "development": { "buildTarget": "loading-bay:build:development" }
+      }
+    },
+    "lint": { "executor": "@nx/eslint:lint" },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p apps/loading-bay/tsconfig.app.json --noEmit"
+      }
+    }
+  }
+}

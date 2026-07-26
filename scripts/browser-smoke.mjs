@@ -1,5 +1,11 @@
 import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -8,10 +14,12 @@ import { fileURLToPath } from "node:url";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const chromium = process.env.CHROMIUM_BIN ?? "/usr/bin/chromium";
 if (!existsSync(chromium)) {
-  throw new Error(`Chromium is required for the product smoke (${chromium} not found)`);
+  throw new Error(
+    `Chromium is required for the product smoke (${chromium} not found)`,
+  );
 }
 
-const bundleDirectory = resolve(repoRoot, "ts/packages/browser-shell/dist/assets");
+const bundleDirectory = resolve(repoRoot, "dist/apps/loading-bay/browser");
 const browserBundle = readdirSync(bundleDirectory)
   .filter((name) => name.endsWith(".js"))
   .map((name) => readFileSync(resolve(bundleDirectory, name), "utf8"))
@@ -31,22 +39,36 @@ const forbiddenRuntimeSurface = [
   "GenericAssetProvider",
   "ProjectBundleFacade",
 ];
-const bundledRuntimeSurface = forbiddenRuntimeSurface.filter((name) => browserBundle.includes(name));
+const bundledRuntimeSurface = forbiddenRuntimeSurface.filter((name) =>
+  browserBundle.includes(name),
+);
 if (bundledRuntimeSurface.length > 0) {
-  throw new Error(`browser bundle imported old runtime surface: ${bundledRuntimeSurface.join(", ")}`);
+  throw new Error(
+    `browser bundle imported old runtime surface: ${bundledRuntimeSurface.join(", ")}`,
+  );
 }
 
-const proofDirectory = mkdtempSync(join(tmpdir(), "rusty-engine-browser-smoke-"));
+const proofDirectory = mkdtempSync(
+  join(tmpdir(), "rusty-engine-browser-smoke-"),
+);
 try {
   const persistedProject = resolve(proofDirectory, "loading-bay.project.json");
-  const convertedProject = resolve(proofDirectory, "converted-wall.project.json");
+  const convertedProject = resolve(
+    proofDirectory,
+    "converted-wall.project.json",
+  );
   const migratedProject = resolve(proofDirectory, "migrated-v6.project.json");
   const currentReceipt = await persistProject(
     resolve(repoRoot, "content/projects/loading-bay.project.json"),
     persistedProject,
   );
-  if (!currentReceipt.includes("sourceSchema=11") || !currentReceipt.includes("currentSchema=11")) {
-    throw new Error(`current project persistence receipt was incomplete\n${currentReceipt}`);
+  if (
+    !currentReceipt.includes("sourceSchema=11") ||
+    !currentReceipt.includes("currentSchema=11")
+  ) {
+    throw new Error(
+      `current project persistence receipt was incomplete\n${currentReceipt}`,
+    );
   }
   await runFullBrowserProduct(persistedProject);
   await runPersistedVoxelEditProduct(persistedProject);
@@ -55,8 +77,13 @@ try {
     resolve(repoRoot, "content/projects/converted-wall.project.json"),
     convertedProject,
   );
-  if (!convertedReceipt.includes("sourceSchema=11") || !convertedReceipt.includes("currentSchema=11")) {
-    throw new Error(`converted project persistence receipt was incomplete\n${convertedReceipt}`);
+  if (
+    !convertedReceipt.includes("sourceSchema=11") ||
+    !convertedReceipt.includes("currentSchema=11")
+  ) {
+    throw new Error(
+      `converted project persistence receipt was incomplete\n${convertedReceipt}`,
+    );
   }
   await runConvertedBrowserProduct(convertedProject);
   await runPersistedConvertedVoxelEditProduct(convertedProject);
@@ -65,7 +92,10 @@ try {
     resolve(repoRoot, "content/generated/encounter-gate.project.json"),
     migratedProject,
   );
-  if (!migrationReceipt.includes("sourceSchema=6") || !migrationReceipt.includes("currentSchema=11")) {
+  if (
+    !migrationReceipt.includes("sourceSchema=6") ||
+    !migrationReceipt.includes("currentSchema=11")
+  ) {
     throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
   }
   await runMigratedBrowserProduct(migratedProject);
@@ -92,7 +122,9 @@ async function persistProject(input, output) {
     output,
   ]);
   if (result.code !== 0) {
-    throw new Error(`project-store exited ${String(result.code)}\n${result.stderr}`);
+    throw new Error(
+      `project-store exited ${String(result.code)}\n${result.stderr}`,
+    );
   }
   return result.stdout;
 }
@@ -100,7 +132,11 @@ async function persistProject(input, output) {
 async function runFullBrowserProduct(project) {
   const running = await launchHost(project);
   try {
-    await waitForHealth(`http://${running.address}/health`, running.host, running.output);
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
     const result = await run(chromium, [
       "--headless=new",
       "--no-sandbox",
@@ -114,7 +150,9 @@ async function runFullBrowserProduct(project) {
       `http://${running.address}/?smoke=1`,
     ]);
     if (result.code !== 0) {
-      throw new Error(`Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}`);
+      throw new Error(
+        `Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}`,
+      );
     }
     const required = [
       'data-smoke-status="pass"',
@@ -149,13 +187,17 @@ async function runFullBrowserProduct(project) {
       "ExtractionBeaconActivated",
       "SEED 4",
     ];
-    const missing = required.filter((marker) => !result.stdout.includes(marker));
+    const missing = required.filter(
+      (marker) => !result.stdout.includes(marker),
+    );
     if (missing.length > 0) {
       throw new Error(
         `browser smoke missing ${missing.join(", ")}\n${result.stdout.slice(-6_000)}`,
       );
     }
-    const beforeReloadResponse = await fetch(`http://${running.address}/api/state`);
+    const beforeReloadResponse = await fetch(
+      `http://${running.address}/api/state`,
+    );
     const beforeReload = await beforeReloadResponse.json();
     if (
       !beforeReloadResponse.ok ||
@@ -207,7 +249,9 @@ async function runFullBrowserProduct(project) {
         `browser reload smoke missing ${missingReload.join(", ")}\n${reloadResult.stdout.slice(-6_000)}`,
       );
     }
-    const afterReloadResponse = await fetch(`http://${running.address}/api/state`);
+    const afterReloadResponse = await fetch(
+      `http://${running.address}/api/state`,
+    );
     const afterReload = await afterReloadResponse.json();
     if (
       !afterReloadResponse.ok ||
@@ -215,6 +259,36 @@ async function runFullBrowserProduct(project) {
     ) {
       throw new Error(
         `browser reload changed authoritative state\nbefore=${JSON.stringify(beforeReload)}\nafter=${JSON.stringify(afterReload)}`,
+      );
+    }
+    const lifecycleResult = await run(chromium, [
+      "--headless=new",
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--use-gl=angle",
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
+      "--virtual-time-budget=7000",
+      "--dump-dom",
+      `http://${running.address}/?lifecycle-smoke=1`,
+    ]);
+    if (lifecycleResult.code !== 0) {
+      throw new Error(
+        `Lifecycle Chromium exited ${String(lifecycleResult.code)}\n${lifecycleResult.stderr.slice(-4_000)}`,
+      );
+    }
+    const lifecycleRequired = [
+      'data-renderer-lifecycle="disposed"',
+      'data-route-disposal="pass"',
+      'data-smoke-status="pass"',
+      "Shared surface released",
+    ];
+    const missingLifecycle = lifecycleRequired.filter(
+      (marker) => !lifecycleResult.stdout.includes(marker),
+    );
+    if (missingLifecycle.length > 0) {
+      throw new Error(
+        `browser lifecycle smoke missing ${missingLifecycle.join(", ")}\n${lifecycleResult.stdout.slice(-6_000)}`,
       );
     }
     const startup = running.output();
@@ -225,7 +299,7 @@ async function runFullBrowserProduct(project) {
       "entryScene=scene/loading-bay",
       "assets=7",
       "scenes=1",
-      "entities=8",
+      "entities=9",
     ]) {
       if (!startup.includes(marker)) {
         throw new Error(`browser host startup missing ${marker}\n${startup}`);
@@ -239,7 +313,11 @@ async function runFullBrowserProduct(project) {
 async function runMigratedBrowserProduct(project) {
   const running = await launchHost(project);
   try {
-    await waitForHealth(`http://${running.address}/health`, running.host, running.output);
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
     const stateResponse = await fetch(`http://${running.address}/api/state`);
     const state = await stateResponse.json();
     if (
@@ -249,7 +327,9 @@ async function runMigratedBrowserProduct(project) {
       state.weapon?.ammoRemaining !== 8 ||
       !state.projection?.some((node) => node.id === 3)
     ) {
-      throw new Error(`migrated browser state was incomplete\n${JSON.stringify(state)}`);
+      throw new Error(
+        `migrated browser state was incomplete\n${JSON.stringify(state)}`,
+      );
     }
     const attackResponse = await fetch(`http://${running.address}/api/attack`, {
       method: "POST",
@@ -257,8 +337,14 @@ async function runMigratedBrowserProduct(project) {
       body: JSON.stringify({ kind: "attack" }),
     });
     const attacked = await attackResponse.json();
-    if (!attackResponse.ok || attacked.tick !== 1 || attacked.weapon?.ammoRemaining !== 7) {
-      throw new Error(`migrated browser action failed\n${JSON.stringify(attacked)}`);
+    if (
+      !attackResponse.ok ||
+      attacked.tick !== 1 ||
+      attacked.weapon?.ammoRemaining !== 7
+    ) {
+      throw new Error(
+        `migrated browser action failed\n${JSON.stringify(attacked)}`,
+      );
     }
     const startup = running.output();
     for (const marker of [
@@ -269,7 +355,9 @@ async function runMigratedBrowserProduct(project) {
       "entities=6",
     ]) {
       if (!startup.includes(marker)) {
-        throw new Error(`migrated browser startup missing ${marker}\n${startup}`);
+        throw new Error(
+          `migrated browser startup missing ${marker}\n${startup}`,
+        );
       }
     }
   } finally {
@@ -280,7 +368,11 @@ async function runMigratedBrowserProduct(project) {
 async function runConvertedBrowserProduct(project) {
   const running = await launchHost(project);
   try {
-    await waitForHealth(`http://${running.address}/health`, running.host, running.output);
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
     const result = await run(chromium, [
       "--headless=new",
       "--no-sandbox",
@@ -293,7 +385,9 @@ async function runConvertedBrowserProduct(project) {
       `http://${running.address}/?converted-smoke=1`,
     ]);
     if (result.code !== 0) {
-      throw new Error(`converted Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}`);
+      throw new Error(
+        `converted Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}`,
+      );
     }
     const required = [
       'data-smoke-status="pass"',
@@ -307,7 +401,9 @@ async function runConvertedBrowserProduct(project) {
       "MATERIALIZED · 90 VOXELS",
       'data-engine="three.js',
     ];
-    const missing = required.filter((marker) => !result.stdout.includes(marker));
+    const missing = required.filter(
+      (marker) => !result.stdout.includes(marker),
+    );
     if (missing.length > 0) {
       throw new Error(
         `converted browser smoke missing ${missing.join(", ")}\n${result.stdout.slice(-8_000)}`,
@@ -324,7 +420,9 @@ async function runConvertedBrowserProduct(project) {
       "entities=7",
     ]) {
       if (!startup.includes(marker)) {
-        throw new Error(`converted browser startup missing ${marker}\n${startup}`);
+        throw new Error(
+          `converted browser startup missing ${marker}\n${startup}`,
+        );
       }
     }
   } finally {
@@ -342,7 +440,11 @@ async function runPersistedConvertedVoxelEditProduct(project) {
   const running = await launchHost(project);
   let persisted;
   try {
-    await waitForHealth(`http://${running.address}/health`, running.host, running.output);
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
     const beforeResponse = await fetch(`http://${running.address}/api/state`);
     const before = await beforeResponse.json();
     if (
@@ -352,17 +454,22 @@ async function runPersistedConvertedVoxelEditProduct(project) {
       before.voxelProbePathLength !== 9 ||
       before.generatedEnvironment !== null
     ) {
-      throw new Error(`converted persisted-edit baseline was incomplete\n${JSON.stringify(before)}`);
+      throw new Error(
+        `converted persisted-edit baseline was incomplete\n${JSON.stringify(before)}`,
+      );
     }
-    const editResponse = await fetch(`http://${running.address}/api/voxel-edit`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        expectedRevision: before.voxelRevision,
-        persistToProject: true,
-        edits,
-      }),
-    });
+    const editResponse = await fetch(
+      `http://${running.address}/api/voxel-edit`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          expectedRevision: before.voxelRevision,
+          persistToProject: true,
+          edits,
+        }),
+      },
+    );
     const edited = await editResponse.json();
     if (
       !editResponse.ok ||
@@ -373,14 +480,19 @@ async function runPersistedConvertedVoxelEditProduct(project) {
       edited.voxelAuthorityHash === before.voxelAuthorityHash ||
       edited.voxelNavigationHash === before.voxelNavigationHash ||
       edited.voxelProbePathLength >= before.voxelProbePathLength ||
-      JSON.stringify(edited.voxelMeshes) === JSON.stringify(before.voxelMeshes) ||
+      JSON.stringify(edited.voxelMeshes) ===
+        JSON.stringify(before.voxelMeshes) ||
       edited.generatedEnvironment !== null
     ) {
-      throw new Error(`converted persisted voxel edit was incomplete\n${JSON.stringify(edited)}`);
+      throw new Error(
+        `converted persisted voxel edit was incomplete\n${JSON.stringify(edited)}`,
+      );
     }
     persisted = voxelStateFingerprint(edited);
 
-    const resetResponse = await fetch(`http://${running.address}/api/reset`, { method: "POST" });
+    const resetResponse = await fetch(`http://${running.address}/api/reset`, {
+      method: "POST",
+    });
     const reset = await resetResponse.json();
     if (
       !resetResponse.ok ||
@@ -389,7 +501,9 @@ async function runPersistedConvertedVoxelEditProduct(project) {
       reset.lastEvents?.length !== 0 ||
       JSON.stringify(voxelStateFingerprint(reset)) !== JSON.stringify(persisted)
     ) {
-      throw new Error(`converted reset did not reopen static edited authority\n${JSON.stringify(reset)}`);
+      throw new Error(
+        `converted reset did not reopen static edited authority\n${JSON.stringify(reset)}`,
+      );
     }
   } finally {
     await stopHost(running.host);
@@ -403,10 +517,15 @@ async function runPersistedConvertedVoxelEditProduct(project) {
     environment?.kind !== "material" ||
     !Array.isArray(environment.materialVoxels) ||
     environment.materialVoxels.length !== 90 ||
-    environment.materialVoxels.some((voxel) => removed.has(JSON.stringify(voxel.address))) ||
-    (Array.isArray(environment.voxelAssets) && environment.voxelAssets.length !== 0)
+    environment.materialVoxels.some((voxel) =>
+      removed.has(JSON.stringify(voxel.address)),
+    ) ||
+    (Array.isArray(environment.voxelAssets) &&
+      environment.voxelAssets.length !== 0)
   ) {
-    throw new Error(`converted saved project did not materialize edited authority\n${bytes}`);
+    throw new Error(
+      `converted saved project did not materialize edited authority\n${bytes}`,
+    );
   }
   for (const forbidden of [
     "sourceRevision",
@@ -418,13 +537,19 @@ async function runPersistedConvertedVoxelEditProduct(project) {
     "replay",
   ]) {
     if (bytes.includes(forbidden)) {
-      throw new Error(`converted saved project leaked transient field ${forbidden}`);
+      throw new Error(
+        `converted saved project leaked transient field ${forbidden}`,
+      );
     }
   }
 
   const reopened = await launchHost(project);
   try {
-    await waitForHealth(`http://${reopened.address}/health`, reopened.host, reopened.output);
+    await waitForHealth(
+      `http://${reopened.address}/health`,
+      reopened.host,
+      reopened.output,
+    );
     const response = await fetch(`http://${reopened.address}/api/state`);
     const state = await response.json();
     if (
@@ -432,7 +557,9 @@ async function runPersistedConvertedVoxelEditProduct(project) {
       state.voxelRevision !== 0 ||
       JSON.stringify(voxelStateFingerprint(state)) !== JSON.stringify(persisted)
     ) {
-      throw new Error(`fresh host did not reopen converted edited authority\n${JSON.stringify(state)}`);
+      throw new Error(
+        `fresh host did not reopen converted edited authority\n${JSON.stringify(state)}`,
+      );
     }
   } finally {
     await stopHost(reopened.host);
@@ -456,18 +583,25 @@ async function runPersistedVoxelEditProduct(project) {
   let persistedNavigationHash;
   let persistedPathLength;
   try {
-    await waitForHealth(`http://${running.address}/health`, running.host, running.output);
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
     const beforeResponse = await fetch(`http://${running.address}/api/state`);
     const before = await beforeResponse.json();
-    const editResponse = await fetch(`http://${running.address}/api/voxel-edit`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        expectedRevision: before.voxelRevision,
-        persistToProject: true,
-        edits: [{ kind: "clear", address: [4, 1, 6] }],
-      }),
-    });
+    const editResponse = await fetch(
+      `http://${running.address}/api/voxel-edit`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          expectedRevision: before.voxelRevision,
+          persistToProject: true,
+          edits: [{ kind: "clear", address: [4, 1, 6] }],
+        }),
+      },
+    );
     const edited = await editResponse.json();
     if (
       !editResponse.ok ||
@@ -480,13 +614,17 @@ async function runPersistedVoxelEditProduct(project) {
       edited.voxelProbePathLength >= before.voxelProbePathLength ||
       edited.generatedEnvironment !== null
     ) {
-      throw new Error(`persisted voxel edit response was incomplete\n${JSON.stringify(edited)}`);
+      throw new Error(
+        `persisted voxel edit response was incomplete\n${JSON.stringify(edited)}`,
+      );
     }
     persistedHash = edited.voxelAuthorityHash;
     persistedNavigationHash = edited.voxelNavigationHash;
     persistedPathLength = edited.voxelProbePathLength;
 
-    const resetResponse = await fetch(`http://${running.address}/api/reset`, { method: "POST" });
+    const resetResponse = await fetch(`http://${running.address}/api/reset`, {
+      method: "POST",
+    });
     const reset = await resetResponse.json();
     if (
       !resetResponse.ok ||
@@ -498,7 +636,9 @@ async function runPersistedVoxelEditProduct(project) {
       reset.voxelEditReceipt !== undefined ||
       reset.lastEvents?.length !== 0
     ) {
-      throw new Error(`persisted voxel reset did not reopen static authority\n${JSON.stringify(reset)}`);
+      throw new Error(
+        `persisted voxel reset did not reopen static authority\n${JSON.stringify(reset)}`,
+      );
     }
   } finally {
     await stopHost(running.host);
@@ -510,10 +650,13 @@ async function runPersistedVoxelEditProduct(project) {
   if (
     environment?.kind !== "material" ||
     !Array.isArray(environment.materialVoxels) ||
-    environment.materialVoxels.some((voxel) =>
-      JSON.stringify(voxel.address) === JSON.stringify([4, 1, 6]))
+    environment.materialVoxels.some(
+      (voxel) => JSON.stringify(voxel.address) === JSON.stringify([4, 1, 6]),
+    )
   ) {
-    throw new Error(`saved project did not materialize the accepted edit\n${bytes}`);
+    throw new Error(
+      `saved project did not materialize the accepted edit\n${bytes}`,
+    );
   }
   for (const forbidden of [
     "sourceRevision",
@@ -530,7 +673,11 @@ async function runPersistedVoxelEditProduct(project) {
 
   const reopened = await launchHost(project);
   try {
-    await waitForHealth(`http://${reopened.address}/health`, reopened.host, reopened.output);
+    await waitForHealth(
+      `http://${reopened.address}/health`,
+      reopened.host,
+      reopened.output,
+    );
     const response = await fetch(`http://${reopened.address}/api/state`);
     const state = await response.json();
     if (
@@ -541,7 +688,9 @@ async function runPersistedVoxelEditProduct(project) {
       state.voxelProbePathLength !== persistedPathLength ||
       state.generatedEnvironment !== null
     ) {
-      throw new Error(`fresh host did not reopen persisted voxel authority\n${JSON.stringify(state)}`);
+      throw new Error(
+        `fresh host did not reopen persisted voxel authority\n${JSON.stringify(state)}`,
+      );
     }
   } finally {
     await stopHost(reopened.host);
@@ -599,7 +748,9 @@ async function reservePort() {
   }
   const { port } = address;
   await new Promise((resolveClose, reject) =>
-    server.close((error) => (error === undefined ? resolveClose() : reject(error))),
+    server.close((error) =>
+      error === undefined ? resolveClose() : reject(error),
+    ),
   );
   return port;
 }
@@ -608,7 +759,9 @@ async function waitForHealth(url, process, output) {
   const deadline = Date.now() + 20_000;
   while (Date.now() < deadline) {
     if (process.exitCode !== null) {
-      throw new Error(`browser host exited early (${String(process.exitCode)})\n${output()}`);
+      throw new Error(
+        `browser host exited early (${String(process.exitCode)})\n${output()}`,
+      );
     }
     try {
       const response = await fetch(url);
@@ -631,7 +784,10 @@ async function waitForHealth(url, process, output) {
 
 function run(command, args) {
   return new Promise((resolveRun, reject) => {
-    const child = spawn(command, args, { cwd: repoRoot, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, {
+      cwd: repoRoot,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => {

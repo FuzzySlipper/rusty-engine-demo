@@ -161,6 +161,7 @@ export interface BrowserPresentationFeedbackOptions {
   readonly layer: HTMLElement;
   readonly readState: () => RuntimeBrowserState;
   readonly surface: RendererSurface;
+  readonly telemetryLayer: HTMLElement;
 }
 
 interface SharedPresentationHosts {
@@ -180,6 +181,7 @@ export class BrowserPresentationFeedback {
   readonly #layer: HTMLElement;
   readonly #readState: () => RuntimeBrowserState;
   readonly #surface: RendererSurface;
+  readonly #telemetryLayer: HTMLElement;
   readonly #pulseTargets = new Set<HTMLElement>();
   readonly #timeouts = new Set<ReturnType<typeof globalThis.setTimeout>>();
   #tail: Promise<void> = Promise.resolve();
@@ -193,6 +195,7 @@ export class BrowserPresentationFeedback {
     this.#layer = options.layer;
     this.#readState = options.readState;
     this.#surface = options.surface;
+    this.#telemetryLayer = options.telemetryLayer;
     this.#hosts = this.#createHosts();
     this.#surface.setPresentationHosts(this.#hosts.set);
     this.#setAudioStatus("inactive");
@@ -376,7 +379,7 @@ export class BrowserPresentationFeedback {
       maxFrameTimeSamples: 20,
     });
     const telemetrySink = new RendererDomTelemetryOverlaySink({
-      container: this.#layer,
+      container: this.#telemetryLayer,
       createElement: () => {
         const element = document.createElement("pre");
         element.className = "shared-render-telemetry";

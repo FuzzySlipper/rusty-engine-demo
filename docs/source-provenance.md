@@ -11,12 +11,12 @@ extraction point, not an active dependency pin.
 
 ## M10A Rust transfer
 
-| Local surface | Source path | Treatment |
-|---|---|---|
-| `rust/crates/loading-bay-game` | `rust/crates/game-host` | Copied as one cohesive gameplay vertical; package/crate imports renamed from `game-host`/`game_host`. |
-| `content/projects` | `content/projects` | Copied unchanged for loading-bay and converted-content admission/product behavior. |
-| `content/generated` | `content/generated` | Copied unchanged for migration, encounter, controller, navigation, and workload tests. |
-| `content/assets/kenney-wall-a.voxel.json` | same path | Copied as the canonical converted-asset test input; later re-encoded through the current Engine voxel owner as recorded below. |
+| Local surface                             | Source path             | Treatment                                                                                                                      |
+| ----------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `rust/crates/loading-bay-game`            | `rust/crates/game-host` | Copied as one cohesive gameplay vertical; package/crate imports renamed from `game-host`/`game_host`.                          |
+| `content/projects`                        | `content/projects`      | Copied unchanged for loading-bay and converted-content admission/product behavior.                                             |
+| `content/generated`                       | `content/generated`     | Copied unchanged for migration, encounter, controller, navigation, and workload tests.                                         |
+| `content/assets/kenney-wall-a.voxel.json` | same path               | Copied as the canonical converted-asset test input; later re-encoded through the current Engine voxel owner as recorded below. |
 
 Reusable Rust crates are not copied. Cargo consumes their packages directly from the exact Engine
 Git revision recorded in `Cargo.toml` and `Cargo.lock`.
@@ -27,14 +27,14 @@ runtime claims.
 
 ## M10B browser transfer
 
-| Local surface | Source path | Treatment |
-|---|---|---|
-| `ts/packages/project-content` | same path | Copied as the optional immutable content composer and renamed to `@rusty-engine-demo/project-content`. |
-| `ts/packages/browser-shell` | same path | Copied as the product-owned input, projection, feedback, and browser shell; imports renamed to the demo package scope. |
-| `ts/packages/render-contracts` | same path | Initially copied into the demo; removed under #6162 after its complete successor became a shared exact-revision Engine package. |
-| `ts/packages/renderer-three` | same path | Initially copied into the demo; removed under #6162 after the retained Three/WebGL backend and browser surface moved behind shared Engine packages. |
-| `scripts/browser-smoke.mjs` | same path | Copied as the end-to-end product proof; the Rust package invocation changed from the source product name to `loading-bay-game`. |
-| Root pnpm, TypeScript, and Vite configuration | same paths | Copied and narrowed to the demo-owned package identities and verification gate. |
+| Local surface                                 | Source path | Treatment                                                                                                                                           |
+| --------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ts/packages/project-content`                 | same path   | Copied as the optional immutable content composer and renamed to `@rusty-engine-demo/project-content`.                                              |
+| `ts/packages/browser-shell`                   | same path   | Copied as the product-owned input, projection, feedback, and browser shell; imports renamed to the demo package scope.                              |
+| `ts/packages/render-contracts`                | same path   | Initially copied into the demo; removed under #6162 after its complete successor became a shared exact-revision Engine package.                     |
+| `ts/packages/renderer-three`                  | same path   | Initially copied into the demo; removed under #6162 after the retained Three/WebGL backend and browser surface moved behind shared Engine packages. |
+| `scripts/browser-smoke.mjs`                   | same path   | Copied as the end-to-end product proof; the Rust package invocation changed from the source product name to `loading-bay-game`.                     |
+| Root pnpm, TypeScript, and Vite configuration | same paths  | Copied and narrowed to the demo-owned package identities and verification gate.                                                                     |
 
 The browser packages initially moved together because all four served one product at extraction
 time. The later renderer migration made the demo an external consumer of
@@ -107,12 +107,22 @@ The product architecture, protocol targets, content vocabulary, and original lev
 They are not transferred Doom content and do not copy another game's code, map, geometry, names,
 sounds, textures, sprites, or trade dress.
 
-The public `/home/dev/rusty-engine-ui` checkout at commit `68ddfa5` was inspected as a potential
-donor. At #6215 no donor files have been imported. Task #6216 may substantially adopt its Angular/Nx
-foundation, boundary tooling, theme tokens, platform ports, browser evidence harness, and
-presentational UI components; every actual transfer or adaptation must be added to this document
-when it occurs. Its fake transport, placeholder actions, and UI-owned inventory/equipment state are
-not eligible for transfer.
+The public `/home/dev/rusty-engine-ui` checkout at exact commit
+`68ddfa5430ec3bc2cf7ca96963982db9511e79ba` supplied the following #6216 downstream shell patterns:
+
+| Local surface                                                                                     | Donor surface                                                                                                       | Treatment                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Root Angular 21 / Nx 23 workspace, boundary tags, strict app TypeScript, and pnpm build allowlist | root `package.json`, `pnpm-workspace.yaml`, `nx.json`, `boundaries.json`, `eslint.config.mjs`, `tsconfig.base.json` | Selectively adapted around this repository's existing Rust and `ts/packages/project-content` owners; package names, scopes, targets, and paths are Loading Bay-specific.                               |
+| `libs/theme`                                                                                      | `libs/theme`                                                                                                        | Palette and reusable panel-token structure adapted to the existing Loading Bay visual language.                                                                                                        |
+| `libs/platform`                                                                                   | `libs/platform`                                                                                                     | Narrow `DocumentEffectsPort` and browser implementation selected; unused storage, clock, and clipboard ports were not copied.                                                                          |
+| `libs/ui-compass`                                                                                 | `libs/ui-compass`                                                                                                   | Pure presentation algorithm and component structure adapted to the full-viewport FPS overlay.                                                                                                          |
+| `libs/ui-combat-log`                                                                              | `libs/ui-combat-log`                                                                                                | Pure presentation structure adapted to committed Rust fact projections.                                                                                                                                |
+| `apps/loading-bay`                                                                                | `apps/app` foundation                                                                                               | Angular bootstrap, hash-router ownership, and standalone-component patterns adopted; the actual viewport, HUD, diagnostics, input, renderer, and runtime projection remain this game's implementation. |
+
+No donor feature screen, fake transport, demo configuration, placeholder action provider, store
+kernel, UI-owned inventory/equipment state, or inert menu control was imported. The migrated route
+mounts the exact shared Engine renderer already used here and disposes its input listeners, held
+input, presentation feedback, and shared surface through one route-owned lifecycle.
 
 Rusty Engine task #6213 produced the renderer-owned timing seam at public SHA
 `2665b74566136fb77e3a26b0766394124c8f58d3`. That SHA is recorded here as reviewed-upstream

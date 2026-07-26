@@ -44,7 +44,12 @@ if [[ -z "$DEMO_PROJECT" ]]; then
 fi
 
 cd "$DEMO_ROOT"
-pnpm run build:shell
+DEMO_NX="$DEMO_ROOT/node_modules/.bin/nx"
+if [[ ! -x "$DEMO_NX" ]]; then
+  echo "workspace dependencies are missing; run pnpm install --frozen-lockfile" >&2
+  exit 1
+fi
+"$DEMO_NX" build loading-bay
 exec cargo run --locked -p loading-bay-game --bin browser-host -- \
   --addr "${DEMO_BIND_HOST}:${DEMO_BIND_PORT}" \
   --project "$DEMO_PROJECT"

@@ -11,7 +11,13 @@ const operationalRoots = [
   "package.json",
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
+  "nx.json",
+  "boundaries.json",
+  "eslint.config.mjs",
+  "tsconfig.angular.json",
   ".github",
+  "apps",
+  "libs",
   "scripts",
   "rust",
   "ts",
@@ -19,7 +25,9 @@ const operationalRoots = [
 const rustEngineRevision = "fb0d091ba5a5465ffb8eb46b1962d0415c257a71";
 const renderEngineRevision = "937a3cef2568d04a261e78126f34e6baea1828c9";
 
-const files = operationalRoots.flatMap((entry) => collect(resolve(repoRoot, entry)));
+const files = operationalRoots.flatMap((entry) =>
+  collect(resolve(repoRoot, entry)),
+);
 const forbidden = [
   ["historical Engine checkout", ["asha", "-engine"].join("")],
   ["historical demo checkout", ["asha", "-demo"].join("")],
@@ -28,6 +36,9 @@ const forbidden = [
   ["private renderer-three package", "@rusty-engine-demo/renderer-three"],
   ["old Rust product package", ["game", "-host"].join("")],
   ["old Rust product crate", ["game", "_host"].join("")],
+  ["donor placeholder actions", "PlaceholderActions"],
+  ["donor fake store kernel", "provideTemplateStoreKernel"],
+  ["donor fake content authority", "DEMO_CONFIG"],
   ["absolute sibling checkout", ["/home/dev/", "rusty-engine"].join("")],
   ["relative sibling checkout", ["../", "rusty-engine"].join("")],
 ];
@@ -38,31 +49,49 @@ for (const file of files) {
   const content = readFileSync(file, "utf8");
   for (const [label, marker] of forbidden) {
     if (content.includes(marker)) {
-      violations.push(`${file.slice(repoRoot.length + 1)}: ${label} (${marker})`);
+      violations.push(
+        `${file.slice(repoRoot.length + 1)}: ${label} (${marker})`,
+      );
     }
   }
 }
 
 const expectedPackages = new Map([
   ["package.json", "rusty-engine-demo"],
-  ["ts/packages/browser-shell/package.json", "@rusty-engine-demo/browser-shell"],
-  ["ts/packages/project-content/package.json", "@rusty-engine-demo/project-content"],
+  [
+    "ts/packages/browser-shell/package.json",
+    "@rusty-engine-demo/browser-shell",
+  ],
+  [
+    "ts/packages/project-content/package.json",
+    "@rusty-engine-demo/project-content",
+  ],
 ]);
 for (const [relativePath, expectedName] of expectedPackages) {
-  const packageJson = JSON.parse(readFileSync(resolve(repoRoot, relativePath), "utf8"));
+  const packageJson = JSON.parse(
+    readFileSync(resolve(repoRoot, relativePath), "utf8"),
+  );
   if (packageJson.name !== expectedName) {
     violations.push(`${relativePath}: expected package name ${expectedName}`);
   }
 }
 
-for (const relativePath of ["ts/packages/render-contracts", "ts/packages/renderer-three"]) {
+for (const relativePath of [
+  "ts/packages/render-contracts",
+  "ts/packages/renderer-three",
+]) {
   if (existsSync(resolve(repoRoot, relativePath))) {
-    violations.push(`${relativePath}: demo-private renderer package must remain absent`);
+    violations.push(
+      `${relativePath}: demo-private renderer package must remain absent`,
+    );
   }
 }
 
 const browserPackage = JSON.parse(
-  readFileSync(resolve(repoRoot, "ts/packages/browser-shell/package.json"), "utf8"),
+  readFileSync(
+    resolve(repoRoot, "ts/packages/browser-shell/package.json"),
+    "utf8",
+  ),
 );
 for (const packageName of [
   "render-contracts",
@@ -81,16 +110,24 @@ for (const packageName of [
 
 const cargoManifest = readFileSync(resolve(repoRoot, "Cargo.toml"), "utf8");
 if (!cargoManifest.includes(`revision = "${rustEngineRevision}"`)) {
-  violations.push(`Cargo.toml: Engine metadata revision must be ${rustEngineRevision}`);
+  violations.push(
+    `Cargo.toml: Engine metadata revision must be ${rustEngineRevision}`,
+  );
 }
-for (const match of cargoManifest.matchAll(/git = "https:\/\/github\.com\/FuzzySlipper\/rusty-engine\.git", rev = "([0-9a-f]+)"/g)) {
+for (const match of cargoManifest.matchAll(
+  /git = "https:\/\/github\.com\/FuzzySlipper\/rusty-engine\.git", rev = "([0-9a-f]+)"/g,
+)) {
   if (match[1] !== rustEngineRevision) {
-    violations.push(`Cargo.toml: Rust Engine dependency resolves ${match[1]} instead of ${rustEngineRevision}`);
+    violations.push(
+      `Cargo.toml: Rust Engine dependency resolves ${match[1]} instead of ${rustEngineRevision}`,
+    );
   }
 }
 
 if (violations.length > 0) {
-  throw new Error(`downstream boundary audit failed:\n${violations.join("\n")}`);
+  throw new Error(
+    `downstream boundary audit failed:\n${violations.join("\n")}`,
+  );
 }
 
 console.log(

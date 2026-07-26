@@ -1,7 +1,7 @@
 {
   "project": "rusty-engine-demo",
   "serve": {
-    "command": "pnpm run serve:den -- --host {host} --port {port}",
+    "command": "bash scripts/serve-den.sh -- --host {host} --port {port}",
     "preferredPort": 8787,
     "healthUrl": "/health",
     "readyText": "\"project\":\"rusty-engine-demo\"",

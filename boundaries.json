@@ -1,0 +1,35 @@
+{
+  "scopes": ["platform", "feature", "shell", "theme", "components"],
+  "typeConstraints": [
+    {
+      "sourceTag": "type:app",
+      "onlyDependOnLibsWithTags": ["type:feature", "type:lib"]
+    },
+    { "sourceTag": "type:feature", "onlyDependOnLibsWithTags": ["type:lib"] },
+    { "sourceTag": "type:lib", "onlyDependOnLibsWithTags": ["type:lib"] }
+  ],
+  "scopeConstraints": [
+    { "sourceTag": "scope:platform", "onlyDependOnLibsWithTags": [] },
+    { "sourceTag": "scope:theme", "onlyDependOnLibsWithTags": [] },
+    {
+      "sourceTag": "scope:components",
+      "onlyDependOnLibsWithTags": ["scope:theme"]
+    },
+    {
+      "sourceTag": "scope:feature",
+      "onlyDependOnLibsWithTags": [
+        "scope:platform",
+        "scope:components",
+        "scope:theme"
+      ]
+    },
+    {
+      "sourceTag": "scope:shell",
+      "onlyDependOnLibsWithTags": [
+        "scope:feature",
+        "scope:platform",
+        "scope:theme"
+      ]
+    }
+  ]
+}

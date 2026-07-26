@@ -206,7 +206,7 @@ fn main() {
 
 fn arguments() -> (String, PathBuf, PathBuf) {
     let default_dist =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../ts/packages/browser-shell/dist");
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../dist/apps/loading-bay/browser");
     let mut address = DEFAULT_ADDRESS.to_owned();
     let mut dist = default_dist;
     let mut project = default_project_path();

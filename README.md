@@ -9,9 +9,10 @@ voxel, mesh, asset, and conversion mechanisms.
 The Rust game vertical is named `loading-bay-game`. Its Engine dependencies are public Git
 dependencies: Rust remains pinned to reviewed authoring revision
 `fb0d091ba5a5465ffb8eb46b1962d0415c257a71`, while the browser renderer is pinned to review-fix
-revision `937a3cef2568d04a261e78126f34e6baea1828c9`; a sibling checkout is not required. The demo owns its browser shell and semantic projection adapter,
-while Rusty Engine owns the shared render contracts, retained projection, Three/WebGL backend,
-surface host, audio, particle, billboard, and telemetry hosts.
+revision `937a3cef2568d04a261e78126f34e6baea1828c9`; a sibling checkout is not required. The demo owns
+its Angular/Nx browser shell, route-scoped input lifecycle, and semantic projection adapter, while
+Rusty Engine owns the shared render contracts, retained projection, Three/WebGL backend, surface
+host, audio, particle, billboard, and telemetry hosts.
 
 The demo-owned `ExtractionBeacon` is the first post-extraction gameplay addition. Its authored
 configuration and live state remain on the beacon entity, `ExtractionBeaconService` owns the
@@ -32,6 +33,11 @@ Then open `http://127.0.0.1:8787`. The default project is
 `content/projects/loading-bay.project.json`; pass `--project <path>` to select another admitted
 project. `content/projects/relay-annex.project.json` is a second, entirely TypeScript-authored
 arrangement using the same settled demo meanings.
+
+The root route is a full-viewport FPS surface with a disposable HUD projection. Its diagnostics
+drawer exposes only concrete Rust host actions. The hash-routed diagnostics screen is also the
+browser lifecycle proof: leaving the game route releases the shared renderer before another route
+can mount it.
 
 For a managed LAN-facing session, use the repository manifest:
 

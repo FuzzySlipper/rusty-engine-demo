@@ -1,0 +1,33 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": ".",
+    "emitDecoratorMetadata": false,
+    "exactOptionalPropertyTypes": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "lib": ["es2022", "dom"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": true,
+    "paths": {
+      "@rusty-engine-demo/game-runtime": [
+        "ts/packages/browser-shell/src/game-runtime.ts"
+      ],
+      "@rusty-engine-demo/platform": ["libs/platform/src/index.ts"],
+      "@rusty-engine-demo/ui-combat-log": ["libs/ui-combat-log/src/index.ts"],
+      "@rusty-engine-demo/ui-compass": ["libs/ui-compass/src/index.ts"]
+    },
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2022",
+    "useUnknownInCatchVariables": true
+  },
+  "exclude": ["node_modules", "target", "tmp", "dist", "coverage"]
+}
