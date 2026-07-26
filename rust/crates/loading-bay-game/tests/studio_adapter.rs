@@ -67,7 +67,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        20
+        37
     );
     assert_eq!(
         response["project"]["projection"]["ops"][0]["op"],
