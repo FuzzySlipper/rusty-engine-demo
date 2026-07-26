@@ -256,6 +256,12 @@ fn weapon_slot_edges_reject_precisely_and_select_only_owned_items_on_fixed_ticks
             .disposition,
         InputCommandDisposition::Repeated
     );
+    for sequence in 5..=70 {
+        game_loop
+            .submit_input(input(generation, sequence, [0.0, 0.0], [0.0, 0.0], false))
+            .unwrap();
+        game_loop.run_fixed_tick().unwrap();
+    }
     let selected_inventory = game_loop.runtime().session().inventory(PLAYER).unwrap();
     assert_eq!(
         game_loop.submit_edge_command(edge(
@@ -264,7 +270,7 @@ fn weapon_slot_edges_reject_precisely_and_select_only_owned_items_on_fixed_ticks
             GameLoopEdgeCommandKind::SelectWeaponSlot { slot: 0 },
         )),
         Err(InputCommandRejection::StaleSequence {
-            acknowledged: 4,
+            acknowledged: 70,
             actual: 3,
         })
     );
