@@ -165,7 +165,7 @@ async function runFullBrowserProduct(project) {
       running.output,
     );
     const result = await runChromiumSmoke(
-      `http://${running.address}/?smoke=1`,
+      `http://${running.address}/?smoke=1#/game`,
       "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
       60_000,
     );
@@ -355,7 +355,7 @@ async function runFullBrowserProduct(project) {
       );
     }
     const reloadResult = await runChromiumSmoke(
-      `http://${running.address}/?reload-smoke=1`,
+      `http://${running.address}/?reload-smoke=1#/game`,
       "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
       30_000,
     );
@@ -400,7 +400,7 @@ async function runFullBrowserProduct(project) {
       );
     }
     const lifecycleResult = await runChromiumSmoke(
-      `http://${running.address}/?lifecycle-smoke=1`,
+      `http://${running.address}/?lifecycle-smoke=1#/game`,
       "document.body?.dataset.routeDisposal === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
       30_000,
     );
@@ -423,6 +423,16 @@ async function runFullBrowserProduct(project) {
         `browser lifecycle smoke missing ${missingLifecycle.join(", ")}\n${lifecycleResult.stdout.slice(-6_000)}`,
       );
     }
+    await runIsolatedGameShellProof(project, {
+      width: 1440,
+      height: 900,
+      label: "desktop",
+    });
+    await runIsolatedGameShellProof(project, {
+      width: 390,
+      height: 844,
+      label: "narrow",
+    });
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
@@ -440,6 +450,263 @@ async function runFullBrowserProduct(project) {
   } finally {
     await stopHost(running.host);
   }
+}
+
+async function runIsolatedGameShellProof(project, viewport) {
+  const running = await launchHost(project);
+  try {
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
+    await runGameShellProof(running.address, viewport);
+  } finally {
+    await stopHost(running.host);
+  }
+}
+
+async function runGameShellProof(address, viewport) {
+  const result = await runChromiumSmoke(
+    `http://${address}/#/`,
+    "document.body?.dataset.gameShellProof === 'pass' || document.body?.dataset.gameShellProof === 'fail'",
+    45_000,
+    {
+      viewport,
+      setupExpression: gameShellScenario(viewport.label),
+    },
+  );
+  if (result.code !== 0) {
+    throw new Error(
+      `${viewport.label} game-shell Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}`,
+    );
+  }
+  const required = [
+    'data-game-shell-proof="pass"',
+    `data-game-shell-viewport="${viewport.label}"`,
+    'data-game-shell-menu="pass"',
+    'data-game-shell-continue="pass"',
+    'data-game-shell-pause="pass"',
+    'data-game-shell-inventory="pass"',
+    'data-game-shell-settings="pass"',
+    'data-game-shell-aiming="pass"',
+    'data-game-shell-overflow="pass"',
+  ];
+  const missing = required.filter((marker) => !result.stdout.includes(marker));
+  if (missing.length > 0) {
+    const bodyDataset =
+      result.stdout.match(/<body[^>]*>/)?.[0] ?? "<body missing>";
+    throw new Error(
+      `${viewport.label} game-shell proof missing ${missing.join(", ")}\n${bodyDataset}\n${result.stdout.slice(-8_000)}`,
+    );
+  }
+}
+
+function gameShellScenario(viewportLabel) {
+  return `(async () => {
+    const delay = (milliseconds) =>
+      new Promise((resolve) => setTimeout(resolve, milliseconds));
+    const waitFor = async (predicate, label) => {
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline) {
+        if (predicate()) return;
+        await delay(50);
+      }
+      throw new Error("timed out waiting for " + label);
+    };
+    const byText = (selector, text) =>
+      [...document.querySelectorAll(selector)].find(
+        (element) => element.textContent?.trim() === text,
+      );
+    const control = (text) =>
+      [...document.querySelectorAll("label")].find((label) =>
+        label.textContent?.includes(text),
+      )?.querySelector("input");
+    try {
+      await waitFor(() => document.querySelector("red-main-menu") !== null, "main menu");
+      const newGame = byText("button", "New game");
+      const continueButton = byText("button", "Continue");
+      if (!(newGame instanceof HTMLButtonElement) ||
+          !(continueButton instanceof HTMLButtonElement) ||
+          !continueButton.disabled) {
+        throw new Error("main menu did not expose accurate new/continue state");
+      }
+      newGame.click();
+      await waitFor(
+        () =>
+          document.body.dataset.rendererLifecycle === "mounted" &&
+          document.querySelector(".game-state-overlay") === null,
+        "connected game",
+      );
+      const canvas = document.querySelector("#viewport");
+      const rect = canvas?.getBoundingClientRect();
+      const aimingTarget =
+        rect === undefined
+          ? null
+          : document.elementFromPoint(
+              Math.floor(rect.left + rect.width / 2),
+              Math.floor(rect.top + rect.height / 2),
+            );
+      const aimingPassed =
+        canvas instanceof HTMLCanvasElement &&
+        rect !== undefined &&
+        rect.width >= document.documentElement.clientWidth - 2 &&
+        rect.height >= Math.min(500, innerHeight - 30) &&
+        aimingTarget === canvas;
+      const hotbarPassed =
+        document.querySelectorAll("red-game-hotbar button").length === 3 &&
+        document.body.textContent?.includes("Arc Pistol") === true;
+
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { code: "KeyI", bubbles: true }),
+      );
+      await waitFor(
+        () => document.querySelector(".game-panel")?.textContent?.includes("Inventory") === true,
+        "inventory panel",
+      );
+      const inventoryPanel = document.querySelector(".game-panel");
+      const inventoryLive =
+        inventoryPanel?.textContent?.includes("SIMULATION LIVE") === true &&
+        inventoryPanel.textContent.includes("Med Patch") &&
+        inventoryPanel.textContent.includes("Arc Pistol");
+      const useButton = [...document.querySelectorAll(".game-panel button")].find(
+        (button) => button.textContent?.trim().startsWith("USE"),
+      );
+      if (!(useButton instanceof HTMLButtonElement)) {
+        throw new Error("inventory did not expose supported item use");
+      }
+      useButton.click();
+      await waitFor(
+        () => document.querySelector(".action-rejection") !== null,
+        "typed full-health rejection",
+      );
+      const rejection = document.querySelector(".action-rejection")?.textContent ?? "";
+      const typedItemRequest = rejection.includes("healthFull");
+      byText(".panel-actions button", "Return to game")?.click();
+      await waitFor(() => document.querySelector(".game-panel-overlay") === null, "game return");
+
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { code: "Escape", bubbles: true }),
+      );
+      await waitFor(
+        () => document.querySelector(".simulation-state")?.textContent?.includes("PAUSED") === true,
+        "Rust pause acknowledgement",
+      );
+      const pausePassed =
+        document.querySelector(".game-panel")?.textContent?.includes("Restart loading bay") === true;
+      byText(".pause-actions button", "Settings")?.click();
+      await waitFor(
+        () => document.querySelector(".game-panel")?.textContent?.includes("Mouse sensitivity") === true,
+        "settings panel",
+      );
+      const sensitivity = control("Mouse sensitivity");
+      const invert = control("Invert vertical look");
+      const volume = control("Effects volume");
+      const hud = control("Show game HUD");
+      const telemetry = control("Show renderer telemetry");
+      if (!(sensitivity instanceof HTMLInputElement) ||
+          !(invert instanceof HTMLInputElement) ||
+          !(volume instanceof HTMLInputElement) ||
+          !(hud instanceof HTMLInputElement) ||
+          !(telemetry instanceof HTMLInputElement)) {
+        throw new Error("settings controls were incomplete");
+      }
+      sensitivity.value = "1.35";
+      sensitivity.dispatchEvent(new Event("input", { bubbles: true }));
+      invert.checked = true;
+      invert.dispatchEvent(new Event("change", { bubbles: true }));
+      volume.value = "0.35";
+      volume.dispatchEvent(new Event("input", { bubbles: true }));
+      telemetry.checked = true;
+      telemetry.dispatchEvent(new Event("change", { bubbles: true }));
+      hud.checked = false;
+      hud.dispatchEvent(new Event("change", { bubbles: true }));
+      await delay(50);
+      const hudHidden = document.querySelector(".viewport-card")?.classList.contains("hud-hidden");
+      hud.checked = true;
+      hud.dispatchEvent(new Event("change", { bubbles: true }));
+      await delay(50);
+      const stored = JSON.parse(
+        localStorage.getItem("rusty-engine-demo.host-user-settings.v1") ?? "{}",
+      );
+      const settingsPassed =
+        stored.mouseSensitivity === 1.35 &&
+        stored.invertY === true &&
+        stored.sfxVolume === 0.35 &&
+        stored.telemetryVisible === true &&
+        hudHidden === true &&
+        document.querySelector("#feedback-audio-status")?.dataset.volume === "0.35" &&
+        document.querySelector("#renderer-telemetry")?.hidden === false;
+      byText(".panel-actions button", "Done")?.click();
+      await waitFor(
+        () => document.querySelector(".game-panel")?.textContent?.includes("Restart loading bay") === true,
+        "pause return",
+      );
+      byText(".pause-actions button", "Main menu")?.click();
+      await waitFor(() => document.querySelector("red-main-menu") !== null, "menu return");
+      const resumedContinue = byText("button", "Continue");
+      const menuPassed =
+        resumedContinue instanceof HTMLButtonElement && !resumedContinue.disabled;
+      resumedContinue?.click();
+      await waitFor(
+        () =>
+          document.body.dataset.rendererLifecycle === "mounted" &&
+          document.querySelector(".game-state-overlay") === null,
+        "continued game",
+      );
+      await waitFor(
+        () =>
+          document.querySelector("red-game-hotbar button[aria-pressed='true']")?.hasAttribute("disabled") === false,
+        "continued unpaused simulation",
+      );
+      const continuePassed =
+        document.querySelector(".game-panel-overlay") === null &&
+        document.querySelector(".game-state-overlay") === null;
+      const overflowPassed = document.documentElement.scrollWidth <= innerWidth + 1;
+
+      document.body.dataset.gameShellViewport = ${JSON.stringify(viewportLabel)};
+      document.body.dataset.gameShellAimingTarget =
+        aimingTarget instanceof Element
+          ? aimingTarget.tagName.toLowerCase() + "." + aimingTarget.className
+          : String(aimingTarget);
+      document.body.dataset.gameShellCanvasRect =
+        rect === undefined
+          ? "missing"
+          : rect.width + "x" + rect.height + "@" + innerWidth + "x" + innerHeight;
+      document.body.dataset.gameShellMenu = menuPassed ? "pass" : "fail";
+      document.body.dataset.gameShellContinue = continuePassed ? "pass" : "fail";
+      document.body.dataset.gameShellPause = pausePassed ? "pass" : "fail";
+      document.body.dataset.gameShellInventoryEvidence =
+        String(inventoryLive) +
+        ":" +
+        String(typedItemRequest) +
+        ":" +
+        String(hotbarPassed) +
+        ":" +
+        rejection.trim();
+      document.body.dataset.gameShellInventory =
+        inventoryLive && typedItemRequest && hotbarPassed ? "pass" : "fail";
+      document.body.dataset.gameShellSettings = settingsPassed ? "pass" : "fail";
+      document.body.dataset.gameShellAiming = aimingPassed ? "pass" : "fail";
+      document.body.dataset.gameShellOverflow = overflowPassed ? "pass" : "fail";
+      document.body.dataset.gameShellProof =
+        menuPassed &&
+        continuePassed &&
+        pausePassed &&
+        inventoryLive &&
+        typedItemRequest &&
+        hotbarPassed &&
+        settingsPassed &&
+        aimingPassed &&
+        overflowPassed
+          ? "pass"
+          : "fail";
+    } catch (error) {
+      document.body.dataset.gameShellError =
+        error instanceof Error ? error.message : String(error);
+      document.body.dataset.gameShellProof = "fail";
+    }
+  })()`;
 }
 
 function storedProjectEntityCount(project) {
@@ -525,7 +792,7 @@ async function runConvertedBrowserProduct(project) {
       running.output,
     );
     const result = await runChromiumSmoke(
-      `http://${running.address}/?converted-smoke=1`,
+      `http://${running.address}/?converted-smoke=1#/game`,
       "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
       30_000,
     );
@@ -1101,7 +1368,12 @@ function run(command, args) {
   });
 }
 
-async function runChromiumSmoke(url, completionExpression, timeout) {
+async function runChromiumSmoke(
+  url,
+  completionExpression,
+  timeout,
+  options = {},
+) {
   const debuggingPort = await reservePort();
   const profileDirectory = mkdtempSync(
     join(tmpdir(), "rusty-engine-chromium-"),
@@ -1145,7 +1417,42 @@ async function runChromiumSmoke(url, completionExpression, timeout) {
     client = await connectDevTools(target.webSocketDebuggerUrl);
     await client.send("Page.enable");
     await client.send("Runtime.enable");
+    if (options.viewport !== undefined) {
+      await client.send("Emulation.setDeviceMetricsOverride", {
+        width: options.viewport.width,
+        height: options.viewport.height,
+        deviceScaleFactor: 1,
+        mobile: options.viewport.width < 600,
+      });
+    }
     await client.send("Page.navigate", { url });
+    if (options.setupExpression !== undefined) {
+      const navigationDeadline = Date.now() + 10_000;
+      let navigationReady = false;
+      while (Date.now() < navigationDeadline) {
+        try {
+          const ready = await client.send("Runtime.evaluate", {
+            expression: `location.href === ${JSON.stringify(url)} && document.readyState !== "loading"`,
+            returnByValue: true,
+          });
+          if (ready?.result?.value === true) {
+            navigationReady = true;
+            break;
+          }
+        } catch {
+          // Navigation replaces the JavaScript execution context.
+        }
+        await delay(50);
+      }
+      if (!navigationReady) {
+        throw new Error(`Chromium did not finish navigation to ${url}`);
+      }
+      await client.send("Runtime.evaluate", {
+        expression: options.setupExpression,
+        awaitPromise: true,
+        returnByValue: true,
+      });
+    }
 
     const deadline = Date.now() + timeout;
     let completed = false;

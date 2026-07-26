@@ -129,6 +129,38 @@ a {
   text-transform: uppercase;
 }
 
+.hud-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-self: end;
+  pointer-events: auto;
+}
+
+.hud-actions button,
+.hud-actions a {
+  background: #071012bf;
+  border: 1px solid var(--rusty-engine-border);
+  color: var(--rusty-engine-muted);
+  cursor: pointer;
+  font:
+    0.64rem "SFMono-Regular",
+    Consolas,
+    monospace;
+  letter-spacing: 0.08em;
+  padding: 8px 10px;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.hud-actions button:hover,
+.hud-actions button:focus-visible,
+.hud-actions a:hover,
+.hud-actions a:focus-visible {
+  border-color: var(--rusty-engine-accent);
+  color: var(--rusty-engine-accent);
+  outline: none;
+}
+
 .hud-left,
 .hud-right {
   bottom: 28px;
@@ -146,6 +178,301 @@ a {
   gap: 14px;
   justify-items: end;
   right: 20px;
+}
+
+.hud-hotbar {
+  bottom: 32px;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 7;
+}
+
+.key-ring {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: end;
+  max-width: 16rem;
+}
+
+.key-ring span {
+  background: rgb(4 14 16 / 82%);
+  border: 1px solid var(--rusty-engine-border);
+  color: var(--rusty-engine-warn);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.4rem;
+  text-transform: uppercase;
+}
+
+.interaction-prompt {
+  background: rgb(4 14 16 / 88%);
+  border: 1px solid var(--rusty-engine-accent);
+  bottom: calc(50% - 4.5rem);
+  color: var(--rusty-engine-accent);
+  cursor: pointer;
+  font-size: 0.68rem;
+  left: 50%;
+  letter-spacing: 0.08em;
+  padding: 0.45rem 0.7rem;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 8;
+}
+
+.viewport-card.hud-hidden .hud-top,
+.viewport-card.hud-hidden .hud-left,
+.viewport-card.hud-hidden .hud-right,
+.viewport-card.hud-hidden .hud-hotbar,
+.viewport-card.hud-hidden .interaction-prompt,
+.viewport-card.hud-hidden .pointer-help,
+.viewport-card.hud-hidden .feedback-audio-status,
+.viewport-card.hud-hidden .reticle {
+  display: none;
+}
+
+.game-state-overlay,
+.game-panel-overlay {
+  align-items: center;
+  background: rgb(2 8 10 / 78%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: absolute;
+  z-index: 20;
+}
+
+.game-state-overlay {
+  flex-direction: column;
+  text-align: center;
+}
+
+.game-state-overlay h1 {
+  color: var(--rusty-engine-accent);
+  letter-spacing: 0.12em;
+  margin: 0.25rem;
+}
+
+.game-state-overlay p:not(.section-label) {
+  color: var(--rusty-engine-muted);
+  max-width: 34rem;
+}
+
+.game-state-overlay button,
+.game-panel button,
+.settings-card a {
+  background: rgb(7 23 25 / 94%);
+  border: 1px solid var(--rusty-engine-border);
+  color: var(--rusty-engine-text);
+  cursor: pointer;
+  padding: 0.65rem 0.9rem;
+  text-decoration: none;
+}
+
+.game-state-overlay button:hover,
+.game-state-overlay button:focus-visible,
+.game-panel button:hover:not(:disabled),
+.game-panel button:focus-visible,
+.settings-card a:hover,
+.settings-card a:focus-visible {
+  border-color: var(--rusty-engine-accent);
+  color: var(--rusty-engine-accent);
+  outline: none;
+}
+
+.game-panel {
+  background: linear-gradient(135deg, rgb(10 35 36 / 98%), rgb(4 13 16 / 98%));
+  border: 1px solid var(--rusty-engine-border-strong);
+  box-shadow: 0 1.5rem 5rem #000c;
+  max-height: calc(100dvh - 2rem);
+  max-width: 58rem;
+  overflow: auto;
+  padding: clamp(1rem, 3vw, 2rem);
+  width: 100%;
+}
+
+.game-panel > header,
+.settings-card > header {
+  align-items: start;
+  border-bottom: 1px solid var(--rusty-engine-border);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+}
+
+.game-panel h2,
+.settings-card h1 {
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.simulation-state {
+  color: var(--rusty-engine-warn);
+  font-size: 0.65rem;
+  letter-spacing: 0.09em;
+}
+
+.pause-actions {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 auto;
+  max-width: 24rem;
+}
+
+.pause-actions button:first-child {
+  border-color: var(--rusty-engine-accent);
+  color: var(--rusty-engine-accent);
+}
+
+.pause-actions button:disabled,
+.game-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: end;
+  margin-top: 1rem;
+}
+
+.action-rejection {
+  border-left: 2px solid var(--rusty-engine-danger);
+  color: var(--rusty-engine-danger);
+  font-size: 0.72rem;
+  margin: 1rem 0 0;
+  overflow-wrap: anywhere;
+  padding-left: 0.65rem;
+}
+
+.game-action-rejection {
+  background: rgb(4 14 16 / 92%);
+  bottom: 7.25rem;
+  left: 50%;
+  margin: 0;
+  max-width: min(34rem, calc(100% - 2rem));
+  padding: 0.55rem 0.7rem;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 9;
+}
+
+.main-menu-screen,
+.settings-screen {
+  background:
+    linear-gradient(110deg, rgb(2 8 10 / 50%), rgb(2 8 10 / 96%)),
+    radial-gradient(circle at 20% 20%, #175447 0, #071012 45%, #020607 100%);
+  display: grid;
+  min-height: 100dvh;
+  padding: clamp(1rem, 5vw, 4rem);
+  place-items: center;
+}
+
+.main-menu-card,
+.settings-card {
+  background: rgb(4 14 16 / 92%);
+  border: 1px solid var(--rusty-engine-border-strong);
+  box-shadow: 0 2rem 7rem #000c;
+  max-width: 46rem;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  width: 100%;
+}
+
+.main-menu-card header {
+  border-bottom: 1px solid var(--rusty-engine-border);
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.main-menu-card h1 {
+  color: var(--rusty-engine-accent);
+  font-size: clamp(3rem, 11vw, 7rem);
+  letter-spacing: -0.06em;
+  line-height: 0.82;
+  margin: 0.5rem 0 1rem;
+}
+
+.main-menu-card header > p:last-child,
+.availability {
+  color: var(--rusty-engine-muted);
+  line-height: 1.5;
+}
+
+.eyebrow {
+  color: var(--rusty-engine-warn);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.main-menu-card nav {
+  display: grid;
+  gap: 0.55rem;
+  max-width: 22rem;
+}
+
+.main-menu-card nav button,
+.main-menu-card nav a {
+  background: transparent;
+  border: 1px solid var(--rusty-engine-border);
+  color: var(--rusty-engine-text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  padding: 0.8rem 1rem;
+  text-align: left;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.main-menu-card nav .primary {
+  border-color: var(--rusty-engine-accent);
+  color: var(--rusty-engine-accent);
+}
+
+.main-menu-card nav button:hover:not(:disabled),
+.main-menu-card nav button:focus-visible,
+.main-menu-card nav a:hover,
+.main-menu-card nav a:focus-visible {
+  background: rgb(25 85 70 / 35%);
+  border-color: var(--rusty-engine-accent);
+  outline: none;
+}
+
+.main-menu-card nav button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.main-menu-screen > footer {
+  bottom: 1rem;
+  color: var(--rusty-engine-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.62rem;
+  gap: 1rem;
+  justify-content: center;
+  left: 1rem;
+  letter-spacing: 0.08em;
+  position: fixed;
+  right: 1rem;
+  text-transform: uppercase;
+}
+
+.settings-card {
+  max-width: 52rem;
+}
+
+.settings-saved {
+  color: var(--rusty-engine-muted);
+  font-size: 0.68rem;
+  margin: 1rem 0 0;
 }
 
 .scene-caption {
@@ -228,6 +555,7 @@ a {
   border-radius: 50%;
   height: 18px;
   left: 50%;
+  pointer-events: none;
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
@@ -523,6 +851,32 @@ footer {
 }
 
 @media (max-width: 760px) {
+  .hud-actions button:first-child,
+  .diagnostics-link,
+  .hud-left,
+  .key-ring {
+    display: none;
+  }
+  .hud-hotbar {
+    bottom: 40px;
+  }
+  .hud-right {
+    bottom: 118px;
+  }
+  .scene-caption {
+    display: none;
+  }
+  .game-panel-overlay {
+    align-items: stretch;
+    padding: 0;
+  }
+  .game-panel {
+    border-inline: 0;
+    max-height: 100dvh;
+  }
+  .main-menu-screen > footer {
+    position: static;
+  }
   .viewport-card {
     height: calc(100dvh - 28px);
     min-height: 420px;

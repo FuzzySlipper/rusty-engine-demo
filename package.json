@@ -11,6 +11,7 @@
     "lint": "nx run-many -t lint --all",
     "serve:den": "bash scripts/serve-den.sh",
     "test:boundaries": "node scripts/test-boundaries.mjs",
+    "test:platform": "node --test libs/platform/src/*.test.ts",
     "test:shell": "pnpm --filter @rusty-engine-demo/browser-shell test",
     "test:browser": "node scripts/browser-smoke.mjs",
     "test:ts": "pnpm --filter @rusty-engine-demo/project-content test",

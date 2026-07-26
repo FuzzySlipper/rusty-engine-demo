@@ -459,6 +459,13 @@ export class LoadingBayGameSession {
     this.#scheduleInput();
   }
 
+  discardInputForSessionReplacement(): void {
+    if (this.#closed) {
+      return;
+    }
+    this.#clearBufferedInput();
+  }
+
   sendInput(intent: SessionInputIntent): Promise<RuntimeBrowserState> {
     this.queueInput(intent);
     return this.#ensureInputSettlement().promise;
@@ -935,6 +942,10 @@ function isSessionRejectionCode(value: unknown): value is SessionRejectionCode {
     value === "weaponNotOwned" ||
     value === "weaponAlreadySelected" ||
     value === "playerDefeated" ||
+    value === "itemNotOwned" ||
+    value === "itemNotUsable" ||
+    value === "healthFull" ||
+    value === "checkpointUnavailable" ||
     value === "paused" ||
     value === "internalDefect"
   );

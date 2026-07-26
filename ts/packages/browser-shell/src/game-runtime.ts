@@ -2,7 +2,7 @@ import { mountRendererSurface } from "@rusty-engine/renderer-host";
 
 import { SerializedActionQueue } from "./action-queue.js";
 import { CoalescedLookInput } from "./coalesced-look.js";
-import { LoadingBayGameSession } from "./game-session.js";
+import { GameSessionError, LoadingBayGameSession } from "./game-session.js";
 import { HeldMovementInput } from "./held-movement.js";
 import {
   clampInputUnit,
@@ -33,25 +33,81 @@ type VoxelEditOperation =
 
 const PRODUCT_EDIT_VOXEL = [4, 1, 6] as const;
 
+export interface LoadingBayHostPresentationPreferences {
+  readonly mouseSensitivity: number;
+  readonly invertY: boolean;
+  readonly sfxVolume: number;
+  readonly telemetryVisible: boolean;
+}
+
+export interface LoadingBayInventoryStack {
+  readonly item: string;
+  readonly quantity: number;
+}
+
+export interface LoadingBayWeaponSlot {
+  readonly slot: number;
+  readonly item: string;
+  readonly owned: boolean;
+  readonly selected: boolean;
+  readonly ammunition: string;
+  readonly ammunitionQuantity: number;
+}
+
+export interface LoadingBayInputBindings {
+  readonly moveForward: string;
+  readonly moveBackward: string;
+  readonly moveLeft: string;
+  readonly moveRight: string;
+  readonly mouseLook: string;
+  readonly primaryFire: string;
+  readonly selectWeapon: readonly string[];
+}
+
 export interface LoadingBayPresentationSnapshot {
   readonly ammoCapacity: number;
   readonly ammoRemaining: number;
   readonly armor: number;
+  readonly bindings: LoadingBayInputBindings;
+  readonly connected: boolean;
+  readonly doorState: "closed" | "open";
+  readonly equippedWeapon: string | null;
   readonly encounterState: string;
   readonly events: readonly string[];
   readonly health: number;
   readonly headingDegrees: number;
+  readonly interactionPrompt: string | null;
+  readonly interactionTarget: number | null;
+  readonly inventoryCapacity: number;
+  readonly inventoryStacks: readonly LoadingBayInventoryStack[];
+  readonly lastRejection: string | null;
   readonly maxArmor: number;
   readonly maxHealth: number;
+  readonly paused: boolean;
+  readonly restartAvailable: boolean;
   readonly vitalityState: "alive" | "dead";
+  readonly weaponItem: string;
+  readonly weaponPresentation: string;
+  readonly weaponSlots: readonly LoadingBayWeaponSlot[];
 }
 
 export interface LoadingBayGameOptions {
   readonly onProjection?: (snapshot: LoadingBayPresentationSnapshot) => void;
+  readonly onConnectionFailure?: (message: string) => void;
+  readonly preferences?: LoadingBayHostPresentationPreferences;
 }
 
 export interface LoadingBayGameHandle {
   readonly dispose: () => Promise<void>;
+  readonly interact: (target: number) => Promise<void>;
+  readonly releaseInput: () => void;
+  readonly restart: () => Promise<void>;
+  readonly selectWeaponSlot: (slot: number) => Promise<void>;
+  readonly setPaused: (paused: boolean) => Promise<void>;
+  readonly updatePreferences: (
+    preferences: LoadingBayHostPresentationPreferences,
+  ) => void;
+  readonly useItem: (item: string) => Promise<void>;
 }
 
 export async function mountLoadingBayGame(
@@ -106,6 +162,7 @@ export async function mountLoadingBayGame(
   let disposed = false;
   let rendererTelemetryRefreshObserved = false;
   let rendererTelemetryResetObserved = false;
+  let hostPreferences = normalizeHostPreferences(options.preferences);
   const localLookOffset = new LocalLookPresentationOffset();
   const heldMovement = new HeldMovementInput({
     bindings: () => current.player.bindings,
@@ -157,13 +214,19 @@ export async function mountLoadingBayGame(
     surface,
     telemetryLayer,
   });
+  presentationFeedback.setAudioLevel(hostPreferences.sfxVolume);
+  telemetryLayer.hidden = !hostPreferences.telemetryVisible;
   session.setStateListener(applySessionState);
   session.setFailureListener((error) => {
     if (!disposed) {
-      if (error.retry === "reconnect" || error.code === "sessionClosed") {
+      const connectionFailure =
+        (error.retry === "reconnect" && error.code !== "sessionClosed") ||
+        error.code === "protocolMismatch";
+      if (connectionFailure) {
         clearActiveInput();
+        recordActionRejection(error);
+        options.onConnectionFailure?.(error.message);
       }
-      recordActionRejection(error);
     }
   });
   const dispose = async (): Promise<void> => {
@@ -225,13 +288,7 @@ export async function mountLoadingBayGame(
     "click",
     () => {
       void presentationFeedback.activateAudio();
-      void session
-        .sendEdge({
-          kind: "useItem",
-          item: "supply/med-patch",
-        })
-        .then(applySessionState)
-        .catch(recordActionRejection);
+      void performUseItem("supply/med-patch").catch(recordActionRejection);
     },
     eventOptions,
   );
@@ -376,9 +433,10 @@ export async function mountLoadingBayGame(
       ) {
         return;
       }
+      const pitchDirection = hostPreferences.invertY ? -1 : 1;
       const action = resolvePointerAction(
-        event.movementX,
-        event.movementY,
+        event.movementX * hostPreferences.mouseSensitivity,
+        event.movementY * hostPreferences.mouseSensitivity * pitchDirection,
         current.player.bindings,
       );
       if (action?.kind === "look") {
@@ -692,7 +750,10 @@ export async function mountLoadingBayGame(
       (enemy) => enemy.id === 4,
     )?.currentHealth;
     const ammoAfterFirstShot = current.weapon.ammoRemaining;
-    await performInputIntent([0, 0]);
+    // Real pointer capture sends the press transition once. Let several fixed
+    // ticks pass without fabricating a second `pressed` frame; the Rust loop
+    // must keep semiautomatic fire edge-triggered while the held intent ages.
+    await delay(120);
     const healthAfterRepeatedHeldFire = current.enemies.find(
       (enemy) => enemy.id === 4,
     )?.currentHealth;
@@ -967,7 +1028,16 @@ export async function mountLoadingBayGame(
     document.body.dataset.smokeStatus = passed ? "pass" : "fail";
   }
 
-  return { dispose };
+  return {
+    dispose,
+    interact: (target) => runUiAction(() => enqueueInteraction(target)),
+    releaseInput: releaseCapturedInput,
+    restart: () => runUiAction(performRestart),
+    selectWeaponSlot: (slot) => runUiAction(() => enqueueWeaponSelection(slot)),
+    setPaused: (paused) => runUiAction(() => performSetPaused(paused)),
+    updatePreferences,
+    useItem: (item) => runUiAction(() => performUseItem(item)),
+  };
 
   async function performRestart(): Promise<void> {
     heldMovement.clear(false);
@@ -976,7 +1046,7 @@ export async function mountLoadingBayGame(
     clearLocalLookPresentation();
     latestMovement = { kind: "move", forward: 0, right: 0 };
     primaryFireHeld = false;
-    session.neutralizeInput();
+    session.discardInputForSessionReplacement();
     const telemetrySamplesBeforeRestart = Number(
       telemetryLayer.dataset.rendererSampleSequence ?? "0",
     );
@@ -999,9 +1069,48 @@ export async function mountLoadingBayGame(
     updateRendererStatus();
   }
 
+  async function performSetPaused(paused: boolean): Promise<void> {
+    clearActiveInput();
+    if (paused && document.pointerLockElement === canvas) {
+      document.exitPointerLock();
+    }
+    await performInputEdge({ kind: "setPaused", paused });
+  }
+
+  async function performUseItem(item: string): Promise<void> {
+    current = await session.sendEdge({ kind: "useItem", item });
+    lastActionRejection = null;
+    renderReadout(current);
+  }
+
+  async function runUiAction(operation: () => Promise<void>): Promise<void> {
+    void presentationFeedback.activateAudio();
+    try {
+      await operation();
+    } catch (error) {
+      recordActionRejection(error);
+      throw error;
+    }
+  }
+
+  function updatePreferences(
+    preferences: LoadingBayHostPresentationPreferences,
+  ): void {
+    hostPreferences = normalizeHostPreferences(preferences);
+    presentationFeedback.setAudioLevel(hostPreferences.sfxVolume);
+    telemetryLayer.hidden = !hostPreferences.telemetryVisible;
+  }
+
   function applySessionState(state: RuntimeBrowserState): void {
     if (disposed) {
       return;
+    }
+    if (
+      (current.player.vitalityState !== "dead" &&
+        state.player.vitalityState === "dead") ||
+      (current.input.connected && !state.input.connected)
+    ) {
+      releaseCapturedInput();
     }
     current = state;
     eventHistory.push(...state.lastEvents);
@@ -1114,17 +1223,32 @@ export async function mountLoadingBayGame(
         return item;
       }),
     );
+    const interaction = availableInteraction(state);
     options.onProjection?.({
       ammoCapacity: state.weapon.ammoCapacity,
       ammoRemaining: state.weapon.ammoRemaining,
       armor: state.player.armor,
+      bindings: state.player.bindings,
+      connected: state.input.connected,
+      doorState: state.doorState,
+      equippedWeapon: state.inventory?.equippedWeapon ?? null,
       encounterState: state.encounterState,
       events: [...eventHistory],
       health: state.player.currentHealth,
       headingDegrees: normalizeDegrees(state.player.yawDegrees),
+      interactionPrompt: interaction?.prompt ?? null,
+      interactionTarget: interaction?.target ?? null,
+      inventoryCapacity: state.inventory?.capacitySlots ?? 0,
+      inventoryStacks: state.inventory?.stacks ?? [],
+      lastRejection: lastActionRejection,
       maxArmor: state.player.maxArmor,
       maxHealth: state.player.maxHealth,
+      paused: state.input.paused,
+      restartAvailable: state.restart.authoredBaselineAvailable,
       vitalityState: state.player.vitalityState,
+      weaponItem: state.weapon.item,
+      weaponPresentation: state.weapon.presentation,
+      weaponSlots: state.inventory?.weapons ?? [],
     });
   }
 
@@ -1250,6 +1374,13 @@ export async function mountLoadingBayGame(
     primaryFireHeld = false;
     if (current.input.connected) {
       session.neutralizeInput();
+    }
+  }
+
+  function releaseCapturedInput(): void {
+    clearActiveInput();
+    if (document.pointerLockElement === canvas) {
+      document.exitPointerLock();
     }
   }
 
@@ -1729,7 +1860,11 @@ export async function mountLoadingBayGame(
 
   function recordActionRejection(error: unknown): void {
     lastActionRejection =
-      error instanceof Error ? error.message : String(error);
+      error instanceof GameSessionError
+        ? `${error.code}: ${error.message}`
+        : error instanceof Error
+          ? error.message
+          : String(error);
     eventHistory.push(
       lastActionRejection.includes("CombatRejected")
         ? "CombatRejected"
@@ -1740,6 +1875,60 @@ export async function mountLoadingBayGame(
 
   function normalizeDegrees(value: number): number {
     return ((((value + 180) % 360) + 360) % 360) - 180;
+  }
+
+  function normalizeHostPreferences(
+    preferences: LoadingBayHostPresentationPreferences | undefined,
+  ): LoadingBayHostPresentationPreferences {
+    return {
+      mouseSensitivity: boundedPreference(
+        preferences?.mouseSensitivity,
+        0.25,
+        2,
+        1,
+      ),
+      invertY: preferences?.invertY ?? false,
+      sfxVolume: boundedPreference(preferences?.sfxVolume, 0, 1, 1),
+      telemetryVisible: preferences?.telemetryVisible ?? true,
+    };
+  }
+
+  function boundedPreference(
+    value: number | undefined,
+    minimum: number,
+    maximum: number,
+    fallback: number,
+  ): number {
+    return value !== undefined && Number.isFinite(value)
+      ? Math.min(maximum, Math.max(minimum, value))
+      : fallback;
+  }
+
+  function availableInteraction(state: RuntimeBrowserState): {
+    readonly prompt: string;
+    readonly target: number;
+  } | null {
+    const beacon = state.extractionBeacon;
+    if (beacon === null || beacon.state !== "standby") {
+      return null;
+    }
+    const position =
+      state.projection.find((node) => node.id === beacon.id)?.translation ??
+      null;
+    if (
+      position === null ||
+      Math.hypot(
+        position[0] - state.player.position[0],
+        position[1] - state.player.position[1],
+        position[2] - state.player.position[2],
+      ) > beacon.activationRadius
+    ) {
+      return null;
+    }
+    return {
+      prompt: "Activate extraction beacon",
+      target: beacon.id,
+    };
   }
 
   function includesEvery(

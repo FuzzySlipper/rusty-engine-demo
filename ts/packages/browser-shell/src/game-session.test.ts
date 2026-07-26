@@ -384,6 +384,49 @@ test("coalesced look remains within the authoritative input envelope", () => {
   );
 });
 
+test("session replacement preparation cancels unsent transient input", async () => {
+  const originalLocation = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "location",
+  );
+  const originalWebSocket = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "WebSocket",
+  );
+  const sockets: InputDiscardSocket[] = [];
+
+  Object.defineProperty(globalThis, "location", {
+    configurable: true,
+    value: { host: "loading-bay.test", protocol: "http:" },
+  });
+  Object.defineProperty(globalThis, "WebSocket", {
+    configurable: true,
+    value: class extends InputDiscardSocket {
+      constructor() {
+        super();
+        sockets.push(this);
+      }
+    },
+  });
+
+  try {
+    const session = await LoadingBayGameSession.connect();
+    session.queueInput({
+      movement: [1, 0],
+      lookDelta: [0.25, -0.25],
+      primaryFireHeld: true,
+    });
+    session.discardInputForSessionReplacement();
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    assert.deepEqual(sockets[0]?.sentCommands, []);
+    assert.equal(session.pendingInputFrameCount, 0);
+    await session.close();
+  } finally {
+    restoreGlobal("location", originalLocation);
+    restoreGlobal("WebSocket", originalWebSocket);
+  }
+});
+
 test("a fixed-tick restart rejection settles and releases the restart slot", async () => {
   const originalLocation = Object.getOwnPropertyDescriptor(
     globalThis,
@@ -464,6 +507,42 @@ test("typed weapon-slot edges settle from the authoritative equipped projection"
       selected.inventory?.weapons.find((weapon) => weapon.slot === 1)?.selected,
       true,
     );
+    await session.close();
+  } finally {
+    restoreGlobal("location", originalLocation);
+    restoreGlobal("WebSocket", originalWebSocket);
+  }
+});
+
+test("typed item rejections settle without closing the live session", async () => {
+  const originalLocation = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "location",
+  );
+  const originalWebSocket = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "WebSocket",
+  );
+
+  Object.defineProperty(globalThis, "location", {
+    configurable: true,
+    value: { host: "loading-bay.test", protocol: "http:" },
+  });
+  Object.defineProperty(globalThis, "WebSocket", {
+    configurable: true,
+    value: HealthFullRejectionSocket,
+  });
+
+  try {
+    const session = await LoadingBayGameSession.connect();
+    await assert.rejects(
+      session.sendEdge({ kind: "useItem", item: "supply/med-patch" }),
+      (error) =>
+        error instanceof GameSessionError && error.code === "healthFull",
+    );
+    assert.equal(session.state.tick, 2);
+    assert.equal(session.state.input.connected, true);
+    assert.equal(session.pendingEdgeCount, 0);
     await session.close();
   } finally {
     restoreGlobal("location", originalLocation);
@@ -573,6 +652,126 @@ class SelectionSocket extends EventTarget {
     this.dispatchEvent(
       new MessageEvent("message", { data: JSON.stringify(envelope) }),
     );
+  }
+}
+
+class HealthFullRejectionSocket extends EventTarget {
+  static readonly OPEN = 1;
+  readonly bufferedAmount = 0;
+  readyState = HealthFullRejectionSocket.OPEN;
+
+  constructor() {
+    super();
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 1,
+        snapshotSequence: 1,
+        acknowledgedCommandSequence: 0,
+        staticRevision: resources.staticRevision,
+        update: { kind: "full", state: dynamic },
+        resources,
+        facts: [],
+        metrics,
+      });
+    });
+  }
+
+  send(payload: string): void {
+    const envelope = JSON.parse(payload) as {
+      readonly sequence: number;
+      readonly command: { readonly kind: string; readonly item?: string };
+    };
+    assert.deepEqual(envelope.command, {
+      kind: "useItem",
+      item: "supply/med-patch",
+    });
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 2,
+        snapshotSequence: 2,
+        acknowledgedCommandSequence: envelope.sequence,
+        staticRevision: resources.staticRevision,
+        update: {
+          kind: "delta",
+          baseSnapshotSequence: 1,
+          changes: {
+            tick: 2,
+            input: {
+              ...dynamic.input,
+              acknowledgedSequence: envelope.sequence,
+              consumedSequence: envelope.sequence,
+            },
+          },
+        },
+        facts: [
+          {
+            kind: "InputEdgeRejectedHealthFull",
+            code: "healthFull",
+            commandSequence: envelope.sequence,
+          },
+        ],
+        metrics,
+      });
+    });
+  }
+
+  close(): void {
+    this.readyState = 3;
+    this.dispatchEvent(new Event("close"));
+  }
+
+  #emit(envelope: ServerUpdateEnvelope): void {
+    this.dispatchEvent(
+      new MessageEvent("message", { data: JSON.stringify(envelope) }),
+    );
+  }
+}
+
+class InputDiscardSocket extends EventTarget {
+  static readonly OPEN = 1;
+  readonly bufferedAmount = 0;
+  readonly sentCommands: string[] = [];
+  readyState = InputDiscardSocket.OPEN;
+
+  constructor() {
+    super();
+    queueMicrotask(() => {
+      this.dispatchEvent(
+        new MessageEvent("message", {
+          data: JSON.stringify({
+            protocolVersion: 1,
+            sessionId: "loading-bay-1",
+            connectionGeneration: 1,
+            serverTick: 1,
+            snapshotSequence: 1,
+            acknowledgedCommandSequence: 0,
+            staticRevision: resources.staticRevision,
+            update: { kind: "full", state: dynamic },
+            resources,
+            facts: [],
+            metrics,
+          } satisfies ServerUpdateEnvelope),
+        }),
+      );
+    });
+  }
+
+  send(payload: string): void {
+    const envelope = JSON.parse(payload) as {
+      readonly command: { readonly kind: string };
+    };
+    this.sentCommands.push(envelope.command.kind);
+  }
+
+  close(): void {
+    this.readyState = 3;
+    this.dispatchEvent(new Event("close"));
   }
 }
 

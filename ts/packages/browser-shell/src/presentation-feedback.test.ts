@@ -132,6 +132,24 @@ test("shared signal ids are delivery-local and a reset reopens retained host ide
   assert.deepEqual(signalIds(reopened.frame), firstSignals);
 });
 
+test("host-user effects volume scales disposable audio descriptors only", () => {
+  const full = new PresentationFeedbackAdapter().project(feedbackState(), 1);
+  const quiet = new PresentationFeedbackAdapter().project(
+    feedbackState(),
+    0.25,
+  );
+  const fullVolumes = audioVolumes(full.frame);
+  const quietVolumes = audioVolumes(quiet.frame);
+
+  assert.equal(fullVolumes.length, 9);
+  assert.deepEqual(
+    quietVolumes,
+    fullVolumes.map((volume) => volume * 0.25),
+  );
+  assert.deepEqual(quiet.particleKinds, full.particleKinds);
+  assert.deepEqual(quiet.billboardValues, full.billboardValues);
+});
+
 test("renderer telemetry uses the shared surface timing without a downstream clock", () => {
   const state = feedbackState();
   const timing = {
@@ -169,6 +187,16 @@ function signalIds(
     }
     return [];
   });
+}
+
+function audioVolumes(
+  frame: ReturnType<PresentationFeedbackAdapter["project"]>["frame"],
+): number[] {
+  return frame.ops.flatMap((operation) =>
+    operation.domain === "audio" && operation.op.op === "emit"
+      ? [operation.op.descriptor.volume]
+      : [],
+  );
 }
 
 function feedbackState(): RuntimeBrowserState {

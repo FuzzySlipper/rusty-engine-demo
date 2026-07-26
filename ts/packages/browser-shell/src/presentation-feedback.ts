@@ -113,7 +113,10 @@ export class PresentationFeedbackAdapter {
     this.#telemetryCreated = false;
   }
 
-  project(state: RuntimeBrowserState): ProjectedPresentationFeedback {
+  project(
+    state: RuntimeBrowserState,
+    audioLevel = 1,
+  ): ProjectedPresentationFeedback {
     this.#generation += 1;
     const operations: PresentationOp[] = [];
     const animationPulses: string[] = [];
@@ -155,6 +158,7 @@ export class PresentationFeedbackAdapter {
           `${signalStem}:audio`,
           feedback.sound,
           anchor,
+          audioLevel,
         ),
       );
       if (feedback.billboard !== undefined) {
@@ -220,6 +224,7 @@ export class BrowserPresentationFeedback {
   #activeSoundWindows = 0;
   #soundAttempts = 0;
   #scheduledSounds = 0;
+  #audioLevel = 1;
 
   constructor(options: BrowserPresentationFeedbackOptions) {
     this.#audioStatus = options.audioStatus;
@@ -231,6 +236,7 @@ export class BrowserPresentationFeedback {
     this.#surface.setPresentationHosts(this.#hosts.set);
     this.#setAudioStatus("inactive");
     this.#audioStatus.dataset.activeSounds = "0";
+    this.setAudioLevel(1);
     this.#layer.dataset.activeEffects = "0";
     this.#layer.dataset.maxActiveEffects = String(MAX_ACTIVE_EFFECTS);
     this.#layer.dataset.sharedRendererHosts =
@@ -247,6 +253,13 @@ export class BrowserPresentationFeedback {
       this.#setAudioStatus("unavailable");
       return "unavailable";
     }
+  }
+
+  setAudioLevel(level: number): void {
+    this.#audioLevel = Number.isFinite(level)
+      ? Math.min(1, Math.max(0, level))
+      : 1;
+    this.#audioStatus.dataset.volume = this.#audioLevel.toFixed(2);
   }
 
   apply(
@@ -274,7 +287,7 @@ export class BrowserPresentationFeedback {
     if (reset) {
       await this.#resetTransient();
     }
-    const projected = this.#adapter.project(state);
+    const projected = this.#adapter.project(state, this.#audioLevel);
     projected.animationStates.forEach((animation) =>
       this.#setAnimationState(animation),
     );
@@ -843,6 +856,7 @@ function audioEmit(
   signalId: string,
   kind: FeedbackSoundKind,
   anchor: FeedbackAnchor,
+  audioLevel: number,
 ): PresentationOp {
   const resource = AUDIO_RESOURCES[kind];
   return {
@@ -854,7 +868,7 @@ function audioEmit(
       descriptor: {
         clip: { asset: resource.asset, contentHash: resource.contentHash },
         bus: "sfx",
-        volume: resource.volume,
+        volume: resource.volume * Math.min(1, Math.max(0, audioLevel)),
         pitch: 1,
         looping: false,
         spatialBlend: 0.65,

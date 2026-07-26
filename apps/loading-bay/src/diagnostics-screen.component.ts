@@ -18,7 +18,7 @@ import { RouterLink } from "@angular/router";
         This route owns no renderer. Returning to the game creates one new
         shared surface under the game route lifecycle.
       </p>
-      <a routerLink="/">Return to Loading Bay</a>
+      <a routerLink="/game">Return to Loading Bay</a>
     </main>
   `,
 })

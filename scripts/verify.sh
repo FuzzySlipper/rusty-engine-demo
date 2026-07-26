@@ -8,6 +8,7 @@ pnpm run audit:boundary
 pnpm run typecheck
 pnpm run check:content
 pnpm run test:ts
+pnpm run test:platform
 pnpm run test:shell
 pnpm run build:shell
 ./scripts/verify-rust.sh
