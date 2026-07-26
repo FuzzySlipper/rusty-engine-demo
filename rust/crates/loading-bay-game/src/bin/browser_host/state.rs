@@ -4,7 +4,7 @@ use core_ids::EntityId;
 use core_math::Vec3;
 use loading_bay_game::{
     DoorState, EncounterState, EnemyState, ExtractionBeaconState, GameRuntime, NavigationState,
-    PlayerInputSessionView,
+    PickupCollectionCause, PickupState, PlayerInputSessionView,
 };
 use serde::Serialize;
 
@@ -64,6 +64,34 @@ struct BrowserWeaponState {
     ammo_remaining: u32,
     ammo_capacity: u32,
     ready_at_tick: u64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserInventoryStack {
+    item: String,
+    quantity: u32,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserInventoryState {
+    owner: u64,
+    capacity_slots: usize,
+    stacks: Vec<BrowserInventoryStack>,
+    equipped_weapon: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserPickupState {
+    id: u64,
+    item: String,
+    quantity: u32,
+    state: &'static str,
+    collected_by: Option<u64>,
+    collected_at_tick: Option<u64>,
+    collection_cause: Option<&'static str>,
 }
 
 #[derive(Debug, Serialize)]
@@ -132,6 +160,8 @@ pub(super) struct BrowserDynamicState {
     input: PlayerInputSessionView,
     player: BrowserPlayerState,
     weapon: BrowserWeaponState,
+    inventory: BrowserInventoryState,
+    pickups: Vec<BrowserPickupState>,
     extraction_beacon: Option<BrowserExtractionBeaconState>,
     enemies: Vec<BrowserEnemyState>,
     presentation: BrowserPresentation,
@@ -250,6 +280,56 @@ pub(super) fn browser_dynamic_state(
         ammo_capacity: weapon.config.ammo_capacity,
         ready_at_tick: weapon.state.ready_at_tick.raw(),
     };
+    let inventory = runtime
+        .session()
+        .inventory(ACTOR)
+        .expect("browser player inventory");
+    let inventory_state = BrowserInventoryState {
+        owner: inventory.owner.raw(),
+        capacity_slots: inventory.capacity_slots,
+        stacks: inventory
+            .stacks
+            .into_iter()
+            .map(|stack| BrowserInventoryStack {
+                item: stack.item.as_str().to_owned(),
+                quantity: stack.quantity,
+            })
+            .collect(),
+        equipped_weapon: inventory
+            .equipped_weapon
+            .map(|item| item.as_str().to_owned()),
+    };
+    let pickups = runtime
+        .session()
+        .pickups()
+        .map(|pickup| {
+            let (state, collected_by, collected_at_tick, collection_cause) = match pickup.state {
+                PickupState::Available => ("available", None, None, None),
+                PickupState::Collected {
+                    actor,
+                    collected_at_tick,
+                    cause,
+                } => (
+                    "collected",
+                    Some(actor.raw()),
+                    Some(collected_at_tick),
+                    Some(match cause {
+                        PickupCollectionCause::Overlap { .. } => "overlap",
+                        PickupCollectionCause::Interaction { .. } => "interaction",
+                    }),
+                ),
+            };
+            BrowserPickupState {
+                id: pickup.entity.raw(),
+                item: pickup.config.item.as_str().to_owned(),
+                quantity: pickup.config.quantity,
+                state,
+                collected_by,
+                collected_at_tick,
+                collection_cause,
+            }
+        })
+        .collect();
     let extraction_beacon = runtime.session().extraction_beacon(BEACON).map(|beacon| {
         let (state, activated_by, activated_at_tick) = match beacon.state {
             ExtractionBeaconState::Standby => ("standby", None, None),
@@ -330,6 +410,8 @@ pub(super) fn browser_dynamic_state(
         input: host.runtime.input_session(),
         player: player_state,
         weapon: weapon_state,
+        inventory: inventory_state,
+        pickups,
         extraction_beacon,
         enemies,
         presentation: project_presentation(

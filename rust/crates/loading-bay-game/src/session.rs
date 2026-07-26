@@ -24,9 +24,10 @@ use crate::navigation::{
     NavigationComponent, NavigationState, NavigationView, MAX_NAVIGATION_QUERY_BUDGET,
     MAX_NAVIGATION_SPEED_UNITS_PER_SECOND,
 };
+use crate::pickup::{pickup_view, PickupComponent, PickupState, PickupView};
 use crate::player::{PlayerControllerComponent, PlayerControllerState, PlayerControllerView};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GameSession {
     pub(crate) entities: EntityState,
     pub(crate) doors: BTreeMap<EntityId, DoorComponent>,
@@ -40,6 +41,7 @@ pub struct GameSession {
     pub(crate) player_controllers: BTreeMap<EntityId, PlayerControllerComponent>,
     pub(crate) item_definitions: BTreeMap<ItemDefinitionId, ItemDefinition>,
     pub(crate) inventories: BTreeMap<EntityId, InventoryComponent>,
+    pub(crate) pickups: BTreeMap<EntityId, PickupComponent>,
     pub(crate) weapons: BTreeMap<EntityId, WeaponComponent>,
 }
 
@@ -74,6 +76,7 @@ impl GameSession {
         let mut navigators = BTreeMap::new();
         let mut player_controllers = BTreeMap::new();
         let mut inventories = BTreeMap::new();
+        let mut pickups = BTreeMap::new();
         let mut weapons = BTreeMap::new();
 
         for definition in &definitions {
@@ -236,6 +239,46 @@ impl GameSession {
                         .map_err(GameEntityDefinitionError::Inventory)?,
                 );
             }
+            if let Some(config) = &definition.pickup {
+                let view = entities.view(entity).expect("definition created entity");
+                if view.transform.is_none() {
+                    return Err(GameEntityDefinitionError::PickupMissingTransform { entity });
+                }
+                if view.bounds.is_none() {
+                    return Err(GameEntityDefinitionError::PickupMissingBounds { entity });
+                }
+                if view.renderable.is_none() {
+                    return Err(GameEntityDefinitionError::PickupMissingRenderable { entity });
+                }
+                if definition.door.is_some()
+                    || definition.switch
+                    || definition.enemy
+                    || definition.health.is_some()
+                    || definition.encounter.is_some()
+                    || definition.extraction_beacon.is_some()
+                    || definition.navigation.is_some()
+                    || definition.player_controller.is_some()
+                    || definition.inventory.is_some()
+                    || definition.weapon.is_some()
+                {
+                    return Err(
+                        GameEntityDefinitionError::PickupConflictsWithGameplayOwner { entity },
+                    );
+                }
+                let Some(item) = item_definitions.get(&config.item) else {
+                    return Err(GameEntityDefinitionError::PickupMissingItemDefinition { entity });
+                };
+                if config.quantity == 0 || config.quantity > item.max_quantity {
+                    return Err(GameEntityDefinitionError::InvalidPickupQuantity { entity });
+                }
+                pickups.insert(
+                    entity,
+                    PickupComponent {
+                        config: config.clone(),
+                        state: PickupState::Available,
+                    },
+                );
+            }
             if let Some(config) = definition.weapon {
                 if definition.player_controller.is_none() {
                     return Err(GameEntityDefinitionError::WeaponWithoutPlayerController {
@@ -371,6 +414,7 @@ impl GameSession {
             player_controllers,
             item_definitions,
             inventories,
+            pickups,
             weapons,
         })
     }
@@ -483,6 +527,18 @@ impl GameSession {
         self.inventories
             .get(&owner)
             .map(|component| inventory_view(owner, component))
+    }
+
+    pub fn pickup(&self, entity: EntityId) -> Option<PickupView> {
+        self.pickups
+            .get(&entity)
+            .map(|component| pickup_view(entity, component))
+    }
+
+    pub fn pickups(&self) -> impl ExactSizeIterator<Item = PickupView> + '_ {
+        self.pickups
+            .iter()
+            .map(|(entity, component)| pickup_view(*entity, component))
     }
 
     pub fn weapon(&self, entity: EntityId) -> Option<WeaponView> {

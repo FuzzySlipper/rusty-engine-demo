@@ -1,0 +1,347 @@
+use core_ids::EntityId;
+use engine_spatial::{
+    KinematicTriggerDefinition, TriggerGeometrySource, TriggerOverlapFact, TriggerReconcileCause,
+    TriggerReconcileReceipt, TriggerVolumeDiagnostic, TriggerVolumeSystem,
+};
+use entity_state::{EntityAuthoringFact, EntityAuthoringService};
+
+use crate::inventory::{
+    InventoryAction, InventoryCommand, InventoryFact, InventoryReceipt, InventoryRejection,
+    InventoryService, ItemDefinitionId,
+};
+use crate::session::GameSession;
+
+pub const PICKUP_TRIGGER_SCOPE: &str = "loading-bay.pickup";
+pub const MAX_PICKUP_OVERLAP_SUBJECTS: usize = 128;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PickupConfig {
+    pub item: ItemDefinitionId,
+    pub quantity: u32,
+}
+
+impl PickupConfig {
+    pub fn new(item: ItemDefinitionId, quantity: u32) -> Self {
+        Self { item, quantity }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PickupCollectionCause {
+    Overlap {
+        trigger_revision: u64,
+    },
+    Interaction {
+        connection_generation: u64,
+        command_sequence: u64,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PickupState {
+    Available,
+    Collected {
+        actor: EntityId,
+        collected_at_tick: u64,
+        cause: PickupCollectionCause,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PickupComponent {
+    pub config: PickupConfig,
+    pub state: PickupState,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PickupView {
+    pub entity: EntityId,
+    pub config: PickupConfig,
+    pub state: PickupState,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PickupDisposition {
+    Collected,
+    Repeated,
+    AlreadyCollected,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PickupFact {
+    Collected {
+        pickup: EntityId,
+        actor: EntityId,
+        item: ItemDefinitionId,
+        quantity: u32,
+        collected_at_tick: u64,
+        inventory_facts: Vec<InventoryFact>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PickupPresentationCue {
+    pub pickup: EntityId,
+    pub actor: EntityId,
+    pub item: ItemDefinitionId,
+    pub quantity: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PickupCollectionCommand {
+    pub pickup: EntityId,
+    pub actor: EntityId,
+    pub tick: u64,
+    pub cause: PickupCollectionCause,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PickupReceipt {
+    pub disposition: PickupDisposition,
+    pub before: PickupView,
+    pub after: PickupView,
+    pub inventory: Option<InventoryReceipt>,
+    pub entity_facts: Vec<EntityAuthoringFact>,
+    pub trigger_facts: Vec<TriggerOverlapFact>,
+    pub facts: Vec<PickupFact>,
+    pub cues: Vec<PickupPresentationCue>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PickupRejection {
+    UnknownPickup {
+        pickup: EntityId,
+    },
+    NotOverlapping {
+        pickup: EntityId,
+        actor: EntityId,
+        trigger_revision: u64,
+    },
+    InventorySequenceOverflow {
+        actor: EntityId,
+    },
+    Inventory(InventoryRejection),
+    WorldMutationFailed {
+        pickup: EntityId,
+    },
+    Trigger {
+        diagnostics: Vec<TriggerVolumeDiagnostic>,
+    },
+}
+
+impl std::fmt::Display for PickupRejection {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{self:?}")
+    }
+}
+
+impl std::error::Error for PickupRejection {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PickupRejectedAttempt {
+    pub pickup: EntityId,
+    pub reason: PickupRejection,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PickupPhaseReceipt {
+    pub trigger_revision: u64,
+    pub trigger_facts: Vec<TriggerOverlapFact>,
+    pub collected: Vec<PickupReceipt>,
+    pub rejected: Vec<PickupRejectedAttempt>,
+}
+
+pub struct PickupService;
+
+impl PickupService {
+    pub(crate) fn trigger_system(session: &GameSession) -> TriggerVolumeSystem {
+        TriggerVolumeSystem::new(session.pickups.keys().copied().map(|pickup| {
+            KinematicTriggerDefinition::new(pickup, PICKUP_TRIGGER_SCOPE, ["pickup"])
+                .with_geometry_source(TriggerGeometrySource::EntityBounds)
+        }))
+        .expect("admitted pickup trigger identities are fixed and valid")
+    }
+
+    pub fn collect(
+        session: &mut GameSession,
+        triggers: &mut TriggerVolumeSystem,
+        command: PickupCollectionCommand,
+    ) -> Result<PickupReceipt, PickupRejection> {
+        let Some(component) = session.pickups.get(&command.pickup) else {
+            return Err(PickupRejection::UnknownPickup {
+                pickup: command.pickup,
+            });
+        };
+        let before = pickup_view(command.pickup, component);
+        if let PickupState::Collected { actor, cause, .. } = &component.state {
+            let disposition = if *actor == command.actor && *cause == command.cause {
+                PickupDisposition::Repeated
+            } else {
+                PickupDisposition::AlreadyCollected
+            };
+            return Ok(PickupReceipt {
+                disposition,
+                before: before.clone(),
+                after: before,
+                inventory: None,
+                entity_facts: Vec::new(),
+                trigger_facts: Vec::new(),
+                facts: Vec::new(),
+                cues: Vec::new(),
+            });
+        }
+
+        let overlap = triggers
+            .current_overlaps(command.pickup, MAX_PICKUP_OVERLAP_SUBJECTS)
+            .map_err(|error| PickupRejection::Trigger {
+                diagnostics: error.diagnostics,
+            })?;
+        if !overlap.subjects.contains(&command.actor) {
+            return Err(PickupRejection::NotOverlapping {
+                pickup: command.pickup,
+                actor: command.actor,
+                trigger_revision: overlap.revision,
+            });
+        }
+
+        let mut candidate_session = session.clone();
+        let mut candidate_triggers = triggers.clone();
+        let inventory_sequence = candidate_session
+            .inventories
+            .get(&command.actor)
+            .and_then(|inventory| inventory.last_applied_command_sequence)
+            .map_or(Some(1), |sequence| sequence.checked_add(1))
+            .ok_or(PickupRejection::InventorySequenceOverflow {
+                actor: command.actor,
+            })?;
+        let inventory = InventoryService::apply(
+            &mut candidate_session,
+            command.actor,
+            InventoryCommand {
+                sequence: inventory_sequence,
+                action: InventoryAction::Grant {
+                    item: component.config.item.clone(),
+                    quantity: component.config.quantity,
+                },
+            },
+        )
+        .map_err(PickupRejection::Inventory)?;
+        let entity_revision = candidate_session.entities.revision();
+        let entity_receipt = EntityAuthoringService
+            .destroy(
+                &mut candidate_session.entities,
+                entity_revision,
+                command.pickup,
+            )
+            .map_err(|_| PickupRejection::WorldMutationFailed {
+                pickup: command.pickup,
+            })?;
+        let candidate_component = candidate_session
+            .pickups
+            .get_mut(&command.pickup)
+            .expect("pickup was validated before staging");
+        candidate_component.state = PickupState::Collected {
+            actor: command.actor,
+            collected_at_tick: command.tick,
+            cause: command.cause.clone(),
+        };
+        let after = pickup_view(command.pickup, candidate_component);
+        let trigger_receipt = candidate_triggers
+            .reconcile(
+                &candidate_session.entities,
+                command.tick,
+                TriggerReconcileCause::LifecycleChanged,
+            )
+            .map_err(|error| PickupRejection::Trigger {
+                diagnostics: error.diagnostics,
+            })?;
+        let item = component.config.item.clone();
+        let quantity = component.config.quantity;
+        let inventory_facts = inventory.facts.clone();
+
+        *session = candidate_session;
+        *triggers = candidate_triggers;
+        Ok(PickupReceipt {
+            disposition: PickupDisposition::Collected,
+            before,
+            after,
+            inventory: Some(inventory),
+            entity_facts: entity_receipt.facts,
+            trigger_facts: trigger_receipt.facts,
+            facts: vec![PickupFact::Collected {
+                pickup: command.pickup,
+                actor: command.actor,
+                item: item.clone(),
+                quantity,
+                collected_at_tick: command.tick,
+                inventory_facts,
+            }],
+            cues: vec![PickupPresentationCue {
+                pickup: command.pickup,
+                actor: command.actor,
+                item,
+                quantity,
+            }],
+        })
+    }
+
+    pub(crate) fn reconcile_and_collect(
+        session: &mut GameSession,
+        triggers: &mut TriggerVolumeSystem,
+        actor: EntityId,
+        tick: u64,
+    ) -> Result<PickupPhaseReceipt, PickupRejection> {
+        let TriggerReconcileReceipt {
+            revision,
+            facts,
+            diagnostics: _,
+            ..
+        } = triggers
+            .reconcile(&session.entities, tick, TriggerReconcileCause::Movement)
+            .map_err(|error| PickupRejection::Trigger {
+                diagnostics: error.diagnostics,
+            })?;
+        let entered = facts
+            .iter()
+            .filter(|fact| {
+                fact.kind == engine_spatial::TriggerOverlapFactKind::Enter
+                    && fact.pair.subject_id() == actor
+                    && session.pickups.contains_key(&fact.pair.trigger_id())
+            })
+            .map(|fact| fact.pair.trigger_id())
+            .collect::<Vec<_>>();
+        let mut collected = Vec::new();
+        let mut rejected = Vec::new();
+        for pickup in entered {
+            match Self::collect(
+                session,
+                triggers,
+                PickupCollectionCommand {
+                    pickup,
+                    actor,
+                    tick,
+                    cause: PickupCollectionCause::Overlap {
+                        trigger_revision: revision,
+                    },
+                },
+            ) {
+                Ok(receipt) => collected.push(receipt),
+                Err(reason) => rejected.push(PickupRejectedAttempt { pickup, reason }),
+            }
+        }
+        Ok(PickupPhaseReceipt {
+            trigger_revision: revision,
+            trigger_facts: facts,
+            collected,
+            rejected,
+        })
+    }
+}
+
+pub(crate) fn pickup_view(entity: EntityId, component: &PickupComponent) -> PickupView {
+    PickupView {
+        entity,
+        config: component.config.clone(),
+        state: component.state.clone(),
+    }
+}

@@ -581,6 +581,13 @@ fn drain_game_loop_feedback(
                 facts.push(("ExtractionBeaconActivated".to_owned(), None));
                 feedback.extend_extraction_beacon(fact);
             }
+            GameLoopFact::Pickup(fact) => {
+                facts.push(("PickupCollected".to_owned(), None));
+                feedback.extend_pickup(&fact);
+            }
+            GameLoopFact::PickupRejected { reason, .. } => {
+                facts.push((pickup_rejection_name(&reason).to_owned(), None));
+            }
             GameLoopFact::Event(event) => {
                 facts.push((event_name(&event).to_owned(), None));
                 feedback.extend_events(std::slice::from_ref(&event));
@@ -602,6 +609,9 @@ fn drain_game_loop_feedback(
                     loading_bay_game::EdgeCommandRejection::NotInteractable => {
                         "InputEdgeRejectedNotInteractable"
                     }
+                    loading_bay_game::EdgeCommandRejection::PickupRejected => {
+                        "InputEdgeRejectedPickup"
+                    }
                 }
                 .to_owned(),
                 Some(sequence),
@@ -615,6 +625,27 @@ fn drain_game_loop_feedback(
         }
     }
     (facts, feedback)
+}
+
+fn pickup_rejection_name(reason: &loading_bay_game::PickupRejection) -> &'static str {
+    match reason {
+        loading_bay_game::PickupRejection::Inventory(
+            loading_bay_game::InventoryRejection::QuantityOverflow { .. },
+        ) => "PickupRejectedQuantityOverflow",
+        loading_bay_game::PickupRejection::Inventory(
+            loading_bay_game::InventoryRejection::InventoryFull { .. },
+        ) => "PickupRejectedInventoryFull",
+        loading_bay_game::PickupRejection::Inventory(_) => "PickupRejectedInventory",
+        loading_bay_game::PickupRejection::NotOverlapping { .. } => "PickupRejectedNotOverlapping",
+        loading_bay_game::PickupRejection::UnknownPickup { .. } => "PickupRejectedUnknown",
+        loading_bay_game::PickupRejection::InventorySequenceOverflow { .. } => {
+            "PickupRejectedSequenceOverflow"
+        }
+        loading_bay_game::PickupRejection::WorldMutationFailed { .. } => {
+            "PickupRejectedWorldMutation"
+        }
+        loading_bay_game::PickupRejection::Trigger { .. } => "PickupRejectedTrigger",
+    }
 }
 
 fn combat_fact_name(fact: &CombatFact) -> &'static str {

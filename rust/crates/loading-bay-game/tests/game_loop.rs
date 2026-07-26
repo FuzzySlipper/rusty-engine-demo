@@ -78,6 +78,68 @@ fn fixed_tick_integrates_velocity_instead_of_applying_an_authored_request_step()
 }
 
 #[test]
+fn fixed_pickup_phase_collects_non_solid_overlap_and_reports_capacity_rejection() {
+    let mut game_loop = game_loop();
+    let generation = game_loop.start_connection().connection_generation;
+    let mut facts = Vec::new();
+    for sequence in 1..=40 {
+        game_loop
+            .submit_input(input(generation, sequence, [0.0, 1.0], [0.0, 0.0], false))
+            .unwrap();
+        facts.extend(game_loop.run_fixed_tick().unwrap().facts);
+    }
+
+    assert!(
+        player_position(&game_loop)[0] > 3.5,
+        "the player traverses both non-solid pickup volumes"
+    );
+    assert!(
+        facts.iter().any(|fact| matches!(
+            fact,
+            GameLoopFact::Pickup(loading_bay_game::PickupFact::Collected {
+                pickup,
+                item,
+                quantity: 160,
+                ..
+            }) if *pickup == EntityId::new(20) && item.as_str() == "ammo/energy-cell"
+        )),
+        "{facts:#?}"
+    );
+    assert!(facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::PickupRejected {
+            pickup,
+            reason: loading_bay_game::PickupRejection::Inventory(
+                loading_bay_game::InventoryRejection::QuantityOverflow {
+                    current: 200,
+                    requested: 1,
+                    limit: 200,
+                    ..
+                }
+            )
+        } if *pickup == EntityId::new(21)
+    )));
+    assert!(matches!(
+        game_loop
+            .runtime()
+            .session()
+            .pickup(EntityId::new(20))
+            .unwrap()
+            .state,
+        loading_bay_game::PickupState::Collected { .. }
+    ));
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .pickup(EntityId::new(21))
+            .unwrap()
+            .state,
+        loading_bay_game::PickupState::Available
+    );
+}
+
+#[test]
 fn elapsed_cadence_is_deterministic_and_large_debt_is_bounded() {
     let mut combined = game_loop();
     let combined_generation = combined.start_connection().connection_generation;

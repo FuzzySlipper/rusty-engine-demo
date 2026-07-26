@@ -63,8 +63,8 @@ try {
     persistedProject,
   );
   if (
-    !currentReceipt.includes("sourceSchema=11") ||
-    !currentReceipt.includes("currentSchema=11")
+    !currentReceipt.includes("sourceSchema=13") ||
+    !currentReceipt.includes("currentSchema=13")
   ) {
     throw new Error(
       `current project persistence receipt was incomplete\n${currentReceipt}`,
@@ -79,7 +79,7 @@ try {
   );
   if (
     !convertedReceipt.includes("sourceSchema=11") ||
-    !convertedReceipt.includes("currentSchema=11")
+    !convertedReceipt.includes("currentSchema=13")
   ) {
     throw new Error(
       `converted project persistence receipt was incomplete\n${convertedReceipt}`,
@@ -94,7 +94,7 @@ try {
   );
   if (
     !migrationReceipt.includes("sourceSchema=6") ||
-    !migrationReceipt.includes("currentSchema=11")
+    !migrationReceipt.includes("currentSchema=13")
   ) {
     throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
   }
@@ -180,6 +180,7 @@ async function runFullBrowserProduct(project) {
       'data-held-input="pass"',
       'data-local-look-offset="pass"',
       'data-local-look-presentation="bounded-disposable"',
+      'data-pickups="pass"',
       'data-gate-passage="pass"',
       'data-queue-recovery="pass"',
       'data-cooldown="pass"',
@@ -424,10 +425,10 @@ async function runFullBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
-      "sourceSchema=11",
-      "currentSchema=11",
+      "sourceSchema=13",
+      "currentSchema=13",
       "entryScene=scene/loading-bay",
-      "assets=7",
+      "assets=12",
       "scenes=1",
       `entities=${String(expectedEntityCount)}`,
     ]) {
@@ -497,7 +498,7 @@ async function runMigratedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=migrated-v6-project",
-      "currentSchema=11",
+      "currentSchema=13",
       "assets=4",
       "scenes=1",
       "entities=6",
@@ -529,7 +530,7 @@ async function runConvertedBrowserProduct(project) {
     );
     if (result.code !== 0) {
       throw new Error(
-        `converted Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}`,
+        `converted Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-8_000)}`,
       );
     }
     const required = [
@@ -556,7 +557,7 @@ async function runConvertedBrowserProduct(project) {
     for (const marker of [
       "project id=converted-wall",
       "sourceSchema=11",
-      "currentSchema=11",
+      "currentSchema=13",
       "entryScene=scene/converted-wall",
       "assets=10",
       "scenes=1",

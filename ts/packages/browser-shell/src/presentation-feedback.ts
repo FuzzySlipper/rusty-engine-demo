@@ -32,7 +32,8 @@ export type FeedbackParticleKind =
   | "impact"
   | "defeat"
   | "door"
-  | "beacon";
+  | "beacon"
+  | "pickup";
 export type FeedbackSoundKind =
   | "step"
   | "blocked"
@@ -41,7 +42,8 @@ export type FeedbackSoundKind =
   | "defeat"
   | "doorOpen"
   | "doorClose"
-  | "beacon";
+  | "beacon"
+  | "pickup";
 
 export interface FeedbackAnchor {
   readonly entity: number;
@@ -363,6 +365,8 @@ export class BrowserPresentationFeedback {
     this.#activeSoundWindows = 0;
     this.#audioStatus.dataset.activeSounds = "0";
     this.#setAudioStatus("inactive");
+    delete this.#audioStatus.dataset.lastSound;
+    delete this.#audioStatus.dataset.soundKinds;
     for (const key of [
       "animationStates",
       "cueKinds",
@@ -559,6 +563,11 @@ export class BrowserPresentationFeedback {
 
   #recordAudioKind(kind: FeedbackSoundKind): void {
     this.#audioStatus.dataset.lastSound = kind;
+    const kinds = new Set(
+      (this.#audioStatus.dataset.soundKinds ?? "").split(",").filter(Boolean),
+    );
+    kinds.add(kind);
+    this.#audioStatus.dataset.soundKinds = [...kinds].join(",");
   }
 
   #record(
@@ -659,6 +668,16 @@ function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
         sound: "beacon",
         billboard: { text: "EXTRACTION ONLINE", tone: "success" },
       };
+    case "pickupCollected":
+      return {
+        particle: "pickup",
+        pulse: "pickup",
+        sound: "pickup",
+        billboard: {
+          text: `+${String(cue.quantity)} ${cue.item}`,
+          tone: "success",
+        },
+      };
   }
 }
 
@@ -681,6 +700,8 @@ function cueAnchor(
       return entityAnchor(state, cue.entity);
     case "extractionBeaconActivated":
       return entityAnchor(state, cue.entity);
+    case "pickupCollected":
+      return entityAnchor(state, cue.actor);
   }
 }
 
@@ -697,6 +718,8 @@ function cueEntity(cue: RuntimeFeedbackCue): number {
     case "doorChanged":
     case "extractionBeaconActivated":
       return cue.entity;
+    case "pickupCollected":
+      return cue.actor;
   }
 }
 
@@ -868,6 +891,7 @@ const SOUND_PROFILES: Record<
   doorOpen: { frequency: 150, frequencyEnd: 310, duration: 0.24, volume: 0.15 },
   doorClose: { frequency: 260, frequencyEnd: 90, duration: 0.2, volume: 0.15 },
   beacon: { frequency: 240, frequencyEnd: 720, duration: 0.32, volume: 0.15 },
+  pickup: { frequency: 420, frequencyEnd: 760, duration: 0.16, volume: 0.13 },
 };
 
 const AUDIO_RESOURCES = createAudioResources();
@@ -983,6 +1007,7 @@ const PARTICLE_COLORS: Record<
   defeat: [0.91, 0.37, 0.32, 1],
   door: [0.36, 0.83, 0.65, 1],
   beacon: [0.4, 0.94, 0.76, 1],
+  pickup: [0.95, 0.78, 0.3, 1],
 };
 
 const BILLBOARD_COLORS = {

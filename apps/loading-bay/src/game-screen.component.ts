@@ -123,6 +123,12 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
             <div class="pose-readout" id="weapon-state">
               Awaiting weapon projection
             </div>
+            <div class="pose-readout" id="inventory-state">
+              Awaiting inventory projection
+            </div>
+            <div class="pose-readout" id="pickup-state">
+              Awaiting pickup projection
+            </div>
             <div class="pose-readout" id="environment-state">
               Awaiting environment projection
             </div>

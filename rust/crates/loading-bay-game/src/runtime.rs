@@ -5,8 +5,8 @@ use core_time::{Tick, TickDelta};
 
 use engine_spatial::{
     KinematicMotionSystem, MotionPhaseError, MotionPhaseReceipt, NavigationStepError,
-    VoxelCollisionScene, VoxelEditApplyError, VoxelEditReceipt, VoxelEditService,
-    VoxelEditTransaction,
+    TriggerVolumeSystem, VoxelCollisionScene, VoxelEditApplyError, VoxelEditReceipt,
+    VoxelEditService, VoxelEditTransaction,
 };
 
 use crate::combat::{CombatReceipt, CombatRejectionReason, CombatService, ResolvedAttackAction};
@@ -18,6 +18,10 @@ use crate::extraction_beacon::{ExtractionBeaconReceipt, ExtractionBeaconService}
 use crate::interaction::InteractionService;
 use crate::inventory::{InventoryCommand, InventoryReceipt, InventoryRejection, InventoryService};
 use crate::navigation::{EnemyNavigationSystem, NavigationPhaseReceipt};
+use crate::pickup::{
+    PickupCollectionCause, PickupCollectionCommand, PickupPhaseReceipt, PickupReceipt,
+    PickupRejection, PickupService,
+};
 use crate::player::{PlayerControlReceipt, PlayerControllerService, ResolvedPlayerAction};
 use crate::project_admission::decode_and_admit_stored_project;
 use crate::runtime_records::{readout, GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
@@ -91,6 +95,7 @@ pub enum RuntimeError {
     },
     VoxelEdit(VoxelEditApplyError),
     Inventory(InventoryRejection),
+    Pickup(PickupRejection),
 }
 
 impl std::fmt::Display for RuntimeError {
@@ -109,10 +114,12 @@ pub struct GameRuntime {
     pub(crate) events: VecDeque<GameEvent>,
     pub(crate) journal: Vec<JournalEntry>,
     pub(crate) collision_scene: Option<VoxelCollisionScene>,
+    pub(crate) pickup_triggers: TriggerVolumeSystem,
 }
 
 impl GameRuntime {
     pub fn new(session: GameSession) -> Self {
+        let pickup_triggers = PickupService::trigger_system(&session);
         Self {
             session,
             tick: Tick::ZERO,
@@ -120,6 +127,7 @@ impl GameRuntime {
             events: VecDeque::new(),
             journal: Vec::new(),
             collision_scene: None,
+            pickup_triggers,
         }
     }
 
@@ -187,6 +195,42 @@ impl GameRuntime {
         command: InventoryCommand,
     ) -> Result<InventoryReceipt, RuntimeError> {
         InventoryService::apply(&mut self.session, owner, command).map_err(RuntimeError::Inventory)
+    }
+
+    pub fn collect_pickup(
+        &mut self,
+        actor: EntityId,
+        pickup: EntityId,
+        connection_generation: u64,
+        command_sequence: u64,
+    ) -> Result<PickupReceipt, RuntimeError> {
+        PickupService::collect(
+            &mut self.session,
+            &mut self.pickup_triggers,
+            PickupCollectionCommand {
+                pickup,
+                actor,
+                tick: self.tick.raw(),
+                cause: PickupCollectionCause::Interaction {
+                    connection_generation,
+                    command_sequence,
+                },
+            },
+        )
+        .map_err(RuntimeError::Pickup)
+    }
+
+    pub(crate) fn run_pickup_phase(
+        &mut self,
+        actor: EntityId,
+    ) -> Result<PickupPhaseReceipt, RuntimeError> {
+        PickupService::reconcile_and_collect(
+            &mut self.session,
+            &mut self.pickup_triggers,
+            actor,
+            self.tick.raw(),
+        )
+        .map_err(RuntimeError::Pickup)
     }
 
     /// Run the one centrally scheduled kinematic phase over every configured

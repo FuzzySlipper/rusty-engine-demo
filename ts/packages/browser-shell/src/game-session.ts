@@ -991,6 +991,8 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     isRecord(value.input) &&
     isRecord(value.player) &&
     isRecord(value.weapon) &&
+    isRecord(value.inventory) &&
+    Array.isArray(value.pickups) &&
     (value.extractionBeacon === null || isRecord(value.extractionBeacon)) &&
     Array.isArray(value.enemies) &&
     isRecord(value.presentation) &&

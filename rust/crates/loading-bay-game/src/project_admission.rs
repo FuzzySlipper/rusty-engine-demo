@@ -21,6 +21,7 @@ use crate::inventory::{
     InventoryConfig, InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind,
 };
 use crate::navigation::NavigationConfig;
+use crate::pickup::PickupConfig;
 use crate::player::{PlayerControllerConfig, PlayerInputBindings};
 use crate::project_codec::decode_project_document;
 use crate::session::GameSession;
@@ -457,6 +458,8 @@ fn authored_definition(
         || authored.rotation != [0.0, 0.0, 0.0, 1.0]
         || authored.scale != [1.0; 3]
         || authored.light.is_some()
+        || authored.bounds.is_some()
+        || authored.pickup.is_some()
     {
         entity_definition = entity_definition.with_full_transform(EntityTransform {
             translation: initial_translation.unwrap_or(Vec3::ZERO),
@@ -471,6 +474,10 @@ fn authored_definition(
     }
     if let Some(parent) = authored.parent {
         entity_definition = entity_definition.with_transform_parent(EntityId::new(parent));
+    }
+    if let Some(bounds) = authored.bounds {
+        entity_definition =
+            entity_definition.with_bounds(array_vec3(bounds.min), array_vec3(bounds.max));
     }
     if let Some(collision) = authored.collision {
         entity_definition =
@@ -598,6 +605,12 @@ fn authored_definition(
                 .transpose()?,
         ));
     }
+    if let Some(pickup) = &authored.pickup {
+        definition = definition.as_pickup(PickupConfig::new(
+            parse_item_id(&pickup.item, &format!("{}.item", path("pickup")))?,
+            pickup.quantity,
+        ));
+    }
     if let Some(weapon) = authored.weapon {
         definition = definition.with_weapon(WeaponConfig {
             damage: weapon.damage,
@@ -702,6 +715,15 @@ fn definition_error(
         | Error::InvalidPlayerControllerConfig { entity } => (
             diagnostic_code::INVALID_COMPONENT,
             entity_path(scene_index, indexes, *entity, "playerController"),
+        ),
+        Error::PickupMissingTransform { entity }
+        | Error::PickupMissingBounds { entity }
+        | Error::PickupMissingRenderable { entity }
+        | Error::PickupMissingItemDefinition { entity }
+        | Error::InvalidPickupQuantity { entity }
+        | Error::PickupConflictsWithGameplayOwner { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "pickup"),
         ),
         Error::WeaponWithoutPlayerController { entity } | Error::InvalidWeaponConfig { entity } => {
             (

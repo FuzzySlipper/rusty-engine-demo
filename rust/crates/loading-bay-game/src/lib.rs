@@ -16,6 +16,7 @@ mod game_loop;
 mod interaction;
 mod inventory;
 mod navigation;
+mod pickup;
 mod player;
 mod project_admission;
 mod project_codec;
@@ -74,6 +75,12 @@ pub use navigation::{
     NavigationPhaseReceipt, NavigationState, NavigationView, MAX_NAVIGATION_QUERY_BUDGET,
     MAX_NAVIGATION_SPEED_UNITS_PER_SECOND,
 };
+pub use pickup::{
+    PickupCollectionCause, PickupCollectionCommand, PickupComponent, PickupConfig,
+    PickupDisposition, PickupFact, PickupPhaseReceipt, PickupPresentationCue, PickupReceipt,
+    PickupRejectedAttempt, PickupRejection, PickupService, PickupState, PickupView,
+    MAX_PICKUP_OVERLAP_SUBJECTS, PICKUP_TRIGGER_SCOPE,
+};
 pub use player::{
     PlayerControlFact, PlayerControlReceipt, PlayerControllerComponent, PlayerControllerConfig,
     PlayerControllerState, PlayerControllerView, PlayerInputBindings, ResolvedPlayerAction,
@@ -99,21 +106,22 @@ pub use snapshot::{
     decode_game_snapshot, encode_game_snapshot, EncounterSnapshot, EnemySnapshot,
     ExtractionBeaconSnapshot, GameSnapshot, GameSnapshotError, GeneratedRoomSnapshot,
     HealthSnapshot, InventorySnapshot, InventoryStackSnapshot, ItemDefinitionSnapshot,
-    MaterialVoxelSnapshot, NavigationSnapshot, PlayerControllerSnapshot,
+    MaterialVoxelSnapshot, NavigationSnapshot, PickupSnapshot, PlayerControllerSnapshot,
     PlayerInputBindingsSnapshot, SnapshotEncounterState, SnapshotEnemyState,
     SnapshotExtractionBeaconState, SnapshotItemKind, SnapshotNavigationState,
-    VoxelCollisionSnapshot, WeaponSnapshot, GAME_SNAPSHOT_SCHEMA_VERSION,
+    SnapshotPickupCollectionCause, SnapshotPickupState, VoxelCollisionSnapshot, WeaponSnapshot,
+    GAME_SNAPSHOT_SCHEMA_VERSION,
 };
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset,
-    StoredAssetCatalogMetadata, StoredAssetImport, StoredCollision, StoredDoor, StoredEncounter,
-    StoredEntityDefinition, StoredExtractionBeacon, StoredGeneratedVoxelEnvironment, StoredHealth,
-    StoredImportSource, StoredInventory, StoredInventoryStack, StoredItemDefinition,
-    StoredItemKind, StoredKinematic, StoredLight, StoredMaterialVoxel,
-    StoredMaterialVoxelEnvironment, StoredNavigation, StoredPlayerController,
-    StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable, StoredScene,
-    StoredSolidVoxelEnvironment, StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance,
-    StoredWeapon, STORED_PROJECT_SCHEMA_VERSION,
+    StoredAssetCatalogMetadata, StoredAssetImport, StoredBounds, StoredCollision, StoredDoor,
+    StoredEncounter, StoredEntityDefinition, StoredExtractionBeacon,
+    StoredGeneratedVoxelEnvironment, StoredHealth, StoredImportSource, StoredInventory,
+    StoredInventoryStack, StoredItemDefinition, StoredItemKind, StoredKinematic, StoredLight,
+    StoredMaterialVoxel, StoredMaterialVoxelEnvironment, StoredNavigation, StoredPickup,
+    StoredPlayerController, StoredPlayerInputBindings, StoredProject, StoredProjectError,
+    StoredRenderable, StoredScene, StoredSolidVoxelEnvironment, StoredSwitch,
+    StoredVoxelEnvironment, StoredVoxelInstance, StoredWeapon, STORED_PROJECT_SCHEMA_VERSION,
 };
 pub use studio_adapter::{
     AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,

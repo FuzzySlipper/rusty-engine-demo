@@ -4,10 +4,10 @@ use core_ids::EntityId;
 use core_math::Vec3;
 use core_time::{Tick, TickDelta};
 use engine_spatial::{
-    GeneratedRoomConfig, MaterialVoxel, VoxelCollisionScene, VoxelSourceRevision,
-    GENERATED_ROOM_VERSION,
+    GeneratedRoomConfig, MaterialVoxel, TriggerVolumeSnapshot, TriggerVolumeSystem,
+    VoxelCollisionScene, VoxelSourceRevision, GENERATED_ROOM_VERSION,
 };
-use entity_state::{EntityState, EntityStateSnapshot};
+use entity_state::{EntityLifecycle, EntityState, EntityStateSnapshot};
 use serde::{Deserialize, Serialize};
 
 use crate::combat::{
@@ -28,6 +28,9 @@ use crate::navigation::{
     NavigationComponent, NavigationConfig, NavigationState, MAX_NAVIGATION_QUERY_BUDGET,
     MAX_NAVIGATION_SPEED_UNITS_PER_SECOND,
 };
+use crate::pickup::{
+    PickupCollectionCause, PickupComponent, PickupConfig, PickupState, PICKUP_TRIGGER_SCOPE,
+};
 use crate::player::{
     PlayerControllerComponent, PlayerControllerConfig, PlayerControllerState, PlayerInputBindings,
 };
@@ -35,8 +38,7 @@ use crate::runtime::GameRuntime;
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 11;
-const PREVIOUS_GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 10;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 12;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -58,6 +60,10 @@ pub struct GameSnapshot {
     pub player_controllers: Vec<PlayerControllerSnapshot>,
     #[serde(default)]
     pub inventories: Vec<InventorySnapshot>,
+    #[serde(default)]
+    pub pickups: Vec<PickupSnapshot>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pickup_triggers: Option<TriggerVolumeSnapshot>,
     pub weapons: Vec<WeaponSnapshot>,
     pub scheduled: Vec<ScheduledSnapshot>,
 }
@@ -110,6 +116,48 @@ pub struct InventorySnapshot {
 pub struct InventoryStackSnapshot {
     pub item: String,
     pub quantity: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct PickupSnapshot {
+    pub entity: u64,
+    pub item: String,
+    pub quantity: u32,
+    pub state: SnapshotPickupState,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "state",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum SnapshotPickupState {
+    Available,
+    Collected {
+        actor: u64,
+        collected_at_tick: u64,
+        cause: SnapshotPickupCollectionCause,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum SnapshotPickupCollectionCause {
+    Overlap {
+        trigger_revision: u64,
+    },
+    Interaction {
+        connection_generation: u64,
+        command_sequence: u64,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -345,12 +393,29 @@ pub enum GameSnapshotError {
     },
     Inventory(InventoryAdmissionError),
     FutureInventoryStateInLegacySnapshot,
+    TriggerVolume(engine_spatial::TriggerVolumeError),
     DuplicateInventory {
         owner: u64,
     },
     UnknownInventoryEntity {
         owner: u64,
     },
+    DuplicatePickup {
+        entity: u64,
+    },
+    UnknownPickupEntity {
+        entity: u64,
+    },
+    InvalidPickup {
+        entity: u64,
+    },
+    PickupCollectionFromFuture {
+        entity: u64,
+        collected_at_tick: u64,
+        snapshot_tick: u64,
+    },
+    InvalidPickupTriggerDefinitions,
+    FuturePickupStateInLegacySnapshot,
     UnknownDoorEntity {
         entity: u64,
     },
@@ -682,6 +747,42 @@ impl GameRuntime {
                         .map(|item| item.as_str().to_string()),
                 })
                 .collect(),
+            pickups: self
+                .session
+                .pickups
+                .iter()
+                .map(|(entity, component)| PickupSnapshot {
+                    entity: entity.raw(),
+                    item: component.config.item.as_str().to_string(),
+                    quantity: component.config.quantity,
+                    state: match &component.state {
+                        PickupState::Available => SnapshotPickupState::Available,
+                        PickupState::Collected {
+                            actor,
+                            collected_at_tick,
+                            cause,
+                        } => SnapshotPickupState::Collected {
+                            actor: actor.raw(),
+                            collected_at_tick: *collected_at_tick,
+                            cause: match cause {
+                                PickupCollectionCause::Overlap { trigger_revision } => {
+                                    SnapshotPickupCollectionCause::Overlap {
+                                        trigger_revision: *trigger_revision,
+                                    }
+                                }
+                                PickupCollectionCause::Interaction {
+                                    connection_generation,
+                                    command_sequence,
+                                } => SnapshotPickupCollectionCause::Interaction {
+                                    connection_generation: *connection_generation,
+                                    command_sequence: *command_sequence,
+                                },
+                            },
+                        },
+                    },
+                })
+                .collect(),
+            pickup_triggers: Some(self.pickup_triggers.snapshot()),
             weapons: self
                 .session
                 .weapons
@@ -712,19 +813,22 @@ impl GameRuntime {
         }
     }
 
-    pub fn from_snapshot(snapshot: GameSnapshot) -> Result<Self, GameSnapshotError> {
-        if !matches!(
-            snapshot.schema_version,
-            GAME_SNAPSHOT_SCHEMA_VERSION | PREVIOUS_GAME_SNAPSHOT_SCHEMA_VERSION
-        ) {
+    pub fn from_snapshot(mut snapshot: GameSnapshot) -> Result<Self, GameSnapshotError> {
+        if !(10..=GAME_SNAPSHOT_SCHEMA_VERSION).contains(&snapshot.schema_version) {
             return Err(GameSnapshotError::UnsupportedSchema {
                 actual: snapshot.schema_version,
             });
         }
-        if snapshot.schema_version < GAME_SNAPSHOT_SCHEMA_VERSION
+        let source_schema_version = snapshot.schema_version;
+        if source_schema_version < 11
             && (!snapshot.item_definitions.is_empty() || !snapshot.inventories.is_empty())
         {
             return Err(GameSnapshotError::FutureInventoryStateInLegacySnapshot);
+        }
+        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION
+            && (!snapshot.pickups.is_empty() || snapshot.pickup_triggers.is_some())
+        {
+            return Err(GameSnapshotError::FuturePickupStateInLegacySnapshot);
         }
         let collision_scene = snapshot
             .voxel_collision
@@ -1227,6 +1331,129 @@ impl GameRuntime {
             );
         }
 
+        let mut pickups = BTreeMap::new();
+        for pickup in snapshot.pickups {
+            let entity = EntityId::new(pickup.entity);
+            if pickups.contains_key(&entity) {
+                return Err(GameSnapshotError::DuplicatePickup {
+                    entity: pickup.entity,
+                });
+            }
+            let view =
+                entities
+                    .view(entity)
+                    .map_err(|_| GameSnapshotError::UnknownPickupEntity {
+                        entity: pickup.entity,
+                    })?;
+            let item = parse_snapshot_item_id(pickup.item)?;
+            let Some(definition) = item_definitions.get(&item) else {
+                return Err(GameSnapshotError::InvalidPickup {
+                    entity: pickup.entity,
+                });
+            };
+            if pickup.quantity == 0 || pickup.quantity > definition.max_quantity {
+                return Err(GameSnapshotError::InvalidPickup {
+                    entity: pickup.entity,
+                });
+            }
+            let state = match pickup.state {
+                SnapshotPickupState::Available => {
+                    if view.lifecycle != EntityLifecycle::Active
+                        || view.transform.is_none()
+                        || view.bounds.is_none()
+                        || view.renderable.is_none()
+                    {
+                        return Err(GameSnapshotError::InvalidPickup {
+                            entity: pickup.entity,
+                        });
+                    }
+                    PickupState::Available
+                }
+                SnapshotPickupState::Collected {
+                    actor,
+                    collected_at_tick,
+                    cause,
+                } => {
+                    if view.lifecycle != EntityLifecycle::Tombstoned
+                        || !entities.contains(EntityId::new(actor))
+                    {
+                        return Err(GameSnapshotError::InvalidPickup {
+                            entity: pickup.entity,
+                        });
+                    }
+                    if collected_at_tick > snapshot.tick {
+                        return Err(GameSnapshotError::PickupCollectionFromFuture {
+                            entity: pickup.entity,
+                            collected_at_tick,
+                            snapshot_tick: snapshot.tick,
+                        });
+                    }
+                    PickupState::Collected {
+                        actor: EntityId::new(actor),
+                        collected_at_tick,
+                        cause: match cause {
+                            SnapshotPickupCollectionCause::Overlap { trigger_revision } => {
+                                PickupCollectionCause::Overlap { trigger_revision }
+                            }
+                            SnapshotPickupCollectionCause::Interaction {
+                                connection_generation,
+                                command_sequence,
+                            } => PickupCollectionCause::Interaction {
+                                connection_generation,
+                                command_sequence,
+                            },
+                        },
+                    }
+                }
+            };
+            pickups.insert(
+                entity,
+                PickupComponent {
+                    config: PickupConfig {
+                        item,
+                        quantity: pickup.quantity,
+                    },
+                    state,
+                },
+            );
+        }
+        let pickup_triggers = if source_schema_version == GAME_SNAPSHOT_SCHEMA_VERSION {
+            TriggerVolumeSystem::from_snapshot(
+                snapshot
+                    .pickup_triggers
+                    .take()
+                    .ok_or(GameSnapshotError::InvalidPickupTriggerDefinitions)?,
+            )
+            .map_err(GameSnapshotError::TriggerVolume)?
+        } else {
+            TriggerVolumeSystem::default()
+        };
+        let expected_trigger_entities = pickups.keys().copied().collect::<Vec<_>>();
+        let actual_trigger_entities = pickup_triggers
+            .definitions()
+            .map(|definition| {
+                let valid = definition.scope == PICKUP_TRIGGER_SCOPE
+                    && definition.tags == ["pickup".to_string()]
+                    && definition.geometry_source()
+                        == engine_spatial::TriggerGeometrySource::EntityBounds;
+                (definition.trigger_id(), valid)
+            })
+            .collect::<Vec<_>>();
+        if actual_trigger_entities.len() != expected_trigger_entities.len()
+            || actual_trigger_entities
+                .iter()
+                .zip(expected_trigger_entities)
+                .any(|((actual, valid), expected)| !valid || *actual != expected)
+            || pickup_triggers.active_overlaps().any(|pair| {
+                !pickups
+                    .get(&pair.trigger_id())
+                    .is_some_and(|pickup| pickup.state == PickupState::Available)
+                    || !entities.contains(pair.subject_id())
+            })
+        {
+            return Err(GameSnapshotError::InvalidPickupTriggerDefinitions);
+        }
+
         let mut encounters = BTreeMap::new();
         let mut encounter_ids = BTreeSet::new();
         let mut encounter_by_enemy = BTreeMap::new();
@@ -1322,6 +1549,7 @@ impl GameRuntime {
                 player_controllers,
                 item_definitions,
                 inventories,
+                pickups,
                 weapons,
             },
             tick: Tick::new(snapshot.tick),
@@ -1329,6 +1557,7 @@ impl GameRuntime {
             events: VecDeque::new(),
             journal: Vec::new(),
             collision_scene,
+            pickup_triggers,
         })
     }
 }

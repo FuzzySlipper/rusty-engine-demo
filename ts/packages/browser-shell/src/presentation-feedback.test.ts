@@ -13,7 +13,7 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
   const adapter = new PresentationFeedbackAdapter();
   const projected = adapter.project(feedbackState());
 
-  assert.equal(decodePresentationFrameDiff(projected.frame).ops.length, 20);
+  assert.equal(decodePresentationFrameDiff(projected.frame).ops.length, 23);
   assert.deepEqual(
     projected.animationStates.map(
       (state) => `${String(state.entity)}:${state.posture}`,
@@ -28,6 +28,7 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
     "defeat",
     "open",
     "active",
+    "pickup",
   ]);
   assert.deepEqual(projected.particleKinds, [
     "movement",
@@ -37,6 +38,7 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
     "defeat",
     "door",
     "beacon",
+    "pickup",
   ]);
   assert.deepEqual(projected.billboardValues, [
     "BLOCKED",
@@ -44,6 +46,7 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
     "DEFEATED",
     "EXIT OPEN",
     "EXTRACTION ONLINE",
+    "+12 ammo/scatter-shell",
   ]);
   assert.deepEqual(projected.soundKinds, [
     "step",
@@ -53,6 +56,7 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
     "defeat",
     "doorOpen",
     "beacon",
+    "pickup",
   ]);
 
   const domains = projected.frame.ops.map((operation) => operation.domain);
@@ -60,9 +64,9 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
     domains.filter((domain) => domain === "telemetryOverlay").length,
     1,
   );
-  assert.equal(domains.filter((domain) => domain === "particle").length, 7);
-  assert.equal(domains.filter((domain) => domain === "audio").length, 7);
-  assert.equal(domains.filter((domain) => domain === "billboard").length, 5);
+  assert.equal(domains.filter((domain) => domain === "particle").length, 8);
+  assert.equal(domains.filter((domain) => domain === "audio").length, 8);
+  assert.equal(domains.filter((domain) => domain === "billboard").length, 6);
   assert.deepEqual(
     projected.frame.ops.map((operation) => operation.meta.sequence),
     projected.frame.ops.map((_, index) => index),
@@ -212,6 +216,13 @@ function feedbackState(): RuntimeBrowserState {
       },
     },
     weapon: { damage: 60, ammoRemaining: 6, ammoCapacity: 8, readyAtTick: 6 },
+    inventory: {
+      owner: 1,
+      capacitySlots: 8,
+      stacks: [{ item: "weapon/arc-pistol", quantity: 1 }],
+      equippedWeapon: "weapon/arc-pistol",
+    },
+    pickups: [],
     extractionBeacon: {
       id: 7,
       state: "active",
@@ -250,6 +261,13 @@ function feedbackState(): RuntimeBrowserState {
         { kind: "defeat", attacker: 1, entity: 4 },
         { kind: "doorChanged", entity: 3, state: "open" },
         { kind: "extractionBeaconActivated", entity: 7, actor: 1 },
+        {
+          kind: "pickupCollected",
+          entity: 22,
+          actor: 1,
+          item: "ammo/scatter-shell",
+          quantity: 12,
+        },
       ],
     },
     lastEvents: [],

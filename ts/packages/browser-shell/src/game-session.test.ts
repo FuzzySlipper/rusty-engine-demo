@@ -49,6 +49,13 @@ const dynamic = {
     ammoCapacity: 8,
     readyAtTick: 0,
   },
+  inventory: {
+    owner: 1,
+    capacitySlots: 8,
+    stacks: [{ item: "weapon/arc-pistol", quantity: 1 }],
+    equippedWeapon: "weapon/arc-pistol",
+  },
+  pickups: [],
   extractionBeacon: null,
   enemies: [],
   presentation: { animationStates: [], cues: [] },

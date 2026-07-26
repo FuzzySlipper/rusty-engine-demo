@@ -56,6 +56,13 @@ function state(
       ammoCapacity: 8,
       readyAtTick: 0,
     },
+    inventory: {
+      owner: 1,
+      capacitySlots: 8,
+      stacks: [{ item: "weapon/arc-pistol", quantity: 1 }],
+      equippedWeapon: "weapon/arc-pistol",
+    },
+    pickups: [],
     extractionBeacon: null,
     voxelMeshes: [],
     generatedEnvironment: null,
@@ -102,6 +109,36 @@ test("whole Rust readouts become create update and destroy diffs", () => {
   );
   destroyed.commit();
   assert.equal(adapter.trackedEntityCount, 0);
+});
+
+test("collecting a pickup destroys only its retained entity handle", () => {
+  const adapter = new RuntimeProjectionAdapter();
+  const door = {
+    id: 3,
+    name: "exit",
+    asset: "mesh/security-door",
+    translation: [0, 0, 8] as const,
+    visible: true,
+  };
+  const pickup = {
+    id: 22,
+    name: "scatter-shell-cache",
+    asset: "mesh/pickup-ammunition",
+    translation: [4.5, 1.5, 2.5] as const,
+    visible: true,
+  };
+  const created = adapter.apply(state([door, pickup]));
+  created.commit();
+
+  const collected = adapter.apply(state([door]));
+  assert.deepEqual(
+    collected.ops.map((operation) => [
+      operation.op,
+      operation.op === "destroy" ? operation.handle : null,
+    ]),
+    [["destroy", entityHandle(pickup.id)]],
+  );
+  collected.commit();
 });
 
 test("generated chunk mesh is retained by content hash and uses the typed mesh payload path", () => {

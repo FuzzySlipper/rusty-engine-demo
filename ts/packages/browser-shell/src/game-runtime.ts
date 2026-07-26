@@ -66,6 +66,8 @@ export async function mountLoadingBayGame(
   const beaconState = requiredElement("beacon-state", HTMLElement);
   const playerPose = requiredElement("player-pose", HTMLElement);
   const weaponState = requiredElement("weapon-state", HTMLElement);
+  const inventoryState = requiredElement("inventory-state", HTMLElement);
+  const pickupState = requiredElement("pickup-state", HTMLElement);
   const environmentState = requiredElement("environment-state", HTMLElement);
   const voxelState = requiredElement("voxel-state", HTMLElement);
   const persistVoxelEdit = requiredElement(
@@ -500,6 +502,9 @@ export async function mountLoadingBayGame(
       ? "PASS · Converted voxel asset reached retained WebGL, collision, navigation, and live edits"
       : "FAIL · Converted voxel product proof did not converge";
   } else if (smokeMode) {
+    const pickupProofPassed = await proveWorldPickups();
+    document.body.dataset.pickups = pickupProofPassed ? "pass" : "fail";
+    await performRestart();
     const voxelBefore = voxelFingerprint(current);
     let staleRejected = false;
     try {
@@ -909,6 +914,7 @@ export async function mountLoadingBayGame(
       : "fail";
     const passed =
       gameplayPassed &&
+      pickupProofPassed &&
       voxelEditPassed &&
       rejectedUnchanged &&
       resetFeedbackRebuilt &&
@@ -1016,6 +1022,21 @@ export async function mountLoadingBayGame(
     combatState.title = lastActionRejection ?? "";
     playerPose.textContent = `${state.player.position.map((value) => value.toFixed(1)).join(", ")} · YAW ${state.player.yawDegrees.toFixed(0)}°`;
     weaponState.textContent = `${String(state.weapon.damage)} DMG · ${String(state.weapon.ammoRemaining)}/${String(state.weapon.ammoCapacity)} AMMO`;
+    inventoryState.textContent = state.inventory.stacks
+      .map((stack) => `${stack.item} ×${String(stack.quantity)}`)
+      .join(" · ");
+    inventoryState.dataset.equipped = state.inventory.equippedWeapon ?? "none";
+    const availablePickups = state.pickups.filter(
+      (pickup) => pickup.state === "available",
+    );
+    pickupState.textContent = `${String(availablePickups.length)}/${String(state.pickups.length)} PICKUPS AVAILABLE`;
+    pickupState.dataset.available = availablePickups
+      .map((pickup) => String(pickup.id))
+      .join(",");
+    pickupState.dataset.collected = state.pickups
+      .filter((pickup) => pickup.state === "collected")
+      .map((pickup) => String(pickup.id))
+      .join(",");
     environmentState.textContent =
       state.generatedEnvironment === null
         ? `MATERIALIZED · ${String(state.voxelSolidCount)} VOXELS`
@@ -1280,6 +1301,76 @@ export async function mountLoadingBayGame(
       }
     }
     return true;
+  }
+
+  async function proveWorldPickups(): Promise<boolean> {
+    const pickupIds = current.pickups.map((pickup) => pickup.id);
+    const startedAvailable =
+      pickupIds.length === 7 &&
+      current.pickups.every((pickup) => pickup.state === "available");
+    const walked = await walkPlayerPath([
+      [2.5, 2.5],
+      [3.5, 2.5],
+      [4.5, 2.5],
+      [5.5, 2.5],
+      [6.5, 2.5],
+      [6.5, 3.5],
+      [5.5, 3.5],
+    ]);
+    await presentationFeedback.settled();
+    const collected = current.pickups
+      .filter((pickup) => pickup.state === "collected")
+      .map((pickup) => pickup.id);
+    const available = current.pickups
+      .filter((pickup) => pickup.state === "available")
+      .map((pickup) => pickup.id);
+    const inventoryExact =
+      inventoryQuantity("ammo/energy-cell") === 200 &&
+      inventoryQuantity("ammo/scatter-shell") === 12 &&
+      inventoryQuantity("weapon/breach-scattergun") === 1 &&
+      inventoryQuantity("supply/med-patch") === 2 &&
+      inventoryQuantity("armor/impact-vest") === 1 &&
+      inventoryQuantity("key/maintenance-pass") === 1;
+    const worldExact =
+      JSON.stringify(collected) === JSON.stringify([20, 22, 23, 24, 25, 26]) &&
+      JSON.stringify(available) === JSON.stringify([21]) &&
+      !current.projection.some((node) => collected.includes(node.id)) &&
+      current.projection.some((node) => node.id === 21);
+    const rejectionExact = eventHistory.includes(
+      "PickupRejectedQuantityOverflow",
+    );
+    const factsProjected =
+      eventHistory.filter((event) => event === "PickupCollected").length >= 6;
+    const cueProjected =
+      includesEvery(feedbackLayer.dataset.animationPulses, ["pickup"]) &&
+      includesEvery(feedbackLayer.dataset.particleKinds, ["pickup"]) &&
+      includesEvery(feedbackAudioStatus.dataset.soundKinds, ["pickup"]);
+    document.body.dataset.pickupEvidence = [
+      pickupIds.join(","),
+      collected.join(","),
+      available.join(","),
+      current.inventory.stacks
+        .map((stack) => `${stack.item}:${String(stack.quantity)}`)
+        .join(","),
+      rejectionExact,
+      cueProjected,
+    ].join("|");
+    return (
+      startedAvailable &&
+      walked &&
+      inventoryExact &&
+      worldExact &&
+      rejectionExact &&
+      factsProjected &&
+      cueProjected
+    );
+  }
+
+  function inventoryQuantity(item: string): number {
+    return (
+      current.inventory.stacks.find((stack) => stack.item === item)?.quantity ??
+      0
+    );
   }
 
   async function walkPlayerTo(

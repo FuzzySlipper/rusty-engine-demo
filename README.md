@@ -8,7 +8,7 @@ voxel, mesh, asset, and conversion mechanisms.
 
 The Rust game vertical is named `loading-bay-game`. Its Engine dependencies are public Git
 dependencies: Rust remains pinned to reviewed authoring revision
-`fb0d091ba5a5465ffb8eb46b1962d0415c257a71`, while the browser renderer is pinned to review-fix
+`ad19a0a6e74af711875a9ce0d113b9f231e434ec`, while the browser renderer is pinned to review-fix
 revision `2665b74566136fb77e3a26b0766394124c8f58d3`; a sibling checkout is not required. The demo owns
 its Angular/Nx browser shell, route-scoped input lifecycle, and semantic projection adapter, while
 Rusty Engine owns the shared render contracts, retained projection, Three/WebGL backend, surface

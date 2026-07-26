@@ -632,6 +632,7 @@ pub fn create_scene_object(
                     rotation: object.transform.rotation,
                     scale: object.transform.scale,
                     light,
+                    bounds: None,
                     collision: object.collision,
                     renderable,
                     door: None,
@@ -644,6 +645,7 @@ pub fn create_scene_object(
                     navigation: None,
                     player_controller: None,
                     inventory: None,
+                    pickup: None,
                     weapon: None,
                 });
             Ok(ProjectMutationReceipt::SceneObjectCreated {
@@ -1925,6 +1927,7 @@ const fn render_asset_kind(kind: RenderAssetKind) -> &'static str {
         RenderAssetKind::SpriteAtlas => "spriteAtlas",
         RenderAssetKind::StaticMesh => "staticMesh",
         RenderAssetKind::AnimatedMesh => "animatedMesh",
+        RenderAssetKind::VoxelObject => "voxelObject",
         RenderAssetKind::Audio => "audio",
         RenderAssetKind::Font => "font",
     }

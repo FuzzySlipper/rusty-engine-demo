@@ -7,6 +7,7 @@ use crate::encounter::EncounterConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::inventory::{InventoryAdmissionError, InventoryConfig};
 use crate::navigation::NavigationConfig;
+use crate::pickup::PickupConfig;
 use crate::player::PlayerControllerConfig;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -22,6 +23,7 @@ pub struct GameEntityDefinition {
     pub navigation: Option<NavigationConfig>,
     pub player_controller: Option<PlayerControllerConfig>,
     pub inventory: Option<InventoryConfig>,
+    pub pickup: Option<PickupConfig>,
     pub weapon: Option<WeaponConfig>,
 }
 
@@ -39,6 +41,7 @@ impl GameEntityDefinition {
             navigation: None,
             player_controller: None,
             inventory: None,
+            pickup: None,
             weapon: None,
         }
     }
@@ -97,6 +100,11 @@ impl GameEntityDefinition {
 
     pub fn with_inventory(mut self, config: InventoryConfig) -> Self {
         self.inventory = Some(config);
+        self
+    }
+
+    pub fn as_pickup(mut self, config: PickupConfig) -> Self {
+        self.pickup = Some(config);
         self
     }
 
@@ -183,6 +191,24 @@ pub enum GameEntityDefinitionError {
         entity: EntityId,
     },
     InvalidPlayerControllerConfig {
+        entity: EntityId,
+    },
+    PickupMissingTransform {
+        entity: EntityId,
+    },
+    PickupMissingBounds {
+        entity: EntityId,
+    },
+    PickupMissingRenderable {
+        entity: EntityId,
+    },
+    PickupMissingItemDefinition {
+        entity: EntityId,
+    },
+    InvalidPickupQuantity {
+        entity: EntityId,
+    },
+    PickupConflictsWithGameplayOwner {
         entity: EntityId,
     },
     WeaponWithoutPlayerController {

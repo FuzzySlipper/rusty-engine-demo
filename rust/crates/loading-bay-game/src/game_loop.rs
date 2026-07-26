@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     CombatFact, CombatRejectionReason, ExtractionBeaconFact, GameEvent, GameRuntime,
-    NavigationFact, PlayerControlFact, ResolvedAttackAction, RuntimeError,
+    NavigationFact, PickupFact, PickupReceipt, PickupRejection, PlayerControlFact,
+    ResolvedAttackAction, RuntimeError,
 };
 
 pub const FIXED_SIMULATION_HZ: u32 = 60;
@@ -141,6 +142,7 @@ pub enum EdgeCommandRejection {
     Paused,
     UnknownTarget,
     NotInteractable,
+    PickupRejected,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -149,6 +151,11 @@ pub enum GameLoopFact {
     Navigation(NavigationFact),
     Combat(CombatFact),
     ExtractionBeacon(ExtractionBeaconFact),
+    Pickup(PickupFact),
+    PickupRejected {
+        pickup: EntityId,
+        reason: PickupRejection,
+    },
     Event(GameEvent),
     CombatRejected {
         reason: CombatRejectionReason,
@@ -452,7 +459,7 @@ impl LoadingBayGameLoop {
             self.run_player_motion_phase(&mut facts)?;
             self.run_enemy_phase(&mut facts)?;
             self.run_combat_phase(&mut facts)?;
-            self.run_interaction_phase(interactions, &mut facts)?;
+            self.run_interaction_and_pickup_phase(interactions, &mut facts)?;
             let events = self.runtime.run_scheduled_consequence_phase()?;
             facts.extend(events.into_iter().map(GameLoopFact::Event));
         } else {
@@ -589,11 +596,21 @@ impl LoadingBayGameLoop {
         }
     }
 
-    fn run_interaction_phase(
+    fn run_interaction_and_pickup_phase(
         &mut self,
         interactions: Vec<QueuedEdgeCommand>,
         facts: &mut Vec<GameLoopFact>,
     ) -> Result<(), RuntimeError> {
+        let pickup_phase = self.runtime.run_pickup_phase(self.player)?;
+        for receipt in pickup_phase.collected {
+            extend_pickup_facts(receipt, facts);
+        }
+        facts.extend(pickup_phase.rejected.into_iter().map(|attempt| {
+            GameLoopFact::PickupRejected {
+                pickup: attempt.pickup,
+                reason: attempt.reason,
+            }
+        }));
         for command in interactions {
             let GameLoopEdgeCommandKind::Interact { target } = command.command else {
                 if matches!(
@@ -607,6 +624,28 @@ impl LoadingBayGameLoop {
                 continue;
             };
             let target = EntityId::new(target);
+            if self.runtime.session().pickup(target).is_some() {
+                match self.runtime.collect_pickup(
+                    self.player,
+                    target,
+                    self.input.connection_generation,
+                    command.sequence,
+                ) {
+                    Ok(receipt) => extend_pickup_facts(receipt, facts),
+                    Err(RuntimeError::Pickup(reason)) => {
+                        facts.push(GameLoopFact::PickupRejected {
+                            pickup: target,
+                            reason,
+                        });
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason: EdgeCommandRejection::PickupRejected,
+                        });
+                    }
+                    Err(error) => return Err(error),
+                }
+                continue;
+            }
             if self.runtime.session().extraction_beacon(target).is_some() {
                 match self.runtime.activate_extraction_beacon(self.player, target) {
                     Ok(receipt) => {
@@ -654,4 +693,8 @@ impl LoadingBayGameLoop {
         }
         self.pending_facts.push_back(fact);
     }
+}
+
+fn extend_pickup_facts(receipt: PickupReceipt, facts: &mut Vec<GameLoopFact>) {
+    facts.extend(receipt.facts.into_iter().map(GameLoopFact::Pickup));
 }

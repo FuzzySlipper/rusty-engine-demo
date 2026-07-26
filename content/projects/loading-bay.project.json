@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "projectId": "loading-bay",
   "name": "Loading Bay",
   "entryScene": "scene/loading-bay",
@@ -57,6 +57,21 @@
       "id": "mesh/extraction-beacon"
     },
     {
+      "id": "mesh/pickup-ammunition"
+    },
+    {
+      "id": "mesh/pickup-armor"
+    },
+    {
+      "id": "mesh/pickup-health"
+    },
+    {
+      "id": "mesh/pickup-key"
+    },
+    {
+      "id": "mesh/pickup-weapon"
+    },
+    {
       "id": "mesh/player-marker"
     },
     {
@@ -70,6 +85,50 @@
     }
   ],
   "itemDefinitions": [
+    {
+      "id": "ammo/energy-cell",
+      "maxQuantity": 200,
+      "kind": {
+        "kind": "ammunition"
+      }
+    },
+    {
+      "id": "ammo/scatter-shell",
+      "maxQuantity": 50,
+      "kind": {
+        "kind": "ammunition"
+      }
+    },
+    {
+      "id": "armor/impact-vest",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "armor",
+        "protection": 100
+      }
+    },
+    {
+      "id": "key/inert-inspection-tag",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "accessKey"
+      }
+    },
+    {
+      "id": "key/maintenance-pass",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "accessKey"
+      }
+    },
+    {
+      "id": "supply/med-patch",
+      "maxQuantity": 5,
+      "kind": {
+        "kind": "healthSupply",
+        "restoreHealth": 25
+      }
+    },
     {
       "id": "weapon/arc-pistol",
       "maxQuantity": 1,
@@ -92,50 +151,6 @@
       "kind": {
         "kind": "weapon",
         "ammunition": "ammo/energy-cell"
-      }
-    },
-    {
-      "id": "ammo/energy-cell",
-      "maxQuantity": 200,
-      "kind": {
-        "kind": "ammunition"
-      }
-    },
-    {
-      "id": "ammo/scatter-shell",
-      "maxQuantity": 50,
-      "kind": {
-        "kind": "ammunition"
-      }
-    },
-    {
-      "id": "key/maintenance-pass",
-      "maxQuantity": 1,
-      "kind": {
-        "kind": "accessKey"
-      }
-    },
-    {
-      "id": "supply/med-patch",
-      "maxQuantity": 5,
-      "kind": {
-        "kind": "healthSupply",
-        "restoreHealth": 25
-      }
-    },
-    {
-      "id": "armor/impact-vest",
-      "maxQuantity": 1,
-      "kind": {
-        "kind": "armor",
-        "protection": 100
-      }
-    },
-    {
-      "id": "key/inert-inspection-tag",
-      "maxQuantity": 1,
-      "kind": {
-        "kind": "accessKey"
       }
     }
   ],
@@ -205,6 +220,18 @@
               0,
               0,
               0
+            ]
+          },
+          "bounds": {
+            "min": [
+              -0.25,
+              -0.25,
+              -0.25
+            ],
+            "max": [
+              0.25,
+              0.25,
+              0.25
             ]
           },
           "inventory": {
@@ -407,23 +434,206 @@
           }
         },
         {
-          "id": 11,
-          "name": "New Entity",
+          "id": 20,
+          "name": "energy-cell-cache",
           "translation": [
-            0,
-            0,
-            0
+            2.5,
+            1.5,
+            2.5
           ],
-          "light": {
-            "kind": "directional",
-            "color": [
-              1,
-              1,
-              1
+          "bounds": {
+            "min": [
+              -0.35,
+              -0.35,
+              -0.35
             ],
-            "intensity": 1,
-            "enabled": true,
-            "shadows": false
+            "max": [
+              0.35,
+              0.35,
+              0.35
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/pickup-ammunition",
+            "visible": true
+          },
+          "pickup": {
+            "item": "ammo/energy-cell",
+            "quantity": 160
+          }
+        },
+        {
+          "id": 21,
+          "name": "energy-cell-overflow-probe",
+          "translation": [
+            3.5,
+            1.5,
+            2.5
+          ],
+          "bounds": {
+            "min": [
+              -0.35,
+              -0.35,
+              -0.35
+            ],
+            "max": [
+              0.35,
+              0.35,
+              0.35
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/pickup-ammunition",
+            "visible": true
+          },
+          "pickup": {
+            "item": "ammo/energy-cell",
+            "quantity": 1
+          }
+        },
+        {
+          "id": 22,
+          "name": "scatter-shell-cache",
+          "translation": [
+            4.5,
+            1.5,
+            2.5
+          ],
+          "bounds": {
+            "min": [
+              -0.35,
+              -0.35,
+              -0.35
+            ],
+            "max": [
+              0.35,
+              0.35,
+              0.35
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/pickup-ammunition",
+            "visible": true
+          },
+          "pickup": {
+            "item": "ammo/scatter-shell",
+            "quantity": 12
+          }
+        },
+        {
+          "id": 23,
+          "name": "breach-scattergun-pickup",
+          "translation": [
+            5.5,
+            1.5,
+            2.5
+          ],
+          "bounds": {
+            "min": [
+              -0.35,
+              -0.35,
+              -0.35
+            ],
+            "max": [
+              0.35,
+              0.35,
+              0.35
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/pickup-weapon",
+            "visible": true
+          },
+          "pickup": {
+            "item": "weapon/breach-scattergun",
+            "quantity": 1
+          }
+        },
+        {
+          "id": 24,
+          "name": "med-patch-pickup",
+          "translation": [
+            6.5,
+            1.5,
+            2.5
+          ],
+          "bounds": {
+            "min": [
+              -0.35,
+              -0.35,
+              -0.35
+            ],
+            "max": [
+              0.35,
+              0.35,
+              0.35
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/pickup-health",
+            "visible": true
+          },
+          "pickup": {
+            "item": "supply/med-patch",
+            "quantity": 1
+          }
+        },
+        {
+          "id": 25,
+          "name": "impact-vest-pickup",
+          "translation": [
+            6.5,
+            1.5,
+            3.5
+          ],
+          "bounds": {
+            "min": [
+              -0.35,
+              -0.35,
+              -0.35
+            ],
+            "max": [
+              0.35,
+              0.35,
+              0.35
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/pickup-armor",
+            "visible": true
+          },
+          "pickup": {
+            "item": "armor/impact-vest",
+            "quantity": 1
+          }
+        },
+        {
+          "id": 26,
+          "name": "maintenance-pass-pickup",
+          "translation": [
+            5.5,
+            1.5,
+            3.5
+          ],
+          "bounds": {
+            "min": [
+              -0.35,
+              -0.35,
+              -0.35
+            ],
+            "max": [
+              0.35,
+              0.35,
+              0.35
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/pickup-key",
+            "visible": true
+          },
+          "pickup": {
+            "item": "key/maintenance-pass",
+            "quantity": 1
           }
         }
       ]

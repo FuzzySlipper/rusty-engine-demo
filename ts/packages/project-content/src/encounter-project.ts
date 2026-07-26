@@ -15,6 +15,13 @@ export const ENCOUNTER_IDS = {
   doorControl: 6,
   extractionBeacon: 7,
   motionProbe: 10,
+  energyFillPickup: 20,
+  energyOverflowPickup: 21,
+  ammunitionPickup: 22,
+  weaponPickup: 23,
+  healthPickup: 24,
+  armorPickup: 25,
+  keyPickup: 26,
 } as const;
 
 export const LOADING_BAY_ITEM_IDS = {
@@ -232,6 +239,10 @@ export function loadingBayStoredProject(
     entity.id === ENCOUNTER_IDS.actor
       ? {
           ...entity,
+          bounds: {
+            min: [-0.25, -0.25, -0.25] as const,
+            max: [0.25, 0.25, 0.25] as const,
+          },
           inventory: {
             capacitySlots: 8,
             startingStacks: [
@@ -253,7 +264,7 @@ export function loadingBayStoredProject(
   }
 
   return {
-    schemaVersion: 12,
+    schemaVersion: 13,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",
@@ -261,12 +272,47 @@ export function loadingBayStoredProject(
       ANIMATED_CHARACTER_ASSET,
       { id: "mesh/control-panel" },
       { id: "mesh/extraction-beacon" },
+      { id: "mesh/pickup-ammunition" },
+      { id: "mesh/pickup-armor" },
+      { id: "mesh/pickup-health" },
+      { id: "mesh/pickup-key" },
+      { id: "mesh/pickup-weapon" },
       { id: "mesh/player-marker" },
       { id: "mesh/security-door" },
       { id: "mesh/security-sentry" },
       { id: "mesh/spatial-probe" },
     ],
     itemDefinitions: [
+      {
+        id: LOADING_BAY_ITEM_IDS.energyCell,
+        maxQuantity: 200,
+        kind: { kind: "ammunition" },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.scatterShell,
+        maxQuantity: 50,
+        kind: { kind: "ammunition" },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.impactVest,
+        maxQuantity: 1,
+        kind: { kind: "armor", protection: 100 },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.inertInspectionTag,
+        maxQuantity: 1,
+        kind: { kind: "accessKey" },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.maintenancePass,
+        maxQuantity: 1,
+        kind: { kind: "accessKey" },
+      },
+      {
+        id: LOADING_BAY_ITEM_IDS.medPatch,
+        maxQuantity: 5,
+        kind: { kind: "healthSupply", restoreHealth: 25 },
+      },
       {
         id: LOADING_BAY_ITEM_IDS.arcPistol,
         maxQuantity: 1,
@@ -281,36 +327,6 @@ export function loadingBayStoredProject(
         id: LOADING_BAY_ITEM_IDS.rivetCarbine,
         maxQuantity: 1,
         kind: { kind: "weapon", ammunition: LOADING_BAY_ITEM_IDS.energyCell },
-      },
-      {
-        id: LOADING_BAY_ITEM_IDS.energyCell,
-        maxQuantity: 200,
-        kind: { kind: "ammunition" },
-      },
-      {
-        id: LOADING_BAY_ITEM_IDS.scatterShell,
-        maxQuantity: 50,
-        kind: { kind: "ammunition" },
-      },
-      {
-        id: LOADING_BAY_ITEM_IDS.maintenancePass,
-        maxQuantity: 1,
-        kind: { kind: "accessKey" },
-      },
-      {
-        id: LOADING_BAY_ITEM_IDS.medPatch,
-        maxQuantity: 5,
-        kind: { kind: "healthSupply", restoreHealth: 25 },
-      },
-      {
-        id: LOADING_BAY_ITEM_IDS.impactVest,
-        maxQuantity: 1,
-        kind: { kind: "armor", protection: 100 },
-      },
-      {
-        id: LOADING_BAY_ITEM_IDS.inertInspectionTag,
-        maxQuantity: 1,
-        kind: { kind: "accessKey" },
       },
     ],
     scenes: [
@@ -344,6 +360,62 @@ export function loadingBayStoredProject(
             },
           },
           probe,
+          pickupEntity(
+            ENCOUNTER_IDS.energyFillPickup,
+            "energy-cell-cache",
+            "mesh/pickup-ammunition",
+            [2.5, 1.5, 2.5],
+            LOADING_BAY_ITEM_IDS.energyCell,
+            160,
+          ),
+          pickupEntity(
+            ENCOUNTER_IDS.energyOverflowPickup,
+            "energy-cell-overflow-probe",
+            "mesh/pickup-ammunition",
+            [3.5, 1.5, 2.5],
+            LOADING_BAY_ITEM_IDS.energyCell,
+            1,
+          ),
+          pickupEntity(
+            ENCOUNTER_IDS.ammunitionPickup,
+            "scatter-shell-cache",
+            "mesh/pickup-ammunition",
+            [4.5, 1.5, 2.5],
+            LOADING_BAY_ITEM_IDS.scatterShell,
+            12,
+          ),
+          pickupEntity(
+            ENCOUNTER_IDS.weaponPickup,
+            "breach-scattergun-pickup",
+            "mesh/pickup-weapon",
+            [5.5, 1.5, 2.5],
+            LOADING_BAY_ITEM_IDS.breachScattergun,
+            1,
+          ),
+          pickupEntity(
+            ENCOUNTER_IDS.healthPickup,
+            "med-patch-pickup",
+            "mesh/pickup-health",
+            [6.5, 1.5, 2.5],
+            LOADING_BAY_ITEM_IDS.medPatch,
+            1,
+          ),
+          pickupEntity(
+            ENCOUNTER_IDS.armorPickup,
+            "impact-vest-pickup",
+            "mesh/pickup-armor",
+            [6.5, 1.5, 3.5],
+            LOADING_BAY_ITEM_IDS.impactVest,
+            1,
+          ),
+          pickupEntity(
+            ENCOUNTER_IDS.keyPickup,
+            "maintenance-pass-pickup",
+            "mesh/pickup-key",
+            [5.5, 1.5, 3.5],
+            LOADING_BAY_ITEM_IDS.maintenancePass,
+            1,
+          ),
         ],
       },
     ],
@@ -367,6 +439,22 @@ export function relayAnnexStoredProject(): StoredProjectContent {
 
   const entities = sourceScene.entities.flatMap(
     (entity): readonly EntityDefinition[] => {
+      if (entity.pickup !== undefined) {
+        const positions: Readonly<Record<number, Vec3>> = {
+          [ENCOUNTER_IDS.energyFillPickup]: [2.5, 1.5, 2.5],
+          [ENCOUNTER_IDS.energyOverflowPickup]: [3.5, 1.5, 2.5],
+          [ENCOUNTER_IDS.ammunitionPickup]: [4.5, 1.5, 2.5],
+          [ENCOUNTER_IDS.weaponPickup]: [5.5, 1.5, 2.5],
+          [ENCOUNTER_IDS.healthPickup]: [5.5, 1.5, 3.5],
+          [ENCOUNTER_IDS.armorPickup]: [4.5, 1.5, 3.5],
+          [ENCOUNTER_IDS.keyPickup]: [3.5, 1.5, 3.5],
+        };
+        const translation = positions[entity.id];
+        if (translation === undefined) {
+          throw new Error(`unexpected relay pickup ${entity.id}`);
+        }
+        return [{ ...entity, translation }];
+      }
       switch (entity.id) {
         case ENCOUNTER_IDS.actor:
           return [{ ...entity, translation: [2.5, 1.5, 2.5] }];
@@ -452,5 +540,26 @@ export function relayAnnexStoredProject(): StoredProjectContent {
         entities,
       },
     ],
+  };
+}
+
+function pickupEntity(
+  id: number,
+  name: string,
+  asset: string,
+  translation: Vec3,
+  item: string,
+  quantity: number,
+): EntityDefinition {
+  return {
+    id,
+    name,
+    translation,
+    bounds: {
+      min: [-0.35, -0.35, -0.35],
+      max: [0.35, 0.35, 0.35],
+    },
+    renderable: { asset, visible: true },
+    pickup: { item, quantity },
   };
 }

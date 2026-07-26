@@ -53,6 +53,28 @@ export interface RuntimeWeaponState {
   readonly readyAtTick: number;
 }
 
+export interface RuntimeInventoryStack {
+  readonly item: string;
+  readonly quantity: number;
+}
+
+export interface RuntimeInventoryState {
+  readonly owner: number;
+  readonly capacitySlots: number;
+  readonly stacks: readonly RuntimeInventoryStack[];
+  readonly equippedWeapon: string | null;
+}
+
+export interface RuntimePickupState {
+  readonly id: number;
+  readonly item: string;
+  readonly quantity: number;
+  readonly state: "available" | "collected";
+  readonly collectedBy: number | null;
+  readonly collectedAtTick: number | null;
+  readonly collectionCause: "overlap" | "interaction" | null;
+}
+
 export interface RuntimeInputSessionState {
   readonly connectionGeneration: number;
   readonly connected: boolean;
@@ -149,6 +171,13 @@ export type RuntimeFeedbackCue =
       readonly kind: "extractionBeaconActivated";
       readonly entity: number;
       readonly actor: number;
+    }
+  | {
+      readonly kind: "pickupCollected";
+      readonly entity: number;
+      readonly actor: number;
+      readonly item: string;
+      readonly quantity: number;
     };
 
 export interface RuntimePresentationState {
@@ -174,6 +203,8 @@ export interface RuntimeBrowserState {
   readonly input: RuntimeInputSessionState;
   readonly player: RuntimePlayerState;
   readonly weapon: RuntimeWeaponState;
+  readonly inventory: RuntimeInventoryState;
+  readonly pickups: readonly RuntimePickupState[];
   readonly extractionBeacon: RuntimeExtractionBeaconState | null;
   readonly voxelMeshes: readonly RuntimeVoxelMeshChunk[];
   readonly generatedEnvironment: RuntimeGeneratedEnvironment | null;
@@ -402,6 +433,7 @@ function projectedNode(
   const probe = node.asset.includes("spatial-probe");
   const wall = node.asset.includes("voxel-wall");
   const player = node.asset.includes("player-marker");
+  const pickup = node.asset.includes("pickup-");
   const scale: readonly [number, number, number] = door
     ? [2.4, 3.4, 0.55]
     : beacon
@@ -412,11 +444,13 @@ function projectedNode(
           ? [1, 1, 1]
           : player
             ? [0.7, 1.4, 0.7]
-            : [1.1, 1.8, 1.1];
+            : pickup
+              ? [0.55, 0.55, 0.55]
+              : [1.1, 1.8, 1.1];
   const authored = node.translation ?? [0, 0, 0];
   const translation: readonly [number, number, number] = [
     authored[0],
-    authored[1] + (probe || wall ? 0 : scale[1] / 2),
+    authored[1] + (probe || wall || pickup ? 0 : scale[1] / 2),
     authored[2],
   ];
   const color: Material = door
@@ -431,16 +465,34 @@ function projectedNode(
           ? { color: [0.22, 0.38, 0.43, 1], wireframe: false }
           : player
             ? { color: [0.24, 0.74, 0.91, 1], wireframe: false }
-            : { color: [0.82, 0.18, 0.14, 1], wireframe: false };
+            : pickup
+              ? pickupMaterial(node.asset)
+              : { color: [0.82, 0.18, 0.14, 1], wireframe: false };
   return primitiveNode(
     node.name,
     node.id,
-    probe || player ? "sphere" : "cube",
+    probe || player || pickup ? "sphere" : "cube",
     translation,
     scale,
     color,
     node.visible && !player,
   );
+}
+
+function pickupMaterial(asset: string): Material {
+  if (asset.includes("pickup-ammunition")) {
+    return { color: [0.95, 0.76, 0.2, 1], wireframe: false };
+  }
+  if (asset.includes("pickup-health")) {
+    return { color: [0.3, 0.95, 0.44, 1], wireframe: false };
+  }
+  if (asset.includes("pickup-armor")) {
+    return { color: [0.3, 0.63, 0.98, 1], wireframe: false };
+  }
+  if (asset.includes("pickup-key")) {
+    return { color: [0.92, 0.42, 0.95, 1], wireframe: false };
+  }
+  return { color: [0.92, 0.28, 0.2, 1], wireframe: false };
 }
 
 function primitiveNode(

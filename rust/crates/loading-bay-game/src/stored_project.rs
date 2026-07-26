@@ -17,7 +17,7 @@ use voxel_asset::VoxelAsset;
 
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 12;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 13;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -235,6 +235,8 @@ pub struct StoredEntityDefinition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub light: Option<StoredLight>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub bounds: Option<StoredBounds>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub collision: Option<StoredCollision>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub renderable: Option<StoredRenderable>,
@@ -259,7 +261,16 @@ pub struct StoredEntityDefinition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inventory: Option<StoredInventory>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub pickup: Option<StoredPickup>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub weapon: Option<StoredWeapon>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredBounds {
+    pub min: [f32; 3],
+    pub max: [f32; 3],
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -273,6 +284,13 @@ pub struct StoredInventory {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredInventoryStack {
+    pub item: String,
+    pub quantity: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredPickup {
     pub item: String,
     pub quantity: u32,
 }
@@ -914,6 +932,23 @@ fn validate_scene_entities(
             ));
         }
         validate_entity_transform(entity, &root)?;
+        if let Some(bounds) = entity.bounds {
+            let valid =
+                bounds.min.into_iter().chain(bounds.max).all(|value| {
+                    value.is_finite() && value.abs() <= entity_state::MAX_ABS_TRANSLATION
+                }) && bounds
+                    .min
+                    .into_iter()
+                    .zip(bounds.max)
+                    .all(|(minimum, maximum)| minimum <= maximum);
+            if !valid {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.bounds"),
+                    "entity bounds must be finite, ordered, and within the spatial limit",
+                ));
+            }
+        }
         if entity.light.is_some() && entity.renderable.is_some() {
             return Err(failure(
                 diagnostic_code::INVALID_COMPONENT,
@@ -1049,6 +1084,70 @@ fn validate_scene_entities(
                         "equipped weapon must be an owned weapon item",
                     ));
                 }
+            }
+        }
+        if let Some(pickup) = &entity.pickup {
+            ItemDefinitionId::parse(pickup.item.clone()).map_err(|error| {
+                failure(
+                    diagnostic_code::INVALID_VALUE,
+                    format!("{root}.pickup.item"),
+                    error.to_string(),
+                )
+            })?;
+            let Some(definition) = project
+                .item_definitions
+                .iter()
+                .find(|definition| definition.id == pickup.item)
+            else {
+                return Err(failure(
+                    diagnostic_code::MISSING_ITEM_DEFINITION,
+                    format!("{root}.pickup.item"),
+                    format!("pickup references missing item `{}`", pickup.item),
+                ));
+            };
+            if pickup.quantity == 0 || pickup.quantity > definition.max_quantity {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.pickup.quantity"),
+                    format!(
+                        "pickup quantity must be between 1 and {}",
+                        definition.max_quantity
+                    ),
+                ));
+            }
+            if entity.translation.is_none()
+                || entity.bounds.is_none()
+                || entity.renderable.is_none()
+            {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.pickup"),
+                    "pickup entities require an authored translation, bounds, and renderable",
+                ));
+            }
+            if entity.collision.is_some() || entity.kinematic.is_some() {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.pickup"),
+                    "pickup trigger bounds must remain non-solid and non-kinematic",
+                ));
+            }
+            if entity.door.is_some()
+                || entity.switch.is_some()
+                || entity.enemy
+                || entity.health.is_some()
+                || entity.encounter.is_some()
+                || entity.extraction_beacon.is_some()
+                || entity.navigation.is_some()
+                || entity.player_controller.is_some()
+                || entity.inventory.is_some()
+                || entity.weapon.is_some()
+            {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.pickup"),
+                    "pickup cannot also own another gameplay behavior",
+                ));
             }
         }
     }

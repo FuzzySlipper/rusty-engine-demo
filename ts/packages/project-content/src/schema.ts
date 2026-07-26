@@ -7,6 +7,11 @@ export interface CollisionDefinition {
   readonly staticCollider: boolean;
 }
 
+export interface BoundsDefinition {
+  readonly min: Vec3;
+  readonly max: Vec3;
+}
+
 export interface RenderableDefinition {
   readonly asset: string;
   readonly visible: boolean;
@@ -96,6 +101,11 @@ export interface InventoryDefinition {
   readonly initiallyEquippedWeapon: string | null;
 }
 
+export interface PickupDefinition {
+  readonly item: string;
+  readonly quantity: number;
+}
+
 export interface VoxelCollisionDefinition {
   readonly voxelSize: number;
   readonly chunkSize: number;
@@ -131,6 +141,7 @@ export interface EntityDefinition {
   readonly rotation?: Quat;
   readonly scale?: Vec3;
   readonly light?: LightDefinition;
+  readonly bounds?: BoundsDefinition;
   readonly collision?: CollisionDefinition;
   readonly renderable?: RenderableDefinition;
   readonly door?: DoorDefinition;
@@ -143,6 +154,7 @@ export interface EntityDefinition {
   readonly navigation?: NavigationDefinition;
   readonly playerController?: PlayerControllerDefinition;
   readonly inventory?: InventoryDefinition;
+  readonly pickup?: PickupDefinition;
   readonly weapon?: WeaponDefinition;
 }
 
@@ -232,7 +244,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 12;
+  readonly schemaVersion: 13;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

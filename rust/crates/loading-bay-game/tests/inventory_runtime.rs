@@ -433,6 +433,13 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
         .as_object_mut()
         .unwrap()
         .remove("inventory");
+    legacy["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|entity| entity.get("pickup").is_none());
+    for entity in legacy["scenes"][0]["entities"].as_array_mut().unwrap() {
+        entity.as_object_mut().unwrap().remove("bounds");
+    }
     let decoded = decode_project_document(&legacy.to_string()).unwrap();
     assert_eq!(decoded.source_schema_version, 11);
     assert_eq!(
@@ -488,6 +495,11 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
         .as_object_mut()
         .unwrap()
         .remove("inventories");
+    previous_snapshot.as_object_mut().unwrap().remove("pickups");
+    previous_snapshot
+        .as_object_mut()
+        .unwrap()
+        .remove("pickupTriggers");
     let migrated_snapshot = decode_game_snapshot(&previous_snapshot.to_string()).unwrap();
     assert!(migrated_snapshot.session().inventory(PLAYER).is_none());
     assert!(migrated_snapshot

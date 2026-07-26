@@ -7,7 +7,7 @@
 use core_ids::EntityId;
 use loading_bay_game::{
     CombatFact, DoorState, EnemyState, ExtractionBeaconFact, ExtractionBeaconState, GameEvent,
-    GameRuntime, NavigationFact, NavigationState, PlayerControlFact,
+    GameRuntime, NavigationFact, NavigationState, PickupFact, PlayerControlFact,
 };
 use serde::Serialize;
 
@@ -62,6 +62,12 @@ enum BrowserFeedbackCue {
     ExtractionBeaconActivated {
         entity: u64,
         actor: u64,
+    },
+    PickupCollected {
+        entity: u64,
+        actor: u64,
+        item: String,
+        quantity: u32,
     },
 }
 
@@ -156,6 +162,22 @@ impl BrowserFeedbackProjection {
                 entity: beacon.raw(),
                 actor: actor.raw(),
             });
+    }
+
+    pub(super) fn extend_pickup(&mut self, fact: &PickupFact) {
+        let PickupFact::Collected {
+            pickup,
+            actor,
+            item,
+            quantity,
+            ..
+        } = fact;
+        self.cues.push(BrowserFeedbackCue::PickupCollected {
+            entity: pickup.raw(),
+            actor: actor.raw(),
+            item: item.as_str().to_owned(),
+            quantity: *quantity,
+        });
     }
 
     fn push_movement(&mut self, entity: EntityId, from: [f32; 3], to: [f32; 3]) {
