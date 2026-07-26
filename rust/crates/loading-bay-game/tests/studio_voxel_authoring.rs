@@ -756,7 +756,7 @@ fn conversion_plans_stay_private_and_apply_atomically_with_provenance() {
     );
     assert_eq!(
         converted.provenance.converter,
-        "rusty-engine.mesh-to-voxel.v1"
+        "rusty-engine.mesh-to-voxel.v2"
     );
     assert_eq!(converted.content_hash, output_hash);
 
