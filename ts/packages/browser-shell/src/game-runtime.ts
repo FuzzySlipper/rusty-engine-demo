@@ -790,7 +790,7 @@ export async function mountLoadingBayGame(
     renderReadout(current);
     void applyPresentationFeedback(false, refreshFrame.ops.length);
     await enqueuePlayerAction({ kind: "move", forward: -1, right: 0 });
-    await delay(0);
+    await presentationFeedback.settled();
     const restartStartedWithConcreteTransients =
       playerMotionState.dataset.animationPulse !== undefined &&
       Number(feedbackLayer.dataset.activeEffects ?? "0") > 0 &&
