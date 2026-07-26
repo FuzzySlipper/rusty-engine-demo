@@ -181,6 +181,8 @@ async function runFullBrowserProduct(project) {
       'data-local-look-offset="pass"',
       'data-local-look-presentation="bounded-disposable"',
       'data-enemy-combat="pass"',
+      'data-entity-occlusion="pass"',
+      'data-entity-occlusion-evidence="true:true:true:true"',
       'data-pickups="pass"',
       'data-gate-passage="pass"',
       'data-queue-recovery="pass"',
@@ -210,7 +212,6 @@ async function runFullBrowserProduct(project) {
       "EnemyDefeated",
       "EncounterCleared",
       "DoorOpened",
-      "NavigationAdvanced",
       "PlayerMoved",
       "PlayerBlocked",
       "PlayerLookChanged",
@@ -465,7 +466,7 @@ async function runProgressionRouteProof(project) {
       running.output,
     );
     const result = await runChromiumSmoke(
-      `http://${running.address}/#/`,
+      `http://${running.address}/?input-proof=1#/`,
       "document.body?.dataset.progressionRoute === 'pass' || document.body?.dataset.progressionRoute === 'fail'",
       45_000,
       {
@@ -502,8 +503,15 @@ async function runProgressionRouteProof(project) {
               state.inventory?.stacks.some(
                 (stack) =>
                   stack.item === "key/maintenance-pass" && stack.quantity === 1,
-              ) === true && state.interaction?.target === 30,
-            "key inventory and keyed-door prompt",
+              ) === true,
+            "key inventory",
+          );
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyS", "KeyD"],
+            (state) => state.interaction?.target === 30,
+            "keyed-door approach",
           );
           await waitForCdp(
             client,
@@ -524,6 +532,7 @@ async function runProgressionRouteProof(project) {
             (state) => state.interaction?.target === 30,
             "east keyed-door prompt",
           );
+          await defeatEnemyThroughBrowserInput(client, running.address, 5);
           await pressKey(client, "KeyE");
           await waitForHostState(
             running.address,
@@ -533,6 +542,13 @@ async function runProgressionRouteProof(project) {
               ) === true,
             "keyed door opening",
           );
+          await defeatEnemyThroughBrowserInput(client, running.address, 4);
+          await orientPlayerThroughBrowserInput(
+            client,
+            running.address,
+            0,
+            -10,
+          );
 
           await holdKeysUntil(
             client,
@@ -540,7 +556,7 @@ async function runProgressionRouteProof(project) {
             ["KeyS"],
             (state) =>
               state.player.position[0] >= 5.5 &&
-              state.player.position[2] >= 7.2,
+              state.player.position[2] >= 8.4,
             "interlock switch",
           );
           await holdKeysUntil(
@@ -574,14 +590,24 @@ async function runProgressionRouteProof(project) {
             client,
             running.address,
             ["KeyS"],
-            (state) => state.player.position[2] >= 8.2,
-            "secret overlook south approach",
+            (state) => state.player.position[2] >= 9.5,
+            "secret overlook south bypass",
           );
           await holdKeysUntil(
             client,
             running.address,
-            ["KeyD"],
+            ["KeyS", "KeyD"],
             (state) => state.player.position[0] >= 6.2,
+            "secret overlook east bypass",
+          );
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyW"],
+            (state) =>
+              state.secretRegions?.some(
+                (secret) => secret.id === 31 && secret.state === "discovered",
+              ) === true,
             "secret overlook entry",
           );
           await waitForHostState(
@@ -602,13 +628,21 @@ async function runProgressionRouteProof(project) {
               state.player.position[2] >= 9.3,
             "open exit approach",
           );
-          await holdKeysUntil(
-            client,
+          const exitApproach = await waitForHostState(
             running.address,
-            ["KeyS"],
-            (state) => state.player.position[2] >= 12.2,
-            "level exit",
+            (state) => state.player !== undefined,
+            "level-exit approach position",
           );
+          if (exitApproach.interaction?.target !== 32) {
+            await holdKeysUntil(
+              client,
+              running.address,
+              [exitApproach.player.position[2] > 12.5 ? "KeyW" : "KeyS"],
+              (state) => state.interaction?.target === 32,
+              "level-exit approach",
+              5_000,
+            );
+          }
           await waitForHostState(
             running.address,
             (state) => state.interaction?.target === 32,
@@ -677,9 +711,147 @@ async function waitForHostState(address, predicate, label, timeout = 15_000) {
       enemies: lastState?.enemies,
       doorAccess: lastState?.doorAccess,
       doorState: lastState?.doorState,
+      levelComplete: lastState?.levelComplete,
+      levelExits: lastState?.levelExits,
+      secretRegions: lastState?.secretRegions,
       interaction: lastState?.interaction,
     })}`,
   );
+}
+
+async function defeatEnemyThroughBrowserInput(client, address, enemyId) {
+  for (let shot = 0; shot < 4; shot += 1) {
+    let state = await waitForHostState(
+      address,
+      (candidate) =>
+        candidate.enemies?.some((enemy) => enemy.id === enemyId) === true,
+      `enemy ${String(enemyId)} projection`,
+    );
+    const enemy = state.enemies.find((candidate) => candidate.id === enemyId);
+    if (enemy.state === "defeated") {
+      return;
+    }
+    state = await aimAtEnemyThroughBrowserInput(
+      client,
+      address,
+      enemyId,
+      state,
+    );
+    const healthBefore = state.enemies.find(
+      (candidate) => candidate.id === enemyId,
+    ).currentHealth;
+    await client.send("Runtime.evaluate", {
+      expression: `document.querySelector("#primary-fire")?.click()`,
+    });
+    await waitForHostState(
+      address,
+      (candidate) => {
+        const updated = candidate.enemies?.find(
+          (enemy) => enemy.id === enemyId,
+        );
+        return (
+          updated?.state === "defeated" || updated?.currentHealth < healthBefore
+        );
+      },
+      `enemy ${String(enemyId)} browser-input damage`,
+    );
+  }
+  await waitForHostState(
+    address,
+    (state) =>
+      state.enemies?.find((enemy) => enemy.id === enemyId)?.state ===
+      "defeated",
+    `enemy ${String(enemyId)} browser-input defeat`,
+  );
+}
+
+async function aimAtEnemyThroughBrowserInput(
+  client,
+  address,
+  enemyId,
+  initialState,
+) {
+  let state = initialState;
+  for (let step = 0; step < 40; step += 1) {
+    const enemy = state.enemies.find((candidate) => candidate.id === enemyId);
+    const offsetX = enemy.position[0] - state.player.position[0];
+    const offsetY = enemy.position[1] - state.player.position[1];
+    const offsetZ = enemy.position[2] - state.player.position[2];
+    const desiredYaw = normalizeDegrees(
+      (Math.atan2(-offsetX, -offsetZ) * 180) / Math.PI,
+    );
+    const desiredPitch =
+      (Math.atan2(offsetY, Math.hypot(offsetX, offsetZ)) * 180) / Math.PI;
+    const yawDifference = normalizeDegrees(
+      desiredYaw - state.player.yawDegrees,
+    );
+    const pitchDifference = desiredPitch - state.player.pitchDegrees;
+    if (Math.abs(yawDifference) < 1 && Math.abs(pitchDifference) < 1) {
+      return state;
+    }
+    const beforeYaw = state.player.yawDegrees;
+    const beforePitch = state.player.pitchDegrees;
+    const yawUnits = Math.max(-1, Math.min(1, yawDifference / 12));
+    const pitchUnits = Math.max(-1, Math.min(1, pitchDifference / 12));
+    await client.send("Runtime.evaluate", {
+      expression: `window.dispatchEvent(new MouseEvent("mousemove", {
+        movementX: ${String(-yawUnits * 20)},
+        movementY: ${String(-pitchUnits * 20)},
+      }))`,
+    });
+    state = await waitForHostState(
+      address,
+      (candidate) =>
+        candidate.player.yawDegrees !== beforeYaw ||
+        candidate.player.pitchDegrees !== beforePitch,
+      `enemy ${String(enemyId)} browser-input aim`,
+    );
+  }
+  throw new Error(`could not aim at enemy ${String(enemyId)} in Chromium`);
+}
+
+async function orientPlayerThroughBrowserInput(
+  client,
+  address,
+  desiredYaw,
+  desiredPitch,
+) {
+  let state = await waitForHostState(
+    address,
+    (candidate) => candidate.player !== undefined,
+    "player projection for browser-input orientation",
+  );
+  for (let step = 0; step < 40; step += 1) {
+    const yawDifference = normalizeDegrees(
+      desiredYaw - state.player.yawDegrees,
+    );
+    const pitchDifference = desiredPitch - state.player.pitchDegrees;
+    if (Math.abs(yawDifference) < 1 && Math.abs(pitchDifference) < 1) {
+      return;
+    }
+    const beforeYaw = state.player.yawDegrees;
+    const beforePitch = state.player.pitchDegrees;
+    const yawUnits = Math.max(-1, Math.min(1, yawDifference / 12));
+    const pitchUnits = Math.max(-1, Math.min(1, pitchDifference / 12));
+    await client.send("Runtime.evaluate", {
+      expression: `window.dispatchEvent(new MouseEvent("mousemove", {
+        movementX: ${String(-yawUnits * 20)},
+        movementY: ${String(-pitchUnits * 20)},
+      }))`,
+    });
+    state = await waitForHostState(
+      address,
+      (candidate) =>
+        candidate.player.yawDegrees !== beforeYaw ||
+        candidate.player.pitchDegrees !== beforePitch,
+      "browser-input route orientation",
+    );
+  }
+  throw new Error("could not restore progression route orientation");
+}
+
+function normalizeDegrees(degrees) {
+  return ((((degrees + 180) % 360) + 360) % 360) - 180;
 }
 
 async function holdKeysUntil(
@@ -699,6 +871,12 @@ async function holdKeysUntil(
     for (const code of codes.toReversed()) {
       await dispatchKey(client, "keyUp", code);
     }
+    await waitForHostState(
+      address,
+      (state) => state.playerMotionState === "idle",
+      `${label} input release`,
+      5_000,
+    );
   }
 }
 

@@ -154,6 +154,7 @@ export async function mountLoadingBayGame(
   const smokeMode = query.has("smoke");
   const reloadSmokeMode = query.has("reload-smoke");
   const convertedSmokeMode = query.has("converted-smoke");
+  const inputProofMode = query.has("input-proof");
   let lastActionRejection: string | null = null;
   const authoringQueue = new SerializedActionQueue(recordActionRejection);
 
@@ -432,6 +433,7 @@ export async function mountLoadingBayGame(
       if (
         !smokeMode &&
         !convertedSmokeMode &&
+        !inputProofMode &&
         document.pointerLockElement !== canvas
       ) {
         return;
@@ -643,6 +645,15 @@ export async function mountLoadingBayGame(
       clearedPassage &&
       restoredBulkheadOpened &&
       blockedByRestoredVoxel;
+    document.body.dataset.voxelEditEvidence = [
+      editBecameVisibleAndNavigable,
+      voxelEditFirstFight,
+      voxelEditSecondFight,
+      clearedBulkheadOpened,
+      clearedPassage,
+      restoredBulkheadOpened,
+      blockedByRestoredVoxel,
+    ].join(":");
     document.body.dataset.voxelEdit = voxelEditPassed ? "pass" : "fail";
     document.body.dataset.voxelRejection = rejectedUnchanged ? "pass" : "fail";
     document.body.dataset.voxelCollision =
@@ -662,8 +673,14 @@ export async function mountLoadingBayGame(
       feedbackAudioStatus.dataset.activeSounds ?? "none",
     ].join(":");
     await performRestart();
+    await presentationFeedback.settled();
     const resetCuesBelongToFreshSimulation = current.presentation.cues.every(
-      (cue) => cue.kind === "movement" || cue.kind === "enemyAlert",
+      (cue) =>
+        cue.kind === "movement" ||
+        cue.kind === "enemyAlert" ||
+        cue.kind === "enemyAttack" ||
+        cue.kind === "enemyAttackMissed" ||
+        cue.kind === "damage",
     );
     const resetAnimationStates = feedbackLayer.dataset.animationStates ?? "";
     const resetEnemyPostureRebuilt =
@@ -683,6 +700,7 @@ export async function mountLoadingBayGame(
       feedbackLayer.dataset.activeEffects ?? "none",
       feedbackAudioStatus.dataset.activeSounds ?? "none",
       document.querySelector("[data-animation-pulse]") === null,
+      playerMotionState.dataset.animationPulse ?? "none",
       feedbackLayer.dataset.animationStates ?? "none",
       resetCuesBelongToFreshSimulation,
     ].join(":");
@@ -692,11 +710,7 @@ export async function mountLoadingBayGame(
     document.body.dataset.feedbackConcreteReset = resetFeedbackRebuilt
       ? "pass"
       : "fail";
-    const initialEnemyPosition = current.enemies.find(
-      (enemy) => enemy.id === 4,
-    )?.position;
     const initialPlayerPosition = current.player.position;
-    const initialPlayerHealth = current.player.currentHealth;
     const initialPlayerYaw = current.player.yawDegrees;
     const heldCode = current.player.bindings.moveForward;
     window.dispatchEvent(new KeyboardEvent("keydown", { code: heldCode }));
@@ -750,13 +764,6 @@ export async function mountLoadingBayGame(
       current.player.pitchDegrees > initialPlayerPitch;
     await delay(100);
     current = await requestState("/api/state");
-    const movingEnemyPosition = current.enemies.find(
-      (enemy) => enemy.id === 4,
-    )?.position;
-    const movingTargetAdvanced =
-      initialEnemyPosition !== undefined &&
-      movingEnemyPosition !== undefined &&
-      vectorChanged(movingEnemyPosition, initialEnemyPosition, 0.001);
     const enemyCombatEvidence = [
       eventHistory.includes("EnemyAlerted") ||
         includesEvery(feedbackLayer.dataset.animationPulses, [
@@ -765,7 +772,7 @@ export async function mountLoadingBayGame(
       eventHistory.includes("EnemyAttackFired"),
       eventHistory.includes("EnemyAttackHit"),
       eventHistory.includes("DamageApplied"),
-      current.player.currentHealth < initialPlayerHealth,
+      current.player.currentHealth < current.player.maxHealth,
       includesEvery(feedbackLayer.dataset.animationPulses, [
         "enemy-alert-sight",
         "sentry-pulse-attack",
@@ -876,7 +883,7 @@ export async function mountLoadingBayGame(
       playerStopped &&
       playerLooked &&
       localLookPresentationPassed &&
-      movingTargetAdvanced &&
+      document.body.dataset.entityOcclusion === "pass" &&
       enemyCombatProjected &&
       movingTargetDamaged &&
       queueRecovered &&
@@ -1596,6 +1603,43 @@ export async function mountLoadingBayGame(
       [3.5, 3.5],
       [2.5, 3.5],
     ]);
+    const closedBulkheadBlockedSight =
+      current.doorAccess.some(
+        (door) => door.id === 30 && door.state === "closed",
+      ) &&
+      current.enemies.find((enemy) => enemy.id === 4)?.combatPosture ===
+        "sleeping";
+    const closedEnemyPosition = current.enemies.find(
+      (enemy) => enemy.id === 4,
+    )?.position;
+    const occlusionBulkheadOpened = await openProgressionBulkhead();
+    await delay(350);
+    current = await requestState("/api/state");
+    const openedBulkheadRestoredSight =
+      current.enemies.find((enemy) => enemy.id === 4)?.combatPosture !==
+      "sleeping";
+    const openedEnemyPosition = current.enemies.find(
+      (enemy) => enemy.id === 4,
+    )?.position;
+    const openedBulkheadRestoredNavigation =
+      closedEnemyPosition !== undefined &&
+      openedEnemyPosition !== undefined &&
+      vectorChanged(openedEnemyPosition, closedEnemyPosition, 0.001) &&
+      eventHistory.includes("NavigationAdvanced");
+    const entityOcclusionPassed =
+      closedBulkheadBlockedSight &&
+      occlusionBulkheadOpened &&
+      openedBulkheadRestoredSight &&
+      openedBulkheadRestoredNavigation;
+    document.body.dataset.entityOcclusion = entityOcclusionPassed
+      ? "pass"
+      : "fail";
+    document.body.dataset.entityOcclusionEvidence = [
+      closedBulkheadBlockedSight,
+      occlusionBulkheadOpened,
+      openedBulkheadRestoredSight,
+      openedBulkheadRestoredNavigation,
+    ].join(":");
     const firstEnemyDefeated = await damageEnemyTo(4, 0);
     const secondEnemyDefeated = await damageEnemyTo(5, 0);
     const pickupFightPassed =
@@ -1728,6 +1772,7 @@ export async function mountLoadingBayGame(
     ].join("|");
     return (
       startedAvailable &&
+      entityOcclusionPassed &&
       pickupFightPassed &&
       walked &&
       inventoryAndArmorExact &&
@@ -1743,7 +1788,11 @@ export async function mountLoadingBayGame(
   }
 
   async function defeatEnemiesForSmoke(): Promise<boolean> {
-    return (await damageEnemyTo(4, 0)) && (await damageEnemyTo(5, 0));
+    return (
+      (await openProgressionBulkhead()) &&
+      (await damageEnemyTo(4, 0)) &&
+      (await damageEnemyTo(5, 0))
+    );
   }
 
   async function openProgressionBulkhead(): Promise<boolean> {

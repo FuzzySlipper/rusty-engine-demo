@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use core_ids::EntityId;
 use core_math::Vec3;
 use core_time::{Tick, TickDelta};
-use engine_spatial::VoxelCollisionScene;
+use engine_spatial::{SpatialOcclusionQuery, SpatialOcclusionService, VoxelCollisionScene};
+use entity_state::EntityState;
 
 use crate::combat::EnemyState;
 use crate::navigation::NavigationPhaseReceipt;
@@ -220,7 +221,13 @@ impl EnemyCombatService {
             let delta = player_position - enemy_position;
             let distance = delta.length();
             let visible = distance <= component.config.perception.sight_range
-                && line_of_sight(scene, enemy_position, player_position);
+                && line_of_sight(
+                    scene,
+                    &session.entities,
+                    enemy_position,
+                    player_position,
+                    [enemy, player],
+                )?;
             let heard = distance <= component.config.perception.hearing_range;
             let perception = if visible {
                 Some(EnemyPerceptionCause::Sight)
@@ -246,7 +253,13 @@ impl EnemyCombatService {
             }
 
             let can_attack = distance <= component.config.attack.range
-                && line_of_sight(scene, enemy_position, player_position);
+                && line_of_sight(
+                    scene,
+                    &session.entities,
+                    enemy_position,
+                    player_position,
+                    [enemy, player],
+                )?;
             if can_attack {
                 transition_posture(enemy, component, EnemyCombatPosture::Attacking, &mut facts);
                 continue;
@@ -350,7 +363,13 @@ impl EnemyCombatService {
                 ready_at_tick,
             });
 
-            if !line_of_sight(scene, origin, player_position) {
+            if !line_of_sight(
+                scene,
+                &session.entities,
+                origin,
+                player_position,
+                [enemy, player],
+            )? {
                 facts.push(EnemyCombatFact::AttackMissed {
                     enemy,
                     target: player,
@@ -403,20 +422,32 @@ fn transition_posture(
     });
 }
 
-fn line_of_sight(scene: &VoxelCollisionScene, origin: Vec3, target: Vec3) -> bool {
+fn line_of_sight(
+    scene: &VoxelCollisionScene,
+    entities: &EntityState,
+    origin: Vec3,
+    target: Vec3,
+    ignored_entities: [EntityId; 2],
+) -> Result<bool, RuntimeError> {
     let delta = target - origin;
     let distance = delta.length();
     if distance <= f32::EPSILON {
-        return true;
+        return Ok(true);
     }
     let direction = delta * distance.recip();
-    scene
-        .raycast(
-            [origin.x as f64, origin.y as f64, origin.z as f64],
-            [direction.x as f64, direction.y as f64, direction.z as f64],
-            distance as f64,
+    let hit = SpatialOcclusionService
+        .cast_ray(
+            scene,
+            entities,
+            SpatialOcclusionQuery {
+                origin: [origin.x as f64, origin.y as f64, origin.z as f64],
+                direction: [direction.x as f64, direction.y as f64, direction.z as f64],
+                max_distance: distance as f64,
+                ignored_entities: &ignored_entities,
+            },
         )
-        .is_none_or(|hit| hit.distance as f32 + 0.000_1 >= distance)
+        .map_err(RuntimeError::SpatialOcclusion)?;
+    Ok(hit.is_none_or(|hit| hit.distance() as f32 + 0.000_1 >= distance))
 }
 
 fn finite_positive_bounded(value: f32, maximum: f32) -> bool {

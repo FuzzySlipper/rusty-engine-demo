@@ -11,6 +11,7 @@ const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.pro
 const PLAYER: EntityId = EntityId::new(1);
 const MELEE: EntityId = EntityId::new(4);
 const RANGED: EntityId = EntityId::new(5);
+const MAINTENANCE_BULKHEAD: EntityId = EntityId::new(30);
 
 #[test]
 fn authored_enemies_own_distinct_perception_and_attack_meanings() {
@@ -125,6 +126,91 @@ fn canonical_voxel_wall_blocks_sight_and_ranged_damage() {
             .unwrap()
             .current,
         100
+    );
+}
+
+#[test]
+fn active_bulkhead_blocks_sight_and_damage_until_opened() {
+    let mut project = single_enemy_project(RANGED);
+    entity_mut(&mut project, PLAYER)["translation"] = serde_json::json!([2.5, 1.5, 4.5]);
+    entity_mut(&mut project, RANGED)["translation"] = serde_json::json!([2.5, 1.5, 6.5]);
+    entity_mut(&mut project, RANGED)["navigation"]["goal"] = serde_json::json!([2.5, 1.5, 6.5]);
+    entity_mut(&mut project, RANGED)["enemyCombat"]["hearingRange"] = 0.into();
+    entity_mut(&mut project, MAINTENANCE_BULKHEAD)["bounds"] = serde_json::json!({
+        "min": [-3.2, -1.5, -0.275],
+        "max": [3.2, 1.5, 0.275]
+    });
+    entity_mut(&mut project, MAINTENANCE_BULKHEAD)["door"]["access"]["activationRadius"] = 4.into();
+    entity_mut(&mut project, PLAYER)["inventory"]["startingStacks"]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!({
+            "item": "key/maintenance-pass",
+            "quantity": 1
+        }));
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
+
+    for _ in 0..3 {
+        let blocked = game_loop.run_fixed_tick().unwrap();
+        assert!(!blocked.facts.iter().any(|fact| matches!(
+            fact,
+            GameLoopFact::EnemyCombat(
+                EnemyCombatFact::Alerted { enemy: RANGED, .. }
+                    | EnemyCombatFact::AttackFired { enemy: RANGED, .. }
+            )
+        )));
+    }
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .enemy_combat(RANGED)
+            .unwrap()
+            .state
+            .posture,
+        EnemyCombatPosture::Sleeping
+    );
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .health(PLAYER)
+            .unwrap()
+            .current,
+        100
+    );
+
+    game_loop
+        .runtime_mut()
+        .open_keyed_door(PLAYER, MAINTENANCE_BULKHEAD)
+        .unwrap();
+    let door = game_loop
+        .runtime()
+        .session()
+        .door(MAINTENANCE_BULKHEAD)
+        .unwrap();
+    assert!(!door.entity_view.collision.unwrap().enabled);
+
+    let alerted = game_loop.run_fixed_tick().unwrap();
+    assert!(alerted.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::EnemyCombat(EnemyCombatFact::Alerted {
+            enemy: RANGED,
+            target: PLAYER,
+            ..
+        })
+    )));
+    let attack = game_loop.run_fixed_tick().unwrap();
+    assert_enemy_damage(&attack.facts, RANGED, 4);
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .health(PLAYER)
+            .unwrap()
+            .current,
+        96
     );
 }
 
@@ -456,6 +542,10 @@ fn snapshot_rejects_enemy_cooldown_beyond_authored_cadence() {
 
 fn single_enemy_project(enemy: EntityId) -> serde_json::Value {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    entity_mut(&mut project, MAINTENANCE_BULKHEAD)
+        .as_object_mut()
+        .unwrap()
+        .remove("bounds");
     project["scenes"][0]["entities"]
         .as_array_mut()
         .unwrap()

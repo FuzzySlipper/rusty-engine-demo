@@ -22,7 +22,7 @@ const operationalRoots = [
   "rust",
   "ts",
 ];
-const rustEngineRevision = "ad19a0a6e74af711875a9ce0d113b9f231e434ec";
+const rustEngineRevision = "464dd5e16bb023ad8d81515eabeaac9bb75df74d";
 const renderEngineRevision = "2665b74566136fb77e3a26b0766394124c8f58d3";
 
 const files = operationalRoots.flatMap((entry) =>

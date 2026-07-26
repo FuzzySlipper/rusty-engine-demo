@@ -65,6 +65,14 @@ fn fixed_tick_integrates_velocity_instead_of_applying_an_authored_request_step()
     let mut game_loop = game_loop();
     let generation = game_loop.start_connection().connection_generation;
     let before = player_position(&game_loop);
+    let expected_distance = game_loop
+        .runtime()
+        .session()
+        .player_controller(PLAYER)
+        .expect("player")
+        .config
+        .move_speed_units_per_second
+        * FIXED_STEP_DURATION.as_secs_f32();
     game_loop
         .submit_input(input(generation, 1, [1.0, 0.0], [0.0, 0.0], false))
         .unwrap();
@@ -80,7 +88,10 @@ fn fixed_tick_integrates_velocity_instead_of_applying_an_authored_request_step()
 
     assert_eq!(receipt.phases, FIXED_TICK_PHASE_ORDER);
     assert!(receipt.simulation_advanced);
-    assert!(distance > 0.06 && distance < 0.07, "{distance}");
+    assert!(
+        (distance - expected_distance).abs() < 0.000_01,
+        "{distance}"
+    );
     assert!(receipt
         .facts
         .iter()

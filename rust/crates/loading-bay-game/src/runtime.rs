@@ -5,8 +5,8 @@ use core_time::{Tick, TickDelta};
 
 use engine_spatial::{
     KinematicMotionSystem, MotionPhaseError, MotionPhaseReceipt, NavigationStepError,
-    TriggerVolumeSystem, VoxelCollisionScene, VoxelEditApplyError, VoxelEditReceipt,
-    VoxelEditService, VoxelEditTransaction,
+    SpatialOcclusionError, TriggerVolumeSystem, VoxelCollisionScene, VoxelEditApplyError,
+    VoxelEditReceipt, VoxelEditService, VoxelEditTransaction,
 };
 
 use crate::combat::{CombatReceipt, CombatRejectionReason, CombatService, ResolvedAttackAction};
@@ -112,6 +112,7 @@ pub enum RuntimeError {
         entity: EntityId,
         source: NavigationStepError,
     },
+    SpatialOcclusion(SpatialOcclusionError),
     VoxelEdit(VoxelEditApplyError),
     Inventory(InventoryRejection),
     InventorySequenceOverflow {

@@ -5,7 +5,7 @@ Rusty Engine Demo was originally extracted from
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
 
 The current Rust dependencies resolve from exact reviewed authoring revision
-`ad19a0a6e74af711875a9ce0d113b9f231e434ec`; browser render packages resolve from exact review-fix
+`464dd5e16bb023ad8d81515eabeaac9bb75df74d`; browser render packages resolve from exact review-fix
 revision `2665b74566136fb77e3a26b0766394124c8f58d3`. The older revision below remains the historical
 extraction point, not an active dependency pin.
 
@@ -68,7 +68,7 @@ project path and headless beacon proof; it was not transferred from Engine.
 ## M11B Studio adapter and voxel-owner adaptation
 
 The project-owned Studio adapter was authored directly in this repository against an exact Engine
-revision, now `ad19a0a6e74af711875a9ce0d113b9f231e434ec`. It composes the public `asset-catalog`,
+revision, now `464dd5e16bb023ad8d81515eabeaac9bb75df74d`. It composes the public `asset-catalog`,
 `authored-scene`, `content-store`, `entity-state`, `engine-inspector`, `render-model`, and
 `render-projection` crates while retaining Loading Bay schema, layout, and domain admission here.
 No Studio or adapter implementation was copied from Engine or Asha.
@@ -82,7 +82,7 @@ artifact, not new product content or a restored Asha dependency.
 ## M11F Studio parity adaptation
 
 Protocol 6 was authored directly in this repository against Engine revision
-`ad19a0a6e74af711875a9ce0d113b9f231e434ec`. It adapts the Engine-owned source-asset import,
+`464dd5e16bb023ad8d81515eabeaac9bb75df74d`. It adapts the Engine-owned source-asset import,
 catalog/lock, renderer payload, voxel primitive/template, history, annotation, conversion, canonical
 asset, and environment-authoring mechanisms into named Loading Bay project operations. Trusted
 host-file publication, source-drift inspection, and private prepared-candidate state are downstream

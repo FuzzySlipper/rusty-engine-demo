@@ -255,6 +255,7 @@ export function loadingBayStoredProject(
         ...playerWithoutLegacyWeapon,
         playerController: {
           ...playerController,
+          moveSpeedUnitsPerSecond: 6,
           bindings: {
             ...playerController.bindings,
             selectWeapon: ["Digit1", "Digit2", "Digit3"],
@@ -283,6 +284,15 @@ export function loadingBayStoredProject(
             LOADING_BAY_ITEM_IDS.breachScattergun,
             LOADING_BAY_ITEM_IDS.rivetCarbine,
           ],
+        },
+      };
+    }
+    if (entity.id === ENCOUNTER_IDS.exit) {
+      return {
+        ...entity,
+        bounds: {
+          min: [-1.2, -1.5, -0.275] as const,
+          max: [1.2, 1.5, 0.275] as const,
         },
       };
     }
@@ -552,6 +562,10 @@ export function loadingBayStoredProject(
             id: ENCOUNTER_IDS.keyedBulkhead,
             name: "maintenance-bulkhead",
             translation: [GENERATED_EXIT.centerX, 1.5, 5.5],
+            bounds: {
+              min: [-3.2, -1.5, -0.275],
+              max: [3.2, 1.5, 0.275],
+            },
             collision: { enabled: true, staticCollider: true },
             renderable: { asset: "mesh/security-door", visible: true },
             kinematic: {
@@ -560,7 +574,7 @@ export function loadingBayStoredProject(
             },
             door: {
               openTranslation: [GENERATED_EXIT.centerX, 4.5, 5.5],
-              autoCloseAfterTicks: 90,
+              autoCloseAfterTicks: null,
               access: {
                 requiredKey: LOADING_BAY_ITEM_IDS.maintenancePass,
                 keyPolicy: "retain",
