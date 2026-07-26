@@ -375,10 +375,7 @@ impl PickupService {
         tick: u64,
     ) -> Result<PickupPhaseReceipt, PickupRejection> {
         let TriggerReconcileReceipt {
-            revision,
-            facts,
-            diagnostics: _,
-            ..
+            revision, facts, ..
         } = triggers
             .reconcile(&session.entities, tick, TriggerReconcileCause::Movement)
             .map_err(|error| PickupRejection::Trigger {
