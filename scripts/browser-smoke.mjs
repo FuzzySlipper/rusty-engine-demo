@@ -556,7 +556,7 @@ async function runConvertedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=converted-wall",
-      "sourceSchema=11",
+      "sourceSchema=13",
       "currentSchema=13",
       "entryScene=scene/converted-wall",
       "assets=10",

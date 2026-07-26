@@ -1022,10 +1022,13 @@ export async function mountLoadingBayGame(
     combatState.title = lastActionRejection ?? "";
     playerPose.textContent = `${state.player.position.map((value) => value.toFixed(1)).join(", ")} · YAW ${state.player.yawDegrees.toFixed(0)}°`;
     weaponState.textContent = `${String(state.weapon.damage)} DMG · ${String(state.weapon.ammoRemaining)}/${String(state.weapon.ammoCapacity)} AMMO`;
-    inventoryState.textContent = state.inventory.stacks
-      .map((stack) => `${stack.item} ×${String(stack.quantity)}`)
-      .join(" · ");
-    inventoryState.dataset.equipped = state.inventory.equippedWeapon ?? "none";
+    inventoryState.textContent =
+      state.inventory === null
+        ? "NO AUTHORED INVENTORY"
+        : state.inventory.stacks
+            .map((stack) => `${stack.item} ×${String(stack.quantity)}`)
+            .join(" · ");
+    inventoryState.dataset.equipped = state.inventory?.equippedWeapon ?? "none";
     const availablePickups = state.pickups.filter(
       (pickup) => pickup.state === "available",
     );
@@ -1349,7 +1352,7 @@ export async function mountLoadingBayGame(
       pickupIds.join(","),
       collected.join(","),
       available.join(","),
-      current.inventory.stacks
+      (current.inventory?.stacks ?? [])
         .map((stack) => `${stack.item}:${String(stack.quantity)}`)
         .join(","),
       rejectionExact,
@@ -1368,8 +1371,8 @@ export async function mountLoadingBayGame(
 
   function inventoryQuantity(item: string): number {
     return (
-      current.inventory.stacks.find((stack) => stack.item === item)?.quantity ??
-      0
+      current.inventory?.stacks.find((stack) => stack.item === item)
+        ?.quantity ?? 0
     );
   }
 

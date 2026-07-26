@@ -114,6 +114,25 @@ test("full session bootstrap composes dynamic state with immutable resources", (
   assert.equal(applied.state.voxelMeshes, resources.voxelMeshes);
 });
 
+test("legacy projects preserve an absent Rust inventory through browser composition", () => {
+  const envelope: ServerUpdateEnvelope = {
+    protocolVersion: 1,
+    sessionId: "legacy-project-1",
+    connectionGeneration: 1,
+    serverTick: 1,
+    snapshotSequence: 1,
+    acknowledgedCommandSequence: 0,
+    staticRevision: resources.staticRevision,
+    update: { kind: "full", state: { ...dynamic, inventory: null } },
+    resources,
+    facts: [],
+    metrics,
+  };
+
+  const applied = applyServerUpdate(null, envelope);
+  assert.equal(applied.state.inventory, null);
+});
+
 test("dynamic deltas retain cold resources and reject a sequence gap", () => {
   const full: ServerUpdateEnvelope = {
     protocolVersion: 1,

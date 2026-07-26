@@ -160,7 +160,7 @@ pub(super) struct BrowserDynamicState {
     input: PlayerInputSessionView,
     player: BrowserPlayerState,
     weapon: BrowserWeaponState,
-    inventory: BrowserInventoryState,
+    inventory: Option<BrowserInventoryState>,
     pickups: Vec<BrowserPickupState>,
     extraction_beacon: Option<BrowserExtractionBeaconState>,
     enemies: Vec<BrowserEnemyState>,
@@ -280,25 +280,25 @@ pub(super) fn browser_dynamic_state(
         ammo_capacity: weapon.config.ammo_capacity,
         ready_at_tick: weapon.state.ready_at_tick.raw(),
     };
-    let inventory = runtime
-        .session()
-        .inventory(ACTOR)
-        .expect("browser player inventory");
-    let inventory_state = BrowserInventoryState {
-        owner: inventory.owner.raw(),
-        capacity_slots: inventory.capacity_slots,
-        stacks: inventory
-            .stacks
-            .into_iter()
-            .map(|stack| BrowserInventoryStack {
-                item: stack.item.as_str().to_owned(),
-                quantity: stack.quantity,
-            })
-            .collect(),
-        equipped_weapon: inventory
-            .equipped_weapon
-            .map(|item| item.as_str().to_owned()),
-    };
+    let inventory_state =
+        runtime
+            .session()
+            .inventory(ACTOR)
+            .map(|inventory| BrowserInventoryState {
+                owner: inventory.owner.raw(),
+                capacity_slots: inventory.capacity_slots,
+                stacks: inventory
+                    .stacks
+                    .into_iter()
+                    .map(|stack| BrowserInventoryStack {
+                        item: stack.item.as_str().to_owned(),
+                        quantity: stack.quantity,
+                    })
+                    .collect(),
+                equipped_weapon: inventory
+                    .equipped_weapon
+                    .map(|item| item.as_str().to_owned()),
+            });
     let pickups = runtime
         .session()
         .pickups()

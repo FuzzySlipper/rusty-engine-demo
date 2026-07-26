@@ -203,7 +203,7 @@ export interface RuntimeBrowserState {
   readonly input: RuntimeInputSessionState;
   readonly player: RuntimePlayerState;
   readonly weapon: RuntimeWeaponState;
-  readonly inventory: RuntimeInventoryState;
+  readonly inventory: RuntimeInventoryState | null;
   readonly pickups: readonly RuntimePickupState[];
   readonly extractionBeacon: RuntimeExtractionBeaconState | null;
   readonly voxelMeshes: readonly RuntimeVoxelMeshChunk[];
