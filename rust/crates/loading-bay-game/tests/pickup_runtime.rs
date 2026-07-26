@@ -1,8 +1,9 @@
 use core_ids::EntityId;
-use entity_state::EntityLifecycle;
+use entity_state::{EntityDefinition, EntityLifecycle};
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, diagnostic_code, encode_game_snapshot,
-    encode_project_document, GameRuntime, InventoryRejection, PickupDisposition, PickupFact,
+    encode_project_document, GameEntityDefinition, GameEntityDefinitionError, GameRuntime,
+    GameSession, InventoryRejection, ItemDefinitionId, PickupConfig, PickupDisposition, PickupFact,
     PickupRejection, PickupState, RuntimeError,
 };
 
@@ -206,6 +207,44 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
             .unwrap();
     assert_eq!(runtime.session().pickups().len(), 0);
     assert_eq!(quantity(&runtime, "ammo/energy-cell"), 40);
+}
+
+#[test]
+fn pickup_trigger_quota_is_rejected_before_runtime_construction_without_panicking() {
+    let item = ItemDefinitionId::parse("ammo/quota-probe").unwrap();
+    let definitions = (0..=engine_spatial::MAX_TRIGGER_DEFINITIONS)
+        .map(|index| {
+            let entity = EntityId::new(index as u64 + 1);
+            GameEntityDefinition::new(EntityDefinition::new(entity, format!("pickup-{index}")))
+                .as_pickup(PickupConfig::new(item.clone(), 1))
+        })
+        .collect::<Vec<_>>();
+
+    assert!(matches!(
+        GameSession::from_definitions(definitions).unwrap_err(),
+        GameEntityDefinitionError::TooManyPickups { count, limit }
+            if count == engine_spatial::MAX_TRIGGER_DEFINITIONS + 1
+                && limit == engine_spatial::MAX_TRIGGER_DEFINITIONS
+    ));
+}
+
+#[test]
+fn snapshot_pickup_trigger_quota_has_a_deterministic_typed_rejection() {
+    let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let mut snapshot: serde_json::Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    let template = snapshot["pickups"][0].clone();
+    let pickups = snapshot["pickups"].as_array_mut().unwrap();
+    while pickups.len() <= engine_spatial::MAX_TRIGGER_DEFINITIONS {
+        pickups.push(template.clone());
+    }
+
+    assert!(matches!(
+        decode_game_snapshot(&snapshot.to_string()).unwrap_err(),
+        loading_bay_game::GameSnapshotError::TooManyPickups { count, limit }
+            if count == engine_spatial::MAX_TRIGGER_DEFINITIONS + 1
+                && limit == engine_spatial::MAX_TRIGGER_DEFINITIONS
+    ));
 }
 
 fn with_overlap(runtime: GameRuntime, pickup: EntityId) -> GameRuntime {

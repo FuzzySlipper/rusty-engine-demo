@@ -403,6 +403,10 @@ pub enum GameSnapshotError {
     DuplicatePickup {
         entity: u64,
     },
+    TooManyPickups {
+        count: usize,
+        limit: usize,
+    },
     UnknownPickupEntity {
         entity: u64,
     },
@@ -1331,6 +1335,12 @@ impl GameRuntime {
             );
         }
 
+        if snapshot.pickups.len() > engine_spatial::MAX_TRIGGER_DEFINITIONS {
+            return Err(GameSnapshotError::TooManyPickups {
+                count: snapshot.pickups.len(),
+                limit: engine_spatial::MAX_TRIGGER_DEFINITIONS,
+            });
+        }
         let mut pickups = BTreeMap::new();
         for pickup in snapshot.pickups {
             let entity = EntityId::new(pickup.entity);

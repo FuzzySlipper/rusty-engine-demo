@@ -208,6 +208,10 @@ pub enum GameEntityDefinitionError {
     InvalidPickupQuantity {
         entity: EntityId,
     },
+    TooManyPickups {
+        count: usize,
+        limit: usize,
+    },
     PickupConflictsWithGameplayOwner {
         entity: EntityId,
     },

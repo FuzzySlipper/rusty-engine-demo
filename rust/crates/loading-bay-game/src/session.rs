@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use core_ids::EntityId;
 use core_math::Vec3;
 use core_time::Tick;
+use engine_spatial::MAX_TRIGGER_DEFINITIONS;
 use entity_state::{EntityState, EntityView};
 
 use crate::combat::{
@@ -57,6 +58,16 @@ impl GameSession {
         definitions: impl IntoIterator<Item = GameEntityDefinition>,
     ) -> Result<Self, GameEntityDefinitionError> {
         let definitions: Vec<GameEntityDefinition> = definitions.into_iter().collect();
+        let pickup_count = definitions
+            .iter()
+            .filter(|definition| definition.pickup.is_some())
+            .count();
+        if pickup_count > MAX_TRIGGER_DEFINITIONS {
+            return Err(GameEntityDefinitionError::TooManyPickups {
+                count: pickup_count,
+                limit: MAX_TRIGGER_DEFINITIONS,
+            });
+        }
         let item_definitions = admit_item_definitions(item_definitions)
             .map_err(GameEntityDefinitionError::Inventory)?;
         let entities = EntityState::from_definitions(

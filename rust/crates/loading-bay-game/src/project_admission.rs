@@ -725,6 +725,10 @@ fn definition_error(
             diagnostic_code::INVALID_COMPONENT,
             entity_path(scene_index, indexes, *entity, "pickup"),
         ),
+        Error::TooManyPickups { .. } => (
+            diagnostic_code::INVALID_COMPONENT,
+            format!("scenes[{scene_index}].entities"),
+        ),
         Error::WeaponWithoutPlayerController { entity } | Error::InvalidWeaponConfig { entity } => {
             (
                 diagnostic_code::INVALID_COMPONENT,
