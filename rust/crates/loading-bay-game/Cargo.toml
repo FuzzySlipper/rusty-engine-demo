@@ -26,6 +26,7 @@ render-projection.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_path_to_error.workspace = true
+tungstenite.workspace = true
 entity-state.workspace = true
 voxel-asset.workspace = true
 voxel-annotation.workspace = true

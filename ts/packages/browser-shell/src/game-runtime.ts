@@ -2,6 +2,7 @@ import { mountRendererSurface } from "@rusty-engine/renderer-host";
 
 import { SerializedActionQueue } from "./action-queue.js";
 import { CoalescedLookInput } from "./coalesced-look.js";
+import { LoadingBayGameSession } from "./game-session.js";
 import { HeldMovementInput } from "./held-movement.js";
 import {
   clampInputUnit,
@@ -86,10 +87,10 @@ export async function mountLoadingBayGame(
   const reloadSmokeMode = query.has("reload-smoke");
   const convertedSmokeMode = query.has("converted-smoke");
   let lastActionRejection: string | null = null;
-  const actionQueue = new SerializedActionQueue(recordActionRejection);
+  const authoringQueue = new SerializedActionQueue(recordActionRejection);
 
-  let current = await requestState("/api/input/connect", "POST");
-  let inputSequence = current.input.acknowledgedSequence;
+  const session = await LoadingBayGameSession.connect();
+  let current = session.state;
   let latestMovement = { kind: "move" as const, forward: 0, right: 0 };
   let primaryFireHeld = false;
   let lookGeneration = 0;
@@ -97,16 +98,21 @@ export async function mountLoadingBayGame(
   const heldMovement = new HeldMovementInput({
     bindings: () => current.player.bindings,
     intervalMilliseconds: () => 1_000 / 60,
-    dispatch: enqueueMovementIntent,
+    dispatch: (action) =>
+      enqueueMovementIntent(action).catch((error: unknown) => {
+        recordActionRejection(error);
+      }),
   });
   const lookInput = new CoalescedLookInput({
     dispatch: (action) => {
       const generation = lookGeneration;
-      return actionQueue.enqueue(async () => {
+      return (async () => {
         if (generation !== lookGeneration || disposed) {
           return;
         }
         await performPlayerAction(action);
+      })().catch((error: unknown) => {
+        recordActionRejection(error);
       });
     },
   });
@@ -132,6 +138,12 @@ export async function mountLoadingBayGame(
     surface,
     telemetryLayer,
   });
+  session.setStateListener(applySessionState);
+  session.setFailureListener((error) => {
+    if (!disposed) {
+      recordActionRejection(error);
+    }
+  });
   const dispose = async (): Promise<void> => {
     if (disposed) {
       return;
@@ -146,7 +158,7 @@ export async function mountLoadingBayGame(
     if (document.pointerLockElement === canvas) {
       document.exitPointerLock();
     }
-    const disconnected = disconnectInput();
+    const disconnected = session.close();
     const feedbackDisposed = presentationFeedback.dispose();
     surface.dispose();
     await Promise.all([disconnected, feedbackDisposed]);
@@ -154,12 +166,13 @@ export async function mountLoadingBayGame(
   renderReadout(current);
   await applyPresentationFeedback(true, initialFrame.ops.length);
   updateRendererStatus();
+  updateSessionDiagnostics();
 
   requiredElement("primary-fire", HTMLButtonElement).addEventListener(
     "click",
     () => {
       void presentationFeedback.activateAudio();
-      enqueueAttackAction({ kind: "attack" });
+      void enqueueAttackAction({ kind: "attack" }).catch(recordActionRejection);
     },
     eventOptions,
   );
@@ -172,7 +185,7 @@ export async function mountLoadingBayGame(
       lookInput.clear();
       latestMovement = { kind: "move", forward: 0, right: 0 };
       primaryFireHeld = false;
-      void perform("/api/reset");
+      void performRestart();
     },
     eventOptions,
   );
@@ -180,14 +193,14 @@ export async function mountLoadingBayGame(
     "click",
     () => {
       void presentationFeedback.activateAudio();
-      void enqueueInteraction(7);
+      void enqueueInteraction(7).catch(recordActionRejection);
     },
     eventOptions,
   );
   requiredElement("remove-voxel", HTMLButtonElement).addEventListener(
     "click",
     () => {
-      void actionQueue.enqueue(() =>
+      void authoringQueue.enqueue(() =>
         performVoxelEdit({
           kind: "clear",
           address: PRODUCT_EDIT_VOXEL,
@@ -199,7 +212,7 @@ export async function mountLoadingBayGame(
   requiredElement("place-voxel", HTMLButtonElement).addEventListener(
     "click",
     () => {
-      void actionQueue.enqueue(() =>
+      void authoringQueue.enqueue(() =>
         performVoxelEdit({
           kind: "set",
           address: PRODUCT_EDIT_VOXEL,
@@ -409,7 +422,7 @@ export async function mountLoadingBayGame(
       [4.5, 5.5],
       [4.5, 8.5],
     ]));
-    await perform("/api/reset");
+    await performRestart();
 
     await performVoxelEdits([
       { kind: "clear", address: [4, 1, 6] },
@@ -500,13 +513,13 @@ export async function mountLoadingBayGame(
       [4.5, 5.5],
       [4.5, 7.5],
     ]);
-    await perform("/api/reset");
+    await performRestart();
     const blockedByRestoredVoxel = !(await walkPlayerPath([
       [3.5, 5.5],
       [4.5, 5.5],
       [4.5, 7.5],
     ]));
-    await perform("/api/reset");
+    await performRestart();
     const voxelEditPassed =
       editBecameVisibleAndNavigable && clearedPassage && blockedByRestoredVoxel;
     document.body.dataset.voxelEdit = voxelEditPassed ? "pass" : "fail";
@@ -515,24 +528,39 @@ export async function mountLoadingBayGame(
       clearedPassage && blockedByRestoredVoxel ? "pass" : "fail";
 
     await presentationFeedback.activateAudio();
-    await enqueueAttackAction({ kind: "attack" });
+    primaryFireHeld = true;
+    await performInputIntent([0, 0]);
     await presentationFeedback.settled();
     const resetStartedWithConcreteTransients =
       playerMotionState.dataset.animationPulse === "attack" &&
       Number(feedbackLayer.dataset.activeEffects ?? "0") > 0 &&
       Number(feedbackAudioStatus.dataset.activeSounds ?? "0") > 0;
-    await perform("/api/reset");
+    document.body.dataset.feedbackResetStart = [
+      playerMotionState.dataset.animationPulse ?? "none",
+      feedbackLayer.dataset.activeEffects ?? "none",
+      feedbackAudioStatus.dataset.activeSounds ?? "none",
+    ].join(":");
+    await performRestart();
+    const resetCuesBelongToFreshSimulation = current.presentation.cues.every(
+      (cue) => cue.kind === "movement",
+    );
     const resetFeedbackRebuilt =
       resetStartedWithConcreteTransients &&
-      current.presentation.cues.length === 0 &&
-      feedbackLayer.dataset.activeEffects === "0" &&
-      feedbackAudioStatus.dataset.activeSounds === "0" &&
-      document.querySelector("[data-animation-pulse]") === null &&
+      resetCuesBelongToFreshSimulation &&
+      playerMotionState.dataset.animationPulse !== "attack" &&
       includesEvery(feedbackLayer.dataset.animationStates, [
         "1:idle",
         "3:closed",
         "4:moving",
       ]);
+    document.body.dataset.feedbackResetResult = [
+      current.presentation.cues.length,
+      feedbackLayer.dataset.activeEffects ?? "none",
+      feedbackAudioStatus.dataset.activeSounds ?? "none",
+      document.querySelector("[data-animation-pulse]") === null,
+      feedbackLayer.dataset.animationStates ?? "none",
+      resetCuesBelongToFreshSimulation,
+    ].join(":");
     document.body.dataset.feedbackReset = resetFeedbackRebuilt
       ? "pass"
       : "fail";
@@ -545,7 +573,7 @@ export async function mountLoadingBayGame(
     window.dispatchEvent(new KeyboardEvent("keydown", { code: heldCode }));
     await delay(current.player.moveStepSeconds * 8_000);
     window.dispatchEvent(new KeyboardEvent("keyup", { code: heldCode }));
-    await actionQueue.settled();
+    await performInputIntent([0, 0]);
     const playerMoved = vectorChanged(
       current.player.position,
       initialPlayerPosition,
@@ -554,7 +582,7 @@ export async function mountLoadingBayGame(
     const playerBlocked = current.playerMotionState === "blocked";
     const releasedPlayerPosition = current.player.position;
     await delay(current.player.moveStepSeconds * 2_000);
-    await actionQueue.settled();
+    await performInputIntent([0, 0]);
     current = await requestState("/api/state");
     const playerStopped = !vectorChanged(
       current.player.position,
@@ -568,7 +596,6 @@ export async function mountLoadingBayGame(
       new MouseEvent("mousemove", { movementX: 20, movementY: -10 }),
     );
     await lookInput.settled();
-    await actionQueue.settled();
     const playerLooked =
       normalizeDegrees(current.player.yawDegrees - initialPlayerYaw) < 0 &&
       current.player.pitchDegrees > initialPlayerPitch;
@@ -728,42 +755,33 @@ export async function mountLoadingBayGame(
     document.body.dataset.audioFeedback = audioFeedbackPassed ? "pass" : "fail";
 
     latestMovement = { kind: "move", forward: -1, right: 0 };
-    inputSequence += 1;
-    const droppedResponse = await requestState("/api/input-intent", "POST", {
-      connectionGeneration: current.input.connectionGeneration,
-      sequence: inputSequence,
-      intent: {
-        movement: [-1, 0],
-        lookDelta: [0, 0],
-        primaryFireHeld: false,
-      },
+    const droppedResponse = await session.sendInput({
+      movement: [-1, 0],
+      lookDelta: [0, 0],
+      primaryFireHeld: false,
     });
     const droppedHadTransientCue = droppedResponse.presentation.cues.some(
       (cue) => cue.kind === "movement" || cue.kind === "movementBlocked",
     );
     latestMovement = { kind: "move", forward: 0, right: 0 };
-    inputSequence += 1;
-    const neutralResponse = await requestState("/api/input-intent", "POST", {
-      connectionGeneration: current.input.connectionGeneration,
-      sequence: inputSequence,
-      intent: {
-        movement: [0, 0],
-        lookDelta: [0, 0],
-        primaryFireHeld: false,
-      },
+    const neutralResponse = await session.sendInput({
+      movement: [0, 0],
+      lookDelta: [0, 0],
+      primaryFireHeld: false,
     });
+    const neutralSequence = neutralResponse.input.acknowledgedSequence;
     const refreshed = await requestState("/api/state");
     const droppedDeliverySafe =
       droppedHadTransientCue &&
       refreshed.presentation.cues.length === 0 &&
-      neutralResponse.input.consumedSequence === inputSequence &&
-      refreshed.input.consumedSequence === inputSequence;
+      neutralResponse.input.consumedSequence === neutralSequence &&
+      refreshed.input.consumedSequence === neutralSequence;
     document.body.dataset.feedbackDropEvidence = [
       droppedHadTransientCue,
       refreshed.presentation.cues.length,
       neutralResponse.input.consumedSequence,
       refreshed.input.consumedSequence,
-      inputSequence,
+      neutralSequence,
     ].join(":");
     current = refreshed;
     const refreshFrame = projection.apply(current);
@@ -801,6 +819,27 @@ export async function mountLoadingBayGame(
       : "fail";
     const feedbackDropPassed = droppedDeliverySafe && restartRebuilt;
     document.body.dataset.feedbackDrop = feedbackDropPassed ? "pass" : "fail";
+    updateSessionDiagnostics();
+    const sessionMetrics = session.metrics;
+    const sessionTransportPassed =
+      sessionMetrics.legacyWholeStateBytes > 0 &&
+      sessionMetrics.bootstrapOutboundBytes > 0 &&
+      sessionMetrics.steadyStateUpdateCount > 0 &&
+      sessionMetrics.steadyStateLastBytes <
+        sessionMetrics.legacyWholeStateBytes / 2 &&
+      sessionMetrics.steadyStateMaxBytes <
+        sessionMetrics.legacyWholeStateBytes / 2 &&
+      sessionMetrics.maximumPendingOutboundUpdates === 1 &&
+      sessionMetrics.droppedFactCount === 0 &&
+      session.pendingInputFrameCount === 0 &&
+      session.pendingEdgeCount === 0 &&
+      session.maximumPendingInputFrameCount <= 2 &&
+      session.maximumPendingEdgeCount <= 32 &&
+      session.maximumCommandRoundTripMilliseconds > 0 &&
+      session.maximumCommandRoundTripMilliseconds < 2_000;
+    document.body.dataset.sessionTransport = sessionTransportPassed
+      ? "pass"
+      : "fail";
     const passed =
       gameplayPassed &&
       voxelEditPassed &&
@@ -808,7 +847,8 @@ export async function mountLoadingBayGame(
       resetFeedbackRebuilt &&
       feedbackFamiliesPassed &&
       audioFeedbackPassed &&
-      feedbackDropPassed;
+      feedbackDropPassed &&
+      sessionTransportPassed;
     smokeResult.dataset.status = passed ? "pass" : "fail";
     smokeResult.textContent = passed
       ? "PASS · Rust facts reached retained WebGL and disposable feedback"
@@ -818,27 +858,42 @@ export async function mountLoadingBayGame(
 
   return { dispose };
 
-  async function perform(path: string): Promise<void> {
-    current = await requestState(path, "POST");
-    if (path === "/api/reset") {
-      eventHistory.length = 0;
-      lastActionRejection = null;
-      inputSequence = current.input.acknowledgedSequence;
-      latestMovement = { kind: "move", forward: 0, right: 0 };
-      primaryFireHeld = false;
-    }
-    eventHistory.push(...current.lastEvents);
+  async function performRestart(): Promise<void> {
+    heldMovement.clear(false);
+    lookGeneration += 1;
+    lookInput.clear();
+    latestMovement = { kind: "move", forward: 0, right: 0 };
+    primaryFireHeld = false;
+    session.neutralizeInput();
+    current = await session.sendEdge({
+      kind: "restart",
+      mode: "authoredBaseline",
+    });
+    eventHistory.length = 0;
+    lastActionRejection = null;
     const frame = projection.apply(current);
     applyRendererFrame(frame);
     surface.setCameraPose(derivePlayerCameraPose(current.player));
     surface.renderOnce();
     renderReadout(current);
-    if (path === "/api/reset") {
-      await applyPresentationFeedback(true, frame.ops.length);
-    } else {
-      void applyPresentationFeedback(false, frame.ops.length);
-    }
+    await applyPresentationFeedback(true, frame.ops.length);
     updateRendererStatus();
+  }
+
+  function applySessionState(state: RuntimeBrowserState): void {
+    if (disposed) {
+      return;
+    }
+    current = state;
+    eventHistory.push(...state.lastEvents);
+    const frame = projection.apply(state);
+    applyRendererFrame(frame);
+    surface.setCameraPose(derivePlayerCameraPose(state.player));
+    surface.renderOnce();
+    renderReadout(state);
+    void applyPresentationFeedback(false, frame.ops.length);
+    updateRendererStatus();
+    updateSessionDiagnostics();
   }
 
   async function performVoxelEdit(edit: VoxelEditOperation): Promise<void> {
@@ -970,25 +1025,27 @@ export async function mountLoadingBayGame(
       throw new Error("held movement can only dispatch movement intent");
     }
     latestMovement = action;
-    return actionQueue.enqueue(() => performInputIntent([0, 0]));
+    return performInputIntent([0, 0]);
   }
 
   function enqueueCurrentInput(): void {
-    void actionQueue.enqueue(() => performInputIntent([0, 0]));
+    session.queueInput({
+      movement: [latestMovement.forward, latestMovement.right],
+      lookDelta: [0, 0],
+      primaryFireHeld,
+    });
   }
 
   function enqueuePlayerAction(action: ResolvedPlayerAction): Promise<void> {
-    return actionQueue.enqueue(() => performPlayerAction(action));
+    return performPlayerAction(action);
   }
 
   function enqueueAttackAction(action: ResolvedAttackAction): Promise<void> {
-    return actionQueue.enqueue(() => performAttackAction(action));
+    return performAttackAction(action);
   }
 
   function enqueueInteraction(target: number): Promise<void> {
-    return actionQueue.enqueue(() =>
-      performInputEdge({ kind: "interact", target }),
-    );
+    return performInputEdge({ kind: "interact", target });
   }
 
   async function performPlayerAction(
@@ -1007,25 +1064,13 @@ export async function mountLoadingBayGame(
   async function performInputIntent(
     lookDelta: readonly [number, number],
   ): Promise<void> {
-    inputSequence += 1;
-    current = await requestState("/api/input-intent", "POST", {
-      connectionGeneration: current.input.connectionGeneration,
-      sequence: inputSequence,
-      intent: {
-        movement: [latestMovement.forward, latestMovement.right],
-        lookDelta,
-        primaryFireHeld,
-      },
+    current = await session.sendInput({
+      movement: [latestMovement.forward, latestMovement.right],
+      lookDelta,
+      primaryFireHeld,
     });
     lastActionRejection = null;
-    eventHistory.push(...current.lastEvents);
-    const frame = projection.apply(current);
-    applyRendererFrame(frame);
-    surface.setCameraPose(derivePlayerCameraPose(current.player));
-    surface.renderOnce();
     renderReadout(current);
-    void applyPresentationFeedback(false, frame.ops.length);
-    updateRendererStatus();
   }
 
   async function performInputEdge(
@@ -1033,21 +1078,9 @@ export async function mountLoadingBayGame(
       | { readonly kind: "interact"; readonly target: number }
       | { readonly kind: "setPaused"; readonly paused: boolean },
   ): Promise<void> {
-    inputSequence += 1;
-    current = await requestState("/api/input-edge", "POST", {
-      connectionGeneration: current.input.connectionGeneration,
-      sequence: inputSequence,
-      command,
-    });
+    current = await session.sendEdge(command);
     lastActionRejection = null;
-    eventHistory.push(...current.lastEvents);
-    const frame = projection.apply(current);
-    applyRendererFrame(frame);
-    surface.setCameraPose(derivePlayerCameraPose(current.player));
-    surface.renderOnce();
     renderReadout(current);
-    void applyPresentationFeedback(false, frame.ops.length);
-    updateRendererStatus();
   }
 
   async function performAttackAction(
@@ -1060,30 +1093,14 @@ export async function mountLoadingBayGame(
   }
 
   function clearActiveInput(): void {
-    const changed =
-      heldMovement.active || primaryFireHeld || lookInput.pendingFrameCount > 0;
     heldMovement.clear(false);
     lookGeneration += 1;
     lookInput.clear();
     latestMovement = { kind: "move", forward: 0, right: 0 };
     primaryFireHeld = false;
-    if (changed && current.input.connected) {
-      enqueueCurrentInput();
+    if (current.input.connected) {
+      session.neutralizeInput();
     }
-  }
-
-  async function disconnectInput(): Promise<void> {
-    if (!current.input.connected) {
-      return;
-    }
-    await fetch("/api/input/disconnect", {
-      body: JSON.stringify({
-        connectionGeneration: current.input.connectionGeneration,
-      }),
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      method: "POST",
-    }).catch(() => undefined);
   }
 
   async function aimAtEnemy(enemyId: number): Promise<void> {
@@ -1230,6 +1247,63 @@ export async function mountLoadingBayGame(
 
   function updateRendererStatus(): void {
     rendererStatus.textContent = `${surface.kind} · ${String(projection.trackedEntityCount)} entities · ${String(projection.trackedMeshCount)} voxel meshes`;
+  }
+
+  function updateSessionDiagnostics(): void {
+    const metrics = session.metrics;
+    document.body.dataset.sessionProtocol = "1";
+    document.body.dataset.sessionLegacyBytes = String(
+      metrics.legacyWholeStateBytes,
+    );
+    document.body.dataset.sessionBootstrapBytes = String(
+      metrics.bootstrapOutboundBytes,
+    );
+    document.body.dataset.sessionStaticUpdates = String(
+      metrics.staticResourceUpdateCount,
+    );
+    document.body.dataset.sessionStaticBytes = String(
+      metrics.staticResourceLastBytes,
+    );
+    document.body.dataset.sessionStaticMaxBytes = String(
+      metrics.staticResourceMaxBytes,
+    );
+    document.body.dataset.sessionSteadyBytes = String(
+      metrics.steadyStateLastBytes,
+    );
+    document.body.dataset.sessionSteadyMaxBytes = String(
+      metrics.steadyStateMaxBytes,
+    );
+    document.body.dataset.sessionSteadyUpdates = String(
+      metrics.steadyStateUpdateCount,
+    );
+    document.body.dataset.sessionPendingOutboundMax = String(
+      metrics.maximumPendingOutboundUpdates,
+    );
+    document.body.dataset.sessionDroppedFacts = String(
+      metrics.droppedFactCount,
+    );
+    document.body.dataset.sessionBuildMicroseconds = String(
+      metrics.lastUpdateBuildMicroseconds,
+    );
+    document.body.dataset.sessionBuildMaxMicroseconds = String(
+      metrics.maximumUpdateBuildMicroseconds,
+    );
+    document.body.dataset.sessionPendingInput = String(
+      session.pendingInputFrameCount,
+    );
+    document.body.dataset.sessionPendingInputMax = String(
+      session.maximumPendingInputFrameCount,
+    );
+    document.body.dataset.sessionPendingEdges = String(
+      session.pendingEdgeCount,
+    );
+    document.body.dataset.sessionPendingEdgesMax = String(
+      session.maximumPendingEdgeCount,
+    );
+    document.body.dataset.sessionRttMilliseconds =
+      session.lastCommandRoundTripMilliseconds.toFixed(3);
+    document.body.dataset.sessionRttMaxMilliseconds =
+      session.maximumCommandRoundTripMilliseconds.toFixed(3);
   }
 
   async function requestState(

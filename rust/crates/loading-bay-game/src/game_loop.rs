@@ -83,6 +83,7 @@ pub struct PlayerInputCommand {
 pub enum GameLoopEdgeCommandKind {
     Interact { target: u64 },
     SetPaused { paused: bool },
+    RestartAuthoredBaseline,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -155,6 +156,9 @@ pub enum GameLoopFact {
     EdgeCommandRejected {
         sequence: u64,
         reason: EdgeCommandRejection,
+    },
+    RestartRequested {
+        sequence: u64,
     },
     InputExpired {
         sequence: u64,
@@ -507,6 +511,7 @@ impl LoadingBayGameLoop {
                     self.input.paused = paused;
                     self.input.clear_intent();
                 }
+                GameLoopEdgeCommandKind::RestartAuthoredBaseline => interactions.push(command),
                 GameLoopEdgeCommandKind::Interact { .. } => interactions.push(command),
             }
         }
@@ -591,6 +596,14 @@ impl LoadingBayGameLoop {
     ) -> Result<(), RuntimeError> {
         for command in interactions {
             let GameLoopEdgeCommandKind::Interact { target } = command.command else {
+                if matches!(
+                    command.command,
+                    GameLoopEdgeCommandKind::RestartAuthoredBaseline
+                ) {
+                    facts.push(GameLoopFact::RestartRequested {
+                        sequence: command.sequence,
+                    });
+                }
                 continue;
             };
             let target = EntityId::new(target);

@@ -117,6 +117,15 @@ function durableBrowserAuthority(state) {
   return JSON.stringify(durable);
 }
 
+function bodyDataNumber(html, attribute) {
+  const match = html.match(new RegExp(`${attribute}="([^"]+)"`));
+  const value = Number(match?.[1]);
+  if (!Number.isFinite(value)) {
+    throw new Error(`browser smoke did not publish numeric ${attribute}`);
+  }
+  return value;
+}
+
 async function persistProject(input, output) {
   const result = await run("cargo", [
     "run",
@@ -148,18 +157,11 @@ async function runFullBrowserProduct(project) {
       running.host,
       running.output,
     );
-    const result = await run(chromium, [
-      "--headless=new",
-      "--no-sandbox",
-      "--disable-dev-shm-usage",
-      "--use-gl=angle",
-      "--use-angle=swiftshader",
-      "--enable-unsafe-swiftshader",
-      "--autoplay-policy=no-user-gesture-required",
-      "--virtual-time-budget=20000",
-      "--dump-dom",
+    const result = await runChromiumSmoke(
       `http://${running.address}/?smoke=1`,
-    ]);
+      "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
+      60_000,
+    );
     if (result.code !== 0) {
       throw new Error(
         `Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}`,
@@ -182,6 +184,12 @@ async function runFullBrowserProduct(project) {
       'data-voxel-edit="pass"',
       'data-voxel-rejection="pass"',
       'data-voxel-collision="pass"',
+      'data-session-transport="pass"',
+      'data-session-protocol="1"',
+      'data-session-pending-outbound-max="1"',
+      'data-session-dropped-facts="0"',
+      'data-session-pending-input="0"',
+      'data-session-pending-edges="0"',
       "PASS · Rust facts reached retained WebGL and disposable feedback",
       "EnemyDefeated",
       "EncounterCleared",
@@ -205,6 +213,66 @@ async function runFullBrowserProduct(project) {
         `browser smoke missing ${missing.join(", ")}\n${result.stdout.match(/<body[^>]*>/)?.[0] ?? "body tag unavailable"}\n${result.stdout.slice(-6_000)}`,
       );
     }
+    const sessionEvidence = {
+      legacyBytes: bodyDataNumber(result.stdout, "data-session-legacy-bytes"),
+      bootstrapBytes: bodyDataNumber(
+        result.stdout,
+        "data-session-bootstrap-bytes",
+      ),
+      staticUpdates: bodyDataNumber(
+        result.stdout,
+        "data-session-static-updates",
+      ),
+      staticMaxBytes: bodyDataNumber(
+        result.stdout,
+        "data-session-static-max-bytes",
+      ),
+      steadyBytes: bodyDataNumber(result.stdout, "data-session-steady-bytes"),
+      steadyMaxBytes: bodyDataNumber(
+        result.stdout,
+        "data-session-steady-max-bytes",
+      ),
+      pendingOutboundMax: bodyDataNumber(
+        result.stdout,
+        "data-session-pending-outbound-max",
+      ),
+      pendingInputMax: bodyDataNumber(
+        result.stdout,
+        "data-session-pending-input-max",
+      ),
+      pendingEdgesMax: bodyDataNumber(
+        result.stdout,
+        "data-session-pending-edges-max",
+      ),
+      droppedFacts: bodyDataNumber(result.stdout, "data-session-dropped-facts"),
+      buildMaxMicroseconds: bodyDataNumber(
+        result.stdout,
+        "data-session-build-max-microseconds",
+      ),
+      roundTripMaxMilliseconds: bodyDataNumber(
+        result.stdout,
+        "data-session-rtt-max-milliseconds",
+      ),
+    };
+    if (
+      sessionEvidence.legacyBytes <= 0 ||
+      sessionEvidence.bootstrapBytes <= 0 ||
+      sessionEvidence.staticUpdates <= 0 ||
+      sessionEvidence.staticMaxBytes <= sessionEvidence.steadyMaxBytes ||
+      sessionEvidence.steadyBytes >= sessionEvidence.legacyBytes / 2 ||
+      sessionEvidence.steadyMaxBytes >= sessionEvidence.legacyBytes / 2 ||
+      sessionEvidence.pendingOutboundMax !== 1 ||
+      sessionEvidence.pendingInputMax > 2 ||
+      sessionEvidence.pendingEdgesMax > 32 ||
+      sessionEvidence.droppedFacts !== 0 ||
+      sessionEvidence.roundTripMaxMilliseconds <= 0 ||
+      sessionEvidence.roundTripMaxMilliseconds >= 2_000
+    ) {
+      throw new Error(
+        `game-session measurements violated the product budget\n${JSON.stringify(sessionEvidence)}`,
+      );
+    }
+    console.log(`game-session proof ${JSON.stringify(sessionEvidence)}`);
     const beforeReloadResponse = await fetch(
       `http://${running.address}/api/state`,
     );
@@ -221,17 +289,11 @@ async function runFullBrowserProduct(project) {
         `browser reload baseline was not retained defeated/open authority\n${JSON.stringify(beforeReload)}`,
       );
     }
-    const reloadResult = await run(chromium, [
-      "--headless=new",
-      "--no-sandbox",
-      "--disable-dev-shm-usage",
-      "--use-gl=angle",
-      "--use-angle=swiftshader",
-      "--enable-unsafe-swiftshader",
-      "--virtual-time-budget=10000",
-      "--dump-dom",
+    const reloadResult = await runChromiumSmoke(
       `http://${running.address}/?reload-smoke=1`,
-    ]);
+      "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
+      30_000,
+    );
     if (reloadResult.code !== 0) {
       throw new Error(
         `Reload Chromium exited ${String(reloadResult.code)}\n${reloadResult.stderr.slice(-4_000)}`,
@@ -272,17 +334,11 @@ async function runFullBrowserProduct(project) {
         `browser reload changed durable authority\nbefore=${durableBrowserAuthority(beforeReload)}\nafter=${durableBrowserAuthority(afterReload)}`,
       );
     }
-    const lifecycleResult = await run(chromium, [
-      "--headless=new",
-      "--no-sandbox",
-      "--disable-dev-shm-usage",
-      "--use-gl=angle",
-      "--use-angle=swiftshader",
-      "--enable-unsafe-swiftshader",
-      "--virtual-time-budget=7000",
-      "--dump-dom",
+    const lifecycleResult = await runChromiumSmoke(
       `http://${running.address}/?lifecycle-smoke=1`,
-    ]);
+      "document.body?.dataset.routeDisposal === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
+      30_000,
+    );
     if (lifecycleResult.code !== 0) {
       throw new Error(
         `Lifecycle Chromium exited ${String(lifecycleResult.code)}\n${lifecycleResult.stderr.slice(-4_000)}`,
@@ -336,19 +392,16 @@ function storedProjectEntityCount(project) {
 
 async function runMigratedBrowserProduct(project) {
   const running = await launchHost(project);
+  let session;
   try {
     await waitForHealth(
       `http://${running.address}/health`,
       running.host,
       running.output,
     );
-    const stateResponse = await fetch(
-      `http://${running.address}/api/input/connect`,
-      { method: "POST" },
-    );
-    const state = await stateResponse.json();
+    session = await openGameSession(running.address);
+    const state = session.state();
     if (
-      !stateResponse.ok ||
       state.generatedEnvironment?.seed !== 4 ||
       state.enemies?.length !== 2 ||
       state.weapon?.ammoRemaining !== 8 ||
@@ -358,25 +411,13 @@ async function runMigratedBrowserProduct(project) {
         `migrated browser state was incomplete\n${JSON.stringify(state)}`,
       );
     }
-    const attackResponse = await fetch(
-      `http://${running.address}/api/input-intent`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          connectionGeneration: state.input.connectionGeneration,
-          sequence: 1,
-          intent: {
-            movement: [0, 0],
-            lookDelta: [0, 0],
-            primaryFireHeld: true,
-          },
-        }),
-      },
-    );
-    const attacked = await attackResponse.json();
+    const attacked = await session.command({
+      kind: "setInputIntent",
+      movement: [0, 0],
+      lookDelta: [0, 0],
+      primaryFireHeld: true,
+    });
     if (
-      !attackResponse.ok ||
       attacked.tick <= state.tick ||
       attacked.weapon?.ammoRemaining >= state.weapon.ammoRemaining
     ) {
@@ -384,26 +425,12 @@ async function runMigratedBrowserProduct(project) {
         `migrated browser action failed\n${JSON.stringify(attacked)}`,
       );
     }
-    const releaseResponse = await fetch(
-      `http://${running.address}/api/input-intent`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          connectionGeneration: state.input.connectionGeneration,
-          sequence: 2,
-          intent: {
-            movement: [0, 0],
-            lookDelta: [0, 0],
-            primaryFireHeld: false,
-          },
-        }),
-      },
-    );
-    await releaseResponse.arrayBuffer();
-    if (!releaseResponse.ok) {
-      throw new Error("migrated browser fire release failed");
-    }
+    await session.command({
+      kind: "setInputIntent",
+      movement: [0, 0],
+      lookDelta: [0, 0],
+      primaryFireHeld: false,
+    });
     const startup = running.output();
     for (const marker of [
       "project id=migrated-v6-project",
@@ -419,6 +446,7 @@ async function runMigratedBrowserProduct(project) {
       }
     }
   } finally {
+    session?.close();
     await stopHost(running.host);
   }
 }
@@ -431,17 +459,11 @@ async function runConvertedBrowserProduct(project) {
       running.host,
       running.output,
     );
-    const result = await run(chromium, [
-      "--headless=new",
-      "--no-sandbox",
-      "--disable-dev-shm-usage",
-      "--use-gl=angle",
-      "--use-angle=swiftshader",
-      "--enable-unsafe-swiftshader",
-      "--virtual-time-budget=10000",
-      "--dump-dom",
+    const result = await runChromiumSmoke(
       `http://${running.address}/?converted-smoke=1`,
-    ]);
+      "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
+      30_000,
+    );
     if (result.code !== 0) {
       throw new Error(
         `converted Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}`,
@@ -548,19 +570,16 @@ async function runPersistedConvertedVoxelEditProduct(project) {
     }
     persisted = voxelStateFingerprint(edited);
 
-    const resetResponse = await fetch(`http://${running.address}/api/reset`, {
-      method: "POST",
-    });
-    const reset = await resetResponse.json();
+    const reset = await restartGameSession(running.address);
     if (
-      !resetResponse.ok ||
       reset.voxelRevision !== 0 ||
       reset.voxelEditReceipt !== undefined ||
-      reset.lastEvents?.length !== 0 ||
+      !reset.lastEvents?.every((event) => event === "NavigationAdvanced") ||
       JSON.stringify(voxelStateFingerprint(reset)) !== JSON.stringify(persisted)
     ) {
+      const actual = voxelStateFingerprint(reset);
       throw new Error(
-        `converted reset did not reopen static edited authority\n${JSON.stringify(reset)}`,
+        `converted reset did not reopen static edited authority\nexpected=${JSON.stringify(persisted)}\nactual=${JSON.stringify(actual)}\nlastEvents=${JSON.stringify(reset.lastEvents)}`,
       );
     }
   } finally {
@@ -630,8 +649,170 @@ function voxelStateFingerprint(state) {
     authorityHash: state.voxelAuthorityHash,
     navigationHash: state.voxelNavigationHash,
     probePathLength: state.voxelProbePathLength,
-    meshes: state.voxelMeshes,
+    meshes: state.voxelMeshes.map((mesh) => ({
+      chunk: mesh.chunk,
+      contentHash: mesh.contentHash,
+      boundsMin: mesh.boundsMin,
+      boundsMax: mesh.boundsMax,
+      groups: mesh.groups.map((group) => ({
+        materialSlot: group.materialSlot,
+        start: group.start,
+        count: group.count,
+      })),
+      positionCount: mesh.positions.length,
+      normalCount: mesh.normals.length,
+      indexCount: mesh.indices.length,
+    })),
     generatedEnvironment: state.generatedEnvironment,
+  };
+}
+
+async function restartGameSession(address) {
+  const session = await openGameSession(address);
+  try {
+    return await session.command({
+      kind: "restart",
+      mode: "authoredBaseline",
+    });
+  } finally {
+    session.close();
+  }
+}
+
+async function openGameSession(address) {
+  const socket = new WebSocket(`ws://${address}/api/session`, "loading-bay.v1");
+  const inbox = socketInbox(socket);
+  await new Promise((resolveOpen, rejectOpen) => {
+    socket.addEventListener("open", resolveOpen, { once: true });
+    socket.addEventListener(
+      "error",
+      () => rejectOpen(new Error("game-session WebSocket failed to open")),
+      { once: true },
+    );
+  });
+
+  let sessionId = "";
+  let snapshotSequence = 0;
+  let dynamic;
+  let resources;
+  let state;
+  let sequence = 0;
+
+  const apply = (envelope) => {
+    if (envelope.protocolVersion !== 1 || envelope.update === undefined) {
+      throw new Error(
+        `unexpected game-session update ${JSON.stringify(envelope)}`,
+      );
+    }
+    if (envelope.update.kind === "full") {
+      dynamic = envelope.update.state;
+    } else {
+      if (
+        dynamic === undefined ||
+        envelope.sessionId !== sessionId ||
+        envelope.update.baseSnapshotSequence !== snapshotSequence
+      ) {
+        throw new Error(
+          `non-contiguous game-session delta ${JSON.stringify(envelope)}`,
+        );
+      }
+      dynamic = { ...dynamic, ...envelope.update.changes };
+    }
+    resources = envelope.resources ?? resources;
+    if (resources === undefined) {
+      throw new Error("game-session update did not establish static resources");
+    }
+    const { staticRevision: _staticRevision, ...runtimeResources } = resources;
+    state = { ...dynamic, ...runtimeResources };
+    sessionId = envelope.sessionId;
+    snapshotSequence = envelope.snapshotSequence;
+    return state;
+  };
+
+  apply(await inbox.next());
+  return {
+    state: () => state,
+    async command(command) {
+      sequence += 1;
+      const commandSequence = sequence;
+      const commandSession = sessionId;
+      socket.send(
+        JSON.stringify({
+          protocolVersion: 1,
+          sessionId,
+          sequence: commandSequence,
+          observedSnapshotSequence: snapshotSequence,
+          observedStaticRevision: resources?.staticRevision,
+          command,
+        }),
+      );
+      for (;;) {
+        const envelope = await inbox.next();
+        if (envelope.update === undefined) {
+          if (envelope.commandSequence === commandSequence) {
+            throw new Error(
+              `game-session command rejected: ${String(envelope.code)}: ${String(envelope.message)}`,
+            );
+          }
+          continue;
+        }
+        const accepted = apply(envelope);
+        if (command.kind === "restart") {
+          if (sessionId !== commandSession) {
+            sequence = 0;
+            return accepted;
+          }
+        } else if (
+          envelope.acknowledgedCommandSequence >= commandSequence &&
+          accepted.input.consumedSequence >= commandSequence
+        ) {
+          return accepted;
+        }
+      }
+    },
+    close() {
+      socket.close(1000, "proof complete");
+    },
+  };
+}
+
+function socketInbox(socket) {
+  const queued = [];
+  const waiting = [];
+  let failure;
+  socket.addEventListener("message", (event) => {
+    const value = JSON.parse(String(event.data));
+    const waiter = waiting.shift();
+    if (waiter === undefined) {
+      queued.push(value);
+    } else {
+      waiter.resolve(value);
+    }
+  });
+  socket.addEventListener("close", () => {
+    failure ??= new Error("game-session WebSocket closed");
+    for (const waiter of waiting.splice(0)) {
+      waiter.reject(failure);
+    }
+  });
+  socket.addEventListener("error", () => {
+    failure ??= new Error("game-session WebSocket failed");
+    for (const waiter of waiting.splice(0)) {
+      waiter.reject(failure);
+    }
+  });
+  return {
+    next() {
+      if (queued.length > 0) {
+        return Promise.resolve(queued.shift());
+      }
+      if (failure !== undefined) {
+        return Promise.reject(failure);
+      }
+      return new Promise((resolve, reject) => {
+        waiting.push({ resolve, reject });
+      });
+    },
   };
 }
 
@@ -680,19 +861,15 @@ async function runPersistedVoxelEditProduct(project) {
     persistedNavigationHash = edited.voxelNavigationHash;
     persistedPathLength = edited.voxelProbePathLength;
 
-    const resetResponse = await fetch(`http://${running.address}/api/reset`, {
-      method: "POST",
-    });
-    const reset = await resetResponse.json();
+    const reset = await restartGameSession(running.address);
     if (
-      !resetResponse.ok ||
       reset.voxelRevision !== 0 ||
       reset.voxelAuthorityHash !== persistedHash ||
       reset.voxelNavigationHash !== persistedNavigationHash ||
       reset.voxelProbePathLength !== persistedPathLength ||
       reset.generatedEnvironment !== null ||
       reset.voxelEditReceipt !== undefined ||
-      reset.lastEvents?.length !== 0
+      !reset.lastEvents?.every((event) => event === "NavigationAdvanced")
     ) {
       throw new Error(
         `persisted voxel reset did not reopen static authority\n${JSON.stringify(reset)}`,
@@ -856,6 +1033,181 @@ function run(command, args) {
     });
     child.once("error", reject);
     child.once("exit", (code) => resolveRun({ code, stdout, stderr }));
+  });
+}
+
+async function runChromiumSmoke(url, completionExpression, timeout) {
+  const debuggingPort = await reservePort();
+  const profileDirectory = mkdtempSync(
+    join(tmpdir(), "rusty-engine-chromium-"),
+  );
+  const browser = spawn(
+    chromium,
+    [
+      "--headless=new",
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--use-gl=angle",
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
+      "--autoplay-policy=no-user-gesture-required",
+      `--remote-debugging-port=${String(debuggingPort)}`,
+      "--remote-debugging-address=127.0.0.1",
+      "--remote-allow-origins=*",
+      `--user-data-dir=${profileDirectory}`,
+      "about:blank",
+    ],
+    {
+      cwd: repoRoot,
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  let stderr = "";
+  browser.stdout.on("data", (chunk) => {
+    stderr += String(chunk);
+  });
+  browser.stderr.on("data", (chunk) => {
+    stderr += String(chunk);
+  });
+
+  let client;
+  try {
+    const target = await waitForChromiumTarget(
+      debuggingPort,
+      browser,
+      () => stderr,
+    );
+    client = await connectDevTools(target.webSocketDebuggerUrl);
+    await client.send("Page.enable");
+    await client.send("Runtime.enable");
+    await client.send("Page.navigate", { url });
+
+    const deadline = Date.now() + timeout;
+    let completed = false;
+    while (Date.now() < deadline) {
+      if (browser.exitCode !== null) {
+        throw new Error(
+          `Chromium exited early (${String(browser.exitCode)})\n${stderr.slice(-4_000)}`,
+        );
+      }
+      const result = await client.send("Runtime.evaluate", {
+        expression: completionExpression,
+        returnByValue: true,
+      });
+      if (result?.result?.value === true) {
+        completed = true;
+        break;
+      }
+      await delay(50);
+    }
+    const htmlResult = await client.send("Runtime.evaluate", {
+      expression: "document.documentElement.outerHTML",
+      returnByValue: true,
+    });
+    const stdout =
+      typeof htmlResult?.result?.value === "string"
+        ? htmlResult.result.value
+        : "";
+    return {
+      code: completed ? 0 : 1,
+      stdout,
+      stderr: completed
+        ? stderr
+        : `${stderr}\nTimed out waiting for ${completionExpression}`,
+    };
+  } finally {
+    client?.close();
+    browser.kill("SIGTERM");
+    await Promise.race([onceExit(browser), delay(1_000)]);
+    if (browser.exitCode === null) {
+      browser.kill("SIGKILL");
+    }
+    rmSync(profileDirectory, { recursive: true, force: true });
+  }
+}
+
+async function waitForChromiumTarget(port, process, output) {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    if (process.exitCode !== null) {
+      throw new Error(
+        `Chromium exited before debugging was ready (${String(process.exitCode)})\n${output()}`,
+      );
+    }
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:${String(port)}/json/list`,
+      );
+      const targets = await response.json();
+      const target = Array.isArray(targets)
+        ? targets.find(
+            (candidate) =>
+              candidate?.type === "page" &&
+              typeof candidate.webSocketDebuggerUrl === "string",
+          )
+        : undefined;
+      if (target !== undefined) {
+        return target;
+      }
+    } catch {
+      // Chromium takes a moment to publish its debugging target.
+    }
+    await delay(50);
+  }
+  throw new Error(
+    `Chromium debugging target did not become ready\n${output()}`,
+  );
+}
+
+function connectDevTools(url) {
+  return new Promise((resolveConnect, rejectConnect) => {
+    const socket = new WebSocket(url);
+    const pending = new Map();
+    let nextId = 0;
+    socket.addEventListener("open", () => {
+      resolveConnect({
+        send(method, params = {}) {
+          nextId += 1;
+          const id = nextId;
+          return new Promise((resolveCommand, rejectCommand) => {
+            pending.set(id, { resolveCommand, rejectCommand });
+            socket.send(JSON.stringify({ id, method, params }));
+          });
+        },
+        close() {
+          socket.close();
+        },
+      });
+    });
+    socket.addEventListener("message", (event) => {
+      const message = JSON.parse(String(event.data));
+      if (typeof message.id !== "number") {
+        return;
+      }
+      const command = pending.get(message.id);
+      if (command === undefined) {
+        return;
+      }
+      pending.delete(message.id);
+      if (message.error === undefined) {
+        command.resolveCommand(message.result);
+      } else {
+        command.rejectCommand(
+          new Error(
+            `Chromium debugging command failed: ${JSON.stringify(message.error)}`,
+          ),
+        );
+      }
+    });
+    socket.addEventListener("error", rejectConnect);
+    socket.addEventListener("close", () => {
+      for (const command of pending.values()) {
+        command.rejectCommand(
+          new Error("Chromium debugging connection closed"),
+        );
+      }
+      pending.clear();
+    });
   });
 }
 

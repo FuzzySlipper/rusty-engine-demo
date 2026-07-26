@@ -125,7 +125,8 @@ No component callback, browser timer, renderer callback, or plugin scheduler can
 
 The wire format is versioned and game-specific. Rust types are canonical; generated or
 structurally checked TypeScript types may encode/decode them. These stable shapes guide #6217,
-#6218, and later feature tasks.
+#6218, and later feature tasks. The implemented version-1 lifecycle, bounds, cancellation rules,
+and live measurement proof are recorded in [`game-session-protocol.md`](game-session-protocol.md).
 
 ### Client command envelope
 
@@ -135,6 +136,7 @@ ClientCommandEnvelope {
   sessionId: string
   sequence: u64
   observedSnapshotSequence?: u64
+  observedStaticRevision?: string
   command: GameCommand
 }
 ```

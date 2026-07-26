@@ -1,4 +1,4 @@
-//! Product-specific whole-state readout for the browser shell.
+//! Product-specific static resources and dynamic readouts for the browser shell.
 
 use core_ids::EntityId;
 use core_math::Vec3;
@@ -111,13 +111,17 @@ struct BrowserGeneratedEnvironment {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct BrowserState {
+    #[serde(flatten)]
+    pub(super) dynamic: BrowserDynamicState,
+    #[serde(flatten)]
+    pub(super) resources: BrowserStaticResources,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct BrowserDynamicState {
     tick: u64,
     entity_revision: u64,
-    voxel_revision: u64,
-    voxel_authority_hash: String,
-    voxel_solid_count: usize,
-    voxel_navigation_hash: String,
-    voxel_probe_path_length: usize,
     projection: Vec<BrowserProjectionNode>,
     door_state: &'static str,
     encounter_state: &'static str,
@@ -129,11 +133,22 @@ pub(super) struct BrowserState {
     player: BrowserPlayerState,
     weapon: BrowserWeaponState,
     extraction_beacon: Option<BrowserExtractionBeaconState>,
-    voxel_meshes: Vec<BrowserVoxelMeshChunk>,
-    generated_environment: Option<BrowserGeneratedEnvironment>,
     enemies: Vec<BrowserEnemyState>,
     presentation: BrowserPresentation,
     pub(super) last_events: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct BrowserStaticResources {
+    static_revision: String,
+    voxel_revision: u64,
+    voxel_authority_hash: String,
+    voxel_solid_count: usize,
+    voxel_navigation_hash: String,
+    voxel_probe_path_length: usize,
+    voxel_meshes: Vec<BrowserVoxelMeshChunk>,
+    generated_environment: Option<BrowserGeneratedEnvironment>,
 }
 
 pub(super) fn browser_state(
@@ -141,6 +156,17 @@ pub(super) fn browser_state(
     last_events: Vec<String>,
     feedback: BrowserFeedbackProjection,
 ) -> BrowserState {
+    BrowserState {
+        dynamic: browser_dynamic_state(host, last_events, feedback),
+        resources: browser_static_resources(host),
+    }
+}
+
+pub(super) fn browser_dynamic_state(
+    host: &BrowserRuntime,
+    last_events: Vec<String>,
+    feedback: BrowserFeedbackProjection,
+) -> BrowserDynamicState {
     let runtime: &GameRuntime = host.runtime.runtime();
     let readout = runtime.readout();
     let projection = readout
@@ -257,59 +283,9 @@ pub(super) fn browser_state(
     } else {
         "ready"
     };
-    let scene = runtime
-        .collision_scene()
-        .expect("browser project collision scene");
-    let voxel_meshes = scene
-        .mesh_chunks()
-        .iter()
-        .map(|mesh| BrowserVoxelMeshChunk {
-            chunk: mesh.chunk,
-            content_hash: format!("{:016x}", mesh.content_hash),
-            translation: mesh.translation,
-            positions: mesh.positions.clone(),
-            normals: mesh.normals.clone(),
-            indices: mesh.indices.clone(),
-            groups: mesh
-                .groups
-                .iter()
-                .map(|group| BrowserVoxelMeshGroup {
-                    material_slot: group.material_slot,
-                    start: group.start,
-                    count: group.count,
-                })
-                .collect(),
-            bounds_min: mesh.bounds_min,
-            bounds_max: mesh.bounds_max,
-        })
-        .collect();
-    let generated_environment = scene.generated_room().map(|(config, record)| {
-        let mesh_vertices = scene.mesh_chunks().iter().map(|mesh| mesh.vertices).sum();
-        let mesh_quads = scene.mesh_chunks().iter().map(|mesh| mesh.quads).sum();
-        BrowserGeneratedEnvironment {
-            seed: config.seed,
-            output_hash: format!("{:016x}", record.output_hash),
-            solid_voxels: record.solid_voxel_count,
-            mesh_vertices,
-            mesh_quads,
-        }
-    });
-    BrowserState {
+    BrowserDynamicState {
         tick: readout.tick.raw(),
         entity_revision: readout.entity_revision,
-        voxel_revision: scene.source_revision().raw(),
-        voxel_authority_hash: format!("{:016x}", scene.authority_hash()),
-        voxel_solid_count: scene.solid_voxel_count(),
-        voxel_navigation_hash: format!("{:016x}", scene.navigation_hash()),
-        voxel_probe_path_length: scene
-            .navigation_step(
-                Vec3::new(1.5, 1.5, 6.5),
-                Vec3::new(7.5, 1.5, 6.5),
-                Vec3::ZERO,
-                0.1,
-                512,
-            )
-            .map_or(0, |step| step.path_len),
         projection,
         door_state: match runtime.session().door(EXIT).expect("exit door").state {
             DoorState::Closed => "closed",
@@ -355,8 +331,6 @@ pub(super) fn browser_state(
         player: player_state,
         weapon: weapon_state,
         extraction_beacon,
-        voxel_meshes,
-        generated_environment,
         enemies,
         presentation: project_presentation(
             runtime,
@@ -367,5 +341,77 @@ pub(super) fn browser_state(
             feedback,
         ),
         last_events,
+    }
+}
+
+pub(super) fn browser_static_revision(host: &BrowserRuntime) -> String {
+    let scene = host
+        .runtime
+        .runtime()
+        .collision_scene()
+        .expect("browser project collision scene");
+    format!(
+        "{}:{:016x}",
+        scene.source_revision().raw(),
+        scene.authority_hash()
+    )
+}
+
+pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticResources {
+    let runtime: &GameRuntime = host.runtime.runtime();
+    let scene = runtime
+        .collision_scene()
+        .expect("browser project collision scene");
+    let voxel_meshes = scene
+        .mesh_chunks()
+        .iter()
+        .map(|mesh| BrowserVoxelMeshChunk {
+            chunk: mesh.chunk,
+            content_hash: format!("{:016x}", mesh.content_hash),
+            translation: mesh.translation,
+            positions: mesh.positions.clone(),
+            normals: mesh.normals.clone(),
+            indices: mesh.indices.clone(),
+            groups: mesh
+                .groups
+                .iter()
+                .map(|group| BrowserVoxelMeshGroup {
+                    material_slot: group.material_slot,
+                    start: group.start,
+                    count: group.count,
+                })
+                .collect(),
+            bounds_min: mesh.bounds_min,
+            bounds_max: mesh.bounds_max,
+        })
+        .collect();
+    let generated_environment = scene.generated_room().map(|(config, record)| {
+        let mesh_vertices = scene.mesh_chunks().iter().map(|mesh| mesh.vertices).sum();
+        let mesh_quads = scene.mesh_chunks().iter().map(|mesh| mesh.quads).sum();
+        BrowserGeneratedEnvironment {
+            seed: config.seed,
+            output_hash: format!("{:016x}", record.output_hash),
+            solid_voxels: record.solid_voxel_count,
+            mesh_vertices,
+            mesh_quads,
+        }
+    });
+    BrowserStaticResources {
+        static_revision: browser_static_revision(host),
+        voxel_revision: scene.source_revision().raw(),
+        voxel_authority_hash: format!("{:016x}", scene.authority_hash()),
+        voxel_solid_count: scene.solid_voxel_count(),
+        voxel_navigation_hash: format!("{:016x}", scene.navigation_hash()),
+        voxel_probe_path_length: scene
+            .navigation_step(
+                Vec3::new(1.5, 1.5, 6.5),
+                Vec3::new(7.5, 1.5, 6.5),
+                Vec3::ZERO,
+                0.1,
+                512,
+            )
+            .map_or(0, |step| step.path_len),
+        voxel_meshes,
+        generated_environment,
     }
 }

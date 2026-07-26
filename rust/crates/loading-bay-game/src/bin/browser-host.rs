@@ -3,25 +3,27 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::ops::{Deref, DerefMut};
 use std::path::{Component, Path, PathBuf};
-use std::sync::{Arc, Condvar, LockResult, Mutex, MutexGuard};
+use std::sync::{Arc, LockResult, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
 use core_ids::EntityId;
 use loading_bay_game::{
     admit_stored_project_with_document, materialize_stored_project_voxels, AdmittedStoredProject,
-    CombatFact, CombatMissReason, GameEvent, GameLoopEdgeCommand, GameLoopFact, GameRuntime,
-    InputCommandRejection, LoadingBayGameLoop, NavigationFact, PlayerControlFact,
-    PlayerInputCommand, ProjectSaveMode, ProjectStore, VoxelEdit, VoxelEditTransaction,
-    VoxelSourceRevision,
+    CombatFact, CombatMissReason, GameEvent, GameLoopFact, GameRuntime, LoadingBayGameLoop,
+    NavigationFact, PlayerControlFact, ProjectSaveMode, ProjectStore, VoxelEdit,
+    VoxelEditTransaction, VoxelSourceRevision,
 };
 use serde::{Deserialize, Serialize};
 
 #[path = "browser_host/presentation.rs"]
 mod presentation;
+#[path = "browser_host/session.rs"]
+mod session;
 #[path = "browser_host/state.rs"]
 mod state;
 
 use presentation::BrowserFeedbackProjection;
+use session::{run_game_session, session_upgrade_requested};
 use state::{browser_state, BrowserState};
 
 const DEFAULT_ADDRESS: &str = "127.0.0.1:8787";
@@ -33,7 +35,6 @@ const EXIT: EntityId = EntityId::new(3);
 const FIRST_ENEMY: u64 = 4;
 const SECOND_ENEMY: u64 = 5;
 const MOTION_PROBE: EntityId = EntityId::new(10);
-const INPUT_ACK_WAIT: Duration = Duration::from_millis(100);
 
 #[derive(Debug)]
 struct BrowserProjectSummary {
@@ -52,6 +53,20 @@ struct BrowserRuntime {
     authored: AdmittedStoredProject,
     project_path: PathBuf,
     project: BrowserProjectSummary,
+    pending_restart: Option<PendingRestart>,
+    replacement_origin: Option<RestartIdentity>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct RestartIdentity {
+    connection_generation: u64,
+    sequence: u64,
+}
+
+#[derive(Debug)]
+struct PendingRestart {
+    identity: RestartIdentity,
+    replacement: Box<BrowserRuntime>,
 }
 
 impl BrowserRuntime {
@@ -87,7 +102,97 @@ impl BrowserRuntime {
             authored,
             project_path,
             project,
+            pending_restart: None,
+            replacement_origin: None,
         })
+    }
+
+    fn start_browser_connection(&mut self) -> u64 {
+        self.pending_restart = None;
+        self.replacement_origin = None;
+        self.runtime.start_connection().connection_generation
+    }
+
+    fn stage_restart(
+        &mut self,
+        connection_generation: u64,
+        sequence: u64,
+        replacement: BrowserRuntime,
+    ) {
+        self.pending_restart = Some(PendingRestart {
+            identity: RestartIdentity {
+                connection_generation,
+                sequence,
+            },
+            replacement: Box::new(replacement),
+        });
+    }
+
+    fn cancel_staged_restart(&mut self, connection_generation: u64, sequence: u64) {
+        if self.pending_restart.as_ref().is_some_and(|pending| {
+            pending.identity
+                == (RestartIdentity {
+                    connection_generation,
+                    sequence,
+                })
+        }) {
+            self.pending_restart = None;
+        }
+    }
+
+    fn apply_consumed_restart(&mut self, sequence: u64) -> bool {
+        let Some(pending) = self.pending_restart.take() else {
+            return false;
+        };
+        if pending.identity.sequence != sequence
+            || self.runtime.input_session().connection_generation
+                != pending.identity.connection_generation
+        {
+            self.pending_restart = Some(pending);
+            return false;
+        }
+
+        let mut replacement = *pending.replacement;
+        replacement
+            .runtime
+            .start_connection_after(pending.identity.connection_generation);
+        replacement.replacement_origin = Some(pending.identity);
+        *self = replacement;
+        true
+    }
+
+    fn adopt_consumed_restart(&mut self, connection_generation: u64, sequence: u64) -> Option<u64> {
+        let identity = RestartIdentity {
+            connection_generation,
+            sequence,
+        };
+        if self.replacement_origin != Some(identity) {
+            return None;
+        }
+        self.replacement_origin = None;
+        Some(self.runtime.input_session().connection_generation)
+    }
+
+    fn disconnect_browser_session(
+        &mut self,
+        connection_generation: u64,
+        pending_restart_sequence: Option<u64>,
+    ) {
+        if let Some(sequence) = pending_restart_sequence {
+            self.cancel_staged_restart(connection_generation, sequence);
+            if self.replacement_origin
+                == Some(RestartIdentity {
+                    connection_generation,
+                    sequence,
+                })
+            {
+                self.replacement_origin = None;
+                let active_generation = self.runtime.input_session().connection_generation;
+                self.runtime.disconnect(active_generation);
+                return;
+            }
+        }
+        self.runtime.disconnect(connection_generation);
     }
 }
 
@@ -108,28 +213,18 @@ impl DerefMut for BrowserRuntime {
 #[derive(Debug)]
 struct SharedBrowserRuntime {
     runtime: Mutex<BrowserRuntime>,
-    advanced: Condvar,
-    automatic_driver: bool,
 }
 
 impl SharedBrowserRuntime {
-    fn new(runtime: BrowserRuntime, automatic_driver: bool) -> Self {
+    fn new(runtime: BrowserRuntime) -> Self {
         Self {
             runtime: Mutex::new(runtime),
-            advanced: Condvar::new(),
-            automatic_driver,
         }
     }
 
     fn lock(&self) -> LockResult<MutexGuard<'_, BrowserRuntime>> {
         self.runtime.lock()
     }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct BrowserDisconnectRequest {
-    connection_generation: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -214,7 +309,7 @@ fn main() {
         runtime.project.entity_count,
         runtime.project_path.display()
     );
-    let runtime = Arc::new(SharedBrowserRuntime::new(runtime, true));
+    let runtime = Arc::new(SharedBrowserRuntime::new(runtime));
     start_game_loop_driver(&runtime);
     let listener = TcpListener::bind(&address)
         .unwrap_or_else(|error| panic!("cannot bind browser host at {address}: {error}"));
@@ -241,15 +336,27 @@ fn start_game_loop_driver(runtime: &Arc<SharedBrowserRuntime>) {
             let now = Instant::now();
             let elapsed = now.saturating_duration_since(previous);
             previous = now;
-            let result = runtime
-                .lock()
-                .expect("runtime lock")
-                .runtime
-                .advance_elapsed(elapsed);
-            if let Err(error) = result {
-                eprintln!("browser-host fixed game loop error: {error}");
+            let mut host = runtime.lock().expect("runtime lock");
+            match host.runtime.advance_elapsed(elapsed) {
+                Ok(receipt) => {
+                    let restart_sequence = receipt.fixed_ticks.iter().find_map(|tick| {
+                        tick.facts.iter().find_map(|fact| match fact {
+                            GameLoopFact::RestartRequested { sequence } => Some(*sequence),
+                            _ => None,
+                        })
+                    });
+                    if let Some(sequence) = restart_sequence {
+                        if !host.apply_consumed_restart(sequence) {
+                            eprintln!(
+                                "browser-host ignored restart {sequence} without a matching staged runtime"
+                            );
+                        }
+                    }
+                }
+                Err(error) => {
+                    eprintln!("browser-host fixed game loop error: {error}");
+                }
             }
-            runtime.advanced.notify_all();
         }
     });
 }
@@ -280,6 +387,10 @@ fn default_project_path() -> PathBuf {
 
 fn handle_connection(mut stream: TcpStream, runtime: &Arc<SharedBrowserRuntime>, dist: &Path) {
     let _ = stream.set_read_timeout(Some(Duration::from_secs(3)));
+    if session_upgrade_requested(&stream) {
+        run_game_session(stream, Arc::clone(runtime));
+        return;
+    }
     let request = match read_request(&mut stream) {
         Ok(request) => request,
         Err(message) => {
@@ -374,77 +485,6 @@ fn route(
                 browser_state(&runtime, Vec::new(), BrowserFeedbackProjection::default()),
             )
         }
-        ("POST", "/api/input/connect") => {
-            let mut runtime = runtime.lock().expect("runtime lock");
-            runtime.runtime.start_connection();
-            json_response(
-                200,
-                browser_state(&runtime, Vec::new(), BrowserFeedbackProjection::default()),
-            )
-        }
-        ("POST", "/api/input/disconnect") => {
-            let request: BrowserDisconnectRequest = match serde_json::from_slice(body) {
-                Ok(request) => request,
-                Err(error) => {
-                    return error_json(400, &format!("invalid disconnect request: {error}"));
-                }
-            };
-            let mut runtime = runtime.lock().expect("runtime lock");
-            if !runtime.runtime.disconnect(request.connection_generation) {
-                return error_json(409, "sessionClosed: connection generation is not active");
-            }
-            json_response(
-                200,
-                browser_state(&runtime, Vec::new(), BrowserFeedbackProjection::default()),
-            )
-        }
-        ("POST", "/api/input-intent") => {
-            let command: PlayerInputCommand = match serde_json::from_slice(body) {
-                Ok(command) => command,
-                Err(error) => return error_json(400, &format!("invalid input intent: {error}")),
-            };
-            {
-                let mut runtime = runtime.lock().expect("runtime lock");
-                if let Err(rejection) = runtime.runtime.submit_input(command) {
-                    return input_rejection_json(rejection);
-                }
-            }
-            wait_for_input_consumption(runtime, command.connection_generation, command.sequence);
-            let mut runtime = runtime.lock().expect("runtime lock");
-            let (facts, feedback) = drain_game_loop_feedback(&mut runtime.runtime);
-            json_response(200, browser_state(&runtime, facts, feedback))
-        }
-        ("POST", "/api/input-edge") => {
-            let command: GameLoopEdgeCommand = match serde_json::from_slice(body) {
-                Ok(command) => command,
-                Err(error) => return error_json(400, &format!("invalid input edge: {error}")),
-            };
-            {
-                let mut runtime = runtime.lock().expect("runtime lock");
-                if let Err(rejection) = runtime.runtime.submit_edge_command(command) {
-                    return input_rejection_json(rejection);
-                }
-            }
-            wait_for_input_consumption(runtime, command.connection_generation, command.sequence);
-            let mut runtime = runtime.lock().expect("runtime lock");
-            let (facts, feedback) = drain_game_loop_feedback(&mut runtime.runtime);
-            json_response(200, browser_state(&runtime, facts, feedback))
-        }
-        ("POST", "/api/reset") => {
-            let mut runtime = runtime.lock().expect("runtime lock");
-            let project_path = runtime.project_path.clone();
-            let previous_generation = runtime.runtime.input_session().connection_generation;
-            let mut replacement =
-                BrowserRuntime::load(&project_path).expect("reset stored browser project");
-            replacement
-                .runtime
-                .start_connection_after(previous_generation);
-            *runtime = replacement;
-            json_response(
-                200,
-                browser_state(&runtime, Vec::new(), BrowserFeedbackProjection::default()),
-            )
-        }
         ("POST", "/api/voxel-edit") => {
             let request: BrowserVoxelEditRequest = match serde_json::from_slice(body) {
                 Ok(request) => request,
@@ -518,72 +558,42 @@ fn route(
     }
 }
 
-fn wait_for_input_consumption(
-    runtime: &Arc<SharedBrowserRuntime>,
-    connection_generation: u64,
-    sequence: u64,
-) {
-    if !runtime.automatic_driver {
-        return;
-    }
-    let guard = runtime.lock().expect("runtime lock");
-    let _ = runtime
-        .advanced
-        .wait_timeout_while(guard, INPUT_ACK_WAIT, |runtime| {
-            let input = runtime.runtime.input_session();
-            input.connection_generation == connection_generation
-                && input.connected
-                && input.consumed_sequence < sequence
-        })
-        .expect("runtime input wait");
-}
-
-fn input_rejection_json(rejection: InputCommandRejection) -> (u16, &'static str, Vec<u8>) {
-    let (status, code) = match rejection {
-        InputCommandRejection::InvalidInput => (400, "invalidInput"),
-        InputCommandRejection::SessionDisconnected
-        | InputCommandRejection::WrongConnectionGeneration { .. } => (409, "sessionClosed"),
-        InputCommandRejection::StaleSequence { .. } => (409, "staleSequence"),
-        InputCommandRejection::EdgeQueueSaturated { .. } => (409, "edgeQueueSaturated"),
-    };
-    error_json(status, &format!("{code}: {rejection}"))
-}
-
 fn drain_game_loop_feedback(
     game_loop: &mut LoadingBayGameLoop,
-) -> (Vec<String>, BrowserFeedbackProjection) {
-    let mut names = Vec::new();
+) -> (Vec<(String, Option<u64>)>, BrowserFeedbackProjection) {
+    let mut facts = Vec::new();
     let mut feedback = BrowserFeedbackProjection::default();
     for fact in game_loop.drain_pending_facts() {
         match fact {
             GameLoopFact::PlayerControl(fact) => {
-                names.push(player_fact_name(&fact).to_owned());
+                facts.push((player_fact_name(&fact).to_owned(), None));
                 feedback.extend_player_control(std::slice::from_ref(&fact));
             }
             GameLoopFact::Navigation(fact) => {
-                names.push(navigation_fact_name(&fact).to_owned());
+                facts.push((navigation_fact_name(&fact).to_owned(), None));
                 feedback.extend_navigation(std::slice::from_ref(&fact));
             }
             GameLoopFact::Combat(fact) => {
-                names.push(combat_fact_name(&fact).to_owned());
+                facts.push((combat_fact_name(&fact).to_owned(), None));
                 feedback.extend_combat(std::slice::from_ref(&fact));
             }
             GameLoopFact::ExtractionBeacon(fact) => {
-                names.push("ExtractionBeaconActivated".to_owned());
+                facts.push(("ExtractionBeaconActivated".to_owned(), None));
                 feedback.extend_extraction_beacon(fact);
             }
             GameLoopFact::Event(event) => {
-                names.push(event_name(&event).to_owned());
+                facts.push((event_name(&event).to_owned(), None));
                 feedback.extend_events(std::slice::from_ref(&event));
             }
-            GameLoopFact::CombatRejected { reason } => names.push(
+            GameLoopFact::CombatRejected { reason } => facts.push((
                 match reason {
                     loading_bay_game::CombatRejectionReason::Cooldown => "CombatRejectedCooldown",
                     loading_bay_game::CombatRejectionReason::NoAmmo => "CombatRejectedNoAmmo",
                 }
                 .to_owned(),
-            ),
-            GameLoopFact::EdgeCommandRejected { reason, .. } => names.push(
+                None,
+            )),
+            GameLoopFact::EdgeCommandRejected { sequence, reason } => facts.push((
                 match reason {
                     loading_bay_game::EdgeCommandRejection::Paused => "InputEdgeRejectedPaused",
                     loading_bay_game::EdgeCommandRejection::UnknownTarget => {
@@ -594,11 +604,17 @@ fn drain_game_loop_feedback(
                     }
                 }
                 .to_owned(),
-            ),
-            GameLoopFact::InputExpired { .. } => names.push("InputExpired".to_owned()),
+                Some(sequence),
+            )),
+            GameLoopFact::InputExpired { .. } => {
+                facts.push(("InputExpired".to_owned(), None));
+            }
+            GameLoopFact::RestartRequested { .. } => {
+                facts.push(("RestartRequested".to_owned(), None));
+            }
         }
     }
-    (names, feedback)
+    (facts, feedback)
 }
 
 fn combat_fact_name(fact: &CombatFact) -> &'static str {
@@ -730,7 +746,7 @@ mod tests {
     }
 
     fn shared_browser_runtime() -> Arc<SharedBrowserRuntime> {
-        Arc::new(SharedBrowserRuntime::new(stored_browser_runtime(), false))
+        Arc::new(SharedBrowserRuntime::new(stored_browser_runtime()))
     }
 
     #[test]
@@ -779,94 +795,19 @@ mod tests {
     }
 
     #[test]
-    fn input_routes_preserve_generation_sequence_and_disconnect_identity() {
+    fn legacy_gameplay_mutation_routes_are_inert() {
         let runtime = shared_browser_runtime();
-        let connected = response_json(route(
-            "POST",
-            "/api/input/connect",
-            &[],
-            &runtime,
-            Path::new("."),
-        ));
-        let generation = connected["input"]["connectionGeneration"]
+        let tick_before = response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")))
+            ["tick"]
             .as_u64()
-            .expect("connection generation");
-        let command = serde_json::to_vec(&PlayerInputCommand {
-            connection_generation: generation,
-            sequence: 1,
-            intent: loading_bay_game::PlayerInputIntent {
-                movement: [1.0, 0.0],
-                look_delta: [0.25, 0.0],
-                primary_fire_held: false,
-            },
-        })
-        .unwrap();
-        let accepted = response_json(route(
-            "POST",
-            "/api/input-intent",
-            &command,
-            &runtime,
-            Path::new("."),
-        ));
-        assert_eq!(accepted["input"]["acknowledgedSequence"], 1);
-        assert_eq!(accepted["input"]["consumedSequence"], 0);
-
-        runtime.lock().unwrap().runtime.run_fixed_tick().unwrap();
-        let advanced = response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")));
-        assert_eq!(advanced["input"]["consumedSequence"], 1);
-        assert_ne!(
-            advanced["player"]["position"],
-            connected["player"]["position"]
-        );
-        assert_ne!(
-            advanced["player"]["yawDegrees"],
-            connected["player"]["yawDegrees"]
-        );
-
-        let disconnect = serde_json::to_vec(&BrowserDisconnectRequest {
-            connection_generation: generation,
-        })
-        .unwrap();
-        assert_eq!(
-            route(
-                "POST",
-                "/api/input/disconnect",
-                &disconnect,
-                &runtime,
-                Path::new(".")
-            )
-            .0,
-            200
-        );
-        assert_eq!(
-            route(
-                "POST",
-                "/api/input-intent",
-                &command,
-                &runtime,
-                Path::new(".")
-            )
-            .0,
-            409
-        );
-    }
-
-    #[test]
-    fn host_gameplay_edges_wait_for_the_fixed_tick_and_legacy_phase_routes_are_inert() {
-        let runtime = shared_browser_runtime();
-        let connected = response_json(route(
-            "POST",
-            "/api/input/connect",
-            &[],
-            &runtime,
-            Path::new("."),
-        ));
-        let generation = connected["input"]["connectionGeneration"]
-            .as_u64()
-            .expect("connection generation");
-        let tick_before = connected["tick"].as_u64().expect("tick");
+            .expect("tick");
 
         for path in [
+            "/api/input/connect",
+            "/api/input/disconnect",
+            "/api/input-intent",
+            "/api/input-edge",
+            "/api/reset",
             "/api/motion-phase",
             "/api/navigation-step",
             "/api/navigation-phase",
@@ -882,32 +823,44 @@ mod tests {
             response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")))["tick"],
             tick_before
         );
+    }
 
-        let pause = serde_json::to_vec(&GameLoopEdgeCommand {
-            connection_generation: generation,
-            sequence: 1,
-            command: loading_bay_game::GameLoopEdgeCommandKind::SetPaused { paused: true },
-        })
-        .unwrap();
-        let queued = response_json(route(
-            "POST",
-            "/api/input-edge",
-            &pause,
-            &runtime,
-            Path::new("."),
-        ));
-        assert_eq!(queued["tick"], tick_before);
-        assert_eq!(queued["input"]["queuedEdgeCommands"], 1);
-        assert_eq!(queued["input"]["consumedSequence"], 0);
-        assert_eq!(queued["input"]["paused"], false);
+    #[test]
+    fn authored_restart_replaces_the_runtime_only_after_fixed_tick_consumption() {
+        let mut host = stored_browser_runtime();
+        let generation = host.start_browser_connection();
+        host.runtime
+            .submit_edge_command(loading_bay_game::GameLoopEdgeCommand {
+                connection_generation: generation,
+                sequence: 1,
+                command: loading_bay_game::GameLoopEdgeCommandKind::RestartAuthoredBaseline,
+            })
+            .unwrap();
+        host.stage_restart(generation, 1, stored_browser_runtime());
 
-        let receipt = runtime.lock().unwrap().runtime.run_fixed_tick().unwrap();
-        assert!(!receipt.simulation_advanced);
-        let consumed = response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")));
-        assert_eq!(consumed["tick"], tick_before);
-        assert_eq!(consumed["input"]["queuedEdgeCommands"], 0);
-        assert_eq!(consumed["input"]["consumedSequence"], 1);
-        assert_eq!(consumed["input"]["paused"], true);
+        assert_eq!(
+            host.runtime.input_session().connection_generation,
+            generation
+        );
+        assert!(host.replacement_origin.is_none());
+
+        let tick = host.runtime.run_fixed_tick().unwrap();
+        assert!(tick
+            .facts
+            .contains(&GameLoopFact::RestartRequested { sequence: 1 }));
+        assert_eq!(
+            host.runtime.input_session().connection_generation,
+            generation
+        );
+
+        assert!(host.apply_consumed_restart(1));
+        let replacement_generation = host.runtime.input_session().connection_generation;
+        assert!(replacement_generation > generation);
+        assert_eq!(
+            host.adopt_consumed_restart(generation, 1),
+            Some(replacement_generation)
+        );
+        assert!(host.replacement_origin.is_none());
     }
 
     #[test]
@@ -966,37 +919,26 @@ mod tests {
                 < before["voxelProbePathLength"].as_u64().unwrap()
         );
         assert_ne!(edited["voxelMeshes"], before["voxelMeshes"]);
-
-        let reset = response_json(route("POST", "/api/reset", &[], &runtime, Path::new(".")));
-        assert_eq!(reset["voxelRevision"], before["voxelRevision"]);
-        assert_eq!(reset["voxelAuthorityHash"], before["voxelAuthorityHash"]);
-        assert_eq!(reset["voxelNavigationHash"], before["voxelNavigationHash"]);
-        assert_eq!(reset["voxelMeshes"], before["voxelMeshes"]);
     }
 
     #[test]
-    fn state_and_reset_rebuild_posture_without_replaying_transient_cues() {
+    fn state_rebuilds_posture_without_replaying_transient_cues() {
         let runtime = shared_browser_runtime();
 
-        for response in [
-            route("GET", "/api/state", &[], &runtime, Path::new(".")),
-            route("POST", "/api/reset", &[], &runtime, Path::new(".")),
-        ] {
-            let value = response_json(response);
-            assert_eq!(value["presentation"]["cues"], serde_json::json!([]));
-            assert_eq!(
-                value["presentation"]["animationStates"]
-                    .as_array()
-                    .expect("animation states")
-                    .len(),
-                5
-            );
-            assert!(value["presentation"]["animationStates"]
+        let value = response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")));
+        assert_eq!(value["presentation"]["cues"], serde_json::json!([]));
+        assert_eq!(
+            value["presentation"]["animationStates"]
                 .as_array()
                 .expect("animation states")
-                .iter()
-                .any(|state| state["entity"] == BEACON.raw()));
-        }
+                .len(),
+            5
+        );
+        assert!(value["presentation"]["animationStates"]
+            .as_array()
+            .expect("animation states")
+            .iter()
+            .any(|state| state["entity"] == BEACON.raw()));
     }
 
     #[test]
@@ -1012,74 +954,10 @@ mod tests {
 
         let state = browser_state(&stored, vec!["DoorOpened".to_owned()], feedback);
 
-        assert_eq!(state.last_events, ["DoorOpened"]);
+        assert_eq!(state.dynamic.last_events, ["DoorOpened"]);
         assert_eq!(
             loading_bay_game::encode_game_snapshot(&stored).expect("snapshot after projection"),
             before
-        );
-    }
-
-    #[test]
-    fn dropped_response_feedback_is_not_replayed_and_does_not_change_outcome() {
-        let first = shared_browser_runtime();
-        let second = shared_browser_runtime();
-        for runtime in [&first, &second] {
-            response_json(route(
-                "POST",
-                "/api/input/connect",
-                &[],
-                runtime,
-                Path::new("."),
-            ));
-            let movement = serde_json::to_vec(&PlayerInputCommand {
-                connection_generation: 1,
-                sequence: 1,
-                intent: loading_bay_game::PlayerInputIntent {
-                    movement: [1.0, 0.0],
-                    look_delta: [0.0, 0.0],
-                    primary_fire_held: false,
-                },
-            })
-            .unwrap();
-            response_json(route(
-                "POST",
-                "/api/input-intent",
-                &movement,
-                runtime,
-                Path::new("."),
-            ));
-            runtime.lock().unwrap().runtime.run_fixed_tick().unwrap();
-        }
-        let neutral = serde_json::to_vec(&PlayerInputCommand {
-            connection_generation: 1,
-            sequence: 2,
-            intent: loading_bay_game::PlayerInputIntent::NEUTRAL,
-        })
-        .unwrap();
-        let delivered = response_json(route(
-            "POST",
-            "/api/input-intent",
-            &neutral,
-            &first,
-            Path::new("."),
-        ));
-        let dropped = route(
-            "POST",
-            "/api/input-intent",
-            &neutral,
-            &second,
-            Path::new("."),
-        );
-        assert_eq!(dropped.0, 200);
-        assert_eq!(delivered["presentation"]["cues"][0]["kind"], "movement");
-
-        let refreshed = response_json(route("GET", "/api/state", &[], &second, Path::new(".")));
-        assert_eq!(refreshed["presentation"]["cues"], serde_json::json!([]));
-        assert_eq!(
-            loading_bay_game::encode_game_snapshot(&first.lock().expect("first runtime"))
-                .expect("first snapshot"),
-            loading_bay_game::encode_game_snapshot(&second.lock().expect("second runtime"))
-                .expect("second snapshot")
         );
     }
 }
