@@ -5,9 +5,9 @@ use core_ids::EntityId;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CombatFact, CombatRejectionReason, ExtractionBeaconFact, GameEvent, GameRuntime,
-    NavigationFact, PickupFact, PickupReceipt, PickupRejection, PlayerControlFact,
-    ResolvedAttackAction, RuntimeError,
+    CombatFact, CombatRejectionReason, ExtractionBeaconFact, GameEvent, GameRuntime, InventoryFact,
+    InventoryRejection, InventoryService, NavigationFact, PickupFact, PickupReceipt,
+    PickupRejection, PlayerControlFact, ResolvedAttackAction, RuntimeError,
 };
 
 pub const FIXED_SIMULATION_HZ: u32 = 60;
@@ -83,6 +83,7 @@ pub struct PlayerInputCommand {
 )]
 pub enum GameLoopEdgeCommandKind {
     Interact { target: u64 },
+    SelectWeaponSlot { slot: u8 },
     SetPaused { paused: bool },
     RestartAuthoredBaseline,
 }
@@ -143,6 +144,11 @@ pub enum EdgeCommandRejection {
     UnknownTarget,
     NotInteractable,
     PickupRejected,
+    InvalidWeaponSlot,
+    WeaponNotOwned,
+    WeaponAlreadySelected,
+    PlayerDefeated,
+    InventoryRejected,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -152,6 +158,7 @@ pub enum GameLoopFact {
     Combat(CombatFact),
     ExtractionBeacon(ExtractionBeaconFact),
     Pickup(PickupFact),
+    Inventory(InventoryFact),
     PickupRejected {
         pickup: EntityId,
         reason: PickupRejection,
@@ -520,6 +527,7 @@ impl LoadingBayGameLoop {
                 }
                 GameLoopEdgeCommandKind::RestartAuthoredBaseline => interactions.push(command),
                 GameLoopEdgeCommandKind::Interact { .. } => interactions.push(command),
+                GameLoopEdgeCommandKind::SelectWeaponSlot { .. } => interactions.push(command),
             }
         }
         self.input.consumed_sequence = self
@@ -612,6 +620,41 @@ impl LoadingBayGameLoop {
             }
         }));
         for command in interactions {
+            if let GameLoopEdgeCommandKind::SelectWeaponSlot { slot } = command.command {
+                match InventoryService::select_weapon_slot(
+                    &mut self.runtime.session,
+                    self.player,
+                    usize::from(slot),
+                ) {
+                    Ok(receipt) => {
+                        facts.extend(receipt.facts.into_iter().map(GameLoopFact::Inventory));
+                    }
+                    Err(rejection) => {
+                        let reason = match rejection {
+                            InventoryRejection::InvalidWeaponSlot { .. }
+                            | InventoryRejection::MissingDefinition { .. }
+                            | InventoryRejection::IncompatibleSelection { .. } => {
+                                EdgeCommandRejection::InvalidWeaponSlot
+                            }
+                            InventoryRejection::WeaponNotOwned { .. } => {
+                                EdgeCommandRejection::WeaponNotOwned
+                            }
+                            InventoryRejection::AlreadySelected { .. } => {
+                                EdgeCommandRejection::WeaponAlreadySelected
+                            }
+                            InventoryRejection::OwnerDefeated { .. } => {
+                                EdgeCommandRejection::PlayerDefeated
+                            }
+                            _ => EdgeCommandRejection::InventoryRejected,
+                        };
+                        facts.push(GameLoopFact::EdgeCommandRejected {
+                            sequence: command.sequence,
+                            reason,
+                        });
+                    }
+                }
+                continue;
+            }
             let GameLoopEdgeCommandKind::Interact { target } = command.command else {
                 if matches!(
                     command.command,

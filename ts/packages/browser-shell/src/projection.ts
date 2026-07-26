@@ -34,6 +34,7 @@ export interface RuntimePlayerBindings {
   readonly moveRight: string;
   readonly mouseLook: string;
   readonly primaryFire: string;
+  readonly selectWeapon: readonly string[];
 }
 
 export interface RuntimePlayerState {
@@ -47,7 +48,11 @@ export interface RuntimePlayerState {
 }
 
 export interface RuntimeWeaponState {
+  readonly item: string;
+  readonly presentation: string;
   readonly damage: number;
+  readonly ammunition: string;
+  readonly ammunitionCost: number;
   readonly ammoRemaining: number;
   readonly ammoCapacity: number;
   readonly readyAtTick: number;
@@ -58,11 +63,21 @@ export interface RuntimeInventoryStack {
   readonly quantity: number;
 }
 
+export interface RuntimeInventoryWeapon {
+  readonly slot: number;
+  readonly item: string;
+  readonly owned: boolean;
+  readonly selected: boolean;
+  readonly ammunition: string;
+  readonly ammunitionQuantity: number;
+}
+
 export interface RuntimeInventoryState {
   readonly owner: number;
   readonly capacitySlots: number;
   readonly stacks: readonly RuntimeInventoryStack[];
   readonly equippedWeapon: string | null;
+  readonly weapons: readonly RuntimeInventoryWeapon[];
 }
 
 export interface RuntimePickupState {

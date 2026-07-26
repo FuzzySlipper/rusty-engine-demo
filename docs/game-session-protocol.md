@@ -38,6 +38,7 @@ Version 1 accepts this closed game-specific command family:
 
 - `setInputIntent { movement, lookDelta, primaryFireHeld }`
 - `interact { target }`
+- `selectWeaponSlot { slot }`
 - `setPaused { paused }`
 - `restart { mode: authoredBaseline }`
 
@@ -46,11 +47,14 @@ coalesced pending frame, sends at no more than 60 Hz, clamps accumulated look, a
 buffering at 64 KiB. Pointer-lock loss, blur, visibility loss, disposal, and restart clear pending
 look and submit neutral held state.
 
-Interaction, pause, and restart are must-deliver edges. The browser admits at most 32 pending edges,
-and Rust independently admits at most 32 queued fixed-tick edges. Saturation rejects the new edge as
-`edgeQueueSaturated` without partial mutation or disturbing accepted ordering. The server reads at
-most 32 commands per poll, rejects commands larger than 16 KiB, builds at most one synchronous
-outbound update, caps the transport write buffer at 256 KiB, and uses a bounded write deadline.
+Interaction, weapon selection, pause, and restart are must-deliver edges. The browser admits at
+most 32 pending edges, and Rust independently admits at most 32 queued fixed-tick edges. Saturation
+rejects the new edge as `edgeQueueSaturated` without partial mutation or disturbing accepted
+ordering. A numeric binding resolves to an authored zero-based slot; Rust rejects an invalid slot,
+unowned weapon, already-selected weapon, or defeated player without changing inventory. The server
+reads at most 32 commands per poll, rejects commands larger than 16 KiB, builds at most one
+synchronous outbound update, caps the transport write buffer at 256 KiB, and uses a bounded write
+deadline.
 
 Rust retains at most 256 ordered gameplay facts before delivery. Overflow increments a visible
 counter and forces a full authoritative resync. Facts in a successfully written update retain
@@ -65,9 +69,12 @@ navigation-resource hashes are sent only when that identity changes. A session r
 the same identity reuses the browser's immutable resource value rather than retransmitting it.
 
 Dynamic full and delta updates contain the Rust-owned tick, entity revision, retained projection,
-door and encounter state, player/input/weapon state, extraction beacon, enemies, animation posture,
-and this update's facts/cues. Deltas name their exact base and replace only changed top-level owners.
-A reconnect, restart, gap, fact overflow, or static identity change forces a full dynamic
+door and encounter state, player/input/equipped-weapon/inventory/pickup state, extraction beacon,
+enemies, animation posture, and this update's facts/cues. Weapon projection includes the selected
+item definition, its ammunition item and cost, the live quantity, and cooldown eligibility.
+Inventory projection exposes authored slots with owned/selected flags; it does not let TypeScript
+equip or consume items locally. Deltas name their exact base and replace only changed top-level
+owners. A reconnect, restart, gap, fact overflow, or static identity change forces a full dynamic
 projection; only a static identity change carries static resource bytes.
 
 `GET /api/state` remains a read-only diagnostic snapshot and `/api/voxel-edit` remains an explicit
@@ -79,14 +86,16 @@ mutators are unavailable.
 Rejections preserve a closed actionable code and retry disposition. Version 1 distinguishes
 `protocolMismatch`, `sessionClosed`, `transportLost`, `staleSequence`,
 `edgeQueueSaturated`, `deltaBaseUnavailable`, `invalidInput`, `unknownTarget`,
-`notInteractable`, `paused`, and `internalDefect`. Gameplay or policy rejection does not masquerade
-as transport loss.
+`notInteractable`, `cooldown`, `noAmmo`, `noEquippedWeapon`, `invalidWeaponSlot`,
+`weaponNotOwned`, `weaponAlreadySelected`, `playerDefeated`, `paused`, and `internalDefect`.
+Gameplay or policy rejection does not masquerade as transport loss.
 
 ## Product proof and measurement
 
-`pnpm run test:browser` drives realistic mouse look, held movement, combat, interaction, restart,
-resource revision changes, reload, and disposal through a real Chromium/WebGL product. The page
-publishes session metrics in `data-session-*` attributes, and the proof requires:
+`pnpm run test:browser` drives realistic mouse look, held movement, weapon pickup and numeric
+selection, combat, interaction, restart, resource revision changes, reload, and disposal through a
+real Chromium/WebGL product. The page publishes session metrics in `data-session-*` attributes, and
+the proof requires:
 
 - held movement advances and then stops without starvation;
 - client input never exceeds one in-flight plus one pending frame;

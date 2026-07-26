@@ -35,8 +35,8 @@ fn authored_item_vocabulary_and_starting_inventory_admit_as_read_only_views() {
             .item_definition(&item("weapon/arc-pistol"))
             .unwrap()
             .kind,
-        ItemKind::Weapon { ammunition }
-            if ammunition == item("ammo/energy-cell")
+        ItemKind::Weapon(definition)
+            if definition.ammunition == item("ammo/energy-cell")
     ));
     assert!(matches!(
         session
@@ -439,6 +439,10 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
         .as_object_mut()
         .unwrap()
         .remove("inventory");
+    legacy["scenes"][0]["entities"][0]["playerController"]["bindings"]
+        .as_object_mut()
+        .unwrap()
+        .remove("selectWeapon");
     legacy["scenes"][0]["entities"]
         .as_array_mut()
         .unwrap()
@@ -506,6 +510,15 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
         .as_object_mut()
         .unwrap()
         .remove("pickupTriggers");
+    for controller in previous_snapshot["playerControllers"]
+        .as_array_mut()
+        .unwrap()
+    {
+        controller["bindings"]
+            .as_object_mut()
+            .unwrap()
+            .remove("selectWeapon");
+    }
     let migrated_snapshot = decode_game_snapshot(&previous_snapshot.to_string()).unwrap();
     assert!(migrated_snapshot.session().inventory(PLAYER).is_none());
     assert!(migrated_snapshot

@@ -15,9 +15,12 @@ use serde::{Deserialize, Serialize};
 use voxel_annotation::{validate_annotation_layer, VoxelAnnotationLayer, VoxelAnnotationLimits};
 use voxel_asset::VoxelAsset;
 
+use crate::combat::{
+    MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_RANGE,
+};
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 13;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 14;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -60,7 +63,7 @@ pub struct StoredProject {
     pub scenes: Vec<StoredScene>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredItemDefinition {
     pub id: String,
@@ -68,7 +71,7 @@ pub struct StoredItemDefinition {
     pub kind: StoredItemKind,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
@@ -76,11 +79,37 @@ pub struct StoredItemDefinition {
     deny_unknown_fields
 )]
 pub enum StoredItemKind {
-    Weapon { ammunition: String },
+    Weapon {
+        ammunition: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        attack_mode: Option<StoredWeaponAttackMode>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        damage: Option<u32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        max_distance: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cooldown_ticks: Option<u64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        ammunition_cost: Option<u32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        muzzle_offset: Option<[f32; 3]>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        presentation: Option<String>,
+    },
     Ammunition,
     AccessKey,
-    HealthSupply { restore_health: u32 },
-    Armor { protection: u32 },
+    HealthSupply {
+        restore_health: u32,
+    },
+    Armor {
+        protection: u32,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StoredWeaponAttackMode {
+    Hitscan,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -279,6 +308,8 @@ pub struct StoredInventory {
     pub capacity_slots: usize,
     pub starting_stacks: Vec<StoredInventoryStack>,
     pub initially_equipped_weapon: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub weapon_slots: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -293,6 +324,8 @@ pub struct StoredInventoryStack {
 pub struct StoredPickup {
     pub item: String,
     pub quantity: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub starter_ammunition: Option<StoredInventoryStack>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -419,6 +452,8 @@ pub struct StoredPlayerInputBindings {
     pub move_right: String,
     pub mouse_look: String,
     pub primary_fire: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub select_weapon: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -563,9 +598,40 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
         }
     }
     for (index, definition) in document.item_definitions.iter().enumerate() {
-        let StoredItemKind::Weapon { ammunition } = &definition.kind else {
+        let StoredItemKind::Weapon {
+            ammunition,
+            attack_mode,
+            damage,
+            max_distance,
+            cooldown_ticks,
+            ammunition_cost,
+            muzzle_offset,
+            presentation,
+        } = &definition.kind
+        else {
             continue;
         };
+        let valid_weapon = attack_mode.is_some()
+            && damage.is_some_and(|value| (1..=MAX_WEAPON_DAMAGE).contains(&value))
+            && max_distance
+                .is_some_and(|value| value.is_finite() && value > 0.0 && value <= MAX_WEAPON_RANGE)
+            && cooldown_ticks.is_some_and(|value| value <= MAX_WEAPON_COOLDOWN_TICKS)
+            && ammunition_cost.is_some_and(|value| value > 0 && value <= MAX_ITEM_QUANTITY)
+            && muzzle_offset.is_some_and(|value| {
+                value
+                    .into_iter()
+                    .all(|axis| axis.is_finite() && axis.abs() <= MAX_WEAPON_MUZZLE_OFFSET)
+            })
+            && presentation
+                .as_ref()
+                .is_some_and(|value| !value.is_empty() && value.len() <= 96);
+        if !valid_weapon {
+            return Err(failure(
+                diagnostic_code::INVALID_VALUE,
+                format!("itemDefinitions[{index}].kind"),
+                "current weapon definitions require valid attackMode, damage, maxDistance, cooldownTicks, ammunitionCost, muzzleOffset, and presentation",
+            ));
+        }
         ItemDefinitionId::parse(ammunition.clone()).map_err(|error| {
             failure(
                 diagnostic_code::INVALID_VALUE,
@@ -1085,6 +1151,46 @@ fn validate_scene_entities(
                     ));
                 }
             }
+            let mut weapon_slots = BTreeSet::new();
+            for (slot_index, item) in inventory.weapon_slots.iter().enumerate() {
+                let path = format!("{root}.inventory.weaponSlots[{slot_index}]");
+                if !weapon_slots.insert(item) {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        path,
+                        "weapon slots must not repeat an item identity",
+                    ));
+                }
+                let Some(definition) = project
+                    .item_definitions
+                    .iter()
+                    .find(|definition| definition.id == *item)
+                else {
+                    return Err(failure(
+                        diagnostic_code::MISSING_ITEM_DEFINITION,
+                        path,
+                        format!("weapon slot references missing item `{item}`"),
+                    ));
+                };
+                if !matches!(definition.kind, StoredItemKind::Weapon { .. }) {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        path,
+                        "weapon slots must reference weapon item definitions",
+                    ));
+                }
+            }
+            if inventory
+                .initially_equipped_weapon
+                .as_ref()
+                .is_some_and(|equipped| !inventory.weapon_slots.contains(equipped))
+            {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.inventory.initiallyEquippedWeapon"),
+                    "equipped weapon must occupy an authored weapon slot",
+                ));
+            }
         }
         if let Some(pickup) = &entity.pickup {
             ItemDefinitionId::parse(pickup.item.clone()).map_err(|error| {
@@ -1114,6 +1220,43 @@ fn validate_scene_entities(
                         definition.max_quantity
                     ),
                 ));
+            }
+            if let Some(starter) = &pickup.starter_ammunition {
+                let StoredItemKind::Weapon { ammunition, .. } = &definition.kind else {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{root}.pickup.starterAmmunition"),
+                        "only a weapon pickup can declare starter ammunition",
+                    ));
+                };
+                if starter.item != *ammunition {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{root}.pickup.starterAmmunition.item"),
+                        "starter ammunition must match the picked-up weapon definition",
+                    ));
+                }
+                let Some(ammunition_definition) = project
+                    .item_definitions
+                    .iter()
+                    .find(|candidate| candidate.id == starter.item)
+                else {
+                    return Err(failure(
+                        diagnostic_code::MISSING_ITEM_DEFINITION,
+                        format!("{root}.pickup.starterAmmunition.item"),
+                        format!(
+                            "starter ammunition references missing item `{}`",
+                            starter.item
+                        ),
+                    ));
+                };
+                if starter.quantity == 0 || starter.quantity > ammunition_definition.max_quantity {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{root}.pickup.starterAmmunition.quantity"),
+                        "starter ammunition quantity is outside its definition limit",
+                    ));
+                }
             }
             if entity.translation.is_none()
                 || entity.bounds.is_none()

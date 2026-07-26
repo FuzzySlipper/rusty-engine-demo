@@ -24,6 +24,7 @@ pub struct PlayerInputBindings {
     pub move_right: String,
     pub mouse_look: String,
     pub primary_fire: String,
+    pub select_weapon: Vec<String>,
 }
 
 impl PlayerInputBindings {
@@ -34,6 +35,7 @@ impl PlayerInputBindings {
         move_right: impl Into<String>,
         mouse_look: impl Into<String>,
         primary_fire: impl Into<String>,
+        select_weapon: impl IntoIterator<Item = String>,
     ) -> Self {
         Self {
             move_forward: move_forward.into(),
@@ -42,11 +44,12 @@ impl PlayerInputBindings {
             move_right: move_right.into(),
             mouse_look: mouse_look.into(),
             primary_fire: primary_fire.into(),
+            select_weapon: select_weapon.into_iter().collect(),
         }
     }
 
     pub(crate) fn is_valid(&self) -> bool {
-        let controls = [
+        let fixed_controls = [
             self.move_forward.as_str(),
             self.move_backward.as_str(),
             self.move_left.as_str(),
@@ -54,12 +57,18 @@ impl PlayerInputBindings {
             self.mouse_look.as_str(),
             self.primary_fire.as_str(),
         ];
-        if controls
+        if fixed_controls
             .iter()
+            .copied()
+            .chain(self.select_weapon.iter().map(String::as_str))
             .any(|control| control.is_empty() || control.len() > MAX_INPUT_CONTROL_LENGTH)
         {
             return false;
         }
+        let controls = fixed_controls
+            .into_iter()
+            .chain(self.select_weapon.iter().map(String::as_str))
+            .collect::<Vec<_>>();
         controls
             .iter()
             .enumerate()

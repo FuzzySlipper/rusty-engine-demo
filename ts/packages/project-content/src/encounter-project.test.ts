@@ -98,7 +98,7 @@ test("keyboard bindings vary as content without changing controller behavior", (
   assert.equal(player?.playerController?.lookDegreesPerUnit, 12);
 });
 
-test("health and weapon configuration stay on their responsible entities", () => {
+test("schema-six migration fixture keeps predecessor entity ownership explicit", () => {
   const project = encounterGateProject(["guard"], {
     enemyHealth: 140,
     weaponDamage: 35,
@@ -191,6 +191,11 @@ test("stored item definitions and starting inventory remain immutable authored d
       { item: LOADING_BAY_ITEM_IDS.medPatch, quantity: 1 },
     ],
     initiallyEquippedWeapon: LOADING_BAY_ITEM_IDS.arcPistol,
+    weaponSlots: [
+      LOADING_BAY_ITEM_IDS.arcPistol,
+      LOADING_BAY_ITEM_IDS.breachScattergun,
+      LOADING_BAY_ITEM_IDS.rivetCarbine,
+    ],
   });
   assert.deepEqual(
     project.itemDefinitions.find(
@@ -199,7 +204,17 @@ test("stored item definitions and starting inventory remain immutable authored d
     {
       id: LOADING_BAY_ITEM_IDS.arcPistol,
       maxQuantity: 1,
-      kind: { kind: "weapon", ammunition: LOADING_BAY_ITEM_IDS.energyCell },
+      kind: {
+        kind: "weapon",
+        attackMode: "hitscan",
+        damage: 60,
+        maxDistance: 20,
+        cooldownTicks: 2,
+        ammunition: LOADING_BAY_ITEM_IDS.energyCell,
+        ammunitionCost: 1,
+        muzzleOffset: [0, 0, 0],
+        presentation: "arc-pistol",
+      },
     },
   );
   assert.equal(
@@ -210,9 +225,28 @@ test("stored item definitions and starting inventory remain immutable authored d
   );
   assert.equal(
     player?.inventory?.startingStacks.some(
-      (stack) => (stack.item as string) === LOADING_BAY_ITEM_IDS.inertInspectionTag,
+      (stack) =>
+        (stack.item as string) === LOADING_BAY_ITEM_IDS.inertInspectionTag,
     ),
     false,
+  );
+  assert.deepEqual(player?.playerController?.bindings.selectWeapon, [
+    "Digit1",
+    "Digit2",
+    "Digit3",
+  ]);
+  assert.deepEqual(
+    project.scenes[0]?.entities.find(
+      (entity) => entity.id === ENCOUNTER_IDS.weaponPickup,
+    )?.pickup,
+    {
+      item: LOADING_BAY_ITEM_IDS.breachScattergun,
+      quantity: 1,
+      starterAmmunition: {
+        item: LOADING_BAY_ITEM_IDS.scatterShell,
+        quantity: 8,
+      },
+    },
   );
 });
 

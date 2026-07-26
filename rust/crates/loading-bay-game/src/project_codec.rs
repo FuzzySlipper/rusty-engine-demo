@@ -11,14 +11,16 @@ use voxel_asset::canonicalize_voxel_asset;
 use crate::content::PROJECT_CONTENT_SCHEMA_VERSION;
 use crate::stored_project::{
     decode_stored_project, diagnostic_code, validate_stored_project, StoredAsset,
-    StoredEntityDefinition, StoredGeneratedVoxelEnvironment, StoredProject, StoredProjectError,
-    StoredScene, StoredSolidVoxelEnvironment, StoredVoxelEnvironment,
+    StoredEntityDefinition, StoredGeneratedVoxelEnvironment, StoredInventory, StoredInventoryStack,
+    StoredItemDefinition, StoredItemKind, StoredProject, StoredProjectError, StoredScene,
+    StoredSolidVoxelEnvironment, StoredVoxelEnvironment, StoredWeaponAttackMode,
     STORED_PROJECT_SCHEMA_VERSION,
 };
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 12;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 13;
+const LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION: u32 = 12;
 const LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION: u32 = 11;
 const LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION: u32 = 10;
 const LEGACY_V9_STORED_PROJECT_SCHEMA_VERSION: u32 = 9;
@@ -55,7 +57,8 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v12(decode_legacy_project(input)?)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v13(decode_legacy_project(input)?)?,
+        LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION => migrate_v12(decode_legacy_project(input)?)?,
         LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION => migrate_v11(decode_legacy_project(input)?)?,
         LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION => migrate_v10(decode_legacy_project(input)?)?,
         LEGACY_V9_STORED_PROJECT_SCHEMA_VERSION => migrate_v9(decode_legacy_project(input)?)?,
@@ -67,13 +70,14 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
                     LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V9_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -182,12 +186,25 @@ fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectErro
     Ok(document)
 }
 
-fn migrate_v12(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+fn migrate_v13(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
     );
+    reject_future_weapon_fields(&legacy)?;
+    migrate_legacy_weapon_authority(&mut legacy)?;
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn migrate_v12(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION
+    );
     reject_future_pickup_fields(&legacy)?;
+    reject_future_weapon_fields(&legacy)?;
+    migrate_legacy_weapon_authority(&mut legacy)?;
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
 }
@@ -199,6 +216,8 @@ fn migrate_v11(mut legacy: StoredProject) -> Result<StoredProject, StoredProject
     );
     reject_future_inventory_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
+    reject_future_weapon_fields(&legacy)?;
+    migrate_legacy_weapon_authority(&mut legacy)?;
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
 }
@@ -210,6 +229,8 @@ fn migrate_v10(mut legacy: StoredProject) -> Result<StoredProject, StoredProject
     );
     reject_future_inventory_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
+    reject_future_weapon_fields(&legacy)?;
+    migrate_legacy_weapon_authority(&mut legacy)?;
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
 }
@@ -221,6 +242,8 @@ fn migrate_v9(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
     );
     reject_future_inventory_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
+    reject_future_weapon_fields(&legacy)?;
+    migrate_legacy_weapon_authority(&mut legacy)?;
     assign_legacy_child_order(&mut legacy);
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
@@ -233,6 +256,8 @@ fn migrate_v8(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
     );
     reject_future_inventory_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
+    reject_future_weapon_fields(&legacy)?;
+    migrate_legacy_weapon_authority(&mut legacy)?;
     assign_legacy_child_order(&mut legacy);
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
@@ -245,6 +270,8 @@ fn migrate_v7(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectE
     );
     reject_future_inventory_fields(&legacy)?;
     reject_future_pickup_fields(&legacy)?;
+    reject_future_weapon_fields(&legacy)?;
+    migrate_legacy_weapon_authority(&mut legacy)?;
     if legacy.scenes.iter().any(|scene| {
         scene
             .entities
@@ -300,7 +327,7 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
         entity.child_order = index as u32;
     }
 
-    canonicalize(StoredProject {
+    let mut migrated = StoredProject {
         schema_version: STORED_PROJECT_SCHEMA_VERSION,
         project_id: MIGRATED_V6_PROJECT_ID.to_string(),
         name: "Migrated Schema 6 Project".to_string(),
@@ -327,7 +354,217 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
             voxel_instances: Vec::new(),
             entities: legacy.entities,
         }],
-    })
+    };
+    migrate_legacy_weapon_authority(&mut migrated)?;
+    canonicalize(migrated)
+}
+
+fn reject_future_weapon_fields(legacy: &StoredProject) -> Result<(), StoredProjectError> {
+    let item_has_future = legacy.item_definitions.iter().any(|definition| {
+        matches!(
+            &definition.kind,
+            StoredItemKind::Weapon {
+                attack_mode: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                damage: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                max_distance: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                cooldown_ticks: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                ammunition_cost: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                muzzle_offset: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                presentation: Some(_),
+                ..
+            }
+        )
+    });
+    let entity_has_future = legacy
+        .scenes
+        .iter()
+        .flat_map(|scene| &scene.entities)
+        .any(|entity| {
+            entity
+                .inventory
+                .as_ref()
+                .is_some_and(|inventory| !inventory.weapon_slots.is_empty())
+                || entity
+                    .player_controller
+                    .as_ref()
+                    .is_some_and(|controller| !controller.bindings.select_weapon.is_empty())
+                || entity
+                    .pickup
+                    .as_ref()
+                    .is_some_and(|pickup| pickup.starter_ammunition.is_some())
+        });
+    if item_has_future || entity_has_future {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "scenes",
+            format!(
+                "schema {} cannot declare inventory-backed weapon fields",
+                legacy.schema_version
+            ),
+        ));
+    }
+    Ok(())
+}
+
+fn migrate_legacy_weapon_authority(project: &mut StoredProject) -> Result<(), StoredProjectError> {
+    for scene in &mut project.scenes {
+        for entity in &mut scene.entities {
+            let Some(legacy_weapon) = entity.weapon.take() else {
+                continue;
+            };
+            let Some(controller) = entity.player_controller.as_mut() else {
+                return Err(StoredProjectError::new(
+                    diagnostic_code::MIGRATION,
+                    "scenes",
+                    format!(
+                        "entity {} has a legacy weapon without a player controller",
+                        entity.id
+                    ),
+                ));
+            };
+            if entity.inventory.is_none() {
+                let weapon_id = format!("weapon/migrated-player-{}", entity.id);
+                let ammunition_id = format!("ammo/migrated-player-{}", entity.id);
+                project.item_definitions.push(StoredItemDefinition {
+                    id: ammunition_id.clone(),
+                    max_quantity: legacy_weapon.ammo_capacity,
+                    kind: StoredItemKind::Ammunition,
+                });
+                project.item_definitions.push(StoredItemDefinition {
+                    id: weapon_id.clone(),
+                    max_quantity: 1,
+                    kind: legacy_weapon_item_kind(&weapon_id, ammunition_id.clone(), legacy_weapon),
+                });
+                entity.inventory = Some(StoredInventory {
+                    capacity_slots: 2,
+                    starting_stacks: vec![
+                        StoredInventoryStack {
+                            item: weapon_id.clone(),
+                            quantity: 1,
+                        },
+                        StoredInventoryStack {
+                            item: ammunition_id,
+                            quantity: legacy_weapon.ammo_capacity,
+                        },
+                    ],
+                    initially_equipped_weapon: Some(weapon_id.clone()),
+                    weapon_slots: vec![weapon_id],
+                });
+                controller.bindings.select_weapon = vec!["Digit1".to_string()];
+            } else if let Some(equipped) = entity
+                .inventory
+                .as_ref()
+                .and_then(|inventory| inventory.initially_equipped_weapon.clone())
+            {
+                let Some(definition) = project
+                    .item_definitions
+                    .iter_mut()
+                    .find(|definition| definition.id == equipped)
+                else {
+                    return Err(StoredProjectError::new(
+                        diagnostic_code::MIGRATION,
+                        "itemDefinitions",
+                        format!("legacy equipped weapon `{equipped}` has no item definition"),
+                    ));
+                };
+                let ammunition = match &definition.kind {
+                    StoredItemKind::Weapon { ammunition, .. } => ammunition.clone(),
+                    _ => {
+                        return Err(StoredProjectError::new(
+                            diagnostic_code::MIGRATION,
+                            "itemDefinitions",
+                            format!("legacy equipped item `{equipped}` is not a weapon"),
+                        ));
+                    }
+                };
+                definition.kind = legacy_weapon_item_kind(&equipped, ammunition, legacy_weapon);
+            }
+        }
+    }
+
+    for definition in &mut project.item_definitions {
+        let StoredItemKind::Weapon {
+            ammunition,
+            attack_mode,
+            damage,
+            max_distance,
+            cooldown_ticks,
+            ammunition_cost,
+            muzzle_offset,
+            presentation,
+        } = &mut definition.kind
+        else {
+            continue;
+        };
+        *attack_mode = Some(StoredWeaponAttackMode::Hitscan);
+        *damage = Some(damage.unwrap_or(40));
+        *max_distance = Some(max_distance.unwrap_or(20.0));
+        *cooldown_ticks = Some(cooldown_ticks.unwrap_or(6));
+        *ammunition_cost = Some(ammunition_cost.unwrap_or(1));
+        *muzzle_offset = Some(muzzle_offset.unwrap_or([0.0, 0.0, 0.0]));
+        *presentation = Some(
+            presentation
+                .clone()
+                .unwrap_or_else(|| definition.id.clone()),
+        );
+        let _ = ammunition;
+    }
+    let weapon_ids = project
+        .item_definitions
+        .iter()
+        .filter(|definition| matches!(definition.kind, StoredItemKind::Weapon { .. }))
+        .map(|definition| definition.id.clone())
+        .collect::<Vec<_>>();
+    for entity in project
+        .scenes
+        .iter_mut()
+        .flat_map(|scene| &mut scene.entities)
+    {
+        let Some(inventory) = entity.inventory.as_mut() else {
+            continue;
+        };
+        if inventory.weapon_slots.is_empty() {
+            inventory.weapon_slots = weapon_ids.clone();
+        }
+        if let Some(controller) = entity.player_controller.as_mut() {
+            controller.bindings.select_weapon = inventory
+                .weapon_slots
+                .iter()
+                .enumerate()
+                .map(|(index, _)| format!("Digit{}", index + 1))
+                .collect();
+        }
+    }
+    Ok(())
+}
+
+fn legacy_weapon_item_kind(
+    presentation: &str,
+    ammunition: String,
+    weapon: crate::StoredWeapon,
+) -> StoredItemKind {
+    StoredItemKind::Weapon {
+        ammunition,
+        attack_mode: Some(StoredWeaponAttackMode::Hitscan),
+        damage: Some(weapon.damage),
+        max_distance: Some(weapon.max_distance),
+        cooldown_ticks: Some(weapon.cooldown_ticks),
+        ammunition_cost: Some(1),
+        muzzle_offset: Some(weapon.muzzle_offset),
+        presentation: Some(presentation.to_string()),
+    }
 }
 
 fn reject_future_inventory_fields(legacy: &StoredProject) -> Result<(), StoredProjectError> {

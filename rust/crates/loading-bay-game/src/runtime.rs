@@ -50,6 +50,7 @@ pub enum RuntimeError {
     },
     UnknownWeapon {
         entity: EntityId,
+        item: crate::ItemDefinitionId,
     },
     CombatRejected {
         entity: EntityId,
@@ -95,6 +96,9 @@ pub enum RuntimeError {
     },
     VoxelEdit(VoxelEditApplyError),
     Inventory(InventoryRejection),
+    InventorySequenceOverflow {
+        owner: EntityId,
+    },
     Pickup(PickupRejection),
 }
 

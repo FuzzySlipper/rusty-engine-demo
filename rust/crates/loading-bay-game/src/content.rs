@@ -168,6 +168,7 @@ pub enum ProjectContentError {
     AmbiguousVoxelEnvironment,
     CollisionScene(engine_spatial::CollisionSceneError),
     Definition(GameEntityDefinitionError),
+    Migration(crate::StoredProjectError),
 }
 
 impl std::fmt::Display for ProjectContentError {
@@ -235,16 +236,16 @@ pub fn decode_project_content(input: &str) -> Result<AdmittedProject, ProjectCon
     {
         return Err(ProjectContentError::NavigationMissingCollisionScene { entity });
     }
-    Ok(AdmittedProject {
-        session,
-        collision_scene,
-    })
+    let _ = (session, collision_scene);
+    crate::project_admission::decode_and_admit_stored_project(input)
+        .map_err(ProjectContentError::Migration)
 }
 
 fn authored_definition(
     authored: AuthoredEntityDefinition,
 ) -> Result<GameEntityDefinition, ProjectContentError> {
     let entity = EntityId::new(authored.id);
+    let has_player_controller = authored.player_controller.is_some();
     let initial_translation = authored.translation.map(array_vec3);
     let mut entity_definition = EntityDefinition::new(entity, authored.name);
     if let Some(translation) = initial_translation {
@@ -325,17 +326,28 @@ fn authored_definition(
                 controller.bindings.move_right,
                 controller.bindings.mouse_look,
                 controller.bindings.primary_fire,
+                [],
             ),
         });
     }
     if let Some(weapon) = authored.weapon {
-        definition = definition.with_weapon(WeaponConfig {
+        let weapon = WeaponConfig {
             damage: weapon.damage,
             max_distance: weapon.max_distance,
             cooldown_ticks: weapon.cooldown_ticks,
             ammo_capacity: weapon.ammo_capacity,
             muzzle_offset: array_vec3(weapon.muzzle_offset),
-        });
+        };
+        if !has_player_controller {
+            return Err(ProjectContentError::Definition(
+                GameEntityDefinitionError::WeaponWithoutPlayerController { entity },
+            ));
+        }
+        if !weapon.is_valid() {
+            return Err(ProjectContentError::Definition(
+                GameEntityDefinitionError::InvalidWeaponConfig { entity },
+            ));
+        }
     }
     Ok(definition)
 }

@@ -18,11 +18,24 @@ pub const MAX_PICKUP_OVERLAP_SUBJECTS: usize = 128;
 pub struct PickupConfig {
     pub item: ItemDefinitionId,
     pub quantity: u32,
+    pub starter_ammunition: Option<crate::InventoryStack>,
 }
 
 impl PickupConfig {
     pub fn new(item: ItemDefinitionId, quantity: u32) -> Self {
-        Self { item, quantity }
+        Self {
+            item,
+            quantity,
+            starter_ammunition: None,
+        }
+    }
+
+    pub fn with_starter_ammunition(
+        mut self,
+        starter_ammunition: Option<crate::InventoryStack>,
+    ) -> Self {
+        self.starter_ammunition = starter_ammunition;
+        self
     }
 }
 
@@ -95,12 +108,12 @@ pub struct PickupCollectionCommand {
     pub cause: PickupCollectionCause,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PickupReceipt {
     pub disposition: PickupDisposition,
     pub before: PickupView,
     pub after: PickupView,
-    pub inventory: Option<InventoryReceipt>,
+    pub inventory: Vec<InventoryReceipt>,
     pub entity_facts: Vec<EntityAuthoringFact>,
     pub trigger_facts: Vec<TriggerOverlapFact>,
     pub facts: Vec<PickupFact>,
@@ -143,7 +156,7 @@ pub struct PickupRejectedAttempt {
     pub reason: PickupRejection,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PickupPhaseReceipt {
     pub trigger_revision: u64,
     pub trigger_facts: Vec<TriggerOverlapFact>,
@@ -183,7 +196,7 @@ impl PickupService {
                 disposition,
                 before: before.clone(),
                 after: before,
-                inventory: None,
+                inventory: Vec::new(),
                 entity_facts: Vec::new(),
                 trigger_facts: Vec::new(),
                 facts: Vec::new(),
@@ -214,7 +227,7 @@ impl PickupService {
             .ok_or(PickupRejection::InventorySequenceOverflow {
                 actor: command.actor,
             })?;
-        let inventory = InventoryService::apply(
+        let mut inventory = vec![InventoryService::apply(
             &mut candidate_session,
             command.actor,
             InventoryCommand {
@@ -225,7 +238,28 @@ impl PickupService {
                 },
             },
         )
-        .map_err(PickupRejection::Inventory)?;
+        .map_err(PickupRejection::Inventory)?];
+        if let Some(starter) = &component.config.starter_ammunition {
+            let sequence = inventory_sequence.checked_add(1).ok_or(
+                PickupRejection::InventorySequenceOverflow {
+                    actor: command.actor,
+                },
+            )?;
+            inventory.push(
+                InventoryService::apply(
+                    &mut candidate_session,
+                    command.actor,
+                    InventoryCommand {
+                        sequence,
+                        action: InventoryAction::Grant {
+                            item: starter.item.clone(),
+                            quantity: starter.quantity,
+                        },
+                    },
+                )
+                .map_err(PickupRejection::Inventory)?,
+            );
+        }
         let entity_revision = candidate_session.entities.revision();
         let entity_receipt = EntityAuthoringService
             .destroy(
@@ -257,7 +291,10 @@ impl PickupService {
             })?;
         let item = component.config.item.clone();
         let quantity = component.config.quantity;
-        let inventory_facts = inventory.facts.clone();
+        let inventory_facts = inventory
+            .iter()
+            .flat_map(|receipt| receipt.facts.iter().cloned())
+            .collect();
 
         *session = candidate_session;
         *triggers = candidate_triggers;
@@ -265,7 +302,7 @@ impl PickupService {
             disposition: PickupDisposition::Collected,
             before,
             after,
-            inventory: Some(inventory),
+            inventory,
             entity_facts: entity_receipt.facts,
             trigger_facts: trigger_receipt.facts,
             facts: vec![PickupFact::Collected {

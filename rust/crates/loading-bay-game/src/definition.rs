@@ -193,6 +193,11 @@ pub enum GameEntityDefinitionError {
     InvalidPlayerControllerConfig {
         entity: EntityId,
     },
+    WeaponBindingSlotMismatch {
+        entity: EntityId,
+        binding_count: usize,
+        slot_count: usize,
+    },
     PickupMissingTransform {
         entity: EntityId,
     },
@@ -212,6 +217,9 @@ pub enum GameEntityDefinitionError {
         count: usize,
         limit: usize,
     },
+    InvalidPickupStarterAmmunition {
+        entity: EntityId,
+    },
     PickupConflictsWithGameplayOwner {
         entity: EntityId,
     },
@@ -219,6 +227,9 @@ pub enum GameEntityDefinitionError {
         entity: EntityId,
     },
     InvalidWeaponConfig {
+        entity: EntityId,
+    },
+    LegacyEntityWeapon {
         entity: EntityId,
     },
     EmptyEncounter {

@@ -115,6 +115,12 @@ collection, atomic inventory grant plus entity consumption, snapshot state, fact
 identity. Rusty Engine contributes only the exact-pinned generic entity bounds and trigger-volume
 mechanism.
 
+The schema-14 weapon-item definitions, authored numeric slots, starter scatter-shell grant, and
+browser inventory projection were authored directly in this repository under Den task #6222. They
+reuse the existing downstream primitive pickup presentation identities and do not add copied mesh,
+texture, sound, sprite, code, or level data. The `arc-pistol`, `breach-scattergun`, and
+`rivet-carbine` identities and their combat values are original Loading Bay demo content.
+
 The public `/home/dev/rusty-engine-ui` checkout at exact commit
 `68ddfa5430ec3bc2cf7ca96963982db9511e79ba` supplied the following #6216 downstream shell patterns:
 

@@ -253,6 +253,10 @@ export async function mountLoadingBayGame(
       event.preventDefault();
       if (action.kind === "move") {
         heldMovement.press(event.code);
+      } else if (action.kind === "selectWeaponSlot") {
+        if (!event.repeat) {
+          void enqueueWeaponSelection(action.slot).catch(recordActionRejection);
+        }
       } else if (!event.repeat) {
         primaryFireHeld = true;
         enqueueCurrentInput();
@@ -1021,7 +1025,7 @@ export async function mountLoadingBayGame(
       lastActionRejection === null ? state.combatState : "rejected";
     combatState.title = lastActionRejection ?? "";
     playerPose.textContent = `${state.player.position.map((value) => value.toFixed(1)).join(", ")} · YAW ${state.player.yawDegrees.toFixed(0)}°`;
-    weaponState.textContent = `${String(state.weapon.damage)} DMG · ${String(state.weapon.ammoRemaining)}/${String(state.weapon.ammoCapacity)} AMMO`;
+    weaponState.textContent = `${state.weapon.presentation.toUpperCase()} · ${String(state.weapon.damage)} DMG · ${String(state.weapon.ammoRemaining)}/${String(state.weapon.ammoCapacity)} ${state.weapon.ammunition.toUpperCase()}`;
     inventoryState.textContent =
       state.inventory === null
         ? "NO AUTHORED INVENTORY"
@@ -1150,6 +1154,10 @@ export async function mountLoadingBayGame(
     return performInputEdge({ kind: "interact", target });
   }
 
+  function enqueueWeaponSelection(slot: number): Promise<void> {
+    return performInputEdge({ kind: "selectWeaponSlot", slot });
+  }
+
   async function performPlayerAction(
     action: ResolvedPlayerAction,
   ): Promise<void> {
@@ -1178,6 +1186,7 @@ export async function mountLoadingBayGame(
   async function performInputEdge(
     command:
       | { readonly kind: "interact"; readonly target: number }
+      | { readonly kind: "selectWeaponSlot"; readonly slot: number }
       | { readonly kind: "setPaused"; readonly paused: boolean },
   ): Promise<void> {
     current = await session.sendEdge(command);
@@ -1329,7 +1338,7 @@ export async function mountLoadingBayGame(
       .map((pickup) => pickup.id);
     const inventoryExact =
       inventoryQuantity("ammo/energy-cell") === 200 &&
-      inventoryQuantity("ammo/scatter-shell") === 12 &&
+      inventoryQuantity("ammo/scatter-shell") === 20 &&
       inventoryQuantity("weapon/breach-scattergun") === 1 &&
       inventoryQuantity("supply/med-patch") === 2 &&
       inventoryQuantity("armor/impact-vest") === 1 &&
@@ -1348,6 +1357,20 @@ export async function mountLoadingBayGame(
       includesEvery(feedbackLayer.dataset.animationPulses, ["pickup"]) &&
       includesEvery(feedbackLayer.dataset.particleKinds, ["pickup"]) &&
       includesEvery(feedbackAudioStatus.dataset.soundKinds, ["pickup"]);
+    const numericSelection = resolveKeyboardAction(
+      "Digit2",
+      current.player.bindings,
+    );
+    if (numericSelection?.kind === "selectWeaponSlot") {
+      await enqueueWeaponSelection(numericSelection.slot);
+    }
+    const selectedPickupWeapon =
+      current.weapon.item === "weapon/breach-scattergun" &&
+      current.weapon.ammunition === "ammo/scatter-shell" &&
+      current.weapon.ammoRemaining === 20 &&
+      current.inventory?.equippedWeapon === "weapon/breach-scattergun" &&
+      current.inventory.weapons.find((weapon) => weapon.slot === 1)
+        ?.selected === true;
     document.body.dataset.pickupEvidence = [
       pickupIds.join(","),
       collected.join(","),
@@ -1357,6 +1380,7 @@ export async function mountLoadingBayGame(
         .join(","),
       rejectionExact,
       cueProjected,
+      selectedPickupWeapon,
     ].join("|");
     return (
       startedAvailable &&
@@ -1365,7 +1389,8 @@ export async function mountLoadingBayGame(
       worldExact &&
       rejectionExact &&
       factsProjected &&
-      cueProjected
+      cueProjected &&
+      selectedPickupWeapon
     );
   }
 

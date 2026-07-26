@@ -2,7 +2,8 @@ use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, CombatFact, CombatMissReason,
     CombatRejectionReason, DoorState, EncounterState, EnemyState, GameEntityDefinitionError,
-    GameEvent, GameRuntime, ProjectContentError, ResolvedAttackAction, RuntimeError,
+    GameEvent, GameRuntime, ItemDefinitionId, ProjectContentError, ResolvedAttackAction,
+    RuntimeError,
 };
 use serde_json::{json, Value};
 
@@ -118,15 +119,7 @@ fn exhausted_authored_ammo_rejects_without_a_second_health_mutation() {
         }
     ));
     assert_eq!(runtime.session().health(ENEMY).unwrap().current, 70);
-    assert_eq!(
-        runtime
-            .session()
-            .weapon(PLAYER)
-            .unwrap()
-            .state
-            .ammo_remaining,
-        0
-    );
+    assert_eq!(inventory_quantity(&runtime, "ammo/energy-cell"), 0);
 }
 
 #[test]
@@ -279,6 +272,18 @@ fn attack(runtime: &mut GameRuntime) -> loading_bay_game::CombatReceipt {
 
 fn runtime(project: Value) -> GameRuntime {
     GameRuntime::from_project_content(&project.to_string()).expect("admit combat project")
+}
+
+fn inventory_quantity(runtime: &GameRuntime, item: &str) -> u32 {
+    let item = ItemDefinitionId::parse(item).unwrap();
+    runtime
+        .session()
+        .inventory(PLAYER)
+        .unwrap()
+        .stacks
+        .into_iter()
+        .find(|stack| stack.item == item)
+        .map_or(0, |stack| stack.quantity)
 }
 
 fn combat_project(

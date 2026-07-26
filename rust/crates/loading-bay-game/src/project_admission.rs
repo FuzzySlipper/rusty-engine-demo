@@ -18,7 +18,8 @@ use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::DoorConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::inventory::{
-    InventoryConfig, InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind,
+    InventoryConfig, InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind, WeaponAttackMode,
+    WeaponDefinition,
 };
 use crate::navigation::NavigationConfig;
 use crate::pickup::PickupConfig;
@@ -137,9 +138,31 @@ fn authored_item_definition(
     let path = format!("itemDefinitions[{index}]");
     let id = parse_item_id(&authored.id, &format!("{path}.id"))?;
     let kind = match &authored.kind {
-        StoredItemKind::Weapon { ammunition } => ItemKind::Weapon {
+        StoredItemKind::Weapon {
+            ammunition,
+            attack_mode,
+            damage,
+            max_distance,
+            cooldown_ticks,
+            ammunition_cost,
+            muzzle_offset,
+            presentation,
+        } => ItemKind::Weapon(WeaponDefinition {
+            attack_mode: match attack_mode.expect("validated current weapon attack mode") {
+                crate::StoredWeaponAttackMode::Hitscan => WeaponAttackMode::Hitscan,
+            },
+            damage: damage.expect("validated current weapon damage"),
+            max_distance: max_distance.expect("validated current weapon range"),
+            cooldown_ticks: cooldown_ticks.expect("validated current weapon cadence"),
             ammunition: parse_item_id(ammunition, &format!("{path}.kind.ammunition"))?,
-        },
+            ammunition_cost: ammunition_cost.expect("validated current weapon ammunition cost"),
+            muzzle_offset: array_vec3(
+                muzzle_offset.expect("validated current weapon muzzle offset"),
+            ),
+            presentation: presentation
+                .clone()
+                .expect("validated current weapon presentation"),
+        }),
         StoredItemKind::Ammunition => ItemKind::Ammunition,
         StoredItemKind::AccessKey => ItemKind::AccessKey,
         StoredItemKind::HealthSupply { restore_health } => ItemKind::HealthSupply {
@@ -573,6 +596,7 @@ fn authored_definition(
                 controller.bindings.move_right.clone(),
                 controller.bindings.mouse_look.clone(),
                 controller.bindings.primary_fire.clone(),
+                controller.bindings.select_weapon.clone(),
             ),
         });
     }
@@ -603,13 +627,41 @@ fn authored_definition(
                     )
                 })
                 .transpose()?,
+            inventory
+                .weapon_slots
+                .iter()
+                .enumerate()
+                .map(|(slot_index, item)| {
+                    parse_item_id(
+                        item,
+                        &format!("{}.weaponSlots[{slot_index}]", path("inventory")),
+                    )
+                })
+                .collect::<Result<Vec<_>, StoredProjectError>>()?,
         ));
     }
     if let Some(pickup) = &authored.pickup {
-        definition = definition.as_pickup(PickupConfig::new(
-            parse_item_id(&pickup.item, &format!("{}.item", path("pickup")))?,
-            pickup.quantity,
-        ));
+        definition = definition.as_pickup(
+            PickupConfig::new(
+                parse_item_id(&pickup.item, &format!("{}.item", path("pickup")))?,
+                pickup.quantity,
+            )
+            .with_starter_ammunition(
+                pickup
+                    .starter_ammunition
+                    .as_ref()
+                    .map(|starter| {
+                        Ok(InventoryStack::new(
+                            parse_item_id(
+                                &starter.item,
+                                &format!("{}.starterAmmunition.item", path("pickup")),
+                            )?,
+                            starter.quantity,
+                        ))
+                    })
+                    .transpose()?,
+            ),
+        );
     }
     if let Some(weapon) = authored.weapon {
         definition = definition.with_weapon(WeaponConfig {
@@ -712,7 +764,8 @@ fn definition_error(
         | Error::PlayerControllerMissingCollision { entity }
         | Error::PlayerControllerMissingKinematic { entity }
         | Error::PlayerControllerMissingRenderable { entity }
-        | Error::InvalidPlayerControllerConfig { entity } => (
+        | Error::InvalidPlayerControllerConfig { entity }
+        | Error::WeaponBindingSlotMismatch { entity, .. } => (
             diagnostic_code::INVALID_COMPONENT,
             entity_path(scene_index, indexes, *entity, "playerController"),
         ),
@@ -729,12 +782,16 @@ fn definition_error(
             diagnostic_code::INVALID_COMPONENT,
             format!("scenes[{scene_index}].entities"),
         ),
-        Error::WeaponWithoutPlayerController { entity } | Error::InvalidWeaponConfig { entity } => {
-            (
-                diagnostic_code::INVALID_COMPONENT,
-                entity_path(scene_index, indexes, *entity, "weapon"),
-            )
-        }
+        Error::WeaponWithoutPlayerController { entity }
+        | Error::InvalidWeaponConfig { entity }
+        | Error::LegacyEntityWeapon { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "weapon"),
+        ),
+        Error::InvalidPickupStarterAmmunition { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "pickup.starterAmmunition"),
+        ),
         Error::EmptyEncounter { encounter }
         | Error::DuplicateEncounterMember { encounter, .. }
         | Error::UnknownEncounterMember { encounter, .. }

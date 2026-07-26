@@ -89,6 +89,10 @@ const ANIMATED_CHARACTER_ASSET = {
   },
 } as const satisfies StoredAssetDefinition;
 
+/**
+ * Schema-6 migration fixture retained to prove predecessor admission.
+ * New game content should use the current stored-project composer below.
+ */
 export function encounterGateProject(
   enemyNames: readonly string[],
   options: EncounterProjectOptions = {},
@@ -235,10 +239,22 @@ export function loadingBayStoredProject(
   if (player === undefined) {
     throw new Error("loading-bay player source is missing");
   }
+  const { weapon: legacyWeapon, ...playerWithoutLegacyWeapon } = player;
+  if (legacyWeapon === undefined || player.playerController === undefined) {
+    throw new Error("loading-bay player weapon/controller source is missing");
+  }
+  const playerController = player.playerController;
   const entitiesWithInventory = entities.map((entity) =>
     entity.id === ENCOUNTER_IDS.actor
       ? {
-          ...entity,
+          ...playerWithoutLegacyWeapon,
+          playerController: {
+            ...playerController,
+            bindings: {
+              ...playerController.bindings,
+              selectWeapon: ["Digit1", "Digit2", "Digit3"],
+            },
+          },
           bounds: {
             min: [-0.25, -0.25, -0.25] as const,
             max: [0.25, 0.25, 0.25] as const,
@@ -251,6 +267,11 @@ export function loadingBayStoredProject(
               { item: LOADING_BAY_ITEM_IDS.medPatch, quantity: 1 },
             ],
             initiallyEquippedWeapon: LOADING_BAY_ITEM_IDS.arcPistol,
+            weaponSlots: [
+              LOADING_BAY_ITEM_IDS.arcPistol,
+              LOADING_BAY_ITEM_IDS.breachScattergun,
+              LOADING_BAY_ITEM_IDS.rivetCarbine,
+            ],
           },
         }
       : entity,
@@ -264,7 +285,7 @@ export function loadingBayStoredProject(
   }
 
   return {
-    schemaVersion: 13,
+    schemaVersion: 14,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",
@@ -316,17 +337,47 @@ export function loadingBayStoredProject(
       {
         id: LOADING_BAY_ITEM_IDS.arcPistol,
         maxQuantity: 1,
-        kind: { kind: "weapon", ammunition: LOADING_BAY_ITEM_IDS.energyCell },
+        kind: {
+          kind: "weapon",
+          attackMode: "hitscan",
+          damage: options.weaponDamage ?? 60,
+          maxDistance: 20,
+          cooldownTicks: options.weaponCooldownTicks ?? 2,
+          ammunition: LOADING_BAY_ITEM_IDS.energyCell,
+          ammunitionCost: 1,
+          muzzleOffset: [0, 0, 0],
+          presentation: "arc-pistol",
+        },
       },
       {
         id: LOADING_BAY_ITEM_IDS.breachScattergun,
         maxQuantity: 1,
-        kind: { kind: "weapon", ammunition: LOADING_BAY_ITEM_IDS.scatterShell },
+        kind: {
+          kind: "weapon",
+          attackMode: "hitscan",
+          damage: 90,
+          maxDistance: 12,
+          cooldownTicks: 36,
+          ammunition: LOADING_BAY_ITEM_IDS.scatterShell,
+          ammunitionCost: 2,
+          muzzleOffset: [0, 0, 0],
+          presentation: "breach-scattergun",
+        },
       },
       {
         id: LOADING_BAY_ITEM_IDS.rivetCarbine,
         maxQuantity: 1,
-        kind: { kind: "weapon", ammunition: LOADING_BAY_ITEM_IDS.energyCell },
+        kind: {
+          kind: "weapon",
+          attackMode: "hitscan",
+          damage: 30,
+          maxDistance: 25,
+          cooldownTicks: 1,
+          ammunition: LOADING_BAY_ITEM_IDS.energyCell,
+          ammunitionCost: 1,
+          muzzleOffset: [0, 0, 0],
+          presentation: "rivet-carbine",
+        },
       },
     ],
     scenes: [
@@ -391,6 +442,10 @@ export function loadingBayStoredProject(
             [5.5, 1.5, 2.5],
             LOADING_BAY_ITEM_IDS.breachScattergun,
             1,
+            {
+              item: LOADING_BAY_ITEM_IDS.scatterShell,
+              quantity: 8,
+            },
           ),
           pickupEntity(
             ENCOUNTER_IDS.healthPickup,
@@ -550,6 +605,10 @@ function pickupEntity(
   translation: Vec3,
   item: string,
   quantity: number,
+  starterAmmunition?: {
+    readonly item: string;
+    readonly quantity: number;
+  },
 ): EntityDefinition {
   return {
     id,
@@ -560,6 +619,10 @@ function pickupEntity(
       max: [0.35, 0.35, 0.35],
     },
     renderable: { asset, visible: true },
-    pickup: { item, quantity },
+    pickup: {
+      item,
+      quantity,
+      ...(starterAmmunition === undefined ? {} : { starterAmmunition }),
+    },
   };
 }

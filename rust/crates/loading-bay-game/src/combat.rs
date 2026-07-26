@@ -5,6 +5,10 @@ use engine_spatial::VoxelCollisionScene;
 use entity_state::{EntityCommand, EntityCommandBatch, EntityView};
 use serde::{Deserialize, Serialize};
 
+use crate::inventory::{
+    InventoryAction, InventoryCommand, InventoryFact, InventoryRejection, InventoryService,
+    ItemDefinitionId, ItemKind, WeaponDefinition,
+};
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
@@ -53,6 +57,8 @@ pub struct HealthComponent {
     pub current: u32,
 }
 
+/// Legacy schema-6/entity authoring shape. Current projects store these
+/// semantics on the responsible weapon item definition instead.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct WeaponConfig {
     pub damage: u32,
@@ -79,14 +85,7 @@ impl WeaponConfig {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WeaponState {
-    pub ammo_remaining: u32,
     pub ready_at_tick: Tick,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct WeaponComponent {
-    pub config: WeaponConfig,
-    pub state: WeaponState,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -99,6 +98,8 @@ pub enum ResolvedAttackAction {
 pub enum CombatRejectionReason {
     Cooldown,
     NoAmmo,
+    NoEquippedWeapon,
+    AttackerDefeated,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -109,8 +110,11 @@ pub enum CombatMissReason {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CombatFact {
+    Inventory(InventoryFact),
     AttackFired {
         attacker: EntityId,
+        weapon: ItemDefinitionId,
+        ammunition: ItemDefinitionId,
         origin: Vec3,
         direction: Vec3,
         ammo_before: u32,
@@ -160,10 +164,11 @@ pub struct HealthView {
     pub current: u32,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct WeaponView {
-    pub entity: EntityId,
-    pub config: WeaponConfig,
+    pub owner: EntityId,
+    pub item: ItemDefinitionId,
+    pub definition: WeaponDefinition,
     pub state: WeaponState,
 }
 
@@ -193,16 +198,57 @@ impl CombatService {
         if !session.entities.contains(attacker) {
             return Err(RuntimeError::UnknownActor { actor: attacker });
         }
-        let Some(weapon) = session.weapons.get(&attacker).copied() else {
-            return Err(RuntimeError::UnknownWeapon { entity: attacker });
+        if session
+            .health
+            .get(&attacker)
+            .is_some_and(|health| health.current == 0)
+        {
+            return Err(RuntimeError::CombatRejected {
+                entity: attacker,
+                reason: CombatRejectionReason::AttackerDefeated,
+            });
+        }
+        let Some(inventory) = session.inventories.get(&attacker) else {
+            return Err(RuntimeError::CombatRejected {
+                entity: attacker,
+                reason: CombatRejectionReason::NoEquippedWeapon,
+            });
         };
-        if tick.raw() < weapon.state.ready_at_tick.raw() {
+        let Some(weapon_item) = inventory.equipped_weapon.clone() else {
+            return Err(RuntimeError::CombatRejected {
+                entity: attacker,
+                reason: CombatRejectionReason::NoEquippedWeapon,
+            });
+        };
+        let Some(definition) = session.item_definitions.get(&weapon_item) else {
+            return Err(RuntimeError::UnknownWeapon {
+                entity: attacker,
+                item: weapon_item,
+            });
+        };
+        let ItemKind::Weapon(weapon) = definition.kind.clone() else {
+            return Err(RuntimeError::UnknownWeapon {
+                entity: attacker,
+                item: definition.id.clone(),
+            });
+        };
+        let ready_at_tick = inventory
+            .weapon_ready_at
+            .get(&weapon_item)
+            .copied()
+            .unwrap_or(Tick::ZERO);
+        if tick.raw() < ready_at_tick.raw() {
             return Err(RuntimeError::CombatRejected {
                 entity: attacker,
                 reason: CombatRejectionReason::Cooldown,
             });
         }
-        if weapon.state.ammo_remaining == 0 {
+        let ammo_before = inventory
+            .stacks
+            .iter()
+            .find(|stack| stack.item == weapon.ammunition)
+            .map_or(0, |stack| stack.quantity);
+        if ammo_before < weapon.ammunition_cost {
             return Err(RuntimeError::CombatRejected {
                 entity: attacker,
                 reason: CombatRejectionReason::NoAmmo,
@@ -221,41 +267,69 @@ impl CombatService {
             .translation;
         let direction = aim_direction(controller.state.yaw_degrees, controller.state.pitch_degrees);
         let origin =
-            transform + local_aim_offset(weapon.config.muzzle_offset, controller.state.yaw_degrees);
-        let target = nearest_combat_target(
-            session,
-            attacker,
-            origin,
-            direction,
-            weapon.config.max_distance,
-        );
+            transform + local_aim_offset(weapon.muzzle_offset, controller.state.yaw_degrees);
+        let target =
+            nearest_combat_target(session, attacker, origin, direction, weapon.max_distance);
         let world_blocker = scene
             .raycast(
                 [origin.x as f64, origin.y as f64, origin.z as f64],
                 [direction.x as f64, direction.y as f64, direction.z as f64],
-                weapon.config.max_distance as f64,
+                weapon.max_distance as f64,
             )
             .map(|hit| hit.distance as f32);
-        let ammo_after = weapon.state.ammo_remaining - 1;
-        let ready_at_tick = tick.advance(TickDelta::new(weapon.config.cooldown_ticks));
+        let ammo_after = ammo_before - weapon.ammunition_cost;
+        let ready_at_tick = tick.advance(TickDelta::new(weapon.cooldown_ticks));
+        let mut candidate_session = session.clone();
+        let inventory_sequence = candidate_session
+            .inventories
+            .get(&attacker)
+            .and_then(|inventory| inventory.last_applied_command_sequence)
+            .map_or(Some(1), |sequence| sequence.checked_add(1))
+            .ok_or(RuntimeError::InventorySequenceOverflow { owner: attacker })?;
+        let ammunition_receipt = InventoryService::apply(
+            &mut candidate_session,
+            attacker,
+            InventoryCommand {
+                sequence: inventory_sequence,
+                action: InventoryAction::Consume {
+                    item: weapon.ammunition.clone(),
+                    quantity: weapon.ammunition_cost,
+                },
+            },
+        )
+        .map_err(|rejection| match rejection {
+            InventoryRejection::QuantityUnderflow { .. } => RuntimeError::CombatRejected {
+                entity: attacker,
+                reason: CombatRejectionReason::NoAmmo,
+            },
+            other => RuntimeError::Inventory(other),
+        })?;
         let mut facts = vec![CombatFact::AttackFired {
             attacker,
+            weapon: weapon_item.clone(),
+            ammunition: weapon.ammunition.clone(),
             origin,
             direction,
-            ammo_before: weapon.state.ammo_remaining,
+            ammo_before,
             ammo_after,
             ready_at_tick,
         }];
+        facts.extend(
+            ammunition_receipt
+                .facts
+                .into_iter()
+                .map(CombatFact::Inventory),
+        );
         let mut event = None;
 
         match target {
             Some(hit) if world_blocker.is_none_or(|distance| hit.distance + 0.000_1 < distance) => {
-                let health = session
+                let health = candidate_session
                     .health
                     .get(&hit.entity)
                     .copied()
                     .expect("target selection requires health");
-                let amount = weapon.config.damage.min(health.current);
+                let amount = weapon.damage.min(health.current);
                 let after = health.current - amount;
                 facts.push(CombatFact::AttackHit {
                     attacker,
@@ -270,13 +344,13 @@ impl CombatService {
                     after,
                 });
                 if after == 0 {
-                    event = Self::defeat_enemy(session, attacker, hit.entity)?;
+                    event = Self::defeat_enemy(&mut candidate_session, attacker, hit.entity)?;
                     facts.push(CombatFact::EnemyDefeated {
                         attacker,
                         enemy: hit.entity,
                     });
                 } else {
-                    session
+                    candidate_session
                         .health
                         .get_mut(&hit.entity)
                         .expect("target health remains attached")
@@ -293,14 +367,13 @@ impl CombatService {
             }),
         }
 
-        session
-            .weapons
+        candidate_session
+            .inventories
             .get_mut(&attacker)
-            .expect("weapon validated above")
-            .state = WeaponState {
-            ammo_remaining: ammo_after,
-            ready_at_tick,
-        };
+            .expect("inventory validated above")
+            .weapon_ready_at
+            .insert(weapon_item, ready_at_tick);
+        *session = candidate_session;
         Ok(CombatResolution {
             action,
             facts,

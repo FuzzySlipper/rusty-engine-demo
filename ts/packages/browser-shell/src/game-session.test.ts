@@ -41,10 +41,15 @@ const dynamic = {
       moveRight: "KeyD",
       mouseLook: "MouseMove",
       primaryFire: "Mouse0",
+      selectWeapon: ["Digit1", "Digit2", "Digit3"],
     },
   },
   weapon: {
+    item: "weapon/arc-pistol",
+    presentation: "arc-pistol",
     damage: 20,
+    ammunition: "ammo/energy-cell",
+    ammunitionCost: 1,
     ammoRemaining: 8,
     ammoCapacity: 8,
     readyAtTick: 0,
@@ -54,6 +59,16 @@ const dynamic = {
     capacitySlots: 8,
     stacks: [{ item: "weapon/arc-pistol", quantity: 1 }],
     equippedWeapon: "weapon/arc-pistol",
+    weapons: [
+      {
+        slot: 0,
+        item: "weapon/arc-pistol",
+        owned: true,
+        selected: true,
+        ammunition: "ammo/energy-cell",
+        ammunitionQuantity: 8,
+      },
+    ],
   },
   pickups: [],
   extractionBeacon: null,
@@ -272,6 +287,34 @@ test("a replacement session reuses resources with the same static revision", () 
       state: {
         ...dynamic,
         tick: 0,
+        weapon: {
+          item: "weapon/breach-scattergun",
+          presentation: "breach-scattergun",
+          damage: 90,
+          ammunition: "ammo/scatter-shell",
+          ammunitionCost: 2,
+          ammoRemaining: 8,
+          ammoCapacity: 50,
+          readyAtTick: 36,
+        },
+        inventory: {
+          ...dynamic.inventory,
+          equippedWeapon: "weapon/breach-scattergun",
+          weapons: [
+            {
+              ...dynamic.inventory.weapons[0],
+              selected: false,
+            },
+            {
+              slot: 1,
+              item: "weapon/breach-scattergun",
+              owned: true,
+              selected: true,
+              ammunition: "ammo/scatter-shell",
+              ammunitionQuantity: 8,
+            },
+          ],
+        },
       },
     },
     facts: [],
@@ -280,6 +323,11 @@ test("a replacement session reuses resources with the same static revision", () 
 
   assert.equal(replacement.baseline.sessionId, "loading-bay-2");
   assert.equal(replacement.state.voxelMeshes, resources.voxelMeshes);
+  assert.equal(replacement.state.weapon.item, "weapon/breach-scattergun");
+  assert.equal(
+    replacement.state.inventory?.equippedWeapon,
+    "weapon/breach-scattergun",
+  );
 });
 
 test("coalesced look remains within the authoritative input envelope", () => {
@@ -338,6 +386,153 @@ test("a fixed-tick restart rejection settles and releases the restart slot", asy
     restoreGlobal("WebSocket", originalWebSocket);
   }
 });
+
+test("typed weapon-slot edges settle from the authoritative equipped projection", async () => {
+  const originalLocation = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "location",
+  );
+  const originalWebSocket = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "WebSocket",
+  );
+
+  Object.defineProperty(globalThis, "location", {
+    configurable: true,
+    value: { host: "loading-bay.test", protocol: "http:" },
+  });
+  Object.defineProperty(globalThis, "WebSocket", {
+    configurable: true,
+    value: SelectionSocket,
+  });
+
+  try {
+    const session = await LoadingBayGameSession.connect();
+    const selected = await session.sendEdge({
+      kind: "selectWeaponSlot",
+      slot: 1,
+    });
+    assert.equal(selected.weapon.item, "weapon/breach-scattergun");
+    assert.equal(selected.weapon.ammunition, "ammo/scatter-shell");
+    assert.equal(
+      selected.inventory?.equippedWeapon,
+      "weapon/breach-scattergun",
+    );
+    assert.equal(
+      selected.inventory?.weapons.find((weapon) => weapon.slot === 1)?.selected,
+      true,
+    );
+    await session.close();
+  } finally {
+    restoreGlobal("location", originalLocation);
+    restoreGlobal("WebSocket", originalWebSocket);
+  }
+});
+
+class SelectionSocket extends EventTarget {
+  static readonly OPEN = 1;
+  readonly bufferedAmount = 0;
+  readyState = SelectionSocket.OPEN;
+
+  constructor() {
+    super();
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 1,
+        snapshotSequence: 1,
+        acknowledgedCommandSequence: 0,
+        staticRevision: resources.staticRevision,
+        update: { kind: "full", state: dynamic },
+        resources,
+        facts: [],
+        metrics,
+      });
+    });
+  }
+
+  send(payload: string): void {
+    const envelope = JSON.parse(payload) as {
+      readonly sequence: number;
+      readonly command: { readonly kind: string; readonly slot?: number };
+    };
+    assert.deepEqual(envelope.command, {
+      kind: "selectWeaponSlot",
+      slot: 1,
+    });
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 2,
+        snapshotSequence: 2,
+        acknowledgedCommandSequence: envelope.sequence,
+        staticRevision: resources.staticRevision,
+        update: {
+          kind: "delta",
+          baseSnapshotSequence: 1,
+          changes: {
+            tick: 2,
+            input: {
+              ...dynamic.input,
+              acknowledgedSequence: envelope.sequence,
+              consumedSequence: envelope.sequence,
+            },
+            weapon: {
+              item: "weapon/breach-scattergun",
+              presentation: "breach-scattergun",
+              damage: 90,
+              ammunition: "ammo/scatter-shell",
+              ammunitionCost: 2,
+              ammoRemaining: 8,
+              ammoCapacity: 50,
+              readyAtTick: 0,
+            },
+            inventory: {
+              ...dynamic.inventory,
+              stacks: [
+                ...dynamic.inventory.stacks,
+                { item: "weapon/breach-scattergun", quantity: 1 },
+                { item: "ammo/scatter-shell", quantity: 8 },
+              ],
+              equippedWeapon: "weapon/breach-scattergun",
+              weapons: [
+                {
+                  ...dynamic.inventory.weapons[0],
+                  selected: false,
+                },
+                {
+                  slot: 1,
+                  item: "weapon/breach-scattergun",
+                  owned: true,
+                  selected: true,
+                  ammunition: "ammo/scatter-shell",
+                  ammunitionQuantity: 8,
+                },
+              ],
+            },
+          },
+        },
+        facts: [{ kind: "InventoryWeaponSelected" }],
+        metrics,
+      });
+    });
+  }
+
+  close(): void {
+    this.readyState = 3;
+    this.dispatchEvent(new Event("close"));
+  }
+
+  #emit(envelope: ServerUpdateEnvelope): void {
+    this.dispatchEvent(
+      new MessageEvent("message", { data: JSON.stringify(envelope) }),
+    );
+  }
+}
 
 class RestartRejectionSocket extends EventTarget {
   static readonly OPEN = 1;

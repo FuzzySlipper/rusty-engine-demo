@@ -10,10 +10,7 @@ use engine_spatial::{
 use entity_state::{EntityLifecycle, EntityState, EntityStateSnapshot};
 use serde::{Deserialize, Serialize};
 
-use crate::combat::{
-    EnemyComponent, EnemyState, HealthComponent, HealthConfig, WeaponComponent, WeaponConfig,
-    WeaponState,
-};
+use crate::combat::{EnemyComponent, EnemyState, HealthComponent, HealthConfig};
 use crate::door::{DoorComponent, DoorConfig, DoorState};
 use crate::encounter::{EncounterComponent, EncounterConfig, EncounterState};
 use crate::extraction_beacon::{
@@ -22,7 +19,7 @@ use crate::extraction_beacon::{
 use crate::interaction::SwitchComponent;
 use crate::inventory::{
     admit_item_definitions, inventory_from_config, InventoryAdmissionError, InventoryConfig,
-    InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind,
+    InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind, WeaponAttackMode, WeaponDefinition,
 };
 use crate::navigation::{
     NavigationComponent, NavigationConfig, NavigationState, MAX_NAVIGATION_QUERY_BUDGET,
@@ -38,7 +35,7 @@ use crate::runtime::GameRuntime;
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 12;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 13;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -64,6 +61,7 @@ pub struct GameSnapshot {
     pub pickups: Vec<PickupSnapshot>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pickup_triggers: Option<TriggerVolumeSnapshot>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub weapons: Vec<WeaponSnapshot>,
     pub scheduled: Vec<ScheduledSnapshot>,
 }
@@ -79,7 +77,7 @@ pub struct VoxelCollisionSnapshot {
     pub generated_room: Option<GeneratedRoomSnapshot>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ItemDefinitionSnapshot {
     pub id: String,
@@ -87,7 +85,7 @@ pub struct ItemDefinitionSnapshot {
     pub kind: SnapshotItemKind,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
@@ -95,11 +93,37 @@ pub struct ItemDefinitionSnapshot {
     deny_unknown_fields
 )]
 pub enum SnapshotItemKind {
-    Weapon { ammunition: String },
+    Weapon {
+        ammunition: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        attack_mode: Option<SnapshotWeaponAttackMode>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        damage: Option<u32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        max_distance: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cooldown_ticks: Option<u64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        ammunition_cost: Option<u32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        muzzle_offset: Option<[f32; 3]>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        presentation: Option<String>,
+    },
     Ammunition,
     AccessKey,
-    HealthSupply { restore_health: u32 },
-    Armor { protection: u32 },
+    HealthSupply {
+        restore_health: u32,
+    },
+    Armor {
+        protection: u32,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotWeaponAttackMode {
+    Hitscan,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -109,6 +133,17 @@ pub struct InventorySnapshot {
     pub capacity_slots: usize,
     pub stacks: Vec<InventoryStackSnapshot>,
     pub equipped_weapon: Option<String>,
+    #[serde(default)]
+    pub weapon_slots: Vec<String>,
+    #[serde(default)]
+    pub weapon_cooldowns: Vec<WeaponCooldownSnapshot>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct WeaponCooldownSnapshot {
+    pub item: String,
+    pub ready_at_tick: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -124,6 +159,8 @@ pub struct PickupSnapshot {
     pub entity: u64,
     pub item: String,
     pub quantity: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub starter_ammunition: Option<InventoryStackSnapshot>,
     pub state: SnapshotPickupState,
 }
 
@@ -309,6 +346,8 @@ pub struct PlayerInputBindingsSnapshot {
     pub move_right: String,
     pub mouse_look: String,
     pub primary_fire: String,
+    #[serde(default)]
+    pub select_weapon: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -420,6 +459,11 @@ pub enum GameSnapshotError {
     },
     InvalidPickupTriggerDefinitions,
     FuturePickupStateInLegacySnapshot,
+    FutureWeaponStateInLegacySnapshot,
+    InvalidWeaponCooldown {
+        owner: u64,
+        item: String,
+    },
     UnknownDoorEntity {
         entity: u64,
     },
@@ -549,8 +593,17 @@ impl GameRuntime {
                     id: definition.id.as_str().to_string(),
                     max_quantity: definition.max_quantity,
                     kind: match &definition.kind {
-                        ItemKind::Weapon { ammunition } => SnapshotItemKind::Weapon {
-                            ammunition: ammunition.as_str().to_string(),
+                        ItemKind::Weapon(weapon) => SnapshotItemKind::Weapon {
+                            ammunition: weapon.ammunition.as_str().to_string(),
+                            attack_mode: Some(match weapon.attack_mode {
+                                WeaponAttackMode::Hitscan => SnapshotWeaponAttackMode::Hitscan,
+                            }),
+                            damage: Some(weapon.damage),
+                            max_distance: Some(weapon.max_distance),
+                            cooldown_ticks: Some(weapon.cooldown_ticks),
+                            ammunition_cost: Some(weapon.ammunition_cost),
+                            muzzle_offset: Some(weapon.muzzle_offset.to_array()),
+                            presentation: Some(weapon.presentation.clone()),
                         },
                         ItemKind::Ammunition => SnapshotItemKind::Ammunition,
                         ItemKind::AccessKey => SnapshotItemKind::AccessKey,
@@ -727,6 +780,7 @@ impl GameRuntime {
                         move_right: component.config.bindings.move_right.clone(),
                         mouse_look: component.config.bindings.mouse_look.clone(),
                         primary_fire: component.config.bindings.primary_fire.clone(),
+                        select_weapon: component.config.bindings.select_weapon.clone(),
                     },
                 })
                 .collect(),
@@ -749,6 +803,19 @@ impl GameRuntime {
                         .equipped_weapon
                         .as_ref()
                         .map(|item| item.as_str().to_string()),
+                    weapon_slots: component
+                        .weapon_slots
+                        .iter()
+                        .map(|item| item.as_str().to_string())
+                        .collect(),
+                    weapon_cooldowns: component
+                        .weapon_ready_at
+                        .iter()
+                        .map(|(item, ready_at_tick)| WeaponCooldownSnapshot {
+                            item: item.as_str().to_string(),
+                            ready_at_tick: ready_at_tick.raw(),
+                        })
+                        .collect(),
                 })
                 .collect(),
             pickups: self
@@ -759,6 +826,12 @@ impl GameRuntime {
                     entity: entity.raw(),
                     item: component.config.item.as_str().to_string(),
                     quantity: component.config.quantity,
+                    starter_ammunition: component.config.starter_ammunition.as_ref().map(
+                        |starter| InventoryStackSnapshot {
+                            item: starter.item.as_str().to_string(),
+                            quantity: starter.quantity,
+                        },
+                    ),
                     state: match &component.state {
                         PickupState::Available => SnapshotPickupState::Available,
                         PickupState::Collected {
@@ -787,21 +860,7 @@ impl GameRuntime {
                 })
                 .collect(),
             pickup_triggers: Some(self.pickup_triggers.snapshot()),
-            weapons: self
-                .session
-                .weapons
-                .iter()
-                .map(|(entity, component)| WeaponSnapshot {
-                    entity: entity.raw(),
-                    damage: component.config.damage,
-                    max_distance: component.config.max_distance,
-                    cooldown_ticks: component.config.cooldown_ticks,
-                    ammo_capacity: component.config.ammo_capacity,
-                    muzzle_offset: component.config.muzzle_offset.to_array(),
-                    ammo_remaining: component.state.ammo_remaining,
-                    ready_at_tick: component.state.ready_at_tick.raw(),
-                })
-                .collect(),
+            weapons: Vec::new(),
             scheduled: self
                 .scheduler
                 .entries()
@@ -829,10 +888,18 @@ impl GameRuntime {
         {
             return Err(GameSnapshotError::FutureInventoryStateInLegacySnapshot);
         }
-        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION
+        if source_schema_version < 12
             && (!snapshot.pickups.is_empty() || snapshot.pickup_triggers.is_some())
         {
             return Err(GameSnapshotError::FuturePickupStateInLegacySnapshot);
+        }
+        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION {
+            if snapshot_has_inventory_weapon_fields(&snapshot) {
+                return Err(GameSnapshotError::FutureWeaponStateInLegacySnapshot);
+            }
+            migrate_legacy_snapshot_weapon_authority(&mut snapshot)?;
+        } else if !snapshot.weapons.is_empty() {
+            return Err(GameSnapshotError::FutureWeaponStateInLegacySnapshot);
         }
         let collision_scene = snapshot
             .voxel_collision
@@ -1232,6 +1299,7 @@ impl GameRuntime {
                     controller.bindings.move_right,
                     controller.bindings.mouse_look,
                     controller.bindings.primary_fire,
+                    controller.bindings.select_weapon,
                 ),
             };
             if !config.is_valid()
@@ -1255,49 +1323,6 @@ impl GameRuntime {
             );
         }
 
-        let mut weapons = BTreeMap::new();
-        let mut weapon_ids = BTreeSet::new();
-        for weapon_snapshot in snapshot.weapons {
-            if !weapon_ids.insert(weapon_snapshot.entity) {
-                return Err(GameSnapshotError::DuplicateWeapon {
-                    entity: weapon_snapshot.entity,
-                });
-            }
-            let entity = EntityId::new(weapon_snapshot.entity);
-            if !entities.contains(entity) {
-                return Err(GameSnapshotError::UnknownWeaponEntity {
-                    entity: weapon_snapshot.entity,
-                });
-            }
-            if !player_controllers.contains_key(&entity) {
-                return Err(GameSnapshotError::MissingWeaponCapability {
-                    entity: weapon_snapshot.entity,
-                });
-            }
-            let config = WeaponConfig {
-                damage: weapon_snapshot.damage,
-                max_distance: weapon_snapshot.max_distance,
-                cooldown_ticks: weapon_snapshot.cooldown_ticks,
-                ammo_capacity: weapon_snapshot.ammo_capacity,
-                muzzle_offset: array_vec3(weapon_snapshot.muzzle_offset),
-            };
-            if !config.is_valid() || weapon_snapshot.ammo_remaining > config.ammo_capacity {
-                return Err(GameSnapshotError::InvalidWeaponConfig {
-                    entity: weapon_snapshot.entity,
-                });
-            }
-            weapons.insert(
-                entity,
-                WeaponComponent {
-                    config,
-                    state: WeaponState {
-                        ammo_remaining: weapon_snapshot.ammo_remaining,
-                        ready_at_tick: Tick::new(weapon_snapshot.ready_at_tick),
-                    },
-                },
-            );
-        }
-
         let mut inventories = BTreeMap::new();
         for inventory in snapshot.inventories {
             let owner = EntityId::new(inventory.owner);
@@ -1309,6 +1334,18 @@ impl GameRuntime {
             if !entities.contains(owner) || !player_controllers.contains_key(&owner) {
                 return Err(GameSnapshotError::UnknownInventoryEntity {
                     owner: inventory.owner,
+                });
+            }
+            let weapon_slots = inventory
+                .weapon_slots
+                .into_iter()
+                .map(parse_snapshot_item_id)
+                .collect::<Result<Vec<_>, _>>()?;
+            if player_controllers.get(&owner).is_none_or(|controller| {
+                controller.config.bindings.select_weapon.len() != weapon_slots.len()
+            }) {
+                return Err(GameSnapshotError::InvalidPlayerControllerConfig {
+                    entity: inventory.owner,
                 });
             }
             let config = InventoryConfig::new(
@@ -1327,12 +1364,33 @@ impl GameRuntime {
                     .equipped_weapon
                     .map(parse_snapshot_item_id)
                     .transpose()?,
+                weapon_slots.clone(),
             );
-            inventories.insert(
-                owner,
-                inventory_from_config(owner, &config, &item_definitions)
-                    .map_err(GameSnapshotError::Inventory)?,
-            );
+            let mut component = inventory_from_config(owner, &config, &item_definitions)
+                .map_err(GameSnapshotError::Inventory)?;
+            let mut cooldowns = BTreeMap::new();
+            for cooldown in inventory.weapon_cooldowns {
+                let raw_item = cooldown.item.clone();
+                let item = parse_snapshot_item_id(cooldown.item)?;
+                if !weapon_slots.contains(&item)
+                    || cooldowns
+                        .insert(item, Tick::new(cooldown.ready_at_tick))
+                        .is_some()
+                {
+                    return Err(GameSnapshotError::InvalidWeaponCooldown {
+                        owner: inventory.owner,
+                        item: raw_item,
+                    });
+                }
+            }
+            if cooldowns.len() != weapon_slots.len() {
+                return Err(GameSnapshotError::InvalidWeaponCooldown {
+                    owner: inventory.owner,
+                    item: "missing-authored-slot".to_string(),
+                });
+            }
+            component.weapon_ready_at = cooldowns;
+            inventories.insert(owner, component);
         }
 
         if snapshot.pickups.len() > engine_spatial::MAX_TRIGGER_DEFINITIONS {
@@ -1365,6 +1423,31 @@ impl GameRuntime {
                 return Err(GameSnapshotError::InvalidPickup {
                     entity: pickup.entity,
                 });
+            }
+            if let Some(starter) = &pickup.starter_ammunition {
+                let ItemKind::Weapon(weapon) = &definition.kind else {
+                    return Err(GameSnapshotError::InvalidPickup {
+                        entity: pickup.entity,
+                    });
+                };
+                let starter_item = ItemDefinitionId::parse(starter.item.clone()).map_err(|_| {
+                    GameSnapshotError::InvalidPickup {
+                        entity: pickup.entity,
+                    }
+                })?;
+                if starter_item != weapon.ammunition
+                    || starter.quantity == 0
+                    || item_definitions
+                        .get(&starter_item)
+                        .is_none_or(|definition| {
+                            !matches!(definition.kind, ItemKind::Ammunition)
+                                || starter.quantity > definition.max_quantity
+                        })
+                {
+                    return Err(GameSnapshotError::InvalidPickup {
+                        entity: pickup.entity,
+                    });
+                }
             }
             let state = match pickup.state {
                 SnapshotPickupState::Available => {
@@ -1422,12 +1505,21 @@ impl GameRuntime {
                     config: PickupConfig {
                         item,
                         quantity: pickup.quantity,
+                        starter_ammunition: pickup
+                            .starter_ammunition
+                            .map(|starter| {
+                                Ok(InventoryStack::new(
+                                    parse_snapshot_item_id(starter.item)?,
+                                    starter.quantity,
+                                ))
+                            })
+                            .transpose()?,
                     },
                     state,
                 },
             );
         }
-        let pickup_triggers = if source_schema_version == GAME_SNAPSHOT_SCHEMA_VERSION {
+        let pickup_triggers = if source_schema_version >= 12 {
             TriggerVolumeSystem::from_snapshot(
                 snapshot
                     .pickup_triggers
@@ -1560,7 +1652,6 @@ impl GameRuntime {
                 item_definitions,
                 inventories,
                 pickups,
-                weapons,
             },
             tick: Tick::new(snapshot.tick),
             scheduler,
@@ -1594,9 +1685,53 @@ fn snapshot_item_definition(
 ) -> Result<ItemDefinition, GameSnapshotError> {
     let id = parse_snapshot_item_id(snapshot.id)?;
     let kind = match snapshot.kind {
-        SnapshotItemKind::Weapon { ammunition } => ItemKind::Weapon {
+        SnapshotItemKind::Weapon {
+            ammunition,
+            attack_mode,
+            damage,
+            max_distance,
+            cooldown_ticks,
+            ammunition_cost,
+            muzzle_offset,
+            presentation,
+        } => ItemKind::Weapon(WeaponDefinition {
+            attack_mode: match attack_mode.ok_or_else(|| {
+                GameSnapshotError::InvalidItemDefinitionId {
+                    value: format!("{}:missing-attack-mode", id.as_str()),
+                }
+            })? {
+                SnapshotWeaponAttackMode::Hitscan => WeaponAttackMode::Hitscan,
+            },
+            damage: damage.ok_or_else(|| GameSnapshotError::InvalidItemDefinitionId {
+                value: format!("{}:missing-damage", id.as_str()),
+            })?,
+            max_distance: max_distance.ok_or_else(|| {
+                GameSnapshotError::InvalidItemDefinitionId {
+                    value: format!("{}:missing-range", id.as_str()),
+                }
+            })?,
+            cooldown_ticks: cooldown_ticks.ok_or_else(|| {
+                GameSnapshotError::InvalidItemDefinitionId {
+                    value: format!("{}:missing-cadence", id.as_str()),
+                }
+            })?,
             ammunition: parse_snapshot_item_id(ammunition)?,
-        },
+            ammunition_cost: ammunition_cost.ok_or_else(|| {
+                GameSnapshotError::InvalidItemDefinitionId {
+                    value: format!("{}:missing-ammunition-cost", id.as_str()),
+                }
+            })?,
+            muzzle_offset: array_vec3(muzzle_offset.ok_or_else(|| {
+                GameSnapshotError::InvalidItemDefinitionId {
+                    value: format!("{}:missing-muzzle-offset", id.as_str()),
+                }
+            })?),
+            presentation: presentation.ok_or_else(|| {
+                GameSnapshotError::InvalidItemDefinitionId {
+                    value: format!("{}:missing-presentation", id.as_str()),
+                }
+            })?,
+        }),
         SnapshotItemKind::Ammunition => ItemKind::Ammunition,
         SnapshotItemKind::AccessKey => ItemKind::AccessKey,
         SnapshotItemKind::HealthSupply { restore_health } => {
@@ -1605,6 +1740,210 @@ fn snapshot_item_definition(
         SnapshotItemKind::Armor { protection } => ItemKind::Armor { protection },
     };
     Ok(ItemDefinition::new(id, kind, snapshot.max_quantity))
+}
+
+fn snapshot_has_inventory_weapon_fields(snapshot: &GameSnapshot) -> bool {
+    snapshot.item_definitions.iter().any(|definition| {
+        matches!(
+            definition.kind,
+            SnapshotItemKind::Weapon {
+                attack_mode: Some(_),
+                ..
+            } | SnapshotItemKind::Weapon {
+                damage: Some(_),
+                ..
+            } | SnapshotItemKind::Weapon {
+                max_distance: Some(_),
+                ..
+            } | SnapshotItemKind::Weapon {
+                cooldown_ticks: Some(_),
+                ..
+            } | SnapshotItemKind::Weapon {
+                ammunition_cost: Some(_),
+                ..
+            } | SnapshotItemKind::Weapon {
+                muzzle_offset: Some(_),
+                ..
+            } | SnapshotItemKind::Weapon {
+                presentation: Some(_),
+                ..
+            }
+        )
+    }) || snapshot.inventories.iter().any(|inventory| {
+        !inventory.weapon_slots.is_empty() || !inventory.weapon_cooldowns.is_empty()
+    }) || snapshot
+        .player_controllers
+        .iter()
+        .any(|controller| !controller.bindings.select_weapon.is_empty())
+        || snapshot
+            .pickups
+            .iter()
+            .any(|pickup| pickup.starter_ammunition.is_some())
+}
+
+fn migrate_legacy_snapshot_weapon_authority(
+    snapshot: &mut GameSnapshot,
+) -> Result<(), GameSnapshotError> {
+    let legacy_weapons = std::mem::take(&mut snapshot.weapons);
+    for legacy in &legacy_weapons {
+        if !snapshot
+            .player_controllers
+            .iter()
+            .any(|controller| controller.entity == legacy.entity)
+        {
+            return Err(GameSnapshotError::MissingWeaponCapability {
+                entity: legacy.entity,
+            });
+        }
+        if !snapshot
+            .inventories
+            .iter()
+            .any(|inventory| inventory.owner == legacy.entity)
+        {
+            let weapon_id = format!("weapon/migrated-player-{}", legacy.entity);
+            let ammunition_id = format!("ammo/migrated-player-{}", legacy.entity);
+            snapshot.item_definitions.push(ItemDefinitionSnapshot {
+                id: ammunition_id.clone(),
+                max_quantity: legacy.ammo_capacity,
+                kind: SnapshotItemKind::Ammunition,
+            });
+            snapshot.item_definitions.push(ItemDefinitionSnapshot {
+                id: weapon_id.clone(),
+                max_quantity: 1,
+                kind: legacy_snapshot_weapon_kind(&weapon_id, ammunition_id.clone(), legacy),
+            });
+            let mut stacks = vec![InventoryStackSnapshot {
+                item: weapon_id.clone(),
+                quantity: 1,
+            }];
+            if legacy.ammo_remaining > 0 {
+                stacks.push(InventoryStackSnapshot {
+                    item: ammunition_id,
+                    quantity: legacy.ammo_remaining,
+                });
+            }
+            snapshot.inventories.push(InventorySnapshot {
+                owner: legacy.entity,
+                capacity_slots: 2,
+                stacks,
+                equipped_weapon: Some(weapon_id.clone()),
+                weapon_slots: vec![weapon_id.clone()],
+                weapon_cooldowns: vec![WeaponCooldownSnapshot {
+                    item: weapon_id,
+                    ready_at_tick: legacy.ready_at_tick,
+                }],
+            });
+        } else {
+            let equipped = snapshot
+                .inventories
+                .iter()
+                .find(|inventory| inventory.owner == legacy.entity)
+                .and_then(|inventory| inventory.equipped_weapon.clone())
+                .ok_or(GameSnapshotError::InvalidWeaponConfig {
+                    entity: legacy.entity,
+                })?;
+            let definition = snapshot
+                .item_definitions
+                .iter_mut()
+                .find(|definition| definition.id == equipped)
+                .ok_or(GameSnapshotError::InvalidWeaponConfig {
+                    entity: legacy.entity,
+                })?;
+            let ammunition = match &definition.kind {
+                SnapshotItemKind::Weapon { ammunition, .. } => ammunition.clone(),
+                _ => {
+                    return Err(GameSnapshotError::InvalidWeaponConfig {
+                        entity: legacy.entity,
+                    });
+                }
+            };
+            definition.kind = legacy_snapshot_weapon_kind(&equipped, ammunition, legacy);
+        }
+    }
+
+    for definition in &mut snapshot.item_definitions {
+        let SnapshotItemKind::Weapon {
+            attack_mode,
+            damage,
+            max_distance,
+            cooldown_ticks,
+            ammunition_cost,
+            muzzle_offset,
+            presentation,
+            ..
+        } = &mut definition.kind
+        else {
+            continue;
+        };
+        *attack_mode = Some(SnapshotWeaponAttackMode::Hitscan);
+        *damage = Some(damage.unwrap_or(40));
+        *max_distance = Some(max_distance.unwrap_or(20.0));
+        *cooldown_ticks = Some(cooldown_ticks.unwrap_or(6));
+        *ammunition_cost = Some(ammunition_cost.unwrap_or(1));
+        *muzzle_offset = Some(muzzle_offset.unwrap_or([0.0, 0.0, 0.0]));
+        *presentation = Some(
+            presentation
+                .clone()
+                .unwrap_or_else(|| definition.id.clone()),
+        );
+    }
+    let weapon_ids = snapshot
+        .item_definitions
+        .iter()
+        .filter(|definition| matches!(definition.kind, SnapshotItemKind::Weapon { .. }))
+        .map(|definition| definition.id.clone())
+        .collect::<Vec<_>>();
+    for inventory in &mut snapshot.inventories {
+        if inventory.weapon_slots.is_empty() {
+            inventory.weapon_slots = weapon_ids.clone();
+        }
+        if inventory.weapon_cooldowns.is_empty() {
+            inventory.weapon_cooldowns = inventory
+                .weapon_slots
+                .iter()
+                .map(|item| WeaponCooldownSnapshot {
+                    item: item.clone(),
+                    ready_at_tick: legacy_weapons
+                        .iter()
+                        .find(|legacy| {
+                            legacy.entity == inventory.owner
+                                && inventory.equipped_weapon.as_ref() == Some(item)
+                        })
+                        .map_or(0, |legacy| legacy.ready_at_tick),
+                })
+                .collect();
+        }
+        if let Some(controller) = snapshot
+            .player_controllers
+            .iter_mut()
+            .find(|controller| controller.entity == inventory.owner)
+        {
+            controller.bindings.select_weapon = inventory
+                .weapon_slots
+                .iter()
+                .enumerate()
+                .map(|(index, _)| format!("Digit{}", index + 1))
+                .collect();
+        }
+    }
+    Ok(())
+}
+
+fn legacy_snapshot_weapon_kind(
+    presentation: &str,
+    ammunition: String,
+    weapon: &WeaponSnapshot,
+) -> SnapshotItemKind {
+    SnapshotItemKind::Weapon {
+        ammunition,
+        attack_mode: Some(SnapshotWeaponAttackMode::Hitscan),
+        damage: Some(weapon.damage),
+        max_distance: Some(weapon.max_distance),
+        cooldown_ticks: Some(weapon.cooldown_ticks),
+        ammunition_cost: Some(1),
+        muzzle_offset: Some(weapon.muzzle_offset),
+        presentation: Some(presentation.to_string()),
+    }
 }
 
 fn parse_snapshot_item_id(value: String) -> Result<ItemDefinitionId, GameSnapshotError> {

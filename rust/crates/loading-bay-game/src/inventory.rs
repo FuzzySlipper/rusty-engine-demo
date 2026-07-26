@@ -1,6 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use core_ids::EntityId;
+use core_math::Vec3;
+use core_time::Tick;
+
+use crate::combat::{
+    MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_RANGE,
+};
 
 pub const MAX_ITEM_DEFINITION_ID_BYTES: usize = 96;
 pub const MAX_ITEM_QUANTITY: u32 = 1_000_000;
@@ -58,16 +64,51 @@ impl std::fmt::Display for ItemDefinitionIdError {
 
 impl std::error::Error for ItemDefinitionIdError {}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WeaponAttackMode {
+    Hitscan,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WeaponDefinition {
+    pub attack_mode: WeaponAttackMode,
+    pub damage: u32,
+    pub max_distance: f32,
+    pub cooldown_ticks: u64,
+    pub ammunition: ItemDefinitionId,
+    pub ammunition_cost: u32,
+    pub muzzle_offset: Vec3,
+    pub presentation: String,
+}
+
+impl WeaponDefinition {
+    pub(crate) fn is_valid(&self) -> bool {
+        (1..=MAX_WEAPON_DAMAGE).contains(&self.damage)
+            && self.max_distance.is_finite()
+            && self.max_distance > 0.0
+            && self.max_distance <= MAX_WEAPON_RANGE
+            && self.cooldown_ticks <= MAX_WEAPON_COOLDOWN_TICKS
+            && self.ammunition_cost > 0
+            && self.ammunition_cost <= MAX_ITEM_QUANTITY
+            && vec3_is_finite(self.muzzle_offset)
+            && self.muzzle_offset.x.abs() <= MAX_WEAPON_MUZZLE_OFFSET
+            && self.muzzle_offset.y.abs() <= MAX_WEAPON_MUZZLE_OFFSET
+            && self.muzzle_offset.z.abs() <= MAX_WEAPON_MUZZLE_OFFSET
+            && !self.presentation.is_empty()
+            && self.presentation.len() <= MAX_ITEM_DEFINITION_ID_BYTES
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum ItemKind {
-    Weapon { ammunition: ItemDefinitionId },
+    Weapon(WeaponDefinition),
     Ammunition,
     AccessKey,
     HealthSupply { restore_health: u32 },
     Armor { protection: u32 },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ItemDefinition {
     pub id: ItemDefinitionId,
     pub kind: ItemKind,
@@ -101,6 +142,7 @@ pub struct InventoryConfig {
     pub capacity_slots: usize,
     pub starting_stacks: Vec<InventoryStack>,
     pub initially_equipped_weapon: Option<ItemDefinitionId>,
+    pub weapon_slots: Vec<ItemDefinitionId>,
 }
 
 impl InventoryConfig {
@@ -108,32 +150,38 @@ impl InventoryConfig {
         capacity_slots: usize,
         starting_stacks: impl IntoIterator<Item = InventoryStack>,
         initially_equipped_weapon: Option<ItemDefinitionId>,
+        weapon_slots: impl IntoIterator<Item = ItemDefinitionId>,
     ) -> Self {
         Self {
             capacity_slots,
             starting_stacks: starting_stacks.into_iter().collect(),
             initially_equipped_weapon,
+            weapon_slots: weapon_slots.into_iter().collect(),
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct InventoryComponent {
     pub capacity_slots: usize,
     pub stacks: Vec<InventoryStack>,
     pub equipped_weapon: Option<ItemDefinitionId>,
+    pub weapon_slots: Vec<ItemDefinitionId>,
+    pub weapon_ready_at: BTreeMap<ItemDefinitionId, Tick>,
     pub(crate) last_applied_command_sequence: Option<u64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct InventoryView {
     pub owner: EntityId,
     pub capacity_slots: usize,
     pub stacks: Vec<InventoryStack>,
     pub equipped_weapon: Option<ItemDefinitionId>,
+    pub weapon_slots: Vec<ItemDefinitionId>,
+    pub weapon_ready_at: BTreeMap<ItemDefinitionId, Tick>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ItemDefinitionView {
     pub id: ItemDefinitionId,
     pub kind: ItemKind,
@@ -186,7 +234,7 @@ pub enum InventoryFact {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct InventoryReceipt {
     pub sequence: u64,
     pub action: InventoryAction,
@@ -235,6 +283,16 @@ pub enum InventoryRejection {
     },
     AlreadySelected {
         item: ItemDefinitionId,
+    },
+    InvalidWeaponSlot {
+        slot: usize,
+        slot_count: usize,
+    },
+    OwnerDefeated {
+        owner: EntityId,
+    },
+    CommandSequenceOverflow {
+        owner: EntityId,
     },
     RepeatedCommand {
         sequence: u64,
@@ -291,6 +349,18 @@ pub enum InventoryAdmissionError {
         owner: EntityId,
         item: ItemDefinitionId,
     },
+    DuplicateWeaponSlot {
+        owner: EntityId,
+        item: ItemDefinitionId,
+    },
+    MissingWeaponSlotDefinition {
+        owner: EntityId,
+        item: ItemDefinitionId,
+    },
+    IncompatibleWeaponSlot {
+        owner: EntityId,
+        item: ItemDefinitionId,
+    },
 }
 
 pub struct InventoryService;
@@ -319,6 +389,14 @@ impl InventoryService {
         }
 
         let before = inventory_view(owner, component);
+        if matches!(command.action, InventoryAction::SelectWeapon { .. })
+            && session
+                .health
+                .get(&owner)
+                .is_some_and(|health| health.current == 0)
+        {
+            return Err(InventoryRejection::OwnerDefeated { owner });
+        }
         let mut candidate = component.clone();
         let facts = apply_action(
             &session.item_definitions,
@@ -338,6 +416,34 @@ impl InventoryService {
             facts,
         })
     }
+
+    pub(crate) fn select_weapon_slot(
+        session: &mut crate::session::GameSession,
+        owner: EntityId,
+        slot: usize,
+    ) -> Result<InventoryReceipt, InventoryRejection> {
+        let Some(inventory) = session.inventories.get(&owner) else {
+            return Err(InventoryRejection::UnknownInventory { owner });
+        };
+        let Some(item) = inventory.weapon_slots.get(slot).cloned() else {
+            return Err(InventoryRejection::InvalidWeaponSlot {
+                slot,
+                slot_count: inventory.weapon_slots.len(),
+            });
+        };
+        let sequence = inventory
+            .last_applied_command_sequence
+            .map_or(Some(1), |sequence| sequence.checked_add(1))
+            .ok_or(InventoryRejection::CommandSequenceOverflow { owner })?;
+        Self::apply(
+            session,
+            owner,
+            InventoryCommand {
+                sequence,
+                action: InventoryAction::SelectWeapon { item },
+            },
+        )
+    }
 }
 
 pub(crate) fn admit_item_definitions(
@@ -347,10 +453,9 @@ pub(crate) fn admit_item_definitions(
     for definition in definitions {
         if definition.max_quantity == 0
             || definition.max_quantity > MAX_ITEM_QUANTITY
-            || matches!(
-                definition.kind,
-                ItemKind::Weapon { .. } | ItemKind::AccessKey
-            ) && definition.max_quantity != 1
+            || matches!(definition.kind, ItemKind::Weapon(_) | ItemKind::AccessKey)
+                && definition.max_quantity != 1
+            || matches!(&definition.kind, ItemKind::Weapon(weapon) if !weapon.is_valid())
             || matches!(
                 definition.kind,
                 ItemKind::HealthSupply { restore_health: 0 } | ItemKind::Armor { protection: 0 }
@@ -366,19 +471,24 @@ pub(crate) fn admit_item_definitions(
         }
     }
     for definition in admitted.values() {
-        let ItemKind::Weapon { ammunition } = &definition.kind else {
+        let ItemKind::Weapon(weapon) = &definition.kind else {
             continue;
         };
-        let Some(ammunition_definition) = admitted.get(ammunition) else {
+        let Some(ammunition_definition) = admitted.get(&weapon.ammunition) else {
             return Err(InventoryAdmissionError::MissingAmmunitionDefinition {
                 weapon: definition.id.clone(),
-                ammunition: ammunition.clone(),
+                ammunition: weapon.ammunition.clone(),
             });
         };
         if !matches!(ammunition_definition.kind, ItemKind::Ammunition) {
             return Err(InventoryAdmissionError::IncompatibleAmmunitionDefinition {
                 weapon: definition.id.clone(),
-                ammunition: ammunition.clone(),
+                ammunition: weapon.ammunition.clone(),
+            });
+        }
+        if weapon.ammunition_cost > ammunition_definition.max_quantity {
+            return Err(InventoryAdmissionError::InvalidItemDefinition {
+                item: definition.id.clone(),
             });
         }
     }
@@ -433,7 +543,7 @@ pub(crate) fn inventory_from_config(
             .any(|stack| stack.item == *equipped);
         let compatible = definitions
             .get(equipped)
-            .is_some_and(|definition| matches!(definition.kind, ItemKind::Weapon { .. }));
+            .is_some_and(|definition| matches!(definition.kind, ItemKind::Weapon(_)));
         if !owned || !compatible {
             return Err(InventoryAdmissionError::InvalidInitialSelection {
                 owner,
@@ -441,10 +551,38 @@ pub(crate) fn inventory_from_config(
             });
         }
     }
+    let mut seen_slots = BTreeSet::new();
+    for item in &config.weapon_slots {
+        if !seen_slots.insert(item.clone()) {
+            return Err(InventoryAdmissionError::DuplicateWeaponSlot {
+                owner,
+                item: item.clone(),
+            });
+        }
+        let Some(definition) = definitions.get(item) else {
+            return Err(InventoryAdmissionError::MissingWeaponSlotDefinition {
+                owner,
+                item: item.clone(),
+            });
+        };
+        if !matches!(definition.kind, ItemKind::Weapon(_)) {
+            return Err(InventoryAdmissionError::IncompatibleWeaponSlot {
+                owner,
+                item: item.clone(),
+            });
+        }
+    }
     Ok(InventoryComponent {
         capacity_slots: config.capacity_slots,
         stacks: config.starting_stacks.clone(),
         equipped_weapon: config.initially_equipped_weapon.clone(),
+        weapon_slots: config.weapon_slots.clone(),
+        weapon_ready_at: config
+            .weapon_slots
+            .iter()
+            .cloned()
+            .map(|item| (item, Tick::ZERO))
+            .collect(),
         last_applied_command_sequence: None,
     })
 }
@@ -455,6 +593,8 @@ pub(crate) fn inventory_view(owner: EntityId, component: &InventoryComponent) ->
         capacity_slots: component.capacity_slots,
         stacks: component.stacks.clone(),
         equipped_weapon: component.equipped_weapon.clone(),
+        weapon_slots: component.weapon_slots.clone(),
+        weapon_ready_at: component.weapon_ready_at.clone(),
     }
 }
 
@@ -601,7 +741,10 @@ fn apply_action(
         }
         InventoryAction::SelectWeapon { item } => {
             let definition = require_definition(definitions, item)?;
-            if !matches!(definition.kind, ItemKind::Weapon { .. }) {
+            if !matches!(definition.kind, ItemKind::Weapon(_)) {
+                return Err(InventoryRejection::IncompatibleSelection { item: item.clone() });
+            }
+            if !candidate.weapon_slots.contains(item) {
                 return Err(InventoryRejection::IncompatibleSelection { item: item.clone() });
             }
             if !candidate.stacks.iter().any(|stack| stack.item == *item) {
@@ -618,6 +761,10 @@ fn apply_action(
             }])
         }
     }
+}
+
+fn vec3_is_finite(value: Vec3) -> bool {
+    value.x.is_finite() && value.y.is_finite() && value.z.is_finite()
 }
 
 fn require_definition<'a>(

@@ -3,8 +3,8 @@ use entity_state::{EntityDefinition, EntityLifecycle};
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, diagnostic_code, encode_game_snapshot,
     encode_project_document, GameEntityDefinition, GameEntityDefinitionError, GameRuntime,
-    GameSession, InventoryRejection, ItemDefinitionId, PickupConfig, PickupDisposition, PickupFact,
-    PickupRejection, PickupState, RuntimeError,
+    GameSession, InventoryAction, InventoryCommand, InventoryRejection, ItemDefinitionId,
+    PickupConfig, PickupDisposition, PickupFact, PickupRejection, PickupState, RuntimeError,
 };
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
@@ -142,7 +142,7 @@ fn every_pickup_family_round_trips_and_authored_restart_restores_availability() 
             .unwrap();
     }
 
-    assert_eq!(quantity(&runtime, "ammo/scatter-shell"), 12);
+    assert_eq!(quantity(&runtime, "ammo/scatter-shell"), 20);
     assert_eq!(quantity(&runtime, "weapon/breach-scattergun"), 1);
     assert_eq!(quantity(&runtime, "supply/med-patch"), 2);
     assert_eq!(quantity(&runtime, "armor/impact-vest"), 1);
@@ -150,7 +150,7 @@ fn every_pickup_family_round_trips_and_authored_restart_restores_availability() 
     let encoded = encode_game_snapshot(&runtime).unwrap();
     let reopened = decode_game_snapshot(&encoded).unwrap();
     assert_eq!(encode_game_snapshot(&reopened).unwrap(), encoded);
-    assert_eq!(quantity(&reopened, "ammo/scatter-shell"), 12);
+    assert_eq!(quantity(&reopened, "ammo/scatter-shell"), 20);
     assert!(reopened
         .session()
         .pickups()
@@ -166,6 +166,50 @@ fn every_pickup_family_round_trips_and_authored_restart_restores_availability() 
 }
 
 #[test]
+fn weapon_pickup_grants_starter_ammunition_atomically_and_duplicates_grant_neither() {
+    let mut runtime = with_overlap(
+        GameRuntime::from_stored_project(PROJECT).unwrap(),
+        EntityId::new(23),
+    );
+    let receipt = runtime
+        .collect_pickup(PLAYER, EntityId::new(23), 1, 1)
+        .unwrap();
+    assert_eq!(receipt.inventory.len(), 2);
+    assert_eq!(quantity(&runtime, "weapon/breach-scattergun"), 1);
+    assert_eq!(quantity(&runtime, "ammo/scatter-shell"), 8);
+
+    let mut duplicate = GameRuntime::from_stored_project(PROJECT).unwrap();
+    duplicate
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: ItemDefinitionId::parse("weapon/breach-scattergun").unwrap(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    let mut duplicate = with_overlap(duplicate, EntityId::new(23));
+    let before = encode_game_snapshot(&duplicate).unwrap();
+    assert!(matches!(
+        duplicate
+            .collect_pickup(PLAYER, EntityId::new(23), 1, 1)
+            .unwrap_err(),
+        RuntimeError::Pickup(PickupRejection::Inventory(
+            InventoryRejection::QuantityOverflow { .. }
+        ))
+    ));
+    assert_eq!(encode_game_snapshot(&duplicate).unwrap(), before);
+    assert_eq!(quantity(&duplicate, "ammo/scatter-shell"), 0);
+    assert_eq!(
+        duplicate.session().pickup(EntityId::new(23)).unwrap().state,
+        PickupState::Available
+    );
+}
+
+#[test]
 fn schema_eleven_rejects_future_pickup_state_but_migrates_when_fields_are_absent() {
     let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
     let mut snapshot: serde_json::Value =
@@ -178,6 +222,7 @@ fn schema_eleven_rejects_future_pickup_state_but_migrates_when_fields_are_absent
 
     snapshot.as_object_mut().unwrap().remove("pickups");
     snapshot.as_object_mut().unwrap().remove("pickupTriggers");
+    strip_snapshot_weapon_item_fields(&mut snapshot);
     let migrated = decode_game_snapshot(&snapshot.to_string()).unwrap();
     assert_eq!(migrated.session().pickups().len(), 0);
     assert_eq!(quantity(&migrated, "ammo/energy-cell"), 40);
@@ -199,6 +244,7 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
             entity.as_object_mut().unwrap().remove("bounds");
         }
     }
+    strip_project_weapon_item_fields(&mut project);
     let migrated = decode_project_document(&project.to_string()).unwrap();
     assert_eq!(migrated.source_schema_version, 12);
     assert!(migrated.was_migrated());
@@ -207,6 +253,67 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
             .unwrap();
     assert_eq!(runtime.session().pickups().len(), 0);
     assert_eq!(quantity(&runtime, "ammo/energy-cell"), 40);
+}
+
+fn strip_snapshot_weapon_item_fields(snapshot: &mut serde_json::Value) {
+    for definition in snapshot["itemDefinitions"].as_array_mut().unwrap() {
+        if definition["kind"]["kind"] == "weapon" {
+            let kind = definition["kind"].as_object_mut().unwrap();
+            for field in [
+                "attackMode",
+                "damage",
+                "maxDistance",
+                "cooldownTicks",
+                "ammunitionCost",
+                "muzzleOffset",
+                "presentation",
+            ] {
+                kind.remove(field);
+            }
+        }
+    }
+    for inventory in snapshot["inventories"].as_array_mut().unwrap() {
+        inventory.as_object_mut().unwrap().remove("weaponSlots");
+        inventory.as_object_mut().unwrap().remove("weaponCooldowns");
+    }
+    for controller in snapshot["playerControllers"].as_array_mut().unwrap() {
+        controller["bindings"]
+            .as_object_mut()
+            .unwrap()
+            .remove("selectWeapon");
+    }
+}
+
+fn strip_project_weapon_item_fields(project: &mut serde_json::Value) {
+    for definition in project["itemDefinitions"].as_array_mut().unwrap() {
+        if definition["kind"]["kind"] == "weapon" {
+            let kind = definition["kind"].as_object_mut().unwrap();
+            for field in [
+                "attackMode",
+                "damage",
+                "maxDistance",
+                "cooldownTicks",
+                "ammunitionCost",
+                "muzzleOffset",
+                "presentation",
+            ] {
+                kind.remove(field);
+            }
+        }
+    }
+    for scene in project["scenes"].as_array_mut().unwrap() {
+        for entity in scene["entities"].as_array_mut().unwrap() {
+            if let Some(inventory) = entity.get_mut("inventory") {
+                inventory.as_object_mut().unwrap().remove("weaponSlots");
+            }
+            if let Some(controller) = entity.get_mut("playerController") {
+                controller["bindings"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("selectWeapon");
+            }
+        }
+    }
 }
 
 #[test]

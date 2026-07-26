@@ -8,7 +8,14 @@ export type ResolvedPlayerAction =
     }
   | { readonly kind: "move"; readonly forward: number; readonly right: number };
 export type ResolvedAttackAction = { readonly kind: "attack" };
-export type ResolvedInputAction = ResolvedAttackAction | ResolvedPlayerAction;
+export type ResolvedWeaponSelectionAction = {
+  readonly kind: "selectWeaponSlot";
+  readonly slot: number;
+};
+export type ResolvedInputAction =
+  | ResolvedAttackAction
+  | ResolvedPlayerAction
+  | ResolvedWeaponSelectionAction;
 
 export function resolveKeyboardAction(
   code: string,
@@ -28,6 +35,10 @@ export function resolveKeyboardAction(
   }
   if (code === bindings.primaryFire) {
     return { kind: "attack" };
+  }
+  const weaponSlot = bindings.selectWeapon.indexOf(code);
+  if (weaponSlot >= 0) {
+    return { kind: "selectWeaponSlot", slot: weaponSlot };
   }
   return null;
 }

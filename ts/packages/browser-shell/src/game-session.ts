@@ -25,6 +25,11 @@ export type SessionRejectionCode =
   | "notInteractable"
   | "cooldown"
   | "noAmmo"
+  | "noEquippedWeapon"
+  | "invalidWeaponSlot"
+  | "weaponNotOwned"
+  | "weaponAlreadySelected"
+  | "playerDefeated"
   | "paused"
   | "internalDefect";
 
@@ -106,6 +111,7 @@ type ClientGameCommand =
       readonly kind: "setInputIntent";
     } & SessionInputIntent)
   | { readonly kind: "interact"; readonly target: number }
+  | { readonly kind: "selectWeaponSlot"; readonly slot: number }
   | { readonly kind: "setPaused"; readonly paused: boolean }
   | {
       readonly kind: "restart";
@@ -919,6 +925,11 @@ function isSessionRejectionCode(value: unknown): value is SessionRejectionCode {
     value === "notInteractable" ||
     value === "cooldown" ||
     value === "noAmmo" ||
+    value === "noEquippedWeapon" ||
+    value === "invalidWeaponSlot" ||
+    value === "weaponNotOwned" ||
+    value === "weaponAlreadySelected" ||
+    value === "playerDefeated" ||
     value === "paused" ||
     value === "internalDefect"
   );
@@ -976,6 +987,79 @@ function isRuntimeStaticResources(
   );
 }
 
+function isRuntimePlayerState(value: unknown): boolean {
+  if (!isRecord(value) || !isRecord(value.bindings)) {
+    return false;
+  }
+  const bindings = value.bindings;
+  return (
+    isFiniteNumber(value.id) &&
+    isFiniteVector3(value.position) &&
+    isFiniteNumber(value.yawDegrees) &&
+    isFiniteNumber(value.pitchDegrees) &&
+    isFiniteNumber(value.moveStepSeconds) &&
+    isFiniteNumber(value.lookDegreesPerUnit) &&
+    [
+      "moveForward",
+      "moveBackward",
+      "moveLeft",
+      "moveRight",
+      "mouseLook",
+      "primaryFire",
+    ].every((key) => typeof bindings[key] === "string") &&
+    Array.isArray(bindings.selectWeapon) &&
+    bindings.selectWeapon.every((binding) => typeof binding === "string")
+  );
+}
+
+function isRuntimeWeaponState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.item === "string" &&
+    typeof value.presentation === "string" &&
+    isFiniteNumber(value.damage) &&
+    typeof value.ammunition === "string" &&
+    isFiniteNumber(value.ammunitionCost) &&
+    isFiniteNumber(value.ammoRemaining) &&
+    isFiniteNumber(value.ammoCapacity) &&
+    isFiniteNumber(value.readyAtTick)
+  );
+}
+
+function isRuntimeInventoryState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.owner) &&
+    isFiniteNumber(value.capacitySlots) &&
+    (value.equippedWeapon === null ||
+      typeof value.equippedWeapon === "string") &&
+    Array.isArray(value.stacks) &&
+    value.stacks.every(
+      (stack) =>
+        isRecord(stack) &&
+        typeof stack.item === "string" &&
+        isFiniteNumber(stack.quantity),
+    ) &&
+    Array.isArray(value.weapons) &&
+    value.weapons.every(
+      (weapon) =>
+        isRecord(weapon) &&
+        isFiniteNumber(weapon.slot) &&
+        typeof weapon.item === "string" &&
+        typeof weapon.owned === "boolean" &&
+        typeof weapon.selected === "boolean" &&
+        typeof weapon.ammunition === "string" &&
+        isFiniteNumber(weapon.ammunitionQuantity),
+    )
+  );
+}
+
+function isFiniteVector3(value: unknown): boolean {
+  return (
+    Array.isArray(value) && value.length === 3 && value.every(isFiniteNumber)
+  );
+}
+
 function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
   return (
     isRecord(value) &&
@@ -989,9 +1073,9 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     typeof value.playerMotionState === "string" &&
     typeof value.combatState === "string" &&
     isRecord(value.input) &&
-    isRecord(value.player) &&
-    isRecord(value.weapon) &&
-    (value.inventory === null || isRecord(value.inventory)) &&
+    isRuntimePlayerState(value.player) &&
+    isRuntimeWeaponState(value.weapon) &&
+    (value.inventory === null || isRuntimeInventoryState(value.inventory)) &&
     Array.isArray(value.pickups) &&
     (value.extractionBeacon === null || isRecord(value.extractionBeacon)) &&
     Array.isArray(value.enemies) &&

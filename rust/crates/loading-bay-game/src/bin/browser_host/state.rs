@@ -3,8 +3,8 @@
 use core_ids::EntityId;
 use core_math::Vec3;
 use loading_bay_game::{
-    DoorState, EncounterState, EnemyState, ExtractionBeaconState, GameRuntime, NavigationState,
-    PickupCollectionCause, PickupState, PlayerInputSessionView,
+    DoorState, EncounterState, EnemyState, ExtractionBeaconState, GameRuntime, ItemKind,
+    NavigationState, PickupCollectionCause, PickupState, PlayerInputSessionView,
 };
 use serde::Serialize;
 
@@ -43,6 +43,7 @@ struct BrowserPlayerBindings {
     move_right: String,
     mouse_look: String,
     primary_fire: String,
+    select_weapon: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -60,10 +61,25 @@ struct BrowserPlayerState {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct BrowserWeaponState {
+    item: String,
+    presentation: String,
     damage: u32,
+    ammunition: String,
+    ammunition_cost: u32,
     ammo_remaining: u32,
     ammo_capacity: u32,
     ready_at_tick: u64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserInventoryWeapon {
+    slot: usize,
+    item: String,
+    owned: bool,
+    selected: bool,
+    ammunition: String,
+    ammunition_quantity: u32,
 }
 
 #[derive(Debug, Serialize)]
@@ -80,6 +96,7 @@ struct BrowserInventoryState {
     capacity_slots: usize,
     stacks: Vec<BrowserInventoryStack>,
     equipped_weapon: Option<String>,
+    weapons: Vec<BrowserInventoryWeapon>,
 }
 
 #[derive(Debug, Serialize)]
@@ -268,6 +285,7 @@ pub(super) fn browser_dynamic_state(
             move_right: bindings.move_right.clone(),
             mouse_look: bindings.mouse_look.clone(),
             primary_fire: bindings.primary_fire.clone(),
+            select_weapon: bindings.select_weapon.clone(),
         },
     };
     let weapon = runtime
@@ -275,9 +293,26 @@ pub(super) fn browser_dynamic_state(
         .weapon(ACTOR)
         .expect("browser player weapon");
     let weapon_state = BrowserWeaponState {
-        damage: weapon.config.damage,
-        ammo_remaining: weapon.state.ammo_remaining,
-        ammo_capacity: weapon.config.ammo_capacity,
+        item: weapon.item.as_str().to_owned(),
+        presentation: weapon.definition.presentation.clone(),
+        damage: weapon.definition.damage,
+        ammunition: weapon.definition.ammunition.as_str().to_owned(),
+        ammunition_cost: weapon.definition.ammunition_cost,
+        ammo_remaining: runtime
+            .session()
+            .inventory(ACTOR)
+            .and_then(|inventory| {
+                inventory
+                    .stacks
+                    .into_iter()
+                    .find(|stack| stack.item == weapon.definition.ammunition)
+                    .map(|stack| stack.quantity)
+            })
+            .unwrap_or(0),
+        ammo_capacity: runtime
+            .session()
+            .item_definition(&weapon.definition.ammunition)
+            .map_or(0, |definition| definition.max_quantity),
         ready_at_tick: weapon.state.ready_at_tick.raw(),
     };
     let inventory_state =
@@ -289,7 +324,7 @@ pub(super) fn browser_dynamic_state(
                 capacity_slots: inventory.capacity_slots,
                 stacks: inventory
                     .stacks
-                    .into_iter()
+                    .iter()
                     .map(|stack| BrowserInventoryStack {
                         item: stack.item.as_str().to_owned(),
                         quantity: stack.quantity,
@@ -297,7 +332,31 @@ pub(super) fn browser_dynamic_state(
                     .collect(),
                 equipped_weapon: inventory
                     .equipped_weapon
+                    .as_ref()
                     .map(|item| item.as_str().to_owned()),
+                weapons: inventory
+                    .weapon_slots
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(slot, item)| {
+                        let definition = runtime.session().item_definition(item)?;
+                        let ItemKind::Weapon(weapon) = definition.kind else {
+                            return None;
+                        };
+                        Some(BrowserInventoryWeapon {
+                            slot,
+                            item: item.as_str().to_owned(),
+                            owned: inventory.stacks.iter().any(|stack| stack.item == *item),
+                            selected: inventory.equipped_weapon.as_ref() == Some(item),
+                            ammunition: weapon.ammunition.as_str().to_owned(),
+                            ammunition_quantity: inventory
+                                .stacks
+                                .iter()
+                                .find(|stack| stack.item == weapon.ammunition)
+                                .map_or(0, |stack| stack.quantity),
+                        })
+                    })
+                    .collect(),
             });
     let pickups = runtime
         .session()

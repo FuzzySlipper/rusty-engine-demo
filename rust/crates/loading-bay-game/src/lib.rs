@@ -31,10 +31,9 @@ mod studio_adapter;
 
 pub use combat::{
     CombatFact, CombatMissReason, CombatReceipt, CombatRejectionReason, EnemyComponent, EnemyState,
-    EnemyView, HealthComponent, HealthConfig, HealthView, ResolvedAttackAction, WeaponComponent,
-    WeaponConfig, WeaponState, WeaponView, MAX_COMBAT_HITBOX_HALF_EXTENT, MAX_HEALTH,
-    MAX_WEAPON_AMMO, MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET,
-    MAX_WEAPON_RANGE,
+    EnemyView, HealthComponent, HealthConfig, HealthView, ResolvedAttackAction, WeaponConfig,
+    WeaponState, WeaponView, MAX_COMBAT_HITBOX_HALF_EXTENT, MAX_HEALTH, MAX_WEAPON_AMMO,
+    MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_RANGE,
 };
 pub use content::{
     decode_project_content, AdmittedProject, ProjectContentError, PROJECT_CONTENT_SCHEMA_VERSION,
@@ -67,8 +66,8 @@ pub use inventory::{
     InventoryAction, InventoryAdmissionError, InventoryCommand, InventoryComponent,
     InventoryConfig, InventoryFact, InventoryReceipt, InventoryRejection, InventoryService,
     InventoryStack, InventoryView, ItemDefinition, ItemDefinitionId, ItemDefinitionIdError,
-    ItemDefinitionView, ItemKind, MAX_INVENTORY_SLOTS, MAX_ITEM_DEFINITION_ID_BYTES,
-    MAX_ITEM_QUANTITY,
+    ItemDefinitionView, ItemKind, WeaponAttackMode, WeaponDefinition, MAX_INVENTORY_SLOTS,
+    MAX_ITEM_DEFINITION_ID_BYTES, MAX_ITEM_QUANTITY,
 };
 pub use navigation::{
     NavigationComponent, NavigationConfig, NavigationFact, NavigationFailure,
@@ -109,8 +108,8 @@ pub use snapshot::{
     MaterialVoxelSnapshot, NavigationSnapshot, PickupSnapshot, PlayerControllerSnapshot,
     PlayerInputBindingsSnapshot, SnapshotEncounterState, SnapshotEnemyState,
     SnapshotExtractionBeaconState, SnapshotItemKind, SnapshotNavigationState,
-    SnapshotPickupCollectionCause, SnapshotPickupState, VoxelCollisionSnapshot, WeaponSnapshot,
-    GAME_SNAPSHOT_SCHEMA_VERSION,
+    SnapshotPickupCollectionCause, SnapshotPickupState, SnapshotWeaponAttackMode,
+    VoxelCollisionSnapshot, WeaponCooldownSnapshot, WeaponSnapshot, GAME_SNAPSHOT_SCHEMA_VERSION,
 };
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset,
@@ -121,7 +120,8 @@ pub use stored_project::{
     StoredMaterialVoxel, StoredMaterialVoxelEnvironment, StoredNavigation, StoredPickup,
     StoredPlayerController, StoredPlayerInputBindings, StoredProject, StoredProjectError,
     StoredRenderable, StoredScene, StoredSolidVoxelEnvironment, StoredSwitch,
-    StoredVoxelEnvironment, StoredVoxelInstance, StoredWeapon, STORED_PROJECT_SCHEMA_VERSION,
+    StoredVoxelEnvironment, StoredVoxelInstance, StoredWeapon, StoredWeaponAttackMode,
+    STORED_PROJECT_SCHEMA_VERSION,
 };
 pub use studio_adapter::{
     AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,

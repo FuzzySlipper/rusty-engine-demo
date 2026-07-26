@@ -59,6 +59,9 @@ enum BrowserGameCommand {
     Interact {
         target: u64,
     },
+    SelectWeaponSlot {
+        slot: u8,
+    },
     SetPaused {
         paused: bool,
     },
@@ -88,6 +91,11 @@ pub(super) enum RejectionCode {
     NotInteractable,
     Cooldown,
     NoAmmo,
+    NoEquippedWeapon,
+    InvalidWeaponSlot,
+    WeaponNotOwned,
+    WeaponAlreadySelected,
+    PlayerDefeated,
     Paused,
     InternalDefect,
 }
@@ -477,6 +485,13 @@ fn process_command(
                 command: GameLoopEdgeCommandKind::Interact { target },
             })
         }
+        BrowserGameCommand::SelectWeaponSlot { slot } => {
+            host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                connection_generation: context.connection_generation,
+                sequence: envelope.sequence,
+                command: GameLoopEdgeCommandKind::SelectWeaponSlot { slot },
+            })
+        }
         BrowserGameCommand::SetPaused { paused } => {
             host.runtime.submit_edge_command(GameLoopEdgeCommand {
                 connection_generation: context.connection_generation,
@@ -759,6 +774,13 @@ fn fact_rejection_code(kind: &str) -> Option<RejectionCode> {
         "InputEdgeRejectedPaused" => Some(RejectionCode::Paused),
         "CombatRejectedCooldown" => Some(RejectionCode::Cooldown),
         "CombatRejectedNoAmmo" => Some(RejectionCode::NoAmmo),
+        "CombatRejectedNoEquippedWeapon" => Some(RejectionCode::NoEquippedWeapon),
+        "CombatRejectedPlayerDefeated" => Some(RejectionCode::PlayerDefeated),
+        "InputEdgeRejectedInvalidWeaponSlot" => Some(RejectionCode::InvalidWeaponSlot),
+        "InputEdgeRejectedWeaponNotOwned" => Some(RejectionCode::WeaponNotOwned),
+        "InputEdgeRejectedWeaponAlreadySelected" => Some(RejectionCode::WeaponAlreadySelected),
+        "InputEdgeRejectedPlayerDefeated" => Some(RejectionCode::PlayerDefeated),
+        "InputEdgeRejectedInventory" => Some(RejectionCode::InternalDefect),
         _ => None,
     }
 }

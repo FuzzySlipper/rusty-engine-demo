@@ -585,6 +585,9 @@ fn drain_game_loop_feedback(
                 facts.push(("PickupCollected".to_owned(), None));
                 feedback.extend_pickup(&fact);
             }
+            GameLoopFact::Inventory(_) => {
+                facts.push(("InventoryWeaponSelected".to_owned(), None));
+            }
             GameLoopFact::PickupRejected { reason, .. } => {
                 facts.push((pickup_rejection_name(&reason).to_owned(), None));
             }
@@ -596,6 +599,12 @@ fn drain_game_loop_feedback(
                 match reason {
                     loading_bay_game::CombatRejectionReason::Cooldown => "CombatRejectedCooldown",
                     loading_bay_game::CombatRejectionReason::NoAmmo => "CombatRejectedNoAmmo",
+                    loading_bay_game::CombatRejectionReason::NoEquippedWeapon => {
+                        "CombatRejectedNoEquippedWeapon"
+                    }
+                    loading_bay_game::CombatRejectionReason::AttackerDefeated => {
+                        "CombatRejectedPlayerDefeated"
+                    }
                 }
                 .to_owned(),
                 None,
@@ -611,6 +620,21 @@ fn drain_game_loop_feedback(
                     }
                     loading_bay_game::EdgeCommandRejection::PickupRejected => {
                         "InputEdgeRejectedPickup"
+                    }
+                    loading_bay_game::EdgeCommandRejection::InvalidWeaponSlot => {
+                        "InputEdgeRejectedInvalidWeaponSlot"
+                    }
+                    loading_bay_game::EdgeCommandRejection::WeaponNotOwned => {
+                        "InputEdgeRejectedWeaponNotOwned"
+                    }
+                    loading_bay_game::EdgeCommandRejection::WeaponAlreadySelected => {
+                        "InputEdgeRejectedWeaponAlreadySelected"
+                    }
+                    loading_bay_game::EdgeCommandRejection::PlayerDefeated => {
+                        "InputEdgeRejectedPlayerDefeated"
+                    }
+                    loading_bay_game::EdgeCommandRejection::InventoryRejected => {
+                        "InputEdgeRejectedInventory"
                     }
                 }
                 .to_owned(),
@@ -650,6 +674,7 @@ fn pickup_rejection_name(reason: &loading_bay_game::PickupRejection) -> &'static
 
 fn combat_fact_name(fact: &CombatFact) -> &'static str {
     match fact {
+        CombatFact::Inventory(_) => "CombatAmmunitionConsumed",
         CombatFact::AttackFired { .. } => "CombatFired",
         CombatFact::AttackHit { .. } => "CombatHit",
         CombatFact::AttackMissed {

@@ -6,7 +6,8 @@ use core_ids::EntityId;
 use loading_bay_game::{
     admit_stored_project_with_document, decode_game_snapshot, decode_project_document,
     diagnostic_code, encode_game_snapshot, encode_project_document, DoorState, GameRuntime,
-    ProjectSaveMode, ProjectStore, ProjectStoreError, ResolvedAttackAction, ResolvedPlayerAction,
+    ItemDefinitionId, ProjectSaveMode, ProjectStore, ProjectStoreError, ResolvedAttackAction,
+    ResolvedPlayerAction,
 };
 
 const CURRENT_PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
@@ -34,15 +35,7 @@ fn authored_save_stays_static_while_independent_snapshot_reopens_live_values() {
 
     assert_eq!(runtime.tick().raw(), 1);
     assert_eq!(runtime.session().health(ENEMY).unwrap().current, 40);
-    assert_eq!(
-        runtime
-            .session()
-            .weapon(PLAYER)
-            .unwrap()
-            .state
-            .ammo_remaining,
-        7
-    );
+    assert_eq!(inventory_quantity(&runtime, "ammo/energy-cell"), 39);
     assert_eq!(
         runtime
             .session()
@@ -92,15 +85,7 @@ fn authored_save_stays_static_while_independent_snapshot_reopens_live_values() {
     let initial = GameRuntime::from_admitted_project(initial);
     assert_eq!(initial.tick().raw(), 0);
     assert_eq!(initial.session().health(ENEMY).unwrap().current, 100);
-    assert_eq!(
-        initial
-            .session()
-            .weapon(PLAYER)
-            .unwrap()
-            .state
-            .ammo_remaining,
-        8
-    );
+    assert_eq!(inventory_quantity(&initial, "ammo/energy-cell"), 40);
     assert_eq!(
         initial.session().door(EXIT).unwrap().state,
         DoorState::Closed
@@ -110,15 +95,7 @@ fn authored_save_stays_static_while_independent_snapshot_reopens_live_values() {
     assert_eq!(encode_game_snapshot(&reopened).unwrap(), snapshot);
     assert_eq!(reopened.tick().raw(), 1);
     assert_eq!(reopened.session().health(ENEMY).unwrap().current, 40);
-    assert_eq!(
-        reopened
-            .session()
-            .weapon(PLAYER)
-            .unwrap()
-            .state
-            .ammo_remaining,
-        7
-    );
+    assert_eq!(inventory_quantity(&reopened, "ammo/energy-cell"), 39);
     assert_eq!(
         reopened.session().door(EXIT).unwrap().state,
         DoorState::Open
@@ -212,6 +189,18 @@ fn aim_at(runtime: &mut GameRuntime, target: EntityId) {
 
 fn normalize_degrees(value: f32) -> f32 {
     (value + 180.0).rem_euclid(360.0) - 180.0
+}
+
+fn inventory_quantity(runtime: &GameRuntime, item: &str) -> u32 {
+    let item = ItemDefinitionId::parse(item).unwrap();
+    runtime
+        .session()
+        .inventory(PLAYER)
+        .unwrap()
+        .stacks
+        .into_iter()
+        .find(|stack| stack.item == item)
+        .map_or(0, |stack| stack.quantity)
 }
 
 fn contains_object_key(value: &serde_json::Value, needle: &str) -> bool {

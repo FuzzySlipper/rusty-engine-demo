@@ -3,9 +3,10 @@ use std::time::Duration;
 use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, GameLoopEdgeCommand, GameLoopEdgeCommandKind,
-    GameLoopFact, GameRuntime, InputCommandDisposition, InputCommandRejection, LoadingBayGameLoop,
-    PlayerInputCommand, PlayerInputIntent, FIXED_STEP_DURATION, FIXED_TICK_PHASE_ORDER,
-    MAX_CATCH_UP_TICKS, MAX_EDGE_COMMANDS,
+    GameLoopFact, GameRuntime, InputCommandDisposition, InputCommandRejection, InventoryAction,
+    InventoryCommand, InventoryFact, ItemDefinitionId, LoadingBayGameLoop, PlayerInputCommand,
+    PlayerInputIntent, FIXED_STEP_DURATION, FIXED_TICK_PHASE_ORDER, MAX_CATCH_UP_TICKS,
+    MAX_EDGE_COMMANDS,
 };
 
 const PLAYER: EntityId = EntityId::new(1);
@@ -47,6 +48,14 @@ fn input(
             look_delta,
             primary_fire_held,
         },
+    }
+}
+
+fn edge(generation: u64, sequence: u64, command: GameLoopEdgeCommandKind) -> GameLoopEdgeCommand {
+    GameLoopEdgeCommand {
+        connection_generation: generation,
+        sequence,
+        command,
     }
 }
 
@@ -136,6 +145,175 @@ fn fixed_pickup_phase_collects_non_solid_overlap_and_reports_capacity_rejection(
             .unwrap()
             .state,
         loading_bay_game::PickupState::Available
+    );
+}
+
+#[test]
+fn weapon_slot_edges_reject_precisely_and_select_only_owned_items_on_fixed_ticks() {
+    let mut game_loop = game_loop();
+    let generation = game_loop.start_connection().connection_generation;
+    let original = game_loop.runtime().session().inventory(PLAYER).unwrap();
+
+    game_loop
+        .submit_edge_command(edge(
+            generation,
+            1,
+            GameLoopEdgeCommandKind::SelectWeaponSlot { slot: 1 },
+        ))
+        .unwrap();
+    let unowned = game_loop.run_fixed_tick().unwrap();
+    assert!(unowned.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::EdgeCommandRejected {
+            sequence: 1,
+            reason: loading_bay_game::EdgeCommandRejection::WeaponNotOwned,
+        }
+    )));
+    assert_eq!(
+        game_loop.runtime().session().inventory(PLAYER).unwrap(),
+        original
+    );
+
+    game_loop
+        .submit_edge_command(edge(
+            generation,
+            2,
+            GameLoopEdgeCommandKind::SelectWeaponSlot { slot: 9 },
+        ))
+        .unwrap();
+    let invalid = game_loop.run_fixed_tick().unwrap();
+    assert!(invalid.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::EdgeCommandRejected {
+            sequence: 2,
+            reason: loading_bay_game::EdgeCommandRejection::InvalidWeaponSlot,
+        }
+    )));
+
+    game_loop
+        .submit_edge_command(edge(
+            generation,
+            3,
+            GameLoopEdgeCommandKind::SelectWeaponSlot { slot: 0 },
+        ))
+        .unwrap();
+    let already = game_loop.run_fixed_tick().unwrap();
+    assert!(already.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::EdgeCommandRejected {
+            sequence: 3,
+            reason: loading_bay_game::EdgeCommandRejection::WeaponAlreadySelected,
+        }
+    )));
+
+    let breach = ItemDefinitionId::parse("weapon/breach-scattergun").unwrap();
+    game_loop
+        .runtime_mut()
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: breach.clone(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    game_loop
+        .submit_edge_command(edge(
+            generation,
+            4,
+            GameLoopEdgeCommandKind::SelectWeaponSlot { slot: 1 },
+        ))
+        .unwrap();
+    let selected = game_loop.run_fixed_tick().unwrap();
+    assert!(selected.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::Inventory(InventoryFact::EquippedWeaponChanged {
+            after: Some(item),
+            ..
+        }) if item == &breach
+    )));
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .inventory(PLAYER)
+            .unwrap()
+            .equipped_weapon,
+        Some(breach)
+    );
+
+    assert_eq!(
+        game_loop
+            .submit_edge_command(edge(
+                generation,
+                4,
+                GameLoopEdgeCommandKind::SelectWeaponSlot { slot: 0 },
+            ))
+            .unwrap()
+            .disposition,
+        InputCommandDisposition::Repeated
+    );
+    let selected_inventory = game_loop.runtime().session().inventory(PLAYER).unwrap();
+    assert_eq!(
+        game_loop.submit_edge_command(edge(
+            generation,
+            3,
+            GameLoopEdgeCommandKind::SelectWeaponSlot { slot: 0 },
+        )),
+        Err(InputCommandRejection::StaleSequence {
+            acknowledged: 4,
+            actual: 3,
+        })
+    );
+    assert_eq!(
+        game_loop.runtime().session().inventory(PLAYER).unwrap(),
+        selected_inventory
+    );
+}
+
+#[test]
+fn defeated_player_cannot_change_equipped_weapon() {
+    let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    project["scenes"][0]["entities"][0]["health"] = serde_json::json!({
+        "max": 1,
+        "hitboxHalfExtents": [0.25, 0.25, 0.25]
+    });
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let mut snapshot: serde_json::Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    snapshot["health"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|health| health["entity"] == PLAYER.raw())
+        .unwrap()["current"] = 0.into();
+    let defeated = decode_game_snapshot(&snapshot.to_string()).unwrap();
+    let before = defeated.session().inventory(PLAYER).unwrap();
+    let mut game_loop = LoadingBayGameLoop::new(defeated, PLAYER).unwrap();
+    let generation = game_loop.start_connection().connection_generation;
+
+    game_loop
+        .submit_edge_command(edge(
+            generation,
+            1,
+            GameLoopEdgeCommandKind::SelectWeaponSlot { slot: 0 },
+        ))
+        .unwrap();
+    let receipt = game_loop.run_fixed_tick().unwrap();
+
+    assert!(receipt.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::EdgeCommandRejected {
+            sequence: 1,
+            reason: loading_bay_game::EdgeCommandRejection::PlayerDefeated,
+        }
+    )));
+    assert_eq!(
+        game_loop.runtime().session().inventory(PLAYER).unwrap(),
+        before
     );
 }
 

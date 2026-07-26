@@ -14,6 +14,7 @@ const bindings: RuntimePlayerBindings = {
   moveLeft: "KeyA",
   moveRight: "KeyD",
   primaryFire: "Mouse0",
+  selectWeapon: ["Digit1", "Digit2", "Digit3"],
 };
 
 void test("authored movement bindings resolve without UI-owned movement policy", () => {
@@ -22,7 +23,15 @@ void test("authored movement bindings resolve without UI-owned movement policy",
     forward: 1,
     right: 0,
   });
-  assert.equal(resolveKeyboardAction("Digit1", bindings), null);
+  assert.deepEqual(resolveKeyboardAction("Digit1", bindings), {
+    kind: "selectWeaponSlot",
+    slot: 0,
+  });
+  assert.deepEqual(resolveKeyboardAction("Digit3", bindings), {
+    kind: "selectWeaponSlot",
+    slot: 2,
+  });
+  assert.equal(resolveKeyboardAction("Digit4", bindings), null);
 });
 
 void test("pointer deltas preserve the corrected first-person look directions", () => {

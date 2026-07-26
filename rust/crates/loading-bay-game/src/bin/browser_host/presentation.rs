@@ -137,7 +137,9 @@ impl BrowserFeedbackProjection {
                 CombatFact::EnemyDefeated {
                     attacker, enemy, ..
                 } => self.push_defeat(Some(*attacker), *enemy),
-                CombatFact::AttackHit { .. } | CombatFact::AttackMissed { .. } => {}
+                CombatFact::Inventory(_)
+                | CombatFact::AttackHit { .. }
+                | CombatFact::AttackMissed { .. } => {}
             }
         }
     }
@@ -299,6 +301,8 @@ mod tests {
         let actor = EntityId::new(1);
         let enemy = EntityId::new(4);
         let door = EntityId::new(3);
+        let weapon = loading_bay_game::ItemDefinitionId::parse("weapon/arc-pistol").unwrap();
+        let ammunition = loading_bay_game::ItemDefinitionId::parse("ammo/energy-cell").unwrap();
         let mut projection = BrowserFeedbackProjection::default();
         projection.extend_player_control(&[
             PlayerControlFact::Moved {
@@ -315,6 +319,8 @@ mod tests {
         projection.extend_combat(&[
             CombatFact::AttackFired {
                 attacker: actor,
+                weapon,
+                ammunition,
                 origin: Vec3::new(2.0, 1.0, 0.0),
                 direction: Vec3::new(0.0, 0.0, -1.0),
                 ammo_before: 8,

@@ -7,8 +7,7 @@ use engine_spatial::MAX_TRIGGER_DEFINITIONS;
 use entity_state::{EntityState, EntityView};
 
 use crate::combat::{
-    EnemyComponent, EnemyState, EnemyView, HealthComponent, HealthView, WeaponComponent,
-    WeaponState, WeaponView,
+    EnemyComponent, EnemyState, EnemyView, HealthComponent, HealthView, WeaponState, WeaponView,
 };
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::{DoorComponent, DoorState, DoorView};
@@ -43,7 +42,6 @@ pub struct GameSession {
     pub(crate) item_definitions: BTreeMap<ItemDefinitionId, ItemDefinition>,
     pub(crate) inventories: BTreeMap<EntityId, InventoryComponent>,
     pub(crate) pickups: BTreeMap<EntityId, PickupComponent>,
-    pub(crate) weapons: BTreeMap<EntityId, WeaponComponent>,
 }
 
 impl GameSession {
@@ -88,10 +86,20 @@ impl GameSession {
         let mut player_controllers = BTreeMap::new();
         let mut inventories = BTreeMap::new();
         let mut pickups = BTreeMap::new();
-        let mut weapons = BTreeMap::new();
 
         for definition in &definitions {
             let entity = definition.entity.id;
+            if let (Some(controller), Some(inventory)) =
+                (&definition.player_controller, &definition.inventory)
+            {
+                if controller.bindings.select_weapon.len() != inventory.weapon_slots.len() {
+                    return Err(GameEntityDefinitionError::WeaponBindingSlotMismatch {
+                        entity,
+                        binding_count: controller.bindings.select_weapon.len(),
+                        slot_count: inventory.weapon_slots.len(),
+                    });
+                }
+            }
             if let Some(config) = definition.door {
                 let view = entities.view(entity).expect("definition created entity");
                 if view.transform.is_none() {
@@ -282,6 +290,26 @@ impl GameSession {
                 if config.quantity == 0 || config.quantity > item.max_quantity {
                     return Err(GameEntityDefinitionError::InvalidPickupQuantity { entity });
                 }
+                if let Some(starter) = &config.starter_ammunition {
+                    let crate::inventory::ItemKind::Weapon(weapon) = &item.kind else {
+                        return Err(GameEntityDefinitionError::InvalidPickupStarterAmmunition {
+                            entity,
+                        });
+                    };
+                    let valid = starter.item == weapon.ammunition
+                        && starter.quantity > 0
+                        && item_definitions
+                            .get(&starter.item)
+                            .is_some_and(|definition| {
+                                matches!(definition.kind, crate::inventory::ItemKind::Ammunition)
+                                    && starter.quantity <= definition.max_quantity
+                            });
+                    if !valid {
+                        return Err(GameEntityDefinitionError::InvalidPickupStarterAmmunition {
+                            entity,
+                        });
+                    }
+                }
                 pickups.insert(
                     entity,
                     PickupComponent {
@@ -290,25 +318,8 @@ impl GameSession {
                     },
                 );
             }
-            if let Some(config) = definition.weapon {
-                if definition.player_controller.is_none() {
-                    return Err(GameEntityDefinitionError::WeaponWithoutPlayerController {
-                        entity,
-                    });
-                }
-                if !config.is_valid() {
-                    return Err(GameEntityDefinitionError::InvalidWeaponConfig { entity });
-                }
-                weapons.insert(
-                    entity,
-                    WeaponComponent {
-                        config,
-                        state: WeaponState {
-                            ammo_remaining: config.ammo_capacity,
-                            ready_at_tick: Tick::ZERO,
-                        },
-                    },
-                );
+            if definition.weapon.is_some() {
+                return Err(GameEntityDefinitionError::LegacyEntityWeapon { entity });
             }
             if let Some(config) = &definition.encounter {
                 if config.members.is_empty() {
@@ -426,7 +437,6 @@ impl GameSession {
             item_definitions,
             inventories,
             pickups,
-            weapons,
         })
     }
 
@@ -553,11 +563,23 @@ impl GameSession {
     }
 
     pub fn weapon(&self, entity: EntityId) -> Option<WeaponView> {
-        let component = self.weapons.get(&entity)?;
+        let inventory = self.inventories.get(&entity)?;
+        let item = inventory.equipped_weapon.clone()?;
+        let definition = self.item_definitions.get(&item)?;
+        let crate::inventory::ItemKind::Weapon(weapon) = &definition.kind else {
+            return None;
+        };
         Some(WeaponView {
-            entity,
-            config: component.config,
-            state: component.state,
+            owner: entity,
+            item: item.clone(),
+            definition: weapon.clone(),
+            state: WeaponState {
+                ready_at_tick: inventory
+                    .weapon_ready_at
+                    .get(&item)
+                    .copied()
+                    .unwrap_or(Tick::ZERO),
+            },
         })
     }
 }

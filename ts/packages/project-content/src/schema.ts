@@ -58,6 +58,7 @@ export interface PlayerInputBindingsDefinition {
   readonly moveRight: string;
   readonly mouseLook: string;
   readonly primaryFire: string;
+  readonly selectWeapon?: readonly string[];
 }
 
 export interface PlayerControllerDefinition {
@@ -78,7 +79,17 @@ export interface WeaponDefinition {
 }
 
 export type ItemKindDefinition =
-  | { readonly kind: "weapon"; readonly ammunition: string }
+  | {
+      readonly kind: "weapon";
+      readonly attackMode: "hitscan";
+      readonly damage: number;
+      readonly maxDistance: number;
+      readonly cooldownTicks: number;
+      readonly ammunition: string;
+      readonly ammunitionCost: number;
+      readonly muzzleOffset: Vec3;
+      readonly presentation: string;
+    }
   | { readonly kind: "ammunition" }
   | { readonly kind: "accessKey" }
   | { readonly kind: "healthSupply"; readonly restoreHealth: number }
@@ -99,11 +110,13 @@ export interface InventoryDefinition {
   readonly capacitySlots: number;
   readonly startingStacks: readonly InventoryStackDefinition[];
   readonly initiallyEquippedWeapon: string | null;
+  readonly weaponSlots: readonly string[];
 }
 
 export interface PickupDefinition {
   readonly item: string;
   readonly quantity: number;
+  readonly starterAmmunition?: InventoryStackDefinition;
 }
 
 export interface VoxelCollisionDefinition {
@@ -244,7 +257,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 13;
+  readonly schemaVersion: 14;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

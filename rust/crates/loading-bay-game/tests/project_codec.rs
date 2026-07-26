@@ -146,7 +146,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 14, 99] {
+    for schema_version in [0, 5, 15, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -236,6 +236,12 @@ fn strip_future_inventory_and_pickups(project: &mut serde_json::Value) {
         for entity in scene["entities"].as_array_mut().unwrap() {
             entity.as_object_mut().unwrap().remove("inventory");
             entity.as_object_mut().unwrap().remove("bounds");
+            if let Some(controller) = entity.get_mut("playerController") {
+                controller["bindings"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("selectWeapon");
+            }
         }
     }
 }

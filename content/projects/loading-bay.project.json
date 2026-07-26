@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 13,
+  "schemaVersion": 14,
   "projectId": "loading-bay",
   "name": "Loading Bay",
   "entryScene": "scene/loading-bay",
@@ -134,7 +134,18 @@
       "maxQuantity": 1,
       "kind": {
         "kind": "weapon",
-        "ammunition": "ammo/energy-cell"
+        "attackMode": "hitscan",
+        "damage": 60,
+        "maxDistance": 20,
+        "cooldownTicks": 2,
+        "ammunition": "ammo/energy-cell",
+        "ammunitionCost": 1,
+        "muzzleOffset": [
+          0,
+          0,
+          0
+        ],
+        "presentation": "arc-pistol"
       }
     },
     {
@@ -142,7 +153,18 @@
       "maxQuantity": 1,
       "kind": {
         "kind": "weapon",
-        "ammunition": "ammo/scatter-shell"
+        "attackMode": "hitscan",
+        "damage": 90,
+        "maxDistance": 12,
+        "cooldownTicks": 36,
+        "ammunition": "ammo/scatter-shell",
+        "ammunitionCost": 2,
+        "muzzleOffset": [
+          0,
+          0,
+          0
+        ],
+        "presentation": "breach-scattergun"
       }
     },
     {
@@ -150,7 +172,18 @@
       "maxQuantity": 1,
       "kind": {
         "kind": "weapon",
-        "ammunition": "ammo/energy-cell"
+        "attackMode": "hitscan",
+        "damage": 30,
+        "maxDistance": 25,
+        "cooldownTicks": 1,
+        "ammunition": "ammo/energy-cell",
+        "ammunitionCost": 1,
+        "muzzleOffset": [
+          0,
+          0,
+          0
+        ],
+        "presentation": "rivet-carbine"
       }
     }
   ],
@@ -208,19 +241,13 @@
               "moveLeft": "KeyA",
               "moveRight": "KeyD",
               "mouseLook": "pointer",
-              "primaryFire": "Mouse0"
+              "primaryFire": "Mouse0",
+              "selectWeapon": [
+                "Digit1",
+                "Digit2",
+                "Digit3"
+              ]
             }
-          },
-          "weapon": {
-            "damage": 60,
-            "maxDistance": 20,
-            "cooldownTicks": 2,
-            "ammoCapacity": 8,
-            "muzzleOffset": [
-              0,
-              0,
-              0
-            ]
           },
           "bounds": {
             "min": [
@@ -250,7 +277,12 @@
                 "quantity": 1
               }
             ],
-            "initiallyEquippedWeapon": "weapon/arc-pistol"
+            "initiallyEquippedWeapon": "weapon/arc-pistol",
+            "weaponSlots": [
+              "weapon/arc-pistol",
+              "weapon/breach-scattergun",
+              "weapon/rivet-carbine"
+            ]
           }
         },
         {
@@ -546,7 +578,11 @@
           },
           "pickup": {
             "item": "weapon/breach-scattergun",
-            "quantity": 1
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/scatter-shell",
+              "quantity": 8
+            }
           }
         },
         {
