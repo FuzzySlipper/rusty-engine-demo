@@ -1372,7 +1372,17 @@ impl GameRuntime {
             for cooldown in inventory.weapon_cooldowns {
                 let raw_item = cooldown.item.clone();
                 let item = parse_snapshot_item_id(cooldown.item)?;
+                let latest_reachable =
+                    item_definitions
+                        .get(&item)
+                        .and_then(|definition| match &definition.kind {
+                            ItemKind::Weapon(weapon) => {
+                                Some(snapshot.tick.saturating_add(weapon.cooldown_ticks))
+                            }
+                            _ => None,
+                        });
                 if !weapon_slots.contains(&item)
+                    || latest_reachable.is_none_or(|latest| cooldown.ready_at_tick > latest)
                     || cooldowns
                         .insert(item, Tick::new(cooldown.ready_at_tick))
                         .is_some()

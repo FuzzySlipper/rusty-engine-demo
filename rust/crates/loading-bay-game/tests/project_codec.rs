@@ -173,6 +173,42 @@ fn migration_rejects_the_ambiguous_legacy_spatial_shape() {
 }
 
 #[test]
+fn schema_thirteen_multi_scene_weapon_migration_rejects_conflicting_authority() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["schemaVersion"] = 13.into();
+    strip_current_weapon_fields(&mut previous);
+
+    let mut second_scene = previous["scenes"][0].clone();
+    second_scene["id"] = "scene/second-loading-bay".into();
+    second_scene["name"] = "Second Loading Bay".into();
+    previous["scenes"]
+        .as_array_mut()
+        .unwrap()
+        .push(second_scene);
+
+    let first_player = previous["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity["id"] == 1)
+        .unwrap();
+    first_player["weapon"] = legacy_weapon(60);
+    let second_player = previous["scenes"][1]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity["id"] == 1)
+        .unwrap();
+    second_player["weapon"] = legacy_weapon(17);
+
+    let error = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap_err();
+
+    assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
+    assert_eq!(error.diagnostic().path, "scenes[1].entities[0].weapon");
+    assert!(error.diagnostic().message.contains("conflicts"));
+}
+
+#[test]
 fn authored_project_codec_has_no_runtime_state_surface() {
     let project = decode_project_document(CURRENT_PROJECT).unwrap().project;
     let encoded = encode_project_document(&project).unwrap();
@@ -244,4 +280,56 @@ fn strip_future_inventory_and_pickups(project: &mut serde_json::Value) {
             }
         }
     }
+}
+
+fn strip_current_weapon_fields(project: &mut serde_json::Value) {
+    for definition in project["itemDefinitions"].as_array_mut().unwrap() {
+        let kind = definition["kind"].as_object_mut().unwrap();
+        if kind.get("kind").and_then(serde_json::Value::as_str) == Some("weapon") {
+            for field in [
+                "attackMode",
+                "damage",
+                "maxDistance",
+                "cooldownTicks",
+                "ammunitionCost",
+                "muzzleOffset",
+                "presentation",
+            ] {
+                kind.remove(field);
+            }
+        }
+    }
+    for scene in project["scenes"].as_array_mut().unwrap() {
+        for entity in scene["entities"].as_array_mut().unwrap() {
+            if let Some(inventory) = entity
+                .get_mut("inventory")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                inventory.remove("weaponSlots");
+            }
+            if let Some(bindings) = entity
+                .get_mut("playerController")
+                .and_then(|controller| controller.get_mut("bindings"))
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                bindings.remove("selectWeapon");
+            }
+            if let Some(pickup) = entity
+                .get_mut("pickup")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                pickup.remove("starterAmmunition");
+            }
+        }
+    }
+}
+
+fn legacy_weapon(damage: u32) -> serde_json::Value {
+    serde_json::json!({
+        "damage": damage,
+        "maxDistance": 20,
+        "cooldownTicks": 2,
+        "ammoCapacity": 200,
+        "muzzleOffset": [0, 0, 0]
+    })
 }

@@ -3,7 +3,7 @@
 //! This is intentionally not a runtime snapshot codec. It accepts only the
 //! static [`StoredProject`] shape and never observes a [`crate::GameRuntime`].
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Deserialize;
 use voxel_asset::canonicalize_voxel_asset;
@@ -419,15 +419,17 @@ fn reject_future_weapon_fields(legacy: &StoredProject) -> Result<(), StoredProje
 }
 
 fn migrate_legacy_weapon_authority(project: &mut StoredProject) -> Result<(), StoredProjectError> {
-    for scene in &mut project.scenes {
-        for entity in &mut scene.entities {
+    let mut migrated_items = BTreeMap::<String, (StoredItemKind, String)>::new();
+    for (scene_index, scene) in project.scenes.iter_mut().enumerate() {
+        for (entity_index, entity) in scene.entities.iter_mut().enumerate() {
             let Some(legacy_weapon) = entity.weapon.take() else {
                 continue;
             };
+            let weapon_path = format!("scenes[{scene_index}].entities[{entity_index}].weapon");
             let Some(controller) = entity.player_controller.as_mut() else {
                 return Err(StoredProjectError::new(
                     diagnostic_code::MIGRATION,
-                    "scenes",
+                    weapon_path,
                     format!(
                         "entity {} has a legacy weapon without a player controller",
                         entity.id
@@ -470,7 +472,7 @@ fn migrate_legacy_weapon_authority(project: &mut StoredProject) -> Result<(), St
             {
                 let Some(definition) = project
                     .item_definitions
-                    .iter_mut()
+                    .iter()
                     .find(|definition| definition.id == equipped)
                 else {
                     return Err(StoredProjectError::new(
@@ -489,7 +491,26 @@ fn migrate_legacy_weapon_authority(project: &mut StoredProject) -> Result<(), St
                         ));
                     }
                 };
-                definition.kind = legacy_weapon_item_kind(&equipped, ammunition, legacy_weapon);
+                let migrated = legacy_weapon_item_kind(&equipped, ammunition, legacy_weapon);
+                if let Some((previous, previous_path)) = migrated_items.get(&equipped) {
+                    if previous != &migrated {
+                        return Err(StoredProjectError::new(
+                            diagnostic_code::MIGRATION,
+                            weapon_path,
+                            format!(
+                                "legacy weapon `{equipped}` conflicts with its mapping at {previous_path}"
+                            ),
+                        ));
+                    }
+                } else {
+                    migrated_items.insert(equipped.clone(), (migrated.clone(), weapon_path));
+                }
+                project
+                    .item_definitions
+                    .iter_mut()
+                    .find(|definition| definition.id == equipped)
+                    .expect("legacy definition was resolved above")
+                    .kind = migrated;
             }
         }
     }

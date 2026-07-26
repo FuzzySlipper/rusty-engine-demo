@@ -1,8 +1,8 @@
 use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, CombatFact, CombatRejectionReason, GameEvent,
-    GameRuntime, InventoryAction, InventoryCommand, ItemDefinitionId, ResolvedAttackAction,
-    ResolvedPlayerAction, RuntimeError,
+    GameRuntime, GameSnapshotError, InventoryAction, InventoryCommand, ItemDefinitionId,
+    ResolvedAttackAction, ResolvedPlayerAction, RuntimeError,
 };
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
@@ -175,6 +175,28 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
         encode_game_snapshot(&uninterrupted).unwrap(),
         before_no_ammo
     );
+}
+
+#[test]
+fn snapshot_rejects_weapon_cooldown_beyond_authored_cadence() {
+    let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let mut snapshot: serde_json::Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    let cooldown = snapshot["inventories"][0]["weaponCooldowns"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|cooldown| cooldown["item"] == "weapon/arc-pistol")
+        .unwrap();
+    cooldown["readyAtTick"] = 10_000.into();
+
+    let error = decode_game_snapshot(&snapshot.to_string()).unwrap_err();
+
+    assert!(matches!(
+        error,
+        GameSnapshotError::InvalidWeaponCooldown { owner: 1, ref item }
+            if item == "weapon/arc-pistol"
+    ));
 }
 
 fn apply(runtime: &mut GameRuntime, sequence: u64, action: InventoryAction) {
