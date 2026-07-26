@@ -560,6 +560,67 @@ test("load commands settle only from the replacement authoritative session", asy
   }
 });
 
+test("save rejection codes settle from immediate and fixed-tick paths without closing the session", async () => {
+  const originalLocation = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "location",
+  );
+  const originalWebSocket = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "WebSocket",
+  );
+
+  Object.defineProperty(globalThis, "location", {
+    configurable: true,
+    value: { host: "loading-bay.test", protocol: "http:" },
+  });
+  Object.defineProperty(globalThis, "WebSocket", {
+    configurable: true,
+    value: SaveRejectionSocket,
+  });
+
+  try {
+    const session = await LoadingBayGameSession.connect();
+    const immediateCodes = [
+      "saveUnavailable",
+      "saveStale",
+      "snapshotCorrupt",
+      "snapshotIncompatible",
+    ] as const;
+    for (const code of immediateCodes) {
+      await assert.rejects(
+        session.sendEdge({
+          kind: "loadGame",
+          slot: "slot1",
+          expectedStorageRevision: "fnv1a64:observed",
+        }),
+        (error) => error instanceof GameSessionError && error.code === code,
+      );
+      assert.equal(session.pendingEdgeCount, 0);
+    }
+    await assert.rejects(
+      session.sendEdge({
+        kind: "saveGame",
+        slot: "slot1",
+        overwrite: false,
+        expectedStorageRevision: "fnv1a64:observed",
+      }),
+      (error) =>
+        error instanceof GameSessionError &&
+        error.code === "saveOverwriteRequired",
+    );
+    assert.equal(session.pendingEdgeCount, 0);
+
+    const paused = await session.sendEdge({ kind: "setPaused", paused: true });
+    assert.equal(paused.input.paused, true);
+    assert.equal(session.pendingEdgeCount, 0);
+    await session.close();
+  } finally {
+    restoreGlobal("location", originalLocation);
+    restoreGlobal("WebSocket", originalWebSocket);
+  }
+});
+
 test("typed weapon-slot edges settle from the authoritative equipped projection", async () => {
   const originalLocation = Object.getOwnPropertyDescriptor(
     globalThis,
@@ -1042,6 +1103,139 @@ class LoadReplacementSocket extends EventTarget {
   #emit(envelope: ServerUpdateEnvelope): void {
     this.dispatchEvent(
       new MessageEvent("message", { data: JSON.stringify(envelope) }),
+    );
+  }
+}
+
+class SaveRejectionSocket extends EventTarget {
+  static readonly OPEN = 1;
+  readonly bufferedAmount = 0;
+  readyState = SaveRejectionSocket.OPEN;
+  #commandCount = 0;
+  #snapshotSequence = 1;
+
+  constructor() {
+    super();
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 1,
+        snapshotSequence: 1,
+        acknowledgedCommandSequence: 0,
+        staticRevision: resources.staticRevision,
+        update: { kind: "full", state: dynamic },
+        resources,
+        facts: [],
+        metrics,
+      });
+    });
+  }
+
+  send(payload: string): void {
+    const envelope = JSON.parse(payload) as {
+      readonly sequence: number;
+      readonly command: { readonly kind: string };
+    };
+    this.#commandCount += 1;
+    const immediateCodes = [
+      "saveUnavailable",
+      "saveStale",
+      "snapshotCorrupt",
+      "snapshotIncompatible",
+    ] as const;
+    const immediateCode = immediateCodes[this.#commandCount - 1];
+    if (immediateCode !== undefined) {
+      assert.equal(envelope.command.kind, "loadGame");
+      queueMicrotask(() => {
+        this.#emit({
+          protocolVersion: 1,
+          sessionId: "loading-bay-1",
+          commandSequence: envelope.sequence,
+          acknowledgedCommandSequence: 0,
+          code: immediateCode,
+          retry: "never",
+          message: immediateCode,
+        });
+      });
+      return;
+    }
+
+    this.#snapshotSequence += 1;
+    if (this.#commandCount === 5) {
+      assert.equal(envelope.command.kind, "saveGame");
+      queueMicrotask(() => {
+        this.#emit({
+          protocolVersion: 1,
+          sessionId: "loading-bay-1",
+          connectionGeneration: 1,
+          serverTick: 2,
+          snapshotSequence: this.#snapshotSequence,
+          acknowledgedCommandSequence: envelope.sequence,
+          staticRevision: resources.staticRevision,
+          update: {
+            kind: "delta",
+            baseSnapshotSequence: this.#snapshotSequence - 1,
+            changes: {
+              tick: 2,
+              input: {
+                ...dynamic.input,
+                acknowledgedSequence: envelope.sequence,
+                consumedSequence: envelope.sequence,
+              },
+            },
+          },
+          facts: [
+            {
+              kind: "SaveRejectedOverwriteRequired",
+              code: "saveOverwriteRequired",
+              commandSequence: envelope.sequence,
+            },
+          ],
+          metrics,
+        });
+      });
+      return;
+    }
+
+    assert.equal(envelope.command.kind, "setPaused");
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 3,
+        snapshotSequence: this.#snapshotSequence,
+        acknowledgedCommandSequence: envelope.sequence,
+        staticRevision: resources.staticRevision,
+        update: {
+          kind: "delta",
+          baseSnapshotSequence: this.#snapshotSequence - 1,
+          changes: {
+            tick: 3,
+            input: {
+              ...dynamic.input,
+              acknowledgedSequence: envelope.sequence,
+              consumedSequence: envelope.sequence,
+              paused: true,
+            },
+          },
+        },
+        facts: [],
+        metrics,
+      });
+    });
+  }
+
+  close(): void {
+    this.readyState = 3;
+    this.dispatchEvent(new Event("close"));
+  }
+
+  #emit(value: unknown): void {
+    this.dispatchEvent(
+      new MessageEvent("message", { data: JSON.stringify(value) }),
     );
   }
 }

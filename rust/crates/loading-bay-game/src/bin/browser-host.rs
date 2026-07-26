@@ -1384,6 +1384,78 @@ mod tests {
     }
 
     #[test]
+    fn elapsed_catch_up_saves_the_exact_command_consumption_tick() {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-browser-save-tick-{}-{unique}",
+            std::process::id()
+        ));
+        let project_path = default_project_path();
+        let mut host = BrowserRuntime::load_with_save_root(&project_path, &save_root).unwrap();
+        let generation = host.start_browser_connection();
+        host.runtime
+            .submit_edge_command(loading_bay_game::GameLoopEdgeCommand {
+                connection_generation: generation,
+                sequence: 1,
+                command: loading_bay_game::GameLoopEdgeCommandKind::SaveGame {
+                    slot: SaveSlotId::Slot1,
+                },
+            })
+            .unwrap();
+        host.stage_save(generation, 1, SaveSlotId::Slot1, false, None);
+
+        let receipt = host
+            .runtime
+            .advance_elapsed(loading_bay_game::FIXED_STEP_DURATION.saturating_mul(3))
+            .unwrap();
+        assert_eq!(receipt.fixed_ticks.len(), 1);
+        assert_eq!(receipt.fixed_ticks[0].simulation_tick, 1);
+        assert!(receipt.fixed_ticks[0]
+            .facts
+            .contains(&GameLoopFact::SaveRequested {
+                sequence: 1,
+                slot: SaveSlotId::Slot1,
+            }));
+        assert!(host.apply_consumed_save(1, SaveSlotId::Slot1));
+
+        let saved = host
+            .save_store
+            .load(
+                &host.save_identity,
+                loading_bay_game::SaveLoadRequest {
+                    slot: SaveSlotId::Slot1,
+                    expected_storage_revision: None,
+                },
+            )
+            .unwrap();
+        assert_eq!(saved.summary.metadata.as_ref().unwrap().tick, 1);
+        assert_eq!(saved.runtime.tick().raw(), 1);
+
+        let remainder = host.runtime.advance_elapsed(Duration::ZERO).unwrap();
+        assert_eq!(remainder.fixed_ticks.len(), 2);
+        assert_eq!(host.runtime.runtime().tick().raw(), 3);
+        assert_eq!(
+            host.save_store
+                .load(
+                    &host.save_identity,
+                    loading_bay_game::SaveLoadRequest {
+                        slot: SaveSlotId::Slot1,
+                        expected_storage_revision: None,
+                    },
+                )
+                .unwrap()
+                .runtime
+                .tick()
+                .raw(),
+            1
+        );
+        fs::remove_dir_all(save_root).unwrap();
+    }
+
+    #[test]
     fn voxel_edit_route_reports_only_after_coherent_rebuild_and_rejects_atomically() {
         let runtime = shared_browser_runtime();
         let before = response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")));

@@ -963,6 +963,11 @@ function isSessionRejectionCode(value: unknown): value is SessionRejectionCode {
     value === "itemNotUsable" ||
     value === "healthFull" ||
     value === "checkpointUnavailable" ||
+    value === "saveUnavailable" ||
+    value === "saveOverwriteRequired" ||
+    value === "saveStale" ||
+    value === "snapshotCorrupt" ||
+    value === "snapshotIncompatible" ||
     value === "paused" ||
     value === "internalDefect"
   );

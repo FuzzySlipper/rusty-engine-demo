@@ -518,15 +518,29 @@ impl LoadingBayGameLoop {
         let steps = due.min(MAX_CATCH_UP_TICKS as u128) as usize;
         let dropped_ticks = due.saturating_sub(steps as u128).min(u64::MAX as u128) as u64;
         let remainder = self.accumulator.as_nanos() % fixed_nanos;
-        self.accumulator = if dropped_ticks > 0 {
-            Duration::from_nanos(remainder as u64)
-        } else {
-            self.accumulator
-                .saturating_sub(FIXED_STEP_DURATION.saturating_mul(steps as u32))
-        };
+        if dropped_ticks > 0 {
+            self.accumulator = FIXED_STEP_DURATION
+                .saturating_mul(steps as u32)
+                .saturating_add(Duration::from_nanos(remainder as u64));
+        }
         let mut fixed_ticks = Vec::with_capacity(steps);
         for _ in 0..steps {
-            fixed_ticks.push(self.run_fixed_tick()?);
+            self.accumulator = self.accumulator.saturating_sub(FIXED_STEP_DURATION);
+            let tick = self.run_fixed_tick()?;
+            let requires_host_interleave = tick.facts.iter().any(|fact| {
+                matches!(
+                    fact,
+                    GameLoopFact::RestartRequested { .. }
+                        | GameLoopFact::SaveRequested { .. }
+                        | GameLoopFact::LoadRequested { .. }
+                )
+            });
+            fixed_ticks.push(tick);
+            // Host-owned persistence/session replacement must observe the
+            // command-consumption tick before any retained catch-up debt runs.
+            if requires_host_interleave {
+                break;
+            }
         }
         Ok(GameLoopAdvanceReceipt {
             fixed_ticks,
