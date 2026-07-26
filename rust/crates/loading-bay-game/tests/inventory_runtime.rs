@@ -449,6 +449,7 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
         .retain(|entity| entity.get("pickup").is_none() && entity.get("hazard").is_none());
     for entity in legacy["scenes"][0]["entities"].as_array_mut().unwrap() {
         entity.as_object_mut().unwrap().remove("bounds");
+        entity.as_object_mut().unwrap().remove("enemyCombat");
         entity.as_object_mut().unwrap().remove("secretRegion");
         entity.as_object_mut().unwrap().remove("levelExit");
         if let Some(door) = entity
@@ -540,6 +541,10 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
         .as_object_mut()
         .unwrap()
         .remove("progression");
+    previous_snapshot
+        .as_object_mut()
+        .unwrap()
+        .remove("enemyCombat");
     for health in previous_snapshot["health"].as_array_mut().unwrap() {
         let health = health.as_object_mut().unwrap();
         health.remove("maxArmor");

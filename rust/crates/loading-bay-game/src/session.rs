@@ -10,6 +10,9 @@ use crate::combat::{EnemyComponent, EnemyState, EnemyView, WeaponState, WeaponVi
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::{DoorComponent, DoorState, DoorView};
 use crate::encounter::{EncounterComponent, EncounterState, EncounterView};
+use crate::enemy_combat::{
+    EnemyCombatComponent, EnemyCombatPosture, EnemyCombatState, EnemyCombatView,
+};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconState, ExtractionBeaconView,
 };
@@ -41,6 +44,7 @@ pub struct GameSession {
     pub(crate) controls: BTreeMap<EntityId, Vec<EntityId>>,
     pub(crate) loading_bay_interlocks: BTreeMap<EntityId, LoadingBayInterlockConfig>,
     pub(crate) enemies: BTreeMap<EntityId, EnemyComponent>,
+    pub(crate) enemy_combat: BTreeMap<EntityId, EnemyCombatComponent>,
     pub(crate) health: BTreeMap<EntityId, HealthComponent>,
     pub(crate) hazards: BTreeMap<EntityId, HazardComponent>,
     pub(crate) encounters: BTreeMap<EntityId, EncounterComponent>,
@@ -95,6 +99,7 @@ impl GameSession {
         let mut controls = BTreeMap::new();
         let mut loading_bay_interlocks = BTreeMap::new();
         let mut enemies = BTreeMap::new();
+        let mut enemy_combat = BTreeMap::new();
         let mut health = BTreeMap::new();
         let mut hazards = BTreeMap::new();
         let mut encounters = BTreeMap::new();
@@ -193,6 +198,35 @@ impl GameSession {
                     entity,
                     EnemyComponent {
                         state: EnemyState::Alive,
+                    },
+                );
+            }
+            if let Some(config) = &definition.enemy_combat {
+                if !definition.enemy {
+                    return Err(GameEntityDefinitionError::EnemyCombatWithoutEnemy { entity });
+                }
+                let view = entities.view(entity).expect("definition created entity");
+                if view.transform.is_none() {
+                    return Err(GameEntityDefinitionError::EnemyCombatMissingTransform { entity });
+                }
+                if definition.health.is_none() {
+                    return Err(GameEntityDefinitionError::EnemyCombatMissingHealth { entity });
+                }
+                if definition.navigation.is_none() {
+                    return Err(GameEntityDefinitionError::EnemyCombatMissingNavigation { entity });
+                }
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidEnemyCombatConfig { entity });
+                }
+                enemy_combat.insert(
+                    entity,
+                    EnemyCombatComponent {
+                        config: config.clone(),
+                        state: EnemyCombatState {
+                            posture: EnemyCombatPosture::Sleeping,
+                            ready_at_tick: Tick::ZERO,
+                            last_known_target_position: None,
+                        },
                     },
                 );
             }
@@ -571,6 +605,7 @@ impl GameSession {
             controls,
             loading_bay_interlocks,
             enemies,
+            enemy_combat,
             health,
             hazards,
             encounters,
@@ -658,6 +693,25 @@ impl GameSession {
             state: component.state,
             entity_view: self.entities.view(entity).ok()?,
         })
+    }
+
+    pub fn enemy_combat(&self, entity: EntityId) -> Option<EnemyCombatView> {
+        let component = self.enemy_combat.get(&entity)?;
+        Some(EnemyCombatView {
+            entity,
+            config: component.config.clone(),
+            state: component.state.clone(),
+        })
+    }
+
+    pub fn enemy_combatants(&self) -> impl ExactSizeIterator<Item = EnemyCombatView> + '_ {
+        self.enemy_combat
+            .iter()
+            .map(|(entity, component)| EnemyCombatView {
+                entity: *entity,
+                config: component.config.clone(),
+                state: component.state.clone(),
+            })
     }
 
     pub fn health(&self, entity: EntityId) -> Option<HealthView> {

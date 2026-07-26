@@ -6,9 +6,9 @@
 
 use core_ids::EntityId;
 use loading_bay_game::{
-    CombatFact, DoorState, EnemyState, ExtractionBeaconFact, ExtractionBeaconState, GameEvent,
-    GameRuntime, NavigationFact, NavigationState, PickupFact, PlayerControlFact, ProgressionFact,
-    VitalityFact,
+    CombatFact, DoorState, EnemyCombatFact, EnemyState, ExtractionBeaconFact,
+    ExtractionBeaconState, GameEvent, GameRuntime, NavigationFact, NavigationState, PickupFact,
+    PlayerControlFact, ProgressionFact, VitalityFact,
 };
 use serde::Serialize;
 
@@ -60,6 +60,24 @@ enum BrowserFeedbackCue {
         target: u64,
         amount: u32,
         remaining: u32,
+    },
+    EnemyAlert {
+        entity: u64,
+        target: u64,
+        cause: &'static str,
+    },
+    EnemyAttack {
+        attacker: u64,
+        target: u64,
+        attack_kind: &'static str,
+        presentation: String,
+        origin: [f32; 3],
+        target_position: [f32; 3],
+    },
+    EnemyAttackMissed {
+        attacker: u64,
+        target: u64,
+        reason: &'static str,
     },
     Defeat {
         attacker: Option<u64>,
@@ -184,6 +202,75 @@ impl BrowserFeedbackProjection {
                 | CombatFact::Vitality(_)
                 | CombatFact::AttackHit { .. }
                 | CombatFact::AttackMissed { .. } => {}
+            }
+        }
+    }
+
+    pub(super) fn extend_enemy_combat(&mut self, facts: &[EnemyCombatFact]) {
+        for fact in facts {
+            match fact {
+                EnemyCombatFact::Alerted {
+                    enemy,
+                    target,
+                    cause,
+                } => self.cues.push(BrowserFeedbackCue::EnemyAlert {
+                    entity: enemy.raw(),
+                    target: target.raw(),
+                    cause: match cause {
+                        loading_bay_game::EnemyPerceptionCause::Sight => "sight",
+                        loading_bay_game::EnemyPerceptionCause::Hearing => "hearing",
+                    },
+                }),
+                EnemyCombatFact::AttackFired {
+                    enemy,
+                    target,
+                    kind,
+                    presentation,
+                    origin,
+                    target_position,
+                    ..
+                } => self.cues.push(BrowserFeedbackCue::EnemyAttack {
+                    attacker: enemy.raw(),
+                    target: target.raw(),
+                    attack_kind: match kind {
+                        loading_bay_game::EnemyAttackKind::Melee => "melee",
+                        loading_bay_game::EnemyAttackKind::RangedHitscan => "rangedHitscan",
+                    },
+                    presentation: presentation.clone(),
+                    origin: origin.to_array(),
+                    target_position: target_position.to_array(),
+                }),
+                EnemyCombatFact::AttackMissed {
+                    enemy,
+                    target,
+                    reason,
+                    ..
+                } => self.cues.push(BrowserFeedbackCue::EnemyAttackMissed {
+                    attacker: enemy.raw(),
+                    target: target.raw(),
+                    reason: match reason {
+                        loading_bay_game::EnemyAttackMissReason::WorldBlocked => "worldBlocked",
+                        loading_bay_game::EnemyAttackMissReason::TargetOutOfRange => {
+                            "targetOutOfRange"
+                        }
+                        loading_bay_game::EnemyAttackMissReason::TargetDead => "targetDead",
+                    },
+                }),
+                EnemyCombatFact::Vitality(VitalityFact::DamageApplied {
+                    source,
+                    target,
+                    health_damage,
+                    health_after,
+                    ..
+                }) => self.cues.push(BrowserFeedbackCue::Damage {
+                    attacker: source.entity().raw(),
+                    target: target.raw(),
+                    amount: *health_damage,
+                    remaining: *health_after,
+                }),
+                EnemyCombatFact::PostureChanged { .. }
+                | EnemyCombatFact::AttackHit { .. }
+                | EnemyCombatFact::Vitality(_) => {}
             }
         }
     }
@@ -395,16 +482,23 @@ pub(super) fn project_presentation(
             .session()
             .enemy(*entity)
             .expect("presentation enemy");
-        let posture = if enemy.state == EnemyState::Defeated {
-            "defeated"
-        } else if runtime
-            .session()
-            .navigation(*entity)
-            .is_some_and(|navigation| navigation.state == NavigationState::Following)
-        {
-            "moving"
-        } else {
-            "idle"
+        let posture = match runtime.session().enemy_combat(*entity) {
+            Some(combat) => match combat.state.posture {
+                loading_bay_game::EnemyCombatPosture::Sleeping => "idle",
+                loading_bay_game::EnemyCombatPosture::Alert => "alert",
+                loading_bay_game::EnemyCombatPosture::Pursuing => "moving",
+                loading_bay_game::EnemyCombatPosture::Attacking => "attacking",
+                loading_bay_game::EnemyCombatPosture::Dead => "defeated",
+            },
+            None if enemy.state == EnemyState::Defeated => "defeated",
+            None if runtime
+                .session()
+                .navigation(*entity)
+                .is_some_and(|navigation| navigation.state == NavigationState::Following) =>
+            {
+                "moving"
+            }
+            None => "idle",
         };
         BrowserAnimationState {
             entity: entity.raw(),

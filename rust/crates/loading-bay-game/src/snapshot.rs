@@ -13,6 +13,10 @@ use serde::{Deserialize, Serialize};
 use crate::combat::{EnemyComponent, EnemyState};
 use crate::door::{DoorComponent, DoorConfig, DoorState};
 use crate::encounter::{EncounterComponent, EncounterConfig, EncounterState};
+use crate::enemy_combat::{
+    EnemyAttackConfig, EnemyAttackKind, EnemyCombatComponent, EnemyCombatConfig,
+    EnemyCombatPosture, EnemyCombatState, EnemyPerceptionConfig,
+};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconState,
 };
@@ -44,9 +48,10 @@ use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::{HealthComponent, HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 16;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 17;
 const INVENTORY_WEAPON_SNAPSHOT_SCHEMA_VERSION: u32 = 13;
 const VITALITY_SNAPSHOT_SCHEMA_VERSION: u32 = 14;
+const PROGRESSION_SNAPSHOT_SCHEMA_VERSION: u32 = 16;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -62,6 +67,8 @@ pub struct GameSnapshot {
     pub extraction_beacons: Vec<ExtractionBeaconSnapshot>,
     pub controls: Vec<ControlsSnapshot>,
     pub enemies: Vec<EnemySnapshot>,
+    #[serde(default)]
+    pub enemy_combat: Vec<EnemyCombatSnapshot>,
     pub health: Vec<HealthSnapshot>,
     #[serde(default)]
     pub hazards: Vec<HazardSnapshot>,
@@ -304,6 +311,41 @@ pub enum SnapshotEnemyState {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct EnemyCombatSnapshot {
+    pub entity: u64,
+    pub sight_range: f32,
+    pub hearing_range: f32,
+    pub attack_kind: SnapshotEnemyAttackKind,
+    pub damage: u32,
+    pub range: f32,
+    pub cooldown_ticks: u64,
+    pub origin_offset: [f32; 3],
+    pub presentation: String,
+    pub posture: SnapshotEnemyCombatPosture,
+    pub ready_at_tick: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_known_target_position: Option<[f32; 3]>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotEnemyAttackKind {
+    Melee,
+    RangedHitscan,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotEnemyCombatPosture {
+    Sleeping,
+    Alert,
+    Pursuing,
+    Attacking,
+    Dead,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct HealthSnapshot {
     pub entity: u64,
     pub current: u32,
@@ -535,6 +577,9 @@ pub enum GameSnapshotError {
     DuplicateEnemy {
         entity: u64,
     },
+    DuplicateEnemyCombat {
+        entity: u64,
+    },
     DuplicateHealth {
         entity: u64,
     },
@@ -586,6 +631,7 @@ pub enum GameSnapshotError {
     FutureWeaponStateInLegacySnapshot,
     FutureVitalityStateInLegacySnapshot,
     FutureProgressionStateInLegacySnapshot,
+    FutureEnemyCombatStateInLegacySnapshot,
     InvalidProgressionState,
     InvalidSecretTriggerDefinitions,
     InvalidHazardConfig {
@@ -618,6 +664,9 @@ pub enum GameSnapshotError {
         actor: u64,
     },
     UnknownEnemyEntity {
+        entity: u64,
+    },
+    UnknownEnemyCombatEntity {
         entity: u64,
     },
     UnknownHealthEntity {
@@ -654,6 +703,9 @@ pub enum GameSnapshotError {
         entity: u64,
     },
     MissingEnemyCapability {
+        entity: u64,
+    },
+    MissingEnemyCombatCapability {
         entity: u64,
     },
     MissingHealthCapability {
@@ -695,6 +747,9 @@ pub enum GameSnapshotError {
         snapshot_tick: u64,
     },
     EnemyHealthStateMismatch {
+        entity: u64,
+    },
+    InvalidEnemyCombatState {
         entity: u64,
     },
     DuplicateEncounterMember {
@@ -867,6 +922,37 @@ impl GameRuntime {
                         EnemyState::Alive => SnapshotEnemyState::Alive,
                         EnemyState::Defeated => SnapshotEnemyState::Defeated,
                     },
+                })
+                .collect(),
+            enemy_combat: self
+                .session
+                .enemy_combat
+                .iter()
+                .map(|(entity, component)| EnemyCombatSnapshot {
+                    entity: entity.raw(),
+                    sight_range: component.config.perception.sight_range,
+                    hearing_range: component.config.perception.hearing_range,
+                    attack_kind: match component.config.attack.kind {
+                        EnemyAttackKind::Melee => SnapshotEnemyAttackKind::Melee,
+                        EnemyAttackKind::RangedHitscan => SnapshotEnemyAttackKind::RangedHitscan,
+                    },
+                    damage: component.config.attack.damage,
+                    range: component.config.attack.range,
+                    cooldown_ticks: component.config.attack.cooldown_ticks,
+                    origin_offset: component.config.attack.origin_offset.to_array(),
+                    presentation: component.config.attack.presentation.clone(),
+                    posture: match component.state.posture {
+                        EnemyCombatPosture::Sleeping => SnapshotEnemyCombatPosture::Sleeping,
+                        EnemyCombatPosture::Alert => SnapshotEnemyCombatPosture::Alert,
+                        EnemyCombatPosture::Pursuing => SnapshotEnemyCombatPosture::Pursuing,
+                        EnemyCombatPosture::Attacking => SnapshotEnemyCombatPosture::Attacking,
+                        EnemyCombatPosture::Dead => SnapshotEnemyCombatPosture::Dead,
+                    },
+                    ready_at_tick: component.state.ready_at_tick.raw(),
+                    last_known_target_position: component
+                        .state
+                        .last_known_target_position
+                        .map(Vec3::to_array),
                 })
                 .collect(),
             health: self
@@ -1161,15 +1247,21 @@ impl GameRuntime {
         } else if !snapshot.weapons.is_empty() {
             return Err(GameSnapshotError::FutureWeaponStateInLegacySnapshot);
         }
-        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION
+        if source_schema_version < PROGRESSION_SNAPSHOT_SCHEMA_VERSION
             && snapshot_has_future_weapon_behavior_fields(&snapshot)
         {
             return Err(GameSnapshotError::FutureWeaponStateInLegacySnapshot);
         }
-        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION && snapshot.progression.is_some() {
+        if source_schema_version < PROGRESSION_SNAPSHOT_SCHEMA_VERSION
+            && snapshot.progression.is_some()
+        {
             return Err(GameSnapshotError::FutureProgressionStateInLegacySnapshot);
         }
-        let progression_snapshot = if source_schema_version >= GAME_SNAPSHOT_SCHEMA_VERSION {
+        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION && !snapshot.enemy_combat.is_empty()
+        {
+            return Err(GameSnapshotError::FutureEnemyCombatStateInLegacySnapshot);
+        }
+        let progression_snapshot = if source_schema_version >= PROGRESSION_SNAPSHOT_SCHEMA_VERSION {
             snapshot.progression.take()
         } else {
             None
@@ -1747,6 +1839,98 @@ impl GameRuntime {
             );
         }
 
+        let mut enemy_combat = BTreeMap::new();
+        let mut enemy_combat_ids = BTreeSet::new();
+        for combat in snapshot.enemy_combat {
+            if !enemy_combat_ids.insert(combat.entity) {
+                return Err(GameSnapshotError::DuplicateEnemyCombat {
+                    entity: combat.entity,
+                });
+            }
+            let entity = EntityId::new(combat.entity);
+            entities
+                .view(entity)
+                .map_err(|_| GameSnapshotError::UnknownEnemyCombatEntity {
+                    entity: combat.entity,
+                })?;
+            let Some(enemy) = enemies.get(&entity) else {
+                return Err(GameSnapshotError::MissingEnemyCombatCapability {
+                    entity: combat.entity,
+                });
+            };
+            if !health.contains_key(&entity) || !navigators.contains_key(&entity) {
+                return Err(GameSnapshotError::MissingEnemyCombatCapability {
+                    entity: combat.entity,
+                });
+            }
+            let config = EnemyCombatConfig {
+                perception: EnemyPerceptionConfig {
+                    sight_range: combat.sight_range,
+                    hearing_range: combat.hearing_range,
+                },
+                attack: EnemyAttackConfig {
+                    kind: match combat.attack_kind {
+                        SnapshotEnemyAttackKind::Melee => EnemyAttackKind::Melee,
+                        SnapshotEnemyAttackKind::RangedHitscan => EnemyAttackKind::RangedHitscan,
+                    },
+                    damage: combat.damage,
+                    range: combat.range,
+                    cooldown_ticks: combat.cooldown_ticks,
+                    origin_offset: array_vec3(combat.origin_offset),
+                    presentation: combat.presentation,
+                },
+            };
+            let posture = match combat.posture {
+                SnapshotEnemyCombatPosture::Sleeping => EnemyCombatPosture::Sleeping,
+                SnapshotEnemyCombatPosture::Alert => EnemyCombatPosture::Alert,
+                SnapshotEnemyCombatPosture::Pursuing => EnemyCombatPosture::Pursuing,
+                SnapshotEnemyCombatPosture::Attacking => EnemyCombatPosture::Attacking,
+                SnapshotEnemyCombatPosture::Dead => EnemyCombatPosture::Dead,
+            };
+            let last_known_target_position = combat.last_known_target_position.map(array_vec3);
+            let position_state_valid = match posture {
+                EnemyCombatPosture::Sleeping | EnemyCombatPosture::Dead => {
+                    last_known_target_position.is_none()
+                }
+                EnemyCombatPosture::Pursuing | EnemyCombatPosture::Attacking => {
+                    last_known_target_position.is_some()
+                }
+                EnemyCombatPosture::Alert => true,
+            };
+            let enemy_state_valid = matches!(
+                (enemy.state, posture),
+                (EnemyState::Defeated, EnemyCombatPosture::Dead)
+                    | (
+                        EnemyState::Alive,
+                        EnemyCombatPosture::Sleeping
+                            | EnemyCombatPosture::Alert
+                            | EnemyCombatPosture::Pursuing
+                            | EnemyCombatPosture::Attacking
+                    )
+            );
+            if !config.is_valid()
+                || !position_state_valid
+                || !enemy_state_valid
+                || last_known_target_position.is_some_and(|position| !vec3_is_finite(position))
+                || combat.ready_at_tick > snapshot.tick.saturating_add(config.attack.cooldown_ticks)
+            {
+                return Err(GameSnapshotError::InvalidEnemyCombatState {
+                    entity: combat.entity,
+                });
+            }
+            enemy_combat.insert(
+                entity,
+                EnemyCombatComponent {
+                    config,
+                    state: EnemyCombatState {
+                        posture,
+                        ready_at_tick: Tick::new(combat.ready_at_tick),
+                        last_known_target_position,
+                    },
+                },
+            );
+        }
+
         let mut player_controllers = BTreeMap::new();
         let mut player_controller_ids = BTreeSet::new();
         for controller in snapshot.player_controllers {
@@ -2214,6 +2398,7 @@ impl GameRuntime {
                 controls,
                 loading_bay_interlocks,
                 enemies,
+                enemy_combat,
                 health,
                 hazards,
                 encounters,

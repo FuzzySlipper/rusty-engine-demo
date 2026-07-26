@@ -350,6 +350,7 @@ fn project_and_snapshot_admission_fail_closed_for_future_hazard_state() {
         .as_array_mut()
         .unwrap()
     {
+        entity.as_object_mut().unwrap().remove("enemyCombat");
         entity.as_object_mut().unwrap().remove("secretRegion");
         entity.as_object_mut().unwrap().remove("levelExit");
         if let Some(door) = entity.get_mut("door").and_then(Value::as_object_mut) {
@@ -391,6 +392,7 @@ fn project_and_snapshot_admission_fail_closed_for_future_hazard_state() {
 #[test]
 fn overlapping_hazard_without_player_health_is_rejected_before_loop_mutation() {
     let mut project: Value = serde_json::from_str(PROJECT).unwrap();
+    strip_enemy_combat(&mut project);
     let hazard_translation = entity(&project, HAZARD.raw())["translation"].clone();
     let player = entity_mut(&mut project, PLAYER.raw());
     player["translation"] = hazard_translation;
@@ -422,6 +424,7 @@ fn overlapping_hazard_without_player_health_is_rejected_before_loop_mutation() {
 
 fn hazard_loop(damage: u32, cooldown_ticks: u64, max_health: u32) -> LoadingBayGameLoop {
     let mut project: Value = serde_json::from_str(PROJECT).unwrap();
+    strip_enemy_combat(&mut project);
     let hazard_translation = entity(&project, HAZARD.raw())["translation"].clone();
     let player = entity_mut(&mut project, PLAYER.raw());
     player["translation"] = hazard_translation;
@@ -434,6 +437,12 @@ fn hazard_loop(damage: u32, cooldown_ticks: u64, max_health: u32) -> LoadingBayG
         PLAYER,
     )
     .unwrap()
+}
+
+fn strip_enemy_combat(project: &mut Value) {
+    for entity in project["scenes"][0]["entities"].as_array_mut().unwrap() {
+        entity.as_object_mut().unwrap().remove("enemyCombat");
+    }
 }
 
 fn edge(

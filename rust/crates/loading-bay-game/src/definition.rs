@@ -4,6 +4,7 @@ use entity_state::EntityDefinition;
 use crate::combat::WeaponConfig;
 use crate::door::DoorConfig;
 use crate::encounter::EncounterConfig;
+use crate::enemy_combat::EnemyCombatConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::hazard::HazardConfig;
 use crate::inventory::{InventoryAdmissionError, InventoryConfig};
@@ -24,6 +25,7 @@ pub struct GameEntityDefinition {
     pub controls_targets: Vec<EntityId>,
     pub loading_bay_interlock: Option<LoadingBayInterlockConfig>,
     pub enemy: bool,
+    pub enemy_combat: Option<EnemyCombatConfig>,
     pub health: Option<HealthConfig>,
     pub hazard: Option<HazardConfig>,
     pub encounter: Option<EncounterConfig>,
@@ -47,6 +49,7 @@ impl GameEntityDefinition {
             controls_targets: Vec::new(),
             loading_bay_interlock: None,
             enemy: false,
+            enemy_combat: None,
             health: None,
             hazard: None,
             encounter: None,
@@ -88,6 +91,11 @@ impl GameEntityDefinition {
 
     pub fn as_enemy(mut self) -> Self {
         self.enemy = true;
+        self
+    }
+
+    pub fn with_enemy_combat(mut self, config: EnemyCombatConfig) -> Self {
+        self.enemy_combat = Some(config);
         self
     }
 
@@ -205,6 +213,21 @@ pub enum GameEntityDefinitionError {
         entity: EntityId,
     },
     EnemyMissingRenderable {
+        entity: EntityId,
+    },
+    EnemyCombatWithoutEnemy {
+        entity: EntityId,
+    },
+    EnemyCombatMissingTransform {
+        entity: EntityId,
+    },
+    EnemyCombatMissingHealth {
+        entity: EntityId,
+    },
+    EnemyCombatMissingNavigation {
+        entity: EntityId,
+    },
+    InvalidEnemyCombatConfig {
         entity: EntityId,
     },
     HealthMissingTransform {

@@ -102,6 +102,24 @@ impl EnemyNavigationSystem {
         scene: &VoxelCollisionScene,
         delta_seconds: f32,
     ) -> Result<NavigationPhaseReceipt, RuntimeError> {
+        Self::run_with_optional_combat_goals(session, scene, delta_seconds, None)
+    }
+
+    pub(crate) fn run_with_combat_goals(
+        session: &mut GameSession,
+        scene: &VoxelCollisionScene,
+        delta_seconds: f32,
+        combat_goals: &BTreeMap<EntityId, Vec3>,
+    ) -> Result<NavigationPhaseReceipt, RuntimeError> {
+        Self::run_with_optional_combat_goals(session, scene, delta_seconds, Some(combat_goals))
+    }
+
+    fn run_with_optional_combat_goals(
+        session: &mut GameSession,
+        scene: &VoxelCollisionScene,
+        delta_seconds: f32,
+        combat_goals: Option<&BTreeMap<EntityId, Vec3>>,
+    ) -> Result<NavigationPhaseReceipt, RuntimeError> {
         if !delta_seconds.is_finite()
             || !(0.0..=MAX_MOTION_DELTA_SECONDS).contains(&delta_seconds)
             || delta_seconds == 0.0
@@ -114,25 +132,48 @@ impl EnemyNavigationSystem {
         let active: Vec<_> = session
             .navigators
             .iter()
-            .filter(|(entity, navigation)| {
-                matches!(
-                    navigation.state,
-                    NavigationState::Following | NavigationState::Blocked
-                ) && session
+            .filter_map(|(entity, navigation)| {
+                if !session
                     .enemies
                     .get(entity)
                     .is_some_and(|enemy| enemy.state == EnemyState::Alive)
+                {
+                    return None;
+                }
+                if session.enemy_combat.contains_key(entity) {
+                    let goal = combat_goals
+                        .and_then(|goals| goals.get(entity).copied())
+                        .or_else(|| combat_goals.is_none().then_some(navigation.config.goal))?;
+                    return Some((*entity, navigation.config, goal));
+                }
+                matches!(
+                    navigation.state,
+                    NavigationState::Following | NavigationState::Blocked
+                )
+                .then_some((*entity, navigation.config, navigation.config.goal))
             })
-            .map(|(entity, navigation)| (*entity, navigation.config))
             .collect();
         let agents_considered = active.len();
-        let selected: BTreeSet<_> = active.iter().map(|(entity, _)| *entity).collect();
+        let selected: BTreeSet<_> = active.iter().map(|(entity, _, _)| *entity).collect();
         let mut plans = BTreeMap::new();
         let mut velocity_commands = Vec::new();
+        if let Some(combat_goals) = combat_goals {
+            for entity in session.enemy_combat.keys().copied() {
+                if session.navigators.contains_key(&entity) && !combat_goals.contains_key(&entity) {
+                    velocity_commands.push(EntityCommand::SetKinematicVelocity {
+                        entity,
+                        velocity: Vec3::ZERO,
+                    });
+                    if let Some(navigation) = session.navigators.get_mut(&entity) {
+                        navigation.state = NavigationState::Arrived;
+                    }
+                }
+            }
+        }
         let mut facts = Vec::new();
         let mut unreachable_agents = 0usize;
 
-        for (entity, config) in active {
+        for (entity, config, goal) in active {
             let view = session
                 .entities
                 .view(entity)
@@ -147,7 +188,7 @@ impl EnemyNavigationSystem {
                 .velocity;
             match scene.navigation_step(
                 before,
-                config.goal,
+                goal,
                 current_velocity,
                 config.speed_units_per_second * delta_seconds,
                 config.max_visited,
@@ -159,7 +200,7 @@ impl EnemyNavigationSystem {
                     plans.insert(
                         entity,
                         NavigationPlan {
-                            goal: config.goal,
+                            goal,
                             before,
                             path_hash: step.path_hash,
                             reaches_goal: step.reached,
@@ -193,7 +234,7 @@ impl EnemyNavigationSystem {
                     });
                     facts.push(NavigationFact::Unreachable {
                         entity,
-                        goal: config.goal,
+                        goal,
                         reason,
                     });
                     unreachable_agents += 1;

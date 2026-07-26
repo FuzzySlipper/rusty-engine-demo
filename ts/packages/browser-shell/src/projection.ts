@@ -25,6 +25,14 @@ export interface RuntimeEnemyState {
   readonly position: readonly [number, number, number];
   readonly currentHealth: number;
   readonly maxHealth: number;
+  readonly combatPosture:
+    | "sleeping"
+    | "alert"
+    | "pursuing"
+    | "attacking"
+    | "dead"
+    | null;
+  readonly attackKind: "melee" | "rangedHitscan" | null;
 }
 
 export interface RuntimePlayerBindings {
@@ -190,6 +198,8 @@ export interface RuntimeAnimationState {
   readonly posture:
     | "idle"
     | "moving"
+    | "alert"
+    | "attacking"
     | "defeated"
     | "open"
     | "closed"
@@ -227,6 +237,27 @@ export type RuntimeFeedbackCue =
       readonly target: number;
       readonly amount: number;
       readonly remaining: number;
+    }
+  | {
+      readonly kind: "enemyAlert";
+      readonly entity: number;
+      readonly target: number;
+      readonly cause: "sight" | "hearing";
+    }
+  | {
+      readonly kind: "enemyAttack";
+      readonly attacker: number;
+      readonly target: number;
+      readonly attackKind: "melee" | "rangedHitscan";
+      readonly presentation: string;
+      readonly origin: readonly [number, number, number];
+      readonly targetPosition: readonly [number, number, number];
+    }
+  | {
+      readonly kind: "enemyAttackMissed";
+      readonly attacker: number;
+      readonly target: number;
+      readonly reason: "worldBlocked" | "targetOutOfRange" | "targetDead";
     }
   | {
       readonly kind: "defeat";

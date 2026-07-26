@@ -589,6 +589,7 @@ export async function mountLoadingBayGame(
     const pickupProofPassed = await proveWorldPickups();
     document.body.dataset.pickups = pickupProofPassed ? "pass" : "fail";
     await performRestart();
+    const voxelEditFirstFight = await defeatEnemiesForSmoke();
     const voxelBefore = voxelFingerprint(current);
     let staleRejected = false;
     try {
@@ -626,6 +627,7 @@ export async function mountLoadingBayGame(
       [4.5, 7.5],
     ]);
     await performRestart();
+    const voxelEditSecondFight = await defeatEnemiesForSmoke();
     const restoredBulkheadOpened = await openProgressionBulkhead();
     const blockedByRestoredVoxel = !(await walkPlayerPath([
       [3.5, 5.5],
@@ -635,6 +637,8 @@ export async function mountLoadingBayGame(
     await performRestart();
     const voxelEditPassed =
       editBecameVisibleAndNavigable &&
+      voxelEditFirstFight &&
+      voxelEditSecondFight &&
       clearedBulkheadOpened &&
       clearedPassage &&
       restoredBulkheadOpened &&
@@ -659,8 +663,12 @@ export async function mountLoadingBayGame(
     ].join(":");
     await performRestart();
     const resetCuesBelongToFreshSimulation = current.presentation.cues.every(
-      (cue) => cue.kind === "movement",
+      (cue) => cue.kind === "movement" || cue.kind === "enemyAlert",
     );
+    const resetAnimationStates = feedbackLayer.dataset.animationStates ?? "";
+    const resetEnemyPostureRebuilt =
+      includesEvery(resetAnimationStates, ["4:idle", "5:idle"]) ||
+      includesEvery(resetAnimationStates, ["4:alert", "5:alert"]);
     const resetFeedbackRebuilt =
       resetStartedWithConcreteTransients &&
       resetCuesBelongToFreshSimulation &&
@@ -668,8 +676,8 @@ export async function mountLoadingBayGame(
       includesEvery(feedbackLayer.dataset.animationStates, [
         "1:idle",
         "3:closed",
-        "4:moving",
-      ]);
+      ]) &&
+      resetEnemyPostureRebuilt;
     document.body.dataset.feedbackResetResult = [
       current.presentation.cues.length,
       feedbackLayer.dataset.activeEffects ?? "none",
@@ -684,7 +692,11 @@ export async function mountLoadingBayGame(
     document.body.dataset.feedbackConcreteReset = resetFeedbackRebuilt
       ? "pass"
       : "fail";
+    const initialEnemyPosition = current.enemies.find(
+      (enemy) => enemy.id === 4,
+    )?.position;
     const initialPlayerPosition = current.player.position;
+    const initialPlayerHealth = current.player.currentHealth;
     const initialPlayerYaw = current.player.yawDegrees;
     const heldCode = current.player.bindings.moveForward;
     window.dispatchEvent(new KeyboardEvent("keydown", { code: heldCode }));
@@ -736,9 +748,6 @@ export async function mountLoadingBayGame(
     const playerLooked =
       normalizeDegrees(current.player.yawDegrees - initialPlayerYaw) < 0 &&
       current.player.pitchDegrees > initialPlayerPitch;
-    const initialEnemyPosition = current.enemies.find(
-      (enemy) => enemy.id === 4,
-    )?.position;
     await delay(100);
     current = await requestState("/api/state");
     const movingEnemyPosition = current.enemies.find(
@@ -748,6 +757,24 @@ export async function mountLoadingBayGame(
       initialEnemyPosition !== undefined &&
       movingEnemyPosition !== undefined &&
       vectorChanged(movingEnemyPosition, initialEnemyPosition, 0.001);
+    const enemyCombatEvidence = [
+      eventHistory.includes("EnemyAlerted") ||
+        includesEvery(feedbackLayer.dataset.animationPulses, [
+          "enemy-alert-sight",
+        ]),
+      eventHistory.includes("EnemyAttackFired"),
+      eventHistory.includes("EnemyAttackHit"),
+      eventHistory.includes("DamageApplied"),
+      current.player.currentHealth < initialPlayerHealth,
+      includesEvery(feedbackLayer.dataset.animationPulses, [
+        "enemy-alert-sight",
+        "sentry-pulse-attack",
+        "damage",
+      ]),
+    ];
+    const enemyCombatProjected = enemyCombatEvidence.every(Boolean);
+    document.body.dataset.enemyCombat = enemyCombatProjected ? "pass" : "fail";
+    document.body.dataset.enemyCombatEvidence = enemyCombatEvidence.join(":");
     await aimAtEnemy(4);
     const healthBeforeCooldownProbe = current.enemies.find(
       (enemy) => enemy.id === 4,
@@ -850,6 +877,7 @@ export async function mountLoadingBayGame(
       playerLooked &&
       localLookPresentationPassed &&
       movingTargetAdvanced &&
+      enemyCombatProjected &&
       movingTargetDamaged &&
       queueRecovered &&
       cooldownRecovered &&
@@ -868,6 +896,8 @@ export async function mountLoadingBayGame(
       includesEvery(feedbackLayer.dataset.animationPulses, [
         "movement",
         "blocked",
+        "enemy-alert-sight",
+        "sentry-pulse-attack",
         "arc-pistol-attack",
         "arc-pistol-dry",
         "damage",
@@ -886,6 +916,7 @@ export async function mountLoadingBayGame(
         "beacon",
       ]) &&
       includesEvery(feedbackLayer.dataset.billboardValues, [
+        "ENEMY ALERT",
         "BLOCKED",
         "EMPTY",
         "-60",
@@ -906,6 +937,9 @@ export async function mountLoadingBayGame(
       Number(feedbackAudioStatus.dataset.attempted ?? "0") > 0 &&
       Number(feedbackAudioStatus.dataset.scheduled ?? "0") > 0 &&
       includesEvery(feedbackAudioStatus.dataset.soundKinds, [
+        "beacon",
+        "shot",
+        "hit",
         "sidearmShot",
         "dryFire",
       ]);
@@ -1218,10 +1252,12 @@ export async function mountLoadingBayGame(
         row.className = "enemy-row";
         row.dataset.entityId = String(enemy.id);
         row.dataset.state = enemy.state;
+        row.dataset.combatPosture = enemy.combatPosture ?? enemy.state;
         const name = document.createElement("span");
         name.textContent = enemy.name;
         const status = document.createElement("strong");
-        status.textContent = `${enemy.state.toUpperCase()} · ${String(enemy.currentHealth)}/${String(enemy.maxHealth)} HP`;
+        const posture = enemy.combatPosture ?? enemy.state;
+        status.textContent = `${posture.toUpperCase()} · ${String(enemy.currentHealth)}/${String(enemy.maxHealth)} HP`;
         row.append(name, status);
         return row;
       }),
@@ -1554,16 +1590,29 @@ export async function mountLoadingBayGame(
     const startedAvailable =
       pickupIds.length === 8 &&
       current.pickups.every((pickup) => pickup.state === "available");
-    const walked = await walkPlayerPath([
+    const capacityWalked = await walkPlayerPath([
       [2.5, 2.5],
-      [2.5, 3.5],
       [3.5, 2.5],
-      [4.5, 2.5],
-      [5.5, 2.5],
-      [6.5, 2.5],
-      [6.5, 3.5],
-      [5.5, 3.5],
+      [3.5, 3.5],
+      [2.5, 3.5],
     ]);
+    const firstEnemyDefeated = await damageEnemyTo(4, 0);
+    const secondEnemyDefeated = await damageEnemyTo(5, 0);
+    const pickupFightPassed =
+      firstEnemyDefeated &&
+      secondEnemyDefeated &&
+      current.player.vitalityState === "alive";
+    const energyAfterFight = inventoryQuantity("ammo/energy-cell");
+    const walked =
+      capacityWalked &&
+      (await walkPlayerPath([
+        [4.5, 3.5],
+        [4.5, 2.5],
+        [5.5, 2.5],
+        [6.5, 2.5],
+        [6.5, 3.5],
+        [5.5, 3.5],
+      ]));
     await presentationFeedback.settled();
     const collected = current.pickups
       .filter((pickup) => pickup.state === "collected")
@@ -1572,7 +1621,7 @@ export async function mountLoadingBayGame(
       .filter((pickup) => pickup.state === "available")
       .map((pickup) => pickup.id);
     const inventoryAndArmorExact =
-      inventoryQuantity("ammo/energy-cell") === 200 &&
+      inventoryQuantity("ammo/energy-cell") === energyAfterFight &&
       inventoryQuantity("ammo/scatter-shell") === 20 &&
       inventoryQuantity("weapon/breach-scattergun") === 1 &&
       inventoryQuantity("weapon/rivet-carbine") === 1 &&
@@ -1669,6 +1718,7 @@ export async function mountLoadingBayGame(
         .map((stack) => `${stack.item}:${String(stack.quantity)}`)
         .join(","),
       `${String(current.player.armor)}/${String(current.player.maxArmor)}`,
+      pickupFightPassed,
       rejectionExact,
       cueProjected,
       selectedSpreadWeapon,
@@ -1678,6 +1728,7 @@ export async function mountLoadingBayGame(
     ].join("|");
     return (
       startedAvailable &&
+      pickupFightPassed &&
       walked &&
       inventoryAndArmorExact &&
       worldExact &&
@@ -1691,6 +1742,10 @@ export async function mountLoadingBayGame(
     );
   }
 
+  async function defeatEnemiesForSmoke(): Promise<boolean> {
+    return (await damageEnemyTo(4, 0)) && (await damageEnemyTo(5, 0));
+  }
+
   async function openProgressionBulkhead(): Promise<boolean> {
     if (inventoryQuantity("key/maintenance-pass") === 0) {
       const collected = await walkPlayerPath([
@@ -1702,9 +1757,7 @@ export async function mountLoadingBayGame(
       }
     }
     if (
-      current.doorAccess.some(
-        (door) => door.id === 30 && door.state === "open",
-      )
+      current.doorAccess.some((door) => door.id === 30 && door.state === "open")
     ) {
       return true;
     }

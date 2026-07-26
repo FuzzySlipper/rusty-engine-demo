@@ -3,9 +3,10 @@
 use core_ids::EntityId;
 use core_math::Vec3;
 use loading_bay_game::{
-    DoorState, EncounterState, EnemyState, ExtractionBeaconState, GameRuntime, ItemKind,
-    LevelExitState, NavigationState, PickupCollectionCause, PickupState, PlayerInputSessionView,
-    RequiredKeyPolicy, SecretRegionState, VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
+    DoorState, EncounterState, EnemyAttackKind, EnemyCombatPosture, EnemyState,
+    ExtractionBeaconState, GameRuntime, ItemKind, LevelExitState, NavigationState,
+    PickupCollectionCause, PickupState, PlayerInputSessionView, RequiredKeyPolicy,
+    SecretRegionState, VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
 };
 use serde::Serialize;
 
@@ -33,6 +34,8 @@ struct BrowserEnemyState {
     position: [f32; 3],
     current_health: u32,
     max_health: u32,
+    combat_posture: Option<&'static str>,
+    attack_kind: Option<&'static str>,
 }
 
 #[derive(Debug, Serialize)]
@@ -301,6 +304,7 @@ pub(super) fn browser_dynamic_state(
                 .session()
                 .enemy(EntityId::new(raw))
                 .expect("browser enemy");
+            let combat = runtime.session().enemy_combat(EntityId::new(raw));
             BrowserEnemyState {
                 id: raw,
                 name: view.entity_view.name,
@@ -325,6 +329,19 @@ pub(super) fn browser_dynamic_state(
                     .expect("browser enemy health")
                     .config
                     .max,
+                combat_posture: combat.as_ref().map(|combat| match combat.state.posture {
+                    EnemyCombatPosture::Sleeping => "sleeping",
+                    EnemyCombatPosture::Alert => "alert",
+                    EnemyCombatPosture::Pursuing => "pursuing",
+                    EnemyCombatPosture::Attacking => "attacking",
+                    EnemyCombatPosture::Dead => "dead",
+                }),
+                attack_kind: combat
+                    .as_ref()
+                    .map(|combat| match combat.config.attack.kind {
+                        EnemyAttackKind::Melee => "melee",
+                        EnemyAttackKind::RangedHitscan => "rangedHitscan",
+                    }),
             }
         })
         .collect();

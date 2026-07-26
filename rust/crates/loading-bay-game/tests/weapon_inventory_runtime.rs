@@ -12,15 +12,16 @@ const ENEMY: EntityId = EntityId::new(4);
 #[test]
 fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
-    project["scenes"][0]["entities"]
+    let enemy = project["scenes"][0]["entities"]
         .as_array_mut()
         .unwrap()
         .iter_mut()
         .find(|entity| entity["id"] == ENEMY.raw())
         .unwrap()
         .as_object_mut()
-        .unwrap()
-        .remove("navigation");
+        .unwrap();
+    enemy.remove("navigation");
+    enemy.remove("enemyCombat");
     let mut uninterrupted = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     aim_at(&mut uninterrupted, ENEMY);
 

@@ -249,44 +249,81 @@ export function loadingBayStoredProject(
     throw new Error("loading-bay player weapon/controller source is missing");
   }
   const playerController = player.playerController;
-  const entitiesWithInventory = entities.map((entity) =>
-    entity.id === ENCOUNTER_IDS.actor
-      ? {
-          ...playerWithoutLegacyWeapon,
-          playerController: {
-            ...playerController,
-            bindings: {
-              ...playerController.bindings,
-              selectWeapon: ["Digit1", "Digit2", "Digit3"],
-            },
+  const entitiesWithInventory = entities.map((entity) => {
+    if (entity.id === ENCOUNTER_IDS.actor) {
+      return {
+        ...playerWithoutLegacyWeapon,
+        playerController: {
+          ...playerController,
+          bindings: {
+            ...playerController.bindings,
+            selectWeapon: ["Digit1", "Digit2", "Digit3"],
           },
-          bounds: {
-            min: [-0.25, -0.25, -0.25] as const,
-            max: [0.25, 0.25, 0.25] as const,
-          },
-          health: {
-            max: 100,
-            hitboxHalfExtents: [0.25, 0.5, 0.25] as const,
-            maxArmor: 100,
-            armorAbsorptionPercent: 50,
-          },
-          inventory: {
-            capacitySlots: 8,
-            startingStacks: [
-              { item: LOADING_BAY_ITEM_IDS.arcPistol, quantity: 1 },
-              { item: LOADING_BAY_ITEM_IDS.energyCell, quantity: 40 },
-              { item: LOADING_BAY_ITEM_IDS.medPatch, quantity: 1 },
-            ],
-            initiallyEquippedWeapon: LOADING_BAY_ITEM_IDS.arcPistol,
-            weaponSlots: [
-              LOADING_BAY_ITEM_IDS.arcPistol,
-              LOADING_BAY_ITEM_IDS.breachScattergun,
-              LOADING_BAY_ITEM_IDS.rivetCarbine,
-            ],
-          },
-        }
-      : entity,
-  );
+        },
+        bounds: {
+          min: [-0.25, -0.25, -0.25] as const,
+          max: [0.25, 0.25, 0.25] as const,
+        },
+        health: {
+          max: 100,
+          hitboxHalfExtents: [0.25, 0.5, 0.25] as const,
+          maxArmor: 100,
+          armorAbsorptionPercent: 50,
+        },
+        inventory: {
+          capacitySlots: 8,
+          startingStacks: [
+            { item: LOADING_BAY_ITEM_IDS.arcPistol, quantity: 1 },
+            { item: LOADING_BAY_ITEM_IDS.energyCell, quantity: 40 },
+            { item: LOADING_BAY_ITEM_IDS.medPatch, quantity: 1 },
+          ],
+          initiallyEquippedWeapon: LOADING_BAY_ITEM_IDS.arcPistol,
+          weaponSlots: [
+            LOADING_BAY_ITEM_IDS.arcPistol,
+            LOADING_BAY_ITEM_IDS.breachScattergun,
+            LOADING_BAY_ITEM_IDS.rivetCarbine,
+          ],
+        },
+      };
+    }
+    if (entity.enemy === true) {
+      const melee = entity.id === ENCOUNTER_IDS.firstEnemy;
+      return {
+        ...entity,
+        kinematic: entity.kinematic ?? {
+          halfExtents: [0.25, 0.5, 0.25] as const,
+          velocity: [0, 0, 0] as const,
+        },
+        navigation: entity.navigation ?? {
+          goal: entity.translation ?? ([1.5, 1.5, 2.5] as const),
+          speedUnitsPerSecond: 2.5,
+          maxVisited: 512,
+        },
+        enemyCombat: {
+          sightRange: melee ? 7 : 8,
+          hearingRange: 2.5,
+          attack: melee
+            ? {
+                kind: "melee" as const,
+                damage: 12,
+                range: 1.25,
+                cooldownTicks: 45,
+                originOffset: [0, 0, 0] as const,
+                presentation: "sentry-strike",
+              }
+            : {
+                kind: "rangedHitscan" as const,
+                damage: 4,
+                range: 7,
+                cooldownTicks: 120,
+                originOffset: [0, 0.25, 0] as const,
+                presentation: "sentry-pulse",
+              },
+        },
+      };
+    }
+    return entity;
+  });
   const probe = entitiesWithInventory.at(-1);
   if (
     probe?.id !== ENCOUNTER_IDS.motionProbe ||
@@ -296,7 +333,7 @@ export function loadingBayStoredProject(
   }
 
   return {
-    schemaVersion: 17,
+    schemaVersion: 18,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",

@@ -674,6 +674,25 @@ function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
         sound: "hit",
         billboard: { text: `-${String(cue.amount)}`, tone: "warning" },
       };
+    case "enemyAlert":
+      return {
+        particle: "blocked",
+        pulse: `enemy-alert-${cue.cause}`,
+        sound: "beacon",
+        billboard: { text: "ENEMY ALERT", tone: "warning" },
+      };
+    case "enemyAttack":
+      return {
+        particle: "muzzle",
+        pulse: `${cue.presentation}-attack`,
+        sound: cue.attackKind === "melee" ? "hit" : "shot",
+      };
+    case "enemyAttackMissed":
+      return {
+        particle: "blocked",
+        pulse: `enemy-miss-${cue.reason}`,
+        sound: "blocked",
+      };
     case "defeat":
       return {
         particle: "defeat",
@@ -754,6 +773,12 @@ function cueAnchor(
       return entityAnchor(state, cue.entity);
     case "damage":
       return entityAnchor(state, cue.target);
+    case "enemyAlert":
+      return entityAnchor(state, cue.entity);
+    case "enemyAttack":
+      return { entity: cue.attacker, position: cue.origin };
+    case "enemyAttackMissed":
+      return entityAnchor(state, cue.target);
     case "defeat":
       return entityAnchor(state, cue.entity);
     case "doorChanged":
@@ -781,6 +806,11 @@ function cueEntity(cue: RuntimeFeedbackCue): number {
       return cue.attacker;
     case "damage":
       return cue.target;
+    case "enemyAlert":
+      return cue.entity;
+    case "enemyAttack":
+    case "enemyAttackMissed":
+      return cue.attacker;
     case "defeat":
     case "doorChanged":
     case "extractionBeaconActivated":

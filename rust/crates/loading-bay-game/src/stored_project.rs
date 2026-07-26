@@ -21,7 +21,7 @@ use crate::combat::{
 };
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 17;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 18;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -283,6 +283,8 @@ pub struct StoredEntityDefinition {
     #[serde(default, skip_serializing_if = "is_false")]
     pub enemy: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub enemy_combat: Option<StoredEnemyCombat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub health: Option<StoredHealth>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hazard: Option<StoredHazard>,
@@ -472,6 +474,32 @@ pub struct StoredHealth {
     pub max_armor: u32,
     #[serde(default, skip_serializing_if = "is_zero_u8")]
     pub armor_absorption_percent: u8,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredEnemyCombat {
+    pub sight_range: f32,
+    pub hearing_range: f32,
+    pub attack: StoredEnemyAttack,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredEnemyAttack {
+    pub kind: StoredEnemyAttackKind,
+    pub damage: u32,
+    pub range: f32,
+    pub cooldown_ticks: u64,
+    pub origin_offset: [f32; 3],
+    pub presentation: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StoredEnemyAttackKind {
+    Melee,
+    RangedHitscan,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

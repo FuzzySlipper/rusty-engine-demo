@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 17,
+  "schemaVersion": 18,
   "projectId": "relay-annex",
   "name": "Relay Annex",
   "entryScene": "scene/relay-annex",
@@ -395,6 +395,22 @@
             ],
             "speedUnitsPerSecond": 2.5,
             "maxVisited": 512
+          },
+          "enemyCombat": {
+            "sightRange": 7,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "melee",
+              "damage": 12,
+              "range": 1.25,
+              "cooldownTicks": 45,
+              "originOffset": [
+                0,
+                0,
+                0
+              ],
+              "presentation": "sentry-strike"
+            }
           }
         },
         {

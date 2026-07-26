@@ -5,10 +5,10 @@ use core_ids::EntityId;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CombatFact, CombatRejectionReason, DamageService, ExtractionBeaconFact, GameEvent, GameRuntime,
-    HazardFact, InventoryFact, InventoryRejection, InventoryService, ItemDefinitionId,
-    NavigationFact, PickupFact, PickupReceipt, PickupRejection, PlayerControlFact,
-    ResolvedAttackAction, RuntimeError, VitalityFact, VitalityRejection,
+    CombatFact, CombatRejectionReason, DamageService, EnemyCombatFact, ExtractionBeaconFact,
+    GameEvent, GameRuntime, HazardFact, InventoryFact, InventoryRejection, InventoryService,
+    ItemDefinitionId, NavigationFact, PickupFact, PickupReceipt, PickupRejection,
+    PlayerControlFact, ResolvedAttackAction, RuntimeError, VitalityFact, VitalityRejection,
 };
 
 pub const FIXED_SIMULATION_HZ: u32 = 60;
@@ -174,6 +174,7 @@ pub enum GameRestartMode {
 pub enum GameLoopFact {
     PlayerControl(PlayerControlFact),
     Navigation(NavigationFact),
+    EnemyCombat(EnemyCombatFact),
     Combat(CombatFact),
     ExtractionBeacon(ExtractionBeaconFact),
     Pickup(PickupFact),
@@ -365,6 +366,11 @@ impl LoadingBayGameLoop {
             && runtime.session().hazards().next().is_some()
         {
             return Err(RuntimeError::HazardPlayerMissingVitality { player });
+        }
+        if runtime.session().health(player).is_none()
+            && runtime.session().enemy_combatants().next().is_some()
+        {
+            return Err(RuntimeError::EnemyCombatPlayerMissingVitality { player });
         }
         Ok(())
     }
@@ -664,12 +670,33 @@ impl LoadingBayGameLoop {
     }
 
     fn run_enemy_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
-        let receipt = self.runtime.run_navigation_phase(FIXED_STEP_SECONDS)?;
-        facts.extend(receipt.facts.into_iter().map(GameLoopFact::Navigation));
+        let receipt = self
+            .runtime
+            .run_enemy_intent_and_motion_phase(self.player, FIXED_STEP_SECONDS)?;
+        facts.extend(receipt.facts.into_iter().map(GameLoopFact::EnemyCombat));
+        facts.extend(
+            receipt
+                .navigation
+                .facts
+                .into_iter()
+                .map(GameLoopFact::Navigation),
+        );
         Ok(())
     }
 
     fn run_combat_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
+        let enemy_attacks = self.runtime.run_enemy_attack_phase(self.player)?;
+        facts.extend(
+            enemy_attacks
+                .facts
+                .into_iter()
+                .map(GameLoopFact::EnemyCombat),
+        );
+        facts.extend(enemy_attacks.events.into_iter().map(GameLoopFact::Event));
+        if DamageService::is_dead(self.runtime.session(), self.player) {
+            self.input.clear_intent();
+            return Ok(());
+        }
         let primary_fire_pressed = std::mem::take(&mut self.input.primary_fire_pressed);
         if !self.input.connected || DamageService::is_dead(self.runtime.session(), self.player) {
             return Ok(());

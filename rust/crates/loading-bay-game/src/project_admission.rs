@@ -16,6 +16,9 @@ use crate::combat::WeaponConfig;
 use crate::content::AdmittedProject;
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::DoorConfig;
+use crate::enemy_combat::{
+    EnemyAttackConfig, EnemyAttackKind, EnemyCombatConfig, EnemyPerceptionConfig,
+};
 use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::hazard::HazardConfig;
 use crate::inventory::{
@@ -592,6 +595,25 @@ fn authored_definition(
     if authored.enemy {
         definition = definition.as_enemy();
     }
+    if let Some(combat) = &authored.enemy_combat {
+        definition = definition.with_enemy_combat(EnemyCombatConfig {
+            perception: EnemyPerceptionConfig {
+                sight_range: combat.sight_range,
+                hearing_range: combat.hearing_range,
+            },
+            attack: EnemyAttackConfig {
+                kind: match combat.attack.kind {
+                    crate::StoredEnemyAttackKind::Melee => EnemyAttackKind::Melee,
+                    crate::StoredEnemyAttackKind::RangedHitscan => EnemyAttackKind::RangedHitscan,
+                },
+                damage: combat.attack.damage,
+                range: combat.attack.range,
+                cooldown_ticks: combat.attack.cooldown_ticks,
+                origin_offset: array_vec3(combat.attack.origin_offset),
+                presentation: combat.attack.presentation.clone(),
+            },
+        });
+    }
     if let Some(health) = authored.health {
         definition = definition.with_health(HealthConfig {
             max: health.max,
@@ -810,6 +832,14 @@ fn definition_error(
         Error::EnemyMissingCollision { entity } | Error::EnemyMissingRenderable { entity } => (
             diagnostic_code::INVALID_COMPONENT,
             entity_path(scene_index, indexes, *entity, "enemy"),
+        ),
+        Error::EnemyCombatWithoutEnemy { entity }
+        | Error::EnemyCombatMissingTransform { entity }
+        | Error::EnemyCombatMissingHealth { entity }
+        | Error::EnemyCombatMissingNavigation { entity }
+        | Error::InvalidEnemyCombatConfig { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "enemyCombat"),
         ),
         Error::HealthMissingTransform { entity }
         | Error::HealthMissingCollision { entity }

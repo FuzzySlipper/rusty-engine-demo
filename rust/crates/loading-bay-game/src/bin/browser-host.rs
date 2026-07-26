@@ -589,6 +589,10 @@ fn drain_game_loop_feedback(
                 facts.push((navigation_fact_name(&fact).to_owned(), None));
                 feedback.extend_navigation(std::slice::from_ref(&fact));
             }
+            GameLoopFact::EnemyCombat(fact) => {
+                facts.push((enemy_combat_fact_name(&fact).to_owned(), None));
+                feedback.extend_enemy_combat(std::slice::from_ref(&fact));
+            }
             GameLoopFact::Combat(fact) => {
                 facts.push((combat_fact_name(&fact).to_owned(), None));
                 feedback.extend_combat(std::slice::from_ref(&fact));
@@ -735,6 +739,17 @@ fn drain_game_loop_feedback(
         }
     }
     (facts, feedback)
+}
+
+fn enemy_combat_fact_name(fact: &loading_bay_game::EnemyCombatFact) -> &'static str {
+    match fact {
+        loading_bay_game::EnemyCombatFact::Alerted { .. } => "EnemyAlerted",
+        loading_bay_game::EnemyCombatFact::PostureChanged { .. } => "EnemyPostureChanged",
+        loading_bay_game::EnemyCombatFact::AttackFired { .. } => "EnemyAttackFired",
+        loading_bay_game::EnemyCombatFact::AttackHit { .. } => "EnemyAttackHit",
+        loading_bay_game::EnemyCombatFact::AttackMissed { .. } => "EnemyAttackMissed",
+        loading_bay_game::EnemyCombatFact::Vitality(fact) => vitality_fact_name(fact),
+    }
 }
 
 fn pickup_rejection_name(reason: &loading_bay_game::PickupRejection) -> &'static str {
@@ -1221,6 +1236,11 @@ mod tests {
         assert_eq!(state["player"]["armor"], 0);
         assert_eq!(state["player"]["maxArmor"], 0);
         assert_eq!(state["player"]["vitalityState"], "alive");
+        assert_eq!(
+            state["enemies"][0]["combatPosture"],
+            serde_json::Value::Null
+        );
+        assert_eq!(state["enemies"][0]["attackKind"], serde_json::Value::Null);
         assert!(runtime.session().health(ACTOR).is_none());
     }
 

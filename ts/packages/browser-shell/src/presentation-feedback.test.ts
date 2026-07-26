@@ -212,6 +212,67 @@ test("progression cues remain typed disposable presentation", () => {
   ]);
 });
 
+test("enemy perception attacks misses and damage stay typed disposable presentation", () => {
+  const state = feedbackState();
+  const projected = new PresentationFeedbackAdapter().project({
+    ...state,
+    presentation: {
+      animationStates: [{ entity: 4, posture: "attacking" }],
+      cues: [
+        {
+          kind: "enemyAlert",
+          entity: 4,
+          target: 1,
+          cause: "sight",
+        },
+        {
+          kind: "enemyAttack",
+          attacker: 4,
+          target: 1,
+          attackKind: "rangedHitscan",
+          presentation: "sentry-pulse",
+          origin: [7.5, 0.25, 5.5],
+          targetPosition: [2, 0, 3],
+        },
+        {
+          kind: "enemyAttackMissed",
+          attacker: 4,
+          target: 1,
+          reason: "worldBlocked",
+        },
+        {
+          kind: "damage",
+          attacker: 4,
+          target: 1,
+          amount: 4,
+          remaining: 96,
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(
+    projected.animationStates.map(
+      (animation) => `${String(animation.entity)}:${animation.posture}`,
+    ),
+    ["4:attacking"],
+  );
+  assert.deepEqual(projected.animationPulses, [
+    "enemy-alert-sight",
+    "sentry-pulse-attack",
+    "enemy-miss-worldBlocked",
+    "damage",
+  ]);
+  assert.deepEqual(projected.particleKinds, [
+    "blocked",
+    "muzzle",
+    "blocked",
+    "impact",
+  ]);
+  assert.deepEqual(projected.billboardValues, ["ENEMY ALERT", "-4"]);
+  assert.deepEqual(projected.soundKinds, ["beacon", "shot", "blocked", "hit"]);
+});
+
 test("host-user effects volume scales disposable audio descriptors only", () => {
   const full = new PresentationFeedbackAdapter().project(feedbackState(), 1);
   const quiet = new PresentationFeedbackAdapter().project(
@@ -388,6 +449,8 @@ function feedbackState(): RuntimeBrowserState {
         position: [7.5, 0, 5.5],
         currentHealth: 0,
         maxHealth: 100,
+        combatPosture: "dead",
+        attackKind: "rangedHitscan",
       },
     ],
     presentation: {

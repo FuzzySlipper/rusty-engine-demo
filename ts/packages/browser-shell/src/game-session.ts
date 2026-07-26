@@ -1128,6 +1128,27 @@ function isRuntimeInteractionState(value: unknown): boolean {
   );
 }
 
+function isRuntimeEnemyState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.id) &&
+    typeof value.name === "string" &&
+    (value.state === "alive" || value.state === "defeated") &&
+    isFiniteVector3(value.position) &&
+    isFiniteNumber(value.currentHealth) &&
+    isFiniteNumber(value.maxHealth) &&
+    (value.combatPosture === null ||
+      value.combatPosture === "sleeping" ||
+      value.combatPosture === "alert" ||
+      value.combatPosture === "pursuing" ||
+      value.combatPosture === "attacking" ||
+      value.combatPosture === "dead") &&
+    (value.attackKind === null ||
+      value.attackKind === "melee" ||
+      value.attackKind === "rangedHitscan")
+  );
+}
+
 function isFiniteVector3(value: unknown): boolean {
   return (
     Array.isArray(value) && value.length === 3 && value.every(isFiniteNumber)
@@ -1167,6 +1188,7 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     (value.interaction === null ||
       isRuntimeInteractionState(value.interaction)) &&
     Array.isArray(value.enemies) &&
+    value.enemies.every(isRuntimeEnemyState) &&
     isRecord(value.presentation) &&
     Array.isArray(value.lastEvents) &&
     value.lastEvents.every((event) => typeof event === "string")

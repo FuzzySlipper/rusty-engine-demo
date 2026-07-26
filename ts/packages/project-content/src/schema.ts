@@ -63,6 +63,19 @@ export interface HealthDefinition {
   readonly armorAbsorptionPercent?: number;
 }
 
+export interface EnemyCombatDefinition {
+  readonly sightRange: number;
+  readonly hearingRange: number;
+  readonly attack: {
+    readonly kind: "melee" | "rangedHitscan";
+    readonly damage: number;
+    readonly range: number;
+    readonly cooldownTicks: number;
+    readonly originOffset: Vec3;
+    readonly presentation: string;
+  };
+}
+
 export interface HazardDefinition {
   readonly damage: number;
   readonly cooldownTicks: number;
@@ -203,6 +216,7 @@ export interface EntityDefinition {
   readonly door?: DoorDefinition;
   readonly switch?: SwitchDefinition;
   readonly enemy?: true;
+  readonly enemyCombat?: EnemyCombatDefinition;
   readonly health?: HealthDefinition;
   readonly hazard?: HazardDefinition;
   readonly encounter?: EncounterDefinition;
@@ -303,7 +317,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 17;
+  readonly schemaVersion: 18;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 17,
+  "schemaVersion": 18,
   "projectId": "loading-bay",
   "name": "Loading Bay",
   "entryScene": "scene/loading-bay",
@@ -396,6 +396,22 @@
             ],
             "speedUnitsPerSecond": 4,
             "maxVisited": 512
+          },
+          "enemyCombat": {
+            "sightRange": 7,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "melee",
+              "damage": 12,
+              "range": 1.25,
+              "cooldownTicks": 45,
+              "originOffset": [
+                0,
+                0,
+                0
+              ],
+              "presentation": "sentry-strike"
+            }
           }
         },
         {
@@ -422,6 +438,43 @@
               0.9,
               0.55
             ]
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.25,
+              0.5,
+              0.25
+            ],
+            "velocity": [
+              0,
+              0,
+              0
+            ]
+          },
+          "navigation": {
+            "goal": [
+              6.5,
+              1.5,
+              2.5
+            ],
+            "speedUnitsPerSecond": 2.5,
+            "maxVisited": 512
+          },
+          "enemyCombat": {
+            "sightRange": 8,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "rangedHitscan",
+              "damage": 4,
+              "range": 7,
+              "cooldownTicks": 120,
+              "originOffset": [
+                0,
+                0.25,
+                0
+              ],
+              "presentation": "sentry-pulse"
+            }
           }
         },
         {

@@ -146,7 +146,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 18, 99] {
+    for schema_version in [0, 5, 19, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -156,6 +156,29 @@ fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
     let error = decode_project_document("{}").unwrap_err();
     assert_eq!(error.diagnostic().code, diagnostic_code::DECODE);
     assert_eq!(error.diagnostic().path, "schemaVersion");
+}
+
+#[test]
+fn schema_seventeen_rejects_future_enemy_combat_and_migrates_when_absent() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["schemaVersion"] = 17.into();
+
+    let error = decode_project_document(&previous.to_string()).unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
+    assert_eq!(error.diagnostic().path, "scenes");
+
+    strip_future_enemy_combat(&mut previous);
+    let decoded = decode_project_document(&previous.to_string()).unwrap();
+    assert_eq!(decoded.source_schema_version, 17);
+    assert_eq!(
+        decoded.project.schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
+    assert!(decoded.was_migrated());
+    assert!(decoded.project.scenes.iter().all(|scene| scene
+        .entities
+        .iter()
+        .all(|entity| entity.enemy_combat.is_none())));
 }
 
 #[test]
@@ -290,6 +313,7 @@ fn contains_object_key(value: &serde_json::Value, needle: &str) -> bool {
 
 fn strip_future_inventory_and_pickups(project: &mut serde_json::Value) {
     project.as_object_mut().unwrap().remove("itemDefinitions");
+    strip_future_enemy_combat(project);
     for scene in project["scenes"].as_array_mut().unwrap() {
         scene["entities"]
             .as_array_mut()
@@ -330,6 +354,7 @@ fn strip_future_inventory_and_pickups(project: &mut serde_json::Value) {
 }
 
 fn strip_future_vitality(project: &mut serde_json::Value) {
+    strip_future_enemy_combat(project);
     for scene in project["scenes"].as_array_mut().unwrap() {
         scene["entities"]
             .as_array_mut()
@@ -406,6 +431,7 @@ fn strip_current_weapon_fields(project: &mut serde_json::Value) {
 }
 
 fn strip_future_progression(project: &mut serde_json::Value) {
+    strip_future_enemy_combat(project);
     for scene in project["scenes"].as_array_mut().unwrap() {
         for entity in scene["entities"].as_array_mut().unwrap() {
             entity.as_object_mut().unwrap().remove("secretRegion");
@@ -422,6 +448,14 @@ fn strip_future_progression(project: &mut serde_json::Value) {
             {
                 switch.remove("loadingBayInterlock");
             }
+        }
+    }
+}
+
+fn strip_future_enemy_combat(project: &mut serde_json::Value) {
+    for scene in project["scenes"].as_array_mut().unwrap() {
+        for entity in scene["entities"].as_array_mut().unwrap() {
+            entity.as_object_mut().unwrap().remove("enemyCombat");
         }
     }
 }

@@ -84,6 +84,9 @@ pub enum DamageSource {
     Hazard {
         hazard: EntityId,
     },
+    EnemyAttack {
+        attacker: EntityId,
+    },
     Direct {
         actor: EntityId,
     },
@@ -94,6 +97,7 @@ impl DamageSource {
         match self {
             Self::Weapon { attacker, .. } => *attacker,
             Self::Hazard { hazard } => *hazard,
+            Self::EnemyAttack { attacker } => *attacker,
             Self::Direct { actor } => *actor,
         }
     }
@@ -296,6 +300,10 @@ impl DamageService {
             };
             if let Some(enemy) = candidate.enemies.get_mut(&command.target) {
                 enemy.state = EnemyState::Defeated;
+                if let Some(combat) = candidate.enemy_combat.get_mut(&command.target) {
+                    combat.state.posture = crate::EnemyCombatPosture::Dead;
+                    combat.state.last_known_target_position = None;
+                }
                 event = Some(GameEvent::EnemyDefeated {
                     enemy: command.target,
                     actor: source,

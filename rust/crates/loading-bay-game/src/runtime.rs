@@ -14,6 +14,9 @@ use crate::content::{decode_project_content, AdmittedProject, ProjectContentErro
 use crate::definition::GameEntityDefinitionError;
 use crate::door::{security_door_definitions, DoorService, DoorTransition, SecurityDoorIds};
 use crate::encounter::EncounterService;
+use crate::enemy_combat::{
+    EnemyAttackPhaseReceipt, EnemyCombatService, EnemyIntentAndMotionReceipt,
+};
 use crate::extraction_beacon::{ExtractionBeaconReceipt, ExtractionBeaconService};
 use crate::hazard::{HazardPhaseReceipt, HazardRejection, HazardService};
 use crate::interaction::InteractionService;
@@ -66,6 +69,9 @@ pub enum RuntimeError {
         player: EntityId,
     },
     HazardPlayerMissingVitality {
+        player: EntityId,
+    },
+    EnemyCombatPlayerMissingVitality {
         player: EntityId,
     },
     PlayerDefeated {
@@ -304,6 +310,52 @@ impl GameRuntime {
             .as_ref()
             .ok_or(RuntimeError::MissingCollisionScene)?;
         EnemyNavigationSystem::run(&mut self.session, scene, delta_seconds)
+    }
+
+    /// Run the game-specific enemy perception and intent owner, then feed only
+    /// its transient pursuit goals into the canonical bounded Engine navigation
+    /// and collision-aware motion seams. The candidate session commits only
+    /// after both phases succeed.
+    pub fn run_enemy_intent_and_motion_phase(
+        &mut self,
+        player: EntityId,
+        delta_seconds: f32,
+    ) -> Result<EnemyIntentAndMotionReceipt, RuntimeError> {
+        let scene = self
+            .collision_scene
+            .as_ref()
+            .ok_or(RuntimeError::MissingCollisionScene)?;
+        let mut candidate = self.session.clone();
+        let intent = EnemyCombatService::perceive_and_plan(&mut candidate, scene, player)?;
+        let navigation = EnemyNavigationSystem::run_with_combat_goals(
+            &mut candidate,
+            scene,
+            delta_seconds,
+            &intent.navigation_goals,
+        )?;
+        self.session = candidate;
+        Ok(EnemyIntentAndMotionReceipt {
+            facts: intent.facts,
+            navigation,
+        })
+    }
+
+    pub fn run_enemy_attack_phase(
+        &mut self,
+        player: EntityId,
+    ) -> Result<EnemyAttackPhaseReceipt, RuntimeError> {
+        let scene = self
+            .collision_scene
+            .as_ref()
+            .ok_or(RuntimeError::MissingCollisionScene)?;
+        let mut candidate = self.session.clone();
+        let mut receipt = EnemyCombatService::attack(&mut candidate, scene, self.tick, player)?;
+        self.session = candidate;
+        for event in receipt.events.drain(..) {
+            self.events.push_back(event);
+        }
+        receipt.events = self.drain_events()?;
+        Ok(receipt)
     }
 
     /// Apply one semantic player action. Browser device details have already

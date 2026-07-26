@@ -63,8 +63,8 @@ try {
     persistedProject,
   );
   if (
-    !currentReceipt.includes("sourceSchema=17") ||
-    !currentReceipt.includes("currentSchema=17")
+    !currentReceipt.includes("sourceSchema=18") ||
+    !currentReceipt.includes("currentSchema=18")
   ) {
     throw new Error(
       `current project persistence receipt was incomplete\n${currentReceipt}`,
@@ -79,7 +79,7 @@ try {
   );
   if (
     !convertedReceipt.includes("sourceSchema=11") ||
-    !convertedReceipt.includes("currentSchema=17")
+    !convertedReceipt.includes("currentSchema=18")
   ) {
     throw new Error(
       `converted project persistence receipt was incomplete\n${convertedReceipt}`,
@@ -94,7 +94,7 @@ try {
   );
   if (
     !migrationReceipt.includes("sourceSchema=6") ||
-    !migrationReceipt.includes("currentSchema=17")
+    !migrationReceipt.includes("currentSchema=18")
   ) {
     throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
   }
@@ -180,6 +180,7 @@ async function runFullBrowserProduct(project) {
       'data-held-input="pass"',
       'data-local-look-offset="pass"',
       'data-local-look-presentation="bounded-disposable"',
+      'data-enemy-combat="pass"',
       'data-pickups="pass"',
       'data-gate-passage="pass"',
       'data-queue-recovery="pass"',
@@ -439,8 +440,8 @@ async function runFullBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
-      "sourceSchema=17",
-      "currentSchema=17",
+      "sourceSchema=18",
+      "currentSchema=18",
       "entryScene=scene/loading-bay",
       "assets=14",
       "scenes=1",
@@ -486,7 +487,6 @@ async function runProgressionRouteProof(project) {
               document.querySelector(".game-state-overlay") === null`,
             "progression connected game",
           );
-
           await holdKeysUntil(
             client,
             running.address,
@@ -501,16 +501,28 @@ async function runProgressionRouteProof(project) {
             (state) =>
               state.inventory?.stacks.some(
                 (stack) =>
-                  stack.item === "key/maintenance-pass" &&
-                  stack.quantity === 1,
-              ) === true &&
-              state.interaction?.target === 30,
+                  stack.item === "key/maintenance-pass" && stack.quantity === 1,
+              ) === true && state.interaction?.target === 30,
             "key inventory and keyed-door prompt",
           );
           await waitForCdp(
             client,
             `document.querySelector(".interaction-prompt")?.textContent?.includes("Open maintenance bulkhead") === true`,
             "rendered keyed-door prompt",
+          );
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyD"],
+            (state) =>
+              state.player.position[0] >= 5.8 &&
+              state.player.armor === state.player.maxArmor,
+            "armored east bulkhead approach",
+          );
+          await waitForHostState(
+            running.address,
+            (state) => state.interaction?.target === 30,
+            "east keyed-door prompt",
           );
           await pressKey(client, "KeyE");
           await waitForHostState(
@@ -526,8 +538,17 @@ async function runProgressionRouteProof(project) {
             client,
             running.address,
             ["KeyS"],
-            (state) => state.player.position[2] >= 7.2,
+            (state) =>
+              state.player.position[0] >= 5.5 &&
+              state.player.position[2] >= 7.2,
             "interlock switch",
+          );
+          await holdKeysUntil(
+            client,
+            running.address,
+            ["KeyA"],
+            (state) => state.player.position[0] <= 3.6,
+            "interlock control approach",
           );
           await waitForHostState(
             running.address,
@@ -552,23 +573,22 @@ async function runProgressionRouteProof(project) {
           await holdKeysUntil(
             client,
             running.address,
-            ["KeyD"],
-            (state) => state.player.position[0] >= 6.2,
-            "secret overlook east approach",
+            ["KeyS"],
+            (state) => state.player.position[2] >= 8.2,
+            "secret overlook south approach",
           );
           await holdKeysUntil(
             client,
             running.address,
-            ["KeyS"],
-            (state) => state.player.position[2] >= 8.2,
+            ["KeyD"],
+            (state) => state.player.position[0] >= 6.2,
             "secret overlook entry",
           );
           await waitForHostState(
             running.address,
             (state) =>
               state.secretRegions?.some(
-                (secret) =>
-                  secret.id === 31 && secret.state === "discovered",
+                (secret) => secret.id === 31 && secret.state === "discovered",
               ) === true,
             "secret discovery",
           );
@@ -639,17 +659,27 @@ async function runProgressionRouteProof(project) {
 
 async function waitForHostState(address, predicate, label, timeout = 15_000) {
   const deadline = Date.now() + timeout;
+  let lastState;
   while (Date.now() < deadline) {
     const response = await fetch(`http://${address}/api/state`, {
       cache: "no-store",
     });
     const state = await response.json();
+    lastState = state;
     if (response.ok && predicate(state)) {
       return state;
     }
     await delay(50);
   }
-  throw new Error(`timed out waiting for ${label}`);
+  throw new Error(
+    `timed out waiting for ${label}: ${JSON.stringify({
+      player: lastState?.player,
+      enemies: lastState?.enemies,
+      doorAccess: lastState?.doorAccess,
+      doorState: lastState?.doorState,
+      interaction: lastState?.interaction,
+    })}`,
+  );
 }
 
 async function holdKeysUntil(
@@ -893,17 +923,36 @@ async function runDeadDialogFocusProof(project) {
               document.querySelector(".game-state-overlay") === null`,
             "dead-dialog connected game",
           );
-          await holdKeysUntil(
-            client,
+          await client.send("Input.dispatchKeyEvent", {
+            type: "keyDown",
+            key: "s",
+            code: "KeyS",
+            windowsVirtualKeyCode: 83,
+            nativeVirtualKeyCode: 83,
+          });
+          await new Promise((resolve) => setTimeout(resolve, 900));
+          await client.send("Input.dispatchKeyEvent", {
+            type: "keyUp",
+            key: "s",
+            code: "KeyS",
+            windowsVirtualKeyCode: 83,
+            nativeVirtualKeyCode: 83,
+          });
+          await waitForHostState(
             running.address,
-            ["KeyS"],
-            (state) => state.player.position[2] >= 4.2,
-            "hazard overlap",
+            (state) =>
+              state.player.currentHealth < state.player.maxHealth &&
+              state.enemies?.some(
+                (enemy) => enemy.combatPosture === "attacking",
+              ) === true,
+            "enemy attack damage",
+            15_000,
           );
           await waitForHostState(
             running.address,
             (state) => state.player.vitalityState === "dead",
-            "dead player projection",
+            "enemy-caused dead player projection",
+            30_000,
           );
           await waitForCdp(
             client,
@@ -965,14 +1014,16 @@ async function runDeadDialogFocusProof(project) {
             );
           }
           await client.send("Runtime.evaluate", {
-            expression: `document.body.dataset.deadDialogFocus = "pass"`,
+            expression: `document.body.dataset.enemyCombatDeath = "pass";
+              document.body.dataset.deadDialogFocus = "pass"`,
           });
         },
       },
     );
     if (
       result.code !== 0 ||
-      !result.stdout.includes('data-dead-dialog-focus="pass"')
+      !result.stdout.includes('data-dead-dialog-focus="pass"') ||
+      !result.stdout.includes('data-enemy-combat-death="pass"')
     ) {
       throw new Error(
         `dead-dialog focus proof failed\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-6_000)}`,
@@ -990,7 +1041,7 @@ function gameShellScenario(viewportLabel) {
     const waitFor = async (predicate, label) => {
       const deadline = Date.now() + 15000;
       while (Date.now() < deadline) {
-        if (predicate()) return;
+        if (await predicate()) return;
         await delay(50);
       }
       throw new Error("timed out waiting for " + label);
@@ -1070,13 +1121,54 @@ function gameShellScenario(viewportLabel) {
       if (!(useButton instanceof HTMLButtonElement)) {
         throw new Error("inventory did not expose supported item use");
       }
+      const itemStateBefore = await fetch("/api/state", {
+        cache: "no-store",
+      }).then((response) => response.json());
+      const patchQuantityBefore =
+        itemStateBefore.inventory?.stacks?.find(
+          (stack) => stack.item === "supply/med-patch",
+        )?.quantity ?? 0;
       useButton.click();
-      await waitFor(
-        () => document.querySelector(".action-rejection") !== null,
-        "typed full-health rejection",
-      );
-      const rejection = document.querySelector(".action-rejection")?.textContent ?? "";
-      const typedItemRequest = rejection.includes("healthFull");
+      let itemUseEvidence = "";
+      let itemUsePassed = false;
+      if (itemStateBefore.player.currentHealth === itemStateBefore.player.maxHealth) {
+        await waitFor(
+          () => document.querySelector(".action-rejection") !== null,
+          "typed full-health rejection",
+        );
+        const rejection =
+          document.querySelector(".action-rejection")?.textContent ?? "";
+        itemUsePassed = rejection.includes("healthFull");
+        itemUseEvidence = rejection.trim();
+      } else {
+        let itemStateAfter = itemStateBefore;
+        await waitFor(async () => {
+          itemStateAfter = await fetch("/api/state", {
+            cache: "no-store",
+          }).then((response) => response.json());
+          const patchQuantityAfter =
+            itemStateAfter.inventory?.stacks?.find(
+              (stack) => stack.item === "supply/med-patch",
+            )?.quantity ?? 0;
+          return (
+            itemStateAfter.player.currentHealth >
+              itemStateBefore.player.currentHealth &&
+            patchQuantityAfter === patchQuantityBefore - 1
+          );
+        }, "authoritative med-patch consumption");
+        itemUsePassed = true;
+        itemUseEvidence =
+          "healed:" +
+          itemStateBefore.player.currentHealth +
+          "->" +
+          itemStateAfter.player.currentHealth +
+          ",patches:" +
+          patchQuantityBefore +
+          "->" +
+          (itemStateAfter.inventory?.stacks?.find(
+            (stack) => stack.item === "supply/med-patch",
+          )?.quantity ?? 0);
+      }
       byText(".panel-actions button", "Return to game")?.click();
       await waitFor(() => document.querySelector(".game-panel-overlay") === null, "game return");
 
@@ -1203,13 +1295,13 @@ function gameShellScenario(viewportLabel) {
       document.body.dataset.gameShellInventoryEvidence =
         String(inventoryLive) +
         ":" +
-        String(typedItemRequest) +
+        String(itemUsePassed) +
         ":" +
         String(hotbarPassed) +
         ":" +
-        rejection.trim();
+        itemUseEvidence;
       document.body.dataset.gameShellInventory =
-        inventoryLive && typedItemRequest && hotbarPassed ? "pass" : "fail";
+        inventoryLive && itemUsePassed && hotbarPassed ? "pass" : "fail";
       document.body.dataset.gameShellSettings = settingsPassed ? "pass" : "fail";
       document.body.dataset.gameShellAiming = aimingPassed ? "pass" : "fail";
       document.body.dataset.gameShellOverflow = overflowPassed ? "pass" : "fail";
@@ -1219,7 +1311,7 @@ function gameShellScenario(viewportLabel) {
         pausePassed &&
         focusPassed &&
         inventoryLive &&
-        typedItemRequest &&
+        itemUsePassed &&
         hotbarPassed &&
         settingsPassed &&
         aimingPassed &&
@@ -1291,7 +1383,7 @@ async function runMigratedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=migrated-v6-project",
-      "currentSchema=17",
+      "currentSchema=18",
       "assets=4",
       "scenes=1",
       "entities=6",
@@ -1349,8 +1441,8 @@ async function runConvertedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=converted-wall",
-      "sourceSchema=17",
-      "currentSchema=17",
+      "sourceSchema=18",
+      "currentSchema=18",
       "entryScene=scene/converted-wall",
       "assets=10",
       "scenes=1",

@@ -139,6 +139,21 @@ no imported audio files. Rust exclusively owns selection, cadence, deterministic
 rays, occlusion, ammunition, damage, and facts. Browser pulses, particles, synthesized audio, and
 the pending shared-renderer viewmodel are disposable presentation and cannot alter aim or damage.
 
+The schema-17 key-gated door, Loading Bay interlock, secret region, level exit, and their original
+presentation strings were authored directly in this repository under Den task #6226. They reuse
+existing downstream primitive door, control-panel, key-pickup, and exit identities and add no
+copied mesh, texture, sound, sprite, code, or level data. Rust exclusively owns key validation,
+retain/consume policy, switch consequences, first-discovery state, level completion, facts, and
+snapshot state; browser prompts and completion overlays are derived presentation.
+
+The schema-18 `sentry-strike` melee and `sentry-pulse` ranged combat configurations were authored
+directly in this repository under Den task #6227. They reuse the existing original Loading Bay
+sentry primitive meshes and synthesized downstream feedback profiles and add no copied mesh,
+texture, sound, sprite, code, or level data. Rust exclusively owns bounded sight/hearing
+activation, pursuit intent, canonical voxel occlusion, cadence, attacks, player damage/death,
+facts, and snapshot state. Browser alert/attack/miss/damage cues and posture labels are disposable
+presentation and cannot select targets or alter damage.
+
 The public `/home/dev/rusty-engine-ui` checkout at exact commit
 `68ddfa5430ec3bc2cf7ca96963982db9511e79ba` supplied the following #6216 downstream shell patterns:
 

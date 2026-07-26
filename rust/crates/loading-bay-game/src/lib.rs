@@ -11,6 +11,7 @@ mod content;
 mod definition;
 mod door;
 mod encounter;
+mod enemy_combat;
 mod extraction_beacon;
 mod game_loop;
 mod hazard;
@@ -45,6 +46,13 @@ pub use door::{
     security_door_definitions, DoorComponent, DoorConfig, DoorState, DoorView, SecurityDoorIds,
 };
 pub use encounter::{EncounterComponent, EncounterConfig, EncounterState, EncounterView};
+pub use enemy_combat::{
+    EnemyAttackConfig, EnemyAttackKind, EnemyAttackMissReason, EnemyAttackPhaseReceipt,
+    EnemyCombatComponent, EnemyCombatConfig, EnemyCombatFact, EnemyCombatPosture, EnemyCombatState,
+    EnemyCombatView, EnemyIntentAndMotionReceipt, EnemyIntentPhaseReceipt, EnemyPerceptionCause,
+    EnemyPerceptionConfig, MAX_ENEMY_ATTACK_COOLDOWN_TICKS, MAX_ENEMY_ATTACK_DAMAGE,
+    MAX_ENEMY_ATTACK_RANGE, MAX_ENEMY_PERCEPTION_RANGE, MAX_ENEMY_PRESENTATION_BYTES,
+};
 pub use engine_spatial::{
     MaterialVoxel, VoxelEdit, VoxelEditApplyError, VoxelEditFact, VoxelEditReceipt,
     VoxelEditRejection, VoxelEditTransaction, VoxelProjectionRevisions, VoxelSourceRevision,
@@ -118,12 +126,13 @@ pub use runtime_records::{GameEvent, JournalEntry, RuntimeReadout, RuntimeReceip
 pub use scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 pub use session::GameSession;
 pub use snapshot::{
-    decode_game_snapshot, encode_game_snapshot, EncounterSnapshot, EnemySnapshot,
-    ExtractionBeaconSnapshot, GameSnapshot, GameSnapshotError, GeneratedRoomSnapshot,
-    HazardSnapshot, HealthSnapshot, InventorySnapshot, InventoryStackSnapshot,
-    ItemDefinitionSnapshot, MaterialVoxelSnapshot, NavigationSnapshot, PickupSnapshot,
-    PlayerControllerSnapshot, PlayerInputBindingsSnapshot, SnapshotEncounterState,
-    SnapshotEnemyState, SnapshotExtractionBeaconState, SnapshotItemKind, SnapshotNavigationState,
+    decode_game_snapshot, encode_game_snapshot, EncounterSnapshot, EnemyCombatSnapshot,
+    EnemySnapshot, ExtractionBeaconSnapshot, GameSnapshot, GameSnapshotError,
+    GeneratedRoomSnapshot, HazardSnapshot, HealthSnapshot, InventorySnapshot,
+    InventoryStackSnapshot, ItemDefinitionSnapshot, MaterialVoxelSnapshot, NavigationSnapshot,
+    PickupSnapshot, PlayerControllerSnapshot, PlayerInputBindingsSnapshot, SnapshotEncounterState,
+    SnapshotEnemyAttackKind, SnapshotEnemyCombatPosture, SnapshotEnemyState,
+    SnapshotExtractionBeaconState, SnapshotItemKind, SnapshotNavigationState,
     SnapshotPickupCollectionCause, SnapshotPickupState, SnapshotVitalityState,
     SnapshotWeaponAttackMode, VoxelCollisionSnapshot, WeaponCooldownSnapshot, WeaponSnapshot,
     GAME_SNAPSHOT_SCHEMA_VERSION,
@@ -131,15 +140,15 @@ pub use snapshot::{
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset,
     StoredAssetCatalogMetadata, StoredAssetImport, StoredBounds, StoredCollision, StoredDoor,
-    StoredDoorAccess, StoredEncounter, StoredEntityDefinition, StoredExtractionBeacon,
-    StoredGeneratedVoxelEnvironment, StoredHazard, StoredHealth, StoredImportSource,
-    StoredInventory, StoredInventoryStack, StoredItemDefinition, StoredItemKind, StoredKinematic,
-    StoredLevelExit, StoredLight, StoredLoadingBayInterlock, StoredMaterialVoxel,
-    StoredMaterialVoxelEnvironment, StoredNavigation, StoredPickup, StoredPlayerController,
-    StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable,
-    StoredRequiredKeyPolicy, StoredScene, StoredSecretRegion, StoredSolidVoxelEnvironment,
-    StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance, StoredWeapon,
-    StoredWeaponAttackMode, STORED_PROJECT_SCHEMA_VERSION,
+    StoredDoorAccess, StoredEncounter, StoredEnemyAttack, StoredEnemyAttackKind, StoredEnemyCombat,
+    StoredEntityDefinition, StoredExtractionBeacon, StoredGeneratedVoxelEnvironment, StoredHazard,
+    StoredHealth, StoredImportSource, StoredInventory, StoredInventoryStack, StoredItemDefinition,
+    StoredItemKind, StoredKinematic, StoredLevelExit, StoredLight, StoredLoadingBayInterlock,
+    StoredMaterialVoxel, StoredMaterialVoxelEnvironment, StoredNavigation, StoredPickup,
+    StoredPlayerController, StoredPlayerInputBindings, StoredProject, StoredProjectError,
+    StoredRenderable, StoredRequiredKeyPolicy, StoredScene, StoredSecretRegion,
+    StoredSolidVoxelEnvironment, StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance,
+    StoredWeapon, StoredWeaponAttackMode, STORED_PROJECT_SCHEMA_VERSION,
 };
 pub use studio_adapter::{
     AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,
