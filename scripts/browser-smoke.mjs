@@ -118,12 +118,19 @@ function durableBrowserAuthority(state) {
 }
 
 function bodyDataNumber(html, attribute) {
-  const match = html.match(new RegExp(`${attribute}="([^"]+)"`));
-  const value = Number(match?.[1]);
+  const value = Number(bodyDataValue(html, attribute));
   if (!Number.isFinite(value)) {
     throw new Error(`browser smoke did not publish numeric ${attribute}`);
   }
   return value;
+}
+
+function bodyDataValue(html, attribute) {
+  const match = html.match(new RegExp(`${attribute}="([^"]+)"`));
+  if (match?.[1] === undefined) {
+    throw new Error(`browser smoke did not publish ${attribute}`);
+  }
+  return match[1];
 }
 
 async function persistProject(input, output) {
@@ -171,6 +178,8 @@ async function runFullBrowserProduct(project) {
       'data-smoke-status="pass"',
       'data-status="pass"',
       'data-held-input="pass"',
+      'data-local-look-offset="pass"',
+      'data-local-look-presentation="bounded-disposable"',
       'data-gate-passage="pass"',
       'data-queue-recovery="pass"',
       'data-cooldown="pass"',
@@ -190,6 +199,10 @@ async function runFullBrowserProduct(project) {
       'data-session-dropped-facts="0"',
       'data-session-pending-input="0"',
       'data-session-pending-edges="0"',
+      'data-renderer-telemetry="pass"',
+      'data-renderer-single-loop="pass"',
+      'data-renderer-telemetry-refresh="pass"',
+      'data-renderer-telemetry-reset="pass"',
       "PASS · Rust facts reached retained WebGL and disposable feedback",
       "EnemyDefeated",
       "EncounterCleared",
@@ -273,6 +286,56 @@ async function runFullBrowserProduct(project) {
       );
     }
     console.log(`game-session proof ${JSON.stringify(sessionEvidence)}`);
+    const rendererEvidence = {
+      timingSource: bodyDataValue(result.stdout, "data-renderer-timing-source"),
+      frameIntervalStatus: bodyDataValue(
+        result.stdout,
+        "data-renderer-frame-interval-status",
+      ),
+      backendSubmissionStatus: bodyDataValue(
+        result.stdout,
+        "data-renderer-backend-submission-status",
+      ),
+      renderSequence: bodyDataNumber(
+        result.stdout,
+        "data-renderer-render-sequence",
+      ),
+      frameIntervalMilliseconds: bodyDataNumber(
+        result.stdout,
+        "data-renderer-frame-interval-milliseconds",
+      ),
+      backendSubmissionMilliseconds: bodyDataNumber(
+        result.stdout,
+        "data-renderer-backend-submission-milliseconds",
+      ),
+      entityCount: bodyDataNumber(result.stdout, "data-renderer-entity-count"),
+      residentChunkCount: bodyDataNumber(
+        result.stdout,
+        "data-renderer-resident-chunk-count",
+      ),
+      renderDiffCount: bodyDataNumber(
+        result.stdout,
+        "data-renderer-render-diff-count",
+      ),
+    };
+    if (
+      rendererEvidence.timingSource !== "animationFrame" ||
+      rendererEvidence.frameIntervalStatus !== "available" ||
+      rendererEvidence.backendSubmissionStatus !== "available" ||
+      rendererEvidence.renderSequence <= 1 ||
+      rendererEvidence.frameIntervalMilliseconds <= 0 ||
+      rendererEvidence.backendSubmissionMilliseconds < 0 ||
+      rendererEvidence.entityCount <= 0 ||
+      rendererEvidence.residentChunkCount <= 0 ||
+      rendererEvidence.renderDiffCount < 0
+    ) {
+      throw new Error(
+        `shared-renderer telemetry was not live\n${JSON.stringify(rendererEvidence)}`,
+      );
+    }
+    console.log(
+      `shared-renderer correctness proof ${JSON.stringify(rendererEvidence)} (headless SwiftShader; not GPU performance evidence)`,
+    );
     const beforeReloadResponse = await fetch(
       `http://${running.address}/api/state`,
     );

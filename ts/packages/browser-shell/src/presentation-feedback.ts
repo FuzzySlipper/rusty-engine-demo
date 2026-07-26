@@ -15,6 +15,8 @@ import {
   RendererPresentationHostSet,
   RendererTelemetryOverlayHost,
   type RendererSurface,
+  type RendererSurfaceTelemetrySample,
+  type RendererSurfaceTimingSample,
 } from "@rusty-engine/renderer-host";
 
 import type {
@@ -61,6 +63,22 @@ export interface ProjectedPresentationFeedback {
   readonly frame: PresentationFrameDiff;
   readonly particleKinds: readonly FeedbackParticleKind[];
   readonly soundKinds: readonly FeedbackSoundKind[];
+}
+
+export function captureRendererTelemetry(
+  surface: Pick<RendererSurface, "timing">,
+  state: RuntimeBrowserState,
+  renderDiffCount: number,
+): RendererSurfaceTelemetrySample {
+  return {
+    sourceTick: state.tick,
+    timing: surface.timing(),
+    counters: {
+      entityCount: state.projection.length,
+      residentChunkCount: state.voxelMeshes.length,
+      renderDiffCount,
+    },
+  };
 }
 
 interface CueFeedback {
@@ -115,31 +133,37 @@ export class PresentationFeedbackAdapter {
       animationPulses.push(feedback.pulse);
       particleKinds.push(feedback.particle);
       soundKinds.push(feedback.sound);
-      operations.push(particleEmit(
-        operations.length,
-        `${signalStem}:particle`,
-        feedback.particle,
-        anchor,
-        state.tick + this.#generation + index,
-      ));
-      operations.push(audioEmit(
-        operations.length,
-        `${signalStem}:audio`,
-        feedback.sound,
-        anchor,
-      ));
+      operations.push(
+        particleEmit(
+          operations.length,
+          `${signalStem}:particle`,
+          feedback.particle,
+          anchor,
+          state.tick + this.#generation + index,
+        ),
+      );
+      operations.push(
+        audioEmit(
+          operations.length,
+          `${signalStem}:audio`,
+          feedback.sound,
+          anchor,
+        ),
+      );
       if (feedback.billboard !== undefined) {
         const handle = billboardHandle(this.#nextBillboardHandle);
         this.#nextBillboardHandle += 1;
         billboardHandles.push(handle);
         billboardValues.push(feedback.billboard.text);
-        operations.push(billboardCreate(
-          operations.length,
-          handle,
-          feedback.billboard.text,
-          feedback.billboard.tone,
-          anchor,
-        ));
+        operations.push(
+          billboardCreate(
+            operations.length,
+            handle,
+            feedback.billboard.text,
+            feedback.billboard.tone,
+            anchor,
+          ),
+        );
       }
     });
 
@@ -202,7 +226,8 @@ export class BrowserPresentationFeedback {
     this.#audioStatus.dataset.activeSounds = "0";
     this.#layer.dataset.activeEffects = "0";
     this.#layer.dataset.maxActiveEffects = String(MAX_ACTIVE_EFFECTS);
-    this.#layer.dataset.sharedRendererHosts = "audio,billboard,particle,telemetry";
+    this.#layer.dataset.sharedRendererHosts =
+      "audio,billboard,particle,telemetry";
   }
 
   async activateAudio(): Promise<"running" | "blocked" | "unavailable"> {
@@ -243,15 +268,21 @@ export class BrowserPresentationFeedback {
       await this.#resetTransient();
     }
     const projected = this.#adapter.project(state);
-    projected.animationStates.forEach((animation) => this.#setAnimationState(animation));
+    projected.animationStates.forEach((animation) =>
+      this.#setAnimationState(animation),
+    );
 
     this.#soundAttempts += projected.soundKinds.length;
     this.#audioStatus.dataset.attempted = String(this.#soundAttempts);
     const receipt = await this.#surface.applyPresentation(projected.frame);
     state.presentation.cues.forEach((cue, index) => {
-      this.#pulseAnimation(cueEntity(cue), projected.animationPulses[index] ?? cue.kind);
+      this.#pulseAnimation(
+        cueEntity(cue),
+        projected.animationPulses[index] ?? cue.kind,
+      );
     });
-    const scheduledSounds = receipt.domains.find((domain) => domain.domain === "audio")?.applied ?? 0;
+    const scheduledSounds =
+      receipt.domains.find((domain) => domain.domain === "audio")?.applied ?? 0;
     this.#scheduledSounds += scheduledSounds;
     this.#audioStatus.dataset.scheduled = String(this.#scheduledSounds);
     projected.soundKinds.forEach((kind) => this.#recordAudioKind(kind));
@@ -259,27 +290,41 @@ export class BrowserPresentationFeedback {
       this.#activeSoundWindows += scheduledSounds;
       this.#audioStatus.dataset.activeSounds = String(this.#activeSoundWindows);
       this.#schedule(() => {
-        this.#activeSoundWindows = Math.max(0, this.#activeSoundWindows - scheduledSounds);
-        this.#audioStatus.dataset.activeSounds = String(this.#activeSoundWindows);
+        this.#activeSoundWindows = Math.max(
+          0,
+          this.#activeSoundWindows - scheduledSounds,
+        );
+        this.#audioStatus.dataset.activeSounds = String(
+          this.#activeSoundWindows,
+        );
       }, ACTIVE_SOUND_EVIDENCE_MILLISECONDS);
     }
 
-    projected.billboardHandles.forEach((handle) => this.#scheduleBillboardDestroy(handle));
-    projected.particleKinds.forEach((kind) => this.#record("particleKinds", kind));
-    projected.billboardValues.forEach((value) => this.#record("billboardValues", value));
-    this.#hosts.telemetry.sample({
-      sourceTick: state.tick,
-      frameTimeMs: 0,
-      counters: {
-        entityCount: state.projection.length,
-        residentChunkCount: state.voxelMeshes.length,
-        renderDiffCount,
-      },
-    }, globalThis.performance?.now() ?? 0);
+    projected.billboardHandles.forEach((handle) =>
+      this.#scheduleBillboardDestroy(handle),
+    );
+    projected.particleKinds.forEach((kind) =>
+      this.#record("particleKinds", kind),
+    );
+    projected.billboardValues.forEach((value) =>
+      this.#record("billboardValues", value),
+    );
+    const telemetry = captureRendererTelemetry(
+      this.#surface,
+      state,
+      renderDiffCount,
+    );
+    const snapshot = this.#hosts.telemetry.sampleSurface(
+      telemetry,
+      telemetry.timing.sourceTimeMs,
+    );
+    this.#recordTelemetryEvidence(telemetry.timing, snapshot);
     this.#updateActiveEffects();
     this.#layer.dataset.lastCueCount = String(projected.cueCount);
     this.#layer.dataset.sharedPresentationApplied = String(receipt.applied);
-    this.#layer.dataset.sharedPresentationDiagnostics = String(receipt.diagnostics.length);
+    this.#layer.dataset.sharedPresentationDiagnostics = String(
+      receipt.diagnostics.length,
+    );
     return {
       cueCount: projected.cueCount,
       failedOperations: receipt.diagnostics.length,
@@ -312,6 +357,7 @@ export class BrowserPresentationFeedback {
     // Start it, retain the cleanup, and do not stall authoritative reset.
     void this.#hosts.audio.dispose().catch(() => undefined);
     this.#adapter.reset();
+    this.#clearTelemetryEvidence();
     this.#hosts = this.#createHosts();
     this.#surface.setPresentationHosts(this.#hosts.set);
     this.#activeSoundWindows = 0;
@@ -330,7 +376,9 @@ export class BrowserPresentationFeedback {
   }
 
   #createHosts(): SharedPresentationHosts {
-    const resolveEntityPosition = (entity: number): readonly [number, number, number] | null =>
+    const resolveEntityPosition = (
+      entity: number,
+    ): readonly [number, number, number] | null =>
       entityPosition(this.#readState(), entity);
     const audio = new RendererAudioHost({
       resolveEntityPosition,
@@ -339,7 +387,10 @@ export class BrowserPresentationFeedback {
         if (resource === undefined) {
           throw new Error(`unknown loading-bay audio resource ${clip.asset}`);
         }
-        return { bytes: resource.bytes.slice(0), contentHash: resource.contentHash };
+        return {
+          bytes: resource.bytes.slice(0),
+          contentHash: resource.contentHash,
+        };
       },
     });
     const billboard = new RendererBillboardHost({
@@ -369,13 +420,18 @@ export class BrowserPresentationFeedback {
       maxActiveEmitters: MAX_ACTIVE_EFFECTS,
       maxParticles: MAX_ACTIVE_EFFECTS,
       resolveEntityPosition,
-      resolveResource: async (sprite) => sprite.asset === PARTICLE_ASSET
-        ? { bytes: PARTICLE_BYTES.slice(0), url: PARTICLE_DATA_URL }
-        : null,
+      resolveResource: async (sprite) =>
+        sprite.asset === PARTICLE_ASSET
+          ? { bytes: PARTICLE_BYTES.slice(0), url: PARTICLE_DATA_URL }
+          : null,
       sink: particleSink,
     });
     const telemetryCollector = new RendererLiveTelemetryCollector({
-      expectedCounters: ["entityCount", "residentChunkCount", "renderDiffCount"],
+      expectedCounters: [
+        "entityCount",
+        "residentChunkCount",
+        "renderDiffCount",
+      ],
       maxFrameTimeSamples: 20,
     });
     const telemetrySink = new RendererDomTelemetryOverlaySink({
@@ -397,23 +453,86 @@ export class BrowserPresentationFeedback {
       particleSink,
       telemetry,
       telemetrySink,
-      set: new RendererPresentationHostSet({ audio, billboard, particle, telemetryOverlay: telemetry }),
+      set: new RendererPresentationHostSet({
+        audio,
+        billboard,
+        particle,
+        telemetryOverlay: telemetry,
+      }),
     };
   }
 
+  #recordTelemetryEvidence(
+    timing: RendererSurfaceTimingSample,
+    snapshot: ReturnType<RendererLiveTelemetryCollector["readSnapshot"]>,
+  ): void {
+    this.#telemetryLayer.dataset.rendererSampleSequence = String(
+      snapshot.sampleSequence,
+    );
+    this.#telemetryLayer.dataset.rendererRenderSequence = String(
+      timing.renderSequence,
+    );
+    this.#telemetryLayer.dataset.rendererTimingSource = timing.source;
+    this.#telemetryLayer.dataset.rendererFrameIntervalStatus =
+      timing.frameIntervalStatus;
+    this.#telemetryLayer.dataset.rendererFrameIntervalMilliseconds =
+      optionalMetric(timing.frameIntervalMs);
+    this.#telemetryLayer.dataset.rendererBackendSubmissionStatus =
+      timing.backendSubmissionDurationStatus;
+    this.#telemetryLayer.dataset.rendererBackendSubmissionMilliseconds =
+      optionalMetric(timing.backendSubmissionDurationMs);
+    this.#telemetryLayer.dataset.rendererFrameHistoryMilliseconds =
+      snapshot.frameTimeHistoryMs.map((value) => value.toFixed(3)).join(",");
+    this.#telemetryLayer.dataset.rendererEntityCount = snapshotMetric(
+      snapshot,
+      "entityCount",
+    );
+    this.#telemetryLayer.dataset.rendererResidentChunkCount = snapshotMetric(
+      snapshot,
+      "residentChunkCount",
+    );
+    this.#telemetryLayer.dataset.rendererRenderDiffCount = snapshotMetric(
+      snapshot,
+      "renderDiffCount",
+    );
+  }
+
+  #clearTelemetryEvidence(): void {
+    for (const key of [
+      "rendererSampleSequence",
+      "rendererRenderSequence",
+      "rendererTimingSource",
+      "rendererFrameIntervalStatus",
+      "rendererFrameIntervalMilliseconds",
+      "rendererBackendSubmissionStatus",
+      "rendererBackendSubmissionMilliseconds",
+      "rendererFrameHistoryMilliseconds",
+      "rendererEntityCount",
+      "rendererResidentChunkCount",
+      "rendererRenderDiffCount",
+    ] as const) {
+      delete this.#telemetryLayer.dataset[key];
+    }
+  }
+
   #setAnimationState(state: RuntimeAnimationState): void {
-    const entity = document.querySelector<HTMLElement>(`[data-entity-id="${String(state.entity)}"]`);
+    const entity = document.querySelector<HTMLElement>(
+      `[data-entity-id="${String(state.entity)}"]`,
+    );
     if (entity !== null) entity.dataset.posture = state.posture;
     this.#record("animationStates", `${String(state.entity)}:${state.posture}`);
   }
 
   #pulseAnimation(entity: number, name: string): void {
-    const target = document.querySelector<HTMLElement>(`[data-entity-id="${String(entity)}"]`);
+    const target = document.querySelector<HTMLElement>(
+      `[data-entity-id="${String(entity)}"]`,
+    );
     if (target !== null) {
       target.dataset.animationPulse = name;
       this.#pulseTargets.add(target);
       this.#schedule(() => {
-        if (target.dataset.animationPulse === name) delete target.dataset.animationPulse;
+        if (target.dataset.animationPulse === name)
+          delete target.dataset.animationPulse;
         this.#pulseTargets.delete(target);
       }, PULSE_LIFETIME_MILLISECONDS);
     }
@@ -423,14 +542,18 @@ export class BrowserPresentationFeedback {
 
   #scheduleBillboardDestroy(handle: BillboardHandle): void {
     this.#schedule(() => {
-      void this.#surface.applyPresentation({
-        schemaVersion: 1,
-        ops: [{
-          domain: "billboard",
-          meta: { sequence: 0 },
-          op: { op: "destroy", handle },
-        }],
-      }).then(() => this.#updateActiveEffects());
+      void this.#surface
+        .applyPresentation({
+          schemaVersion: 1,
+          ops: [
+            {
+              domain: "billboard",
+              meta: { sequence: 0 },
+              op: { op: "destroy", handle },
+            },
+          ],
+        })
+        .then(() => this.#updateActiveEffects());
     }, BILLBOARD_LIFETIME_MILLISECONDS);
   }
 
@@ -439,10 +562,17 @@ export class BrowserPresentationFeedback {
   }
 
   #record(
-    field: "animationStates" | "animationPulses" | "cueKinds" | "particleKinds" | "billboardValues",
+    field:
+      | "animationStates"
+      | "animationPulses"
+      | "cueKinds"
+      | "particleKinds"
+      | "billboardValues",
     value: string,
   ): void {
-    const values = new Set((this.#layer.dataset[field] ?? "").split(",").filter(Boolean));
+    const values = new Set(
+      (this.#layer.dataset[field] ?? "").split(",").filter(Boolean),
+    );
     values.add(value);
     this.#layer.dataset[field] = [...values].join(",");
   }
@@ -458,25 +588,30 @@ export class BrowserPresentationFeedback {
   #clearTimersAndPulses(): void {
     for (const timeout of this.#timeouts) globalThis.clearTimeout(timeout);
     this.#timeouts.clear();
-    for (const target of this.#pulseTargets) delete target.dataset.animationPulse;
+    for (const target of this.#pulseTargets)
+      delete target.dataset.animationPulse;
     this.#pulseTargets.clear();
   }
 
   #updateActiveEffects(): void {
-    const active = this.#hosts.particleSink.activeCount
-      + this.#hosts.billboard.readout().activeBillboards;
+    const active =
+      this.#hosts.particleSink.activeCount +
+      this.#hosts.billboard.readout().activeBillboards;
     this.#layer.dataset.activeEffects = String(active);
   }
 
-  #setAudioStatus(status: "inactive" | "running" | "blocked" | "unavailable"): void {
+  #setAudioStatus(
+    status: "inactive" | "running" | "blocked" | "unavailable",
+  ): void {
     this.#audioStatus.dataset.state = status;
-    this.#audioStatus.textContent = status === "running"
-      ? "AUDIO ARMED"
-      : status === "inactive"
-        ? "AUDIO WAITING"
-        : status === "unavailable"
-          ? "AUDIO UNAVAILABLE"
-          : "AUDIO BLOCKED";
+    this.#audioStatus.textContent =
+      status === "running"
+        ? "AUDIO ARMED"
+        : status === "inactive"
+          ? "AUDIO WAITING"
+          : status === "unavailable"
+            ? "AUDIO UNAVAILABLE"
+            : "AUDIO BLOCKED";
   }
 }
 
@@ -527,7 +662,10 @@ function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
   }
 }
 
-function cueAnchor(state: RuntimeBrowserState, cue: RuntimeFeedbackCue): FeedbackAnchor {
+function cueAnchor(
+  state: RuntimeBrowserState,
+  cue: RuntimeFeedbackCue,
+): FeedbackAnchor {
   switch (cue.kind) {
     case "movement":
       return { entity: cue.entity, position: cue.to };
@@ -562,7 +700,10 @@ function cueEntity(cue: RuntimeFeedbackCue): number {
   }
 }
 
-function entityAnchor(state: RuntimeBrowserState, entity: number): FeedbackAnchor {
+function entityAnchor(
+  state: RuntimeBrowserState,
+  entity: number,
+): FeedbackAnchor {
   return { entity, position: entityPosition(state, entity) ?? [0, 0, 0] };
 }
 
@@ -573,7 +714,10 @@ function entityPosition(
   if (state.player.id === entity) return state.player.position;
   const enemy = state.enemies.find((candidate) => candidate.id === entity);
   if (enemy !== undefined) return enemy.position;
-  return state.projection.find((candidate) => candidate.id === entity)?.translation ?? null;
+  return (
+    state.projection.find((candidate) => candidate.id === entity)
+      ?.translation ?? null
+  );
 }
 
 function telemetryCreate(sequence: number): PresentationOp {
@@ -610,15 +754,25 @@ function particleEmit(
       signalId,
       descriptor: {
         anchor: { kind: "world", position: anchor.position },
-        sprite: { asset: PARTICLE_ASSET, contentHash: PARTICLE_HASH, frameCount: 1 },
+        sprite: {
+          asset: PARTICLE_ASSET,
+          contentHash: PARTICLE_HASH,
+          frameCount: 1,
+        },
         ratePerSecond: 0,
         burstCount: 1,
         lifetimeSeconds: [0.45, 0.7],
         velocityMin: [-0.35, 0.25, -0.35],
         velocityMax: [0.35, 0.9, 0.35],
         acceleration: [0, -0.65, 0],
-        sizeCurve: [{ age: 0, value: 0.7 }, { age: 1, value: 0.08 }],
-        colorCurve: [{ age: 0, color }, { age: 1, color: [color[0], color[1], color[2], 0] }],
+        sizeCurve: [
+          { age: 0, value: 0.7 },
+          { age: 1, value: 0.08 },
+        ],
+        colorCurve: [
+          { age: 0, color },
+          { age: 1, color: [color[0], color[1], color[2], 0] },
+        ],
         flipbookFramesPerSecond: 0,
         seed: Math.max(0, seed),
         maxParticles: 1,
@@ -697,12 +851,15 @@ interface AudioResource {
   readonly volume: number;
 }
 
-const SOUND_PROFILES: Record<FeedbackSoundKind, {
-  readonly duration: number;
-  readonly frequency: number;
-  readonly frequencyEnd: number;
-  readonly volume: number;
-}> = {
+const SOUND_PROFILES: Record<
+  FeedbackSoundKind,
+  {
+    readonly duration: number;
+    readonly frequency: number;
+    readonly frequencyEnd: number;
+    readonly volume: number;
+  }
+> = {
   step: { frequency: 95, frequencyEnd: 70, duration: 0.05, volume: 0.12 },
   blocked: { frequency: 120, frequencyEnd: 55, duration: 0.11, volume: 0.18 },
   shot: { frequency: 220, frequencyEnd: 48, duration: 0.13, volume: 0.2 },
@@ -721,18 +878,29 @@ const AUDIO_RESOURCES_BY_ASSET = new Map(
 function createAudioResources(): Record<FeedbackSoundKind, AudioResource> {
   return Object.fromEntries(
     Object.entries(SOUND_PROFILES).map(([kind, profile]) => {
-      const bytes = toneWave(profile.frequency, profile.frequencyEnd, profile.duration);
-      return [kind, {
-        asset: `audio/loading-bay/${kind}`,
-        bytes,
-        contentHash: fnv1a64(new Uint8Array(bytes)),
-        volume: profile.volume,
-      }];
+      const bytes = toneWave(
+        profile.frequency,
+        profile.frequencyEnd,
+        profile.duration,
+      );
+      return [
+        kind,
+        {
+          asset: `audio/loading-bay/${kind}`,
+          bytes,
+          contentHash: fnv1a64(new Uint8Array(bytes)),
+          volume: profile.volume,
+        },
+      ];
     }),
   ) as unknown as Record<FeedbackSoundKind, AudioResource>;
 }
 
-function toneWave(frequency: number, frequencyEnd: number, duration: number): ArrayBuffer {
+function toneWave(
+  frequency: number,
+  frequencyEnd: number,
+  duration: number,
+): ArrayBuffer {
   const sampleRate = 8_000;
   const sampleCount = Math.max(1, Math.round(sampleRate * duration));
   const bytes = new ArrayBuffer(44 + sampleCount * 2);
@@ -776,10 +944,24 @@ function fnv1a64(bytes: Uint8Array): string {
   return hash.toString(16).padStart(16, "0");
 }
 
+function optionalMetric(value: number | null): string {
+  return value === null ? "unavailable" : value.toFixed(3);
+}
+
+function snapshotMetric(
+  snapshot: ReturnType<RendererLiveTelemetryCollector["readSnapshot"]>,
+  counter: "entityCount" | "residentChunkCount" | "renderDiffCount",
+): string {
+  return String(
+    snapshot.metrics.find((metric) => metric.counter === counter)?.value ??
+      "unavailable",
+  );
+}
+
 const PARTICLE_SOURCE = [
   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">',
   '<circle cx="8" cy="8" r="7" fill="white"/>',
-  '</svg>',
+  "</svg>",
 ].join("");
 const PARTICLE_BYTES_VIEW = new TextEncoder().encode(PARTICLE_SOURCE);
 const PARTICLE_BYTES = PARTICLE_BYTES_VIEW.buffer.slice(

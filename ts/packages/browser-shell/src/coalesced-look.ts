@@ -54,17 +54,28 @@ export class CoalescedLookInput {
     this.#scheduler = options.scheduler ?? browserScheduler;
   }
 
-  push(yawDelta: number, pitchDelta: number): void {
+  push(yawDelta: number, pitchDelta: number): CoalescedLookAction | null {
     if (this.#disposed) {
-      return;
+      return null;
     }
-    this.#pendingYaw = clampLook(this.#pendingYaw + finiteUnit(yawDelta));
-    this.#pendingPitch = clampLook(this.#pendingPitch + finiteUnit(pitchDelta));
+    const previousYaw = this.#pendingYaw;
+    const previousPitch = this.#pendingPitch;
+    this.#pendingYaw = clampLook(previousYaw + finiteUnit(yawDelta));
+    this.#pendingPitch = clampLook(previousPitch + finiteUnit(pitchDelta));
+    const acceptedDelta = {
+      kind: "look" as const,
+      yawDelta: this.#pendingYaw - previousYaw,
+      pitchDelta: this.#pendingPitch - previousPitch,
+    };
+    if (acceptedDelta.yawDelta === 0 && acceptedDelta.pitchDelta === 0) {
+      return null;
+    }
     if (this.#pendingYaw === 0 && this.#pendingPitch === 0) {
-      return;
+      return acceptedDelta;
     }
     this.#ensureSettlement();
     this.#schedule();
+    return acceptedDelta;
   }
 
   clear(): void {

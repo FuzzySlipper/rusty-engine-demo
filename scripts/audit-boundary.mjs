@@ -23,7 +23,7 @@ const operationalRoots = [
   "ts",
 ];
 const rustEngineRevision = "fb0d091ba5a5465ffb8eb46b1962d0415c257a71";
-const renderEngineRevision = "937a3cef2568d04a261e78126f34e6baea1828c9";
+const renderEngineRevision = "2665b74566136fb77e3a26b0766394124c8f58d3";
 
 const files = operationalRoots.flatMap((entry) =>
   collect(resolve(repoRoot, entry)),
@@ -101,6 +101,15 @@ const browserPackage = JSON.parse(
     "utf8",
   ),
 );
+const browserGameRuntime = readFileSync(
+  resolve(repoRoot, "ts/packages/browser-shell/src/game-runtime.ts"),
+  "utf8",
+);
+if (browserGameRuntime.includes("surface.renderOnce(")) {
+  violations.push(
+    "ts/packages/browser-shell/src/game-runtime.ts: the auto-started shared surface must not receive a parallel explicit render path",
+  );
+}
 for (const packageName of [
   "render-contracts",
   "render-projection",

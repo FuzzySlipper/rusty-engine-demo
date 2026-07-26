@@ -15,18 +15,18 @@ trade dress.
 
 ## Campaign-start inventory
 
-| Surface | Current implementation | Product gap and owner |
-|---|---|---|
-| Rust runtime | `GameRuntime` owns a `GameSession`, tick, bounded event wave, scheduler, journal, collision scene, named services, typed facts, and complete snapshots. Motion, navigation, player action, attack, interaction, and beacon activation are separate entry points. | Advancement is action-triggered rather than a continuous game clock. #6217 adds the downstream fixed-step owner and phase order. |
-| Player input | The browser resolves keys and pointer deltas. `HeldMovementInput` repeats movement on a browser interval; `SerializedActionQueue` serializes every accepted or rejected request. Rust validates and directly applies each semantic move/look action. | Held intent, sequence/ack state, expiry, coalesced look, pause, and disconnect behavior belong to the Rust session and bounded host edge in #6217/#6218. |
-| Browser host | A small Rust HTTP server loads one admitted project, holds one mutex-protected runtime, serves static files, and exposes named action routes. Each connection is closed after one response. | #6218 replaces the per-action lifecycle with one versioned, bounded game-session transport. The protocol remains Loading Bay-specific. |
-| Transport payload | Every action returns a complete `BrowserState`: player, weapon, enemies, door/encounter status, projection, presentation, and cloned voxel mesh arrays. | #6218 separates immutable/static revisions from dynamic updates and sends unchanged render resources once per content identity. |
-| Renderer | `RuntimeProjectionAdapter` maps game state to shared Engine render descriptors. `mountRendererSurface` owns the retained Three/WebGL surface and animation scheduling. Shared hosts own audio, particles, billboards, and telemetry. | Preserve this ownership. #6219 consumes upstream #6213 timing and adds no private renderer, cache, or animation loop. |
-| Browser presentation | A proof dashboard, imperative DOM bindings, smoke controls, typed presentation cues, and disposable feedback surround the canvas. `frameTimeMs` is currently supplied as zero. | #6216 adopts the Angular/Nx shell; #6225 wires real menu/HUD/inventory/settings; #6219 replaces placeholder telemetry. |
-| Content | TypeScript composes immutable schema-11 project JSON. Rust decodes, validates, admits, and materializes it. Current meanings cover entities, collision, voxels, renderables, door/switch/encounter, enemies, navigation, one attached weapon, and an extraction beacon. | Item definitions, inventory, pickups, key progression, enemy archetypes, and the complete original route remain downstream game content and semantics in #6220–#6229. |
-| Live persistence | `GameSnapshot` round-trips entities, collision, doors, switches, enemies, health, encounters, navigation, controllers, the attached weapon, schedules, and tick. `ProjectStore` separately persists authored project content. | #6230 adds save slots/checkpoints and restores every new semantic owner without persisting connection or presentation state. |
-| Verification | Focused Rust integration tests cover each current owner. TypeScript tests cover composition, queueing, projection, and feedback. `pnpm run verify` adds boundary audits, exact dependency checks, build, full Rust checks, and a real Chromium/WebGL product smoke. | Every campaign task adds focused proof. #6233 certifies a complete fresh-process playthrough and performance budgets. |
-| Known limitations | Den document `rusty-engine-demo/known-limitations` owns active limitations. | Update the same entry when each limitation is resolved; a task thread or code comment alone is insufficient. |
+| Surface              | Current implementation                                                                                                                                                                                                                                                  | Product gap and owner                                                                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rust runtime         | `GameRuntime` owns a `GameSession`, tick, bounded event wave, scheduler, journal, collision scene, named services, typed facts, and complete snapshots. Motion, navigation, player action, attack, interaction, and beacon activation are separate entry points.        | Advancement is action-triggered rather than a continuous game clock. #6217 adds the downstream fixed-step owner and phase order.                                      |
+| Player input         | The browser resolves keys and pointer deltas. `HeldMovementInput` repeats movement on a browser interval; `SerializedActionQueue` serializes every accepted or rejected request. Rust validates and directly applies each semantic move/look action.                    | Held intent, sequence/ack state, expiry, coalesced look, pause, and disconnect behavior belong to the Rust session and bounded host edge in #6217/#6218.              |
+| Browser host         | A small Rust HTTP server loads one admitted project, holds one mutex-protected runtime, serves static files, and exposes named action routes. Each connection is closed after one response.                                                                             | #6218 replaces the per-action lifecycle with one versioned, bounded game-session transport. The protocol remains Loading Bay-specific.                                |
+| Transport payload    | Every action returns a complete `BrowserState`: player, weapon, enemies, door/encounter status, projection, presentation, and cloned voxel mesh arrays.                                                                                                                 | #6218 separates immutable/static revisions from dynamic updates and sends unchanged render resources once per content identity.                                       |
+| Renderer             | `RuntimeProjectionAdapter` maps game state to shared Engine render descriptors. `mountRendererSurface` owns the retained Three/WebGL surface and animation scheduling. Shared hosts own audio, particles, billboards, and telemetry.                                    | Preserve this ownership. #6219 consumes upstream #6213 timing and adds no private renderer, cache, or animation loop.                                                 |
+| Browser presentation | The Angular/Nx shell surrounds one shared auto-started renderer surface. Its diagnostic drawer reports renderer-owned cadence and synchronous backend submission separately from game-session/fixed-simulation counters; typed presentation cues remain disposable.     | #6225 wires the complete menu/HUD/inventory/settings product while #6219 supplies the real timing baseline.                                                           |
+| Content              | TypeScript composes immutable schema-11 project JSON. Rust decodes, validates, admits, and materializes it. Current meanings cover entities, collision, voxels, renderables, door/switch/encounter, enemies, navigation, one attached weapon, and an extraction beacon. | Item definitions, inventory, pickups, key progression, enemy archetypes, and the complete original route remain downstream game content and semantics in #6220–#6229. |
+| Live persistence     | `GameSnapshot` round-trips entities, collision, doors, switches, enemies, health, encounters, navigation, controllers, the attached weapon, schedules, and tick. `ProjectStore` separately persists authored project content.                                           | #6230 adds save slots/checkpoints and restores every new semantic owner without persisting connection or presentation state.                                          |
+| Verification         | Focused Rust integration tests cover each current owner. TypeScript tests cover composition, queueing, projection, and feedback. `pnpm run verify` adds boundary audits, exact dependency checks, build, full Rust checks, and a real Chromium/WebGL product smoke.     | Every campaign task adds focused proof. #6233 certifies a complete fresh-process playthrough and performance budgets.                                                 |
+| Known limitations    | Den document `rusty-engine-demo/known-limitations` owns active limitations.                                                                                                                                                                                             | Update the same entry when each limitation is resolved; a task thread or code comment alone is insufficient.                                                          |
 
 ### Measured proof-shaped baseline
 
@@ -43,23 +43,23 @@ the current path is unacceptable for continuous input and supplies the compariso
 
 ## Authority map
 
-| Concern | Sole authority | Consumers |
-|---|---|---|
-| Authored project, immutable definitions, original level composition | TypeScript composition admitted and validated by Rust | Project tooling, Rust admission |
-| Fixed tick, phase order, accepted time | Loading Bay Rust game loop | Services, projection, persistence |
-| Player/world/enemy state and mutation | Responsible Rust components and named services | Snapshots and read-only views |
-| Input intent acceptance, sequence/ack, expiry, pause | Loading Bay Rust session | Browser projection |
-| Inventory, items, weapons, ammunition, pickups | Loading Bay Rust | HUD/inventory views |
-| Health, armor, damage, death, restart | Loading Bay Rust | HUD and disposable feedback |
-| Doors, switches, keys, secrets, exit | Loading Bay Rust | World projection and UI |
-| Enemy perception, intent, motion, attack, drops | Loading Bay Rust | World projection and cues |
-| Runtime snapshots, checkpoints, saves | Loading Bay Rust | Host storage boundary |
-| Browser keyboard, mouse, pointer-lock, focus capture | TypeScript host edge | Typed command encoder |
-| Session connection, bounded batching, reconnect | Loading Bay-specific Rust/TypeScript transport edges | Game session |
-| Angular routes, view models, accessibility, loading/error UI | TypeScript presentation | User |
-| Mouse sensitivity, invert-Y, audio, HUD visibility | Host-user TypeScript settings | Input transform and presentation |
-| Retained render resources, surface lifecycle, timing, Three/WebGL | Exact-revision shared Rusty Engine renderer | Angular canvas host and telemetry |
-| Camera/HUD/audio/particles/viewmodel effects | Disposable presentation derived from Rust state/facts | User |
+| Concern                                                             | Sole authority                                        | Consumers                         |
+| ------------------------------------------------------------------- | ----------------------------------------------------- | --------------------------------- |
+| Authored project, immutable definitions, original level composition | TypeScript composition admitted and validated by Rust | Project tooling, Rust admission   |
+| Fixed tick, phase order, accepted time                              | Loading Bay Rust game loop                            | Services, projection, persistence |
+| Player/world/enemy state and mutation                               | Responsible Rust components and named services        | Snapshots and read-only views     |
+| Input intent acceptance, sequence/ack, expiry, pause                | Loading Bay Rust session                              | Browser projection                |
+| Inventory, items, weapons, ammunition, pickups                      | Loading Bay Rust                                      | HUD/inventory views               |
+| Health, armor, damage, death, restart                               | Loading Bay Rust                                      | HUD and disposable feedback       |
+| Doors, switches, keys, secrets, exit                                | Loading Bay Rust                                      | World projection and UI           |
+| Enemy perception, intent, motion, attack, drops                     | Loading Bay Rust                                      | World projection and cues         |
+| Runtime snapshots, checkpoints, saves                               | Loading Bay Rust                                      | Host storage boundary             |
+| Browser keyboard, mouse, pointer-lock, focus capture                | TypeScript host edge                                  | Typed command encoder             |
+| Session connection, bounded batching, reconnect                     | Loading Bay-specific Rust/TypeScript transport edges  | Game session                      |
+| Angular routes, view models, accessibility, loading/error UI        | TypeScript presentation                               | User                              |
+| Mouse sensitivity, invert-Y, audio, HUD visibility                  | Host-user TypeScript settings                         | Input transform and presentation  |
+| Retained render resources, surface lifecycle, timing, Three/WebGL   | Exact-revision shared Rusty Engine renderer           | Angular canvas host and telemetry |
+| Camera/HUD/audio/particles/viewmodel effects                        | Disposable presentation derived from Rust state/facts | User                              |
 
 TypeScript must not become a second simulation, inventory/equipment store, aim authority, pickup
 owner, enemy AI, save owner, render-resource cache, effect simulation, or animation scheduler.
@@ -228,12 +228,12 @@ duplicate a pickup, or block later valid commands.
 
 ## Cold, dynamic, and transient data
 
-| Class | Examples | Transport and persistence |
-|---|---|---|
-| Cold/static content | Project identity/schema, level geometry, voxel chunks, materials, meshes, item/weapon/enemy definitions, pickup and door configuration, presentation asset identities, default bindings | Loaded once by revision/content hash; authored project persistence only |
-| Durable live state | Tick, entity transforms, inventory quantities, equipped weapon, ammo pools, cooldowns, health/armor, enemy state, pickup availability, doors/switches, keys, secret/exit state, checkpoint metadata, deterministic spread state when semantically needed | Dynamic full/delta projection; included in Rust runtime saves |
-| Session-transient authority | Accepted held input, input sequence/ack state, connection generation, queued edge commands | Bounded in Rust session; never saved |
-| Disposable presentation | Pending-look offset, interpolation history, recoil/bob, particles, audio, damage flash, message timers, telemetry chart history | Browser-only and rebuildable; never authoritative or saved |
+| Class                       | Examples                                                                                                                                                                                                                                                 | Transport and persistence                                               |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Cold/static content         | Project identity/schema, level geometry, voxel chunks, materials, meshes, item/weapon/enemy definitions, pickup and door configuration, presentation asset identities, default bindings                                                                  | Loaded once by revision/content hash; authored project persistence only |
+| Durable live state          | Tick, entity transforms, inventory quantities, equipped weapon, ammo pools, cooldowns, health/armor, enemy state, pickup availability, doors/switches, keys, secret/exit state, checkpoint metadata, deterministic spread state when semantically needed | Dynamic full/delta projection; included in Rust runtime saves           |
+| Session-transient authority | Accepted held input, input sequence/ack state, connection generation, queued edge commands                                                                                                                                                               | Bounded in Rust session; never saved                                    |
+| Disposable presentation     | Pending-look offset, interpolation history, recoil/bob, particles, audio, damage flash, message timers, telemetry chart history                                                                                                                          | Browser-only and rebuildable; never authoritative or saved              |
 
 Static mesh arrays must not appear in an ordinary input acknowledgement or simulation delta when
 their content identity is unchanged.
@@ -280,20 +280,20 @@ Performance certification records machine, OS, browser build, viewport, renderer
 Demo SHA, and exact Engine pins. Headless SwiftShader smoke is correctness evidence, not the
 interactive performance machine.
 
-| Concern | Required budget |
-|---|---|
-| Simulation | Fixed 60 Hz; no more than five catch-up ticks; no browser-event-driven advancement |
-| Continuous input | At most 60 submitted input frames/second, one latest pending frame, no promise tail |
-| Edge commands | At most 32 queued; the next edge is rejected as `edgeQueueSaturated`, with no silent loss or partial mutation |
-| Input acknowledgement | Local-LAN p95 at most 50 ms and no sample above 100 ms during the 60-second stress route |
-| Steady dynamic payload | p95 at most 4 KiB/update during ordinary movement/look |
-| Full dynamic resync | At most 32 KiB for the campaign level, excluding separately hashed static resources |
-| Static resources | Zero unchanged mesh/voxel array bytes in ordinary dynamic updates |
-| Server outbound state | One latest unsent state plus 256 must-deliver records maximum |
-| Renderer cadence | Interactive p95 at most 20 ms and p99 at most 33 ms during the representative route |
-| Submission duration | Report separately from cadence; never label synchronous backend submission as GPU time |
-| Reconnect | Full resync and safe idle intent within two seconds after the host becomes reachable |
-| Long-run stability | 10-minute stress route has no growing input, fact, cue, snapshot, or render-resource count |
+| Concern                | Required budget                                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Simulation             | Fixed 60 Hz; no more than five catch-up ticks; no browser-event-driven advancement                            |
+| Continuous input       | At most 60 submitted input frames/second, one latest pending frame, no promise tail                           |
+| Edge commands          | At most 32 queued; the next edge is rejected as `edgeQueueSaturated`, with no silent loss or partial mutation |
+| Input acknowledgement  | Local-LAN p95 at most 50 ms and no sample above 100 ms during the 60-second stress route                      |
+| Steady dynamic payload | p95 at most 4 KiB/update during ordinary movement/look                                                        |
+| Full dynamic resync    | At most 32 KiB for the campaign level, excluding separately hashed static resources                           |
+| Static resources       | Zero unchanged mesh/voxel array bytes in ordinary dynamic updates                                             |
+| Server outbound state  | One latest unsent state plus 256 must-deliver records maximum                                                 |
+| Renderer cadence       | Interactive p95 at most 20 ms and p99 at most 33 ms during the representative route                           |
+| Submission duration    | Report separately from cadence; never label synchronous backend submission as GPU time                        |
+| Reconnect              | Full resync and safe idle intent within two seconds after the host becomes reachable                          |
+| Long-run stability     | 10-minute stress route has no growing input, fact, cue, snapshot, or render-resource count                    |
 
 Task #6218 records before/after traffic and latency. Task #6219 records real
 `surface.timing()` cadence and backend submission duration from upstream #6213. Task #6233 records
@@ -304,16 +304,16 @@ the complete playthrough evidence.
 Every task keeps focused tests close to the owner and uses `pnpm run verify` for product-visible or
 cross-language changes.
 
-| Proof | Required evidence |
-|---|---|
-| Architecture boundary | `pnpm run audit:boundary`; exact public Git pins; no sibling path, private renderer, generic bridge, or TypeScript gameplay store |
-| Fixed loop | Deterministic Rust tests for cadence independence, phase order, catch-up bound, stale intent, disconnect, pause, death, and restart |
-| Protocol | Codec tests, sequence/ack/idempotence tests, queue overflow yielding exactly `edgeQueueSaturated` with no silent loss or partial mutation, reconnect/full resync, typed failures, payload-size instrumentation |
-| Inventory/combat | Atomic grant/consume/equip/fire tests, weapon ownership, distinct ammo, cooldown, spread determinism, death and reopen |
-| World progression | Pickup idempotence, key denial/success, switch/door scheduling, secret first-discovery, checkpoint, exit completion |
-| Renderer/presentation | Shared-surface lifecycle, no double loop, resource retention, real timing, disposable feedback reset |
-| Browser product | Real Chromium tests for menu, pointer lock, held input, numeric weapons, HUD/inventory, pause/reconnect, death/restart, save/load |
-| Campaign | Fresh managed-browser playthrough of all seven route beats within budgets and with current provenance/limitations |
+| Proof                 | Required evidence                                                                                                                                                                                              |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Architecture boundary | `pnpm run audit:boundary`; exact public Git pins; no sibling path, private renderer, generic bridge, or TypeScript gameplay store                                                                              |
+| Fixed loop            | Deterministic Rust tests for cadence independence, phase order, catch-up bound, stale intent, disconnect, pause, death, and restart                                                                            |
+| Protocol              | Codec tests, sequence/ack/idempotence tests, queue overflow yielding exactly `edgeQueueSaturated` with no silent loss or partial mutation, reconnect/full resync, typed failures, payload-size instrumentation |
+| Inventory/combat      | Atomic grant/consume/equip/fire tests, weapon ownership, distinct ammo, cooldown, spread determinism, death and reopen                                                                                         |
+| World progression     | Pickup idempotence, key denial/success, switch/door scheduling, secret first-discovery, checkpoint, exit completion                                                                                            |
+| Renderer/presentation | Shared-surface lifecycle, no double loop, resource retention, real timing, disposable feedback reset                                                                                                           |
+| Browser product       | Real Chromium tests for menu, pointer lock, held input, numeric weapons, HUD/inventory, pause/reconnect, death/restart, save/load                                                                              |
+| Campaign              | Fresh managed-browser playthrough of all seven route beats within budgets and with current provenance/limitations                                                                                              |
 
 ## Upstream promotion gate
 

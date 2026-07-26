@@ -225,6 +225,10 @@ export class LoadingBayGameSession {
   #baseline: SessionBaseline;
   #current: RuntimeBrowserState;
   #metrics: SessionMetrics;
+  #serverTick: number;
+  #snapshotSequence: number;
+  #lastSnapshotReceivedAtMilliseconds: number;
+  #lastSnapshotCadenceMilliseconds: number | null = null;
   #sequence = 0;
   #inputInFlight: number | null = null;
   #pendingInput = false;
@@ -249,11 +253,15 @@ export class LoadingBayGameSession {
     socket: WebSocket,
     applied: AppliedServerUpdate,
     metrics: SessionMetrics,
+    serverTick: number,
   ) {
     this.#socket = socket;
     this.#baseline = applied.baseline;
     this.#current = applied.state;
     this.#metrics = metrics;
+    this.#serverTick = serverTick;
+    this.#snapshotSequence = applied.baseline.snapshotSequence;
+    this.#lastSnapshotReceivedAtMilliseconds = performance.now();
     socket.addEventListener("message", (event) => this.#receive(event.data));
     socket.addEventListener("close", () => {
       if (!this.#closed) {
@@ -344,6 +352,7 @@ export class LoadingBayGameSession {
         socket,
         applyServerUpdate(null, first),
         first.metrics,
+        first.serverTick,
       );
     } catch (error) {
       socket.close(1002, "invalid session bootstrap");
@@ -357,6 +366,18 @@ export class LoadingBayGameSession {
 
   get metrics(): SessionMetrics {
     return this.#metrics;
+  }
+
+  get serverTick(): number {
+    return this.#serverTick;
+  }
+
+  get snapshotSequence(): number {
+    return this.#snapshotSequence;
+  }
+
+  get lastSnapshotCadenceMilliseconds(): number | null {
+    return this.#lastSnapshotCadenceMilliseconds;
   }
 
   get pendingEdgeCount(): number {
@@ -549,6 +570,16 @@ export class LoadingBayGameSession {
       this.#baseline = applied.baseline;
       this.#current = applied.state;
       this.#metrics = value.metrics;
+      const receivedAtMilliseconds = performance.now();
+      this.#serverTick = value.serverTick;
+      this.#snapshotSequence = value.snapshotSequence;
+      this.#lastSnapshotCadenceMilliseconds = replaced
+        ? null
+        : Math.max(
+            0,
+            receivedAtMilliseconds - this.#lastSnapshotReceivedAtMilliseconds,
+          );
+      this.#lastSnapshotReceivedAtMilliseconds = receivedAtMilliseconds;
       if (replaced) {
         const restart = this.#restart;
         if (restart !== null) {

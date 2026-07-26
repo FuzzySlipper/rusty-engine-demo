@@ -3,7 +3,10 @@ import test from "node:test";
 
 import { decodePresentationFrameDiff } from "@rusty-engine/render-contracts";
 
-import { PresentationFeedbackAdapter } from "./presentation-feedback.ts";
+import {
+  PresentationFeedbackAdapter,
+  captureRendererTelemetry,
+} from "./presentation-feedback.ts";
 import type { RuntimeBrowserState } from "./projection.ts";
 
 test("typed gameplay cues map to shared audio billboard particle and telemetry descriptors", () => {
@@ -119,6 +122,31 @@ test("shared signal ids are delivery-local and a reset reopens retained host ide
   assert.equal(reopened.frame.ops[0]?.domain, "telemetryOverlay");
   assert.deepEqual(reopened.billboardHandles, first.billboardHandles);
   assert.deepEqual(signalIds(reopened.frame), firstSignals);
+});
+
+test("renderer telemetry uses the shared surface timing without a downstream clock", () => {
+  const state = feedbackState();
+  const timing = {
+    schemaVersion: 1 as const,
+    renderSequence: 42,
+    source: "animationFrame" as const,
+    sourceTimeMs: 900,
+    frameIntervalMs: 16.75,
+    frameIntervalStatus: "available" as const,
+    backendSubmissionDurationMs: 0.85,
+    backendSubmissionDurationStatus: "available" as const,
+  };
+
+  const sample = captureRendererTelemetry({ timing: () => timing }, state, 3);
+
+  assert.equal(sample.timing, timing);
+  assert.equal(sample.sourceTick, state.tick);
+  assert.deepEqual(sample.counters, {
+    entityCount: state.projection.length,
+    residentChunkCount: state.voxelMeshes.length,
+    renderDiffCount: 3,
+  });
+  assert.equal("frameTimeMs" in sample, false);
 });
 
 function signalIds(

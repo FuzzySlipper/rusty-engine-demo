@@ -12,6 +12,7 @@ import {
   type ResolvedAttackAction,
   type ResolvedPlayerAction,
 } from "./input-resolver.js";
+import { LocalLookPresentationOffset } from "./local-look-offset.js";
 import { BrowserPresentationFeedback } from "./presentation-feedback.js";
 import {
   RuntimeProjectionAdapter,
@@ -80,6 +81,7 @@ export async function mountLoadingBayGame(
     HTMLElement,
   );
   const telemetryLayer = requiredElement("renderer-telemetry", HTMLElement);
+  const sessionTelemetry = requiredElement("session-telemetry", HTMLElement);
   const projection = new RuntimeProjectionAdapter();
   const eventHistory: string[] = [];
   const query = new URLSearchParams(location.search);
@@ -95,6 +97,9 @@ export async function mountLoadingBayGame(
   let primaryFireHeld = false;
   let lookGeneration = 0;
   let disposed = false;
+  let rendererTelemetryRefreshObserved = false;
+  let rendererTelemetryResetObserved = false;
+  const localLookOffset = new LocalLookPresentationOffset();
   const heldMovement = new HeldMovementInput({
     bindings: () => current.player.bindings,
     intervalMilliseconds: () => 1_000 / 60,
@@ -110,7 +115,14 @@ export async function mountLoadingBayGame(
         if (generation !== lookGeneration || disposed) {
           return;
         }
-        await performPlayerAction(action);
+        try {
+          await performPlayerAction(action);
+        } finally {
+          if (generation === lookGeneration && !disposed) {
+            localLookOffset.settleAcceptedFrame(action);
+            applyPresentationCamera();
+          }
+        }
       })().catch((error: unknown) => {
         recordActionRejection(error);
       });
@@ -141,6 +153,9 @@ export async function mountLoadingBayGame(
   session.setStateListener(applySessionState);
   session.setFailureListener((error) => {
     if (!disposed) {
+      if (error.retry === "reconnect" || error.code === "sessionClosed") {
+        clearActiveInput();
+      }
       recordActionRejection(error);
     }
   });
@@ -153,6 +168,7 @@ export async function mountLoadingBayGame(
     heldMovement.clear(false);
     lookGeneration += 1;
     lookInput.dispose();
+    localLookOffset.reset();
     latestMovement = { kind: "move", forward: 0, right: 0 };
     primaryFireHeld = false;
     if (document.pointerLockElement === canvas) {
@@ -183,6 +199,7 @@ export async function mountLoadingBayGame(
       heldMovement.clear(false);
       lookGeneration += 1;
       lookInput.clear();
+      clearLocalLookPresentation();
       latestMovement = { kind: "move", forward: 0, right: 0 };
       primaryFireHeld = false;
       void performRestart();
@@ -340,7 +357,14 @@ export async function mountLoadingBayGame(
         current.player.bindings,
       );
       if (action?.kind === "look") {
-        lookInput.push(action.yawDelta, action.pitchDelta);
+        const acceptedPreview = lookInput.push(
+          action.yawDelta,
+          action.pitchDelta,
+        );
+        if (acceptedPreview !== null) {
+          localLookOffset.applyPendingDelta(acceptedPreview);
+          applyPresentationCamera();
+        }
       }
     },
     eventOptions,
@@ -354,7 +378,6 @@ export async function mountLoadingBayGame(
   );
 
   if (reloadSmokeMode) {
-    surface.renderOnce();
     const door = current.projection.find((node) => node.id === 3);
     const reloadPostureRebuilt =
       current.encounterState === "cleared" &&
@@ -413,7 +436,6 @@ export async function mountLoadingBayGame(
       before.probePathLength === 9 &&
       current.generatedEnvironment === null &&
       current.voxelMeshes.length === 1;
-    surface.renderOnce();
     const convertedAssetVisible =
       convertedAssetLoaded &&
       surface.snapshot().includes("generated-room-chunk");
@@ -595,7 +617,27 @@ export async function mountLoadingBayGame(
     window.dispatchEvent(
       new MouseEvent("mousemove", { movementX: 20, movementY: -10 }),
     );
+    const [previewYawUnits, previewPitchUnits] = localLookOffset.pendingUnits;
+    const localLookPreviewed =
+      previewYawUnits !== 0 &&
+      previewPitchUnits !== 0 &&
+      Math.abs(previewYawUnits) <= 2 &&
+      Math.abs(previewPitchUnits) <= 2;
     await lookInput.settled();
+    const [settledYawUnits, settledPitchUnits] = localLookOffset.pendingUnits;
+    const localLookReconciled =
+      settledYawUnits === 0 && settledPitchUnits === 0;
+    const localLookPresentationPassed =
+      localLookPreviewed && localLookReconciled;
+    document.body.dataset.localLookOffset = localLookPresentationPassed
+      ? "pass"
+      : "fail";
+    document.body.dataset.localLookEvidence = [
+      previewYawUnits,
+      previewPitchUnits,
+      settledYawUnits,
+      settledPitchUnits,
+    ].join(":");
     const playerLooked =
       normalizeDegrees(current.player.yawDegrees - initialPlayerYaw) < 0 &&
       current.player.pitchDegrees > initialPlayerPitch;
@@ -679,7 +721,6 @@ export async function mountLoadingBayGame(
     document.body.dataset.cooldown = cooldownRecovered ? "pass" : "fail";
     await enqueueInteraction(7);
     await presentationFeedback.settled();
-    surface.renderOnce();
     const beaconActivated =
       current.extractionBeacon?.state === "active" &&
       current.extractionBeacon.activatedBy === current.player.id &&
@@ -689,7 +730,6 @@ export async function mountLoadingBayGame(
       surface.snapshot().includes("extraction-beacon");
     document.body.dataset.beaconActivation = beaconActivated ? "pass" : "fail";
     await presentationFeedback.settled();
-    surface.renderOnce();
     const door = current.projection.find((node) => node.id === 3);
     const gameplayPassed =
       current.encounterState === "cleared" &&
@@ -700,6 +740,7 @@ export async function mountLoadingBayGame(
       playerBlocked &&
       playerStopped &&
       playerLooked &&
+      localLookPresentationPassed &&
       movingTargetAdvanced &&
       movingTargetDamaged &&
       queueRecovered &&
@@ -786,7 +827,7 @@ export async function mountLoadingBayGame(
     current = refreshed;
     const refreshFrame = projection.apply(current);
     applyRendererFrame(refreshFrame);
-    surface.setCameraPose(derivePlayerCameraPose(current.player));
+    applyPresentationCamera();
     renderReadout(current);
     void applyPresentationFeedback(false, refreshFrame.ops.length);
     await enqueuePlayerAction({ kind: "move", forward: -1, right: 0 });
@@ -798,10 +839,9 @@ export async function mountLoadingBayGame(
     current = await requestState("/api/state");
     const restartFrame = projection.apply(current);
     applyRendererFrame(restartFrame);
-    surface.setCameraPose(derivePlayerCameraPose(current.player));
+    applyPresentationCamera();
     renderReadout(current);
     await applyPresentationFeedback(true, restartFrame.ops.length);
-    surface.renderOnce();
     const restartRebuilt =
       restartStartedWithConcreteTransients &&
       current.presentation.cues.length === 0 &&
@@ -814,12 +854,39 @@ export async function mountLoadingBayGame(
         "4:defeated",
         "5:defeated",
       ]);
+    document.body.dataset.feedbackConcreteRestartEvidence = [
+      restartStartedWithConcreteTransients,
+      current.presentation.cues.length,
+      feedbackLayer.dataset.activeEffects ?? "none",
+      feedbackAudioStatus.dataset.activeSounds ?? "none",
+      document.querySelector("[data-animation-pulse]") === null,
+      feedbackLayer.dataset.lastCueCount ?? "none",
+      feedbackLayer.dataset.animationStates ?? "none",
+    ].join(":");
     document.body.dataset.feedbackConcreteRestart = restartRebuilt
       ? "pass"
       : "fail";
     const feedbackDropPassed = droppedDeliverySafe && restartRebuilt;
     document.body.dataset.feedbackDrop = feedbackDropPassed ? "pass" : "fail";
     updateSessionDiagnostics();
+    const rendererTelemetryPassed =
+      rendererTelemetryRefreshObserved &&
+      rendererTelemetryResetObserved &&
+      telemetryLayer.dataset.rendererTimingSource === "animationFrame" &&
+      telemetryLayer.dataset.rendererFrameIntervalStatus === "available" &&
+      Number(
+        telemetryLayer.dataset.rendererFrameIntervalMilliseconds ?? "NaN",
+      ) > 0 &&
+      Number(
+        telemetryLayer.dataset.rendererBackendSubmissionMilliseconds ?? "NaN",
+      ) >= 0;
+    document.body.dataset.rendererTelemetry = rendererTelemetryPassed
+      ? "pass"
+      : "fail";
+    document.body.dataset.rendererSingleLoop =
+      telemetryLayer.dataset.rendererTimingSource === "animationFrame"
+        ? "pass"
+        : "fail";
     const sessionMetrics = session.metrics;
     const sessionTransportPassed =
       sessionMetrics.legacyWholeStateBytes > 0 &&
@@ -848,6 +915,7 @@ export async function mountLoadingBayGame(
       feedbackFamiliesPassed &&
       audioFeedbackPassed &&
       feedbackDropPassed &&
+      rendererTelemetryPassed &&
       sessionTransportPassed;
     smokeResult.dataset.status = passed ? "pass" : "fail";
     smokeResult.textContent = passed
@@ -862,9 +930,13 @@ export async function mountLoadingBayGame(
     heldMovement.clear(false);
     lookGeneration += 1;
     lookInput.clear();
+    clearLocalLookPresentation();
     latestMovement = { kind: "move", forward: 0, right: 0 };
     primaryFireHeld = false;
     session.neutralizeInput();
+    const telemetrySamplesBeforeRestart = Number(
+      telemetryLayer.dataset.rendererSampleSequence ?? "0",
+    );
     current = await session.sendEdge({
       kind: "restart",
       mode: "authoredBaseline",
@@ -873,10 +945,14 @@ export async function mountLoadingBayGame(
     lastActionRejection = null;
     const frame = projection.apply(current);
     applyRendererFrame(frame);
-    surface.setCameraPose(derivePlayerCameraPose(current.player));
-    surface.renderOnce();
+    applyPresentationCamera();
     renderReadout(current);
     await applyPresentationFeedback(true, frame.ops.length);
+    rendererTelemetryResetObserved ||=
+      telemetrySamplesBeforeRestart > 1 &&
+      telemetryLayer.dataset.rendererSampleSequence === "1";
+    document.body.dataset.rendererTelemetryReset =
+      rendererTelemetryResetObserved ? "pass" : "pending";
     updateRendererStatus();
   }
 
@@ -888,8 +964,7 @@ export async function mountLoadingBayGame(
     eventHistory.push(...state.lastEvents);
     const frame = projection.apply(state);
     applyRendererFrame(frame);
-    surface.setCameraPose(derivePlayerCameraPose(state.player));
-    surface.renderOnce();
+    applyPresentationCamera();
     renderReadout(state);
     void applyPresentationFeedback(false, frame.ops.length);
     updateRendererStatus();
@@ -913,8 +988,7 @@ export async function mountLoadingBayGame(
     eventHistory.push(...current.lastEvents);
     const frame = projection.apply(current);
     applyRendererFrame(frame);
-    surface.setCameraPose(derivePlayerCameraPose(current.player));
-    surface.renderOnce();
+    applyPresentationCamera();
     renderReadout(current);
     void applyPresentationFeedback(false, frame.ops.length);
     updateRendererStatus();
@@ -1002,6 +1076,10 @@ export async function mountLoadingBayGame(
     feedbackLayer.dataset.lastCueCount = String(receipt.cueCount);
     feedbackLayer.dataset.failedOperations = String(receipt.failedOperations);
     feedbackLayer.dataset.scheduledSounds = String(receipt.scheduledSounds);
+    rendererTelemetryRefreshObserved ||=
+      Number(telemetryLayer.dataset.rendererSampleSequence ?? "0") > 1;
+    document.body.dataset.rendererTelemetryRefresh =
+      rendererTelemetryRefreshObserved ? "pass" : "pending";
   }
 
   function applyRendererFrame(
@@ -1096,11 +1174,36 @@ export async function mountLoadingBayGame(
     heldMovement.clear(false);
     lookGeneration += 1;
     lookInput.clear();
+    clearLocalLookPresentation();
     latestMovement = { kind: "move", forward: 0, right: 0 };
     primaryFireHeld = false;
     if (current.input.connected) {
       session.neutralizeInput();
     }
+  }
+
+  function clearLocalLookPresentation(): void {
+    localLookOffset.reset();
+    applyPresentationCamera();
+  }
+
+  function applyPresentationCamera(): void {
+    const projectedLook = localLookOffset.project(
+      current.player.yawDegrees,
+      current.player.pitchDegrees,
+      current.player.lookDegreesPerUnit,
+    );
+    surface.setCameraPose(
+      derivePlayerCameraPose({
+        ...current.player,
+        yawDegrees: projectedLook.yawDegrees,
+        pitchDegrees: projectedLook.pitchDegrees,
+      }),
+    );
+    const [yawUnits, pitchUnits] = localLookOffset.pendingUnits;
+    document.body.dataset.localLookPresentation = "bounded-disposable";
+    document.body.dataset.localLookYawUnits = yawUnits.toFixed(3);
+    document.body.dataset.localLookPitchUnits = pitchUnits.toFixed(3);
   }
 
   async function aimAtEnemy(enemyId: number): Promise<void> {
@@ -1246,7 +1349,12 @@ export async function mountLoadingBayGame(
   }
 
   function updateRendererStatus(): void {
-    rendererStatus.textContent = `${surface.kind} · ${String(projection.trackedEntityCount)} entities · ${String(projection.trackedMeshCount)} voxel meshes`;
+    const timing = surface.timing();
+    const cadence =
+      timing.frameIntervalMs === null
+        ? timing.frameIntervalStatus
+        : `${timing.frameIntervalMs.toFixed(2)} ms cadence`;
+    rendererStatus.textContent = `${surface.kind} · ${String(projection.trackedEntityCount)} entities · ${String(projection.trackedMeshCount)} voxel meshes · ${cadence}`;
   }
 
   function updateSessionDiagnostics(): void {
@@ -1304,6 +1412,27 @@ export async function mountLoadingBayGame(
       session.lastCommandRoundTripMilliseconds.toFixed(3);
     document.body.dataset.sessionRttMaxMilliseconds =
       session.maximumCommandRoundTripMilliseconds.toFixed(3);
+    document.body.dataset.sessionServerTick = String(session.serverTick);
+    document.body.dataset.sessionSnapshotSequence = String(
+      session.snapshotSequence,
+    );
+    document.body.dataset.sessionSnapshotCadenceMilliseconds =
+      session.lastSnapshotCadenceMilliseconds === null
+        ? "unavailable"
+        : session.lastSnapshotCadenceMilliseconds.toFixed(3);
+    sessionTelemetry.textContent = [
+      `serverTick: ${String(session.serverTick)} fixed@60Hz`,
+      `snapshotSequence: ${String(session.snapshotSequence)}`,
+      `snapshotCadenceMs: ${
+        session.lastSnapshotCadenceMilliseconds === null
+          ? "waiting"
+          : session.lastSnapshotCadenceMilliseconds.toFixed(2)
+      }`,
+      `dynamicPayloadBytes: ${String(metrics.steadyStateLastBytes)}`,
+      `inputFrames: ${String(session.pendingInputFrameCount)}/2 (max ${String(session.maximumPendingInputFrameCount)})`,
+      `edgeCommands: ${String(session.pendingEdgeCount)}/32 (max ${String(session.maximumPendingEdgeCount)})`,
+      `commandRttMs: ${session.lastCommandRoundTripMilliseconds.toFixed(2)}`,
+    ].join("\n");
   }
 
   async function requestState(

@@ -129,7 +129,16 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
             <div class="pose-readout" id="voxel-state">
               Awaiting voxel projection
             </div>
+            <p class="telemetry-label">Shared renderer timing</p>
             <div id="renderer-telemetry" class="renderer-telemetry"></div>
+            <p class="telemetry-note">
+              Cadence is time between submitted frames. Backend submission is
+              synchronous host time, not GPU completion.
+            </p>
+            <p class="telemetry-label">Game session and fixed simulation</p>
+            <pre id="session-telemetry" class="session-telemetry">
+Awaiting session telemetry</pre
+            >
           </article>
 
           <article class="control-panel">

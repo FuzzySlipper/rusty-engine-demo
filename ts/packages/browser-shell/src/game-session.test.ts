@@ -293,6 +293,9 @@ test("a fixed-tick restart rejection settles and releases the restart slot", asy
       session.sendEdge({ kind: "restart", mode: "authoredBaseline" }),
       (error) => error instanceof GameSessionError && error.code === "paused",
     );
+    assert.equal(session.serverTick, 2);
+    assert.equal(session.snapshotSequence, 2);
+    assert.notEqual(session.lastSnapshotCadenceMilliseconds, null);
 
     const restarted = await session.sendEdge({
       kind: "restart",
@@ -300,6 +303,9 @@ test("a fixed-tick restart rejection settles and releases the restart slot", asy
     });
     assert.equal(restarted.tick, 0);
     assert.equal(restarted.input.connectionGeneration, 2);
+    assert.equal(session.serverTick, 0);
+    assert.equal(session.snapshotSequence, 1);
+    assert.equal(session.lastSnapshotCadenceMilliseconds, null);
     await session.close();
   } finally {
     restoreGlobal("location", originalLocation);

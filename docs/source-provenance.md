@@ -6,7 +6,7 @@ Rusty Engine Demo was originally extracted from
 
 The current Rust dependencies resolve from exact reviewed authoring revision
 `fb0d091ba5a5465ffb8eb46b1962d0415c257a71`; browser render packages resolve from exact review-fix
-revision `937a3cef2568d04a261e78126f34e6baea1828c9`. The older revision below remains the historical
+revision `2665b74566136fb77e3a26b0766394124c8f58d3`. The older revision below remains the historical
 extraction point, not an active dependency pin.
 
 ## M10A Rust transfer
@@ -126,5 +126,6 @@ input, presentation feedback, and shared surface through one route-owned lifecyc
 
 Rusty Engine task #6213 produced the renderer-owned timing seam at public SHA
 `2665b74566136fb77e3a26b0766394124c8f58d3`. That SHA is recorded here as reviewed-upstream
-integration evidence, not as an active dependency pin: task #6219 owns the later exact pin and
-downstream call-site change after its dependencies are ready.
+integration evidence and is the active exact browser-renderer dependency pin adopted by #6219.
+The downstream call site reads `surface.timing()` from the shared auto-started surface; no demo
+frame scheduler, backend clock, or private renderer access was introduced.

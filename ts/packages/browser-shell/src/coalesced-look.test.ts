@@ -82,3 +82,28 @@ test("small look deltas coalesce without quantization loss", async () => {
     { kind: "look", yawDelta: 0.003, pitchDelta: 0.005 },
   ]);
 });
+
+test("push reports only the bounded delta admitted to the pending frame", () => {
+  const scheduler = new FakeScheduler();
+  const input = new CoalescedLookInput({
+    dispatch: async () => undefined,
+    scheduler,
+  });
+
+  assert.deepEqual(input.push(0.75, -0.75), {
+    kind: "look",
+    yawDelta: 0.75,
+    pitchDelta: -0.75,
+  });
+  assert.deepEqual(input.push(0.75, -0.75), {
+    kind: "look",
+    yawDelta: 0.25,
+    pitchDelta: -0.25,
+  });
+  assert.equal(input.push(0.75, -0.75), null);
+  assert.deepEqual(input.push(-0.5, 0.5), {
+    kind: "look",
+    yawDelta: -0.5,
+    pitchDelta: 0.5,
+  });
+});

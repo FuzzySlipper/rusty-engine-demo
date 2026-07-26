@@ -342,13 +342,47 @@ a {
 }
 
 .renderer-telemetry {
-  min-height: 80px;
+  min-height: 105px;
   position: relative;
 }
 
 .renderer-telemetry .shared-render-telemetry {
   inset: 8px auto auto 0 !important;
   margin: 0 !important;
+}
+
+.telemetry-label {
+  color: var(--rusty-engine-muted);
+  font:
+    0.58rem "SFMono-Regular",
+    Consolas,
+    monospace;
+  letter-spacing: 0.1em;
+  margin: 14px 0 4px;
+  text-transform: uppercase;
+}
+
+.telemetry-note {
+  color: var(--rusty-engine-muted);
+  font:
+    0.56rem/1.4 "SFMono-Regular",
+    Consolas,
+    monospace;
+  margin: 4px 0 0;
+}
+
+.session-telemetry {
+  background: rgba(8, 12, 16, 0.82);
+  border-radius: 4px;
+  color: #d9f2ff;
+  font:
+    0.62rem/1.45 "SFMono-Regular",
+    Consolas,
+    monospace;
+  margin: 0;
+  overflow: auto;
+  padding: 8px 10px;
+  white-space: pre-wrap;
 }
 
 .button-row {

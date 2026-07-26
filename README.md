@@ -9,7 +9,7 @@ voxel, mesh, asset, and conversion mechanisms.
 The Rust game vertical is named `loading-bay-game`. Its Engine dependencies are public Git
 dependencies: Rust remains pinned to reviewed authoring revision
 `fb0d091ba5a5465ffb8eb46b1962d0415c257a71`, while the browser renderer is pinned to review-fix
-revision `937a3cef2568d04a261e78126f34e6baea1828c9`; a sibling checkout is not required. The demo owns
+revision `2665b74566136fb77e3a26b0766394124c8f58d3`; a sibling checkout is not required. The demo owns
 its Angular/Nx browser shell, route-scoped input lifecycle, and semantic projection adapter, while
 Rusty Engine owns the shared render contracts, retained projection, Three/WebGL backend, surface
 host, audio, particle, billboard, and telemetry hosts.
@@ -35,9 +35,11 @@ project. `content/projects/relay-annex.project.json` is a second, entirely TypeS
 arrangement using the same settled demo meanings.
 
 The root route is a full-viewport FPS surface with a disposable HUD projection. Its diagnostics
-drawer exposes only concrete Rust host actions. The hash-routed diagnostics screen is also the
-browser lifecycle proof: leaving the game route releases the shared renderer before another route
-can mount it.
+drawer exposes only concrete Rust host actions. Renderer-owned frame cadence and synchronous
+backend submission time are shown separately from server tick, snapshot cadence, payload, input,
+and command-RTT counters; backend submission is not GPU timing. The hash-routed diagnostics screen
+is also the browser lifecycle proof: leaving the game route releases the shared renderer before
+another route can mount it.
 
 For a managed LAN-facing session, use the repository manifest:
 
@@ -91,3 +93,5 @@ acceptance corpus. It is an implementation target, not a claim that the full cam
 ships.
 
 Exact transfer provenance is recorded in [docs/source-provenance.md](docs/source-provenance.md).
+Renderer/session counter semantics, budgets, and the current headed LAN baseline are recorded in
+[docs/performance.md](docs/performance.md).
