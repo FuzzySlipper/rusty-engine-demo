@@ -1,7 +1,7 @@
 use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, decode_stored_project, diagnostic_code, encode_game_snapshot,
-    GameRuntime, ProjectDiagnostic, ResolvedPlayerAction, RuntimeError,
+    GameRuntime, ProjectDiagnostic, ResolvedPlayerAction, RuntimeError, StoredItemKind,
 };
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
@@ -22,7 +22,20 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
     assert!(entities
         .iter()
         .any(|entity| entity.player_controller.is_some()));
-    assert!(entities.iter().any(|entity| entity.weapon.is_some()));
+    assert!(entities.iter().all(|entity| entity.weapon.is_none()));
+    assert!(project
+        .item_definitions
+        .iter()
+        .any(|definition| matches!(definition.kind, StoredItemKind::Weapon { .. })));
+    assert_eq!(
+        entities
+            .iter()
+            .find_map(|entity| entity.inventory.as_ref())
+            .unwrap()
+            .weapon_slots
+            .len(),
+        3
+    );
     assert!(entities.iter().any(|entity| entity.navigation.is_some()));
     assert!(entities.iter().any(|entity| entity.health.is_some()));
     assert!(entities.iter().any(|entity| entity.encounter.is_some()));
