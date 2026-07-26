@@ -433,6 +433,7 @@ async function runFullBrowserProduct(project) {
       height: 844,
       label: "narrow",
     });
+    await runDeadDialogFocusProof(project);
     await runHostReplacementContinueProof(project);
     const startup = running.output();
     for (const marker of [
@@ -545,9 +546,7 @@ async function runHostReplacementContinueProof(project) {
     );
     if (
       replacement.code !== 0 ||
-      !replacement.stdout.includes(
-        'data-host-replacement-continue="pass"',
-      )
+      !replacement.stdout.includes('data-host-replacement-continue="pass"')
     ) {
       throw new Error(
         `replacement host exposed stale Continue\n${replacement.stderr}\n${replacement.stdout.slice(-6_000)}`,
@@ -607,6 +606,130 @@ async function runGameShellProof(address, viewport) {
     throw new Error(
       `${viewport.label} game-shell proof missing ${missing.join(", ")}\n${bodyDataset}\n${result.stdout.slice(-8_000)}`,
     );
+  }
+}
+
+async function runDeadDialogFocusProof(project) {
+  const running = await launchHost(project);
+  try {
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
+    const result = await runChromiumSmoke(
+      `http://${running.address}/#/`,
+      "document.body?.dataset.deadDialogFocus === 'pass' || document.body?.dataset.deadDialogFocus === 'fail'",
+      30_000,
+      {
+        viewport: { width: 1440, height: 900 },
+        interactiveSetup: async (client) => {
+          await waitForCdp(
+            client,
+            "document.querySelector('red-main-menu') !== null",
+            "dead-dialog main menu",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `[...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "New game",
+            )?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.body.dataset.rendererLifecycle === "mounted" &&
+              document.querySelector(".game-state-overlay") === null`,
+            "dead-dialog connected game",
+          );
+          await client.send("Input.dispatchKeyEvent", {
+            type: "keyDown",
+            key: "s",
+            code: "KeyS",
+            windowsVirtualKeyCode: 83,
+            nativeVirtualKeyCode: 83,
+          });
+          await delay(450);
+          await client.send("Input.dispatchKeyEvent", {
+            type: "keyUp",
+            key: "s",
+            code: "KeyS",
+            windowsVirtualKeyCode: 83,
+            nativeVirtualKeyCode: 83,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector(".game-state-overlay")?.textContent?.includes("PLAYER DOWN") === true &&
+              document.activeElement?.textContent?.trim() === "Restart loading bay"`,
+            "focused dead dialog",
+          );
+          await client.send("Input.dispatchKeyEvent", {
+            type: "keyDown",
+            key: "Tab",
+            code: "Tab",
+            windowsVirtualKeyCode: 9,
+            nativeVirtualKeyCode: 9,
+          });
+          await client.send("Input.dispatchKeyEvent", {
+            type: "keyUp",
+            key: "Tab",
+            code: "Tab",
+            windowsVirtualKeyCode: 9,
+            nativeVirtualKeyCode: 9,
+          });
+          await waitForCdp(
+            client,
+            `document.activeElement?.textContent?.trim() === "Main menu"`,
+            "dead-dialog second action focus",
+          );
+          await delay(500);
+          const retained = await client.send("Runtime.evaluate", {
+            expression: `document.activeElement?.textContent?.trim() === "Main menu"`,
+            returnByValue: true,
+          });
+          if (retained?.result?.value !== true) {
+            throw new Error(
+              "dead-state projections stole focus from the Main menu action",
+            );
+          }
+          await client.send("Runtime.evaluate", {
+            expression: `[...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "Restart loading bay",
+            )?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector(".game-state-overlay") === null`,
+            "dead-dialog restart",
+          );
+          await delay(100);
+          const restartFocus = await client.send("Runtime.evaluate", {
+            expression: `({
+              id: document.activeElement?.id ?? "",
+              tag: document.activeElement?.tagName ?? "",
+              text: document.activeElement?.textContent?.trim() ?? "",
+            })`,
+            returnByValue: true,
+          });
+          if (restartFocus?.result?.value?.id !== "viewport") {
+            throw new Error(
+              `restart did not restore viewport focus: ${JSON.stringify(restartFocus?.result?.value)}`,
+            );
+          }
+          await client.send("Runtime.evaluate", {
+            expression: `document.body.dataset.deadDialogFocus = "pass"`,
+          });
+        },
+      },
+    );
+    if (
+      result.code !== 0 ||
+      !result.stdout.includes('data-dead-dialog-focus="pass"')
+    ) {
+      throw new Error(
+        `dead-dialog focus proof failed\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-6_000)}`,
+      );
+    }
+  } finally {
+    await stopHost(running.host);
   }
 }
 
@@ -1418,8 +1541,7 @@ async function runPersistedVoxelEditProduct(project) {
 
 async function launchHost(project, requestedAddress) {
   const address =
-    requestedAddress ??
-    `127.0.0.1:${String(await reservePort())}`;
+    requestedAddress ?? `127.0.0.1:${String(await reservePort())}`;
   const host = spawn(
     "cargo",
     [
@@ -1580,6 +1702,9 @@ async function runChromiumSmoke(
       });
     }
     await client.send("Page.navigate", { url });
+    if (options.interactiveSetup !== undefined) {
+      await options.interactiveSetup(client);
+    }
     if (options.setupExpression !== undefined) {
       const navigationDeadline = Date.now() + 10_000;
       let navigationReady = false;
@@ -1652,6 +1777,25 @@ async function runChromiumSmoke(
       rmSync(profileDirectory, { recursive: true, force: true });
     }
   }
+}
+
+async function waitForCdp(client, expression, label, timeout = 15_000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    try {
+      const result = await client.send("Runtime.evaluate", {
+        expression,
+        returnByValue: true,
+      });
+      if (result?.result?.value === true) {
+        return;
+      }
+    } catch {
+      // Navigation can replace the execution context while the route mounts.
+    }
+    await delay(50);
+  }
+  throw new Error(`timed out waiting for ${label}`);
 }
 
 async function waitForChromiumTarget(port, process, output) {

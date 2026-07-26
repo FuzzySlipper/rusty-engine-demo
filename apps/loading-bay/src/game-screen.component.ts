@@ -681,7 +681,16 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     void this.withAction(async (handle) => {
       await handle.restart();
       this.panel.set("game");
-      this.focusViewport();
+      this.focusReturnTarget = null;
+      globalThis.setTimeout(() => {
+        if (
+          !this.destroyed &&
+          this.panel() === "game" &&
+          this.snapshot().vitalityState !== "dead"
+        ) {
+          this.focusViewport();
+        }
+      }, 0);
     });
   }
 
@@ -736,8 +745,9 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     try {
       const handle = await mountLoadingBayGame({
         onProjection: (snapshot) => {
+          const wasDead = this.snapshot().vitalityState === "dead";
           this.snapshot.set(snapshot);
-          if (snapshot.vitalityState === "dead") {
+          if (!wasDead && snapshot.vitalityState === "dead") {
             this.rememberFocusForModal();
             this.scheduleModalFocus();
           }
@@ -855,7 +865,8 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       return;
     }
     const active = document.activeElement;
-    const index = active instanceof HTMLElement ? focusable.indexOf(active) : -1;
+    const index =
+      active instanceof HTMLElement ? focusable.indexOf(active) : -1;
     if (index === -1) {
       event.preventDefault();
       focusable[event.shiftKey ? focusable.length - 1 : 0]?.focus();
