@@ -1742,6 +1742,10 @@ function gameShellScenario(viewportLabel) {
       );
       byText(".pause-actions button", "Main menu")?.click();
       await waitFor(() => document.querySelector("red-main-menu") !== null, "menu return");
+      await waitFor(() => {
+        const button = byText("button", "Continue");
+        return button instanceof HTMLButtonElement && !button.disabled;
+      }, "Continue availability after menu return");
       const resumedContinue = byText("button", "Continue");
       const menuPassed =
         resumedContinue instanceof HTMLButtonElement && !resumedContinue.disabled;
