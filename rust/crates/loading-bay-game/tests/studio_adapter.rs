@@ -262,14 +262,14 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
     );
     assert_eq!(created["type"], "projectCreated", "{created:#}");
     assert_eq!(created["project"]["identity"]["projectId"], "new-project");
-    assert_eq!(created["project"]["identity"]["currentSchemaVersion"], 13);
+    assert_eq!(created["project"]["identity"]["currentSchemaVersion"], 14);
     let created_path = root
         .path()
         .join("content/projects/new-project.project.json");
     let created_bytes = fs::read(&created_path).unwrap();
     let created_document =
         decode_project_document(std::str::from_utf8(&created_bytes).unwrap()).unwrap();
-    assert_eq!(created_document.source_schema_version, 13);
+    assert_eq!(created_document.source_schema_version, 14);
     assert_eq!(created_document.project.scenes.len(), 1);
 
     let duplicate = send(
