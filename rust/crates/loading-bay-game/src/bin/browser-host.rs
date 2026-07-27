@@ -955,7 +955,7 @@ fn drain_game_loop_feedback(
 }
 
 fn emits_locomotion_feedback(tick: u64) -> bool {
-    tick % 6 == 0
+    tick.is_multiple_of(6)
 }
 
 fn enemy_combat_fact_name(fact: &loading_bay_game::EnemyCombatFact) -> &'static str {
