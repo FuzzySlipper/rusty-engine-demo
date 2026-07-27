@@ -476,6 +476,24 @@ function summarizeResources(resources) {
         durationMs: round(durationMs),
       }))
       .sort((left, right) => right.encodedBodyBytes - left.encodedBodyBytes),
+    largestResources: resources
+      .map(
+        ({
+          name,
+          initiatorType,
+          transferBytes,
+          encodedBodyBytes,
+          durationMs,
+        }) => ({
+          name,
+          initiatorType,
+          transferBytes,
+          encodedBodyBytes,
+          durationMs: round(durationMs),
+        }),
+      )
+      .sort((left, right) => right.encodedBodyBytes - left.encodedBodyBytes)
+      .slice(0, 12),
   };
 }
 
