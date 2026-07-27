@@ -13,7 +13,7 @@ const BEACON: EntityId = EntityId::new(7);
 
 #[test]
 fn malformed_beacon_configuration_fails_at_its_authored_path() {
-    let malformed = PROJECT.replace("\"activationRadius\": 16", "\"activationRadius\": -1");
+    let malformed = PROJECT.replace("\"activationRadius\": 3", "\"activationRadius\": -1");
 
     let error = GameRuntime::from_stored_project(&malformed).unwrap_err();
     let RuntimeError::StoredProject(error) = error else {
@@ -84,7 +84,7 @@ fn canonical_project_and_runtime_snapshot_preserve_beacon_meaning() {
         .unwrap()
         .extraction_beacon
         .unwrap();
-    assert_eq!(beacon.activation_radius, 16.0);
+    assert_eq!(beacon.activation_radius, 3.0);
 
     let mut runtime = beacon_runtime(Vec3::new(0.5, 0.0, 0.0));
     runtime.activate_extraction_beacon(ACTOR, BEACON).unwrap();

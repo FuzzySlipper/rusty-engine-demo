@@ -167,6 +167,22 @@ active, and cleared encounter state plus exact-once pickup materialization and s
 Browser silhouette materials, particles, billboards, synthesized audio, and posture labels remain
 disposable presentation.
 
+The complete schema-19 Loading Bay campaign and its Relay Annex data-only variation were authored
+directly in this repository under Den task #6229. The source of truth is the immutable composition
+in `ts/packages/project-content/src/encounter-project.ts`; `pnpm run generate:content` materializes
+the checked-in project JSON. The floor plan, 3,931 material-voxel arrangement, room proportions,
+door and encounter placement, route, lighting, object names, combat values, and progression text
+are original Loading Bay content. Doom was used only as a high-level reference for the familiar
+vocabulary of a compact key/switch/secret/weapon-upgrade FPS route. No Doom source code, map data,
+geometry, node/blockmap data, textures, flats, sprites, sounds, music, names, story text, or trade
+dress was read, converted, copied, or distributed.
+
+The authored primitive asset identities in the campaign resolve through the existing downstream
+projection adapter and the exact-pinned shared renderer. They are not imported art files. The only
+checked-in third-party visual assets remain the separately itemized Kenney CC0 sources above.
+Campaign route checkpoints, deterministic artifact hashes, and product proof are recorded in
+`docs/loading-bay-playtest.md`.
+
 The public `/home/dev/rusty-engine-ui` checkout at exact commit
 `68ddfa5430ec3bc2cf7ca96963982db9511e79ba` supplied the following #6216 downstream shell patterns:
 

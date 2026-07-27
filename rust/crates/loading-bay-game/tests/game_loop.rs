@@ -100,7 +100,31 @@ fn fixed_tick_integrates_velocity_instead_of_applying_an_authored_request_step()
 
 #[test]
 fn fixed_pickup_phase_collects_non_solid_overlap_and_reports_capacity_rejection() {
-    let mut game_loop = game_loop();
+    let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
+    let player = entities
+        .iter_mut()
+        .find(|entity| entity["id"] == 1)
+        .unwrap();
+    player["translation"] = serde_json::json!([1.5, 1.5, 2.5]);
+    player["playerController"]["initialYawDegrees"] = 0.into();
+    let fill = entities
+        .iter_mut()
+        .find(|entity| entity["id"] == 20)
+        .unwrap();
+    fill["translation"] = serde_json::json!([2.5, 1.5, 2.5]);
+    fill["pickup"]["quantity"] = 182.into();
+    let overflow = entities
+        .iter_mut()
+        .find(|entity| entity["id"] == 21)
+        .unwrap();
+    overflow["translation"] = serde_json::json!([3.5, 1.5, 2.5]);
+    overflow["pickup"]["item"] = "ammo/energy-cell".into();
+    let mut game_loop = LoadingBayGameLoop::new(
+        GameRuntime::from_stored_project(&project.to_string()).unwrap(),
+        PLAYER,
+    )
+    .unwrap();
     let generation = game_loop.start_connection().connection_generation;
     let mut facts = Vec::new();
     for sequence in 1..=40 {
@@ -120,7 +144,7 @@ fn fixed_pickup_phase_collects_non_solid_overlap_and_reports_capacity_rejection(
             GameLoopFact::Pickup(loading_bay_game::PickupFact::Collected {
                 pickup,
                 item,
-                quantity: 160,
+                quantity: 182,
                 ..
             }) if *pickup == EntityId::new(20) && item.as_str() == "ammo/energy-cell"
         )),
@@ -343,7 +367,7 @@ fn single_press_automatic_hold_and_dry_fire_have_distinct_fixed_tick_semantics()
         );
     }
     assert_eq!(automatic_fired.len(), 2);
-    assert_eq!(ammunition(&automatic, "ammo/energy-cell"), 38);
+    assert_eq!(ammunition(&automatic, "ammo/energy-cell"), 16);
 
     let mut single = game_loop();
     let generation = single.start_connection().connection_generation;
@@ -353,7 +377,7 @@ fn single_press_automatic_hold_and_dry_fire_have_distinct_fixed_tick_semantics()
             .unwrap();
         single.run_fixed_tick().unwrap();
     }
-    assert_eq!(ammunition(&single, "ammo/energy-cell"), 39);
+    assert_eq!(ammunition(&single, "ammo/energy-cell"), 17);
     single
         .submit_input(input(generation, 6, [0.0, 0.0], [0.0, 0.0], false))
         .unwrap();
@@ -373,7 +397,7 @@ fn single_press_automatic_hold_and_dry_fire_have_distinct_fixed_tick_semantics()
                 ..
             })
         )));
-    assert_eq!(ammunition(&single, "ammo/energy-cell"), 38);
+    assert_eq!(ammunition(&single, "ammo/energy-cell"), 16);
 
     single
         .runtime_mut()
@@ -383,7 +407,7 @@ fn single_press_automatic_hold_and_dry_fire_have_distinct_fixed_tick_semantics()
                 sequence: 3,
                 action: InventoryAction::Consume {
                     item: ItemDefinitionId::parse("ammo/energy-cell").unwrap(),
-                    quantity: 38,
+                    quantity: 16,
                 },
             },
         )
@@ -513,7 +537,9 @@ fn look_is_coalesced_without_losing_small_deltas_and_rejects_invalid_input() {
         .player_controller(PLAYER)
         .unwrap()
         .state;
-    assert!((after.yaw_degrees - before.yaw_degrees - 0.036).abs() < 0.000_1);
+    assert!(
+        (normalized_angle_delta(after.yaw_degrees, before.yaw_degrees) - 0.036).abs() < 0.000_1
+    );
     assert!((after.pitch_degrees - before.pitch_degrees - 0.06).abs() < 0.000_1);
 
     assert_eq!(
@@ -560,7 +586,7 @@ fn coalesced_look_clamps_at_the_action_boundary_in_both_directions() {
         .unwrap()
         .state
         .yaw_degrees;
-    assert!((positive_after - positive_before - 12.0).abs() < 0.000_1);
+    assert!((normalized_angle_delta(positive_after, positive_before) - 12.0).abs() < 0.000_1);
     assert_eq!(positive.input_session().consumed_sequence, 2);
 
     let mut negative = game_loop();
@@ -598,7 +624,7 @@ fn coalesced_look_clamps_at_the_action_boundary_in_both_directions() {
         .unwrap()
         .state
         .yaw_degrees;
-    assert!((negative_after - negative_before + 12.0).abs() < 0.000_1);
+    assert!((normalized_angle_delta(negative_after, negative_before) + 12.0).abs() < 0.000_1);
     assert_eq!(negative.input_session().consumed_sequence, 2);
 }
 
@@ -853,4 +879,8 @@ fn ammunition(game_loop: &LoadingBayGameLoop, item: &str) -> u32 {
         .into_iter()
         .find(|stack| stack.item.as_str() == item)
         .map_or(0, |stack| stack.quantity)
+}
+
+fn normalized_angle_delta(after: f32, before: f32) -> f32 {
+    (after - before + 180.0).rem_euclid(360.0) - 180.0
 }

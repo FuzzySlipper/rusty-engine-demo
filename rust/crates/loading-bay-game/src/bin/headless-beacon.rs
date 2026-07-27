@@ -11,6 +11,22 @@ fn main() {
     let project = project_argument();
     let input = fs::read_to_string(&project)
         .unwrap_or_else(|error| panic!("could not read {}: {error}", project.display()));
+    let mut document: serde_json::Value = serde_json::from_str(&input)
+        .unwrap_or_else(|error| panic!("could not decode {}: {error}", project.display()));
+    let entities = document["scenes"][0]["entities"]
+        .as_array_mut()
+        .expect("entry scene entities");
+    let beacon_translation = entities
+        .iter()
+        .find(|entity| entity["id"] == BEACON.raw())
+        .and_then(|entity| entity.get("translation"))
+        .cloned()
+        .expect("authored beacon translation");
+    entities
+        .iter_mut()
+        .find(|entity| entity["id"] == ACTOR.raw())
+        .expect("authored actor")["translation"] = beacon_translation;
+    let input = serde_json::to_string(&document).expect("encode headless beacon arrangement");
     let mut runtime = GameRuntime::from_stored_project(&input)
         .unwrap_or_else(|error| panic!("could not admit {}: {error}", project.display()));
     let receipt = runtime

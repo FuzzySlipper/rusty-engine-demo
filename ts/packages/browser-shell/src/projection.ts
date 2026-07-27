@@ -1,6 +1,7 @@
 import {
   renderHandle,
   type Geometry,
+  type LightDescriptor,
   type Material,
   type MeshPayloadDescriptor,
   type RenderDiff,
@@ -191,6 +192,49 @@ export interface RuntimeGeneratedEnvironment {
   readonly solidVoxels: number;
   readonly meshVertices: number;
   readonly meshQuads: number;
+}
+
+export type RuntimeAuthoredLightDefinition =
+  | {
+      readonly kind: "ambient";
+      readonly color: readonly [number, number, number];
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly shadows: boolean;
+    }
+  | {
+      readonly kind: "directional";
+      readonly color: readonly [number, number, number];
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly shadows: boolean;
+    }
+  | {
+      readonly kind: "point";
+      readonly color: readonly [number, number, number];
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly range: number | null;
+      readonly decay: number;
+      readonly shadows: boolean;
+    }
+  | {
+      readonly kind: "spot";
+      readonly color: readonly [number, number, number];
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly range: number | null;
+      readonly decay: number;
+      readonly outerAngleRadians: number;
+      readonly penumbra: number;
+      readonly shadows: boolean;
+    };
+
+export interface RuntimeAuthoredLight {
+  readonly id: number;
+  readonly translation: readonly [number, number, number] | null;
+  readonly rotation: readonly [number, number, number, number];
+  readonly light: RuntimeAuthoredLightDefinition;
 }
 
 export interface RuntimeAnimationState {
@@ -391,6 +435,7 @@ export interface RuntimeBrowserState {
   readonly levelComplete: boolean;
   readonly interaction: RuntimeInteractionState | null;
   readonly voxelMeshes: readonly RuntimeVoxelMeshChunk[];
+  readonly lights: readonly RuntimeAuthoredLight[];
   readonly generatedEnvironment: RuntimeGeneratedEnvironment | null;
   readonly enemies: readonly RuntimeEnemyState[];
   readonly presentation: RuntimePresentationState;
@@ -429,6 +474,7 @@ export function derivePlayerCameraPose(
 }
 
 const ENTITY_HANDLE_OFFSET = 100_000;
+const LIGHT_HANDLE_OFFSET = 400_000;
 const FIRST_VOXEL_MESH_HANDLE = 800_000;
 
 export interface RuntimeProjectionPlan extends RenderFrameDiff {
@@ -447,6 +493,7 @@ export class RuntimeProjectionAdapter {
   >();
   readonly #meshHashes = new Map<string, string>();
   readonly #meshHandles = new Map<string, RenderHandle>();
+  readonly #knownLights = new Map<number, LightDescriptor>();
   #nextMeshHandle = FIRST_VOXEL_MESH_HANDLE;
   #revision = 0;
 
@@ -455,6 +502,7 @@ export class RuntimeProjectionAdapter {
     const nextKnown = new Map(this.#known);
     const nextMeshHashes = new Map(this.#meshHashes);
     const nextMeshHandles = new Map(this.#meshHandles);
+    const nextKnownLights = new Map(this.#knownLights);
     let nextMeshHandle = this.#nextMeshHandle;
     const ops: RenderDiff[] = [];
     const incomingMeshes = new Set<string>();
@@ -494,6 +542,34 @@ export class RuntimeProjectionAdapter {
         ops.push({ op: "destroy", handle });
         nextMeshHandles.delete(key);
         nextMeshHashes.delete(key);
+      }
+    }
+
+    const incomingLights = new Set<number>();
+    for (const authored of state.lights) {
+      incomingLights.add(authored.id);
+      const light = lightDescriptor(authored);
+      const known = nextKnownLights.get(authored.id);
+      if (known === undefined) {
+        ops.push({
+          op: "createLight",
+          handle: lightHandle(authored.id),
+          parent: null,
+          light,
+        });
+      } else if (!sameLight(known, light)) {
+        ops.push({
+          op: "updateLight",
+          handle: lightHandle(authored.id),
+          light,
+        });
+      }
+      nextKnownLights.set(authored.id, light);
+    }
+    for (const id of [...nextKnownLights.keys()]) {
+      if (!incomingLights.has(id)) {
+        ops.push({ op: "destroy", handle: lightHandle(id) });
+        nextKnownLights.delete(id);
       }
     }
 
@@ -549,6 +625,7 @@ export class RuntimeProjectionAdapter {
         replaceMap(this.#known, nextKnown);
         replaceMap(this.#meshHashes, nextMeshHashes);
         replaceMap(this.#meshHandles, nextMeshHandles);
+        replaceMap(this.#knownLights, nextKnownLights);
         this.#nextMeshHandle = nextMeshHandle;
         this.#revision += 1;
         committed = true;
@@ -562,6 +639,10 @@ export class RuntimeProjectionAdapter {
 
   get trackedMeshCount(): number {
     return this.#meshHandles.size;
+  }
+
+  get trackedLightCount(): number {
+    return this.#knownLights.size;
   }
 }
 
@@ -606,6 +687,84 @@ export function entityHandle(id: number): RenderHandle {
     );
   }
   return renderHandle(ENTITY_HANDLE_OFFSET + id);
+}
+
+function lightHandle(id: number): RenderHandle {
+  if (
+    !Number.isSafeInteger(id) ||
+    id < 0 ||
+    id >= FIRST_VOXEL_MESH_HANDLE - LIGHT_HANDLE_OFFSET
+  ) {
+    throw new RangeError(
+      "authored light id is outside the browser-safe handle range",
+    );
+  }
+  return renderHandle(LIGHT_HANDLE_OFFSET + id);
+}
+
+function lightDescriptor(authored: RuntimeAuthoredLight): LightDescriptor {
+  const shadowIntent = authored.light.shadows ? "requested" : "disabled";
+  if (authored.light.kind === "ambient") {
+    return {
+      kind: "ambient",
+      color: authored.light.color,
+      intensity: authored.light.intensity,
+      enabled: authored.light.enabled,
+      shadowIntent,
+    };
+  }
+  const direction = rotateForward(authored.rotation);
+  if (authored.light.kind === "directional") {
+    return {
+      kind: "directional",
+      color: authored.light.color,
+      intensity: authored.light.intensity,
+      enabled: authored.light.enabled,
+      direction,
+      shadowIntent,
+    };
+  }
+  const position = authored.translation ?? [0, 0, 0];
+  if (authored.light.kind === "point") {
+    return {
+      kind: "point",
+      color: authored.light.color,
+      intensity: authored.light.intensity,
+      enabled: authored.light.enabled,
+      position,
+      range: authored.light.range,
+      decay: authored.light.decay,
+      shadowIntent,
+    };
+  }
+  return {
+    kind: "spot",
+    color: authored.light.color,
+    intensity: authored.light.intensity,
+    enabled: authored.light.enabled,
+    position,
+    direction,
+    range: authored.light.range,
+    decay: authored.light.decay,
+    outerAngleRadians: authored.light.outerAngleRadians,
+    penumbra: authored.light.penumbra,
+    shadowIntent,
+  };
+}
+
+function rotateForward(
+  rotation: readonly [number, number, number, number],
+): readonly [number, number, number] {
+  const [x, y, z, w] = rotation;
+  return [
+    -2 * (x * z + w * y),
+    -2 * (y * z - w * x),
+    -(1 - 2 * (x * x + y * y)),
+  ];
+}
+
+function sameLight(left: LightDescriptor, right: LightDescriptor): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function projectedNode(

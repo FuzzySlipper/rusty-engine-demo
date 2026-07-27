@@ -59,7 +59,7 @@ fn multiple_mid_level_slots_restore_exact_state_and_eventual_behavior() {
     runtime
         .apply_voxel_edits(VoxelEditTransaction {
             expected_revision: VoxelSourceRevision::INITIAL,
-            edits: &[VoxelEdit::Clear { address: [4, 1, 6] }],
+            edits: &[VoxelEdit::Clear { address: [2, 1, 6] }],
         })
         .unwrap();
     runtime

@@ -9,8 +9,9 @@ use loading_bay_game::{
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const PLAYER: EntityId = EntityId::new(1);
-const EXIT_DOOR: EntityId = EntityId::new(3);
 const INTERLOCK_SWITCH: EntityId = EntityId::new(6);
+const EXTRACTION_GATE: EntityId = EntityId::new(12);
+const GENERATOR_DOOR: EntityId = EntityId::new(13);
 const KEYED_DOOR: EntityId = EntityId::new(30);
 const SECRET: EntityId = EntityId::new(31);
 const LEVEL_EXIT: EntityId = EntityId::new(32);
@@ -79,7 +80,7 @@ fn authored_progression_is_object_owned_and_uses_inventory_keys() {
     );
     assert_eq!(
         session.switch(INTERLOCK_SWITCH).unwrap().controls_targets,
-        vec![EXIT_DOOR]
+        vec![EXTRACTION_GATE]
     );
     assert_eq!(
         session.secret_region(SECRET).unwrap().state,
@@ -94,7 +95,7 @@ fn authored_progression_is_object_owned_and_uses_inventory_keys() {
 #[test]
 fn missing_or_wrong_key_rejects_without_mutating_runtime() {
     for wrong_key in [None, Some("key/inert-inspection-tag")] {
-        let mut project = project_at([4.5, 1.5, 4.5]);
+        let mut project = project_at([11.5, 1.5, 15.5]);
         if let Some(wrong_key) = wrong_key {
             grant_starting_item(&mut project, wrong_key);
         }
@@ -117,7 +118,7 @@ fn missing_or_wrong_key_rejects_without_mutating_runtime() {
 #[test]
 fn keyed_door_retain_and_consume_policies_are_atomic_and_idempotent() {
     for (policy, expected_after) in [("retain", 1), ("consume", 0)] {
-        let mut project = project_at([4.5, 1.5, 4.5]);
+        let mut project = project_at([11.5, 1.5, 15.5]);
         grant_starting_item(&mut project, "key/maintenance-pass");
         entity_mut(&mut project, KEYED_DOOR)["door"]["access"]["keyPolicy"] = policy.into();
         let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
@@ -167,20 +168,27 @@ fn loading_bay_interlock_preserves_switch_consequences_and_scheduled_close() {
     ));
     assert_eq!(encode_game_snapshot(&out_of_range).unwrap(), before);
 
-    let mut project = project_at([3.5, 1.5, 6.5]);
-    grant_starting_item(&mut project, "key/maintenance-pass");
+    let mut project = project_at([11.5, 1.5, 20.5]);
+    entity_mut(&mut project, EntityId::new(40))["encounter"]["activationRadius"] =
+        serde_json::Value::Null;
     let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
-    runtime.open_keyed_door(PLAYER, KEYED_DOOR).unwrap();
+    for enemy in [5, 41, 42] {
+        runtime.defeat_enemy(PLAYER, EntityId::new(enemy)).unwrap();
+    }
+    assert_eq!(
+        runtime.session().door(GENERATOR_DOOR).unwrap().state,
+        DoorState::Open
+    );
 
     let receipt = runtime
         .activate_loading_bay_interlock(PLAYER, INTERLOCK_SWITCH)
         .unwrap();
     assert_eq!(
-        runtime.session().door(KEYED_DOOR).unwrap().state,
+        runtime.session().door(GENERATOR_DOOR).unwrap().state,
         DoorState::Closed
     );
     assert_eq!(
-        runtime.session().door(EXIT_DOOR).unwrap().state,
+        runtime.session().door(EXTRACTION_GATE).unwrap().state,
         DoorState::Open
     );
     assert!(matches!(
@@ -191,11 +199,11 @@ fn loading_bay_interlock_preserves_switch_consequences_and_scheduled_close() {
                 ..
             },
             loading_bay_game::GameEvent::DoorClosed {
-                door: KEYED_DOOR,
+                door: GENERATOR_DOOR,
                 ..
             },
             loading_bay_game::GameEvent::DoorOpened {
-                door: EXIT_DOOR,
+                door: EXTRACTION_GATE,
                 ..
             }
         ]
@@ -203,18 +211,18 @@ fn loading_bay_interlock_preserves_switch_consequences_and_scheduled_close() {
 
     runtime.advance_by(90).unwrap();
     assert_eq!(
-        runtime.session().door(KEYED_DOOR).unwrap().state,
+        runtime.session().door(GENERATOR_DOOR).unwrap().state,
         DoorState::Closed
     );
     assert_eq!(
-        runtime.session().door(EXIT_DOOR).unwrap().state,
+        runtime.session().door(EXTRACTION_GATE).unwrap().state,
         DoorState::Open
     );
 }
 
 #[test]
 fn secret_discovery_is_first_entry_only_and_survives_snapshot_reopen() {
-    let project = project_at([6.5, 1.5, 8.5]);
+    let project = project_at([3.5, 1.5, 24.5]);
     let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
 
@@ -278,7 +286,7 @@ fn secret_discovery_is_first_entry_only_and_survives_snapshot_reopen() {
 
 #[test]
 fn later_over_cap_secret_query_commits_no_earlier_discovery() {
-    let mut project = project_at([6.5, 1.5, 8.5]);
+    let mut project = project_at([3.5, 1.5, 24.5]);
     let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
     entities.push(serde_json::json!({
         "id": 333,
@@ -343,7 +351,7 @@ fn later_over_cap_secret_query_commits_no_earlier_discovery() {
 
 #[test]
 fn level_completion_stops_simulation_across_reconnect_and_allows_only_authored_restart() {
-    let project = project_at([4.5, 1.5, 12.5]);
+    let project = project_at([21.5, 1.5, 50.5]);
     let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
     let generation = game_loop.start_connection().connection_generation;

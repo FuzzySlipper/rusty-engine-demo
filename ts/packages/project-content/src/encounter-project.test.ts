@@ -187,7 +187,7 @@ test("stored item definitions and starting inventory remain immutable authored d
     capacitySlots: 8,
     startingStacks: [
       { item: LOADING_BAY_ITEM_IDS.arcPistol, quantity: 1 },
-      { item: LOADING_BAY_ITEM_IDS.energyCell, quantity: 40 },
+      { item: LOADING_BAY_ITEM_IDS.energyCell, quantity: 18 },
       { item: LOADING_BAY_ITEM_IDS.medPatch, quantity: 1 },
     ],
     initiallyEquippedWeapon: LOADING_BAY_ITEM_IDS.arcPistol,
@@ -219,8 +219,7 @@ test("stored item definitions and starting inventory remain immutable authored d
   );
   assert.deepEqual(
     project.itemDefinitions.find(
-      (definition) =>
-        definition.id === LOADING_BAY_ITEM_IDS.breachScattergun,
+      (definition) => definition.id === LOADING_BAY_ITEM_IDS.breachScattergun,
     )?.kind,
     {
       kind: "weapon",
@@ -303,23 +302,117 @@ test("the extraction beacon is game-owned data on its responsible entity", () =>
   assert.deepEqual(beacon, {
     id: ENCOUNTER_IDS.extractionBeacon,
     name: "extraction-beacon",
-    translation: [4.5, 1.5, 12.5],
+    translation: [18.5, 1.5, 46.5],
     renderable: { asset: "mesh/extraction-beacon", visible: true },
     extractionBeacon: { activationRadius: 3 },
   });
 });
 
-test("stored-project seed remains a candidate-only variation", () => {
-  const first = loadingBayStoredProject({ generationSeed: 4 });
-  const second = loadingBayStoredProject({ generationSeed: 9 });
+test("loading bay material voxels are deterministic and preserve all authored gates", () => {
+  const first = loadingBayStoredProject();
+  const second = loadingBayStoredProject();
+  const environment = first.scenes[0]?.voxelEnvironment;
 
-  assert.equal(first.scenes[0]?.voxelEnvironment?.kind, "generatedRoom");
-  assert.equal(second.scenes[0]?.voxelEnvironment?.kind, "generatedRoom");
-  assert.notDeepEqual(
-    first.scenes[0]?.voxelEnvironment,
-    second.scenes[0]?.voxelEnvironment,
+  assert.equal(environment?.kind, "material");
+  assert.deepEqual(environment, second.scenes[0]?.voxelEnvironment);
+  if (environment?.kind !== "material") {
+    assert.fail("loading bay material environment is missing");
+  }
+  assert.equal(environment.voxelSize, 1);
+  assert.equal(environment.chunkSize, 16);
+  assert.equal(environment.materialVoxels.length, 3_931);
+  assert.deepEqual(
+    [
+      ...new Set(environment.materialVoxels.map((voxel) => voxel.materialSlot)),
+    ].sort(),
+    [1, 2, 3],
   );
-  assert.deepEqual(first.scenes[0]?.entities, second.scenes[0]?.entities);
+  const addresses = new Set(
+    environment.materialVoxels.map((voxel) => voxel.address.join(",")),
+  );
+  for (const opening of [
+    "4,1,17",
+    "11,1,17",
+    "23,1,30",
+    "21,1,35",
+    "21,1,49",
+  ]) {
+    assert.equal(
+      addresses.has(opening),
+      false,
+      `${opening} remains traversable`,
+    );
+  }
+  for (const wall of ["2,1,17", "7,1,17", "19,1,35", "24,1,35"]) {
+    assert.equal(addresses.has(wall), true, `${wall} remains solid`);
+  }
+});
+
+test("loading bay route composes encounters, upgrades, key loop, secret, and exit as entity data", () => {
+  const scene = loadingBayStoredProject().scenes[0];
+  assert.ok(scene);
+  const byId = (id: number) =>
+    scene.entities.find((entity) => entity.id === id);
+
+  assert.equal(
+    scene.entities.filter((entity) => entity.enemy === true).length,
+    8,
+  );
+  assert.deepEqual(byId(ENCOUNTER_IDS.encounter)?.encounter, {
+    members: [ENCOUNTER_IDS.firstEnemy],
+    exit: ENCOUNTER_IDS.cargoDoor,
+    activationRadius: 6,
+  });
+  assert.deepEqual(byId(ENCOUNTER_IDS.generatorEncounter)?.encounter, {
+    members: [
+      ENCOUNTER_IDS.firstEnemy + 1,
+      ENCOUNTER_IDS.generatorMelee,
+      ENCOUNTER_IDS.generatorRanged,
+    ],
+    exit: ENCOUNTER_IDS.generatorDoor,
+    activationRadius: 8,
+  });
+  assert.deepEqual(byId(ENCOUNTER_IDS.finalEncounter)?.encounter, {
+    members: [
+      ENCOUNTER_IDS.finalMeleeOne,
+      ENCOUNTER_IDS.finalRangedOne,
+      ENCOUNTER_IDS.finalMeleeTwo,
+      ENCOUNTER_IDS.finalRangedTwo,
+    ],
+    exit: ENCOUNTER_IDS.exit,
+    activationRadius: 5,
+  });
+  assert.deepEqual(byId(ENCOUNTER_IDS.doorControl)?.switch, {
+    controls: [ENCOUNTER_IDS.extractionGate],
+    loadingBayInterlock: {
+      closeDoor: ENCOUNTER_IDS.generatorDoor,
+      openDoor: ENCOUNTER_IDS.extractionGate,
+    },
+  });
+  assert.equal(
+    byId(ENCOUNTER_IDS.keyedBulkhead)?.door?.access?.requiredKey,
+    LOADING_BAY_ITEM_IDS.maintenancePass,
+  );
+  assert.equal(
+    byId(ENCOUNTER_IDS.weaponPickup)?.pickup?.item,
+    LOADING_BAY_ITEM_IDS.breachScattergun,
+  );
+  assert.equal(
+    byId(ENCOUNTER_IDS.automaticWeaponPickup)?.pickup?.item,
+    LOADING_BAY_ITEM_IDS.rivetCarbine,
+  );
+  assert.deepEqual(
+    byId(ENCOUNTER_IDS.secretRegion)?.translation,
+    [3.5, 1.5, 24.5],
+  );
+  assert.deepEqual(
+    byId(ENCOUNTER_IDS.levelExit)?.translation,
+    [21.5, 1.5, 50.5],
+  );
+  assert.equal(
+    scene.entities.filter((entity) => entity.light !== undefined).length,
+    8,
+  );
 });
 
 test("relay annex is a distinct content-only composition with settled demo meanings", () => {
@@ -336,24 +429,20 @@ test("relay annex is a distinct content-only composition with settled demo meani
   );
 
   assert.equal(project.projectId, "relay-annex");
-  assert.deepEqual(scene?.voxelEnvironment, {
-    kind: "generatedRoom",
-    seed: 17,
-    voxelSize: 1,
-    chunkSize: 16,
-    width: 5,
-    height: 4,
-    length: 8,
-  });
+  assert.equal(scene?.voxelEnvironment?.kind, "material");
+  assert.notDeepEqual(
+    scene?.voxelEnvironment,
+    loadingBayStoredProject().scenes[0]?.voxelEnvironment,
+  );
   assert.deepEqual(encounter?.encounter?.members, [ENCOUNTER_IDS.firstEnemy]);
   assert.equal(
     scene?.entities.some(
       (entity) => entity.id === ENCOUNTER_IDS.firstEnemy + 1,
     ),
-    false,
+    true,
   );
-  assert.deepEqual(player?.translation, [2.5, 1.5, 2.5]);
-  assert.deepEqual(beacon?.translation, [3.5, 1.5, 4.5]);
+  assert.deepEqual(player?.translation, [6.5, 1.5, 3.5]);
+  assert.deepEqual(beacon?.translation, [18.5, 1.5, 46.5]);
   assert.deepEqual(beacon?.extractionBeacon, { activationRadius: 4 });
 });
 

@@ -322,6 +322,7 @@ function state(
     levelComplete: false,
     interaction: null,
     voxelMeshes: [],
+    lights: [],
     generatedEnvironment: null,
     enemies: [],
     presentation: { animationStates: [], cues: [] },

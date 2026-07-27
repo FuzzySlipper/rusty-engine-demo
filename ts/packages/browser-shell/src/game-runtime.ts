@@ -18,6 +18,7 @@ import {
   RuntimeProjectionAdapter,
   derivePlayerCameraPose,
   type RuntimeBrowserState,
+  type RuntimeFeedbackCue,
   type RuntimeSaveSlotId,
   type RuntimeSaveSlotSummary,
 } from "./projection.js";
@@ -34,7 +35,7 @@ type VoxelEditOperation =
       readonly address: readonly [number, number, number];
     };
 
-const PRODUCT_EDIT_VOXEL = [4, 1, 6] as const;
+const PRODUCT_EDIT_VOXEL = [2, 1, 6] as const;
 
 export interface LoadingBayHostPresentationPreferences {
   readonly mouseSensitivity: number;
@@ -487,7 +488,7 @@ export async function mountLoadingBayGame(
     const reloadPostureRebuilt =
       current.encounterState === "cleared" &&
       current.doorState === "open" &&
-      door?.translation?.[1] === 4 &&
+      door?.translation?.[1] === 5.5 &&
       current.enemies.every((enemy) => enemy.state === "defeated") &&
       doorCaption.dataset.posture === "open" &&
       document.querySelector<HTMLElement>('[data-entity-id="4"]')?.dataset
@@ -605,458 +606,31 @@ export async function mountLoadingBayGame(
       ? "PASS · Converted voxel asset reached retained WebGL, collision, navigation, and live edits"
       : "FAIL · Converted voxel product proof did not converge";
   } else if (smokeMode) {
-    const pickupProofPassed = await proveWorldPickups();
-    document.body.dataset.pickups = pickupProofPassed ? "pass" : "fail";
-    await performRestart();
-    const voxelEditFirstFight = await defeatEnemiesForSmoke();
-    const voxelBefore = voxelFingerprint(current);
-    let staleRejected = false;
+    let campaignPassed = false;
     try {
-      await requestState("/api/voxel-edit", "POST", {
-        expectedRevision: current.voxelRevision + 1,
-        persistToProject: false,
-        edits: [{ kind: "clear", address: PRODUCT_EDIT_VOXEL }],
-      });
-    } catch {
-      staleRejected = true;
+      campaignPassed = await proveCampaignRoute();
+    } catch (error) {
+      document.body.dataset.campaignError =
+        error instanceof Error ? error.message : String(error);
     }
-    const afterRejectedEdit = await requestState("/api/state");
-    const rejectedUnchanged =
-      staleRejected &&
-      JSON.stringify(voxelFingerprint(afterRejectedEdit)) ===
-        JSON.stringify(voxelBefore);
-    current = afterRejectedEdit;
-    await performVoxelEdit({ kind: "clear", address: PRODUCT_EDIT_VOXEL });
-    const clearReceipt = current.voxelEditReceipt;
-    const editBecameVisibleAndNavigable =
-      clearReceipt?.acceptedRevision === 1 &&
-      clearReceipt.changedVoxels === 1 &&
-      current.voxelRevision === 1 &&
-      current.voxelSolidCount === voxelBefore.solidCount - 1 &&
-      current.voxelAuthorityHash !== voxelBefore.authorityHash &&
-      current.voxelNavigationHash !== voxelBefore.navigationHash &&
-      current.voxelProbePathLength < voxelBefore.probePathLength &&
-      meshFingerprint(current) !== voxelBefore.meshHash &&
-      current.generatedEnvironment === null &&
-      surface.snapshot().includes("generated-room-chunk");
-    const clearedBulkheadOpened = await openProgressionBulkhead();
-    const clearedPassage = await walkPlayerPath([
-      [3.5, 5.5],
-      [4.5, 5.5],
-      [4.5, 7.5],
-    ]);
-    await performRestart();
-    const voxelEditSecondFight = await defeatEnemiesForSmoke();
-    const restoredBulkheadOpened = await openProgressionBulkhead();
-    const blockedByRestoredVoxel = !(await walkPlayerPath([
-      [3.5, 5.5],
-      [4.5, 5.5],
-      [4.5, 7.5],
-    ]));
-    await performRestart();
-    const voxelEditPassed =
-      editBecameVisibleAndNavigable &&
-      voxelEditFirstFight &&
-      voxelEditSecondFight &&
-      clearedBulkheadOpened &&
-      clearedPassage &&
-      restoredBulkheadOpened &&
-      blockedByRestoredVoxel;
-    document.body.dataset.voxelEditEvidence = [
-      editBecameVisibleAndNavigable,
-      voxelEditFirstFight,
-      voxelEditSecondFight,
-      clearedBulkheadOpened,
-      clearedPassage,
-      restoredBulkheadOpened,
-      blockedByRestoredVoxel,
-    ].join(":");
-    document.body.dataset.voxelEdit = voxelEditPassed ? "pass" : "fail";
-    document.body.dataset.voxelRejection = rejectedUnchanged ? "pass" : "fail";
-    document.body.dataset.voxelCollision =
-      clearedPassage && blockedByRestoredVoxel ? "pass" : "fail";
-
-    await presentationFeedback.activateAudio();
-    primaryFireHeld = true;
-    await performInputIntent([0, 0]);
-    await presentationFeedback.settled();
-    const resetStartedWithConcreteTransients =
-      playerMotionState.dataset.animationPulse === "arc-pistol-attack" &&
-      Number(feedbackLayer.dataset.activeEffects ?? "0") > 0 &&
-      Number(feedbackAudioStatus.dataset.activeSounds ?? "0") > 0;
-    document.body.dataset.feedbackResetStart = [
-      playerMotionState.dataset.animationPulse ?? "none",
-      feedbackLayer.dataset.activeEffects ?? "none",
-      feedbackAudioStatus.dataset.activeSounds ?? "none",
-    ].join(":");
-    await performRestart();
-    await presentationFeedback.settled();
-    const resetCuesBelongToFreshSimulation = current.presentation.cues.every(
-      (cue) =>
-        cue.kind === "movement" ||
-        cue.kind === "enemyAlert" ||
-        cue.kind === "enemyAttack" ||
-        cue.kind === "enemyAttackMissed" ||
-        cue.kind === "damage",
-    );
-    const resetAnimationStates = feedbackLayer.dataset.animationStates ?? "";
-    const resetEnemyPostureRebuilt =
-      includesEvery(resetAnimationStates, ["4:idle", "5:idle"]) ||
-      includesEvery(resetAnimationStates, ["4:alert", "5:alert"]);
-    const resetFeedbackRebuilt =
-      resetStartedWithConcreteTransients &&
-      resetCuesBelongToFreshSimulation &&
-      playerMotionState.dataset.animationPulse !== "arc-pistol-attack" &&
-      includesEvery(feedbackLayer.dataset.animationStates, [
-        "1:idle",
-        "3:closed",
-      ]) &&
-      resetEnemyPostureRebuilt &&
-      feedbackLayer.dataset.viewmodelImpulse === "idle" &&
-      feedbackLayer.dataset.viewmodelWeapon === "weapon/arc-pistol" &&
-      feedbackLayer.dataset.viewmodelNodes === "7" &&
-      document.body.dataset.weaponViewmodelLifecycle === "mounted";
-    document.body.dataset.feedbackResetResult = [
-      current.presentation.cues.length,
-      feedbackLayer.dataset.activeEffects ?? "none",
-      feedbackAudioStatus.dataset.activeSounds ?? "none",
-      document.querySelector("[data-animation-pulse]") === null,
-      playerMotionState.dataset.animationPulse ?? "none",
-      feedbackLayer.dataset.animationStates ?? "none",
-      resetCuesBelongToFreshSimulation,
-    ].join(":");
-    document.body.dataset.feedbackReset = resetFeedbackRebuilt
-      ? "pass"
-      : "fail";
-    document.body.dataset.feedbackConcreteReset = resetFeedbackRebuilt
-      ? "pass"
-      : "fail";
-    const initialPlayerPosition = current.player.position;
-    const initialPlayerYaw = current.player.yawDegrees;
-    const heldCode = current.player.bindings.moveForward;
-    window.dispatchEvent(new KeyboardEvent("keydown", { code: heldCode }));
-    await delay(1_200);
-    window.dispatchEvent(new KeyboardEvent("keyup", { code: heldCode }));
-    await performInputIntent([0, 0]);
-    const playerMoved = vectorChanged(
-      current.player.position,
-      initialPlayerPosition,
-      0.01,
-    );
-    const playerBlocked = current.playerMotionState === "blocked";
-    const releasedPlayerPosition = current.player.position;
-    await delay(current.player.moveStepSeconds * 2_000);
-    await performInputIntent([0, 0]);
-    current = await requestState("/api/state");
-    const playerStopped = !vectorChanged(
-      current.player.position,
-      releasedPlayerPosition,
-      0.000_001,
-    );
-    document.body.dataset.heldInput =
-      playerMoved && playerBlocked && playerStopped ? "pass" : "fail";
-    const initialPlayerPitch = current.player.pitchDegrees;
-    window.dispatchEvent(
-      new MouseEvent("mousemove", { movementX: 20, movementY: -10 }),
-    );
-    const [previewYawUnits, previewPitchUnits] = localLookOffset.pendingUnits;
-    const localLookPreviewed =
-      previewYawUnits !== 0 &&
-      previewPitchUnits !== 0 &&
-      Math.abs(previewYawUnits) <= 2 &&
-      Math.abs(previewPitchUnits) <= 2;
-    await lookInput.settled();
-    const [settledYawUnits, settledPitchUnits] = localLookOffset.pendingUnits;
-    const localLookReconciled =
-      settledYawUnits === 0 && settledPitchUnits === 0;
-    const localLookPresentationPassed =
-      localLookPreviewed && localLookReconciled;
-    document.body.dataset.localLookOffset = localLookPresentationPassed
-      ? "pass"
-      : "fail";
-    document.body.dataset.localLookEvidence = [
-      previewYawUnits,
-      previewPitchUnits,
-      settledYawUnits,
-      settledPitchUnits,
-    ].join(":");
-    const playerLooked =
-      normalizeDegrees(current.player.yawDegrees - initialPlayerYaw) < 0 &&
-      current.player.pitchDegrees > initialPlayerPitch;
-    const combatBulkheadOpenedBeforeProbe = await openProgressionBulkhead();
-    await delay(100);
-    current = await requestState("/api/state");
-    const enemyCombatEvidence = [
-      combatBulkheadOpenedBeforeProbe,
-      eventHistory.includes("EnemyAlerted") ||
-        includesEvery(feedbackLayer.dataset.animationPulses, [
-          "enemy-alert-sight",
-        ]),
-      eventHistory.includes("EnemyAttackFired"),
-      eventHistory.includes("EnemyAttackHit"),
-      eventHistory.includes("DamageApplied"),
-      current.player.currentHealth < current.player.maxHealth,
-      includesEvery(feedbackLayer.dataset.animationPulses, [
-        "enemy-alert-sight",
-        "sentry-pulse-attack",
-        "damage",
-      ]),
-    ];
-    const enemyCombatProjected = enemyCombatEvidence.every(Boolean);
-    document.body.dataset.enemyCombat = enemyCombatProjected ? "pass" : "fail";
-    document.body.dataset.enemyCombatEvidence = enemyCombatEvidence.join(":");
-    await aimAtEnemy(4);
-    const healthBeforeCooldownProbe = current.enemies.find(
-      (enemy) => enemy.id === 4,
-    )?.currentHealth;
-    const ammoBeforeSinglePress = current.weapon.ammoRemaining;
-    primaryFireHeld = true;
-    await performInputIntent([0, 0]);
-    const healthAfterFirstShot = current.enemies.find(
-      (enemy) => enemy.id === 4,
-    )?.currentHealth;
-    const ammoAfterFirstShot = current.weapon.ammoRemaining;
-    // Real pointer capture sends the press transition once. Let several fixed
-    // ticks pass without fabricating a second `pressed` frame; the Rust loop
-    // must keep semiautomatic fire edge-triggered while the held intent ages.
-    await delay(120);
-    const healthAfterRepeatedHeldFire = current.enemies.find(
-      (enemy) => enemy.id === 4,
-    )?.currentHealth;
-    const ammoAfterRepeatedHeldFire = current.weapon.ammoRemaining;
-    primaryFireHeld = false;
-    await performInputIntent([0, 0]);
-    const singlePressHeld =
-      ammoAfterFirstShot === ammoBeforeSinglePress - 1 &&
-      ammoAfterRepeatedHeldFire === ammoAfterFirstShot &&
-      healthAfterRepeatedHeldFire === healthAfterFirstShot;
-    document.body.dataset.cooldownEvidence = [
-      healthBeforeCooldownProbe ?? "missing",
-      healthAfterFirstShot ?? "missing",
-      healthAfterRepeatedHeldFire ?? "missing",
-      ammoBeforeSinglePress,
-      ammoAfterFirstShot,
-      ammoAfterRepeatedHeldFire,
-    ].join(":");
-    const movingTargetDamaged =
-      (healthBeforeCooldownProbe !== undefined &&
-        healthAfterFirstShot !== undefined &&
-        healthAfterFirstShot < healthBeforeCooldownProbe) ||
-      (await damageEnemyTo(4, 40));
-    const yawBeforeRecovery = current.player.yawDegrees;
-    await enqueuePlayerAction({ kind: "look", yawDelta: 0.25, pitchDelta: 0 });
-    const lookRecoveredAfterRejection =
-      current.player.yawDegrees !== yawBeforeRecovery;
-    const firstEnemyDefeated = await damageEnemyTo(4, 0);
-    const secondEnemyDamaged = await damageEnemyTo(5, 40);
-    await enqueuePlayerAction({ kind: "look", yawDelta: 0.25, pitchDelta: 0 });
-    const secondEnemyDefeated = await damageEnemyTo(5, 0);
-    const combatHit =
-      firstEnemyDefeated &&
-      secondEnemyDamaged &&
-      secondEnemyDefeated &&
-      eventHistory.includes("CombatHit");
-    const combatBulkheadOpened = await openProgressionBulkhead();
-    const openGateTraversed = await walkPlayerPath([
-      [1.5, 9.5],
-      [4.5, 9.5],
-      [4.5, 12.5],
-    ]);
-    if (openGateTraversed) {
-      await turnPlayerToward(
-        4.5 - current.player.position[0],
-        10.5 - current.player.position[2],
-      );
+    if (campaignPassed) {
+      await performSaveGame("slot3", false, null);
     }
-    document.body.dataset.gatePassage = openGateTraversed ? "pass" : "fail";
-    const queueRecovered =
-      singlePressHeld &&
-      lookRecoveredAfterRejection &&
-      combatBulkheadOpened &&
-      openGateTraversed;
-    document.body.dataset.queueEvidence = [
-      singlePressHeld,
-      lookRecoveredAfterRejection,
-      openGateTraversed,
-    ].join(":");
-    document.body.dataset.queueRecovery = queueRecovered ? "pass" : "fail";
-    const cooldownRecovered = singlePressHeld && firstEnemyDefeated;
-    document.body.dataset.cooldown = cooldownRecovered ? "pass" : "fail";
-    await enqueueInteraction(7);
-    await presentationFeedback.settled();
-    const beaconActivated =
-      current.extractionBeacon?.state === "active" &&
-      current.extractionBeacon.activatedBy === current.player.id &&
-      eventHistory.includes("ExtractionBeaconActivated") &&
-      beaconState.dataset.state === "active" &&
-      beaconState.dataset.posture === "active" &&
-      surface.snapshot().includes("extraction-beacon");
-    document.body.dataset.beaconActivation = beaconActivated ? "pass" : "fail";
-    const dryFirePassed = await proveDryFire();
-    document.body.dataset.dryFire = dryFirePassed ? "pass" : "fail";
-    await presentationFeedback.settled();
-    const door = current.projection.find((node) => node.id === 3);
-    const gameplayPassed =
-      current.encounterState === "cleared" &&
-      current.doorState === "open" &&
-      door?.translation?.[1] === 4 &&
-      current.enemies.every((enemy) => enemy.state === "defeated") &&
-      playerMoved &&
-      playerBlocked &&
-      playerStopped &&
-      playerLooked &&
-      localLookPresentationPassed &&
-      document.body.dataset.entityOcclusion === "pass" &&
-      enemyCombatProjected &&
-      movingTargetDamaged &&
-      queueRecovered &&
-      cooldownRecovered &&
-      current.generatedEnvironment?.seed === 4 &&
-      combatHit &&
-      dryFirePassed &&
-      openGateTraversed &&
-      current.enemies.every((enemy) => enemy.currentHealth === 0) &&
-      beaconActivated &&
-      eventHistory.includes("CombatHit") &&
-      eventHistory.includes("DamageApplied") &&
-      current.voxelMeshes.length === 1 &&
-      surface.snapshot().includes("loading-bay-exit") &&
-      surface.snapshot().includes("generated-room-chunk");
-    const feedbackFamiliesPassed =
-      includesEvery(feedbackLayer.dataset.animationPulses, [
-        "movement",
-        "blocked",
-        "encounter-activated",
-        "enemy-alert-sight",
-        "sentry-pulse-attack",
-        "arc-pistol-attack",
-        "arc-pistol-dry",
-        "damage",
-        "defeat",
-        "drop-materialized",
-        "open",
-        "active",
-      ]) &&
-      includesEvery(feedbackLayer.dataset.particleKinds, [
-        "movement",
-        "blocked",
-        "muzzle",
-        "dry",
-        "impact",
-        "defeat",
-        "pickup",
-        "door",
-        "beacon",
-      ]) &&
-      includesEvery(feedbackLayer.dataset.billboardValues, [
-        "ENEMY ALERT",
-        "BLOCKED",
-        "EMPTY",
-        "-60",
-        "DEFEATED",
-        "DROP +1 supply/med-patch",
-        "DROP +20 ammo/energy-cell",
-        "EXIT OPEN",
-        "EXTRACTION ONLINE",
-      ]) &&
-      Number(feedbackLayer.dataset.activeEffects ?? "0") <= 24;
-    document.body.dataset.feedbackFamilies = feedbackFamiliesPassed
+    const completedSavePublished =
+      campaignPassed &&
+      current.saveSlots.some(
+        (slot) =>
+          slot.slot === "slot3" &&
+          slot.compatibility === "available" &&
+          slot.metadata?.levelComplete === true,
+      ) &&
+      current.levelComplete;
+    document.body.dataset.completedSave = completedSavePublished
       ? "pass"
       : "fail";
-    document.body.dataset.feedbackEvidence = [
-      feedbackLayer.dataset.animationPulses ?? "",
-      feedbackLayer.dataset.particleKinds ?? "",
-      feedbackLayer.dataset.billboardValues ?? "",
-    ].join("|");
-    const audioFeedbackPassed =
-      Number(feedbackAudioStatus.dataset.attempted ?? "0") > 0 &&
-      Number(feedbackAudioStatus.dataset.scheduled ?? "0") > 0 &&
-      includesEvery(feedbackAudioStatus.dataset.soundKinds, [
-        "beacon",
-        "shot",
-        "hit",
-        "sidearmShot",
-        "dryFire",
-      ]);
-    document.body.dataset.audioFeedback = audioFeedbackPassed ? "pass" : "fail";
-
-    latestMovement = { kind: "move", forward: -1, right: 0 };
-    const droppedResponse = await session.sendInput({
-      movement: [-1, 0],
-      lookDelta: [0, 0],
-      primaryFireHeld: false,
-    });
-    const droppedHadTransientCue = droppedResponse.presentation.cues.some(
-      (cue) => cue.kind === "movement" || cue.kind === "movementBlocked",
-    );
-    latestMovement = { kind: "move", forward: 0, right: 0 };
-    const neutralResponse = await session.sendInput({
-      movement: [0, 0],
-      lookDelta: [0, 0],
-      primaryFireHeld: false,
-    });
-    const neutralSequence = neutralResponse.input.acknowledgedSequence;
-    const refreshed = await requestState("/api/state");
-    const droppedDeliverySafe =
-      droppedHadTransientCue &&
-      refreshed.presentation.cues.length === 0 &&
-      neutralResponse.input.consumedSequence === neutralSequence &&
-      refreshed.input.consumedSequence === neutralSequence;
-    document.body.dataset.feedbackDropEvidence = [
-      droppedHadTransientCue,
-      refreshed.presentation.cues.length,
-      neutralResponse.input.consumedSequence,
-      refreshed.input.consumedSequence,
-      neutralSequence,
-    ].join(":");
-    current = refreshed;
-    const refreshFrame = projection.apply(current);
-    applyRendererFrame(refreshFrame);
-    applyPresentationCamera();
-    renderReadout(current);
-    void applyPresentationFeedback(false, refreshFrame.ops.length);
-    await enqueuePlayerAction({ kind: "move", forward: -1, right: 0 });
-    await presentationFeedback.settled();
-    const restartStartedWithConcreteTransients =
-      playerMotionState.dataset.animationPulse !== undefined &&
-      Number(feedbackLayer.dataset.activeEffects ?? "0") > 0 &&
-      Number(feedbackAudioStatus.dataset.activeSounds ?? "0") > 0;
-    current = await requestState("/api/state");
-    const restartFrame = projection.apply(current);
-    applyRendererFrame(restartFrame);
-    applyPresentationCamera();
-    renderReadout(current);
-    await applyPresentationFeedback(true, restartFrame.ops.length);
-    const restartRebuilt =
-      restartStartedWithConcreteTransients &&
-      current.presentation.cues.length === 0 &&
-      feedbackLayer.dataset.activeEffects === "0" &&
-      feedbackAudioStatus.dataset.activeSounds === "0" &&
-      document.querySelector("[data-animation-pulse]") === null &&
-      feedbackLayer.dataset.lastCueCount === "0" &&
-      includesEvery(feedbackLayer.dataset.animationStates, [
-        "3:open",
-        "4:defeated",
-        "5:defeated",
-      ]);
-    document.body.dataset.feedbackConcreteRestartEvidence = [
-      restartStartedWithConcreteTransients,
-      current.presentation.cues.length,
-      feedbackLayer.dataset.activeEffects ?? "none",
-      feedbackAudioStatus.dataset.activeSounds ?? "none",
-      document.querySelector("[data-animation-pulse]") === null,
-      feedbackLayer.dataset.lastCueCount ?? "none",
-      feedbackLayer.dataset.animationStates ?? "none",
-    ].join(":");
-    document.body.dataset.feedbackConcreteRestart = restartRebuilt
-      ? "pass"
-      : "fail";
-    const feedbackDropPassed = droppedDeliverySafe && restartRebuilt;
-    document.body.dataset.feedbackDrop = feedbackDropPassed ? "pass" : "fail";
     updateSessionDiagnostics();
     const rendererTelemetryPassed =
       rendererTelemetryRefreshObserved &&
-      rendererTelemetryResetObserved &&
       telemetryLayer.dataset.rendererTimingSource === "animationFrame" &&
       telemetryLayer.dataset.rendererFrameIntervalStatus === "available" &&
       Number(
@@ -1093,20 +667,14 @@ export async function mountLoadingBayGame(
       ? "pass"
       : "fail";
     const passed =
-      gameplayPassed &&
-      pickupProofPassed &&
-      voxelEditPassed &&
-      rejectedUnchanged &&
-      resetFeedbackRebuilt &&
-      feedbackFamiliesPassed &&
-      audioFeedbackPassed &&
-      feedbackDropPassed &&
+      campaignPassed &&
+      completedSavePublished &&
       rendererTelemetryPassed &&
       sessionTransportPassed;
     smokeResult.dataset.status = passed ? "pass" : "fail";
     smokeResult.textContent = passed
-      ? "PASS · Rust facts reached retained WebGL and disposable feedback"
-      : "FAIL · Product proof did not converge";
+      ? "PASS · Original Loading Bay campaign completed through Rust authority"
+      : "FAIL · Loading Bay campaign route did not converge";
     document.body.dataset.smokeStatus = passed ? "pass" : "fail";
   }
 
@@ -1583,59 +1151,26 @@ export async function mountLoadingBayGame(
     throw new Error(`could not aim at enemy ${String(enemyId)}`);
   }
 
-  async function firePrimary(): Promise<void> {
+  async function firePrimary(): Promise<
+    Extract<RuntimeFeedbackCue, { readonly kind: "attack" }> | undefined
+  > {
     const action = resolvePointerButtonAction(0, current.player.bindings);
     if (action === null) {
       throw new Error("authored primary-fire binding did not resolve Mouse0");
     }
-    await enqueueAttackAction(action);
-  }
-
-  async function proveDryFire(): Promise<boolean> {
-    const startedWithSidearm = current.weapon.item === "weapon/arc-pistol";
-    let acceptedShots = 0;
-    while (current.weapon.ammoRemaining > 0 && acceptedShots < 64) {
-      await firePrimary();
-      acceptedShots += 1;
-    }
-    const rejectionsBefore = eventHistory.filter(
-      (event) => event === "CombatRejectedNoAmmo",
-    ).length;
-    primaryFireHeld = true;
+    primaryFireHeld = action.kind === "attack";
     await performInputIntent([0, 0]);
     const cue = current.presentation.cues.find(
-      (candidate) => candidate.kind === "dryFire",
+      (
+        candidate,
+      ): candidate is Extract<
+        RuntimeFeedbackCue,
+        { readonly kind: "attack" }
+      > => candidate.kind === "attack",
     );
     primaryFireHeld = false;
     await performInputIntent([0, 0]);
-    await presentationFeedback.settled();
-    const rejectionObserved =
-      eventHistory.filter((event) => event === "CombatRejectedNoAmmo").length >
-      rejectionsBefore;
-    const feedbackObserved =
-      cue?.kind === "dryFire" &&
-      cue.weapon === "weapon/arc-pistol" &&
-      cue.presentation === "arc-pistol" &&
-      includesEvery(feedbackLayer.dataset.animationPulses, [
-        "arc-pistol-dry",
-      ]) &&
-      includesEvery(feedbackLayer.dataset.particleKinds, ["dry"]) &&
-      includesEvery(feedbackLayer.dataset.billboardValues, ["EMPTY"]) &&
-      includesEvery(feedbackAudioStatus.dataset.soundKinds, ["dryFire"]);
-    document.body.dataset.dryFireEvidence = [
-      startedWithSidearm,
-      acceptedShots,
-      current.weapon.ammoRemaining,
-      rejectionObserved,
-      feedbackObserved,
-    ].join(":");
-    return (
-      startedWithSidearm &&
-      acceptedShots <= 40 &&
-      current.weapon.ammoRemaining === 0 &&
-      rejectionObserved &&
-      feedbackObserved
-    );
+    return cue;
   }
 
   async function damageEnemyTo(
@@ -1670,338 +1205,446 @@ export async function mountLoadingBayGame(
     return true;
   }
 
-  async function proveWorldPickups(): Promise<boolean> {
+  async function useCampaignMedPatchIfNeeded(
+    healthThreshold = 75,
+  ): Promise<void> {
+    while (
+      current.player.currentHealth <= healthThreshold &&
+      current.player.currentHealth < current.player.maxHealth &&
+      inventoryQuantity("supply/med-patch") > 0
+    ) {
+      const beforeHealth = current.player.currentHealth;
+      const beforeQuantity = inventoryQuantity("supply/med-patch");
+      await performUseItem("supply/med-patch");
+      if (
+        current.player.currentHealth <= beforeHealth ||
+        inventoryQuantity("supply/med-patch") >= beforeQuantity
+      ) {
+        throw new Error("accepted campaign med patch made no progress");
+      }
+    }
+  }
+
+  async function proveCampaignRoute(): Promise<boolean> {
     await presentationFeedback.activateAudio();
     await presentationFeedback.settled();
+    const enemyIds = [4, 5, 41, 42, 51, 52, 53, 54] as const;
+    const pickupIds = current.pickups.map((pickup) => pickup.id);
+    const availablePickupIds = current.pickups
+      .filter((pickup) => pickup.state === "available")
+      .map((pickup) => pickup.id);
+    const dormantPickupIds = current.pickups
+      .filter((pickup) => pickup.state === "dormant")
+      .map((pickup) => pickup.id);
+    const authoredBaseline =
+      current.generatedEnvironment === null &&
+      current.voxelSolidCount === 3_931 &&
+      projection.trackedEntityCount >= 20 &&
+      projection.trackedLightCount === 8 &&
+      JSON.stringify(current.enemies.map((enemy) => enemy.id)) ===
+        JSON.stringify(enemyIds) &&
+      JSON.stringify(pickupIds) ===
+        JSON.stringify([
+          20, 21, 22, 23, 24, 25, 26, 28, 33, 34, 60, 61, 62, 63, 64, 65,
+        ]) &&
+      JSON.stringify(availablePickupIds) ===
+        JSON.stringify([20, 21, 22, 23, 24, 25, 26, 28]) &&
+      JSON.stringify(dormantPickupIds) ===
+        JSON.stringify([33, 34, 60, 61, 62, 63, 64, 65]);
+    document.body.dataset.campaignBaseline = authoredBaseline ? "pass" : "fail";
+
     const initialViewmodelFingerprint = viewmodelFingerprint();
-    const initialViewmodelNodes = surface
+    const viewmodelNodes = surface
       .projectionSnapshot()
       .nodes.filter((node) => node.layer === "viewmodel");
-    const retainedViewmodel =
-      initialViewmodelNodes.length === 7 &&
-      initialViewmodelNodes.every((node) => node.layer === "viewmodel");
-    const viewmodelPickExcluded =
+    const viewmodelPassed =
+      viewmodelNodes.length === 7 &&
       surface.pick({
         ray: { kind: "viewport", point: [0, 0] },
         filter: { layers: ["viewmodel"] },
       }).hint === null;
-    const yawBeforeViewmodelProof = current.player.yawDegrees;
-    await performInputIntent([0.25, 0]);
-    await presentationFeedback.settled();
-    const cameraMoved =
-      Math.abs(current.player.yawDegrees - yawBeforeViewmodelProof) > 0.01;
-    const viewmodelCameraRelative =
-      cameraMoved && viewmodelFingerprint() === initialViewmodelFingerprint;
-    await performInputIntent([-0.25, 0]);
-    await presentationFeedback.settled();
-    const pickupIds = current.pickups.map((pickup) => pickup.id);
-    const initiallyAvailable = current.pickups
-      .filter((pickup) => pickup.state === "available")
-      .map((pickup) => pickup.id);
-    const initiallyDormant = current.pickups
-      .filter((pickup) => pickup.state === "dormant")
-      .map((pickup) => pickup.id);
-    const startedAvailable =
-      pickupIds.length === 10 &&
-      JSON.stringify(initiallyAvailable) ===
-        JSON.stringify([20, 21, 22, 23, 24, 25, 26, 28]) &&
-      JSON.stringify(initiallyDormant) === JSON.stringify([33, 34]);
-    const bayRusher = current.projection.find((node) => node.id === 4);
-    const arcWarden = current.projection.find((node) => node.id === 5);
-    const archetypesDistinct =
-      bayRusher?.asset === "mesh/bay-rusher" &&
-      arcWarden?.asset === "mesh/arc-warden" &&
-      current.enemies.find((enemy) => enemy.id === 4)?.attackKind === "melee" &&
-      current.enemies.find((enemy) => enemy.id === 5)?.attackKind ===
-        "rangedHitscan" &&
-      surface.snapshot().includes("sentry-alpha") &&
-      surface.snapshot().includes("sentry-beta");
-    document.body.dataset.enemyArchetypes = archetypesDistinct
-      ? "pass"
+    document.body.dataset.weaponViewmodel = viewmodelPassed ? "pass" : "fail";
+    document.body.dataset.weaponViewmodelLayer = viewmodelPassed
+      ? "viewmodel"
       : "fail";
-    const capacityWalked = await walkPlayerPath([
-      [2.5, 2.5],
-      [3.5, 2.5],
-      [3.5, 3.5],
-      [2.5, 3.5],
-    ]);
-    const closedBulkheadBlockedSight =
-      current.doorAccess.some(
-        (door) => door.id === 30 && door.state === "closed",
-      ) &&
-      current.enemies.find((enemy) => enemy.id === 4)?.combatPosture ===
-        "sleeping";
-    const closedEnemyPosition = current.enemies.find(
-      (enemy) => enemy.id === 4,
-    )?.position;
-    const occlusionBulkheadOpened = await openProgressionBulkhead();
-    await delay(350);
-    current = await requestState("/api/state");
-    const openedBulkheadRestoredSight =
-      current.enemies.find((enemy) => enemy.id === 4)?.combatPosture !==
-      "sleeping";
-    const openedEnemyPosition = current.enemies.find(
-      (enemy) => enemy.id === 4,
-    )?.position;
-    const openedBulkheadRestoredNavigation =
-      closedEnemyPosition !== undefined &&
-      openedEnemyPosition !== undefined &&
-      vectorChanged(openedEnemyPosition, closedEnemyPosition, 0.001) &&
-      eventHistory.includes("NavigationAdvanced");
-    const entityOcclusionPassed =
-      closedBulkheadBlockedSight &&
-      occlusionBulkheadOpened &&
-      openedBulkheadRestoredSight &&
-      openedBulkheadRestoredNavigation;
-    document.body.dataset.entityOcclusion = entityOcclusionPassed
-      ? "pass"
-      : "fail";
-    document.body.dataset.entityOcclusionEvidence = [
-      closedBulkheadBlockedSight,
-      occlusionBulkheadOpened,
-      openedBulkheadRestoredSight,
-      openedBulkheadRestoredNavigation,
-    ].join(":");
-    const firstEnemyDefeated = await damageEnemyTo(4, 0);
-    const secondEnemyDefeated = await damageEnemyTo(5, 0);
-    const pickupFightPassed =
-      firstEnemyDefeated &&
-      secondEnemyDefeated &&
-      current.player.vitalityState === "alive";
-    await presentationFeedback.settled();
-    const materializedDrops = current.pickups
-      .filter((pickup) => pickup.state === "available")
-      .map((pickup) => pickup.id)
-      .filter((pickup) => pickup === 33 || pickup === 34);
-    const dropFacts = eventHistory.filter(
-      (event) => event === "EnemyDropMaterialized",
-    ).length;
-    const dropsMaterialized =
-      JSON.stringify(materializedDrops) === JSON.stringify([33, 34]) &&
-      current.projection.some(
-        (node) => node.id === 33 && node.asset === "mesh/pickup-health",
-      ) &&
-      current.projection.some(
-        (node) => node.id === 34 && node.asset === "mesh/pickup-ammunition",
-      ) &&
-      dropFacts === 2;
-    document.body.dataset.enemyDrops = dropsMaterialized ? "pass" : "fail";
-    const energyAfterFight = inventoryQuantity("ammo/energy-cell");
-    const walked =
-      capacityWalked &&
-      (await walkPlayerPath([
-        [4.5, 3.5],
-        [4.5, 2.5],
-        [5.5, 2.5],
-        [6.5, 2.5],
-        [6.5, 3.5],
-        [5.5, 3.5],
-      ]));
-    await presentationFeedback.settled();
-    const collected = current.pickups
-      .filter((pickup) => pickup.state === "collected")
-      .map((pickup) => pickup.id);
-    const available = current.pickups
-      .filter((pickup) => pickup.state === "available")
-      .map((pickup) => pickup.id);
-    const inventoryAndArmorExact =
-      inventoryQuantity("ammo/energy-cell") === energyAfterFight &&
-      inventoryQuantity("ammo/scatter-shell") === 20 &&
-      inventoryQuantity("weapon/breach-scattergun") === 1 &&
-      inventoryQuantity("weapon/rivet-carbine") === 1 &&
-      inventoryQuantity("supply/med-patch") === 2 &&
-      inventoryQuantity("armor/impact-vest") === 0 &&
-      inventoryQuantity("key/maintenance-pass") === 1 &&
-      current.player.armor === 100 &&
-      current.player.armor === current.player.maxArmor;
-    const worldExact =
-      JSON.stringify(collected) ===
-        JSON.stringify([20, 22, 23, 24, 25, 26, 28]) &&
-      JSON.stringify(available) === JSON.stringify([21, 33, 34]) &&
-      !current.projection.some((node) => collected.includes(node.id)) &&
-      [21, 33, 34].every((pickup) =>
-        current.projection.some((node) => node.id === pickup),
-      );
-    const rejectionExact = eventHistory.includes(
-      "PickupRejectedQuantityOverflow",
-    );
-    const factsProjected =
-      eventHistory.filter((event) => event === "PickupCollected").length >= 7;
-    const cueProjected =
-      includesEvery(feedbackLayer.dataset.animationPulses, ["pickup"]) &&
-      includesEvery(feedbackLayer.dataset.particleKinds, ["pickup"]) &&
-      includesEvery(feedbackAudioStatus.dataset.soundKinds, ["pickup"]);
-    const spreadSelection = resolveKeyboardAction(
-      "Digit2",
-      current.player.bindings,
-    );
-    if (spreadSelection?.kind === "selectWeaponSlot") {
-      await enqueueWeaponSelection(spreadSelection.slot);
-    }
-    await presentationFeedback.settled();
-    const scatterViewmodelFingerprint = viewmodelFingerprint();
-    const selectedSpreadWeapon =
-      current.weapon.item === "weapon/breach-scattergun" &&
-      current.weapon.ammunition === "ammo/scatter-shell" &&
-      current.weapon.ammoRemaining === 20 &&
-      current.inventory?.equippedWeapon === "weapon/breach-scattergun" &&
-      current.inventory.weapons.find((weapon) => weapon.slot === 1)
-        ?.selected === true;
-    const spreadAmmoBefore = current.weapon.ammoRemaining;
-    primaryFireHeld = true;
-    await performInputIntent([0, 0]);
-    const spreadCue = current.presentation.cues.find(
-      (cue) => cue.kind === "attack",
-    );
-    primaryFireHeld = false;
-    await performInputIntent([0, 0]);
-    const spreadPassed =
-      spreadCue?.kind === "attack" &&
-      spreadCue.weapon === "weapon/breach-scattergun" &&
-      spreadCue.attackMode === "spread" &&
-      spreadCue.rayCount === 7 &&
-      current.weapon.ammoRemaining === spreadAmmoBefore - 1;
 
-    const automaticSelection = resolveKeyboardAction(
-      "Digit3",
-      current.player.bindings,
-    );
-    if (automaticSelection?.kind === "selectWeaponSlot") {
-      await enqueueWeaponSelection(automaticSelection.slot);
+    const arrivalReached = await walkPlayerPath([[6.5, 6.5]]);
+    const earlyEnemyDefeated =
+      arrivalReached && (await damageEnemyTo(4, 0, 10));
+    const arrivalSupplyReached =
+      earlyEnemyDefeated &&
+      (await walkPlayerPath([
+        [4.5, 9.5],
+        [7.5, 10.5],
+      ]));
+    const cargoDoorHeight = current.projection.find((node) => node.id === 11)
+      ?.translation?.[1];
+    const cargoDoorOpened =
+      earlyEnemyDefeated &&
+      ((cargoDoorHeight ?? 0) > 4 || eventHistory.includes("DoorOpened"));
+    const sideStorageReached =
+      cargoDoorOpened &&
+      (await walkPlayerPath([
+        [4.5, 15.5],
+        [4.5, 18.5],
+        [2.5, 20.5],
+        [3.5, 21.5],
+        [5.5, 22.5],
+        [6.5, 22.5],
+        [6.5, 24.5],
+        [3.5, 24.5],
+      ]));
+    const secretDiscovered =
+      sideStorageReached &&
+      current.secretRegions.some(
+        (secret) => secret.id === 31 && secret.state === "discovered",
+      );
+    const scattergunCollected =
+      inventoryQuantity("weapon/breach-scattergun") === 1 &&
+      inventoryQuantity("ammo/scatter-shell") >= 14;
+    document.body.dataset.campaignArrival =
+      arrivalReached &&
+      earlyEnemyDefeated &&
+      arrivalSupplyReached &&
+      cargoDoorOpened
+        ? "pass"
+        : "fail";
+    document.body.dataset.campaignArrivalEvidence = [
+      arrivalReached,
+      earlyEnemyDefeated,
+      arrivalSupplyReached,
+      cargoDoorOpened,
+      cargoDoorHeight ?? "missing",
+      current.player.position.join(","),
+    ].join(":");
+    document.body.dataset.campaignStorage =
+      sideStorageReached && secretDiscovered && scattergunCollected
+        ? "pass"
+        : "fail";
+    document.body.dataset.campaignStorageEvidence = [
+      sideStorageReached,
+      secretDiscovered,
+      scattergunCollected,
+      current.player.position.join(","),
+      inventoryQuantity("ammo/scatter-shell"),
+    ].join(":");
+    if (
+      !arrivalReached ||
+      !earlyEnemyDefeated ||
+      !arrivalSupplyReached ||
+      !cargoDoorOpened ||
+      !sideStorageReached ||
+      !secretDiscovered ||
+      !scattergunCollected
+    ) {
+      return false;
     }
-    await presentationFeedback.settled();
-    const automaticViewmodelFingerprint = viewmodelFingerprint();
+
+    const generatorReached =
+      sideStorageReached &&
+      (await walkPlayerPath([
+        [6.5, 26.5],
+        [15.5, 27.5],
+        [18.5, 27.5],
+        [18.5, 24.5],
+      ]));
+    const generatorProtectionReady =
+      generatorReached &&
+      current.player.armor > 0 &&
+      inventoryQuantity("armor/impact-vest") === 0;
+    if (
+      generatorReached &&
+      scattergunCollected &&
+      current.weapon.item !== "weapon/breach-scattergun"
+    ) {
+      await enqueueWeaponSelection(1);
+    }
+    await aimAtEnemy(5);
+    const scatterAmmoBefore = current.weapon.ammoRemaining;
+    const scatterCue = await firePrimary();
+    const spreadObserved =
+      scatterCue?.weapon === "weapon/breach-scattergun" &&
+      scatterCue.attackMode === "spread" &&
+      scatterCue.rayCount === 7 &&
+      current.weapon.ammoRemaining === scatterAmmoBefore - 1;
+    const generatorSentryDefeated = await damageEnemyTo(5, 0, 10);
+    await useCampaignMedPatchIfNeeded();
+    if (current.weapon.item !== "weapon/arc-pistol") {
+      await enqueueWeaponSelection(0);
+    }
+    const generatorLoaderDefeated =
+      (await walkPlayerPath([[21.5, 23.5]])) &&
+      (await damageEnemyTo(41, 0, 10));
+    await useCampaignMedPatchIfNeeded();
+    const generatorWardenDefeated =
+      (await walkPlayerPath([[24.5, 27.5]])) &&
+      (await damageEnemyTo(42, 0, 10));
+    await useCampaignMedPatchIfNeeded();
+    const generatorPickupsReached = await walkPlayerPath([
+      [24.5, 28.5],
+      [27.5, 28.5],
+      [26, 28.5],
+      [26, 23],
+      [23.5, 22.5],
+      [23.5, 20.5],
+      [19.5, 24.5],
+      [18.5, 24.5],
+      [18.5, 28.5],
+    ]);
+    const generatorInventoryReady =
+      generatorPickupsReached &&
+      inventoryQuantity("key/maintenance-pass") === 1 &&
+      inventoryQuantity("armor/impact-vest") === 0 &&
+      inventoryQuantity("weapon/rivet-carbine") === 1;
+    if (
+      generatorInventoryReady &&
+      current.weapon.item !== "weapon/rivet-carbine"
+    ) {
+      await enqueueWeaponSelection(2);
+    }
+    await aimAtEnemy(42);
     const automaticAmmoBefore = current.weapon.ammoRemaining;
-    let automaticShotCount = 0;
-    primaryFireHeld = true;
-    for (let frame = 0; frame < 5; frame += 1) {
-      await performInputIntent([0, 0]);
-      automaticShotCount += current.presentation.cues.filter(
-        (cue) =>
-          cue.kind === "attack" &&
-          cue.weapon === "weapon/rivet-carbine" &&
-          cue.attackMode === "automatic",
-      ).length;
+    const automaticCue = await firePrimary();
+    const automaticObserved =
+      automaticCue?.weapon === "weapon/rivet-carbine" &&
+      automaticCue.attackMode === "automatic" &&
+      current.weapon.ammoRemaining === automaticAmmoBefore - 1;
+    if (current.weapon.item !== "weapon/arc-pistol") {
+      await enqueueWeaponSelection(0);
     }
-    primaryFireHeld = false;
-    await performInputIntent([0, 0]);
-    await presentationFeedback.settled();
-    const automaticAmmunitionSpent =
-      automaticAmmoBefore - current.weapon.ammoRemaining;
-    const automaticPassed =
-      current.weapon.item === "weapon/rivet-carbine" &&
-      current.inventory?.equippedWeapon === "weapon/rivet-carbine" &&
-      current.inventory.weapons.find((weapon) => weapon.slot === 2)
-        ?.selected === true &&
-      automaticShotCount >= 1 &&
-      automaticAmmunitionSpent >= 2 &&
-      automaticAmmunitionSpent <= 5;
-    const weaponFeedbackPassed = includesEvery(
-      feedbackAudioStatus.dataset.soundKinds,
-      ["spreadShot", "automaticShot"],
+    const generatorDoorOpened =
+      (current.projection.find((node) => node.id === 13)?.translation?.[1] ??
+        0) > 4;
+    document.body.dataset.campaignGenerator =
+      generatorReached &&
+      generatorProtectionReady &&
+      generatorSentryDefeated &&
+      generatorLoaderDefeated &&
+      generatorWardenDefeated &&
+      generatorInventoryReady &&
+      generatorDoorOpened
+        ? "pass"
+        : "fail";
+    document.body.dataset.campaignGeneratorEvidence = [
+      generatorReached,
+      generatorProtectionReady,
+      generatorSentryDefeated,
+      generatorLoaderDefeated,
+      generatorWardenDefeated,
+      generatorPickupsReached,
+      generatorInventoryReady,
+      generatorDoorOpened,
+      current.player.position.join(","),
+    ].join(":");
+    if (
+      !generatorReached ||
+      !generatorProtectionReady ||
+      !generatorSentryDefeated ||
+      !generatorLoaderDefeated ||
+      !generatorWardenDefeated ||
+      !generatorInventoryReady ||
+      !generatorDoorOpened
+    ) {
+      return false;
+    }
+    await useCampaignMedPatchIfNeeded(95);
+
+    const returnGantryReached =
+      generatorDoorOpened &&
+      (await walkPlayerPath([
+        [23.5, 29.2],
+        [23.5, 31.5],
+        [15.5, 32.5],
+        [11.5, 28.5],
+        [11.5, 19.5],
+      ]));
+    if (returnGantryReached) {
+      await enqueueInteraction(30);
+    }
+    const keyedDoorOpened = current.doorAccess.some(
+      (door) => door.id === 30 && door.state === "open",
     );
-    const viewmodelPresentationPassed =
-      retainedViewmodel &&
-      viewmodelPickExcluded &&
-      viewmodelCameraRelative &&
-      initialViewmodelFingerprint !== scatterViewmodelFingerprint &&
-      scatterViewmodelFingerprint !== automaticViewmodelFingerprint &&
+    const loopbackTraversed =
+      keyedDoorOpened &&
+      (await walkPlayerPath([
+        [11.5, 15.5],
+        [11.5, 20.5],
+      ]));
+    if (loopbackTraversed) {
+      await enqueueInteraction(6);
+    }
+    const extractionGateOpened =
+      (current.projection.find((node) => node.id === 12)?.translation?.[1] ??
+        0) > 4;
+    const finalArenaReached =
+      extractionGateOpened &&
+      (await walkPlayerPath([
+        [15.5, 29.5],
+        [15.5, 32.5],
+        [21.5, 34.2],
+        [21.5, 36.5],
+      ]));
+    document.body.dataset.campaignLoopback =
+      returnGantryReached &&
+      keyedDoorOpened &&
+      loopbackTraversed &&
+      extractionGateOpened &&
+      finalArenaReached
+        ? "pass"
+        : "fail";
+    document.body.dataset.campaignLoopbackEvidence = [
+      returnGantryReached,
+      keyedDoorOpened,
+      loopbackTraversed,
+      extractionGateOpened,
+      finalArenaReached,
+      current.player.position.join(","),
+    ].join(":");
+    if (
+      !returnGantryReached ||
+      !keyedDoorOpened ||
+      !loopbackTraversed ||
+      !extractionGateOpened ||
+      !finalArenaReached
+    ) {
+      return false;
+    }
+
+    let finalFight: boolean = finalArenaReached;
+    for (const [enemyId, waypoint] of [
+      [51, [20.5, 38.5]],
+      [52, [23.5, 38.5]],
+      [53, [20.5, 42.5]],
+      [54, [24.5, 43.5]],
+    ] as const) {
+      if (!finalFight) {
+        break;
+      }
+      if (enemyId === 51) {
+        finalFight = await walkPlayerPath([waypoint]);
+      }
+      finalFight = finalFight && (await damageEnemyTo(enemyId, 0, 10));
+      await useCampaignMedPatchIfNeeded();
+    }
+    const allEnemiesDefeated =
+      finalFight &&
+      current.enemies.every(
+        (enemy) => enemy.state === "defeated" && enemy.currentHealth === 0,
+      );
+    const finalDoorOpened =
+      (current.projection.find((node) => node.id === 3)?.translation?.[1] ??
+        0) > 4;
+    const beaconReached =
+      allEnemiesDefeated &&
+      (await walkPlayerPath([
+        [21.5, 46.5],
+        [18.5, 46.5],
+      ]));
+    if (beaconReached) {
+      await enqueueInteraction(7);
+    }
+    const beaconActivated =
+      current.extractionBeacon?.state === "active" &&
+      current.extractionBeacon.activatedBy === current.player.id;
+    const exitReached =
+      beaconActivated &&
+      (await walkPlayerPath([
+        [21.5, 48],
+        [21.5, 50.5],
+      ]));
+    if (exitReached) {
+      await enqueueInteraction(32);
+    }
+    const levelCompleted =
+      current.levelComplete &&
+      current.levelExits.some(
+        (exit) =>
+          exit.id === 32 &&
+          exit.state === "completed" &&
+          exit.completedBy === current.player.id,
+      );
+    const materializedDrops = current.pickups.filter(
+      (pickup) => pickup.id >= 33 && pickup.state !== "dormant",
+    ).length;
+    const routePresentation =
+      spreadObserved &&
+      automaticObserved &&
+      initialViewmodelFingerprint.length > 0 &&
       includesEvery(feedbackLayer.dataset.viewmodelWeapons, [
         "weapon/arc-pistol",
         "weapon/breach-scattergun",
         "weapon/rivet-carbine",
       ]) &&
-      includesEvery(feedbackLayer.dataset.viewmodelImpulses, ["attack"]) &&
-      feedbackLayer.dataset.viewmodelStatus === "active" &&
-      feedbackLayer.dataset.viewmodelNodes === "7";
-    document.body.dataset.weaponViewmodelBehavior = viewmodelPresentationPassed
-      ? "pass"
-      : "fail";
-    document.body.dataset.weaponViewmodelEvidence = [
-      retainedViewmodel,
-      viewmodelPickExcluded,
-      viewmodelCameraRelative,
-      initialViewmodelFingerprint !== scatterViewmodelFingerprint,
-      scatterViewmodelFingerprint !== automaticViewmodelFingerprint,
-      feedbackLayer.dataset.viewmodelWeapons ?? "none",
-      feedbackLayer.dataset.viewmodelImpulses ?? "none",
-      feedbackLayer.dataset.viewmodelStatus ?? "none",
-      feedbackLayer.dataset.viewmodelNodes ?? "none",
-    ].join("|");
-    document.body.dataset.pickupEvidence = [
-      pickupIds.join(","),
-      initiallyAvailable.join(","),
-      initiallyDormant.join(","),
-      collected.join(","),
-      available.join(","),
-      (current.inventory?.stacks ?? [])
-        .map((stack) => `${stack.item}:${String(stack.quantity)}`)
-        .join(","),
-      `${String(current.player.armor)}/${String(current.player.maxArmor)}`,
-      pickupFightPassed,
-      archetypesDistinct,
-      materializedDrops.join(","),
-      dropFacts,
-      rejectionExact,
-      cueProjected,
-      selectedSpreadWeapon,
-      spreadPassed,
-      automaticPassed,
-      weaponFeedbackPassed,
-      viewmodelPresentationPassed,
-    ].join("|");
-    return (
-      startedAvailable &&
-      archetypesDistinct &&
-      entityOcclusionPassed &&
-      pickupFightPassed &&
-      dropsMaterialized &&
-      walked &&
-      inventoryAndArmorExact &&
-      worldExact &&
-      rejectionExact &&
-      factsProjected &&
-      cueProjected &&
-      selectedSpreadWeapon &&
-      spreadPassed &&
-      automaticPassed &&
-      weaponFeedbackPassed &&
-      viewmodelPresentationPassed
-    );
-  }
-
-  async function defeatEnemiesForSmoke(): Promise<boolean> {
-    return (
-      (await openProgressionBulkhead()) &&
-      (await damageEnemyTo(4, 0)) &&
-      (await damageEnemyTo(5, 0))
-    );
-  }
-
-  async function openProgressionBulkhead(): Promise<boolean> {
-    if (inventoryQuantity("key/maintenance-pass") === 0) {
-      const collected = await walkPlayerPath([
-        [1.5, 3.5],
-        [2.5, 3.5],
+      includesEvery(feedbackLayer.dataset.animationPulses, [
+        "pickup",
+        "encounter-activated",
+        "defeat",
+        "drop-materialized",
+        "open",
+        "active",
       ]);
-      if (!collected || inventoryQuantity("key/maintenance-pass") !== 1) {
-        return false;
-      }
-    }
-    if (
-      current.doorAccess.some((door) => door.id === 30 && door.state === "open")
-    ) {
-      return true;
-    }
-    if (!(await walkPlayerPath([[3.5, 4.5]]))) {
-      return false;
-    }
-    if (current.interaction?.target !== 30) {
-      return false;
-    }
-    await enqueueInteraction(30);
-    return current.doorAccess.some(
-      (door) => door.id === 30 && door.state === "open",
+    document.body.dataset.campaignFinale =
+      allEnemiesDefeated && finalDoorOpened && beaconActivated && levelCompleted
+        ? "pass"
+        : "fail";
+    document.body.dataset.campaignWeapons = routePresentation ? "pass" : "fail";
+    document.body.dataset.enemyArchetypes = authoredBaseline ? "pass" : "fail";
+    document.body.dataset.enemyDrops =
+      materializedDrops === enemyIds.length ? "pass" : "fail";
+    document.body.dataset.beaconActivation = beaconActivated ? "pass" : "fail";
+    document.body.dataset.progressionRoute = levelCompleted ? "pass" : "fail";
+    document.body.dataset.campaignEvidence = [
+      authoredBaseline,
+      arrivalReached,
+      earlyEnemyDefeated,
+      cargoDoorOpened,
+      sideStorageReached,
+      secretDiscovered,
+      generatorReached,
+      generatorProtectionReady,
+      generatorSentryDefeated,
+      generatorLoaderDefeated,
+      generatorWardenDefeated,
+      generatorInventoryReady,
+      returnGantryReached,
+      keyedDoorOpened,
+      loopbackTraversed,
+      extractionGateOpened,
+      finalArenaReached,
+      allEnemiesDefeated,
+      finalDoorOpened,
+      beaconActivated,
+      levelCompleted,
+      materializedDrops,
+      spreadObserved,
+      automaticObserved,
+    ].join(":");
+    return (
+      authoredBaseline &&
+      viewmodelPassed &&
+      earlyEnemyDefeated &&
+      cargoDoorOpened &&
+      sideStorageReached &&
+      secretDiscovered &&
+      scattergunCollected &&
+      generatorReached &&
+      generatorProtectionReady &&
+      generatorSentryDefeated &&
+      generatorLoaderDefeated &&
+      generatorWardenDefeated &&
+      generatorInventoryReady &&
+      generatorDoorOpened &&
+      returnGantryReached &&
+      keyedDoorOpened &&
+      loopbackTraversed &&
+      extractionGateOpened &&
+      finalArenaReached &&
+      allEnemiesDefeated &&
+      finalDoorOpened &&
+      beaconActivated &&
+      levelCompleted &&
+      materializedDrops === enemyIds.length &&
+      routePresentation
     );
   }
 
@@ -2039,6 +1682,12 @@ export async function mountLoadingBayGame(
         latestMovement = { kind: "move", forward: 0, right: 0 };
         await performInputIntent([0, 0]);
         return true;
+      }
+      if (step > 0 && step % 8 === 0) {
+        latestMovement = { kind: "move", forward: 0, right: 0 };
+        await performInputIntent([0, 0]);
+        await turnPlayerToward(offsetX, offsetZ);
+        latestMovement = action;
       }
       const before = current.player.position;
       await performInputIntent([0, 0]);

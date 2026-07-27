@@ -494,6 +494,7 @@ function feedbackState(): RuntimeBrowserState {
     levelComplete: false,
     interaction: null,
     voxelMeshes: [],
+    lights: [],
     generatedEnvironment: null,
     enemies: [
       {

@@ -136,10 +136,14 @@ fn active_bulkhead_blocks_sight_and_damage_until_opened() {
     entity_mut(&mut project, RANGED)["translation"] = serde_json::json!([2.5, 1.5, 6.5]);
     entity_mut(&mut project, RANGED)["navigation"]["goal"] = serde_json::json!([2.5, 1.5, 6.5]);
     entity_mut(&mut project, RANGED)["enemyCombat"]["hearingRange"] = 0.into();
+    entity_mut(&mut project, MAINTENANCE_BULKHEAD)["translation"] =
+        serde_json::json!([2.5, 1.5, 5.5]);
     entity_mut(&mut project, MAINTENANCE_BULKHEAD)["bounds"] = serde_json::json!({
         "min": [-3.2, -1.5, -0.275],
         "max": [3.2, 1.5, 0.275]
     });
+    entity_mut(&mut project, MAINTENANCE_BULKHEAD)["door"]["openTranslation"] =
+        serde_json::json!([2.5, 5.5, 5.5]);
     entity_mut(&mut project, MAINTENANCE_BULKHEAD)["door"]["access"]["activationRadius"] = 4.into();
     entity_mut(&mut project, PLAYER)["inventory"]["startingStacks"]
         .as_array_mut()
@@ -148,6 +152,7 @@ fn active_bulkhead_blocks_sight_and_damage_until_opened() {
             "item": "key/maintenance-pass",
             "quantity": 1
         }));
+    project["scenes"][0]["voxelEnvironment"] = solid_room_floor();
     let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
 
@@ -351,7 +356,10 @@ fn alerted_enemy_tracks_moving_player_through_transient_navigation_goal() {
 #[test]
 fn simultaneous_attacks_apply_in_entity_order_and_kill_once() {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    strip_campaign_expansion(&mut project);
     activate_encounter_immediately(&mut project);
+    entity_mut(&mut project, EntityId::new(2))["encounter"]["members"] =
+        serde_json::json!([MELEE.raw(), RANGED.raw()]);
     for enemy in [MELEE, RANGED] {
         let entity = entity_mut(&mut project, enemy);
         entity["translation"] = serde_json::json!([1.5 + enemy.raw() as f32 * 0.1, 1.5, 4.5]);
@@ -543,6 +551,8 @@ fn snapshot_rejects_enemy_cooldown_beyond_authored_cadence() {
 
 fn single_enemy_project(enemy: EntityId) -> serde_json::Value {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    strip_campaign_expansion(&mut project);
+    entity_mut(&mut project, PLAYER)["translation"] = serde_json::json!([1.5, 1.5, 2.5]);
     entity_mut(&mut project, MAINTENANCE_BULKHEAD)
         .as_object_mut()
         .unwrap()
@@ -565,7 +575,19 @@ fn single_enemy_project(enemy: EntityId) -> serde_json::Value {
         .iter_mut()
         .find(|entity| entity["id"] == 2)
         .unwrap()["encounter"]["members"] = serde_json::json!([enemy.raw()]);
+    entity_mut(&mut project, enemy)["translation"] = serde_json::json!([1.5, 1.5, 5.5]);
+    entity_mut(&mut project, enemy)["navigation"]["goal"] = serde_json::json!([1.5, 1.5, 5.5]);
     project
+}
+
+fn strip_campaign_expansion(project: &mut serde_json::Value) {
+    project["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|entity| {
+            let id = entity["id"].as_u64().unwrap();
+            !matches!(id, 40..=42 | 50..=54 | 60..=65)
+        });
 }
 
 fn activate_encounter_immediately(project: &mut serde_json::Value) {
@@ -583,14 +605,20 @@ fn entity_mut(project: &mut serde_json::Value, id: EntityId) -> &mut serde_json:
 }
 
 fn solid_room_with_wall() -> serde_json::Value {
+    let mut room = solid_room_floor();
+    let voxels = room["solidVoxels"].as_array_mut().unwrap();
+    for y in 1..=3 {
+        voxels.push(serde_json::json!([4, y, 5]));
+    }
+    room
+}
+
+fn solid_room_floor() -> serde_json::Value {
     let mut voxels = Vec::new();
     for x in 0..=9 {
         for z in 0..=11 {
             voxels.push(serde_json::json!([x, 0, z]));
         }
-    }
-    for y in 1..=3 {
-        voxels.push(serde_json::json!([4, y, 5]));
     }
     serde_json::json!({
         "kind": "solid",

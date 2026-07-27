@@ -12,7 +12,7 @@ use loading_bay_game::{
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const CONVERTED_PROJECT: &str =
     include_str!("../../../../content/projects/converted-wall.project.json");
-const PILLAR: [i64; 3] = [4, 1, 6];
+const PILLAR: [i64; 3] = [2, 1, 6];
 const CONVERTED_WALL: [[i64; 3]; 4] = [[4, 1, 6], [5, 1, 6], [4, 1, 7], [5, 1, 7]];
 
 #[test]

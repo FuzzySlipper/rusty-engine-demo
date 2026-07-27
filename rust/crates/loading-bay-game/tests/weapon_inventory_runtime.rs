@@ -64,7 +64,7 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
     let automatic = uninterrupted
         .attack(PLAYER, ResolvedAttackAction::Attack)
         .unwrap();
-    assert_eq!(quantity(&uninterrupted, "ammo/energy-cell"), 39);
+    assert_eq!(quantity(&uninterrupted, "ammo/energy-cell"), 17);
     assert_eq!(uninterrupted.session().health(ENEMY).unwrap().current, 82);
     assert!(automatic.facts.iter().any(|fact| matches!(
         fact,
@@ -86,7 +86,7 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
     let single = uninterrupted
         .attack(PLAYER, ResolvedAttackAction::Attack)
         .unwrap();
-    assert_eq!(quantity(&uninterrupted, "ammo/energy-cell"), 38);
+    assert_eq!(quantity(&uninterrupted, "ammo/energy-cell"), 16);
     assert_eq!(uninterrupted.session().health(ENEMY).unwrap().current, 22);
     assert!(single.facts.iter().any(|fact| matches!(
         fact,
@@ -159,7 +159,7 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
         .unwrap();
     assert_eq!(actual_lethal, expected_lethal);
     assert_eq!(quantity(&uninterrupted, "ammo/scatter-shell"), 3);
-    assert_eq!(quantity(&uninterrupted, "ammo/energy-cell"), 38);
+    assert_eq!(quantity(&uninterrupted, "ammo/energy-cell"), 16);
     assert!(expected_lethal.facts.iter().any(|fact| matches!(
         fact,
         CombatFact::AttackFired {
@@ -387,6 +387,13 @@ fn activate_encounter_immediately(project: &mut serde_json::Value) {
 
 fn combat_occlusion_runtime() -> GameRuntime {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    project["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|entity| {
+            let id = entity["id"].as_u64().unwrap();
+            !matches!(id, 40..=42 | 50..=54 | 60..=65)
+        });
     let encounter = project["scenes"][0]["entities"]
         .as_array_mut()
         .unwrap()

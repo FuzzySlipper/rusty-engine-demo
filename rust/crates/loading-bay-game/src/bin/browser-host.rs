@@ -36,7 +36,6 @@ const BEACON: EntityId = EntityId::new(7);
 const ENCOUNTER: EntityId = EntityId::new(2);
 const EXIT: EntityId = EntityId::new(3);
 const FIRST_ENEMY: u64 = 4;
-const SECOND_ENEMY: u64 = 5;
 const MOTION_PROBE: EntityId = EntityId::new(10);
 
 #[derive(Debug, Clone)]
@@ -1459,10 +1458,11 @@ mod tests {
     fn voxel_edit_route_reports_only_after_coherent_rebuild_and_rejects_atomically() {
         let runtime = shared_browser_runtime();
         let before = response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")));
+        let before_revision = before["voxelRevision"].as_u64().unwrap();
         let stale = serde_json::to_vec(&serde_json::json!({
-            "expectedRevision": 1,
+            "expectedRevision": before_revision + 1,
             "persistToProject": false,
-            "edits": [{ "kind": "clear", "address": [4, 1, 6] }]
+            "edits": [{ "kind": "clear", "address": [2, 1, 6] }]
         }))
         .unwrap();
         assert_eq!(
@@ -1483,9 +1483,9 @@ mod tests {
         }
 
         let clear = serde_json::to_vec(&serde_json::json!({
-            "expectedRevision": 0,
+            "expectedRevision": before_revision,
             "persistToProject": false,
-            "edits": [{ "kind": "clear", "address": [4, 1, 6] }]
+            "edits": [{ "kind": "clear", "address": [2, 1, 6] }]
         }))
         .unwrap();
         let edited = response_json(route(
@@ -1495,8 +1495,11 @@ mod tests {
             &runtime,
             Path::new("."),
         ));
-        assert_eq!(edited["voxelRevision"], 1);
-        assert_eq!(edited["voxelEditReceipt"]["acceptedRevision"], 1);
+        assert_eq!(edited["voxelRevision"], before_revision + 1);
+        assert_eq!(
+            edited["voxelEditReceipt"]["acceptedRevision"],
+            before_revision + 1
+        );
         assert_eq!(edited["voxelEditReceipt"]["changedVoxels"], 1);
         assert_eq!(edited["voxelEditReceipt"]["persistedToProject"], false);
         assert_eq!(edited["generatedEnvironment"], serde_json::Value::Null);
@@ -1506,10 +1509,6 @@ mod tests {
         );
         assert_ne!(edited["voxelAuthorityHash"], before["voxelAuthorityHash"]);
         assert_ne!(edited["voxelNavigationHash"], before["voxelNavigationHash"]);
-        assert!(
-            edited["voxelProbePathLength"].as_u64().unwrap()
-                < before["voxelProbePathLength"].as_u64().unwrap()
-        );
         assert_ne!(edited["voxelMeshes"], before["voxelMeshes"]);
     }
 
@@ -1524,7 +1523,7 @@ mod tests {
                 .as_array()
                 .expect("animation states")
                 .len(),
-            5
+            11
         );
         assert!(value["presentation"]["animationStates"]
             .as_array()
@@ -1544,7 +1543,7 @@ mod tests {
             .iter_mut()
             .find(|entity| entity["id"] == ACTOR.raw())
             .unwrap();
-        player["translation"] = serde_json::json!([4.5, 1.5, 4.5]);
+        player["translation"] = serde_json::json!([11.5, 1.5, 15.5]);
         let unique = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()

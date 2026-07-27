@@ -14,7 +14,7 @@ const CURRENT_PROJECT: &str = include_str!("../../../../content/projects/loading
 const LEGACY_PROJECT: &str =
     include_str!("../../../../content/generated/encounter-gate.project.json");
 const PLAYER: EntityId = EntityId::new(1);
-const EXIT: EntityId = EntityId::new(3);
+const EXIT: EntityId = EntityId::new(12);
 const ENEMY: EntityId = EntityId::new(4);
 const SWITCH: EntityId = EntityId::new(6);
 
@@ -53,7 +53,7 @@ fn authored_save_stays_static_while_independent_snapshot_reopens_live_values() {
 
     assert_eq!(runtime.tick().raw(), 1);
     assert_eq!(runtime.session().health(ENEMY).unwrap().current, 40);
-    assert_eq!(inventory_quantity(&runtime, "ammo/energy-cell"), 39);
+    assert_eq!(inventory_quantity(&runtime, "ammo/energy-cell"), 17);
     assert_eq!(
         runtime
             .session()
@@ -103,7 +103,7 @@ fn authored_save_stays_static_while_independent_snapshot_reopens_live_values() {
     let initial = GameRuntime::from_admitted_project(initial);
     assert_eq!(initial.tick().raw(), 0);
     assert_eq!(initial.session().health(ENEMY).unwrap().current, 100);
-    assert_eq!(inventory_quantity(&initial, "ammo/energy-cell"), 40);
+    assert_eq!(inventory_quantity(&initial, "ammo/energy-cell"), 18);
     assert_eq!(
         initial.session().door(EXIT).unwrap().state,
         DoorState::Closed
@@ -113,7 +113,7 @@ fn authored_save_stays_static_while_independent_snapshot_reopens_live_values() {
     assert_eq!(encode_game_snapshot(&reopened).unwrap(), snapshot);
     assert_eq!(reopened.tick().raw(), 1);
     assert_eq!(reopened.session().health(ENEMY).unwrap().current, 40);
-    assert_eq!(inventory_quantity(&reopened, "ammo/energy-cell"), 39);
+    assert_eq!(inventory_quantity(&reopened, "ammo/energy-cell"), 17);
     assert_eq!(
         reopened.session().door(EXIT).unwrap().state,
         DoorState::Open

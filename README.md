@@ -85,12 +85,12 @@ renderer projection readouts while Loading Bay retains its schema and domain-ope
 - New game semantics belong here first. Do not add a generic Engine hook merely to make a demo
   feature fit.
 
-The campaign contract for evolving this proof into a compact, original FPS is
+The campaign contract for this compact, original FPS is
 [docs/fps-product-architecture.md](docs/fps-product-architecture.md). It records the current
 proof-shaped baseline, sole-authority map, fixed Rust phase order, bounded game-session contract,
 cold/dynamic/transient state split, original level route, measurable product budgets, and
-acceptance corpus. It is an implementation target, not a claim that the full campaign already
-ships.
+acceptance corpus. The authored route and its browser playtest checkpoints are recorded in
+[docs/loading-bay-playtest.md](docs/loading-bay-playtest.md).
 
 Exact transfer provenance is recorded in [docs/source-provenance.md](docs/source-provenance.md).
 Renderer/session counter semantics, budgets, and the current headed LAN baseline are recorded in

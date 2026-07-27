@@ -6,15 +6,13 @@ use loading_bay_game::{
     DoorState, EncounterState, EnemyAttackKind, EnemyCombatPosture, EnemyState,
     ExtractionBeaconState, GameRuntime, ItemKind, LevelExitState, NavigationState,
     PickupCollectionCause, PickupState, PlayerInputSessionView, RequiredKeyPolicy,
-    SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretRegionState, VitalityState,
-    LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
+    SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretRegionState, StoredLight,
+    VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
 };
 use serde::Serialize;
 
 use super::presentation::{project_presentation, BrowserFeedbackProjection, BrowserPresentation};
-use super::{
-    BrowserRuntime, ACTOR, BEACON, ENCOUNTER, EXIT, FIRST_ENEMY, MOTION_PROBE, SECOND_ENEMY,
-};
+use super::{BrowserRuntime, ACTOR, BEACON, ENCOUNTER, EXIT, FIRST_ENEMY, MOTION_PROBE};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -218,6 +216,15 @@ struct BrowserGeneratedEnvironment {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct BrowserAuthoredLight {
+    id: u64,
+    translation: Option<[f32; 3]>,
+    rotation: [f32; 4],
+    light: StoredLight,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(super) struct BrowserState {
     #[serde(flatten)]
     pub(super) dynamic: BrowserDynamicState,
@@ -267,6 +274,7 @@ pub(super) struct BrowserStaticResources {
     voxel_navigation_hash: String,
     voxel_probe_path_length: usize,
     voxel_meshes: Vec<BrowserVoxelMeshChunk>,
+    lights: Vec<BrowserAuthoredLight>,
     generated_environment: Option<BrowserGeneratedEnvironment>,
 }
 
@@ -299,16 +307,18 @@ pub(super) fn browser_dynamic_state(
             visible: node.visible,
         })
         .collect();
-    let enemies = [FIRST_ENEMY, SECOND_ENEMY]
-        .into_iter()
-        .map(|raw| {
-            let view = runtime
-                .session()
-                .enemy(EntityId::new(raw))
-                .expect("browser enemy");
-            let combat = runtime.session().enemy_combat(EntityId::new(raw));
+    let enemy_ids = runtime
+        .session()
+        .enemy_combatants()
+        .map(|combatant| combatant.entity)
+        .collect::<Vec<_>>();
+    let enemies = enemy_ids
+        .iter()
+        .map(|entity| {
+            let view = runtime.session().enemy(*entity).expect("browser enemy");
+            let combat = runtime.session().enemy_combat(*entity);
             BrowserEnemyState {
-                id: raw,
+                id: entity.raw(),
                 name: view.entity_view.name,
                 state: match view.state {
                     EnemyState::Alive => "alive",
@@ -322,12 +332,12 @@ pub(super) fn browser_dynamic_state(
                     .to_array(),
                 current_health: runtime
                     .session()
-                    .health(EntityId::new(raw))
+                    .health(*entity)
                     .expect("browser enemy health")
                     .current,
                 max_health: runtime
                     .session()
-                    .health(EntityId::new(raw))
+                    .health(*entity)
                     .expect("browser enemy health")
                     .config
                     .max,
@@ -663,14 +673,7 @@ pub(super) fn browser_dynamic_state(
         level_complete: runtime.is_level_complete(),
         interaction,
         enemies,
-        presentation: project_presentation(
-            runtime,
-            ACTOR,
-            &[EntityId::new(FIRST_ENEMY), EntityId::new(SECOND_ENEMY)],
-            EXIT,
-            BEACON,
-            feedback,
-        ),
+        presentation: project_presentation(runtime, ACTOR, &enemy_ids, EXIT, BEACON, feedback),
         last_events,
     }
 }
@@ -818,6 +821,24 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
             mesh_quads,
         }
     });
+    let document = host.authored.document();
+    let authored_scene = document
+        .scenes
+        .iter()
+        .find(|scene| scene.id == document.entry_scene)
+        .expect("admitted browser entry scene");
+    let lights = authored_scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            entity.light.map(|light| BrowserAuthoredLight {
+                id: entity.id,
+                translation: entity.translation,
+                rotation: entity.rotation,
+                light,
+            })
+        })
+        .collect();
     BrowserStaticResources {
         host_session_id: host.host_session_id.clone(),
         static_revision: browser_static_revision(host),
@@ -835,6 +856,7 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
             )
             .map_or(0, |step| step.path_len),
         voxel_meshes,
+        lights,
         generated_environment,
     }
 }

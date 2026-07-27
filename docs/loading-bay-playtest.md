@@ -1,0 +1,75 @@
+# Loading Bay campaign playtest
+
+Loading Bay is a compact original FPS route composed as immutable project data and admitted by the
+same Rust runtime used by the browser product. It targets a five-to-ten-minute exploratory first
+run. A direct expert route is intentionally shorter; the extra time comes from reading the space,
+checking the optional storage and secret branches, learning the two enemy silhouettes, and using
+the inventory rather than from slow movement.
+
+## Authored artifact
+
+`ts/packages/project-content/src/encounter-project.ts` is the source of truth.
+`pnpm run generate:content` produces the checked-in artifacts:
+
+| Artifact                                    | SHA-256                                                            |
+| ------------------------------------------- | ------------------------------------------------------------------ |
+| `content/projects/loading-bay.project.json` | `98905a4a139137993e6172f153261d1e06d4ae77caa20ee405767010f0ea51d6` |
+| `content/projects/relay-annex.project.json` | `d98982841e9af7e53fdd16262d28c752e63d17be7fe3dbeed3ac3e1368a2f0c7` |
+
+The Loading Bay artifact contains one scene, 3,931 material voxels, 47 entities, 15 retained asset
+identities, nine item definitions, eight enemies, three encounters, eight authored pickup caches,
+eight dormant defeat drops, five doors, eight lights, one secret, and one level exit. The composer
+sorts entity IDs and emits voxels in deterministic address order. The content test regenerates both
+projects in memory and requires deep equality with the checked-in JSON, so content drift fails the
+normal verification gate.
+
+Relay Annex changes the room arrangement, player start, initial enemy placement and tuning,
+navigation target/speed, and beacon radius through immutable authoring options. It uses the same
+Rust services, host loop, protocol, renderer, and browser shell; there is no variant-specific
+gameplay loop.
+
+## Route checkpoints
+
+1. **Arrival floor.** Start with the arc pistol, 18 energy cells, and one med patch. Collect the
+   visible energy cache and defeat the first Bay Rusher to open the cargo pressure door.
+2. **Side storage.** The straight generator route is visibly gated. The optional west branch gives
+   shells, a med patch, and the breach scattergun. Its sealed manifest recess records the one
+   secret and contains the impact vest.
+3. **Generator floor.** Fight a mixed three-enemy group around a coolant hazard. The room supplies
+   two med patches, the rivet carbine, and the maintenance pass. Defeat drops materialize exactly
+   once as health or energy ammunition.
+4. **Maintenance loopback.** Return to the earlier maintenance bulkhead, open it with the retained
+   pass, and use the generator interlock. The same Rust switch operation closes the generator door
+   and opens the extraction gate, making the changed route legible in the world.
+5. **Extraction approach.** Follow the opened gantry route past the moving status runner and
+   extraction beacon. The player now has three weapons with distinct ammunition and firing modes.
+6. **Dock encounter.** Crossing the dock threshold activates two Bay Rushers and two Arc Wardens.
+   Closed entity doors participate in canonical occlusion for both player and enemy rays.
+7. **Exit.** After the encounter clears, activate the level exit. The completion dialog permits a
+   completed save, and Continue restores that exact completed Rust snapshot in a fresh host
+   process.
+
+## Product proof checklist
+
+The real Chromium gate starts from the main menu with a fresh save root and drives physical
+keyboard, pointer-look, primary-fire, weapon-selection, interaction, item-use, and focus behavior
+through the browser shell. It requires all of the following before reporting success:
+
+- all three encounters activate and clear, all eight enemies are defeated, and all eight dormant
+  drops materialize;
+- the sidearm, spread weapon, and automatic weapon each produce their distinct accepted attack cue;
+- pickup quantities, health use, armor, key ownership, secret discovery, door/interlock state,
+  beacon activation, and level completion come from authoritative session projections;
+- renderer timing reports animation-frame cadence and backend submission duration from the one
+  shared `RendererSurface`, with bounded input, edge, fact, snapshot, and outbound queues;
+- death/restart focus, narrow and desktop overlays, route disposal/remount, resize, reset, and
+  viewmodel exclusion from picking remain intact;
+- a fresh browser and host begin a new authored runtime, while Continue against the isolated
+  campaign save root restores the completed slot and completion dialog;
+- a separate stored-project round trip preserves live voxel edits, and the converted-asset and
+  schema-6 migration products still load through their supported compatibility paths.
+
+The automated route is a correctness and lifecycle proof, not a human-duration benchmark. A manual
+playtest should record start-to-exit time separately and note optional branch use, deaths, remaining
+health/armor, and ammunition at each checkpoint. Any tuning change belongs in immutable project
+content; it must not add browser-owned combat or progression state.

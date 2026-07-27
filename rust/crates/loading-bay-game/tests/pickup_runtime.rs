@@ -17,7 +17,7 @@ fn authored_pickups_are_visible_non_solid_objects_with_explicit_item_quantities(
     let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
     let pickups = runtime.session().pickups().collect::<Vec<_>>();
 
-    assert_eq!(pickups.len(), 10);
+    assert_eq!(pickups.len(), 16);
     assert_eq!(
         pickups
             .iter()
@@ -28,16 +28,22 @@ fn authored_pickups_are_visible_non_solid_objects_with_explicit_item_quantities(
             ))
             .collect::<Vec<_>>(),
         [
-            (20, "ammo/energy-cell", 160),
-            (21, "ammo/energy-cell", 1),
-            (22, "ammo/scatter-shell", 12),
+            (20, "ammo/energy-cell", 12),
+            (21, "supply/med-patch", 1),
+            (22, "ammo/scatter-shell", 6),
             (23, "weapon/breach-scattergun", 1),
-            (24, "supply/med-patch", 1),
+            (24, "supply/med-patch", 2),
             (25, "armor/impact-vest", 1),
             (26, "key/maintenance-pass", 1),
             (28, "weapon/rivet-carbine", 1),
             (33, "supply/med-patch", 1),
-            (34, "ammo/energy-cell", 20),
+            (34, "ammo/energy-cell", 10),
+            (60, "supply/med-patch", 1),
+            (61, "ammo/energy-cell", 10),
+            (62, "supply/med-patch", 1),
+            (63, "ammo/energy-cell", 10),
+            (64, "supply/med-patch", 1),
+            (65, "ammo/energy-cell", 10),
         ]
     );
     for pickup in pickups {
@@ -68,7 +74,7 @@ fn pickup_collection_atomically_grants_inventory_consumes_world_and_is_idempoten
     assert_eq!(receipt.disposition, PickupDisposition::Collected);
     assert_eq!(
         quantity(&runtime, "ammo/energy-cell"),
-        200,
+        30,
         "the existing ammunition stack is incremented exactly"
     );
     assert!(matches!(
@@ -93,7 +99,7 @@ fn pickup_collection_atomically_grants_inventory_consumes_world_and_is_idempoten
         [PickupFact::Collected {
             pickup: ENERGY_FILL,
             actor: PLAYER,
-            quantity: 160,
+            quantity: 12,
             ..
         }]
     ));
@@ -103,13 +109,14 @@ fn pickup_collection_atomically_grants_inventory_consumes_world_and_is_idempoten
     assert_eq!(repeated.disposition, PickupDisposition::Repeated);
     assert!(repeated.facts.is_empty());
     assert!(repeated.cues.is_empty());
-    assert_eq!(quantity(&runtime, "ammo/energy-cell"), 200);
+    assert_eq!(quantity(&runtime, "ammo/energy-cell"), 30);
 }
 
 #[test]
 fn capacity_rejection_leaves_inventory_pickup_and_snapshot_byte_identical() {
+    let project = project_with_energy_overflow();
     let mut runtime = with_overlap(
-        GameRuntime::from_stored_project(PROJECT).unwrap(),
+        GameRuntime::from_stored_project(&project.to_string()).unwrap(),
         ENERGY_FILL,
     );
     runtime.collect_pickup(PLAYER, ENERGY_FILL, 1, 1).unwrap();
@@ -123,8 +130,8 @@ fn capacity_rejection_leaves_inventory_pickup_and_snapshot_byte_identical() {
         error,
         RuntimeError::Pickup(PickupRejection::Inventory(
             InventoryRejection::QuantityOverflow {
-                current: 200,
-                requested: 1,
+                current: 30,
+                requested: 171,
                 limit: 200,
                 ..
             }
@@ -155,11 +162,11 @@ fn every_pickup_family_round_trips_and_authored_restart_restores_availability() 
         }
     }
 
-    assert_eq!(quantity(&runtime, "ammo/scatter-shell"), 20);
+    assert_eq!(quantity(&runtime, "ammo/scatter-shell"), 14);
     assert_eq!(quantity(&runtime, "weapon/breach-scattergun"), 1);
     assert_eq!(quantity(&runtime, "weapon/rivet-carbine"), 1);
-    assert_eq!(quantity(&runtime, "ammo/energy-cell"), 40);
-    assert_eq!(quantity(&runtime, "supply/med-patch"), 2);
+    assert_eq!(quantity(&runtime, "ammo/energy-cell"), 18);
+    assert_eq!(quantity(&runtime, "supply/med-patch"), 3);
     assert_eq!(
         quantity(&runtime, "armor/impact-vest"),
         0,
@@ -194,7 +201,7 @@ fn every_pickup_family_round_trips_and_authored_restart_restores_availability() 
     let encoded = encode_game_snapshot(&runtime).unwrap();
     let reopened = decode_game_snapshot(&encoded).unwrap();
     assert_eq!(encode_game_snapshot(&reopened).unwrap(), encoded);
-    assert_eq!(quantity(&reopened, "ammo/scatter-shell"), 20);
+    assert_eq!(quantity(&reopened, "ammo/scatter-shell"), 14);
     assert_eq!(reopened.session().health(PLAYER).unwrap().armor, 100);
     assert!(reopened
         .session()
@@ -279,7 +286,7 @@ fn schema_eleven_rejects_future_pickup_state_but_migrates_when_fields_are_absent
     strip_snapshot_weapon_item_fields(&mut snapshot);
     let migrated = decode_game_snapshot(&snapshot.to_string()).unwrap();
     assert_eq!(migrated.session().pickups().len(), 0);
-    assert_eq!(quantity(&migrated, "ammo/energy-cell"), 40);
+    assert_eq!(quantity(&migrated, "ammo/energy-cell"), 18);
 }
 
 #[test]
@@ -335,7 +342,20 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
         GameRuntime::from_stored_project(&encode_project_document(&migrated.project).unwrap())
             .unwrap();
     assert_eq!(runtime.session().pickups().len(), 0);
-    assert_eq!(quantity(&runtime, "ammo/energy-cell"), 40);
+    assert_eq!(quantity(&runtime, "ammo/energy-cell"), 18);
+}
+
+fn project_with_energy_overflow() -> serde_json::Value {
+    let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    let overflow = project["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity["id"] == ENERGY_OVERFLOW.raw())
+        .unwrap();
+    overflow["pickup"]["item"] = "ammo/energy-cell".into();
+    overflow["pickup"]["quantity"] = 171.into();
+    project
 }
 
 fn strip_snapshot_enemy_archetype_fields(snapshot: &mut serde_json::Value) {

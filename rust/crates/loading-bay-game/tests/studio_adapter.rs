@@ -33,25 +33,25 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         response["project"]["inspections"]["catalog"]["entryCount"],
         15
     );
-    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 22);
+    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 47);
     assert_eq!(
         response["project"]["inspections"]["entityState"]["entityCount"],
-        22
+        47
     );
     assert_eq!(
         response["project"]["inspections"]["persistence"]["artifactCount"],
         1
     );
-    assert_eq!(response["project"]["voxel"]["solidVoxelCount"], 366);
-    assert_eq!(response["project"]["loadingBay"]["doorCount"], 2);
-    assert_eq!(response["project"]["loadingBay"]["enemyCount"], 2);
+    assert_eq!(response["project"]["voxel"]["solidVoxelCount"], 3_931);
+    assert_eq!(response["project"]["loadingBay"]["doorCount"], 5);
+    assert_eq!(response["project"]["loadingBay"]["enemyCount"], 8);
     assert_eq!(response["project"]["sceneHierarchy"]["sceneId"], 1);
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"]
             .as_array()
             .unwrap()
             .len(),
-        22
+        47
     );
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"][0]["label"],
@@ -67,7 +67,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        49
+        72
     );
     assert_eq!(
         response["project"]["projection"]["ops"][0]["op"],
@@ -342,10 +342,10 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
             "object": {
-                "entityId": 50,
+                "entityId": 200,
                 "name": "authoring-root",
                 "parentEntityId": null,
-                "childOrder": 50,
+                "childOrder": 200,
                 "transform": {
                     "translation": [1.0, 2.0, 3.0],
                     "rotation": [0.0, 0.0, 0.0, 1.0],
@@ -369,9 +369,9 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
             "object": {
-                "entityId": 51,
+                "entityId": 201,
                 "name": "work-light",
-                "parentEntityId": 50,
+                "parentEntityId": 200,
                 "childOrder": 0,
                 "transform": {
                     "translation": [0.0, 4.0, 0.0],
@@ -396,7 +396,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         }),
     );
     assert_eq!(lit["type"], "projectMutationApplied", "{lit:#}");
-    assert_eq!(lit["project"]["projectionReadout"]["retainedLights"], 1);
+    assert_eq!(lit["project"]["projectionReadout"]["retainedLights"], 9);
     assert!(lit["project"]["projection"]["ops"]
         .as_array()
         .unwrap()
@@ -412,7 +412,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "requestId": "full-transform",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 50,
+            "entityId": 200,
             "transform": {
                 "translation": [3.0, 2.0, 1.0],
                 "rotation": [0.0, 0.70710677, 0.0, 0.70710677],
@@ -431,7 +431,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "requestId": "appearance",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 50,
+            "entityId": 200,
             "appearance": {
                 "kind": "staticMesh",
                 "asset": "mesh/player-marker",
@@ -446,7 +446,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         .iter()
         .find(|operation| {
             operation["op"] == "createStaticMeshInstance"
-                && operation["instance"]["metadata"]["sourceEntity"] == 50
+                && operation["instance"]["metadata"]["sourceEntity"] == 200
         })
         .unwrap();
     assert_eq!(
@@ -467,7 +467,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "requestId": "animated-appearance",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 50,
+            "entityId": 200,
             "appearance": {
                 "kind": "animatedMesh",
                 "asset": "mesh-animation/kenney-retro-character-medium",
@@ -492,7 +492,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         .iter()
         .find(|operation| {
             operation["op"] == "createAnimatedMeshInstance"
-                && operation["instance"]["metadata"]["sourceEntity"] == 50
+                && operation["instance"]["metadata"]["sourceEntity"] == 200
         })
         .unwrap();
     assert_eq!(animated_instance["instance"]["playback"]["clip"], "run");
@@ -507,7 +507,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "requestId": "invalid-animation-clip",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 50,
+            "entityId": 200,
             "appearance": {
                 "kind": "animatedMesh",
                 "asset": "mesh-animation/kenney-retro-character-medium",
@@ -526,7 +526,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "protocolVersion": 6,
             "requestId": "collision",
             "expectedProjectHash": hash,
-            "entityId": 50,
+            "entityId": 200,
             "collision": { "enabled": true, "staticCollider": false }
         }),
     );
@@ -540,7 +540,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "protocolVersion": 6,
             "requestId": "kinematic",
             "expectedProjectHash": hash,
-            "entityId": 50,
+            "entityId": 200,
             "kinematic": {
                 "halfExtents": [0.5, 0.75, 0.25],
                 "velocity": [0.0, 0.0, 0.0]
@@ -558,7 +558,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "requestId": "rename",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 50,
+            "entityId": 200,
             "name": "authored-display"
         }),
     );
@@ -574,8 +574,8 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "requestId": "cycle",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 50,
-            "parentEntityId": 51,
+            "entityId": 200,
+            "parentEntityId": 201,
             "childOrder": 0
         }),
     );
@@ -591,12 +591,12 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
             "requestId": "delete-subtree",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 50
+            "entityId": 200
         }),
     );
     assert_eq!(deleted["type"], "projectMutationApplied", "{deleted:#}");
     assert_eq!(deleted["receipt"]["removedObjects"], 2);
-    assert_eq!(deleted["project"]["projectionReadout"]["retainedLights"], 0);
+    assert_eq!(deleted["project"]["projectionReadout"]["retainedLights"], 8);
 
     let persisted = decode_project_document(&fs::read_to_string(root.project_file()).unwrap())
         .unwrap()
@@ -604,7 +604,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
     assert!(persisted.scenes[0]
         .entities
         .iter()
-        .all(|entity| !matches!(entity.id, 50 | 51)));
+        .all(|entity| !matches!(entity.id, 200 | 201)));
 }
 
 #[test]

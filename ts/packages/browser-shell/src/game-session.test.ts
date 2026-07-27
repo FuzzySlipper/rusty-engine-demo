@@ -135,6 +135,7 @@ const resources = {
   voxelNavigationHash: "def",
   voxelProbePathLength: 2,
   voxelMeshes: [],
+  lights: [],
   generatedEnvironment: null,
 } as const;
 

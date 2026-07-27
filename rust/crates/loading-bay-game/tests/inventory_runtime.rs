@@ -77,7 +77,7 @@ fn authored_item_vocabulary_and_starting_inventory_admit_as_read_only_views() {
             .collect::<Vec<_>>(),
         [
             ("weapon/arc-pistol", 1),
-            ("ammo/energy-cell", 40),
+            ("ammo/energy-cell", 18),
             ("supply/med-patch", 1),
         ]
     );
@@ -106,7 +106,7 @@ fn authored_item_vocabulary_and_starting_inventory_admit_as_read_only_views() {
             &runtime.session().inventory(PLAYER).unwrap().stacks,
             "ammo/energy-cell"
         ),
-        40
+        18
     );
 }
 
@@ -123,15 +123,15 @@ fn inventory_commands_are_atomic_ordered_and_report_exact_before_after_state() {
         },
     )
     .unwrap();
-    assert_eq!(quantity(&receipt.before.stacks, "ammo/energy-cell"), 40);
-    assert_eq!(quantity(&receipt.after.stacks, "ammo/energy-cell"), 50);
+    assert_eq!(quantity(&receipt.before.stacks, "ammo/energy-cell"), 18);
+    assert_eq!(quantity(&receipt.after.stacks, "ammo/energy-cell"), 28);
     assert_eq!(
         receipt.facts,
         [InventoryFact::QuantityChanged {
             owner: PLAYER,
             item: item("ammo/energy-cell"),
-            before: 40,
-            after: 50,
+            before: 18,
+            after: 28,
         }]
     );
 
@@ -141,7 +141,7 @@ fn inventory_commands_are_atomic_ordered_and_report_exact_before_after_state() {
         2,
         InventoryAction::Grant {
             item: item("ammo/energy-cell"),
-            quantity: 151,
+            quantity: 173,
         },
     )
     .unwrap_err();
@@ -149,8 +149,8 @@ fn inventory_commands_are_atomic_ordered_and_report_exact_before_after_state() {
         overflow,
         InventoryRejection::QuantityOverflow {
             item: item("ammo/energy-cell"),
-            current: 50,
-            requested: 151,
+            current: 28,
+            requested: 173,
             limit: 200,
         }
     );
@@ -169,7 +169,7 @@ fn inventory_commands_are_atomic_ordered_and_report_exact_before_after_state() {
         },
     )
     .unwrap();
-    assert_eq!(quantity(&consume.after.stacks, "ammo/energy-cell"), 45);
+    assert_eq!(quantity(&consume.after.stacks, "ammo/energy-cell"), 23);
 
     let moved = apply(
         &mut runtime,
@@ -510,14 +510,14 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
             .unwrap()
             .starting_stacks[1]
             .quantity,
-        40
+        18
     );
     assert_eq!(
         quantity(
             &runtime.session().inventory(PLAYER).unwrap().stacks,
             "ammo/energy-cell"
         ),
-        31
+        9
     );
     assert!(!encode_project_document(&authored)
         .unwrap()

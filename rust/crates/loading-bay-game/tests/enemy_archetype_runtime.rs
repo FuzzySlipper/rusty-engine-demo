@@ -22,7 +22,7 @@ fn authored_archetypes_stay_dormant_until_the_bounded_encounter_activates() {
     let ranged = runtime.session().enemy_combat(RANGED).unwrap();
 
     assert_eq!(encounter.state, EncounterState::Dormant);
-    assert_eq!(encounter.activation_radius, Some(5.25));
+    assert_eq!(encounter.activation_radius, Some(6.0));
     assert_eq!(melee.config.attack.kind, EnemyAttackKind::Melee);
     assert_eq!(ranged.config.attack.kind, EnemyAttackKind::RangedHitscan);
     assert_eq!(
@@ -105,7 +105,7 @@ fn authored_archetypes_stay_dormant_until_the_bounded_encounter_activates() {
     );
 
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
-    entity_mut(&mut project, PLAYER)["translation"] = serde_json::json!([1.5, 1.5, 3.5]);
+    entity_mut(&mut project, PLAYER)["translation"] = serde_json::json!([7.5, 1.5, 8.5]);
     let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     let mut inside = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
     let receipt = inside.run_fixed_tick().unwrap();
@@ -401,6 +401,7 @@ fn project_with_overlapping_encounters(count: usize) -> serde_json::Value {
         let mut instance = encounter.clone();
         instance["id"] = (10_000 + index as u64).into();
         instance["name"] = format!("bounded-encounter-{index}").into();
+        instance["translation"] = serde_json::json!([1.5, 1.5, 3.5]);
         instance["encounter"]["members"] = serde_json::json!([enemy_id]);
         entities.push(instance);
     }
@@ -409,10 +410,18 @@ fn project_with_overlapping_encounters(count: usize) -> serde_json::Value {
 
 fn single_melee_project() -> serde_json::Value {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    const CAMPAIGN_ONLY: [u64; 11] = [40, 41, 42, 50, 51, 52, 53, 54, 60, 61, 62];
     project["scenes"][0]["entities"]
         .as_array_mut()
         .unwrap()
-        .retain(|entity| entity["id"] != RANGED.raw() && entity["id"] != RANGED_DROP.raw());
+        .retain(|entity| {
+            let id = entity["id"].as_u64().unwrap();
+            id != RANGED.raw()
+                && id != RANGED_DROP.raw()
+                && !CAMPAIGN_ONLY.contains(&id)
+                && !(63..=65).contains(&id)
+        });
+    entity_mut(&mut project, PLAYER)["translation"] = serde_json::json!([1.5, 1.5, 2.5]);
     let encounter = entity_mut(&mut project, ENCOUNTER);
     encounter["encounter"]["members"] = serde_json::json!([MELEE.raw()]);
     encounter["encounter"]["activationRadius"] = serde_json::Value::Null;

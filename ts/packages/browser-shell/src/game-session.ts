@@ -70,6 +70,7 @@ type StaticStateKey =
   | "voxelNavigationHash"
   | "voxelProbePathLength"
   | "voxelMeshes"
+  | "lights"
   | "generatedEnvironment";
 
 type RuntimeDynamicState = Omit<RuntimeBrowserState, StaticStateKey>;
@@ -1021,6 +1022,7 @@ function isRuntimeStaticResources(
     typeof value.voxelNavigationHash === "string" &&
     isFiniteNumber(value.voxelProbePathLength) &&
     Array.isArray(value.voxelMeshes) &&
+    Array.isArray(value.lights) &&
     (value.generatedEnvironment === null ||
       isRecord(value.generatedEnvironment))
   );
@@ -1288,6 +1290,7 @@ function runtimeStateResources(
     voxelNavigationHash: resources.voxelNavigationHash,
     voxelProbePathLength: resources.voxelProbePathLength,
     voxelMeshes: resources.voxelMeshes,
+    lights: resources.lights,
     generatedEnvironment: resources.generatedEnvironment,
   };
 }

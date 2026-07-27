@@ -44,7 +44,7 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
             .iter()
             .filter(|entity| entity.defeat_drop.is_some())
             .count(),
-        2
+        8
     );
     assert!(entities.iter().any(|entity| entity.door.is_some()));
     assert!(entities.iter().any(|entity| entity.switch.is_some()));
@@ -56,7 +56,7 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
             .iter()
             .filter(|entity| entity.pickup.is_some())
             .count(),
-        10
+        16
     );
     assert_eq!(
         entities
@@ -136,7 +136,7 @@ fn stored_project_admits_every_settled_component_family_atomically() {
             .switch(EntityId::new(6))
             .expect("switch")
             .controls_targets,
-        [EntityId::new(3)]
+        [EntityId::new(12)]
     );
     let collision = runtime.collision_scene().expect("spatial projection");
     assert!(collision.solid_voxel_count() > 0);
@@ -226,20 +226,17 @@ fn component_and_spatial_failures_retain_source_paths() {
 }
 
 #[test]
-fn seed_only_project_edit_changes_canonical_spatial_behavior() {
+fn material_only_project_edit_changes_canonical_spatial_behavior() {
     let variation = mutate(|project| {
-        project["scenes"][0]["voxelEnvironment"]["seed"] = 9.into();
+        project["scenes"][0]["voxelEnvironment"]["materialVoxels"][0]["materialSlot"] = 9.into();
     });
     let first = GameRuntime::from_stored_project(PROJECT).unwrap();
     let second = GameRuntime::from_stored_project(&variation).unwrap();
 
     let first = first.collision_scene().unwrap();
     let second = second.collision_scene().unwrap();
-    assert_ne!(
-        first.generated_room().unwrap().1.output_hash,
-        second.generated_room().unwrap().1.output_hash
-    );
     assert_ne!(first.material_voxels(), second.material_voxels());
+    assert_ne!(first.mesh_chunks(), second.mesh_chunks());
 }
 
 #[test]

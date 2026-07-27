@@ -97,6 +97,7 @@ function state(
     levelComplete: false,
     interaction: null,
     voxelMeshes: [],
+    lights: [],
     generatedEnvironment: null,
     enemies: [],
     presentation: { animationStates: [], cues: [] },
@@ -238,6 +239,74 @@ test("generated chunk mesh is retained by content hash and uses the typed mesh p
   );
   updated.commit();
   assert.equal(adapter.trackedMeshCount, 1);
+});
+
+test("authored lights use retained shared-renderer light operations", () => {
+  const adapter = new RuntimeProjectionAdapter();
+  const ambient = {
+    id: 80,
+    translation: null,
+    rotation: [0, 0, 0, 1] as const,
+    light: {
+      kind: "ambient" as const,
+      color: [0.16, 0.2, 0.28] as const,
+      intensity: 0.6,
+      enabled: true,
+      shadows: false,
+    },
+  };
+  const point = {
+    id: 81,
+    translation: [7.5, 3.3, 9.5] as const,
+    rotation: [0, 0, 0, 1] as const,
+    light: {
+      kind: "point" as const,
+      color: [0.98, 0.68, 0.35] as const,
+      intensity: 1.3,
+      enabled: true,
+      range: 15,
+      decay: 2,
+      shadows: false,
+    },
+  };
+
+  const created = adapter.apply({ ...state([]), lights: [ambient, point] });
+  assert.deepEqual(
+    created.ops.map((operation) => operation.op),
+    ["createLight", "createLight"],
+  );
+  assert.deepEqual(
+    created.ops[1]?.op === "createLight" ? created.ops[1].light : null,
+    {
+      kind: "point",
+      color: [0.98, 0.68, 0.35],
+      intensity: 1.3,
+      enabled: true,
+      position: [7.5, 3.3, 9.5],
+      range: 15,
+      decay: 2,
+      shadowIntent: "disabled",
+    },
+  );
+  created.commit();
+
+  const updated = adapter.apply({
+    ...state([]),
+    lights: [ambient, { ...point, translation: [8.5, 3.3, 9.5] as const }],
+  });
+  assert.deepEqual(
+    updated.ops.map((operation) => operation.op),
+    ["updateLight"],
+  );
+  updated.commit();
+
+  const destroyed = adapter.apply({ ...state([]), lights: [] });
+  assert.deepEqual(
+    destroyed.ops.map((operation) => operation.op),
+    ["destroy", "destroy"],
+  );
+  destroyed.commit();
+  assert.equal(adapter.trackedLightCount, 0);
 });
 
 test("camera pose is rebuilt as a presentation offset from accepted player state", () => {

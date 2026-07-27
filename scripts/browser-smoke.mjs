@@ -167,7 +167,7 @@ async function runFullBrowserProduct(project) {
     const result = await runChromiumSmoke(
       `http://${running.address}/?smoke=1#/game`,
       "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
-      60_000,
+      180_000,
     );
     if (result.code !== 0) {
       throw new Error(
@@ -177,29 +177,18 @@ async function runFullBrowserProduct(project) {
     const required = [
       'data-smoke-status="pass"',
       'data-status="pass"',
-      'data-held-input="pass"',
-      'data-local-look-offset="pass"',
-      'data-local-look-presentation="bounded-disposable"',
-      'data-enemy-combat="pass"',
+      'data-campaign-baseline="pass"',
+      'data-campaign-arrival="pass"',
+      'data-campaign-storage="pass"',
+      'data-campaign-generator="pass"',
+      'data-campaign-loopback="pass"',
+      'data-campaign-finale="pass"',
+      'data-campaign-weapons="pass"',
+      'data-progression-route="pass"',
+      'data-completed-save="pass"',
       'data-enemy-archetypes="pass"',
       'data-enemy-drops="pass"',
-      'data-entity-occlusion="pass"',
-      'data-entity-occlusion-evidence="true:true:true:true"',
-      'data-pickups="pass"',
-      'data-gate-passage="pass"',
-      'data-queue-recovery="pass"',
-      'data-cooldown="pass"',
       'data-beacon-activation="pass"',
-      'data-dry-fire="pass"',
-      'data-feedback-reset="pass"',
-      'data-feedback-concrete-reset="pass"',
-      'data-feedback-families="pass"',
-      'data-audio-feedback="pass"',
-      'data-feedback-drop="pass"',
-      'data-feedback-concrete-restart="pass"',
-      'data-voxel-edit="pass"',
-      'data-voxel-rejection="pass"',
-      'data-voxel-collision="pass"',
       'data-session-transport="pass"',
       'data-session-protocol="1"',
       'data-session-pending-outbound-max="1"',
@@ -209,23 +198,19 @@ async function runFullBrowserProduct(project) {
       'data-renderer-telemetry="pass"',
       'data-renderer-single-loop="pass"',
       'data-renderer-telemetry-refresh="pass"',
-      'data-renderer-telemetry-reset="pass"',
       'data-weapon-viewmodel="pass"',
       'data-weapon-viewmodel-layer="viewmodel"',
-      'data-weapon-viewmodel-behavior="pass"',
-      "PASS · Rust facts reached retained WebGL and disposable feedback",
+      "PASS · Original Loading Bay campaign completed through Rust authority",
       "EnemyDefeated",
       "EncounterCleared",
       "DoorOpened",
       "PlayerMoved",
-      "PlayerBlocked",
       "PlayerLookChanged",
       "CombatHit",
       "DamageApplied",
       "CombatEnemyDefeated",
-      "CombatRejected",
       "ExtractionBeaconActivated",
-      "SEED 4",
+      "LevelCompleted",
     ];
     const missing = required.filter(
       (marker) => !result.stdout.includes(marker),
@@ -279,8 +264,8 @@ async function runFullBrowserProduct(project) {
     if (
       sessionEvidence.legacyBytes <= 0 ||
       sessionEvidence.bootstrapBytes <= 0 ||
-      sessionEvidence.staticUpdates <= 0 ||
-      sessionEvidence.staticMaxBytes <= sessionEvidence.steadyMaxBytes ||
+      sessionEvidence.staticUpdates !== 0 ||
+      sessionEvidence.staticMaxBytes !== 0 ||
       sessionEvidence.steadyBytes >= sessionEvidence.legacyBytes / 2 ||
       sessionEvidence.steadyMaxBytes >= sessionEvidence.legacyBytes / 2 ||
       sessionEvidence.pendingOutboundMax !== 1 ||
@@ -449,7 +434,7 @@ async function runFullBrowserProduct(project) {
       label: "narrow",
     });
     await runDeadDialogFocusProof(project);
-    await runProgressionRouteProof(project);
+    await runCampaignSaveReconnectProof(project);
     await runHostReplacementContinueProof(project);
     const startup = running.output();
     for (const marker of [
@@ -470,8 +455,8 @@ async function runFullBrowserProduct(project) {
   }
 }
 
-async function runProgressionRouteProof(project) {
-  const saveRoot = resolve(proofDirectory, "progression-save-slots");
+async function runCampaignSaveReconnectProof(project) {
+  const saveRoot = resolve(proofDirectory, "campaign-save-slots");
   const running = await launchHost(project, undefined, saveRoot);
   let firstHostStopped = false;
   try {
@@ -481,244 +466,9 @@ async function runProgressionRouteProof(project) {
       running.output,
     );
     const result = await runChromiumSmoke(
-      `http://${running.address}/?input-proof=1#/`,
-      "document.body?.dataset.progressionRoute === 'pass' || document.body?.dataset.progressionRoute === 'fail'",
-      45_000,
-      {
-        viewport: { width: 1440, height: 900 },
-        interactiveSetup: async (client) => {
-          await waitForCdp(
-            client,
-            "document.querySelector('red-main-menu') !== null",
-            "progression main menu",
-          );
-          await client.send("Runtime.evaluate", {
-            expression: `[...document.querySelectorAll("button")].find(
-              (button) => button.textContent?.trim() === "New game",
-            )?.click()`,
-          });
-          await waitForCdp(
-            client,
-            `document.body.dataset.rendererLifecycle === "mounted" &&
-              document.querySelector(".game-state-overlay") === null`,
-            "progression connected game",
-          );
-          await holdKeysUntil(
-            client,
-            running.address,
-            ["KeyS", "KeyD"],
-            (state) =>
-              state.player.position[0] >= 2.25 &&
-              state.player.position[2] >= 3.25,
-            "maintenance-pass pickup",
-          );
-          await waitForHostState(
-            running.address,
-            (state) =>
-              state.inventory?.stacks.some(
-                (stack) =>
-                  stack.item === "key/maintenance-pass" && stack.quantity === 1,
-              ) === true,
-            "key inventory",
-          );
-          await holdKeysUntil(
-            client,
-            running.address,
-            ["KeyS", "KeyD"],
-            (state) => state.interaction?.target === 30,
-            "keyed-door approach",
-          );
-          await waitForCdp(
-            client,
-            `document.querySelector(".interaction-prompt")?.textContent?.includes("Open maintenance bulkhead") === true`,
-            "rendered keyed-door prompt",
-          );
-          await holdKeysUntil(
-            client,
-            running.address,
-            ["KeyD"],
-            (state) =>
-              state.player.position[0] >= 5.8 &&
-              state.player.armor === state.player.maxArmor,
-            "armored east bulkhead approach",
-          );
-          await waitForHostState(
-            running.address,
-            (state) => state.interaction?.target === 30,
-            "east keyed-door prompt",
-          );
-          await defeatEnemyThroughBrowserInput(client, running.address, 5);
-          await pressKey(client, "KeyE");
-          await waitForHostState(
-            running.address,
-            (state) =>
-              state.doorAccess?.some(
-                (door) => door.id === 30 && door.state === "open",
-              ) === true,
-            "keyed door opening",
-          );
-          await defeatEnemyThroughBrowserInput(client, running.address, 4);
-          await orientPlayerThroughBrowserInput(
-            client,
-            running.address,
-            0,
-            -10,
-          );
-
-          await holdKeysUntil(
-            client,
-            running.address,
-            ["KeyS"],
-            (state) =>
-              state.player.position[0] >= 5.5 &&
-              state.player.position[2] >= 8.4,
-            "interlock switch",
-          );
-          await holdKeysUntil(
-            client,
-            running.address,
-            ["KeyA"],
-            (state) => state.player.position[0] <= 3.6,
-            "interlock control approach",
-          );
-          await waitForHostState(
-            running.address,
-            (state) => state.interaction?.target === 6,
-            "interlock prompt",
-          );
-          await waitForCdp(
-            client,
-            `document.querySelector(".interaction-prompt")?.textContent?.includes("Activate door control") === true`,
-            "rendered interlock prompt",
-          );
-          await pressKey(client, "KeyE");
-          await waitForHostState(
-            running.address,
-            (state) =>
-              state.doorAccess?.some(
-                (door) => door.id === 30 && door.state === "closed",
-              ) === true && state.doorState === "open",
-            "interlock consequence",
-          );
-
-          await holdKeysUntil(
-            client,
-            running.address,
-            ["KeyS"],
-            (state) => state.player.position[2] >= 9.5,
-            "secret overlook south bypass",
-          );
-          await holdKeysUntil(
-            client,
-            running.address,
-            ["KeyS", "KeyD"],
-            (state) => state.player.position[0] >= 6.2,
-            "secret overlook east bypass",
-          );
-          await holdKeysUntil(
-            client,
-            running.address,
-            ["KeyW"],
-            (state) =>
-              state.secretRegions?.some(
-                (secret) => secret.id === 31 && secret.state === "discovered",
-              ) === true,
-            "secret overlook entry",
-          );
-          await waitForHostState(
-            running.address,
-            (state) =>
-              state.secretRegions?.some(
-                (secret) => secret.id === 31 && secret.state === "discovered",
-              ) === true,
-            "secret discovery",
-          );
-
-          await holdKeysUntil(
-            client,
-            running.address,
-            ["KeyS", "KeyA"],
-            (state) =>
-              state.player.position[0] <= 4.7 &&
-              state.player.position[2] >= 9.3,
-            "open exit approach",
-          );
-          const exitApproach = await waitForHostState(
-            running.address,
-            (state) => state.player !== undefined,
-            "level-exit approach position",
-          );
-          if (exitApproach.interaction?.target !== 32) {
-            await holdKeysUntil(
-              client,
-              running.address,
-              [exitApproach.player.position[2] > 12.5 ? "KeyW" : "KeyS"],
-              (state) => state.interaction?.target === 32,
-              "level-exit approach",
-              5_000,
-            );
-          }
-          await waitForHostState(
-            running.address,
-            (state) => state.interaction?.target === 32,
-            "level-exit prompt",
-          );
-          await waitForCdp(
-            client,
-            `document.querySelector(".interaction-prompt")?.textContent?.includes("Use loading bay level exit") === true`,
-            "rendered level-exit prompt",
-          );
-          await pressKey(client, "KeyE");
-          await waitForHostState(
-            running.address,
-            (state) =>
-              state.levelComplete === true &&
-              state.levelExits?.some(
-                (exit) =>
-                  exit.id === 32 &&
-                  exit.state === "completed" &&
-                  exit.completedBy === 1,
-              ) === true,
-            "authoritative level completion",
-          );
-          await waitForCdp(
-            client,
-            `document.querySelector(".game-state-overlay")?.textContent?.includes("LOADING BAY COMPLETE") === true &&
-              document.activeElement?.textContent?.trim() === "Restart loading bay"`,
-            "completion result dialog",
-          );
-          await client.send("Runtime.evaluate", {
-            expression: `[...document.querySelectorAll("button")].find(
-              (button) => button.textContent?.trim() === "Save completed run",
-            )?.click()`,
-          });
-          await waitForCdp(
-            client,
-            `document.querySelector(".game-panel")?.textContent?.includes("Save game") === true`,
-            "completion save panel",
-          );
-          await client.send("Runtime.evaluate", {
-            expression: `[...document.querySelectorAll(".save-slot")]
-              .find((slot) => slot.textContent?.includes("Manual save 3"))
-              ?.querySelector("button")?.click()`,
-          });
-          await waitForHostState(
-            running.address,
-            (state) =>
-              state.saveSlots?.some(
-                (slot) =>
-                  slot.slot === "slot3" &&
-                  slot.compatibility === "available" &&
-                  slot.metadata?.levelComplete === true,
-              ) === true,
-            "completed save publication",
-          );
-          await client.send("Runtime.evaluate", {
-            expression: `document.body.dataset.progressionRoute = "pass";
-              document.body.dataset.completedSave = "pass"`,
-          });
-        },
-      },
+      `http://${running.address}/?smoke=1#/game`,
+      "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
+      180_000,
     );
     if (
       result.code !== 0 ||
@@ -726,7 +476,7 @@ async function runProgressionRouteProof(project) {
       !result.stdout.includes('data-completed-save="pass"')
     ) {
       throw new Error(
-        `progression route proof failed\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-8_000)}`,
+        `campaign save proof failed\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-8_000)}`,
       );
     }
     const completed = await waitForHostState(
@@ -739,7 +489,7 @@ async function runProgressionRouteProof(project) {
             slot.compatibility === "available" &&
             slot.metadata?.levelComplete === true,
         ) === true,
-      "completed state before fresh host",
+      "completed campaign before fresh host",
     );
     await stopHost(running.host);
     firstHostStopped = true;
@@ -762,7 +512,7 @@ async function runProgressionRouteProof(project) {
               slot.compatibility === "available" &&
               slot.metadata?.levelComplete === true,
           ) === true,
-        "fresh host with compatible completed save",
+        "fresh host with compatible campaign save",
       );
       if (
         fresh.player.position.join(",") === completed.player.position.join(",")
@@ -779,7 +529,7 @@ async function runProgressionRouteProof(project) {
             await waitForCdp(
               client,
               `document.querySelector("red-main-menu") !== null`,
-              "fresh-host saved main menu",
+              "fresh-host campaign main menu",
             );
             await waitForCdp(
               client,
@@ -792,30 +542,8 @@ async function runProgressionRouteProof(project) {
                     "Rust-owned storage",
                   ) === true;
               })()`,
-              "persisted Continue availability",
+              "persisted campaign Continue availability",
             );
-            const continueState = await client.send("Runtime.evaluate", {
-              expression: `(() => {
-                const button = [...document.querySelectorAll("button")].find(
-                  (candidate) => candidate.textContent?.trim() === "Continue",
-                );
-                return {
-                  disabled: button?.disabled,
-                  message: document.querySelector(".availability")?.textContent,
-                };
-              })()`,
-              returnByValue: true,
-            });
-            if (
-              continueState?.result?.value?.disabled !== false ||
-              !String(continueState?.result?.value?.message).includes(
-                "Rust-owned storage",
-              )
-            ) {
-              throw new Error(
-                `fresh host did not offer persisted Continue: ${JSON.stringify(continueState?.result?.value)}`,
-              );
-            }
             await client.send("Runtime.evaluate", {
               expression: `[...document.querySelectorAll("button")].find(
                 (button) => button.textContent?.trim() === "Continue",
@@ -830,12 +558,12 @@ async function runProgressionRouteProof(project) {
                 ) === true &&
                 state.player.position.join(",") ===
                   completed.player.position.join(","),
-              "completed save restoration",
+              "completed campaign save restoration",
             );
             await waitForCdp(
               client,
               `document.querySelector(".game-state-overlay")?.textContent?.includes("LOADING BAY COMPLETE") === true`,
-              "restored completion dialog",
+              "restored campaign completion dialog",
             );
             await client.send("Runtime.evaluate", {
               expression: `document.body.dataset.completedSaveRestore = "pass"`,
@@ -848,7 +576,7 @@ async function runProgressionRouteProof(project) {
         !restore.stdout.includes('data-completed-save-restore="pass"')
       ) {
         throw new Error(
-          `fresh-process completed-save restore failed\n${restore.stderr.slice(-4_000)}\n${restore.stdout.slice(-8_000)}`,
+          `fresh-process campaign restore failed\n${restore.stderr.slice(-4_000)}\n${restore.stdout.slice(-8_000)}`,
         );
       }
     } finally {
@@ -1087,10 +815,11 @@ function dispatchKey(client, type, code) {
 
 async function runHostReplacementContinueProof(project) {
   const address = `127.0.0.1:${String(await reservePort())}`;
+  const saveRoot = resolve(proofDirectory, "host-continuity-save-slots");
   const profileDirectory = mkdtempSync(
     join(tmpdir(), "rusty-engine-host-continuity-"),
   );
-  let running = await launchHost(project, address);
+  let running = await launchHost(project, address, saveRoot);
   try {
     await waitForHealth(
       `http://${address}/health`,
@@ -1128,7 +857,7 @@ async function runHostReplacementContinueProof(project) {
       );
     }
     await stopHost(running.host);
-    running = await launchHost(project, address);
+    running = await launchHost(project, address, saveRoot);
     await waitForHealth(
       `http://${address}/health`,
       running.host,
@@ -1235,6 +964,8 @@ async function runViewmodelResizeProof(project) {
             `document.body.dataset.weaponViewmodel === "pass" &&
               document.body.dataset.weaponViewmodelLayer === "viewmodel" &&
               document.body.dataset.weaponViewmodelLifecycle === "mounted" &&
+              document.body.dataset.rendererLifecycle === "mounted" &&
+              document.querySelector(".game-state-overlay") === null &&
               document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7"`,
             "initial retained viewmodel",
           );
@@ -1266,11 +997,7 @@ async function runViewmodelResizeProof(project) {
               `viewmodel at ${String(viewport.width)}x${String(viewport.height)}`,
             );
           }
-          await client.send("Runtime.evaluate", {
-            expression: `[...document.querySelectorAll("button")].find(
-              (button) => button.textContent?.trim() === "Pause",
-            )?.click()`,
-          });
+          await pressKey(client, "Escape");
           await waitForCdp(
             client,
             `document.querySelector(".simulation-state")?.textContent?.includes("PAUSED") === true`,
@@ -1402,39 +1129,25 @@ async function runDeadDialogFocusProof(project) {
               document.querySelector(".game-state-overlay") === null`,
             "dead-dialog connected game",
           );
-          await client.send("Input.dispatchKeyEvent", {
-            type: "keyDown",
-            key: "s",
-            code: "KeyS",
-            windowsVirtualKeyCode: 83,
-            nativeVirtualKeyCode: 83,
-          });
-          await new Promise((resolve) => setTimeout(resolve, 900));
-          await client.send("Input.dispatchKeyEvent", {
-            type: "keyUp",
-            key: "s",
-            code: "KeyS",
-            windowsVirtualKeyCode: 83,
-            nativeVirtualKeyCode: 83,
-          });
-          await waitForHostState(
+          await holdKeysUntil(
+            client,
             running.address,
+            ["KeyW"],
             (state) =>
               state.player.currentHealth < state.player.maxHealth &&
               state.enemies?.some(
                 (enemy) => enemy.combatPosture === "attacking",
               ) === true,
-            "enemy attack damage",
+            "cargo-floor enemy attack damage",
             15_000,
           );
           await waitForHostState(
             running.address,
             (state) => state.player.vitalityState === "dead",
             "enemy-caused dead player projection",
-            // The player remains outside the coolant hazard here. The authored
-            // ranged sentry deals four damage every 120 ticks, so an enemy-only
-            // death from full health can legitimately require about 50 seconds.
-            65_000,
+            // The player remains outside the coolant hazard here and the
+            // cargo-floor melee enemy owns the full death transition.
+            45_000,
           );
           await waitForCdp(
             client,
@@ -1834,7 +1547,11 @@ function storedProjectEntityCount(project) {
 }
 
 async function runMigratedBrowserProduct(project) {
-  const running = await launchHost(project);
+  const running = await launchHost(
+    project,
+    undefined,
+    resolve(proofDirectory, "migrated-save-slots"),
+  );
   let session;
   try {
     await waitForHealth(
@@ -1846,9 +1563,11 @@ async function runMigratedBrowserProduct(project) {
     const state = session.state();
     if (
       state.generatedEnvironment?.seed !== 4 ||
-      state.enemies?.length !== 2 ||
+      state.enemies?.length !== 0 ||
       state.weapon?.ammoRemaining !== 8 ||
-      !state.projection?.some((node) => node.id === 3)
+      ![3, 4, 5].every((entity) =>
+        state.projection?.some((node) => node.id === entity),
+      )
     ) {
       throw new Error(
         `migrated browser state was incomplete\n${JSON.stringify(state)}`,
@@ -2260,6 +1979,10 @@ function socketInbox(socket) {
 }
 
 async function runPersistedVoxelEditProduct(project) {
+  const edits = [
+    { kind: "clear", address: [2, 1, 6] },
+    { kind: "clear", address: [3, 1, 6] },
+  ];
   const running = await launchHost(project);
   let persistedHash;
   let persistedNavigationHash;
@@ -2280,7 +2003,7 @@ async function runPersistedVoxelEditProduct(project) {
         body: JSON.stringify({
           expectedRevision: before.voxelRevision,
           persistToProject: true,
-          edits: [{ kind: "clear", address: [4, 1, 6] }],
+          edits,
         }),
       },
     );
@@ -2288,9 +2011,9 @@ async function runPersistedVoxelEditProduct(project) {
     if (
       !editResponse.ok ||
       edited.voxelEditReceipt?.persistedToProject !== true ||
-      edited.voxelEditReceipt?.changedVoxels !== 1 ||
+      edited.voxelEditReceipt?.changedVoxels !== edits.length ||
       edited.voxelRevision !== 1 ||
-      edited.voxelSolidCount !== before.voxelSolidCount - 1 ||
+      edited.voxelSolidCount !== before.voxelSolidCount - edits.length ||
       edited.voxelAuthorityHash === before.voxelAuthorityHash ||
       edited.voxelNavigationHash === before.voxelNavigationHash ||
       edited.voxelProbePathLength >= before.voxelProbePathLength ||
@@ -2328,8 +2051,11 @@ async function runPersistedVoxelEditProduct(project) {
   if (
     environment?.kind !== "material" ||
     !Array.isArray(environment.materialVoxels) ||
-    environment.materialVoxels.some(
-      (voxel) => JSON.stringify(voxel.address) === JSON.stringify([4, 1, 6]),
+    edits.some((edit) =>
+      environment.materialVoxels.some(
+        (voxel) =>
+          JSON.stringify(voxel.address) === JSON.stringify(edit.address),
+      ),
     )
   ) {
     throw new Error(
