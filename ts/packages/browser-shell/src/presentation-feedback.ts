@@ -251,6 +251,7 @@ export class BrowserPresentationFeedback {
     this.#audioStatus.dataset.activeSounds = "0";
     this.setAudioLevel(1);
     this.#layer.dataset.activeEffects = "0";
+    this.#layer.dataset.pendingTimers = "0";
     this.#layer.dataset.maxActiveEffects = String(MAX_ACTIVE_EFFECTS);
     this.#layer.dataset.sharedRendererHosts =
       "audio,billboard,particle,telemetry";
@@ -752,14 +753,17 @@ export class BrowserPresentationFeedback {
   #schedule(operation: () => void, delay: number): void {
     const timeout = globalThis.setTimeout(() => {
       this.#timeouts.delete(timeout);
+      this.#layer.dataset.pendingTimers = String(this.#timeouts.size);
       operation();
     }, delay);
     this.#timeouts.add(timeout);
+    this.#layer.dataset.pendingTimers = String(this.#timeouts.size);
   }
 
   #clearTimersAndPulses(): void {
     for (const timeout of this.#timeouts) globalThis.clearTimeout(timeout);
     this.#timeouts.clear();
+    this.#layer.dataset.pendingTimers = "0";
     for (const target of this.#pulseTargets)
       delete target.dataset.animationPulse;
     this.#pulseTargets.clear();

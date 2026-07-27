@@ -12,6 +12,10 @@ export interface SessionInputIntent {
   readonly primaryFireHeld: boolean;
 }
 
+export interface SessionStateDelivery {
+  readonly sessionReplaced: boolean;
+}
+
 export type SessionRejectionCode =
   | "protocolMismatch"
   | "sessionClosed"
@@ -275,7 +279,9 @@ export class LoadingBayGameSession {
   #maximumPendingInputFrameCount = 0;
   #maximumPendingEdgeCount = 0;
   #closed = false;
-  #onState: ((state: RuntimeBrowserState) => void) | null = null;
+  #onState:
+    | ((state: RuntimeBrowserState, delivery: SessionStateDelivery) => void)
+    | null = null;
   #onFailure: ((error: GameSessionError) => void) | null = null;
 
   private constructor(
@@ -433,7 +439,12 @@ export class LoadingBayGameSession {
     return this.#maximumPendingEdgeCount;
   }
 
-  setStateListener(listener: (state: RuntimeBrowserState) => void): void {
+  setStateListener(
+    listener: (
+      state: RuntimeBrowserState,
+      delivery: SessionStateDelivery,
+    ) => void,
+  ): void {
     this.#onState = listener;
   }
 
@@ -640,7 +651,7 @@ export class LoadingBayGameSession {
       }
       this.#receiveFactRejections(value.facts);
       this.#acceptAcknowledgement(value.acknowledgedCommandSequence);
-      this.#onState?.(this.#current);
+      this.#onState?.(this.#current, { sessionReplaced: replaced });
     } catch (error) {
       this.#failTransport(
         error instanceof GameSessionError

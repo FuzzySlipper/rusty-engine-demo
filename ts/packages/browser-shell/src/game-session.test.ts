@@ -534,6 +534,10 @@ test("load commands settle only from the replacement authoritative session", asy
 
   try {
     const session = await LoadingBayGameSession.connect();
+    const deliveries: boolean[] = [];
+    session.setStateListener((_state, delivery) => {
+      deliveries.push(delivery.sessionReplaced);
+    });
     const loading = session.sendEdge({
       kind: "loadGame",
       slot: "slot1",
@@ -554,6 +558,7 @@ test("load commands settle only from the replacement authoritative session", asy
     assert.equal(loaded.tick, 37);
     assert.equal(loaded.input.connectionGeneration, 2);
     assert.equal(session.pendingEdgeCount, 0);
+    assert.deepEqual(deliveries, [true]);
     await session.close();
   } finally {
     restoreGlobal("location", originalLocation);

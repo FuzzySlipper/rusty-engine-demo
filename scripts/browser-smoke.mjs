@@ -192,6 +192,7 @@ async function runFullBrowserProduct(project) {
       'data-campaign-finale="pass"',
       'data-campaign-weapons="pass"',
       'data-progression-route="pass"',
+      'data-checkpoint-replacement="pass"',
       'data-completed-save="pass"',
       'data-enemy-archetypes="pass"',
       'data-enemy-drops="pass"',

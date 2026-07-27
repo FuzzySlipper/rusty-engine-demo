@@ -8,7 +8,11 @@ import {
   appendPresentationEvents,
   observePresentationEventKinds,
 } from "./event-history.js";
-import { GameSessionError, LoadingBayGameSession } from "./game-session.js";
+import {
+  GameSessionError,
+  LoadingBayGameSession,
+  type SessionStateDelivery,
+} from "./game-session.js";
 import { HeldMovementInput } from "./held-movement.js";
 import {
   clampInputUnit,
@@ -192,6 +196,8 @@ export async function mountLoadingBayGame(
   let disposed = false;
   let rendererTelemetryRefreshObserved = false;
   let rendererTelemetryResetObserved = false;
+  let sessionReplacementPresentation: Promise<void> | null = null;
+  let replacementTelemetrySamplesBefore = 0;
   let hostPreferences = normalizeHostPreferences(options.preferences);
   const localLookOffset = new LocalLookPresentationOffset();
   const heldMovement = new HeldMovementInput({
@@ -742,25 +748,26 @@ export async function mountLoadingBayGame(
     latestMovement = { kind: "move", forward: 0, right: 0 };
     primaryFireHeld = false;
     session.discardInputForSessionReplacement();
-    const telemetrySamplesBeforeRestart = Number(
+    replacementTelemetrySamplesBefore = Number(
       telemetryLayer.dataset.rendererSampleSequence ?? "0",
     );
-    current = await session.sendEdge(command);
     eventHistory.length = 0;
     observedEventKinds.clear();
     eventKindOverflow = false;
     lastActionRejection = null;
-    const frame = projection.apply(current);
-    applyRendererFrame(frame);
-    applyPresentationCamera();
-    renderReadout(current);
-    await applyPresentationFeedback(true, frame.ops.length);
-    rendererTelemetryResetObserved ||=
-      telemetrySamplesBeforeRestart > 1 &&
-      telemetryLayer.dataset.rendererSampleSequence === "1";
-    document.body.dataset.rendererTelemetryReset =
-      rendererTelemetryResetObserved ? "pass" : "pending";
-    updateRendererStatus();
+    sessionReplacementPresentation = null;
+    try {
+      current = await session.sendEdge(command);
+      if (sessionReplacementPresentation === null) {
+        throw new Error(
+          "accepted session replacement did not publish replacement state",
+        );
+      }
+      await sessionReplacementPresentation;
+    } finally {
+      sessionReplacementPresentation = null;
+      replacementTelemetrySamplesBefore = 0;
+    }
   }
 
   async function performSaveGame(
@@ -811,7 +818,10 @@ export async function mountLoadingBayGame(
     telemetryLayer.hidden = !hostPreferences.telemetryVisible;
   }
 
-  function applySessionState(state: RuntimeBrowserState): void {
+  function applySessionState(
+    state: RuntimeBrowserState,
+    delivery: SessionStateDelivery,
+  ): void {
     if (disposed) {
       return;
     }
@@ -828,7 +838,19 @@ export async function mountLoadingBayGame(
     applyRendererFrame(frame);
     applyPresentationCamera();
     renderReadout(state);
-    void applyPresentationFeedback(false, frame.ops.length);
+    const feedbackApplied = applyPresentationFeedback(
+      delivery.sessionReplaced,
+      frame.ops.length,
+    );
+    if (delivery.sessionReplaced) {
+      sessionReplacementPresentation = feedbackApplied.then(() => {
+        rendererTelemetryResetObserved ||=
+          replacementTelemetrySamplesBefore > 1 &&
+          telemetryLayer.dataset.rendererSampleSequence === "1";
+        document.body.dataset.rendererTelemetryReset =
+          rendererTelemetryResetObserved ? "pass" : "pending";
+      });
+    }
     updateRendererStatus();
     updateSessionDiagnostics();
   }
@@ -1702,6 +1724,36 @@ export async function mountLoadingBayGame(
         "open",
         "active",
       ]);
+    document.body.dataset.campaignEventEvidence = [...observedEventKinds].join(
+      ",",
+    );
+    let checkpointReplacementPassed = false;
+    if (checkpointSaved) {
+      const scheduledBefore = Number(
+        feedbackAudioStatus.dataset.scheduled ?? "0",
+      );
+      await performSessionReplacement({
+        kind: "restart",
+        mode: "checkpoint",
+      });
+      await presentationFeedback.settled();
+      const scheduledAfter = Number(
+        feedbackAudioStatus.dataset.scheduled ?? "0",
+      );
+      await delay(1_200);
+      checkpointReplacementPassed =
+        scheduledAfter - scheduledBefore === 1 &&
+        includesEvery(feedbackLayer.dataset.animationPulses, [
+          "checkpoint-restored",
+        ]) &&
+        feedbackLayer.dataset.activeEffects === "0" &&
+        feedbackLayer.dataset.pendingTimers === "0" &&
+        feedbackAudioStatus.dataset.activeSounds === "0" &&
+        document.querySelector("[data-animation-pulse]") === null;
+    }
+    document.body.dataset.checkpointReplacement = checkpointReplacementPassed
+      ? "pass"
+      : "fail";
     document.body.dataset.campaignFinale =
       allEnemiesDefeated && finalDoorOpened && beaconActivated && levelCompleted
         ? "pass"
@@ -1739,6 +1791,7 @@ export async function mountLoadingBayGame(
       automaticObserved,
       lockedDoorDenied,
       checkpointSaved,
+      checkpointReplacementPassed,
       terminalWeaponFeedback,
     ].join(":");
     return (
@@ -1768,6 +1821,7 @@ export async function mountLoadingBayGame(
       materializedDrops === enemyIds.length &&
       lockedDoorDenied &&
       checkpointSaved &&
+      checkpointReplacementPassed &&
       terminalWeaponFeedback &&
       routePresentation
     );
