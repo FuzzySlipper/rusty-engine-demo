@@ -1320,6 +1320,11 @@ mod tests {
             &loading_bay_game::encode_game_snapshot(host.runtime.runtime()).unwrap(),
         )
         .unwrap();
+        defeated_snapshot["schemaVersion"] = 18.into();
+        defeated_snapshot["entities"]["registeredComponents"] = serde_json::json!([]);
+        for inventory in defeated_snapshot["inventories"].as_array_mut().unwrap() {
+            inventory.as_object_mut().unwrap().remove("weaponEntities");
+        }
         let player_health = defeated_snapshot["health"]
             .as_array_mut()
             .unwrap()

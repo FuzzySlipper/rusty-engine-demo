@@ -286,6 +286,33 @@ fn inventory_commands_are_atomic_ordered_and_report_exact_before_after_state() {
             last_applied: 5,
         }
     );
+
+    let consumed_weapon = apply(
+        &mut runtime,
+        6,
+        InventoryAction::Consume {
+            item: item("weapon/breach-scattergun"),
+            quantity: 1,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        consumed_weapon.facts,
+        [
+            InventoryFact::QuantityChanged {
+                owner: PLAYER,
+                item: item("weapon/breach-scattergun"),
+                before: 1,
+                after: 0,
+            },
+            InventoryFact::EquippedWeaponChanged {
+                owner: PLAYER,
+                before: Some(item("weapon/breach-scattergun")),
+                after: None,
+            },
+        ]
+    );
+    assert_eq!(consumed_weapon.after.equipped_weapon, None);
 }
 
 #[test]

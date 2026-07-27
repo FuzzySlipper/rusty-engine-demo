@@ -49,13 +49,15 @@ use crate::progression::{
 use crate::runtime::GameRuntime;
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
-use crate::vitality::{HealthComponent, HealthConfig, VitalityState};
+use crate::vitality::{HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 18;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 19;
+const GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION: u32 = 19;
 const INVENTORY_WEAPON_SNAPSHOT_SCHEMA_VERSION: u32 = 13;
 const VITALITY_SNAPSHOT_SCHEMA_VERSION: u32 = 14;
 const PROGRESSION_SNAPSHOT_SCHEMA_VERSION: u32 = 16;
 const ENEMY_COMBAT_SNAPSHOT_SCHEMA_VERSION: u32 = 17;
+const ENEMY_ARCHETYPE_SNAPSHOT_SCHEMA_VERSION: u32 = 18;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -173,6 +175,15 @@ pub struct InventorySnapshot {
     pub weapon_slots: Vec<String>,
     #[serde(default)]
     pub weapon_cooldowns: Vec<WeaponCooldownSnapshot>,
+    #[serde(default)]
+    pub weapon_entities: Vec<WeaponEntitySnapshot>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct WeaponEntitySnapshot {
+    pub item: String,
+    pub entity: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -568,6 +579,9 @@ pub enum SnapshotLevelExitState {
 
 #[derive(Debug)]
 pub enum GameSnapshotError {
+    Mechanics {
+        reason: String,
+    },
     Encode(serde_json::Error),
     Decode(serde_json::Error),
     UnsupportedSchema {
@@ -1014,22 +1028,28 @@ impl GameRuntime {
                 .session
                 .health
                 .iter()
-                .map(|(entity, component)| HealthSnapshot {
-                    entity: entity.raw(),
-                    current: component.current,
-                    max: component.config.max,
-                    hitbox_half_extents: component.config.hitbox_half_extents.to_array(),
-                    max_armor: component.config.max_armor,
-                    armor_absorption_percent: component.config.armor_absorption_percent,
-                    armor: component.armor,
-                    armor_item: component
-                        .armor_item
-                        .as_ref()
-                        .map(|item| item.as_str().to_owned()),
-                    state: Some(match component.state {
-                        VitalityState::Alive => SnapshotVitalityState::Alive,
-                        VitalityState::Dead => SnapshotVitalityState::Dead,
-                    }),
+                .map(|(entity, config)| {
+                    let vitality = self
+                        .session
+                        .health(*entity)
+                        .expect("admitted vitality remains readable");
+                    HealthSnapshot {
+                        entity: entity.raw(),
+                        current: vitality.current,
+                        max: config.max,
+                        hitbox_half_extents: config.hitbox_half_extents.to_array(),
+                        max_armor: config.max_armor,
+                        armor_absorption_percent: config.armor_absorption_percent,
+                        armor: vitality.armor,
+                        armor_item: vitality
+                            .armor_item
+                            .as_ref()
+                            .map(|item| item.as_str().to_owned()),
+                        state: Some(match vitality.state {
+                            VitalityState::Alive => SnapshotVitalityState::Alive,
+                            VitalityState::Dead => SnapshotVitalityState::Dead,
+                        }),
+                    }
                 })
                 .collect(),
             hazards: self
@@ -1109,34 +1129,48 @@ impl GameRuntime {
                 .session
                 .inventories
                 .iter()
-                .map(|(owner, component)| InventorySnapshot {
-                    owner: owner.raw(),
-                    capacity_slots: component.capacity_slots,
-                    stacks: component
-                        .stacks
-                        .iter()
-                        .map(|stack| InventoryStackSnapshot {
-                            item: stack.item.as_str().to_string(),
-                            quantity: stack.quantity,
-                        })
-                        .collect(),
-                    equipped_weapon: component
-                        .equipped_weapon
-                        .as_ref()
-                        .map(|item| item.as_str().to_string()),
-                    weapon_slots: component
-                        .weapon_slots
-                        .iter()
-                        .map(|item| item.as_str().to_string())
-                        .collect(),
-                    weapon_cooldowns: component
-                        .weapon_ready_at
-                        .iter()
-                        .map(|(item, ready_at_tick)| WeaponCooldownSnapshot {
-                            item: item.as_str().to_string(),
-                            ready_at_tick: ready_at_tick.raw(),
-                        })
-                        .collect(),
+                .map(|(owner, component)| {
+                    let view = self
+                        .session
+                        .inventory(*owner)
+                        .expect("admitted inventory remains readable");
+                    InventorySnapshot {
+                        owner: owner.raw(),
+                        capacity_slots: component.capacity_slots,
+                        stacks: view
+                            .stacks
+                            .iter()
+                            .map(|stack| InventoryStackSnapshot {
+                                item: stack.item.as_str().to_string(),
+                                quantity: stack.quantity,
+                            })
+                            .collect(),
+                        equipped_weapon: view
+                            .equipped_weapon
+                            .as_ref()
+                            .map(|item| item.as_str().to_string()),
+                        weapon_slots: component
+                            .weapon_slots
+                            .iter()
+                            .map(|item| item.as_str().to_string())
+                            .collect(),
+                        weapon_cooldowns: component
+                            .weapon_ready_at
+                            .iter()
+                            .map(|(item, ready_at_tick)| WeaponCooldownSnapshot {
+                                item: item.as_str().to_string(),
+                                ready_at_tick: ready_at_tick.raw(),
+                            })
+                            .collect(),
+                        weapon_entities: component
+                            .weapon_entities
+                            .iter()
+                            .map(|(item, entity)| WeaponEntitySnapshot {
+                                item: item.as_str().to_string(),
+                                entity: entity.raw(),
+                            })
+                            .collect(),
+                    }
                 })
                 .collect(),
             pickups: self
@@ -1320,7 +1354,7 @@ impl GameRuntime {
         {
             return Err(GameSnapshotError::FutureEnemyCombatStateInLegacySnapshot);
         }
-        if source_schema_version < GAME_SNAPSHOT_SCHEMA_VERSION
+        if source_schema_version < ENEMY_ARCHETYPE_SNAPSHOT_SCHEMA_VERSION
             && (!snapshot.enemy_drops.is_empty()
                 || snapshot.encounters.iter().any(|encounter| {
                     encounter.activation_radius.is_some()
@@ -1338,6 +1372,9 @@ impl GameRuntime {
         } else {
             None
         };
+        if source_schema_version < GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION {
+            snapshot.entities.registered_components.clear();
+        }
         let collision_scene = snapshot
             .voxel_collision
             .map(|scene| match scene.generated_room {
@@ -1407,7 +1444,9 @@ impl GameRuntime {
                 }
             })
             .transpose()?;
-        let entities = EntityState::from_snapshot(snapshot.entities)
+        let registry = crate::mechanics::mechanics_registry()
+            .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
+        let mut entities = EntityState::from_snapshot_with_registry(snapshot.entities, registry)
             .map_err(GameSnapshotError::EntityState)?;
         let item_definitions = admit_item_definitions(
             snapshot
@@ -1417,6 +1456,14 @@ impl GameRuntime {
                 .collect::<Result<Vec<_>, _>>()?,
         )
         .map_err(GameSnapshotError::Inventory)?;
+        let mechanics = crate::mechanics::build_runtime(&item_definitions)
+            .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
+        if source_schema_version >= GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION {
+            gameplay_mechanics::validate_state_against_catalog(&entities, &mechanics.catalog)
+                .map_err(|error| GameSnapshotError::Mechanics {
+                    reason: error.to_string(),
+                })?;
+        }
         let mut doors = BTreeMap::new();
         let mut door_ids = BTreeSet::new();
         for door in snapshot.doors {
@@ -1786,24 +1833,71 @@ impl GameRuntime {
                     entity: health_snapshot.entity,
                 });
             }
-            health.insert(
-                entity,
-                HealthComponent {
+            if source_schema_version < GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION {
+                crate::mechanics::attach_restored_health(
+                    &mut entities,
+                    &mechanics,
+                    entity,
                     config,
-                    current: health_snapshot.current,
-                    armor: health_snapshot.armor,
-                    armor_item,
-                    state,
-                },
-            );
+                    health_snapshot.current,
+                    health_snapshot.armor,
+                    armor_item.as_ref(),
+                )
+                .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
+            } else {
+                let tracks = entities
+                    .component::<gameplay_mechanics::TracksComponent>(entity)
+                    .map_err(|error| GameSnapshotError::Mechanics {
+                        reason: error.to_string(),
+                    })?
+                    .ok_or_else(|| GameSnapshotError::Mechanics {
+                        reason: format!("health entity {entity} has no canonical tracks"),
+                    })?;
+                let canonical_health = tracks
+                    .current(&crate::mechanics::health_track())
+                    .and_then(|value| u32::try_from(value.get()).ok());
+                let canonical_armor = tracks
+                    .current(&crate::mechanics::armor_track())
+                    .and_then(|value| u32::try_from(value.get()).ok());
+                let canonical_armor_item = entities
+                    .component::<gameplay_mechanics::ActiveEffectsComponent>(entity)
+                    .map_err(|error| GameSnapshotError::Mechanics {
+                        reason: error.to_string(),
+                    })?
+                    .and_then(|effects| {
+                        effects.effects().iter().find_map(|effect| {
+                            mechanics.armor.iter().find_map(|(item, binding)| {
+                                (effect.definition() == &binding.effect).then(|| item.clone())
+                            })
+                        })
+                    });
+                if canonical_health != Some(health_snapshot.current)
+                    || canonical_armor != Some(health_snapshot.armor)
+                    || canonical_armor_item != armor_item
+                {
+                    return Err(GameSnapshotError::Mechanics {
+                        reason: format!(
+                            "health projection disagrees with canonical mechanics for {entity}"
+                        ),
+                    });
+                }
+            }
+            health.insert(entity, config);
         }
         for (entity, enemy) in &enemies {
-            let Some(health) = health.get(entity) else {
+            let Some(_) = health.get(entity) else {
                 continue;
             };
+            let current = entities
+                .component::<gameplay_mechanics::TracksComponent>(*entity)
+                .ok()
+                .flatten()
+                .and_then(|tracks| tracks.current(&crate::mechanics::health_track()))
+                .and_then(|value| u32::try_from(value.get()).ok())
+                .unwrap_or(0);
             let consistent = match enemy.state {
-                EnemyState::Alive => health.current > 0,
-                EnemyState::Defeated => health.current == 0,
+                EnemyState::Alive => current > 0,
+                EnemyState::Defeated => current == 0,
             };
             if !consistent {
                 return Err(GameSnapshotError::EnemyHealthStateMismatch {
@@ -2069,34 +2163,44 @@ impl GameRuntime {
         }
 
         let mut inventories = BTreeMap::new();
+        let mut next_hidden_entity = entities
+            .entities()
+            .map(|entity| entity.id.raw())
+            .max()
+            .unwrap_or(0)
+            .checked_add(1)
+            .ok_or_else(|| GameSnapshotError::Mechanics {
+                reason: "weapon item entity identity overflow".to_string(),
+            })?;
         for inventory in snapshot.inventories {
-            let owner = EntityId::new(inventory.owner);
+            let InventorySnapshot {
+                owner: raw_owner,
+                capacity_slots,
+                stacks,
+                equipped_weapon,
+                weapon_slots,
+                weapon_cooldowns,
+                weapon_entities: persisted_weapon_entities,
+            } = inventory;
+            let owner = EntityId::new(raw_owner);
             if inventories.contains_key(&owner) {
-                return Err(GameSnapshotError::DuplicateInventory {
-                    owner: inventory.owner,
-                });
+                return Err(GameSnapshotError::DuplicateInventory { owner: raw_owner });
             }
             if !entities.contains(owner) || !player_controllers.contains_key(&owner) {
-                return Err(GameSnapshotError::UnknownInventoryEntity {
-                    owner: inventory.owner,
-                });
+                return Err(GameSnapshotError::UnknownInventoryEntity { owner: raw_owner });
             }
-            let weapon_slots = inventory
-                .weapon_slots
+            let weapon_slots = weapon_slots
                 .into_iter()
                 .map(parse_snapshot_item_id)
                 .collect::<Result<Vec<_>, _>>()?;
             if player_controllers.get(&owner).is_none_or(|controller| {
                 controller.config.bindings.select_weapon.len() != weapon_slots.len()
             }) {
-                return Err(GameSnapshotError::InvalidPlayerControllerConfig {
-                    entity: inventory.owner,
-                });
+                return Err(GameSnapshotError::InvalidPlayerControllerConfig { entity: raw_owner });
             }
             let config = InventoryConfig::new(
-                inventory.capacity_slots,
-                inventory
-                    .stacks
+                capacity_slots,
+                stacks
                     .into_iter()
                     .map(|stack| {
                         Ok(InventoryStack::new(
@@ -2105,16 +2209,13 @@ impl GameRuntime {
                         ))
                     })
                     .collect::<Result<Vec<_>, GameSnapshotError>>()?,
-                inventory
-                    .equipped_weapon
-                    .map(parse_snapshot_item_id)
-                    .transpose()?,
+                equipped_weapon.map(parse_snapshot_item_id).transpose()?,
                 weapon_slots.clone(),
             );
-            let mut component = inventory_from_config(owner, &config, &item_definitions)
+            let mut runtime = inventory_from_config(owner, &config, &item_definitions)
                 .map_err(GameSnapshotError::Inventory)?;
             let mut cooldowns = BTreeMap::new();
-            for cooldown in inventory.weapon_cooldowns {
+            for cooldown in weapon_cooldowns {
                 let raw_item = cooldown.item.clone();
                 let item = parse_snapshot_item_id(cooldown.item)?;
                 let latest_reachable =
@@ -2133,19 +2234,166 @@ impl GameRuntime {
                         .is_some()
                 {
                     return Err(GameSnapshotError::InvalidWeaponCooldown {
-                        owner: inventory.owner,
+                        owner: raw_owner,
                         item: raw_item,
                     });
                 }
             }
             if cooldowns.len() != weapon_slots.len() {
                 return Err(GameSnapshotError::InvalidWeaponCooldown {
-                    owner: inventory.owner,
+                    owner: raw_owner,
                     item: "missing-authored-slot".to_string(),
                 });
             }
-            component.weapon_ready_at = cooldowns;
-            inventories.insert(owner, component);
+            let weapon_entities = if source_schema_version
+                < GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION
+            {
+                let mut mappings = BTreeMap::new();
+                for item in &runtime.weapon_slots {
+                    let entity = EntityId::new(next_hidden_entity);
+                    next_hidden_entity = next_hidden_entity.checked_add(1).ok_or_else(|| {
+                        GameSnapshotError::Mechanics {
+                            reason: "weapon item entity identity overflow".to_string(),
+                        }
+                    })?;
+                    let owned = config
+                        .starting_stacks
+                        .iter()
+                        .any(|stack| stack.item == *item && stack.quantity > 0);
+                    let mut definition = entity_state::EntityDefinition::new(
+                        entity,
+                        format!("Inventory weapon {}", item.as_str()),
+                    );
+                    if owned {
+                        definition = definition.with_containment(owner);
+                    }
+                    let expected_revision = entities.revision();
+                    entity_state::EntityAuthoringService
+                        .admit(&mut entities, expected_revision, [definition])
+                        .map_err(|error| GameSnapshotError::Mechanics {
+                            reason: error.to_string(),
+                        })?;
+                    mappings.insert(item.clone(), entity);
+                }
+                runtime =
+                    crate::mechanics::attach_inventory(&mut entities, owner, &config, &mappings)
+                        .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
+                mappings
+            } else {
+                if persisted_weapon_entities.len() != runtime.weapon_slots.len() {
+                    return Err(GameSnapshotError::Mechanics {
+                        reason: format!(
+                            "inventory {owner} has incomplete canonical weapon entity mapping"
+                        ),
+                    });
+                }
+                let mut mappings = BTreeMap::new();
+                for mapping in persisted_weapon_entities {
+                    let item = parse_snapshot_item_id(mapping.item)?;
+                    let entity = EntityId::new(mapping.entity);
+                    if !runtime.weapon_slots.contains(&item)
+                        || mappings.insert(item.clone(), entity).is_some()
+                    {
+                        return Err(GameSnapshotError::Mechanics {
+                            reason: format!(
+                                "inventory {owner} has invalid weapon entity mapping for {item}"
+                            ),
+                        });
+                    }
+                    let component = entities
+                        .component::<gameplay_mechanics::ItemComponent>(entity)
+                        .map_err(|error| GameSnapshotError::Mechanics {
+                            reason: error.to_string(),
+                        })?
+                        .ok_or_else(|| GameSnapshotError::Mechanics {
+                            reason: format!("weapon entity {entity} has no canonical item"),
+                        })?;
+                    if component.definition()
+                        != &crate::mechanics::mechanics_item_id(&item)
+                            .map_err(|reason| GameSnapshotError::Mechanics { reason })?
+                    {
+                        return Err(GameSnapshotError::Mechanics {
+                            reason: format!(
+                                "weapon entity {entity} definition disagrees with {item}"
+                            ),
+                        });
+                    }
+                }
+                mappings
+            };
+            runtime.weapon_entities = weapon_entities;
+            runtime.weapon_ready_at = cooldowns;
+            if source_schema_version >= GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION {
+                let canonical = gameplay_mechanics::InventoryService::view(
+                    &entities,
+                    &mechanics.catalog,
+                    owner,
+                )
+                .map_err(|error| GameSnapshotError::Mechanics {
+                    reason: error.to_string(),
+                })?;
+                let mut actual = BTreeMap::new();
+                for stack in canonical.stacks() {
+                    let item = item_definitions
+                        .keys()
+                        .find(|item| {
+                            crate::mechanics::mechanics_item_id(item)
+                                .is_ok_and(|candidate| candidate == stack.definition)
+                        })
+                        .cloned()
+                        .ok_or_else(|| GameSnapshotError::Mechanics {
+                            reason: format!(
+                                "inventory {owner} contains unknown canonical item {}",
+                                stack.definition
+                            ),
+                        })?;
+                    actual.insert(item, u32::try_from(stack.quantity).unwrap_or(u32::MAX));
+                }
+                for unique in canonical.unique_items() {
+                    let item = runtime
+                        .weapon_entities
+                        .iter()
+                        .find_map(|(item, entity)| (*entity == unique.entity).then(|| item.clone()))
+                        .ok_or_else(|| GameSnapshotError::Mechanics {
+                            reason: format!(
+                                "inventory {owner} contains unmapped unique item {}",
+                                unique.entity
+                            ),
+                        })?;
+                    actual.insert(item, 1);
+                }
+                let expected = config
+                    .starting_stacks
+                    .iter()
+                    .map(|stack| (stack.item.clone(), stack.quantity))
+                    .collect::<BTreeMap<_, _>>();
+                let equipped = entities
+                    .component::<gameplay_mechanics::EquipmentComponent>(owner)
+                    .map_err(|error| GameSnapshotError::Mechanics {
+                        reason: error.to_string(),
+                    })?
+                    .and_then(|equipment| {
+                        equipment
+                            .assignment(&crate::mechanics::weapon_slot())
+                            .map(|assignment| assignment.item)
+                    })
+                    .and_then(|entity| {
+                        runtime
+                            .weapon_entities
+                            .iter()
+                            .find_map(|(item, candidate)| {
+                                (*candidate == entity).then(|| item.clone())
+                            })
+                    });
+                if actual != expected || equipped != config.initially_equipped_weapon {
+                    return Err(GameSnapshotError::Mechanics {
+                        reason: format!(
+                            "inventory projection disagrees with canonical mechanics for {owner}"
+                        ),
+                    });
+                }
+            }
+            inventories.insert(owner, runtime);
         }
 
         if snapshot.pickups.len() > engine_spatial::MAX_TRIGGER_DEFINITIONS {
@@ -2574,6 +2822,7 @@ impl GameRuntime {
                 player_controllers,
                 item_definitions,
                 inventories,
+                mechanics,
                 pickups,
                 secret_regions,
                 level_exits,
@@ -2807,6 +3056,7 @@ fn migrate_legacy_snapshot_weapon_authority(
                     item: weapon_id,
                     ready_at_tick: legacy.ready_at_tick,
                 }],
+                weapon_entities: Vec::new(),
             });
         } else {
             let equipped = snapshot

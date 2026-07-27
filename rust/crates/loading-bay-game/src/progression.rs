@@ -308,7 +308,7 @@ impl ProgressionService {
         {
             return Err(DoorAccessRejection::OutOfRange { actor, door });
         }
-        let owned = session.inventories.get(&actor).is_some_and(|inventory| {
+        let owned = session.inventory(actor).is_some_and(|inventory| {
             inventory
                 .stacks
                 .iter()

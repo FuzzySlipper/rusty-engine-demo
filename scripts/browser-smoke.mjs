@@ -1135,13 +1135,9 @@ async function runDeadDialogFocusProof(project) {
             client,
             running.address,
             ["KeyW"],
-            (state) =>
-              state.player.currentHealth < state.player.maxHealth &&
-              state.enemies?.some(
-                (enemy) => enemy.combatPosture === "attacking",
-              ) === true,
-            "cargo-floor enemy attack damage",
-            15_000,
+            (state) => state.player.vitalityState === "dead",
+            "cargo-floor enemy-caused death",
+            60_000,
           );
           await waitForHostState(
             running.address,

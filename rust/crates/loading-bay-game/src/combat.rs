@@ -13,7 +13,7 @@ use crate::inventory::{
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
-use crate::vitality::{DamageCommand, DamageService, DamageSource, VitalityFact, VitalityState};
+use crate::vitality::{DamageCommand, DamageService, DamageSource, VitalityFact};
 use crate::EnemyDropFact;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -173,11 +173,7 @@ impl CombatService {
         if !session.entities.contains(attacker) {
             return Err(RuntimeError::UnknownActor { actor: attacker });
         }
-        if session
-            .health
-            .get(&attacker)
-            .is_some_and(|health| health.state == VitalityState::Dead)
-        {
+        if DamageService::is_dead(session, attacker) {
             return Err(RuntimeError::CombatRejected {
                 entity: attacker,
                 reason: CombatRejectionReason::AttackerDefeated,
@@ -189,7 +185,7 @@ impl CombatService {
                 reason: CombatRejectionReason::NoEquippedWeapon,
             });
         };
-        let Some(weapon_item) = inventory.equipped_weapon.clone() else {
+        let Some(weapon_item) = session.equipped_weapon(attacker) else {
             return Err(RuntimeError::CombatRejected {
                 entity: attacker,
                 reason: CombatRejectionReason::NoEquippedWeapon,
@@ -218,7 +214,9 @@ impl CombatService {
                 reason: CombatRejectionReason::Cooldown,
             });
         }
-        let ammo_before = inventory
+        let ammo_before = session
+            .inventory(attacker)
+            .expect("inventory admission remains readable")
             .stacks
             .iter()
             .find(|stack| stack.item == weapon.ammunition)
@@ -411,8 +409,7 @@ impl CombatService {
             return Ok(None);
         }
         let amount = session
-            .health
-            .get(&enemy)
+            .health(enemy)
             .map_or(1, |health| health.current.max(1));
         DamageService::apply(
             session,
@@ -519,7 +516,7 @@ fn nearest_combat_target(
         {
             continue;
         }
-        let Some(health) = session.health.get(entity) else {
+        let Some(health) = session.health(*entity) else {
             continue;
         };
         if health.current == 0 {

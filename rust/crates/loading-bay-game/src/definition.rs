@@ -182,6 +182,9 @@ impl GameEntityDefinition {
 pub enum GameEntityDefinitionError {
     EntityState(entity_state::EntityDefinitionError),
     Inventory(InventoryAdmissionError),
+    Mechanics {
+        reason: String,
+    },
     DuplicateControlTarget {
         switch: EntityId,
         target: EntityId,

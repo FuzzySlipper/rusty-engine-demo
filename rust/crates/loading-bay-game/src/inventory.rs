@@ -3,11 +3,18 @@ use std::collections::{BTreeMap, BTreeSet};
 use core_ids::EntityId;
 use core_math::Vec3;
 use core_time::Tick;
+use gameplay_mechanics::{
+    EquipmentEquipRequest, EquipmentService as MechanicsEquipmentService, EquipmentSwapRequest,
+    EquipmentUnequipRequest, InventoryMutationRequest,
+    InventoryService as MechanicsInventoryService, OperationId, SourceInstanceId,
+    SourceInstanceIdentity,
+};
 
 use crate::combat::{
     MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_PELLETS,
     MAX_WEAPON_RANGE, MAX_WEAPON_SPREAD_DEGREES,
 };
+use crate::mechanics::{mechanics_item_id, weapon_slot, InventoryRuntime};
 
 pub const MAX_ITEM_DEFINITION_ID_BYTES: usize = 96;
 pub const MAX_ITEM_QUANTITY: u32 = 1_000_000;
@@ -187,16 +194,6 @@ impl InventoryConfig {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct InventoryComponent {
-    pub capacity_slots: usize,
-    pub stacks: Vec<InventoryStack>,
-    pub equipped_weapon: Option<ItemDefinitionId>,
-    pub weapon_slots: Vec<ItemDefinitionId>,
-    pub weapon_ready_at: BTreeMap<ItemDefinitionId, Tick>,
-    pub(crate) last_applied_command_sequence: Option<u64>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub struct InventoryView {
     pub owner: EntityId,
     pub capacity_slots: usize,
@@ -326,6 +323,9 @@ pub enum InventoryRejection {
         sequence: u64,
         last_applied: u64,
     },
+    Mechanics {
+        reason: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -386,6 +386,9 @@ pub enum InventoryAdmissionError {
         owner: EntityId,
         item: ItemDefinitionId,
     },
+    Mechanics {
+        reason: String,
+    },
 }
 
 pub struct InventoryService;
@@ -396,10 +399,10 @@ impl InventoryService {
         owner: EntityId,
         command: InventoryCommand,
     ) -> Result<InventoryReceipt, InventoryRejection> {
-        let Some(component) = session.inventories.get(&owner) else {
+        let Some(runtime) = session.inventories.get(&owner) else {
             return Err(InventoryRejection::UnknownInventory { owner });
         };
-        if let Some(last_applied) = component.last_applied_command_sequence {
+        if let Some(last_applied) = runtime.last_applied_command_sequence {
             if command.sequence == last_applied {
                 return Err(InventoryRejection::RepeatedCommand {
                     sequence: command.sequence,
@@ -413,25 +416,21 @@ impl InventoryService {
             }
         }
 
-        let before = inventory_view(owner, component);
+        let before = inventory_view(session, owner)?;
         if matches!(command.action, InventoryAction::SelectWeapon { .. })
-            && session
-                .health
-                .get(&owner)
-                .is_some_and(|health| health.state == crate::VitalityState::Dead)
+            && crate::vitality::DamageService::is_dead(session, owner)
         {
             return Err(InventoryRejection::OwnerDefeated { owner });
         }
-        let mut candidate = component.clone();
-        let facts = apply_action(
-            &session.item_definitions,
-            owner,
-            &mut candidate,
-            &command.action,
-        )?;
-        candidate.last_applied_command_sequence = Some(command.sequence);
-        let after = inventory_view(owner, &candidate);
-        session.inventories.insert(owner, candidate);
+        let mut candidate = session.clone();
+        let facts = apply_action(&mut candidate, owner, command.sequence, &command.action)?;
+        candidate
+            .inventories
+            .get_mut(&owner)
+            .expect("validated inventory remains attached")
+            .last_applied_command_sequence = Some(command.sequence);
+        let after = inventory_view(&candidate, owner)?;
+        *session = candidate;
 
         Ok(InventoryReceipt {
             sequence: command.sequence,
@@ -524,7 +523,7 @@ pub(crate) fn inventory_from_config(
     owner: EntityId,
     config: &InventoryConfig,
     definitions: &BTreeMap<ItemDefinitionId, ItemDefinition>,
-) -> Result<InventoryComponent, InventoryAdmissionError> {
+) -> Result<InventoryRuntime, InventoryAdmissionError> {
     if config.capacity_slots == 0 || config.capacity_slots > MAX_INVENTORY_SLOTS {
         return Err(InventoryAdmissionError::InvalidCapacity {
             owner,
@@ -597,11 +596,15 @@ pub(crate) fn inventory_from_config(
             });
         }
     }
-    Ok(InventoryComponent {
+    Ok(InventoryRuntime {
         capacity_slots: config.capacity_slots,
-        stacks: config.starting_stacks.clone(),
-        equipped_weapon: config.initially_equipped_weapon.clone(),
+        stack_order: config
+            .starting_stacks
+            .iter()
+            .map(|stack| stack.item.clone())
+            .collect(),
         weapon_slots: config.weapon_slots.clone(),
+        weapon_entities: BTreeMap::new(),
         weapon_ready_at: config
             .weapon_slots
             .iter()
@@ -612,99 +615,155 @@ pub(crate) fn inventory_from_config(
     })
 }
 
-pub(crate) fn inventory_view(owner: EntityId, component: &InventoryComponent) -> InventoryView {
-    InventoryView {
-        owner,
-        capacity_slots: component.capacity_slots,
-        stacks: component.stacks.clone(),
-        equipped_weapon: component.equipped_weapon.clone(),
-        weapon_slots: component.weapon_slots.clone(),
-        weapon_ready_at: component.weapon_ready_at.clone(),
+pub(crate) fn inventory_view(
+    session: &crate::session::GameSession,
+    owner: EntityId,
+) -> Result<InventoryView, InventoryRejection> {
+    let runtime = session
+        .inventories
+        .get(&owner)
+        .ok_or(InventoryRejection::UnknownInventory { owner })?;
+    let canonical =
+        MechanicsInventoryService::view(&session.entities, &session.mechanics.catalog, owner)
+            .map_err(mechanics_rejection)?;
+    let equipped_weapon = session.equipped_weapon(owner);
+    let mut stacks = canonical
+        .stacks()
+        .iter()
+        .map(|stack| {
+            let item = product_item_id(&session.item_definitions, &stack.definition)?;
+            let quantity =
+                u32::try_from(stack.quantity).map_err(|_| InventoryRejection::Mechanics {
+                    reason: format!(
+                        "quantity {} does not fit product representation",
+                        stack.quantity
+                    ),
+                })?;
+            Ok(InventoryStack::new(item, quantity))
+        })
+        .collect::<Result<Vec<_>, InventoryRejection>>()?;
+    for unique in canonical.unique_items() {
+        let item = product_item_id(&session.item_definitions, &unique.definition)?;
+        stacks.push(InventoryStack::new(item, 1));
     }
+    stacks.sort_by_key(|stack| {
+        runtime
+            .stack_order
+            .iter()
+            .position(|item| item == &stack.item)
+            .unwrap_or(usize::MAX)
+    });
+    Ok(InventoryView {
+        owner,
+        capacity_slots: runtime.capacity_slots,
+        stacks,
+        equipped_weapon,
+        weapon_slots: runtime.weapon_slots.clone(),
+        weapon_ready_at: runtime.weapon_ready_at.clone(),
+    })
 }
 
 fn apply_action(
-    definitions: &BTreeMap<ItemDefinitionId, ItemDefinition>,
+    session: &mut crate::session::GameSession,
     owner: EntityId,
-    candidate: &mut InventoryComponent,
+    sequence: u64,
     action: &InventoryAction,
 ) -> Result<Vec<InventoryFact>, InventoryRejection> {
+    let definitions = &session.item_definitions;
+    let before_view = inventory_view(session, owner)?;
+    let operation = operation_id(sequence)?;
+    let source = source_identity(operation.clone())?;
     match action {
         InventoryAction::Grant { item, quantity } => {
             let definition = require_definition(definitions, item)?;
             if *quantity == 0 {
                 return Err(InventoryRejection::ZeroQuantity { item: item.clone() });
             }
-            if let Some(stack) = candidate
+            let before = before_view
                 .stacks
-                .iter_mut()
+                .iter()
                 .find(|stack| stack.item == *item)
-            {
-                let before = stack.quantity;
-                let Some(after) = before.checked_add(*quantity) else {
-                    return Err(InventoryRejection::QuantityOverflow {
-                        item: item.clone(),
-                        current: before,
-                        requested: *quantity,
-                        limit: definition.max_quantity,
-                    });
-                };
-                if after > definition.max_quantity {
-                    return Err(InventoryRejection::QuantityOverflow {
-                        item: item.clone(),
-                        current: before,
-                        requested: *quantity,
-                        limit: definition.max_quantity,
-                    });
-                }
-                stack.quantity = after;
-                return Ok(vec![InventoryFact::QuantityChanged {
-                    owner,
+                .map_or(0, |stack| stack.quantity);
+            let after = before.checked_add(*quantity).ok_or_else(|| {
+                InventoryRejection::QuantityOverflow {
                     item: item.clone(),
-                    before,
-                    after,
-                }]);
-            }
-            if candidate.stacks.len() == candidate.capacity_slots {
-                return Err(InventoryRejection::InventoryFull {
-                    capacity_slots: candidate.capacity_slots,
-                });
-            }
-            if *quantity > definition.max_quantity {
+                    current: before,
+                    requested: *quantity,
+                    limit: definition.max_quantity,
+                }
+            })?;
+            if after > definition.max_quantity {
                 return Err(InventoryRejection::QuantityOverflow {
                     item: item.clone(),
-                    current: 0,
+                    current: before,
                     requested: *quantity,
                     limit: definition.max_quantity,
                 });
             }
-            candidate
-                .stacks
-                .push(InventoryStack::new(item.clone(), *quantity));
+            if before == 0 && before_view.stacks.len() == before_view.capacity_slots {
+                return Err(InventoryRejection::InventoryFull {
+                    capacity_slots: before_view.capacity_slots,
+                });
+            }
+            if matches!(definition.kind, ItemKind::Weapon(_)) {
+                if *quantity != 1 || before != 0 {
+                    return Err(InventoryRejection::QuantityOverflow {
+                        item: item.clone(),
+                        current: before,
+                        requested: *quantity,
+                        limit: 1,
+                    });
+                }
+                let weapon = session
+                    .inventories
+                    .get(&owner)
+                    .and_then(|runtime| runtime.weapon_entities.get(item))
+                    .copied()
+                    .ok_or_else(|| InventoryRejection::IncompatibleSelection {
+                        item: item.clone(),
+                    })?;
+                crate::mechanics::set_weapon_containment(&mut session.entities, weapon, owner)
+                    .map_err(|reason| InventoryRejection::Mechanics { reason })?;
+            } else {
+                MechanicsInventoryService::grant(
+                    &mut session.entities,
+                    &session.mechanics.catalog,
+                    InventoryMutationRequest {
+                        operation,
+                        source,
+                        owner,
+                        item: mechanics_item_id(item)
+                            .map_err(|reason| InventoryRejection::Mechanics { reason })?,
+                        quantity: u64::from(*quantity),
+                        expected_revision: None,
+                    },
+                )
+                .map_err(mechanics_rejection)?;
+            }
+            let runtime = session
+                .inventories
+                .get_mut(&owner)
+                .expect("validated inventory remains attached");
+            if before == 0 {
+                runtime.stack_order.push(item.clone());
+            }
             Ok(vec![InventoryFact::QuantityChanged {
                 owner,
                 item: item.clone(),
-                before: 0,
-                after: *quantity,
+                before,
+                after,
             }])
         }
         InventoryAction::Consume { item, quantity } => {
-            require_definition(definitions, item)?;
+            let definition = require_definition(definitions, item)?;
             if *quantity == 0 {
                 return Err(InventoryRejection::ZeroQuantity { item: item.clone() });
             }
-            let Some(index) = candidate
+            let before = before_view
                 .stacks
                 .iter()
-                .position(|stack| stack.item == *item)
-            else {
-                return Err(InventoryRejection::QuantityUnderflow {
-                    item: item.clone(),
-                    current: 0,
-                    requested: *quantity,
-                });
-            };
-            let before = candidate.stacks[index].quantity;
+                .find(|stack| stack.item == *item)
+                .map_or(0, |stack| stack.quantity);
             if *quantity > before {
                 return Err(InventoryRejection::QuantityUnderflow {
                     item: item.clone(),
@@ -719,18 +778,68 @@ fn apply_action(
                 before,
                 after,
             }];
-            if after == 0 {
-                candidate.stacks.remove(index);
-                if candidate.equipped_weapon.as_ref() == Some(item) {
-                    let before_equipped = candidate.equipped_weapon.take();
+            if matches!(definition.kind, ItemKind::Weapon(_)) {
+                if *quantity != 1 {
+                    return Err(InventoryRejection::QuantityUnderflow {
+                        item: item.clone(),
+                        current: before,
+                        requested: *quantity,
+                    });
+                }
+                let weapon = session
+                    .inventories
+                    .get(&owner)
+                    .and_then(|runtime| runtime.weapon_entities.get(item))
+                    .copied()
+                    .ok_or_else(|| InventoryRejection::IncompatibleSelection {
+                        item: item.clone(),
+                    })?;
+                if before_view.equipped_weapon.as_ref() == Some(item) {
+                    let state_revision = session.entities.revision();
+                    MechanicsEquipmentService::unequip(
+                        &mut session.entities,
+                        &session.mechanics.catalog,
+                        EquipmentUnequipRequest {
+                            operation: operation.clone(),
+                            source: source.clone(),
+                            owner,
+                            item: weapon,
+                            expected_equipment_revision: None,
+                            expected_state_revision: state_revision,
+                        },
+                    )
+                    .map_err(mechanics_rejection)?;
                     facts.push(InventoryFact::EquippedWeaponChanged {
                         owner,
-                        before: before_equipped,
+                        before: Some(item.clone()),
                         after: None,
                     });
                 }
+                crate::mechanics::clear_weapon_containment(&mut session.entities, weapon)
+                    .map_err(|reason| InventoryRejection::Mechanics { reason })?;
             } else {
-                candidate.stacks[index].quantity = after;
+                MechanicsInventoryService::consume(
+                    &mut session.entities,
+                    &session.mechanics.catalog,
+                    InventoryMutationRequest {
+                        operation,
+                        source,
+                        owner,
+                        item: mechanics_item_id(item)
+                            .map_err(|reason| InventoryRejection::Mechanics { reason })?,
+                        quantity: u64::from(*quantity),
+                        expected_revision: None,
+                    },
+                )
+                .map_err(mechanics_rejection)?;
+            }
+            if after == 0 {
+                session
+                    .inventories
+                    .get_mut(&owner)
+                    .expect("validated inventory remains attached")
+                    .stack_order
+                    .retain(|candidate| candidate != item);
             }
             Ok(facts)
         }
@@ -738,7 +847,7 @@ fn apply_action(
             from_index,
             to_index,
         } => {
-            let stack_count = candidate.stacks.len();
+            let stack_count = before_view.stacks.len();
             if *from_index >= stack_count {
                 return Err(InventoryRejection::InvalidStackIndex {
                     index: *from_index,
@@ -754,9 +863,13 @@ fn apply_action(
             if from_index == to_index {
                 return Err(InventoryRejection::AlreadyInPosition { index: *from_index });
             }
-            let stack = candidate.stacks.remove(*from_index);
-            let item = stack.item.clone();
-            candidate.stacks.insert(*to_index, stack);
+            let order = &mut session
+                .inventories
+                .get_mut(&owner)
+                .expect("validated inventory remains attached")
+                .stack_order;
+            let item = order.remove(*from_index);
+            order.insert(*to_index, item.clone());
             Ok(vec![InventoryFact::StackMoved {
                 owner,
                 item,
@@ -769,16 +882,64 @@ fn apply_action(
             if !matches!(definition.kind, ItemKind::Weapon(_)) {
                 return Err(InventoryRejection::IncompatibleSelection { item: item.clone() });
             }
-            if !candidate.weapon_slots.contains(item) {
+            let runtime = session
+                .inventories
+                .get(&owner)
+                .expect("validated inventory remains attached");
+            if !runtime.weapon_slots.contains(item) {
                 return Err(InventoryRejection::IncompatibleSelection { item: item.clone() });
             }
-            if !candidate.stacks.iter().any(|stack| stack.item == *item) {
+            if !before_view.stacks.iter().any(|stack| stack.item == *item) {
                 return Err(InventoryRejection::WeaponNotOwned { item: item.clone() });
             }
-            if candidate.equipped_weapon.as_ref() == Some(item) {
+            if before_view.equipped_weapon.as_ref() == Some(item) {
                 return Err(InventoryRejection::AlreadySelected { item: item.clone() });
             }
-            let before = candidate.equipped_weapon.replace(item.clone());
+            let incoming =
+                runtime.weapon_entities.get(item).copied().ok_or_else(|| {
+                    InventoryRejection::IncompatibleSelection { item: item.clone() }
+                })?;
+            let state_revision = session.entities.revision();
+            if let Some(before_item) = &before_view.equipped_weapon {
+                let outgoing = runtime
+                    .weapon_entities
+                    .get(before_item)
+                    .copied()
+                    .ok_or_else(|| InventoryRejection::Mechanics {
+                        reason: format!("missing unique entity for equipped weapon {before_item}"),
+                    })?;
+                MechanicsEquipmentService::swap(
+                    &mut session.entities,
+                    &session.mechanics.catalog,
+                    EquipmentSwapRequest {
+                        operation,
+                        source,
+                        owner,
+                        outgoing_item: outgoing,
+                        incoming_item: incoming,
+                        incoming_slots: vec![weapon_slot()],
+                        expected_equipment_revision: None,
+                        expected_state_revision: state_revision,
+                    },
+                )
+                .map_err(mechanics_rejection)?;
+            } else {
+                MechanicsEquipmentService::equip(
+                    &mut session.entities,
+                    &session.mechanics.catalog,
+                    EquipmentEquipRequest {
+                        operation,
+                        source,
+                        owner,
+                        item: incoming,
+                        slots: vec![weapon_slot()],
+                        expected_equipment_revision: None,
+                        expected_state_revision: state_revision,
+                    },
+                )
+                .map_err(mechanics_rejection)?;
+            }
+            let before = before_view.equipped_weapon;
             Ok(vec![InventoryFact::EquippedWeaponChanged {
                 owner,
                 before,
@@ -799,6 +960,44 @@ fn require_definition<'a>(
     definitions
         .get(item)
         .ok_or_else(|| InventoryRejection::MissingDefinition { item: item.clone() })
+}
+
+fn product_item_id(
+    definitions: &BTreeMap<ItemDefinitionId, ItemDefinition>,
+    mechanics: &gameplay_mechanics::ItemDefinitionId,
+) -> Result<ItemDefinitionId, InventoryRejection> {
+    definitions
+        .keys()
+        .find(|item| mechanics_item_id(item).is_ok_and(|candidate| candidate == *mechanics))
+        .cloned()
+        .ok_or_else(|| InventoryRejection::Mechanics {
+            reason: format!("unknown product item for canonical identity {mechanics}"),
+        })
+}
+
+fn operation_id(sequence: u64) -> Result<OperationId, InventoryRejection> {
+    OperationId::parse(format!("inventory-command-{sequence}")).map_err(|error| {
+        InventoryRejection::Mechanics {
+            reason: error.to_string(),
+        }
+    })
+}
+
+fn source_identity(operation: OperationId) -> Result<SourceInstanceIdentity, InventoryRejection> {
+    Ok(SourceInstanceIdentity::Request {
+        operation,
+        instance: SourceInstanceId::parse("inventory-command").map_err(|error| {
+            InventoryRejection::Mechanics {
+                reason: error.to_string(),
+            }
+        })?,
+    })
+}
+
+fn mechanics_rejection(error: gameplay_mechanics::MechanicsError) -> InventoryRejection {
+    InventoryRejection::Mechanics {
+        reason: error.to_string(),
+    }
 }
 
 fn is_kebab_segment(value: &str) -> bool {

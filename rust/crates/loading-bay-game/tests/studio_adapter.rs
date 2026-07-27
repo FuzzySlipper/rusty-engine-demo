@@ -36,7 +36,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 47);
     assert_eq!(
         response["project"]["inspections"]["entityState"]["entityCount"],
-        47
+        50
     );
     assert_eq!(
         response["project"]["inspections"]["persistence"]["artifactCount"],

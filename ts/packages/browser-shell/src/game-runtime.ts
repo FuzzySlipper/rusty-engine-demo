@@ -1322,6 +1322,7 @@ export async function mountLoadingBayGame(
         return true;
       }
       await useCampaignMedPatchIfNeeded();
+      await waitForWeaponReady();
       await aimAtEnemy(enemyId);
       await firePrimary();
     }
@@ -1329,6 +1330,19 @@ export async function mountLoadingBayGame(
       current.enemies.find((enemy) => enemy.id === enemyId)?.currentHealth ===
       targetHealth
     );
+  }
+
+  async function waitForWeaponReady(): Promise<void> {
+    const deadline = performance.now() + 5_000;
+    while (session.serverTick < current.weapon.readyAtTick) {
+      if (current.player.vitalityState === "dead") {
+        return;
+      }
+      if (performance.now() >= deadline) {
+        throw new Error("authoritative weapon cooldown did not elapse");
+      }
+      await delay(16);
+    }
   }
 
   async function walkPlayerPath(

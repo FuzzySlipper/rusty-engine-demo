@@ -441,6 +441,7 @@ fn defeated_player_cannot_change_equipped_weapon() {
     let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     let mut snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    downgrade_to_schema_eighteen(&mut snapshot);
     snapshot["health"]
         .as_array_mut()
         .unwrap()
@@ -811,6 +812,7 @@ fn save_and_load_edges_have_fixed_tick_meaning_while_live_paused_dead_or_complet
 
     let mut dead_snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(game_loop().runtime()).unwrap()).unwrap();
+    downgrade_to_schema_eighteen(&mut dead_snapshot);
     let health = dead_snapshot["health"]
         .as_array_mut()
         .unwrap()
@@ -867,6 +869,14 @@ fn save_and_load_edges_have_fixed_tick_meaning_while_live_paused_dead_or_complet
         sequence: 1,
         slot: SaveSlotId::Slot3,
     }));
+}
+
+fn downgrade_to_schema_eighteen(snapshot: &mut serde_json::Value) {
+    snapshot["schemaVersion"] = 18.into();
+    snapshot["entities"]["registeredComponents"] = serde_json::json!([]);
+    for inventory in snapshot["inventories"].as_array_mut().unwrap() {
+        inventory.as_object_mut().unwrap().remove("weaponEntities");
+    }
 }
 
 fn ammunition(game_loop: &LoadingBayGameLoop, item: &str) -> u32 {

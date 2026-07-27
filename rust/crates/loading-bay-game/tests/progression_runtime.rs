@@ -416,6 +416,11 @@ fn defeated_player_cannot_advance_progression_but_can_request_restart() {
     let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     let mut snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    snapshot["schemaVersion"] = 18.into();
+    snapshot["entities"]["registeredComponents"] = serde_json::json!([]);
+    for inventory in snapshot["inventories"].as_array_mut().unwrap() {
+        inventory.as_object_mut().unwrap().remove("weaponEntities");
+    }
     let health = snapshot["health"]
         .as_array_mut()
         .unwrap()

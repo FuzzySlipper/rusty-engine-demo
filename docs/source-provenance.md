@@ -5,8 +5,15 @@ Rusty Engine Demo was originally extracted from
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
 
 The current Rust dependencies and browser render packages resolve from exact reviewed Engine
-revision `aa7981510516c201d096ed5751b0e22fa32ef227`. The older revisions below remain historical
+revision `1ee4af531c848e3931cce33b22dc63405d48e3e7`. The older revisions below remain historical
 extraction and feature-provider points, not active dependency pins.
+
+That revision also supplies the reviewed `gameplay-mechanics` provider adopted by Den task #6290.
+Loading Bay uses its registered component store and named inventory, equipment, track, effect, and
+damage services for canonical live quantities and mutations. Loading Bay retains item/weapon
+meanings, fixed-tick ordering, ammunition and cooldown policy, pickups, combat targeting, death
+consequences, saves, projections, and schema migration; no sibling checkout or TypeScript
+mechanics authority is required.
 
 ## M10A Rust transfer
 
@@ -67,7 +74,7 @@ project path and headless beacon proof; it was not transferred from Engine.
 ## M11B Studio adapter and voxel-owner adaptation
 
 The project-owned Studio adapter was authored directly in this repository against an exact Engine
-revision, now `aa7981510516c201d096ed5751b0e22fa32ef227`. It composes the public `asset-catalog`,
+revision, now `1ee4af531c848e3931cce33b22dc63405d48e3e7`. It composes the public `asset-catalog`,
 `authored-scene`, `content-store`, `entity-state`, `engine-inspector`, `render-model`, and
 `render-projection` crates while retaining Loading Bay schema, layout, and domain admission here.
 No Studio or adapter implementation was copied from Engine or Asha.
@@ -92,7 +99,7 @@ transferred.
 
 Protocol 7 was authored directly in this repository against the Engine voxel-object Studio provider
 landed at `f725962bce3e18ffdf202086e00e5b111ce31823` and consumed through exact protocol-7 harness
-descendant `aa7981510516c201d096ed5751b0e22fa32ef227`. The adapter composes Engine-owned static and animated
+descendant `1ee4af531c848e3931cce33b22dc63405d48e3e7`. The adapter composes Engine-owned static and animated
 GLB inspection, bounded conversion planning, private candidate preview, exact output application,
 voxel-object runtime admission, and retained renderer projection. Loading Bay owns only its explicit
 project schema, catalog references, scene attachment operation, atomic publication, and typed
@@ -233,6 +240,6 @@ Rusty Engine task #6213 produced the renderer-owned timing seam at public SHA
 integration evidence adopted by #6219. Rusty Engine task #6263 then produced the bounded
 camera-relative `viewmodel` layer and explicit world/depth-clear/viewmodel composition at public SHA
 `e622c941671bc0f167206b049ab94ea63495a86d`, initially adopted by #6224 and retained in the current
-reviewed Engine descendant `aa7981510516c201d096ed5751b0e22fa32ef227`.
+reviewed Engine descendant `1ee4af531c848e3931cce33b22dc63405d48e3e7`.
 The downstream call site reads `surface.timing()` from the shared auto-started surface; no demo
 frame scheduler, backend clock, renderer object access, or private renderer was introduced.

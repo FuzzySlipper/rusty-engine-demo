@@ -283,17 +283,15 @@ fn death_clears_intent_rejects_same_tick_edges_and_exposes_distinct_restart_mode
 
 #[test]
 fn snapshot_round_trip_preserves_dead_posture_and_rejects_future_vitality_state() {
-    let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
-    let mut dead_snapshot: Value =
+    let mut game_loop = hazard_loop(100, 1, 100);
+    game_loop.run_fixed_tick().unwrap();
+    assert_eq!(
+        game_loop.runtime().session().health(PLAYER).unwrap().state,
+        VitalityState::Dead
+    );
+    let runtime = game_loop.into_runtime();
+    let dead_snapshot: Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
-    let player_health = dead_snapshot["health"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .find(|health| health["entity"] == PLAYER.raw())
-        .unwrap();
-    player_health["current"] = 0.into();
-    player_health["state"] = "dead".into();
 
     let reopened = decode_game_snapshot(&dead_snapshot.to_string()).unwrap();
     assert_eq!(

@@ -18,6 +18,7 @@ mod game_loop;
 mod hazard;
 mod interaction;
 mod inventory;
+mod mechanics;
 mod navigation;
 mod pickup;
 mod player;
@@ -87,11 +88,11 @@ pub use hazard::{
 };
 pub use interaction::{SwitchComponent, SwitchView};
 pub use inventory::{
-    InventoryAction, InventoryAdmissionError, InventoryCommand, InventoryComponent,
-    InventoryConfig, InventoryFact, InventoryReceipt, InventoryRejection, InventoryService,
-    InventoryStack, InventoryView, ItemDefinition, ItemDefinitionId, ItemDefinitionIdError,
-    ItemDefinitionView, ItemKind, WeaponAttackMode, WeaponDefinition, MAX_INVENTORY_SLOTS,
-    MAX_ITEM_DEFINITION_ID_BYTES, MAX_ITEM_QUANTITY,
+    InventoryAction, InventoryAdmissionError, InventoryCommand, InventoryConfig, InventoryFact,
+    InventoryReceipt, InventoryRejection, InventoryService, InventoryStack, InventoryView,
+    ItemDefinition, ItemDefinitionId, ItemDefinitionIdError, ItemDefinitionView, ItemKind,
+    WeaponAttackMode, WeaponDefinition, MAX_INVENTORY_SLOTS, MAX_ITEM_DEFINITION_ID_BYTES,
+    MAX_ITEM_QUANTITY,
 };
 pub use navigation::{
     NavigationComponent, NavigationConfig, NavigationFact, NavigationFailure,
@@ -148,8 +149,8 @@ pub use snapshot::{
     SnapshotEnemyAttackKind, SnapshotEnemyCombatPosture, SnapshotEnemyDropState,
     SnapshotEnemyState, SnapshotExtractionBeaconState, SnapshotItemKind, SnapshotNavigationState,
     SnapshotPickupCollectionCause, SnapshotPickupState, SnapshotVitalityState,
-    SnapshotWeaponAttackMode, VoxelCollisionSnapshot, WeaponCooldownSnapshot, WeaponSnapshot,
-    GAME_SNAPSHOT_SCHEMA_VERSION,
+    SnapshotWeaponAttackMode, VoxelCollisionSnapshot, WeaponCooldownSnapshot, WeaponEntitySnapshot,
+    WeaponSnapshot, GAME_SNAPSHOT_SCHEMA_VERSION,
 };
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset,
@@ -177,7 +178,7 @@ pub use studio_adapter::{
     MAX_STUDIO_ADAPTER_RESPONSE_BYTES, STUDIO_ADAPTER_PROTOCOL_VERSION,
 };
 pub use vitality::{
-    DamageCommand, DamageDisposition, DamageService, DamageSource, HealthComponent, HealthConfig,
-    HealthView, VitalityFact, VitalityReceipt, VitalityRejection, VitalityState, MAX_ARMOR,
+    DamageCommand, DamageDisposition, DamageService, DamageSource, HealthConfig, HealthView,
+    VitalityFact, VitalityReceipt, VitalityRejection, VitalityState, MAX_ARMOR,
     MAX_COMBAT_HITBOX_HALF_EXTENT, MAX_DAMAGE, MAX_HEALTH,
 };

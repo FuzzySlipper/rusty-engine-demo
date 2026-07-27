@@ -764,6 +764,10 @@ fn definition_error(
     use GameEntityDefinitionError as Error;
 
     let (code, path) = match &error {
+        Error::Mechanics { .. } => (
+            diagnostic_code::INVALID_COMPONENT,
+            format!("scenes[{scene_index}].entities"),
+        ),
         Error::Inventory(source) => inventory_error_path(source, scene_index, indexes),
         Error::EntityState(source) => match source {
             entity_state::EntityDefinitionError::DuplicateEntity { entity } => (

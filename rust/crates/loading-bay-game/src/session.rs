@@ -22,9 +22,10 @@ use crate::extraction_beacon::{
 use crate::hazard::{HazardComponent, HazardView};
 use crate::interaction::{SwitchComponent, SwitchView};
 use crate::inventory::{
-    admit_item_definitions, inventory_from_config, inventory_view, InventoryComponent,
-    InventoryView, ItemDefinition, ItemDefinitionId, ItemDefinitionView,
+    admit_item_definitions, inventory_from_config, inventory_view, InventoryView, ItemDefinition,
+    ItemDefinitionId, ItemDefinitionView,
 };
+use crate::mechanics::{self, InventoryRuntime, MechanicsRuntime};
 use crate::navigation::{
     NavigationComponent, NavigationState, NavigationView, MAX_NAVIGATION_QUERY_BUDGET,
     MAX_NAVIGATION_SPEED_UNITS_PER_SECOND,
@@ -36,7 +37,7 @@ use crate::progression::{
     LoadingBayInterlockConfig, LoadingBayInterlockView, SecretRegionComponent, SecretRegionState,
     SecretRegionView,
 };
-use crate::vitality::{HealthComponent, HealthView, VitalityState};
+use crate::vitality::{HealthConfig, HealthView, VitalityState};
 
 #[derive(Debug, Clone)]
 pub struct GameSession {
@@ -49,14 +50,15 @@ pub struct GameSession {
     pub(crate) enemies: BTreeMap<EntityId, EnemyComponent>,
     pub(crate) enemy_combat: BTreeMap<EntityId, EnemyCombatComponent>,
     pub(crate) enemy_drops: BTreeMap<EntityId, EnemyDropComponent>,
-    pub(crate) health: BTreeMap<EntityId, HealthComponent>,
+    pub(crate) health: BTreeMap<EntityId, HealthConfig>,
     pub(crate) hazards: BTreeMap<EntityId, HazardComponent>,
     pub(crate) encounters: BTreeMap<EntityId, EncounterComponent>,
     pub(crate) extraction_beacons: BTreeMap<EntityId, ExtractionBeaconComponent>,
     pub(crate) navigators: BTreeMap<EntityId, NavigationComponent>,
     pub(crate) player_controllers: BTreeMap<EntityId, PlayerControllerComponent>,
     pub(crate) item_definitions: BTreeMap<ItemDefinitionId, ItemDefinition>,
-    pub(crate) inventories: BTreeMap<EntityId, InventoryComponent>,
+    pub(crate) inventories: BTreeMap<EntityId, InventoryRuntime>,
+    pub(crate) mechanics: MechanicsRuntime,
     pub(crate) pickups: BTreeMap<EntityId, PickupComponent>,
     pub(crate) secret_regions: BTreeMap<EntityId, SecretRegionComponent>,
     pub(crate) level_exits: BTreeMap<EntityId, LevelExitComponent>,
@@ -90,12 +92,34 @@ impl GameSession {
         }
         let item_definitions = admit_item_definitions(item_definitions)
             .map_err(GameEntityDefinitionError::Inventory)?;
-        let entities = EntityState::from_definitions(
-            definitions
-                .iter()
-                .map(|definition| definition.entity.clone()),
-        )
-        .map_err(GameEntityDefinitionError::EntityState)?;
+        let mechanics = mechanics::build_runtime(&item_definitions)
+            .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
+        let inventory_configs = definitions
+            .iter()
+            .filter_map(|definition| {
+                definition
+                    .inventory
+                    .as_ref()
+                    .map(|config| (definition.entity.id, config.clone()))
+            })
+            .collect::<BTreeMap<_, _>>();
+        for (owner, config) in &inventory_configs {
+            inventory_from_config(*owner, config, &item_definitions)
+                .map_err(GameEntityDefinitionError::Inventory)?;
+        }
+        let (hidden_weapons, weapon_entities) =
+            mechanics::allocate_weapon_entities(&definitions, &inventory_configs)
+                .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
+        let mut entity_definitions = definitions
+            .iter()
+            .map(|definition| definition.entity.clone())
+            .collect::<Vec<_>>();
+        entity_definitions.extend(hidden_weapons);
+        let registry = mechanics::mechanics_registry()
+            .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
+        let mut entities =
+            EntityState::from_definitions_with_registry(registry, entity_definitions)
+                .map_err(GameEntityDefinitionError::EntityState)?;
 
         let mut doors = BTreeMap::new();
         let mut door_access = BTreeMap::new();
@@ -258,16 +282,9 @@ impl GameSession {
                 if !config.is_valid() {
                     return Err(GameEntityDefinitionError::InvalidHealthConfig { entity });
                 }
-                health.insert(
-                    entity,
-                    HealthComponent {
-                        config,
-                        current: config.max,
-                        armor: 0,
-                        armor_item: None,
-                        state: VitalityState::Alive,
-                    },
-                );
+                mechanics::attach_health(&mut entities, entity, config)
+                    .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
+                health.insert(entity, config);
             }
             if let Some(config) = definition.hazard {
                 let view = entities.view(entity).expect("definition created entity");
@@ -388,11 +405,16 @@ impl GameSession {
                         },
                     ));
                 }
-                inventories.insert(
+                let runtime = mechanics::attach_inventory(
+                    &mut entities,
                     entity,
-                    inventory_from_config(entity, config, &item_definitions)
-                        .map_err(GameEntityDefinitionError::Inventory)?,
-                );
+                    config,
+                    weapon_entities
+                        .get(&entity)
+                        .expect("weapon entities allocated for every inventory"),
+                )
+                .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
+                inventories.insert(entity, runtime);
             }
             if let Some(config) = &definition.pickup {
                 let view = entities.view(entity).expect("definition created entity");
@@ -677,6 +699,11 @@ impl GameSession {
             }
             pickup.state = PickupState::Dormant;
         }
+        gameplay_mechanics::validate_state_against_catalog(&entities, &mechanics.catalog).map_err(
+            |error| GameEntityDefinitionError::Mechanics {
+                reason: error.to_string(),
+            },
+        )?;
 
         Ok(Self {
             entities,
@@ -696,6 +723,7 @@ impl GameSession {
             player_controllers,
             item_definitions,
             inventories,
+            mechanics,
             pickups,
             secret_regions,
             level_exits,
@@ -806,14 +834,36 @@ impl GameSession {
     }
 
     pub fn health(&self, entity: EntityId) -> Option<HealthView> {
-        let component = self.health.get(&entity)?;
+        let config = *self.health.get(&entity)?;
+        let tracks = self
+            .entities
+            .component::<gameplay_mechanics::TracksComponent>(entity)
+            .ok()??;
+        let current =
+            u32::try_from(tracks.current(&crate::mechanics::health_track())?.get()).ok()?;
+        let armor = u32::try_from(tracks.current(&crate::mechanics::armor_track())?.get()).ok()?;
+        let armor_item = self
+            .entities
+            .component::<gameplay_mechanics::ActiveEffectsComponent>(entity)
+            .ok()??
+            .effects()
+            .iter()
+            .find_map(|effect| {
+                self.mechanics.armor.iter().find_map(|(item, binding)| {
+                    (effect.definition() == &binding.effect).then(|| item.clone())
+                })
+            });
         Some(HealthView {
             entity,
-            config: component.config,
-            current: component.current,
-            armor: component.armor,
-            armor_item: component.armor_item.clone(),
-            state: component.state,
+            config,
+            current,
+            armor,
+            armor_item,
+            state: if current == 0 {
+                VitalityState::Dead
+            } else {
+                VitalityState::Alive
+            },
         })
     }
 
@@ -895,9 +945,7 @@ impl GameSession {
     }
 
     pub fn inventory(&self, owner: EntityId) -> Option<InventoryView> {
-        self.inventories
-            .get(&owner)
-            .map(|component| inventory_view(owner, component))
+        inventory_view(self, owner).ok()
     }
 
     pub fn pickup(&self, entity: EntityId) -> Option<PickupView> {
@@ -968,7 +1016,7 @@ impl GameSession {
 
     pub fn weapon(&self, entity: EntityId) -> Option<WeaponView> {
         let inventory = self.inventories.get(&entity)?;
-        let item = inventory.equipped_weapon.clone()?;
+        let item = self.equipped_weapon(entity)?;
         let definition = self.item_definitions.get(&item)?;
         let crate::inventory::ItemKind::Weapon(weapon) = &definition.kind else {
             return None;
@@ -985,6 +1033,19 @@ impl GameSession {
                     .unwrap_or(Tick::ZERO),
             },
         })
+    }
+
+    pub(crate) fn equipped_weapon(&self, owner: EntityId) -> Option<ItemDefinitionId> {
+        let runtime = self.inventories.get(&owner)?;
+        let equipment = self
+            .entities
+            .component::<gameplay_mechanics::EquipmentComponent>(owner)
+            .ok()??;
+        let item_entity = equipment.assignment(&crate::mechanics::weapon_slot())?.item;
+        runtime
+            .weapon_entities
+            .iter()
+            .find_map(|(item, entity)| (*entity == item_entity).then(|| item.clone()))
     }
 }
 

@@ -12,7 +12,7 @@ use crate::navigation::NavigationPhaseReceipt;
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
-use crate::vitality::{DamageCommand, DamageService, DamageSource, VitalityFact, VitalityState};
+use crate::vitality::{DamageCommand, DamageService, DamageSource, VitalityFact};
 
 pub const MAX_ENEMY_PERCEPTION_RANGE: f32 = 100_000.0;
 pub const MAX_ENEMY_ATTACK_RANGE: f32 = 100_000.0;
@@ -178,10 +178,7 @@ impl EnemyCombatService {
             .transform
             .ok_or(RuntimeError::UnknownPlayerController { player })?
             .translation;
-        let player_dead = session
-            .health
-            .get(&player)
-            .is_some_and(|health| health.state == VitalityState::Dead);
+        let player_dead = crate::vitality::DamageService::is_dead(session, player);
         let enemies: Vec<EntityId> = session.enemy_combat.keys().copied().collect();
         let mut facts = Vec::new();
         let mut navigation_goals = BTreeMap::new();
@@ -328,11 +325,7 @@ impl EnemyCombatService {
             let distance = (player_position - origin).length();
             let kind = component.config.attack.kind;
 
-            if session
-                .health
-                .get(&player)
-                .is_some_and(|health| health.state == VitalityState::Dead)
-            {
+            if crate::vitality::DamageService::is_dead(session, player) {
                 facts.push(EnemyCombatFact::AttackMissed {
                     enemy,
                     target: player,

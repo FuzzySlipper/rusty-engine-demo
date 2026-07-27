@@ -49,10 +49,13 @@ inert item whose existing `ItemKind` already expresses its meaning.
 5. For visible content, update `docs/source-provenance.md` and make
    `pnpm run test:browser` walk through the accepted Rust pickup.
 
-Rust admission is in `stored_project.rs` and `project_admission.rs`; item identities, kinds,
-definitions, live quantities, and atomic grant/consume behavior are in `inventory.rs`, while
-pickup transactions are in `pickup.rs`. Add a new Rust item kind only when the item has a genuinely
-new game-owned transaction. Do not encode behavior in an asset name or a TypeScript switch.
+Rust admission is in `stored_project.rs` and `project_admission.rs`; Loading Bay item identities,
+kinds, definitions, slot/cooldown policy, and command translation are in `inventory.rs`.
+`mechanics.rs` admits those definitions into the exact-pinned Engine gameplay-mechanics catalog,
+whose components and named services own live quantities, containment, equipment, tracks, effects,
+damage, and healing. Pickup transactions remain in `pickup.rs`. Add a new Rust item kind only when
+the item has a genuinely new game-owned transaction. Do not encode behavior in an asset name or a
+TypeScript switch.
 
 The existing `key/inert-inspection-tag` is the locality proof: it required only the TypeScript
 composer, checked-in generated JSON, composer assertion, and provenance. No Rust behavior changed.

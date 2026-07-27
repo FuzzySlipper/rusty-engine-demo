@@ -21,6 +21,7 @@ core-voxel.workspace = true
 engine-inspector.workspace = true
 engine-spatial.workspace = true
 environment-authoring.workspace = true
+gameplay-mechanics.workspace = true
 render-model.workspace = true
 render-projection.workspace = true
 serde.workspace = true
