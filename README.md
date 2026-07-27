@@ -9,7 +9,7 @@ voxel, mesh, asset, and conversion mechanisms.
 The Rust game vertical is named `loading-bay-game`. Its Engine dependencies are public Git
 dependencies: Rust remains pinned to reviewed authoring revision
 `464dd5e16bb023ad8d81515eabeaac9bb75df74d`, while the browser renderer is pinned to review-fix
-revision `2665b74566136fb77e3a26b0766394124c8f58d3`; a sibling checkout is not required. The demo owns
+revision `e622c941671bc0f167206b049ab94ea63495a86d`; a sibling checkout is not required. The demo owns
 its Angular/Nx browser shell, route-scoped input lifecycle, and semantic projection adapter, while
 Rusty Engine owns the shared render contracts, retained projection, Three/WebGL backend, surface
 host, audio, particle, billboard, and telemetry hosts.
@@ -62,6 +62,20 @@ It checks package and repository boundaries, TypeScript content and presentation
 Engine Git resolution, the complete Rust suite and Clippy, and a real Chromium/Three/WebGL flow.
 For Rust-only iteration, `./scripts/verify-rust.sh` remains available.
 
+For focused diagnosis:
+
+```bash
+pnpm run check:content       # checked-in JSON exactly matches the TypeScript composer
+pnpm run test:shell          # protocol, projection, input, and presentation units
+pnpm run test:browser        # real Chromium campaign and lifecycle proof
+pnpm run audit:boundary      # exact pins and forbidden downstream shortcuts
+```
+
+`GET /health` identifies a running browser host and `GET /api/state` is a read-only diagnostic
+snapshot. Live gameplay commands use the bounded `/api/session` WebSocket; do not debug by adding
+HTTP gameplay mutators. A stale generated project should be corrected in the composer and
+rematerialized with `pnpm run generate:content`, never hand-edited into agreement.
+
 The project-owned Studio adapter can be run as a bounded JSON-lines process:
 
 ```bash
@@ -91,6 +105,13 @@ proof-shaped baseline, sole-authority map, fixed Rust phase order, bounded game-
 cold/dynamic/transient state split, original level route, measurable product budgets, and
 acceptance corpus. The authored route and its browser playtest checkpoints are recorded in
 [docs/loading-bay-playtest.md](docs/loading-bay-playtest.md).
+
+Concrete recipes for extending items, weapons, enemies, progression objects, and level content
+without creating parallel authority are in
+[docs/extension-recipes.md](docs/extension-recipes.md). The implemented wire lifecycle and bounds
+are in [docs/game-session-protocol.md](docs/game-session-protocol.md). Active limitations are owned
+by the Den document `rusty-engine-demo/known-limitations`; update it with an owning task when a
+limitation changes.
 
 Exact transfer provenance is recorded in [docs/source-provenance.md](docs/source-provenance.md).
 Renderer/session counter semantics, budgets, and the current headed LAN baseline are recorded in

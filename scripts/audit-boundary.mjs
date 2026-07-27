@@ -64,6 +64,47 @@ for (const file of files) {
   }
 }
 
+const downstreamTypeScript = files.filter((file) => {
+  const relative = file.slice(repoRoot.length + 1);
+  return (
+    (relative.startsWith("apps/") ||
+      relative.startsWith("libs/") ||
+      relative.startsWith("ts/")) &&
+    /\.(?:[cm]?js|ts)$/.test(relative)
+  );
+});
+for (const file of downstreamTypeScript) {
+  const relative = file.slice(repoRoot.length + 1);
+  const content = readFileSync(file, "utf8");
+  for (const [label, marker] of [
+    ["browser-owned inventory authority", "class InventoryService"],
+    ["browser-owned pickup authority", "class PickupService"],
+    ["browser-owned combat authority", "class CombatService"],
+    ["browser-owned damage authority", "class DamageService"],
+    ["browser-owned enemy authority", "class EnemyCombatService"],
+    ["legacy input HTTP mutator", "/api/input-intent"],
+    ["legacy edge HTTP mutator", "/api/input-edge"],
+    ["legacy reset HTTP mutator", "/api/reset"],
+    ["legacy phase HTTP mutator", "/api/motion-phase"],
+    ["legacy phase HTTP mutator", "/api/navigation-phase"],
+    ["legacy beacon HTTP mutator", "/api/extraction-beacon/activate"],
+  ]) {
+    if (content.includes(marker)) {
+      violations.push(`${relative}: ${label} (${marker})`);
+    }
+  }
+  for (const [label, marker] of [
+    ["parallel animation-frame scheduler", "requestAnimationFrame("],
+    ["parallel animation-frame scheduler", "cancelAnimationFrame("],
+    ["private Three renderer construction", "new WebGLRenderer("],
+    ["private Three renderer construction", "THREE.WebGLRenderer"],
+  ]) {
+    if (content.includes(marker)) {
+      violations.push(`${relative}: ${label} (${marker})`);
+    }
+  }
+}
+
 const expectedPackages = new Map([
   ["package.json", "rusty-engine-demo"],
   [
@@ -108,6 +149,42 @@ const browserGameRuntime = readFileSync(
 if (browserGameRuntime.includes("surface.renderOnce(")) {
   violations.push(
     "ts/packages/browser-shell/src/game-runtime.ts: the auto-started shared surface must not receive a parallel explicit render path",
+  );
+}
+const gameSessionSource = readFileSync(
+  resolve(repoRoot, "ts/packages/browser-shell/src/game-session.ts"),
+  "utf8",
+);
+for (const staticKey of ["voxelMeshes", "lights", "generatedEnvironment"]) {
+  if (!gameSessionSource.includes(`| "${staticKey}"`)) {
+    violations.push(
+      `ts/packages/browser-shell/src/game-session.ts: ${staticKey} must remain an immutable static resource`,
+    );
+  }
+}
+if (
+  !gameSessionSource.includes(
+    "type RuntimeDynamicState = Omit<RuntimeBrowserState, StaticStateKey>;",
+  )
+) {
+  violations.push(
+    "ts/packages/browser-shell/src/game-session.ts: dynamic session state must structurally omit static resource owners",
+  );
+}
+const rustBrowserSession = readFileSync(
+  resolve(
+    repoRoot,
+    "rust/crates/loading-bay-game/src/bin/browser_host/session.rs",
+  ),
+  "utf8",
+);
+if (
+  !rustBrowserSession.includes(
+    "const MAX_OUTBOUND_BUFFER_BYTES: usize = 2 * 1024 * 1024;",
+  )
+) {
+  violations.push(
+    "rust/crates/loading-bay-game/src/bin/browser_host/session.rs: cold bootstrap transport must retain its explicit 2 MiB bound",
   );
 }
 for (const packageName of [

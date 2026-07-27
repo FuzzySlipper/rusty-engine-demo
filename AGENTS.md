@@ -17,5 +17,7 @@ an Asha compatibility project and it is not the place to generalize speculative 
   bridge, replay/certification spine, or live TypeScript gameplay authority.
 - Keep authored project content distinct from live runtime snapshots and transient presentation.
 - Preserve exact source and asset provenance in `docs/source-provenance.md`.
+- Follow the concrete owner/test/upstream gates in `docs/extension-recipes.md`; do not infer a
+  plugin or generic bridge from the examples.
 - Run `./scripts/verify-rust.sh` for Rust-only iteration. Use `pnpm run verify` for every
   product-visible or cross-language change.

@@ -183,6 +183,11 @@ checked-in third-party visual assets remain the separately itemized Kenney CC0 s
 Campaign route checkpoints, deterministic artifact hashes, and product proof are recorded in
 `docs/loading-bay-playtest.md`.
 
+The agent-facing extension recipes and executable boundary checks added under Den task #6232 are
+native repository documentation and verification code. Their item, weapon, enemy, and layout
+locality examples reference the already-recorded Loading Bay and Relay Annex compositions; they do
+not add or transform any visual, audio, map, or third-party asset.
+
 The public `/home/dev/rusty-engine-ui` checkout at exact commit
 `68ddfa5430ec3bc2cf7ca96963982db9511e79ba` supplied the following #6216 downstream shell patterns:
 
