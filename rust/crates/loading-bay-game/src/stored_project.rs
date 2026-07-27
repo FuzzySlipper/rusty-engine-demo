@@ -23,6 +23,7 @@ use crate::combat::{
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
 pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 20;
+pub const MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS: u64 = 65_536;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -49,6 +50,7 @@ pub mod diagnostic_code {
     pub const INVALID_VOXEL_ANNOTATION: &str = "project.invalidVoxelAnnotation";
     pub const INVALID_VOXEL_INSTANCE: &str = "project.invalidVoxelInstance";
     pub const INVALID_VOXEL_OBJECT: &str = "project.invalidVoxelObject";
+    pub const VOXEL_OBJECT_AGGREGATE_LIMIT: &str = "project.voxelObjectAggregateLimit";
     pub const INVALID_VOXEL_OBJECT_INSTANCE: &str = "project.invalidVoxelObjectInstance";
     pub const INVALID_MATERIAL: &str = "project.invalidMaterial";
     pub const INVALID_IMPORT: &str = "project.invalidImport";
@@ -699,6 +701,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             "project name must not be empty",
         ));
     }
+    validate_voxel_object_aggregate_budget(document, None)?;
 
     let mut item_definitions = BTreeMap::new();
     for (index, definition) in document.item_definitions.iter().enumerate() {
@@ -1125,6 +1128,71 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
         ));
     }
     Ok(())
+}
+
+pub(crate) fn validate_voxel_object_aggregate_budget(
+    document: &StoredProject,
+    replacement: Option<&VoxelObjectAsset>,
+) -> Result<(), StoredProjectError> {
+    let replacement_id = replacement.map(|object| object.asset_id.as_str());
+    let mut resolved_cells = 0_u64;
+    for object in document
+        .assets
+        .iter()
+        .filter_map(|asset| asset.voxel_object.as_ref())
+        .filter(|object| replacement_id != Some(object.asset_id.as_str()))
+    {
+        resolved_cells = add_voxel_object_cells(resolved_cells, object)?;
+    }
+    if let Some(replacement) = replacement {
+        resolved_cells = add_voxel_object_cells(resolved_cells, replacement)?;
+    }
+    if resolved_cells > MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS {
+        return Err(failure(
+            diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT,
+            if replacement.is_some() {
+                "voxelObjectCandidate"
+            } else {
+                "assets"
+            },
+            format!(
+                "voxel-object frames resolve {resolved_cells} aggregate cells; project limit is {MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS}"
+            ),
+        ));
+    }
+    Ok(())
+}
+
+fn add_voxel_object_cells(
+    mut total: u64,
+    object: &VoxelObjectAsset,
+) -> Result<u64, StoredProjectError> {
+    total = add_voxel_frame_cells(total, &object.default_frame)?;
+    for clip in &object.clips {
+        for frame in &clip.frames {
+            total = add_voxel_frame_cells(total, &frame.frame)?;
+        }
+    }
+    Ok(total)
+}
+
+fn add_voxel_frame_cells(
+    total: u64,
+    frame: &voxel_asset::VoxelFrame,
+) -> Result<u64, StoredProjectError> {
+    frame
+        .representation
+        .sparse_runs
+        .iter()
+        .try_fold(total, |total, run| {
+            total.checked_add(u64::from(run.length)).ok_or_else(|| {
+                failure(
+                    diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT,
+                    "assets",
+                    "voxel-object aggregate cell count overflowed",
+                )
+            })
+        })
 }
 
 fn validate_stored_import(

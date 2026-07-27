@@ -3,10 +3,17 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use loading_bay_game::{
-    admit_stored_project, decode_project_document, diagnostic_code, StudioAdapterService,
+    admit_stored_project, decode_project_document, diagnostic_code, encode_project_document,
+    StoredAsset, StudioAdapterService, MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS,
 };
 use serde_json::{json, Value};
-use voxel_asset::{with_computed_voxel_object_hashes, VoxelObjectAnimationFrame, VoxelObjectClip};
+use voxel_asset::{
+    with_computed_voxel_object_hashes, VoxelAssetBounds, VoxelAssetMaterialBinding,
+    VoxelAssetMaterialMapping, VoxelCoordinateSystem, VoxelFrame, VoxelObjectAnimationFrame,
+    VoxelObjectAsset, VoxelObjectClip, VoxelObjectGrid, VoxelObjectProvenance,
+    VoxelObjectProvenanceKind, VoxelRepresentation, VoxelRepresentationKind, VoxelSparseRun,
+    VOXEL_OBJECT_SCHEMA_VERSION,
+};
 
 const STATIC_PROJECT: &str =
     include_str!("../../../../content/projects/converted-wall.project.json");
@@ -307,6 +314,170 @@ fn static_object_candidate_is_private_projected_atomic_and_restart_stable() {
 }
 
 #[test]
+fn aggregate_object_budget_preflights_projects_and_preserves_private_candidate() {
+    let root = TestRoot::static_project();
+    let mut exact = decode_project_document(STATIC_PROJECT).unwrap().project;
+    let half = u32::try_from(MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS / 2).unwrap();
+    assert_eq!(u64::from(half) * 2, MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS);
+    exact
+        .assets
+        .push(stored_budget_object("voxel-object/budget-a", half));
+    exact
+        .assets
+        .push(stored_budget_object("voxel-object/budget-b", half));
+    let exact_bytes = encode_project_document(&exact).unwrap();
+    fs::write(root.project_file(), &exact_bytes).unwrap();
+
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+    assert_eq!(
+        opened["project"]["voxelObjectAuthoring"]["assets"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
+
+    let mut one_over = exact.clone();
+    one_over
+        .assets
+        .push(stored_budget_object("voxel-object/budget-over", 1));
+    let admission_error = admit_stored_project(one_over.clone()).unwrap_err();
+    assert_eq!(
+        admission_error.diagnostic().code,
+        diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT
+    );
+    let mut one_over_bytes = serde_json::to_string_pretty(&one_over).unwrap();
+    one_over_bytes.push('\n');
+    fs::write(root.project_file(), &one_over_bytes).unwrap();
+
+    let read_rejected = send(
+        &mut service,
+        json!({
+            "type": "readProject",
+            "protocolVersion": 7,
+            "requestId": "read-one-over"
+        }),
+    );
+    assert_eq!(read_rejected["type"], "rejected", "{read_rejected:#}");
+    assert_eq!(
+        read_rejected["error"]["code"],
+        diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT
+    );
+    assert_eq!(
+        fs::read_to_string(root.project_file()).unwrap(),
+        one_over_bytes
+    );
+
+    let mut fresh = StudioAdapterService::new();
+    let open_rejected = send(
+        &mut fresh,
+        json!({
+            "type": "openProject",
+            "protocolVersion": 7,
+            "requestId": "open-one-over",
+            "root": root.path(),
+            "projectFile": root.project_relative()
+        }),
+    );
+    assert_eq!(open_rejected["type"], "rejected", "{open_rejected:#}");
+    assert_eq!(
+        open_rejected["error"]["code"],
+        diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT
+    );
+
+    fs::write(root.project_file(), &exact_bytes).unwrap();
+    let restored = send(
+        &mut service,
+        json!({
+            "type": "readProject",
+            "protocolVersion": 7,
+            "requestId": "read-restored"
+        }),
+    );
+    assert_eq!(restored["type"], "projectRead", "{restored:#}");
+
+    let retained = prepare_static(
+        &mut service,
+        &restored,
+        "voxel-object/budget-a",
+        "prepare-replacement",
+    );
+    let rejected_candidate = request_prepare_static(
+        &mut service,
+        &restored,
+        "voxel-object/budget-over",
+        "prepare-one-over",
+    );
+    assert_eq!(
+        rejected_candidate["type"], "rejected",
+        "{rejected_candidate:#}"
+    );
+    assert_eq!(
+        rejected_candidate["error"]["code"],
+        diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT
+    );
+    assert_eq!(
+        fs::read_to_string(root.project_file()).unwrap(),
+        exact_bytes
+    );
+
+    let retained_preview = send(
+        &mut service,
+        json!({
+            "type": "previewVoxelObjectConversion",
+            "protocolVersion": 7,
+            "requestId": "preview-retained",
+            "planId": retained["plan"]["planId"],
+            "expectedPlanHash": retained["plan"]["planHash"],
+            "frame": { "kind": "default" },
+            "maxPreviewSamples": 32
+        }),
+    );
+    assert_eq!(
+        retained_preview["type"], "voxelObjectConversionPreviewed",
+        "{retained_preview:#}"
+    );
+    assert_candidate_projection(&retained_preview);
+
+    let applied = apply_static(
+        &mut service,
+        &restored,
+        retained["plan"]["planId"].as_str().unwrap(),
+        retained["plan"]["planHash"].as_str().unwrap(),
+        retained["preview"]["outputHash"].as_str().unwrap(),
+        "apply-retained",
+    );
+    assert_eq!(
+        applied["receipt"]["kind"], "voxelObjectConversionApplied",
+        "{applied:#}"
+    );
+    let attached = send(
+        &mut service,
+        json!({
+            "type": "attachVoxelObjectInstance",
+            "protocolVersion": 7,
+            "requestId": "attach-after-budget-preflight",
+            "expectedProjectHash": project_hash(&applied),
+            "sceneId": "scene/converted-wall",
+            "instance": {
+                "instanceId": "budget-object",
+                "voxelObjectAssetId": "voxel-object/budget-a",
+                "frame": { "kind": "default" },
+                "translation": [0.0, 0.0, 0.0],
+                "rotation": [0.0, 0.0, 0.0, 1.0],
+                "scale": [1.0, 1.0, 1.0],
+                "materialOverrides": []
+            }
+        }),
+    );
+    assert_eq!(
+        attached["receipt"]["kind"], "voxelObjectInstanceAttached",
+        "{attached:#}"
+    );
+}
+
+#[test]
 fn oversized_object_source_is_rejected_without_project_mutation() {
     let root = TestRoot::static_project();
     let mut service = StudioAdapterService::new();
@@ -560,7 +731,21 @@ fn prepare_static(
     target_asset_id: &str,
     request_id: &str,
 ) -> Value {
-    let response = send(
+    let response = request_prepare_static(service, current, target_asset_id, request_id);
+    assert_eq!(
+        response["type"], "voxelObjectConversionPrepared",
+        "{response:#}"
+    );
+    response
+}
+
+fn request_prepare_static(
+    service: &mut StudioAdapterService,
+    current: &Value,
+    target_asset_id: &str,
+    request_id: &str,
+) -> Value {
+    send(
         service,
         json!({
             "type": "prepareVoxelObjectConversion",
@@ -592,12 +777,7 @@ fn prepare_static(
             "frame": { "kind": "default" },
             "maxPreviewSamples": 32
         }),
-    );
-    assert_eq!(
-        response["type"], "voxelObjectConversionPrepared",
-        "{response:#}"
-    );
-    response
+    )
 }
 
 fn apply_static(
@@ -675,6 +855,77 @@ fn material_definition() -> Value {
             "uvStrategy": "flat"
         }
     })
+}
+
+fn stored_budget_object(asset_id: &str, cells: u32) -> StoredAsset {
+    assert!(cells > 0);
+    let bounds = VoxelAssetBounds {
+        min: [0, 0, 0],
+        max: [i64::from(cells) - 1, 0, 0],
+    };
+    let object = with_computed_voxel_object_hashes(VoxelObjectAsset {
+        schema_version: VOXEL_OBJECT_SCHEMA_VERSION,
+        asset_id: asset_id.to_string(),
+        grid: VoxelObjectGrid {
+            coordinate_system: VoxelCoordinateSystem::RightHandedYUp,
+            cell_size: 1.0,
+            chunk_size: 16,
+            pivot: [0.0, 0.0, 0.0],
+        },
+        bounds,
+        default_frame: VoxelFrame {
+            bounds,
+            representation: VoxelRepresentation {
+                kind: VoxelRepresentationKind::SparseRuns,
+                sparse_runs: vec![VoxelSparseRun {
+                    start: [0, 0, 0],
+                    length: cells,
+                    material_slot: 7,
+                }],
+            },
+            voxel_data_hash: String::new(),
+        },
+        clips: Vec::new(),
+        default_clip: None,
+        material_palette: vec![VoxelAssetMaterialBinding {
+            material_slot: 7,
+            material_asset_id: "material/wall-lines".to_string(),
+            display_name: Some("Budget fixture".to_string()),
+        }],
+        material_map: vec![VoxelAssetMaterialMapping {
+            source_material_slot: 0,
+            source_material_name: Some("budget".to_string()),
+            voxel_material_slot: 7,
+        }],
+        provenance: VoxelObjectProvenance {
+            kind: VoxelObjectProvenanceKind::Authored,
+            source_path: "generated/aggregate-budget".to_string(),
+            source_sha256:
+                "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+                    .to_string(),
+            source_byte_count: 1,
+            converter: "rusty-engine-demo-tests".to_string(),
+            settings_sha256:
+                "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+                    .to_string(),
+            license_path: None,
+            source_clips: Vec::new(),
+        },
+        content_hash: String::new(),
+    })
+    .unwrap();
+    StoredAsset {
+        id: asset_id.to_string(),
+        catalog: None,
+        static_mesh: None,
+        animated_mesh: None,
+        import: None,
+        voxel_volume: None,
+        voxel_object: Some(object),
+        voxel_edit_history: None,
+        voxel_annotations: Vec::new(),
+        material: None,
+    }
 }
 
 fn assert_candidate_projection(response: &Value) {

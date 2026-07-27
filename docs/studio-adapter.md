@@ -72,6 +72,12 @@ and invalid renderer payloads fail atomically.
 Voxel objects persist the Engine-owned asset, default frame, clips and per-frame timing, palette,
 source-material mapping, exact conversion provenance, and game-owned scene instances. Instances
 select the default frame or a named clip frame and retain transform plus bounded material overrides.
+Before any object runtime admission or complete projection, Loading Bay sums sparse-run lengths
+across every stored frame, treating a same-identity private candidate as a replacement, and rejects
+projects or candidates above 65,536 resolved cells with
+`project.voxelObjectAggregateLimit`. The checked preflight applies equally to open, read, prepare,
+preview, apply, and attachment publication, so the later 32 MiB response bound is not the first
+limit on object expansion work.
 Opening the project in a fresh adapter process reconstructs the same typed authoring readout and
 complete renderer frame from those canonical bytes. Schema-19 documents migrate only when the new
 object fields are absent; relabeling schema-20 object content as an older schema fails closed.

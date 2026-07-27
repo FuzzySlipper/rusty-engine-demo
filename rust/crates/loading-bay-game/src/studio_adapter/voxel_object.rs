@@ -242,6 +242,7 @@ fn finish_prepare(
     ),
     AdapterRejection,
 > {
+    project.validate_voxel_object_candidate(&prepared.candidate().asset)?;
     let plan = prepared.plan().clone();
     let preview = preview_voxel_object_conversion(
         &VoxelObjectConversionPreviewRequest {
@@ -285,6 +286,7 @@ pub(crate) fn preview_prepared_voxel_object_conversion(
     AdapterRejection,
 > {
     let project = load_expected(location, &candidate.expected_project_hash)?;
+    project.validate_voxel_object_candidate(&candidate.prepared.candidate().asset)?;
     let preview = preview_voxel_object_conversion(
         &VoxelObjectConversionPreviewRequest {
             plan_id,
@@ -314,6 +316,8 @@ pub(crate) fn apply_prepared_voxel_object_conversion(
             "object candidate belongs to a different project revision",
         ));
     }
+    let project = load_expected(location, expected_project_hash)?;
+    project.validate_voxel_object_candidate(&candidate.prepared.candidate().asset)?;
     let source_bytes = read_selection(
         location,
         &candidate.source,

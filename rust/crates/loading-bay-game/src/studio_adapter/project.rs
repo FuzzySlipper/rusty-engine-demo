@@ -42,6 +42,7 @@ use voxel_asset::{VoxelFrame, VoxelObjectAsset};
 use voxel_convert::VoxelObjectFrameSelection;
 use voxel_object_runtime::{admit_voxel_object, AdmittedVoxelObject, VoxelObjectRuntimeLimits};
 
+use crate::stored_project::validate_voxel_object_aggregate_budget;
 use crate::{
     admit_stored_project_with_document, encode_project_document, AdmittedProject,
     AdmittedStoredProject, DecodedProjectDocument, ProjectSaveMode, ProjectStore,
@@ -228,6 +229,7 @@ impl OpenedOwnerProject {
         candidate: &VoxelObjectAsset,
         frame: &VoxelObjectFrameSelection,
     ) -> Result<(RenderFrameDiff, ProjectionReadout), AdapterRejection> {
+        self.validate_voxel_object_candidate(candidate)?;
         let render_assets = resolved_render_assets(&self.catalog);
         let projected = EntityRenderProjector::new()
             .project(self.admitted.session.entities(), &render_assets)
@@ -243,6 +245,14 @@ impl OpenedOwnerProject {
             diagnostics,
             Some((candidate, frame)),
         )
+    }
+
+    pub(crate) fn validate_voxel_object_candidate(
+        &self,
+        candidate: &VoxelObjectAsset,
+    ) -> Result<(), AdapterRejection> {
+        validate_voxel_object_aggregate_budget(self.stored.document(), Some(candidate))
+            .map_err(stored_project_rejection)
     }
 
     fn compose_projection(
@@ -1115,6 +1125,8 @@ fn project_voxel_objects(
     catalog: &AssetCatalog,
     candidate: Option<(&VoxelObjectAsset, &VoxelObjectFrameSelection)>,
 ) -> Result<ProjectedVoxelObjects, AdapterRejection> {
+    validate_voxel_object_aggregate_budget(project, candidate.map(|(object, _)| object))
+        .map_err(stored_project_rejection)?;
     let mut admitted = project
         .assets
         .iter()
@@ -2256,6 +2268,11 @@ const fn render_asset_kind(kind: RenderAssetKind) -> &'static str {
 }
 
 fn project_store_rejection(error: crate::ProjectStoreError) -> AdapterRejection {
+    if let crate::ProjectStoreError::Codec(codec) = &error {
+        if codec.diagnostic().code == crate::diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT {
+            return stored_project_rejection(codec.clone());
+        }
+    }
     let code = match error {
         crate::ProjectStoreError::StaleSource { .. } => "project.staleHash",
         crate::ProjectStoreError::TooLarge { .. } => "project.tooLarge",
