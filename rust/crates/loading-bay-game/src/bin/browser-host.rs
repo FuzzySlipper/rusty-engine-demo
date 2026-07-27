@@ -777,15 +777,24 @@ fn drain_game_loop_feedback(
 ) -> (Vec<(String, Option<u64>)>, BrowserFeedbackProjection) {
     let mut facts = Vec::new();
     let mut feedback = BrowserFeedbackProjection::default();
+    let presentation_tick = game_loop.runtime().tick().raw();
     for fact in game_loop.drain_pending_facts() {
         match fact {
             GameLoopFact::PlayerControl(fact) => {
                 facts.push((player_fact_name(&fact).to_owned(), None));
-                feedback.extend_player_control(std::slice::from_ref(&fact));
+                // Accepted pose/posture is projected every update. Footstep and
+                // blocked pulses are disposable accents, so sample them from
+                // authoritative ticks instead of creating shared-host work at
+                // the 60 Hz simulation cadence.
+                if emits_locomotion_feedback(presentation_tick) {
+                    feedback.extend_player_control(std::slice::from_ref(&fact));
+                }
             }
             GameLoopFact::Navigation(fact) => {
                 facts.push((navigation_fact_name(&fact).to_owned(), None));
-                feedback.extend_navigation(std::slice::from_ref(&fact));
+                // Enemy movement remains visible through retained transforms
+                // and durable posture. Per-tick pathfinding facts must not
+                // mint particles/audio/billboards.
             }
             GameLoopFact::EnemyCombat(fact) => {
                 facts.push((enemy_combat_fact_name(&fact).to_owned(), None));
@@ -943,6 +952,10 @@ fn drain_game_loop_feedback(
         }
     }
     (facts, feedback)
+}
+
+fn emits_locomotion_feedback(tick: u64) -> bool {
+    tick % 6 == 0
 }
 
 fn enemy_combat_fact_name(fact: &loading_bay_game::EnemyCombatFact) -> &'static str {
@@ -1635,5 +1648,14 @@ mod tests {
             loading_bay_game::encode_game_snapshot(&stored).expect("snapshot after projection"),
             before
         );
+    }
+
+    #[test]
+    fn disposable_locomotion_feedback_is_sampled_from_authoritative_ticks() {
+        assert!(emits_locomotion_feedback(0));
+        assert!(!emits_locomotion_feedback(1));
+        assert!(!emits_locomotion_feedback(5));
+        assert!(emits_locomotion_feedback(6));
+        assert!(emits_locomotion_feedback(60));
     }
 }
