@@ -396,6 +396,21 @@ async function captureState(label, wallMilliseconds) {
           performance.getEntriesByName("first-paint")[0]?.startTime ?? null,
         firstContentfulPaintMs:
           performance.getEntriesByName("first-contentful-paint")[0]?.startTime ?? null,
+        session:
+          document.body.dataset.sessionBootstrapBytes === undefined
+            ? null
+            : {
+                bootstrapBytes: Number(document.body.dataset.sessionBootstrapBytes),
+                equivalentWholeStateBytes: Number(
+                  document.body.dataset.sessionLegacyBytes,
+                ),
+                maximumUpdateBuildMicroseconds: Number(
+                  document.body.dataset.sessionBuildMaxMicroseconds,
+                ),
+                staticResourceUpdateCount: Number(
+                  document.body.dataset.sessionStaticUpdates,
+                ),
+              },
         resources: resources.map((resource) => ({
           name: new URL(resource.name).pathname,
           initiatorType: resource.initiatorType,
