@@ -18,8 +18,10 @@ Rusty Engine retained surface.
    projection plus static resources.
 2. Commands carry protocol version, session identity, a strictly increasing sequence, and the
    latest observed snapshot sequence and static-resource revision.
-3. The server publishes an immutable update at no more than 60 Hz. A normal update is a delta over
-   the immediately preceding accepted snapshot.
+3. The server publishes immutable updates from the Rust fixed-tick driver, never from a second
+   gameplay or render clock. Autonomous retained presentation is sampled at 30 Hz, while a newly
+   consumed command publishes on that exact authoritative tick; the combined stream remains at no
+   more than 60 Hz. A normal update is a delta over the immediately preceding accepted snapshot.
 4. A restart loads and validates a replacement runtime before mutation, replaces the live runtime
    atomically, creates a new session identity, and sends a full dynamic projection.
 5. Socket close, route disposal, or authority replacement disconnects the generation. Pending input
@@ -27,10 +29,11 @@ Rusty Engine retained surface.
 
 There is no automatic mutation retry. After transport loss, a fresh page or host reconnect opens a
 new socket, accepts a full bootstrap, and only then may send new input. Old sequences, pending look,
-held intent, and queued edges are canceled. A delta-base or static-revision gap causes the browser
-to request a full resync with its next coalesced input; the observed static revision tells Rust
-whether that resync must include resource bytes. The browser does not apply the non-contiguous
-delta.
+held intent, and queued edges are canceled. Ordinary observed-snapshot lag is expected while one
+input is in flight and does not force a full projection. A structurally rejected delta sets an
+explicit one-shot `requestFullState` flag on the next coalesced input; an observed sequence ahead of
+Rust also fails closed. The observed static revision tells Rust whether that resync must include
+resource bytes. The browser does not apply the non-contiguous delta.
 
 ## Commands and bounds
 
@@ -82,8 +85,11 @@ projection includes the selected item definition, its ammunition item and cost, 
 and cooldown eligibility.
 Inventory projection exposes authored slots with owned/selected flags; it does not let TypeScript
 equip or consume items locally. Deltas name their exact base and replace only changed top-level
-owners. A reconnect, restart, gap, fact overflow, or static identity change forces a full dynamic
-projection; only a static identity change carries static resource bytes.
+owners. Stable `id`- or `slot`-keyed collections use a closed `$collectionPatch` shape with ordered
+upserts and removals when that encoding is smaller than replacing the collection; the browser
+validates identity and ordering and reconstructs the immutable whole value before projection. A
+reconnect, restart, explicit gap recovery, fact overflow, or static identity change forces a full
+dynamic projection; only a static identity change carries static resource bytes.
 
 `GET /api/state` remains a read-only diagnostic snapshot and `/api/voxel-edit` remains an explicit
 authoring transaction. The former per-event input, edge, disconnect, phase, beacon, and reset HTTP

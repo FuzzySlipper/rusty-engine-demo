@@ -393,17 +393,38 @@ impl DerefMut for BrowserRuntime {
 #[derive(Debug)]
 struct SharedBrowserRuntime {
     runtime: Mutex<BrowserRuntime>,
+    consumed_command_sequence: AtomicU64,
+    projection_sequence: AtomicU64,
 }
 
 impl SharedBrowserRuntime {
     fn new(runtime: BrowserRuntime) -> Self {
         Self {
             runtime: Mutex::new(runtime),
+            consumed_command_sequence: AtomicU64::new(0),
+            projection_sequence: AtomicU64::new(0),
         }
     }
 
     fn lock(&self) -> LockResult<MutexGuard<'_, BrowserRuntime>> {
         self.runtime.lock()
+    }
+
+    fn projection_sequence(&self) -> u64 {
+        self.projection_sequence.load(Ordering::Relaxed)
+    }
+
+    fn mark_projection_changed(&self) {
+        self.projection_sequence.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn consumed_command_sequence(&self) -> u64 {
+        self.consumed_command_sequence.load(Ordering::Relaxed)
+    }
+
+    fn set_consumed_command_sequence(&self, sequence: u64) {
+        self.consumed_command_sequence
+            .store(sequence, Ordering::Relaxed);
     }
 }
 
@@ -512,13 +533,24 @@ fn start_game_loop_driver(runtime: &Arc<SharedBrowserRuntime>) {
     std::thread::spawn(move || {
         let mut previous = Instant::now();
         loop {
-            std::thread::sleep(Duration::from_millis(4));
+            std::thread::sleep(Duration::from_millis(1));
             let now = Instant::now();
             let elapsed = now.saturating_duration_since(previous);
             previous = now;
             let mut host = runtime.lock().expect("runtime lock");
             match host.runtime.advance_elapsed(elapsed) {
                 Ok(receipt) => {
+                    // Autonomous retained presentation needs no second clock:
+                    // sample the authoritative 60 Hz driver at 30 Hz, while
+                    // the session publisher separately wakes on every newly
+                    // consumed command so acknowledgement is never throttled.
+                    let projection_changed = receipt
+                        .fixed_ticks
+                        .iter()
+                        .any(|tick| background_projection_due(tick.driver_tick));
+                    if let Some(tick) = receipt.fixed_ticks.last() {
+                        runtime.set_consumed_command_sequence(tick.consumed_sequence);
+                    }
                     for fact in receipt
                         .fixed_ticks
                         .iter()
@@ -564,6 +596,9 @@ fn start_game_loop_driver(runtime: &Arc<SharedBrowserRuntime>) {
                             }
                             _ => {}
                         }
+                    }
+                    if projection_changed {
+                        runtime.mark_projection_changed();
                     }
                 }
                 Err(error) => {
@@ -963,6 +998,10 @@ fn drain_game_loop_feedback(
 
 fn emits_locomotion_feedback(tick: u64) -> bool {
     tick.is_multiple_of(6)
+}
+
+fn background_projection_due(driver_tick: u64) -> bool {
+    driver_tick.is_multiple_of(2)
 }
 
 fn enemy_combat_fact_name(fact: &loading_bay_game::EnemyCombatFact) -> &'static str {
@@ -1664,5 +1703,13 @@ mod tests {
         assert!(!emits_locomotion_feedback(5));
         assert!(emits_locomotion_feedback(6));
         assert!(emits_locomotion_feedback(60));
+    }
+
+    #[test]
+    fn background_projection_is_tick_owned_and_sampled_at_thirty_hertz() {
+        assert!(background_projection_due(0));
+        assert!(!background_projection_due(1));
+        assert!(background_projection_due(2));
+        assert!(!background_projection_due(3));
     }
 }

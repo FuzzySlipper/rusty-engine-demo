@@ -26,8 +26,7 @@ use super::{
 };
 
 const PROTOCOL_VERSION: u16 = 1;
-const SESSION_UPDATE_INTERVAL: Duration = Duration::from_micros(16_667);
-const SESSION_READ_TIMEOUT: Duration = Duration::from_millis(4);
+const SESSION_READ_TIMEOUT: Duration = Duration::from_millis(1);
 const SESSION_WRITE_TIMEOUT: Duration = Duration::from_millis(100);
 const MAX_COMMAND_BYTES: usize = 16 * 1024;
 const MAX_COMMANDS_PER_POLL: usize = 32;
@@ -41,6 +40,8 @@ struct ClientCommandEnvelope {
     sequence: u64,
     observed_snapshot_sequence: Option<u64>,
     observed_static_revision: Option<String>,
+    #[serde(default)]
+    request_full_state: bool,
     command: BrowserGameCommand,
 }
 
@@ -293,6 +294,7 @@ pub(super) fn run_game_session(stream: TcpStream, runtime: Arc<SharedBrowserRunt
         .lock()
         .expect("runtime lock")
         .start_browser_connection();
+    runtime.set_consumed_command_sequence(0);
     let mut context = SessionContext::new(connection_generation);
     serve_session(websocket, &runtime, &mut context);
 
@@ -338,13 +340,16 @@ fn serve_session(
     runtime: &Arc<SharedBrowserRuntime>,
     context: &mut SessionContext,
 ) {
+    let bootstrap_projection_sequence = runtime.projection_sequence();
+    let bootstrap_consumed_sequence = runtime.consumed_command_sequence();
     if !matches!(
         send_latest_update(&mut websocket, runtime, context),
         Ok(UpdateDisposition::Sent)
     ) {
         return;
     }
-    let mut next_update = Instant::now() + SESSION_UPDATE_INTERVAL;
+    let mut published_projection_sequence = bootstrap_projection_sequence;
+    let mut published_consumed_sequence = bootstrap_consumed_sequence;
     loop {
         for _ in 0..MAX_COMMANDS_PER_POLL {
             match websocket.read() {
@@ -433,14 +438,22 @@ fn serve_session(
             }
         }
 
-        if Instant::now() >= next_update {
+        let pending_projection_sequence = runtime.projection_sequence();
+        let pending_consumed_sequence = runtime.consumed_command_sequence();
+        if session_update_due(
+            pending_projection_sequence,
+            published_projection_sequence,
+            pending_consumed_sequence,
+            published_consumed_sequence,
+        ) {
             if !matches!(
                 send_latest_update(&mut websocket, runtime, context),
                 Ok(UpdateDisposition::Sent)
             ) {
                 return;
             }
-            next_update = Instant::now() + SESSION_UPDATE_INTERVAL;
+            published_projection_sequence = pending_projection_sequence;
+            published_consumed_sequence = pending_consumed_sequence;
         }
     }
 }
@@ -471,10 +484,11 @@ fn process_command(
             "command belongs to a replaced session",
         );
     }
-    if envelope
-        .observed_snapshot_sequence
-        .is_some_and(|observed| observed != context.snapshot_sequence)
-    {
+    if snapshot_resync_required(
+        envelope.request_full_state,
+        envelope.observed_snapshot_sequence,
+        context.snapshot_sequence,
+    ) {
         context.force_full = true;
     }
     if envelope
@@ -1021,8 +1035,103 @@ fn dynamic_diff(previous: &Value, current: &Value) -> Map<String, Value> {
     current
         .iter()
         .filter(|(key, value)| previous.and_then(|state| state.get(*key)) != Some(*value))
-        .map(|(key, value)| (key.clone(), value.clone()))
+        .map(|(key, value)| {
+            let previous_value = previous.and_then(|state| state.get(key));
+            let change = previous_value
+                .and_then(|previous_value| keyed_collection_diff(previous_value, value))
+                .unwrap_or_else(|| value.clone());
+            (key.clone(), change)
+        })
         .collect()
+}
+
+fn keyed_collection_diff(previous: &Value, current: &Value) -> Option<Value> {
+    let previous = previous.as_array()?;
+    let current = current.as_array()?;
+    let key = ["id", "slot"].into_iter().find(|key| {
+        previous
+            .iter()
+            .chain(current)
+            .all(|value| collection_identity(value, key).is_some())
+    })?;
+    let previous_identities = unique_collection_identities(previous, key)?;
+    let current_identities = unique_collection_identities(current, key)?;
+    let removed = previous
+        .iter()
+        .zip(&previous_identities)
+        .filter(|(_, identity)| !current_identities.contains(identity))
+        .map(|(value, _)| value.get(key).expect("validated collection key").clone())
+        .collect::<Vec<_>>();
+    let mut upserts = Vec::new();
+    for (value, identity) in current.iter().zip(&current_identities) {
+        let previous_value = previous_identities
+            .iter()
+            .position(|candidate| candidate == identity)
+            .map(|index| &previous[index]);
+        if previous_value != Some(value) {
+            upserts.push(value.clone());
+        }
+    }
+    let mut reconstructed_identities = previous_identities
+        .iter()
+        .filter(|identity| current_identities.contains(identity))
+        .cloned()
+        .collect::<Vec<_>>();
+    reconstructed_identities.extend(
+        current_identities
+            .iter()
+            .filter(|identity| !previous_identities.contains(identity))
+            .cloned(),
+    );
+    if reconstructed_identities != current_identities {
+        return None;
+    }
+    let patch = serde_json::json!({
+        "$collectionPatch": 1,
+        "key": key,
+        "upserts": upserts,
+        "removed": removed,
+    });
+    (serde_json::to_vec(&patch).ok()?.len() < serde_json::to_vec(current).ok()?.len())
+        .then_some(patch)
+}
+
+fn unique_collection_identities(values: &[Value], key: &str) -> Option<Vec<String>> {
+    let identities = values
+        .iter()
+        .map(|value| collection_identity(value, key))
+        .collect::<Option<Vec<_>>>()?;
+    let mut unique = identities.clone();
+    unique.sort();
+    unique.dedup();
+    (unique.len() == identities.len()).then_some(identities)
+}
+
+fn collection_identity(value: &Value, key: &str) -> Option<String> {
+    match value.as_object()?.get(key)? {
+        Value::Number(value) => Some(format!("number:{value}")),
+        Value::String(value) => Some(format!("string:{value}")),
+        _ => None,
+    }
+}
+
+fn snapshot_resync_required(
+    explicitly_requested: bool,
+    observed_snapshot_sequence: Option<u64>,
+    current_snapshot_sequence: u64,
+) -> bool {
+    explicitly_requested
+        || observed_snapshot_sequence.is_some_and(|observed| observed > current_snapshot_sequence)
+}
+
+fn session_update_due(
+    pending_projection_sequence: u64,
+    published_projection_sequence: u64,
+    pending_consumed_sequence: u64,
+    published_consumed_sequence: u64,
+) -> bool {
+    pending_projection_sequence != published_projection_sequence
+        || pending_consumed_sequence != published_consumed_sequence
 }
 
 fn session_id(connection_generation: u64) -> String {
@@ -1067,6 +1176,83 @@ mod tests {
             .into_iter()
             .collect()
         );
+    }
+
+    #[test]
+    fn dynamic_delta_patches_changed_keyed_collection_members() {
+        let previous = json!({
+            "tick": 1,
+            "projection": [
+                {
+                    "id": 4,
+                    "name": "cargo-loader-arrival-with-a-stable-authored-identity",
+                    "translation": [1, 2, 3],
+                    "visible": true
+                },
+                {
+                    "id": 5,
+                    "name": "gantry-sentry-generator-with-a-stable-authored-identity",
+                    "translation": [4, 5, 6],
+                    "visible": true
+                }
+            ]
+        });
+        let current = json!({
+            "tick": 2,
+            "projection": [
+                {
+                    "id": 4,
+                    "name": "cargo-loader-arrival-with-a-stable-authored-identity",
+                    "translation": [1, 2, 4],
+                    "visible": true
+                },
+                {
+                    "id": 5,
+                    "name": "gantry-sentry-generator-with-a-stable-authored-identity",
+                    "translation": [4, 5, 6],
+                    "visible": true
+                }
+            ]
+        });
+
+        assert_eq!(
+            dynamic_diff(&previous, &current),
+            BTreeMap::from([
+                (
+                    "projection".to_owned(),
+                    json!({
+                        "$collectionPatch": 1,
+                        "key": "id",
+                        "upserts": [
+                            {
+                                "id": 4,
+                                "name": "cargo-loader-arrival-with-a-stable-authored-identity",
+                                "translation": [1, 2, 4],
+                                "visible": true
+                            }
+                        ],
+                        "removed": []
+                    })
+                ),
+                ("tick".to_owned(), json!(2)),
+            ])
+            .into_iter()
+            .collect()
+        );
+    }
+
+    #[test]
+    fn ordinary_lag_does_not_force_a_full_state_resync() {
+        assert!(!snapshot_resync_required(false, Some(40), 42));
+        assert!(snapshot_resync_required(true, Some(40), 42));
+        assert!(snapshot_resync_required(false, Some(43), 42));
+    }
+
+    #[test]
+    fn consumed_commands_publish_without_waiting_for_the_background_sample() {
+        assert!(!session_update_due(12, 12, 40, 40));
+        assert!(session_update_due(13, 12, 40, 40));
+        assert!(session_update_due(12, 12, 41, 40));
     }
 
     #[test]

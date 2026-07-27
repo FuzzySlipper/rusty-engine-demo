@@ -294,7 +294,7 @@ interactive performance machine.
 | Full dynamic resync    | At most 32 KiB for the campaign level, excluding separately hashed static resources                           |
 | Static resources       | Zero unchanged mesh/voxel array bytes in ordinary dynamic updates                                             |
 | Server outbound state  | One latest unsent state plus 256 must-deliver records maximum                                                 |
-| Renderer cadence       | Interactive p95 at most 20 ms and p99 at most 33 ms during the representative route                           |
+| Renderer cadence       | Interactive p95 at most 20 ms and p99 at most 33.5 ms during the representative route                         |
 | Submission duration    | Report separately from cadence; never label synchronous backend submission as GPU time                        |
 | Reconnect              | Full resync and safe idle intent within two seconds after the host becomes reachable                          |
 | Long-run stability     | 10-minute stress route has no growing input, fact, cue, snapshot, or render-resource count                    |

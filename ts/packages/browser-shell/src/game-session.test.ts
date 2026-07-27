@@ -301,6 +301,102 @@ test("dynamic deltas retain cold resources and reject a sequence gap", () => {
   );
 });
 
+test("dynamic deltas patch only changed keyed collection members", () => {
+  const projection = [
+    {
+      id: 3,
+      name: "bulkhead",
+      asset: "mesh/security-door",
+      translation: [3, 4, 5] as const,
+      visible: true,
+    },
+    {
+      id: 4,
+      name: "cargo-loader",
+      asset: "enemy/cargo-loader",
+      translation: [6, 7, 8] as const,
+      visible: true,
+    },
+  ];
+  const initial = applyServerUpdate(null, {
+    protocolVersion: 1,
+    sessionId: "loading-bay-1",
+    connectionGeneration: 1,
+    serverTick: 1,
+    snapshotSequence: 1,
+    acknowledgedCommandSequence: 0,
+    staticRevision: resources.staticRevision,
+    update: {
+      kind: "full",
+      state: { ...dynamic, projection },
+    },
+    resources,
+    facts: [],
+    metrics,
+  });
+
+  const applied = applyServerUpdate(initial.baseline, {
+    protocolVersion: 1,
+    sessionId: "loading-bay-1",
+    connectionGeneration: 1,
+    serverTick: 2,
+    snapshotSequence: 2,
+    acknowledgedCommandSequence: 0,
+    staticRevision: resources.staticRevision,
+    update: {
+      kind: "delta",
+      baseSnapshotSequence: 1,
+      changes: {
+        tick: 2,
+        projection: {
+          $collectionPatch: 1,
+          key: "id",
+          upserts: [
+            {
+              ...projection[1],
+              translation: [6, 7, 9],
+            },
+          ],
+          removed: [],
+        },
+      },
+    },
+    facts: [],
+    metrics,
+  });
+
+  assert.equal(applied.state.projection[0], projection[0]);
+  assert.deepEqual(applied.state.projection[1]?.translation, [6, 7, 9]);
+  assert.throws(
+    () =>
+      applyServerUpdate(initial.baseline, {
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 2,
+        snapshotSequence: 2,
+        acknowledgedCommandSequence: 0,
+        staticRevision: resources.staticRevision,
+        update: {
+          kind: "delta",
+          baseSnapshotSequence: 1,
+          changes: {
+            projection: {
+              $collectionPatch: 1,
+              key: "id",
+              upserts: [],
+              removed: [99],
+            },
+          },
+        },
+        facts: [],
+        metrics,
+      }),
+    (error) =>
+      error instanceof GameSessionError && error.code === "protocolMismatch",
+  );
+});
+
 test("resource revision changes require a matching full resource payload", () => {
   const full: ServerUpdateEnvelope = {
     protocolVersion: 1,

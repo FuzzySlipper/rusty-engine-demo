@@ -90,7 +90,7 @@ interface FullStateUpdate {
 interface DeltaStateUpdate {
   readonly kind: "delta";
   readonly baseSnapshotSequence: number;
-  readonly changes: Partial<RuntimeDynamicState>;
+  readonly changes: Readonly<Record<string, unknown>>;
 }
 
 export interface ServerUpdateEnvelope {
@@ -151,6 +151,7 @@ interface ClientCommandEnvelope {
   readonly sequence: number;
   readonly observedSnapshotSequence: number;
   readonly observedStaticRevision: string;
+  readonly requestFullState: boolean;
   readonly command: ClientGameCommand;
 }
 
@@ -220,7 +221,7 @@ export function applyServerUpdate(
         "resync",
       );
     }
-    dynamic = { ...previous.dynamic, ...envelope.update.changes };
+    dynamic = applyDynamicChanges(previous.dynamic, envelope.update.changes);
   }
   if (!isRuntimeDynamicState(dynamic)) {
     throw new GameSessionError(
@@ -239,6 +240,118 @@ export function applyServerUpdate(
     },
     state: { ...dynamic, ...runtimeResources },
   };
+}
+
+function applyDynamicChanges(
+  previous: RuntimeDynamicState,
+  changes: Readonly<Record<string, unknown>>,
+): RuntimeDynamicState {
+  const dynamic: Record<string, unknown> = { ...previous };
+  for (const [owner, change] of Object.entries(changes)) {
+    if (!isKeyedCollectionPatch(change)) {
+      dynamic[owner] = change;
+      continue;
+    }
+    const collection = dynamic[owner];
+    if (!Array.isArray(collection)) {
+      throw new GameSessionError(
+        "protocolMismatch",
+        `keyed collection patch has no array baseline for ${owner}`,
+      );
+    }
+    dynamic[owner] = applyKeyedCollectionPatch(owner, collection, change);
+  }
+  return dynamic as unknown as RuntimeDynamicState;
+}
+
+interface KeyedCollectionPatch {
+  readonly $collectionPatch: 1;
+  readonly key: "id" | "slot";
+  readonly upserts: readonly Record<string, unknown>[];
+  readonly removed: readonly (number | string)[];
+}
+
+function applyKeyedCollectionPatch(
+  owner: string,
+  previous: readonly unknown[],
+  patch: KeyedCollectionPatch,
+): readonly unknown[] {
+  const next = [...previous];
+  const positions = new Map<number | string, number>();
+  for (const [index, value] of next.entries()) {
+    const identity = collectionIdentity(value, patch.key);
+    if (identity === null || positions.has(identity)) {
+      throw new GameSessionError(
+        "protocolMismatch",
+        `keyed collection ${owner} has an invalid ${patch.key} baseline`,
+      );
+    }
+    positions.set(identity, index);
+  }
+  const removed = new Set(patch.removed);
+  for (const identity of removed) {
+    if (!positions.has(identity)) {
+      throw new GameSessionError(
+        "protocolMismatch",
+        `keyed collection ${owner} removes unknown ${patch.key} ${String(identity)}`,
+      );
+    }
+  }
+  const retained = next.filter((value) => {
+    const identity = collectionIdentity(value, patch.key);
+    return identity !== null && !removed.has(identity);
+  });
+  const retainedPositions = new Map<number | string, number>(
+    retained.map((value, index) => [
+      collectionIdentity(value, patch.key) as number | string,
+      index,
+    ]),
+  );
+  for (const value of patch.upserts) {
+    const identity = collectionIdentity(value, patch.key);
+    if (identity === null) {
+      throw new GameSessionError(
+        "protocolMismatch",
+        `keyed collection ${owner} upsert has no ${patch.key}`,
+      );
+    }
+    const index = retainedPositions.get(identity);
+    if (index === undefined) {
+      retainedPositions.set(identity, retained.length);
+      retained.push(value);
+    } else {
+      retained[index] = value;
+    }
+  }
+  return retained;
+}
+
+function collectionIdentity(
+  value: unknown,
+  key: "id" | "slot",
+): number | string | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const identity = value[key];
+  return typeof identity === "number" || typeof identity === "string"
+    ? identity
+    : null;
+}
+
+function isKeyedCollectionPatch(value: unknown): value is KeyedCollectionPatch {
+  return (
+    isRecord(value) &&
+    value.$collectionPatch === 1 &&
+    (value.key === "id" || value.key === "slot") &&
+    Array.isArray(value.upserts) &&
+    value.upserts.every(isRecord) &&
+    Array.isArray(value.removed) &&
+    value.removed.every(
+      (identity) =>
+        typeof identity === "number" || typeof identity === "string",
+    )
+  );
 }
 
 interface PendingSettlement {
@@ -278,6 +391,7 @@ export class LoadingBayGameSession {
   #maximumCommandRoundTripMilliseconds = 0;
   #maximumPendingInputFrameCount = 0;
   #maximumPendingEdgeCount = 0;
+  #resyncRequested = false;
   #closed = false;
   #onState:
     | ((state: RuntimeBrowserState, delivery: SessionStateDelivery) => void)
@@ -608,6 +722,7 @@ export class LoadingBayGameSession {
         applied = applyServerUpdate(this.#baseline, value);
       } catch (error) {
         if (error instanceof GameSessionError && error.retry === "resync") {
+          this.#resyncRequested = true;
           this.#pendingInput = true;
           this.#scheduleInput();
           return;
@@ -802,10 +917,12 @@ export class LoadingBayGameSession {
       sequence,
       observedSnapshotSequence: this.#baseline.snapshotSequence,
       observedStaticRevision: this.#baseline.resources.staticRevision,
+      requestFullState: this.#resyncRequested,
       command,
     };
     this.#sentAt.set(sequence, performance.now());
     this.#socket.send(JSON.stringify(envelope));
+    this.#resyncRequested = false;
   }
 
   #nextSequence(): number {

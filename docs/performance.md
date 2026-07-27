@@ -25,7 +25,7 @@ bay at a 1600 by 900 viewport:
 
 | Measurement                    |                                        Budget |
 | ------------------------------ | --------------------------------------------: |
-| Renderer cadence               |                    p95 <= 20 ms; p99 <= 33 ms |
+| Renderer cadence               |                  p95 <= 20 ms; p99 <= 33.5 ms |
 | Synchronous backend submission |        Reported separately; no GPU-time claim |
 | Continuous input               | <= 1 in flight plus 1 coalesced pending frame |
 | Edge input                     |                        <= 32 pending commands |

@@ -46,6 +46,9 @@ type VoxelEditOperation =
     };
 
 const PRODUCT_EDIT_VOXEL = [2, 1, 6] as const;
+const TELEMETRY_SAMPLE_INTERVAL_TICKS = 6;
+const SHELL_HEADING_INTERVAL_TICKS = 6;
+const DIAGNOSTIC_HISTORY_SAMPLE_INTERVAL_TICKS = 6;
 
 export interface LoadingBayHostPresentationPreferences {
   readonly mouseSensitivity: number;
@@ -198,6 +201,11 @@ export async function mountLoadingBayGame(
   let rendererTelemetryResetObserved = false;
   let sessionReplacementPresentation: Promise<void> | null = null;
   let replacementTelemetrySamplesBefore = 0;
+  let lastTelemetryProjectionTick = Number.NEGATIVE_INFINITY;
+  let lastPresentationFingerprint = "";
+  let lastEnemyReadoutFingerprint = "";
+  let lastShellProjectionFingerprint = "";
+  let lastShellProjectionTick = Number.NEGATIVE_INFINITY;
   let hostPreferences = normalizeHostPreferences(options.preferences);
   const localLookOffset = new LocalLookPresentationOffset();
   const heldMovement = new HeldMovementInput({
@@ -287,8 +295,10 @@ export async function mountLoadingBayGame(
     surface.dispose();
     await Promise.all([disconnected, feedbackDisposed]);
   };
-  renderReadout(current);
+  renderReadout(current, true);
   await applyPresentationFeedback(true, initialFrame.ops.length);
+  lastPresentationFingerprint = JSON.stringify(current.presentation);
+  lastTelemetryProjectionTick = current.tick;
   updateRendererStatus();
   updateSessionDiagnostics();
 
@@ -782,7 +792,7 @@ export async function mountLoadingBayGame(
       expectedStorageRevision,
     });
     lastActionRejection = null;
-    renderReadout(current);
+    renderReadout(current, true);
   }
 
   async function performSetPaused(paused: boolean): Promise<void> {
@@ -796,7 +806,7 @@ export async function mountLoadingBayGame(
   async function performUseItem(item: string): Promise<void> {
     current = await session.sendEdge({ kind: "useItem", item });
     lastActionRejection = null;
-    renderReadout(current);
+    renderReadout(current, true);
   }
 
   async function runUiAction(operation: () => Promise<void>): Promise<void> {
@@ -837,11 +847,24 @@ export async function mountLoadingBayGame(
     const frame = projection.apply(state);
     applyRendererFrame(frame);
     applyPresentationCamera();
-    renderReadout(state);
-    const feedbackApplied = applyPresentationFeedback(
-      delivery.sessionReplaced,
-      frame.ops.length,
-    );
+    renderReadout(state, delivery.sessionReplaced);
+    const presentationFingerprint = JSON.stringify(state.presentation);
+    const presentationChanged =
+      presentationFingerprint !== lastPresentationFingerprint;
+    const telemetryDue =
+      state.tick - lastTelemetryProjectionTick >=
+      TELEMETRY_SAMPLE_INTERVAL_TICKS;
+    const shouldApplyPresentation =
+      delivery.sessionReplaced || presentationChanged || telemetryDue;
+    const feedbackApplied = shouldApplyPresentation
+      ? applyPresentationFeedback(delivery.sessionReplaced, frame.ops.length)
+      : Promise.resolve();
+    if (shouldApplyPresentation) {
+      lastPresentationFingerprint = presentationFingerprint;
+      lastTelemetryProjectionTick = state.tick;
+      updateRendererStatus();
+      updateSessionDiagnostics();
+    }
     if (delivery.sessionReplaced) {
       sessionReplacementPresentation = feedbackApplied.then(() => {
         rendererTelemetryResetObserved ||=
@@ -851,8 +874,6 @@ export async function mountLoadingBayGame(
           rendererTelemetryResetObserved ? "pass" : "pending";
       });
     }
-    updateRendererStatus();
-    updateSessionDiagnostics();
   }
 
   async function performVoxelEdit(edit: VoxelEditOperation): Promise<void> {
@@ -878,53 +899,95 @@ export async function mountLoadingBayGame(
     updateRendererStatus();
   }
 
-  function renderReadout(state: RuntimeBrowserState): void {
-    eventList.dataset.history = eventHistory.join(",");
-    document.body.dataset.eventHistoryCount = String(eventHistory.length);
-    document.body.dataset.eventHistoryCapacity = String(
-      MAX_PRESENTATION_EVENT_HISTORY,
+  function renderReadout(state: RuntimeBrowserState, force = false): void {
+    const importantEvent = state.lastEvents.some(
+      (event) => !isHighFrequencyDiagnosticEvent(event),
     );
-    document.body.dataset.eventHistoryBounded =
-      eventHistory.length <= MAX_PRESENTATION_EVENT_HISTORY ? "pass" : "fail";
-    document.body.dataset.eventKinds = [...observedEventKinds].join(",");
-    document.body.dataset.eventKindCount = String(observedEventKinds.size);
-    document.body.dataset.eventKindCapacity = String(
-      MAX_PRESENTATION_EVENT_KINDS,
-    );
-    document.body.dataset.eventKindsBounded = eventKindOverflow
-      ? "fail"
-      : "pass";
-    encounterState.textContent = state.encounterState.toUpperCase();
+    if (
+      !force &&
+      state.tick % DIAGNOSTIC_HISTORY_SAMPLE_INTERVAL_TICKS !== 0 &&
+      !importantEvent &&
+      lastActionRejection === null
+    ) {
+      return;
+    }
+    if (
+      force ||
+      state.tick % DIAGNOSTIC_HISTORY_SAMPLE_INTERVAL_TICKS === 0 ||
+      importantEvent
+    ) {
+      eventList.dataset.history = eventHistory.join(",");
+      document.body.dataset.eventHistoryCount = String(eventHistory.length);
+      document.body.dataset.eventHistoryCapacity = String(
+        MAX_PRESENTATION_EVENT_HISTORY,
+      );
+      document.body.dataset.eventHistoryBounded =
+        eventHistory.length <= MAX_PRESENTATION_EVENT_HISTORY ? "pass" : "fail";
+      document.body.dataset.eventKinds = [...observedEventKinds].join(",");
+      document.body.dataset.eventKindCount = String(observedEventKinds.size);
+      document.body.dataset.eventKindCapacity = String(
+        MAX_PRESENTATION_EVENT_KINDS,
+      );
+      document.body.dataset.eventKindsBounded = eventKindOverflow
+        ? "fail"
+        : "pass";
+      eventList.replaceChildren(
+        ...(eventHistory.length === 0
+          ? ["Awaiting action"]
+          : eventHistory.slice(-20)
+        ).map((event) => {
+          const item = document.createElement("li");
+          item.textContent = event;
+          return item;
+        }),
+      );
+    }
+    setText(encounterState, state.encounterState.toUpperCase());
     encounterState.dataset.state = state.encounterState;
-    revision.textContent = `REV ${String(state.entityRevision)}`;
-    doorCaption.textContent = state.doorState === "open" ? "OPEN" : "LOCKED";
+    if (force || state.tick % TELEMETRY_SAMPLE_INTERVAL_TICKS === 0) {
+      setText(revision, `REV ${String(state.entityRevision)}`);
+      setText(
+        playerPose,
+        `${state.player.position.map((value) => value.toFixed(1)).join(", ")} · YAW ${state.player.yawDegrees.toFixed(0)}°`,
+      );
+    }
+    setText(doorCaption, state.doorState === "open" ? "OPEN" : "LOCKED");
     doorCaption.dataset.state = state.doorState;
-    motionState.textContent = state.motionState.toUpperCase();
+    setText(motionState, state.motionState.toUpperCase());
     motionState.dataset.state = state.motionState;
-    navigationState.textContent = state.navigationState.toUpperCase();
+    setText(navigationState, state.navigationState.toUpperCase());
     navigationState.dataset.state = state.navigationState;
-    playerMotionState.textContent = state.playerMotionState.toUpperCase();
+    setText(playerMotionState, state.playerMotionState.toUpperCase());
     playerMotionState.dataset.state = state.playerMotionState;
-    combatState.textContent =
+    setText(
+      combatState,
       lastActionRejection === null
         ? state.combatState.toUpperCase()
-        : "REJECTED";
+        : "REJECTED",
+    );
     combatState.dataset.state =
       lastActionRejection === null ? state.combatState : "rejected";
     combatState.title = lastActionRejection ?? "";
-    playerPose.textContent = `${state.player.position.map((value) => value.toFixed(1)).join(", ")} · YAW ${state.player.yawDegrees.toFixed(0)}°`;
-    weaponState.textContent = `${state.weapon.presentation.toUpperCase()} · ${String(state.weapon.damage)} DMG · ${String(state.weapon.ammoRemaining)}/${String(state.weapon.ammoCapacity)} ${state.weapon.ammunition.toUpperCase()}`;
-    inventoryState.textContent =
+    setText(
+      weaponState,
+      `${state.weapon.presentation.toUpperCase()} · ${String(state.weapon.damage)} DMG · ${String(state.weapon.ammoRemaining)}/${String(state.weapon.ammoCapacity)} ${state.weapon.ammunition.toUpperCase()}`,
+    );
+    setText(
+      inventoryState,
       state.inventory === null
         ? "NO AUTHORED INVENTORY"
         : state.inventory.stacks
             .map((stack) => `${stack.item} ×${String(stack.quantity)}`)
-            .join(" · ");
+            .join(" · "),
+    );
     inventoryState.dataset.equipped = state.inventory?.equippedWeapon ?? "none";
     const availablePickups = state.pickups.filter(
       (pickup) => pickup.state === "available",
     );
-    pickupState.textContent = `${String(availablePickups.length)}/${String(state.pickups.length)} PICKUPS AVAILABLE`;
+    setText(
+      pickupState,
+      `${String(availablePickups.length)}/${String(state.pickups.length)} PICKUPS AVAILABLE`,
+    );
     pickupState.dataset.available = availablePickups
       .map((pickup) => String(pickup.id))
       .join(",");
@@ -932,46 +995,56 @@ export async function mountLoadingBayGame(
       .filter((pickup) => pickup.state === "collected")
       .map((pickup) => String(pickup.id))
       .join(",");
-    environmentState.textContent =
+    setText(
+      environmentState,
       state.generatedEnvironment === null
         ? `MATERIALIZED · ${String(state.voxelSolidCount)} VOXELS`
-        : `SEED ${String(state.generatedEnvironment.seed)} · ${String(state.generatedEnvironment.meshQuads)} QUADS · ${state.generatedEnvironment.outputHash.slice(0, 8)}`;
-    voxelState.textContent = `VOXEL REV ${String(state.voxelRevision)} · NAV ${state.voxelNavigationHash.slice(0, 8)} · PATH ${String(state.voxelProbePathLength)}`;
-    beaconState.textContent =
-      state.extractionBeacon?.state.toUpperCase() ?? "UNAVAILABLE";
+        : `SEED ${String(state.generatedEnvironment.seed)} · ${String(state.generatedEnvironment.meshQuads)} QUADS · ${state.generatedEnvironment.outputHash.slice(0, 8)}`,
+    );
+    setText(
+      voxelState,
+      `VOXEL REV ${String(state.voxelRevision)} · NAV ${state.voxelNavigationHash.slice(0, 8)} · PATH ${String(state.voxelProbePathLength)}`,
+    );
+    setText(
+      beaconState,
+      state.extractionBeacon?.state.toUpperCase() ?? "UNAVAILABLE",
+    );
     beaconState.dataset.state = state.extractionBeacon?.state ?? "unavailable";
     if (state.extractionBeacon !== null) {
       beaconState.dataset.entityId = String(state.extractionBeacon.id);
     } else {
       delete beaconState.dataset.entityId;
     }
-    enemyList.replaceChildren(
-      ...state.enemies.map((enemy) => {
-        const row = document.createElement("div");
-        row.className = "enemy-row";
-        row.dataset.entityId = String(enemy.id);
-        row.dataset.state = enemy.state;
-        row.dataset.combatPosture = enemy.combatPosture ?? enemy.state;
-        const name = document.createElement("span");
-        name.textContent = enemy.name;
-        const status = document.createElement("strong");
-        const posture = enemy.combatPosture ?? enemy.state;
-        status.textContent = `${posture.toUpperCase()} · ${String(enemy.currentHealth)}/${String(enemy.maxHealth)} HP`;
-        row.append(name, status);
-        return row;
-      }),
+    const enemyReadoutFingerprint = JSON.stringify(
+      state.enemies.map((enemy) => [
+        enemy.id,
+        enemy.name,
+        enemy.state,
+        enemy.combatPosture,
+        enemy.currentHealth,
+        enemy.maxHealth,
+      ]),
     );
-    eventList.replaceChildren(
-      ...(eventHistory.length === 0
-        ? ["Awaiting action"]
-        : eventHistory.slice(-20)
-      ).map((event) => {
-        const item = document.createElement("li");
-        item.textContent = event;
-        return item;
-      }),
-    );
-    options.onProjection?.({
+    if (enemyReadoutFingerprint !== lastEnemyReadoutFingerprint) {
+      lastEnemyReadoutFingerprint = enemyReadoutFingerprint;
+      enemyList.replaceChildren(
+        ...state.enemies.map((enemy) => {
+          const row = document.createElement("div");
+          row.className = "enemy-row";
+          row.dataset.entityId = String(enemy.id);
+          row.dataset.state = enemy.state;
+          row.dataset.combatPosture = enemy.combatPosture ?? enemy.state;
+          const name = document.createElement("span");
+          name.textContent = enemy.name;
+          const status = document.createElement("strong");
+          const posture = enemy.combatPosture ?? enemy.state;
+          status.textContent = `${posture.toUpperCase()} · ${String(enemy.currentHealth)}/${String(enemy.maxHealth)} HP`;
+          row.append(name, status);
+          return row;
+        }),
+      );
+    }
+    const shellProjection: LoadingBayPresentationSnapshot = {
       ammoCapacity: state.weapon.ammoCapacity,
       ammoRemaining: state.weapon.ammoRemaining,
       armor: state.player.armor,
@@ -980,7 +1053,9 @@ export async function mountLoadingBayGame(
       doorState: state.doorState,
       equippedWeapon: state.inventory?.equippedWeapon ?? null,
       encounterState: state.encounterState,
-      events: [...eventHistory],
+      events: eventHistory.filter(
+        (event) => !isHighFrequencyDiagnosticEvent(event),
+      ),
       health: state.player.currentHealth,
       headingDegrees: normalizeDegrees(state.player.yawDegrees),
       hostSessionId: state.hostSessionId,
@@ -1002,7 +1077,19 @@ export async function mountLoadingBayGame(
       weaponItem: state.weapon.item,
       weaponPresentation: state.weapon.presentation,
       weaponSlots: state.inventory?.weapons ?? [],
+    };
+    const shellProjectionFingerprint = JSON.stringify({
+      ...shellProjection,
+      headingDegrees: 0,
     });
+    if (
+      shellProjectionFingerprint !== lastShellProjectionFingerprint ||
+      state.tick - lastShellProjectionTick >= SHELL_HEADING_INTERVAL_TICKS
+    ) {
+      lastShellProjectionFingerprint = shellProjectionFingerprint;
+      lastShellProjectionTick = state.tick;
+      options.onProjection?.(shellProjection);
+    }
   }
 
   async function applyPresentationFeedback(
@@ -1109,7 +1196,7 @@ export async function mountLoadingBayGame(
   ): Promise<void> {
     current = await session.sendEdge(command);
     lastActionRejection = null;
-    renderReadout(current);
+    renderReadout(current, true);
   }
 
   async function performAttackAction(
@@ -2153,5 +2240,19 @@ export async function mountLoadingBayGame(
       Math.abs(currentValue[1] - previousValue[1]) > threshold ||
       Math.abs(currentValue[2] - previousValue[2]) > threshold
     );
+  }
+}
+
+function isHighFrequencyDiagnosticEvent(event: string): boolean {
+  return (
+    event === "PlayerMoved" ||
+    event === "PlayerLookChanged" ||
+    event === "InputExpired"
+  );
+}
+
+function setText(element: HTMLElement, value: string): void {
+  if (element.textContent !== value) {
+    element.textContent = value;
   }
 }

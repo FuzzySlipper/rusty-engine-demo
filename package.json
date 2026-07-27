@@ -6,6 +6,7 @@
   "scripts": {
     "audit:boundary": "node scripts/audit-boundary.mjs",
     "build:shell": "nx build loading-bay",
+    "certify:performance": "node scripts/certify-headed-performance.mjs",
     "check:content": "pnpm --filter @rusty-engine-demo/project-content check",
     "generate:content": "pnpm --filter @rusty-engine-demo/project-content generate",
     "lint": "nx run-many -t lint --all",
