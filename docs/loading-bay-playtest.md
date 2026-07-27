@@ -122,9 +122,10 @@ Scope accounting for this certification:
 - The accepted navigation footprint constraint is fail-closed and does not prevent the shipped
   route. It remains documented in the project `known-limitations` record rather than hidden behind
   a second navigation authority.
-- Cold bootstrap size (#6293), the production JavaScript warning budget (#6292), and an independent
-  human pacing playtest (#6294) are explicit downstream measurement/tuning work. None is required
-  for authoritative campaign correctness, the complete automated route, or the certified
-  interaction budgets.
+- Desktop startup and steady-state profiling (#6292) now owns the former #6293 bootstrap question:
+  non-game routes are lazy, the Rust menu summary no longer transfers the full game projection, and
+  the measured one-time game bootstrap remains accepted under its explicit bound. An independent
+  human pacing playtest (#6294) remains separate tuning work rather than an authoritative campaign
+  correctness gap.
 - Source and asset provenance remains exact in `docs/source-provenance.md`; the FPS campaign uses
   original Loading Bay composition and primitive presentation rather than licensed Doom content.
