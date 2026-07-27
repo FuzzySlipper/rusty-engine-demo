@@ -67,15 +67,51 @@ enabled. The observed offset peaked at 0.30 yaw units and 0.10 pitch units, stay
 two-unit-per-axis bound, and reconciled to exactly zero. Input evidence stayed within two pending
 frames, pointer lock remained active, and the browser reported no runtime error.
 
+## 2026-07-27 complete-campaign headed certification
+
+`pnpm run certify:performance` is the repeatable headed-hardware proof. It opens the installed
+product in a visible Chromium/Wayland window, acquires real pointer lock, holds physical `W`, sends
+CDP mouse motion, reads only shared-surface timing, and correlates each WebSocket input sequence
+with the Rust update that both acknowledges and consumes it. The RTT percentile is therefore over
+505 distinct commands rather than repeated samples of the HUD's last-value diagnostic.
+
+The following exact run used Demo revision
+`e31dea511377fe68ab898248c5ee9efa3f9a2cf6`, Rust Engine revision
+`464dd5e16bb023ad8d81515eabeaac9bb75df74d`, and renderer package revision
+`e622c941671bc0f167206b049ab94ea63495a86d`.
+
+| Context        | Value                                                           |
+| -------------- | --------------------------------------------------------------- |
+| Host           | Arch Linux; Linux 7.0.11; AMD Ryzen 7 8845HS; 16 logical CPUs   |
+| GPU/backend    | AMD Radeon 780M; ANGLE OpenGL ES 3.2                            |
+| Browser        | Chromium 148.0.7778.215                                         |
+| Viewport/route | 1600 x 900 product canvas; pointer-locked held movement/look    |
+| Exercise       | 20 seconds; 199 renderer samples; 505 acknowledged input frames |
+
+| Measurement                         |   p50 |   p95 |   p99 |   max |
+| ----------------------------------- | ----: | ----: | ----: | ----: |
+| Renderer cadence (ms)               |  16.7 |  16.8 |  16.8 |  16.8 |
+| Synchronous backend submission (ms) |   0.4 |   0.6 |   0.8 |   0.8 |
+| Snapshot arrival cadence (ms)       |  33.2 |  41.4 |  42.2 |  43.8 |
+| Command acknowledgement (ms)        | 13.00 | 45.28 | 46.34 | 48.04 |
+| Dynamic payload (bytes)             | 2,291 | 2,394 | 2,684 | 2,686 |
+
+The shared renderer reported 35 retained entities, eight resident chunks, zero to three render
+diffs per sampled state, and animation-frame timing throughout. Input, edge, and outbound maxima
+were 2, 1, and 1 respectively; dropped facts remained zero. All interactive budgets pass.
+Autonomous retained state is projected from every second 60 Hz Rust tick, while a newly consumed
+command publishes on its exact tick. This keeps gameplay authority and scheduling in the one Rust
+loop, holds autonomous presentation at 30 Hz, and avoids adding a browser or renderer clock.
+
 ## Camera policy
 
-The hardware-backed LAN certification run measured command acknowledgement p95 at 54.3 ms, just above the
-50 ms interaction budget, while renderer cadence remained within budget. The browser therefore
-presents a local look offset for the admitted portion of at most one in-flight and one coalesced
-pending look frame. Each axis is bounded to two normalized input units. Accepted authoritative
-snapshots remain the base pose; acknowledgement or rejection removes the corresponding frame, and
-restart/reconnect, blur, pointer-lock loss, route disposal, and explicit input clearing discard the
-whole offset.
+The original hardware-backed LAN baseline measured command acknowledgement p95 at 54.3 ms. The
+complete-campaign certification reduces that to 45.28 ms, but the browser retains its bounded local
+look offset so mouse presentation does not wait even one accepted tick. It presents only the
+admitted portion of at most one in-flight and one coalesced pending look frame. Each axis is bounded
+to two normalized input units. Accepted authoritative snapshots remain the base pose;
+acknowledgement or rejection removes the corresponding frame, and restart/reconnect, blur,
+pointer-lock loss, route disposal, and explicit input clearing discard the whole offset.
 
 The offset is presentation-only. Rust still owns aim, fire, facts, persistence, collision, world
 mutation, and the accepted player pose.
