@@ -1,3 +1,5 @@
+mod support;
+
 use core_ids::EntityId;
 use gameplay_mechanics::{EquipmentComponent, InventoryComponent, ItemComponent, TracksComponent};
 use loading_bay_game::{
@@ -83,6 +85,29 @@ fn engine_components_are_canonical_and_schema_nineteen_rejects_projection_drift(
 }
 
 #[test]
+fn schema_eighteen_rejects_future_provider_state_before_migration() {
+    let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let mut relabeled: serde_json::Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    relabeled["schemaVersion"] = 18.into();
+    assert!(matches!(
+        decode_game_snapshot(&relabeled.to_string()),
+        Err(GameSnapshotError::FutureGameplayMechanicsStateInLegacySnapshot)
+    ));
+
+    relabeled["entities"]["registeredComponents"] = serde_json::json!([]);
+    assert!(relabeled["inventories"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|inventory| !inventory["weaponEntities"].as_array().unwrap().is_empty()));
+    assert!(matches!(
+        decode_game_snapshot(&relabeled.to_string()),
+        Err(GameSnapshotError::FutureGameplayMechanicsStateInLegacySnapshot)
+    ));
+}
+
+#[test]
 fn schema_eighteen_save_migrates_into_the_canonical_provider_store() {
     let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
     let before_health = runtime.session().health(PLAYER).unwrap();
@@ -90,18 +115,7 @@ fn schema_eighteen_save_migrates_into_the_canonical_provider_store() {
     let mut legacy: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     legacy["schemaVersion"] = 18.into();
-    legacy["entities"]["registeredComponents"] = serde_json::json!([]);
-    legacy["entities"]["entities"]
-        .as_array_mut()
-        .unwrap()
-        .retain(|entity| {
-            !entity["name"]
-                .as_str()
-                .is_some_and(|name| name.starts_with("Inventory weapon "))
-        });
-    for inventory in legacy["inventories"].as_array_mut().unwrap() {
-        inventory.as_object_mut().unwrap().remove("weaponEntities");
-    }
+    support::strip_future_gameplay_mechanics_state(&mut legacy);
 
     let migrated = decode_game_snapshot(&legacy.to_string()).unwrap();
     assert_eq!(migrated.session().health(PLAYER).unwrap(), before_health);

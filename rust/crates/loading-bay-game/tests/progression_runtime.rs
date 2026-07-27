@@ -1,3 +1,5 @@
+mod support;
+
 use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, DoorAccessRejection, DoorState,
@@ -417,10 +419,7 @@ fn defeated_player_cannot_advance_progression_but_can_request_restart() {
     let mut snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     snapshot["schemaVersion"] = 18.into();
-    snapshot["entities"]["registeredComponents"] = serde_json::json!([]);
-    for inventory in snapshot["inventories"].as_array_mut().unwrap() {
-        inventory.as_object_mut().unwrap().remove("weaponEntities");
-    }
+    support::strip_future_gameplay_mechanics_state(&mut snapshot);
     let health = snapshot["health"]
         .as_array_mut()
         .unwrap()
@@ -467,6 +466,7 @@ fn legacy_snapshots_reject_future_progression_state() {
     let mut snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     snapshot["schemaVersion"] = 15.into();
+    support::strip_future_gameplay_mechanics_state(&mut snapshot);
     for definition in snapshot["itemDefinitions"].as_array_mut().unwrap() {
         let kind = definition["kind"].as_object_mut().unwrap();
         if kind.get("kind").and_then(serde_json::Value::as_str) == Some("weapon") {

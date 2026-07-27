@@ -1,3 +1,5 @@
+mod support;
+
 use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, diagnostic_code, encode_game_snapshot,
@@ -313,6 +315,7 @@ fn snapshot_round_trip_preserves_dead_posture_and_rejects_future_vitality_state(
 
     let mut legacy: Value = serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     legacy["schemaVersion"] = 13.into();
+    support::strip_future_gameplay_mechanics_state(&mut legacy);
     assert!(matches!(
         decode_game_snapshot(&legacy.to_string()).unwrap_err(),
         GameSnapshotError::FutureVitalityStateInLegacySnapshot

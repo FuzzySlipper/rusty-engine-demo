@@ -1,3 +1,5 @@
+mod support;
+
 use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, diagnostic_code, encode_game_snapshot, EnemyAttackKind,
@@ -519,6 +521,7 @@ fn legacy_snapshot_rejects_future_enemy_combat_state() {
     let mut snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     snapshot["schemaVersion"] = 16.into();
+    support::strip_future_gameplay_mechanics_state(&mut snapshot);
 
     assert!(matches!(
         decode_game_snapshot(&snapshot.to_string()),

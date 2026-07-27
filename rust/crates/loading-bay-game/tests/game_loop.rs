@@ -1,3 +1,5 @@
+mod support;
+
 use std::time::Duration;
 
 use core_ids::EntityId;
@@ -873,10 +875,7 @@ fn save_and_load_edges_have_fixed_tick_meaning_while_live_paused_dead_or_complet
 
 fn downgrade_to_schema_eighteen(snapshot: &mut serde_json::Value) {
     snapshot["schemaVersion"] = 18.into();
-    snapshot["entities"]["registeredComponents"] = serde_json::json!([]);
-    for inventory in snapshot["inventories"].as_array_mut().unwrap() {
-        inventory.as_object_mut().unwrap().remove("weaponEntities");
-    }
+    support::strip_future_gameplay_mechanics_state(snapshot);
 }
 
 fn ammunition(game_loop: &LoadingBayGameLoop, item: &str) -> u32 {

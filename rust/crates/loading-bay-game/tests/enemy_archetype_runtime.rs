@@ -1,3 +1,5 @@
+mod support;
+
 use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, diagnostic_code, encode_game_snapshot, CombatFact, EncounterState,
@@ -261,6 +263,7 @@ fn legacy_snapshot_admission_fails_closed_for_archetype_state() {
     let mut future: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     future["schemaVersion"] = 17.into();
+    support::strip_future_gameplay_mechanics_state(&mut future);
     assert!(matches!(
         decode_game_snapshot(&future.to_string()),
         Err(loading_bay_game::GameSnapshotError::FutureEnemyArchetypeStateInLegacySnapshot)
@@ -271,6 +274,7 @@ fn legacy_snapshot_admission_fails_closed_for_archetype_state() {
     let mut legacy: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     legacy["schemaVersion"] = 17.into();
+    support::strip_future_gameplay_mechanics_state(&mut legacy);
     assert!(decode_game_snapshot(&legacy.to_string()).is_ok());
 }
 

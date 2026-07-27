@@ -1,3 +1,5 @@
+mod support;
+
 use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, diagnostic_code, encode_game_snapshot,
@@ -553,6 +555,7 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
     let mut previous_snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     previous_snapshot["schemaVersion"] = 10.into();
+    support::strip_future_gameplay_mechanics_state(&mut previous_snapshot);
     previous_snapshot
         .as_object_mut()
         .unwrap()
@@ -622,6 +625,7 @@ fn schema_ten_snapshot_rejects_future_inventory_fields() {
     let mut snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     snapshot["schemaVersion"] = 10.into();
+    support::strip_future_gameplay_mechanics_state(&mut snapshot);
 
     let error = decode_game_snapshot(&snapshot.to_string()).unwrap_err();
     assert!(matches!(

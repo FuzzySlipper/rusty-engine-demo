@@ -1,3 +1,5 @@
+mod support;
+
 use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, CombatFact, CombatMissReason,
@@ -467,6 +469,7 @@ fn schema_fourteen_snapshot_rejects_future_spread_and_automatic_definitions() {
     let mut snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     snapshot["schemaVersion"] = 14.into();
+    support::strip_future_gameplay_mechanics_state(&mut snapshot);
 
     assert!(matches!(
         decode_game_snapshot(&snapshot.to_string()).unwrap_err(),

@@ -639,6 +639,7 @@ pub enum GameSnapshotError {
     },
     Inventory(InventoryAdmissionError),
     FutureInventoryStateInLegacySnapshot,
+    FutureGameplayMechanicsStateInLegacySnapshot,
     TriggerVolume(engine_spatial::TriggerVolumeError),
     DuplicateInventory {
         owner: u64,
@@ -1309,6 +1310,15 @@ impl GameRuntime {
             });
         }
         let source_schema_version = snapshot.schema_version;
+        if source_schema_version < GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION
+            && (!snapshot.entities.registered_components.is_empty()
+                || snapshot
+                    .inventories
+                    .iter()
+                    .any(|inventory| !inventory.weapon_entities.is_empty()))
+        {
+            return Err(GameSnapshotError::FutureGameplayMechanicsStateInLegacySnapshot);
+        }
         if source_schema_version < 11
             && (!snapshot.item_definitions.is_empty() || !snapshot.inventories.is_empty())
         {
@@ -1372,9 +1382,6 @@ impl GameRuntime {
         } else {
             None
         };
-        if source_schema_version < GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION {
-            snapshot.entities.registered_components.clear();
-        }
         let collision_scene = snapshot
             .voxel_collision
             .map(|scene| match scene.generated_room {

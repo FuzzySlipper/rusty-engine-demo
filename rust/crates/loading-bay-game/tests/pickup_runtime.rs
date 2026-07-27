@@ -1,3 +1,5 @@
+mod support;
+
 use core_ids::EntityId;
 use entity_state::{EntityDefinition, EntityLifecycle};
 use loading_bay_game::{
@@ -272,6 +274,7 @@ fn schema_eleven_rejects_future_pickup_state_but_migrates_when_fields_are_absent
     let mut snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     snapshot["schemaVersion"] = 11.into();
+    support::strip_future_gameplay_mechanics_state(&mut snapshot);
     assert!(matches!(
         decode_game_snapshot(&snapshot.to_string()).unwrap_err(),
         loading_bay_game::GameSnapshotError::FuturePickupStateInLegacySnapshot
