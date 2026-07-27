@@ -53,6 +53,7 @@ struct ClientCommandEnvelope {
     deny_unknown_fields
 )]
 enum BrowserGameCommand {
+    RequestFullState,
     SetInputIntent {
         movement: [f32; 2],
         look_delta: [f32; 2],
@@ -440,7 +441,8 @@ fn serve_session(
 
         let pending_projection_sequence = runtime.projection_sequence();
         let pending_consumed_sequence = runtime.consumed_command_sequence();
-        if session_update_due(
+        if session_update_required(
+            context.force_full,
             pending_projection_sequence,
             published_projection_sequence,
             pending_consumed_sequence,
@@ -499,6 +501,19 @@ fn process_command(
         context.force_full = true;
         context.force_static_resources = true;
     }
+    if matches!(&envelope.command, BrowserGameCommand::RequestFullState) {
+        if !envelope.request_full_state {
+            return send_rejection(
+                websocket,
+                context,
+                Some(envelope.sequence),
+                RejectionCode::InvalidInput,
+                RetryDisposition::Never,
+                "requestFullState control command requires its envelope flag",
+            );
+        }
+        return Ok(());
+    }
 
     let mut host = runtime.lock().expect("runtime lock");
     let result = if host.pending_restart.is_some()
@@ -507,6 +522,9 @@ fn process_command(
         Err(InputCommandRejection::EdgeQueueSaturated { capacity: 1 })
     } else {
         match envelope.command {
+            BrowserGameCommand::RequestFullState => {
+                unreachable!("full-state control returned before gameplay dispatch")
+            }
             BrowserGameCommand::SetInputIntent {
                 movement,
                 look_delta,
@@ -1134,6 +1152,22 @@ fn session_update_due(
         || pending_consumed_sequence != published_consumed_sequence
 }
 
+fn session_update_required(
+    force_full: bool,
+    pending_projection_sequence: u64,
+    published_projection_sequence: u64,
+    pending_consumed_sequence: u64,
+    published_consumed_sequence: u64,
+) -> bool {
+    force_full
+        || session_update_due(
+            pending_projection_sequence,
+            published_projection_sequence,
+            pending_consumed_sequence,
+            published_consumed_sequence,
+        )
+}
+
 fn session_id(connection_generation: u64) -> String {
     format!("loading-bay-{connection_generation:016x}")
 }
@@ -1253,6 +1287,7 @@ mod tests {
         assert!(!session_update_due(12, 12, 40, 40));
         assert!(session_update_due(13, 12, 40, 40));
         assert!(session_update_due(12, 12, 41, 40));
+        assert!(session_update_required(true, 12, 12, 40, 40));
     }
 
     #[test]

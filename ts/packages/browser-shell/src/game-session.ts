@@ -145,6 +145,10 @@ type ClientGameCommand =
       readonly expectedStorageRevision: string | null;
     };
 
+interface RequestFullStateCommand {
+  readonly kind: "requestFullState";
+}
+
 interface ClientCommandEnvelope {
   readonly protocolVersion: number;
   readonly sessionId: string;
@@ -152,7 +156,7 @@ interface ClientCommandEnvelope {
   readonly observedSnapshotSequence: number;
   readonly observedStaticRevision: string;
   readonly requestFullState: boolean;
-  readonly command: ClientGameCommand;
+  readonly command: ClientGameCommand | RequestFullStateCommand;
 }
 
 interface SessionBaseline {
@@ -391,7 +395,8 @@ export class LoadingBayGameSession {
   #maximumCommandRoundTripMilliseconds = 0;
   #maximumPendingInputFrameCount = 0;
   #maximumPendingEdgeCount = 0;
-  #resyncRequested = false;
+  #resyncInFlight: number | null = null;
+  #resyncTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
   #closed = false;
   #onState:
     | ((state: RuntimeBrowserState, delivery: SessionStateDelivery) => void)
@@ -693,6 +698,7 @@ export class LoadingBayGameSession {
       globalThis.clearTimeout(this.#inputTimer);
       this.#inputTimer = null;
     }
+    this.#clearResync();
     this.#clearBufferedInput();
     this.#rejectPending(
       new GameSessionError(
@@ -722,12 +728,13 @@ export class LoadingBayGameSession {
         applied = applyServerUpdate(this.#baseline, value);
       } catch (error) {
         if (error instanceof GameSessionError && error.retry === "resync") {
-          this.#resyncRequested = true;
-          this.#pendingInput = true;
-          this.#scheduleInput();
+          this.#requestResync();
           return;
         }
         throw error;
+      }
+      if (value.update.kind === "full") {
+        this.#clearResync();
       }
       this.#baseline = applied.baseline;
       this.#current = applied.state;
@@ -785,6 +792,17 @@ export class LoadingBayGameSession {
       rejection.message,
       rejection.retry,
     );
+    if (rejection.commandSequence === this.#resyncInFlight) {
+      this.#clearResync();
+      this.#failTransport(
+        new GameSessionError(
+          rejection.code,
+          `full-state recovery was rejected: ${rejection.message}`,
+          "reconnect",
+        ),
+      );
+      return;
+    }
     if (rejection.commandSequence === this.#inputInFlight) {
       this.#inputInFlight = null;
       this.#inputSettlement?.reject(error);
@@ -903,7 +921,51 @@ export class LoadingBayGameSession {
     }
   }
 
-  #sendEnvelope(sequence: number, command: ClientGameCommand): void {
+  #requestResync(): void {
+    if (
+      this.#closed ||
+      this.#resyncInFlight !== null ||
+      this.#resyncTimer !== null
+    ) {
+      return;
+    }
+    if (this.#socket.bufferedAmount > MAX_WEBSOCKET_BUFFERED_BYTES) {
+      this.#resyncTimer = globalThis.setTimeout(() => {
+        this.#resyncTimer = null;
+        this.#requestResync();
+      }, INPUT_SEND_INTERVAL_MILLISECONDS);
+      return;
+    }
+    const sequence = this.#nextSequence();
+    this.#resyncInFlight = sequence;
+    try {
+      this.#sendEnvelope(
+        sequence,
+        { kind: "requestFullState" },
+        { requestFullState: true, trackRoundTrip: false },
+      );
+    } catch (error) {
+      this.#resyncInFlight = null;
+      this.#failTransport(
+        error instanceof GameSessionError
+          ? error
+          : new GameSessionError(
+              "transportLost",
+              error instanceof Error ? error.message : String(error),
+              "reconnect",
+            ),
+      );
+    }
+  }
+
+  #sendEnvelope(
+    sequence: number,
+    command: ClientGameCommand | RequestFullStateCommand,
+    options: {
+      readonly requestFullState?: boolean;
+      readonly trackRoundTrip?: boolean;
+    } = {},
+  ): void {
     if (this.#socket.readyState !== WebSocket.OPEN) {
       throw new GameSessionError(
         "transportLost",
@@ -917,12 +979,13 @@ export class LoadingBayGameSession {
       sequence,
       observedSnapshotSequence: this.#baseline.snapshotSequence,
       observedStaticRevision: this.#baseline.resources.staticRevision,
-      requestFullState: this.#resyncRequested,
+      requestFullState: options.requestFullState ?? false,
       command,
     };
-    this.#sentAt.set(sequence, performance.now());
+    if (options.trackRoundTrip !== false) {
+      this.#sentAt.set(sequence, performance.now());
+    }
     this.#socket.send(JSON.stringify(envelope));
-    this.#resyncRequested = false;
   }
 
   #nextSequence(): number {
@@ -955,6 +1018,7 @@ export class LoadingBayGameSession {
       globalThis.clearTimeout(this.#inputTimer);
       this.#inputTimer = null;
     }
+    this.#clearResync();
     this.#clearBufferedInput();
     this.#rejectPending(error);
     this.#onFailure?.(error);
@@ -986,6 +1050,14 @@ export class LoadingBayGameSession {
     this.#pendingLook = [0, 0];
     this.#latestMovement = [0, 0];
     this.#primaryFireHeld = false;
+  }
+
+  #clearResync(): void {
+    if (this.#resyncTimer !== null) {
+      globalThis.clearTimeout(this.#resyncTimer);
+      this.#resyncTimer = null;
+    }
+    this.#resyncInFlight = null;
   }
 
   #recordRoundTrip(sequence: number): void {

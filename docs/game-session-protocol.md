@@ -31,14 +31,18 @@ There is no automatic mutation retry. After transport loss, a fresh page or host
 new socket, accepts a full bootstrap, and only then may send new input. Old sequences, pending look,
 held intent, and queued edges are canceled. Ordinary observed-snapshot lag is expected while one
 input is in flight and does not force a full projection. A structurally rejected delta sets an
-explicit one-shot `requestFullState` flag on the next coalesced input; an observed sequence ahead of
-Rust also fails closed. The observed static revision tells Rust whether that resync must include
-resource bytes. The browser does not apply the non-contiguous delta.
+explicit one-shot `requestFullState` control envelope that is independent of the one-in-flight input
+lane; an observed sequence ahead of Rust also fails closed. Rust answers that bounded control
+request with a full projection even when no simulation or consumed-command sequence changed. The
+observed static revision tells Rust whether that resync must include resource bytes. The browser
+does not apply the non-contiguous delta, retry gameplay mutation, or settle pending input until the
+full authoritative state arrives.
 
 ## Commands and bounds
 
 Version 1 accepts this closed game-specific command family:
 
+- `requestFullState` (internal recovery control; no gameplay mutation)
 - `setInputIntent { movement, lookDelta, primaryFireHeld }`
 - `interact { target }`
 - `selectWeaponSlot { slot }`

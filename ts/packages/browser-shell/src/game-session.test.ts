@@ -564,6 +564,62 @@ test("session replacement preparation cancels unsent transient input", async () 
   }
 });
 
+test("a rejected delta requests an independent full state and settles input recovery", async () => {
+  const originalLocation = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "location",
+  );
+  const originalWebSocket = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "WebSocket",
+  );
+  const sockets: ResyncRecoverySocket[] = [];
+
+  Object.defineProperty(globalThis, "location", {
+    configurable: true,
+    value: { host: "loading-bay.test", protocol: "http:" },
+  });
+  Object.defineProperty(globalThis, "WebSocket", {
+    configurable: true,
+    value: class extends ResyncRecoverySocket {
+      constructor() {
+        super();
+        sockets.push(this);
+      }
+    },
+  });
+
+  try {
+    const session = await LoadingBayGameSession.connect();
+    const recovered = await session.sendInput({
+      movement: [1, 0],
+      lookDelta: [0.25, -0.25],
+      primaryFireHeld: false,
+    });
+    assert.equal(recovered.tick, 4);
+    assert.equal(session.snapshotSequence, 4);
+    assert.equal(session.pendingInputFrameCount, 0);
+    assert.deepEqual(
+      sockets[0]?.sentEnvelopes.map((envelope) => ({
+        requestFullState: envelope.requestFullState,
+        kind: envelope.command.kind,
+      })),
+      [
+        { requestFullState: false, kind: "setInputIntent" },
+        { requestFullState: true, kind: "requestFullState" },
+      ],
+    );
+
+    const paused = await session.sendEdge({ kind: "setPaused", paused: true });
+    assert.equal(paused.input.paused, true);
+    assert.equal(session.pendingEdgeCount, 0);
+    await session.close();
+  } finally {
+    restoreGlobal("location", originalLocation);
+    restoreGlobal("WebSocket", originalWebSocket);
+  }
+});
+
 test("a fixed-tick restart rejection settles and releases the restart slot", async () => {
   const originalLocation = Object.getOwnPropertyDescriptor(
     globalThis,
@@ -1023,6 +1079,141 @@ class InputDiscardSocket extends EventTarget {
   close(): void {
     this.readyState = 3;
     this.dispatchEvent(new Event("close"));
+  }
+}
+
+class ResyncRecoverySocket extends EventTarget {
+  static readonly OPEN = 1;
+  readonly bufferedAmount = 0;
+  readonly sentEnvelopes: {
+    readonly sequence: number;
+    readonly requestFullState: boolean;
+    readonly command: { readonly kind: string };
+  }[] = [];
+  readyState = ResyncRecoverySocket.OPEN;
+
+  constructor() {
+    super();
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 1,
+        snapshotSequence: 1,
+        acknowledgedCommandSequence: 0,
+        staticRevision: resources.staticRevision,
+        update: { kind: "full", state: dynamic },
+        resources,
+        facts: [],
+        metrics,
+      });
+    });
+  }
+
+  send(payload: string): void {
+    const envelope = JSON.parse(payload) as {
+      readonly sequence: number;
+      readonly requestFullState: boolean;
+      readonly command: { readonly kind: string };
+    };
+    this.sentEnvelopes.push(envelope);
+    if (envelope.command.kind === "setInputIntent") {
+      queueMicrotask(() => {
+        this.#emit({
+          protocolVersion: 1,
+          sessionId: "loading-bay-1",
+          connectionGeneration: 1,
+          serverTick: 3,
+          snapshotSequence: 3,
+          acknowledgedCommandSequence: envelope.sequence,
+          staticRevision: resources.staticRevision,
+          update: {
+            kind: "delta",
+            baseSnapshotSequence: 2,
+            changes: {
+              tick: 3,
+              input: {
+                ...dynamic.input,
+                acknowledgedSequence: envelope.sequence,
+                consumedSequence: envelope.sequence,
+              },
+            },
+          },
+          facts: [],
+          metrics,
+        });
+      });
+      return;
+    }
+    if (envelope.command.kind === "requestFullState") {
+      assert.equal(envelope.requestFullState, true);
+      queueMicrotask(() => {
+        this.#emit({
+          protocolVersion: 1,
+          sessionId: "loading-bay-1",
+          connectionGeneration: 1,
+          serverTick: 4,
+          snapshotSequence: 4,
+          acknowledgedCommandSequence: 1,
+          staticRevision: resources.staticRevision,
+          update: {
+            kind: "full",
+            state: {
+              ...dynamic,
+              tick: 4,
+              input: {
+                ...dynamic.input,
+                acknowledgedSequence: 1,
+                consumedSequence: 1,
+              },
+            },
+          },
+          facts: [],
+          metrics,
+        });
+      });
+      return;
+    }
+
+    assert.equal(envelope.command.kind, "setPaused");
+    queueMicrotask(() => {
+      this.#emit({
+        protocolVersion: 1,
+        sessionId: "loading-bay-1",
+        connectionGeneration: 1,
+        serverTick: 5,
+        snapshotSequence: 5,
+        acknowledgedCommandSequence: envelope.sequence,
+        staticRevision: resources.staticRevision,
+        update: {
+          kind: "delta",
+          baseSnapshotSequence: 4,
+          changes: {
+            tick: 5,
+            input: {
+              ...dynamic.input,
+              acknowledgedSequence: envelope.sequence,
+              consumedSequence: envelope.sequence,
+              paused: true,
+            },
+          },
+        },
+        facts: [],
+        metrics,
+      });
+    });
+  }
+
+  close(): void {
+    this.readyState = 3;
+    this.dispatchEvent(new Event("close"));
+  }
+
+  #emit(envelope: ServerUpdateEnvelope): void {
+    this.dispatchEvent(
+      new MessageEvent("message", { data: JSON.stringify(envelope) }),
+    );
   }
 }
 
