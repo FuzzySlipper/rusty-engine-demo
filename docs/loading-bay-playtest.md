@@ -78,3 +78,53 @@ The automated route is a correctness and lifecycle proof, not a human-duration b
 playtest should record start-to-exit time separately and note optional branch use, deaths, remaining
 health/armor, and ammunition at each checkpoint. Any tuning change belongs in immutable project
 content; it must not add browser-owned combat or progression state.
+
+## Complete-product certification
+
+The campaign was certified on 2026-07-27 from the public runtime revision
+`e31dea511377fe68ab898248c5ee9efa3f9a2cf6`. A fresh managed host built the Angular product, loaded
+the checked-in Loading Bay project, and served the real browser shell at `http://127.0.0.1:8787/`.
+Cargo and pnpm resolved only the exact public Engine revisions recorded in
+`docs/source-provenance.md`; no sibling checkout, path override, global package link, copied
+renderer, or browser-owned gameplay substitute participated.
+
+The real Chromium proof completed the route with normal held movement, pointer look, firing,
+numeric weapon selection, interaction, and item use. It covered all pickups and weapon/ammunition
+families, both enemy archetypes, real damage and death/restart, the maintenance pass, interlock,
+secret, extraction beacon, level exit, completed save, and exact completed-state restoration in a
+fresh host session. The same run checked desktop and narrow layouts, pause and dead dialogs,
+pointer-lock loss/recovery, reconnect/error presentation, synthesized audio scheduling, renderer
+resize/reset/disposal/remount, and zero retained presentation timers or effects after cleanup.
+
+The representative headed 20-second movement/look workload used Chromium 148 on a Radeon 780M at
+1600x900 with real pointer lock, held forward input, and CDP mouse motion. It observed 35 retained
+entities and eight resident chunks:
+
+| Measure                                      | p50    | p95    | p99    | Maximum |
+| -------------------------------------------- | ------ | ------ | ------ | ------- |
+| Shared-renderer submission cadence (ms)      | 16.7   | 16.8   | 16.8   | 16.8    |
+| Synchronous backend submission time (ms)     | 0.4    | 0.6    | 0.8    | 0.8     |
+| Authoritative snapshot cadence (ms)          | 33.2   | 41.4   | 42.2   | 43.8    |
+| Input command acknowledgement latency (ms)   | 12.997 | 45.283 | 46.340 | 48.036  |
+| Ordinary dynamic session payload size (byte) | 2,291  | 2,394  | 2,684  | 2,686   |
+
+The proof correlated 505 actual input command sequences with their authoritative consumed-command
+updates, sampled 199 renderer frames, observed input/edge/outbound queue maxima of 2/1/1, and
+reported zero dropped facts. Renderer cadence comes from the shared `RendererSurface`; backend
+submission duration remains a separate synchronous measurement and is not presented as GPU
+completion time. `docs/performance.md` owns the complete method, budgets, and raw context.
+
+Scope accounting for this certification:
+
+- All #6214 campaign acceptance criteria are exercised by the immutable content checks, focused
+  Rust and browser-shell suites, production build, complete real-browser campaign, exact headed
+  performance proof, and repository-wide `pnpm run verify` gate.
+- The accepted navigation footprint constraint is fail-closed and does not prevent the shipped
+  route. It remains documented in the project `known-limitations` record rather than hidden behind
+  a second navigation authority.
+- Cold bootstrap size (#6293), the production JavaScript warning budget (#6292), and an independent
+  human pacing playtest (#6294) are explicit downstream measurement/tuning work. None is required
+  for authoritative campaign correctness, the complete automated route, or the certified
+  interaction budgets.
+- Source and asset provenance remains exact in `docs/source-provenance.md`; the FPS campaign uses
+  original Loading Bay composition and primitive presentation rather than licensed Doom content.
