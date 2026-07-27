@@ -10,17 +10,23 @@ use voxel_annotation::{
     VoxelAnnotationEditTransaction, VoxelAnnotationLayerDraft, VoxelAnnotationQuery,
     VoxelAnnotationRegionReadout,
 };
-use voxel_asset::{VoxelAssetBounds, VoxelAssetMaterialBinding};
+use voxel_asset::{
+    VoxelAssetBounds, VoxelAssetMaterialBinding, VoxelAssetMaterialMapping,
+    VoxelObjectProvenanceKind, VoxelObjectSourceClipProvenance,
+};
 use voxel_convert::{
     ConversionPlanSettings, VoxelConversionPlan, VoxelConversionPreview, VoxelModelInfoReadout,
-    VoxelModelWindowReadout, VoxelModelWindowRequest,
+    VoxelModelWindowReadout, VoxelModelWindowRequest, VoxelObjectClipConversionRequest,
+    VoxelObjectConversionPlan, VoxelObjectConversionPreview, VoxelObjectConversionSettings,
+    VoxelObjectFrameSelection,
 };
 
 use crate::{
     StoredCollision, StoredImportSource, StoredKinematic, StoredLight, StoredVoxelInstance,
+    StoredVoxelObjectInstance,
 };
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 6;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 7;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
@@ -437,6 +443,59 @@ pub enum StudioAdapterRequest {
         request_id: String,
         plan_id: String,
     },
+    InspectVoxelObjectSource {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        source_kind: StudioVoxelObjectSourceKind,
+        source_asset_id: String,
+        source: StudioFileSelection,
+        mesh_primitive: Option<String>,
+    },
+    PrepareVoxelObjectConversion {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        source_kind: StudioVoxelObjectSourceKind,
+        source_asset_id: String,
+        source: StudioFileSelection,
+        target_asset_id: String,
+        license: Option<StudioFileSelection>,
+        mesh_primitive: Option<String>,
+        settings: Box<VoxelObjectConversionSettings>,
+        clips: Vec<VoxelObjectClipConversionRequest>,
+        default_clip: Option<String>,
+        frame: VoxelObjectFrameSelection,
+        max_preview_samples: u32,
+    },
+    PreviewVoxelObjectConversion {
+        protocol_version: u32,
+        request_id: String,
+        plan_id: String,
+        expected_plan_hash: String,
+        frame: VoxelObjectFrameSelection,
+        max_preview_samples: u32,
+    },
+    ApplyVoxelObjectConversion {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        plan_id: String,
+        expected_plan_hash: String,
+        expected_output_hash: String,
+    },
+    DiscardVoxelObjectConversion {
+        protocol_version: u32,
+        request_id: String,
+        plan_id: String,
+    },
+    AttachVoxelObjectInstance {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        scene_id: String,
+        instance: StoredVoxelObjectInstance,
+    },
     CloseProject {
         protocol_version: u32,
         request_id: String,
@@ -453,6 +512,13 @@ pub enum StudioAdapterRequest {
 pub enum StudioFileSelection {
     Project { path: String },
     Host { path: String },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StudioVoxelObjectSourceKind {
+    Static,
+    Animated,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -625,6 +691,24 @@ impl StudioAdapterRequest {
             | Self::DiscardVoxelConversion {
                 protocol_version, ..
             }
+            | Self::InspectVoxelObjectSource {
+                protocol_version, ..
+            }
+            | Self::PrepareVoxelObjectConversion {
+                protocol_version, ..
+            }
+            | Self::PreviewVoxelObjectConversion {
+                protocol_version, ..
+            }
+            | Self::ApplyVoxelObjectConversion {
+                protocol_version, ..
+            }
+            | Self::DiscardVoxelObjectConversion {
+                protocol_version, ..
+            }
+            | Self::AttachVoxelObjectInstance {
+                protocol_version, ..
+            }
             | Self::CloseProject {
                 protocol_version, ..
             } => *protocol_version,
@@ -684,6 +768,12 @@ impl StudioAdapterRequest {
             | Self::PrepareVoxelConversion { request_id, .. }
             | Self::ApplyVoxelConversion { request_id, .. }
             | Self::DiscardVoxelConversion { request_id, .. }
+            | Self::InspectVoxelObjectSource { request_id, .. }
+            | Self::PrepareVoxelObjectConversion { request_id, .. }
+            | Self::PreviewVoxelObjectConversion { request_id, .. }
+            | Self::ApplyVoxelObjectConversion { request_id, .. }
+            | Self::DiscardVoxelObjectConversion { request_id, .. }
+            | Self::AttachVoxelObjectInstance { request_id, .. }
             | Self::CloseProject { request_id, .. } => request_id,
         }
     }
@@ -816,6 +906,33 @@ pub enum StudioAdapterResponse {
         request_id: String,
         plan_id: String,
     },
+    VoxelObjectSourceInspected {
+        protocol_version: u32,
+        request_id: String,
+        inspection: VoxelObjectSourceInspection,
+    },
+    VoxelObjectConversionPrepared {
+        protocol_version: u32,
+        request_id: String,
+        plan: VoxelObjectConversionPlan,
+        preview: VoxelObjectConversionPreview,
+        projection: RenderFrameDiff,
+        projection_readout: ProjectionReadout,
+    },
+    VoxelObjectConversionPreviewed {
+        protocol_version: u32,
+        request_id: String,
+        preview: VoxelObjectConversionPreview,
+        projection: RenderFrameDiff,
+        projection_readout: ProjectionReadout,
+    },
+    VoxelObjectConversionDiscarded {
+        protocol_version: u32,
+        request_id: String,
+        plan_id: String,
+        projection: RenderFrameDiff,
+        projection_readout: ProjectionReadout,
+    },
     AssetImportPrepared {
         protocol_version: u32,
         request_id: String,
@@ -889,10 +1006,122 @@ pub struct StudioProjectReadout {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel: Option<VoxelStateInspection>,
     pub voxel_authoring: VoxelAuthoringReadout,
+    pub voxel_object_authoring: VoxelObjectAuthoringReadout,
     pub animated_mesh_resources: Vec<AnimatedMeshResourceReadout>,
     pub loading_bay: LoadingBayDomainReadout,
     pub projection: RenderFrameDiff,
     pub projection_readout: ProjectionReadout,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectSourceInspection {
+    pub source_kind: StudioVoxelObjectSourceKind,
+    pub source: voxel_convert::MeshSourceRef,
+    pub source_path: String,
+    pub source_byte_count: u64,
+    pub metadata: voxel_convert::MeshSourceMetadata,
+    pub clips: Vec<VoxelObjectSourceClipReadout>,
+    pub diagnostics: Vec<VoxelObjectSourceDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectSourceClipReadout {
+    pub source_animation_index: u32,
+    pub name: String,
+    pub duration_microseconds: u64,
+    pub channel_count: usize,
+    pub target_node_indices: Vec<u32>,
+    pub properties: Vec<VoxelObjectAnimationProperty>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum VoxelObjectAnimationProperty {
+    Translation,
+    Rotation,
+    Scale,
+    MorphWeights,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectSourceDiagnostic {
+    pub severity: &'static str,
+    pub code: &'static str,
+    pub path: &'static str,
+    pub message: &'static str,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectAuthoringReadout {
+    pub assets: Vec<VoxelObjectAssetAuthoringReadout>,
+    pub instances: Vec<VoxelObjectInstanceReadout>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectAssetAuthoringReadout {
+    pub asset_id: String,
+    pub content_hash: String,
+    pub grid: VoxelObjectGridReadout,
+    pub bounds: VoxelAssetBounds,
+    pub default_frame: VoxelObjectFrameAuthoringReadout,
+    pub clips: Vec<VoxelObjectClipAuthoringReadout>,
+    pub default_clip: Option<String>,
+    pub material_palette: Vec<VoxelAssetMaterialBinding>,
+    pub material_map: Vec<VoxelAssetMaterialMapping>,
+    pub provenance: VoxelObjectProvenanceReadout,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectProvenanceReadout {
+    pub kind: VoxelObjectProvenanceKind,
+    pub source_path: String,
+    pub source_sha256: String,
+    pub source_byte_count: u64,
+    pub converter: String,
+    pub settings_sha256: String,
+    pub license_path: Option<String>,
+    pub source_clips: Vec<VoxelObjectSourceClipProvenance>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectGridReadout {
+    pub coordinate_system: &'static str,
+    pub cell_size: f64,
+    pub chunk_size: u32,
+    pub pivot: [f64; 3],
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectFrameAuthoringReadout {
+    pub bounds: VoxelAssetBounds,
+    pub voxel_data_hash: String,
+    pub voxel_count: usize,
+    pub sparse_run_count: usize,
+    pub duration_microseconds: Option<u64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectClipAuthoringReadout {
+    pub clip_id: String,
+    pub name: Option<String>,
+    pub frames_per_second: f64,
+    pub frames: Vec<VoxelObjectFrameAuthoringReadout>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectInstanceReadout {
+    pub scene_id: String,
+    pub instance: StoredVoxelObjectInstance,
 }
 
 #[derive(Debug, Serialize)]
@@ -1321,6 +1550,20 @@ pub enum ProjectMutationReceipt {
         asset_id: String,
         output_hash: String,
         output_voxels: usize,
+    },
+    VoxelObjectConversionApplied {
+        plan_id: String,
+        plan_hash: String,
+        asset_id: String,
+        output_hash: String,
+        stored_frames: usize,
+        aggregate_voxels: usize,
+    },
+    VoxelObjectInstanceAttached {
+        scene_id: String,
+        instance_id: String,
+        asset_id: String,
+        frame_kind: &'static str,
     },
 }
 

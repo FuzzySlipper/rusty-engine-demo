@@ -367,6 +367,7 @@ fn install_imported_assets(
             animated_mesh: None,
             import: is_mesh.then(|| import.clone()),
             voxel_volume: None,
+            voxel_object: None,
             voxel_edit_history: None,
             voxel_annotations: Vec::new(),
             material: entry.material,

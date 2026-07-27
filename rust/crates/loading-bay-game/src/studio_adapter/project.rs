@@ -30,19 +30,24 @@ use render_model::{
     MaterialUvStrategy, MeshAttribute, MeshAttributeKind, MeshAttributeName, MeshBoundsDescriptor,
     MeshBufferLayout, MeshCollisionPolicy, MeshGroupDescriptor, MeshIndexWidth, MeshMaterialSlot,
     MeshPayloadDescriptor, MeshPayloadSource, MeshProvenance, RenderAssetKind, RenderDiff,
-    RenderFrameDiff, RenderMaterialDescriptor, ResolvedRenderAsset, StaticMeshAsset,
+    RenderFrameDiff, RenderMaterialDescriptor, RenderMetadata, ResolvedRenderAsset,
+    StaticMeshAsset, Transform,
 };
 use render_projection::{
-    AppearanceLight, AppearanceScene, EntityProjectionDiagnostic, EntityRenderProjector,
-    ProjectionAvailability, ProjectionMode, SceneAppearanceProjector,
+    AppearanceLight, AppearanceScene, EntityProjectionDiagnostic, EntityProjectionReadout,
+    EntityRenderProjector, ProjectionAvailability, ProjectionMode, SceneAppearanceProjector,
+    VoxelObjectProjectionInstance, VoxelObjectRenderProjector,
 };
+use voxel_asset::{VoxelFrame, VoxelObjectAsset};
+use voxel_convert::VoxelObjectFrameSelection;
+use voxel_object_runtime::{admit_voxel_object, AdmittedVoxelObject, VoxelObjectRuntimeLimits};
 
 use crate::{
     admit_stored_project_with_document, encode_project_document, AdmittedProject,
     AdmittedStoredProject, DecodedProjectDocument, ProjectSaveMode, ProjectStore,
     StoredAssetImport, StoredCollision, StoredEntityDefinition, StoredImportSource,
     StoredKinematic, StoredLight, StoredProject, StoredRenderable, StoredScene,
-    StoredVoxelEnvironment, STORED_PROJECT_SCHEMA_VERSION,
+    StoredVoxelEnvironment, StoredVoxelObjectFrameSelection, STORED_PROJECT_SCHEMA_VERSION,
 };
 
 use super::host_file::read_host_file;
@@ -53,6 +58,9 @@ use super::protocol::{
     LoadingBayDomainReadout, OwnerInspections, ProjectMutationReceipt, ProjectionDiagnosticReadout,
     ProjectionReadout, SceneHierarchyNodeReadout, SceneHierarchyReadout, StudioProjectIdentity,
     StudioProjectReadout, StudioSceneAppearance, StudioSceneObjectDraft, TransformReadout,
+    VoxelObjectAssetAuthoringReadout, VoxelObjectAuthoringReadout, VoxelObjectClipAuthoringReadout,
+    VoxelObjectFrameAuthoringReadout, VoxelObjectGridReadout, VoxelObjectInstanceReadout,
+    VoxelObjectProvenanceReadout,
 };
 use super::voxel::{project_voxel_authoring, voxel_authoring_readout};
 
@@ -171,22 +179,8 @@ impl OpenedOwnerProject {
             .map(projection_diagnostic)
             .collect();
 
-        let voxel_projected = project_voxel_authoring(project, &self.catalog)?;
-        let light_projection = project_scene_lights(&self.scene)?;
-        let retained_lights = self
-            .scene
-            .nodes
-            .iter()
-            .filter(|node| matches!(node.kind, SceneNodeKind::Light(_)))
-            .count();
-        let entity_projection = install_animation_playback(project, projected.frame)?;
-        let projection = complete_projection(
-            project,
-            &self.catalog,
-            entity_projection,
-            light_projection,
-            voxel_projected.frame,
-        )?;
+        let (projection, projection_readout) =
+            self.compose_projection(projected.frame, projected.readout, diagnostics, None)?;
         let catalog_lock = generate_lock(&self.catalog);
 
         Ok(StudioProjectReadout {
@@ -221,19 +215,74 @@ impl OpenedOwnerProject {
                 .as_ref()
                 .map(inspect_voxel_state),
             voxel_authoring: voxel_authoring_readout(project)?,
+            voxel_object_authoring: voxel_object_authoring_readout(project),
             animated_mesh_resources: animated_mesh_resources(project)?,
             loading_bay: loading_bay_readout(entry_scene),
             projection,
-            projection_readout: ProjectionReadout {
+            projection_readout,
+        })
+    }
+
+    pub(crate) fn voxel_object_candidate_projection(
+        &self,
+        candidate: &VoxelObjectAsset,
+        frame: &VoxelObjectFrameSelection,
+    ) -> Result<(RenderFrameDiff, ProjectionReadout), AdapterRejection> {
+        let render_assets = resolved_render_assets(&self.catalog);
+        let projected = EntityRenderProjector::new()
+            .project(self.admitted.session.entities(), &render_assets)
+            .map_err(|error| reject("projection.rejected", format!("{error:?}")))?;
+        let diagnostics = projected
+            .diagnostics
+            .into_iter()
+            .map(projection_diagnostic)
+            .collect();
+        self.compose_projection(
+            projected.frame,
+            projected.readout,
+            diagnostics,
+            Some((candidate, frame)),
+        )
+    }
+
+    fn compose_projection(
+        &self,
+        entity_frame: RenderFrameDiff,
+        entity_readout: EntityProjectionReadout,
+        diagnostics: Vec<ProjectionDiagnosticReadout>,
+        candidate: Option<(&VoxelObjectAsset, &VoxelObjectFrameSelection)>,
+    ) -> Result<(RenderFrameDiff, ProjectionReadout), AdapterRejection> {
+        let project = self.stored.document();
+        let voxel_projected = project_voxel_authoring(project, &self.catalog)?;
+        let object_projected = project_voxel_objects(project, &self.catalog, candidate)?;
+        let light_projection = project_scene_lights(&self.scene)?;
+        let retained_lights = self
+            .scene
+            .nodes
+            .iter()
+            .filter(|node| matches!(node.kind, SceneNodeKind::Light(_)))
+            .count();
+        let entity_projection = install_animation_playback(project, entity_frame)?;
+        let projection = complete_projection(
+            project,
+            &self.catalog,
+            entity_projection,
+            light_projection,
+            voxel_projected.frame,
+            object_projected.frame,
+        )?;
+        Ok((
+            projection,
+            ProjectionReadout {
                 frame_kind: "complete",
-                source_revision: projected.readout.source_revision,
-                retained_entities: projected.readout.retained_entities,
+                source_revision: entity_readout.source_revision,
+                retained_entities: entity_readout.retained_entities,
                 retained_lights,
                 retained_voxel_instances: voxel_projected.instance_count,
                 retained_voxel_chunks: voxel_projected.chunk_count,
                 diagnostics,
             },
-        })
+        ))
     }
 }
 
@@ -425,6 +474,7 @@ pub fn create_project(
             name: entry_scene_name,
             voxel_environment: None,
             voxel_instances: Vec::new(),
+            voxel_object_instances: Vec::new(),
             entities: Vec::new(),
         }],
     };
@@ -504,6 +554,7 @@ pub fn create_scene(
                 name,
                 voxel_environment: None,
                 voxel_instances: Vec::new(),
+                voxel_object_instances: Vec::new(),
                 entities: Vec::new(),
             });
             if make_entry {
@@ -1055,55 +1106,261 @@ pub(crate) fn publish_project_mutation<T>(
     })
 }
 
+struct ProjectedVoxelObjects {
+    frame: RenderFrameDiff,
+}
+
+fn project_voxel_objects(
+    project: &StoredProject,
+    catalog: &AssetCatalog,
+    candidate: Option<(&VoxelObjectAsset, &VoxelObjectFrameSelection)>,
+) -> Result<ProjectedVoxelObjects, AdapterRejection> {
+    let mut admitted = project
+        .assets
+        .iter()
+        .filter_map(|asset| asset.voxel_object.as_ref())
+        .map(|object| {
+            admit_voxel_object(object, VoxelObjectRuntimeLimits::default())
+                .map(|admitted| (object.asset_id.clone(), admitted))
+                .map_err(|error| {
+                    reject(
+                        "voxelObject.admissionRejected",
+                        format!("{}: {error}", object.asset_id),
+                    )
+                })
+        })
+        .collect::<Result<BTreeMap<String, AdmittedVoxelObject>, _>>()?;
+    if let Some((object, _)) = candidate {
+        let candidate = admit_voxel_object(object, VoxelObjectRuntimeLimits::default())
+            .map_err(|error| reject("voxelObject.admissionRejected", error.to_string()))?;
+        admitted.insert(object.asset_id.clone(), candidate);
+    }
+
+    let mut resolved = Vec::new();
+    for scene in project
+        .scenes
+        .iter()
+        .filter(|scene| scene.id == project.entry_scene)
+    {
+        for instance in &scene.voxel_object_instances {
+            let object = admitted
+                .get(&instance.voxel_object_asset_id)
+                .expect("stored-project admission validates voxel-object references");
+            resolved.push((
+                instance.instance_id.clone(),
+                instance.voxel_object_asset_id.clone(),
+                stored_object_frame(object, &instance.frame)?,
+                Transform {
+                    translation: instance.translation,
+                    rotation: instance.rotation,
+                    scale: instance.scale,
+                },
+                instance
+                    .material_overrides
+                    .iter()
+                    .map(|binding| MeshMaterialSlot {
+                        slot: binding.material_slot,
+                        material: binding.material_asset_id.clone(),
+                    })
+                    .collect::<Vec<_>>(),
+                RenderMetadata {
+                    source_entity: None,
+                    source_scene_node: None,
+                    tags: vec!["studio".to_string(), "voxel-object".to_string()],
+                    label: Some(instance.instance_id.clone()),
+                },
+            ));
+        }
+    }
+    if let Some((candidate_asset, selection)) = candidate {
+        let object = admitted
+            .get(&candidate_asset.asset_id)
+            .expect("candidate was admitted above");
+        resolved.push((
+            "studio-voxel-object-candidate".to_string(),
+            candidate_asset.asset_id.clone(),
+            selected_object_frame(object, selection)?,
+            Transform::IDENTITY,
+            Vec::new(),
+            RenderMetadata {
+                source_entity: None,
+                source_scene_node: None,
+                tags: vec![
+                    "candidate".to_string(),
+                    "studio".to_string(),
+                    "voxel-object".to_string(),
+                ],
+                label: Some("Voxel object candidate".to_string()),
+            },
+        ));
+    }
+
+    let instances = resolved
+        .iter()
+        .map(
+            |(instance_id, asset_id, frame, transform, overrides, metadata)| {
+                VoxelObjectProjectionInstance {
+                    instance_id: instance_id.clone(),
+                    object: admitted
+                        .get(asset_id)
+                        .expect("resolved object identity remains admitted"),
+                    frame: *frame,
+                    transform: *transform,
+                    visible: true,
+                    material_overrides: overrides.clone(),
+                    metadata: metadata.clone(),
+                }
+            },
+        )
+        .collect::<Vec<_>>();
+    let projected = VoxelObjectRenderProjector::new()
+        .project(&instances, &project_material_descriptors(catalog))
+        .map_err(|error| reject("projection.voxelObjectRejected", format!("{error:?}")))?;
+    Ok(ProjectedVoxelObjects {
+        frame: projected.frame,
+    })
+}
+
+fn stored_object_frame(
+    object: &AdmittedVoxelObject,
+    selection: &StoredVoxelObjectFrameSelection,
+) -> Result<u32, AdapterRejection> {
+    match selection {
+        StoredVoxelObjectFrameSelection::Default => Ok(0),
+        StoredVoxelObjectFrameSelection::Clip {
+            clip_id,
+            frame_index,
+        } => object
+            .clip(clip_id)
+            .and_then(|clip| clip.frame_indices.get(*frame_index as usize))
+            .copied()
+            .ok_or_else(|| {
+                reject(
+                    "voxelObject.frameRejected",
+                    format!("clip `{clip_id}` has no frame {frame_index}"),
+                )
+            }),
+    }
+}
+
+fn selected_object_frame(
+    object: &AdmittedVoxelObject,
+    selection: &VoxelObjectFrameSelection,
+) -> Result<u32, AdapterRejection> {
+    match selection {
+        VoxelObjectFrameSelection::Default => Ok(0),
+        VoxelObjectFrameSelection::Clip {
+            clip_id,
+            frame_index,
+        } => object
+            .clip(clip_id)
+            .and_then(|clip| clip.frame_indices.get(*frame_index as usize))
+            .copied()
+            .ok_or_else(|| {
+                reject(
+                    "voxelObject.frameRejected",
+                    format!("clip `{clip_id}` has no frame {frame_index}"),
+                )
+            }),
+    }
+}
+
+fn voxel_object_authoring_readout(project: &StoredProject) -> VoxelObjectAuthoringReadout {
+    let assets = project
+        .assets
+        .iter()
+        .filter_map(|asset| asset.voxel_object.as_ref())
+        .map(|object| VoxelObjectAssetAuthoringReadout {
+            asset_id: object.asset_id.clone(),
+            content_hash: object.content_hash.clone(),
+            grid: VoxelObjectGridReadout {
+                coordinate_system: "rightHandedYUp",
+                cell_size: object.grid.cell_size,
+                chunk_size: object.grid.chunk_size,
+                pivot: object.grid.pivot,
+            },
+            bounds: object.bounds,
+            default_frame: voxel_object_frame_readout(&object.default_frame, None),
+            clips: object
+                .clips
+                .iter()
+                .map(|clip| VoxelObjectClipAuthoringReadout {
+                    clip_id: clip.id.clone(),
+                    name: clip.name.clone(),
+                    frames_per_second: clip.frames_per_second,
+                    frames: clip
+                        .frames
+                        .iter()
+                        .map(|frame| {
+                            let duration = frame
+                                .duration_seconds
+                                .map(|seconds| (seconds * 1_000_000.0).round().max(1.0) as u64);
+                            voxel_object_frame_readout(&frame.frame, duration)
+                        })
+                        .collect(),
+                })
+                .collect(),
+            default_clip: object.default_clip.clone(),
+            material_palette: object.material_palette.clone(),
+            material_map: object.material_map.clone(),
+            provenance: VoxelObjectProvenanceReadout {
+                kind: object.provenance.kind,
+                source_path: object.provenance.source_path.clone(),
+                source_sha256: object.provenance.source_sha256.clone(),
+                source_byte_count: object.provenance.source_byte_count,
+                converter: object.provenance.converter.clone(),
+                settings_sha256: object.provenance.settings_sha256.clone(),
+                license_path: object.provenance.license_path.clone(),
+                source_clips: object.provenance.source_clips.clone(),
+            },
+        })
+        .collect();
+    let instances = project
+        .scenes
+        .iter()
+        .flat_map(|scene| {
+            scene
+                .voxel_object_instances
+                .iter()
+                .cloned()
+                .map(|instance| VoxelObjectInstanceReadout {
+                    scene_id: scene.id.clone(),
+                    instance,
+                })
+        })
+        .collect();
+    VoxelObjectAuthoringReadout { assets, instances }
+}
+
+fn voxel_object_frame_readout(
+    frame: &VoxelFrame,
+    duration_microseconds: Option<u64>,
+) -> VoxelObjectFrameAuthoringReadout {
+    VoxelObjectFrameAuthoringReadout {
+        bounds: frame.bounds,
+        voxel_data_hash: frame.voxel_data_hash.clone(),
+        voxel_count: frame
+            .representation
+            .sparse_runs
+            .iter()
+            .map(|run| run.length as usize)
+            .sum(),
+        sparse_run_count: frame.representation.sparse_runs.len(),
+        duration_microseconds,
+    }
+}
+
 fn complete_projection(
     project: &StoredProject,
     catalog: &AssetCatalog,
     instances: RenderFrameDiff,
     lights: RenderFrameDiff,
     voxels: RenderFrameDiff,
+    voxel_objects: RenderFrameDiff,
 ) -> Result<RenderFrameDiff, AdapterRejection> {
     let mut operations = Vec::new();
-    for entry in catalog
-        .iter()
-        .filter(|entry| entry.kind() == AssetKind::Material)
-    {
-        if let Some(material) = &entry.material {
-            let material = material.render_projection();
-            operations.push(RenderDiff::DefineMaterial {
-                material: RenderMaterialDescriptor {
-                    schema_version: 1,
-                    id: entry.id.as_str().to_string(),
-                    color: [
-                        material.color.r,
-                        material.color.g,
-                        material.color.b,
-                        material.color.a,
-                    ],
-                    texture: material
-                        .texture
-                        .as_ref()
-                        .map(|reference| reference.id().as_str().to_string()),
-                    roughness: material.roughness,
-                    texture_tint: [
-                        material.texture_tint.r,
-                        material.texture_tint.g,
-                        material.texture_tint.b,
-                        material.texture_tint.a,
-                    ],
-                    emission_color: [
-                        material.emission_color.r,
-                        material.emission_color.g,
-                        material.emission_color.b,
-                    ],
-                    emission_intensity: material.emissive,
-                    uv_strategy: match material.uv_strategy {
-                        UvStrategy::Flat => MaterialUvStrategy::Flat,
-                        UvStrategy::Planar => MaterialUvStrategy::Planar,
-                        UvStrategy::Atlas => MaterialUvStrategy::Atlas,
-                    },
-                },
-            });
-        }
+    for material in project_material_descriptors(catalog).into_values() {
+        operations.push(RenderDiff::DefineMaterial { material });
     }
     for entry in catalog
         .iter()
@@ -1140,10 +1397,64 @@ fn complete_projection(
         operations.push(RenderDiff::DefineAnimatedMesh { asset });
     }
     operations.extend(voxels.ops);
+    operations.extend(
+        voxel_objects
+            .ops
+            .into_iter()
+            .filter(|operation| !matches!(operation, RenderDiff::DefineMaterial { .. })),
+    );
     operations.extend(lights.ops);
     operations.extend(instances.ops);
     RenderFrameDiff::try_from_ops(operations)
         .map_err(|error| reject("projection.completeFrameRejected", format!("{error:?}")))
+}
+
+fn project_material_descriptors(
+    catalog: &AssetCatalog,
+) -> BTreeMap<String, RenderMaterialDescriptor> {
+    catalog
+        .iter()
+        .filter(|entry| entry.kind() == AssetKind::Material)
+        .filter_map(|entry| {
+            let material = entry.material.as_ref()?.render_projection();
+            let id = entry.id.as_str().to_string();
+            Some((
+                id.clone(),
+                RenderMaterialDescriptor {
+                    schema_version: 1,
+                    id,
+                    color: [
+                        material.color.r,
+                        material.color.g,
+                        material.color.b,
+                        material.color.a,
+                    ],
+                    texture: material
+                        .texture
+                        .as_ref()
+                        .map(|reference| reference.id().as_str().to_string()),
+                    roughness: material.roughness,
+                    texture_tint: [
+                        material.texture_tint.r,
+                        material.texture_tint.g,
+                        material.texture_tint.b,
+                        material.texture_tint.a,
+                    ],
+                    emission_color: [
+                        material.emission_color.r,
+                        material.emission_color.g,
+                        material.emission_color.b,
+                    ],
+                    emission_intensity: material.emissive,
+                    uv_strategy: match material.uv_strategy {
+                        UvStrategy::Flat => MaterialUvStrategy::Flat,
+                        UvStrategy::Planar => MaterialUvStrategy::Planar,
+                        UvStrategy::Atlas => MaterialUvStrategy::Atlas,
+                    },
+                },
+            ))
+        })
+        .collect()
 }
 
 fn project_scene_lights(scene: &FlatSceneDocument) -> Result<RenderFrameDiff, AdapterRejection> {
@@ -1485,6 +1796,12 @@ fn project_catalog(project: &StoredProject) -> Result<AssetCatalog, AdapterRejec
                         .voxel_volume
                         .iter()
                         .flat_map(|voxel| &voxel.material_palette)
+                        .chain(
+                            asset
+                                .voxel_object
+                                .iter()
+                                .flat_map(|object| &object.material_palette),
+                        )
                         .map(|binding| StoredAssetReference {
                             id: binding.material_asset_id.clone(),
                             version: StoredAssetVersionRequirement::Exact { value: 1 },

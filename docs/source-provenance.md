@@ -4,10 +4,9 @@ Rusty Engine Demo was originally extracted from
 [`FuzzySlipper/rusty-engine`](https://github.com/FuzzySlipper/rusty-engine) at commit
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
 
-The current Rust dependencies resolve from exact reviewed authoring revision
-`464dd5e16bb023ad8d81515eabeaac9bb75df74d`; browser render packages resolve from exact review-fix
-revision `e622c941671bc0f167206b049ab94ea63495a86d`. The older revisions below remain historical
-extraction point, not an active dependency pin.
+The current Rust dependencies and browser render packages resolve from exact reviewed Engine
+revision `fbdf2b5988edbf548f42fefb16821826d8b0e77b`. The older revisions below remain historical
+extraction and feature-provider points, not active dependency pins.
 
 ## M10A Rust transfer
 
@@ -68,7 +67,7 @@ project path and headless beacon proof; it was not transferred from Engine.
 ## M11B Studio adapter and voxel-owner adaptation
 
 The project-owned Studio adapter was authored directly in this repository against an exact Engine
-revision, now `464dd5e16bb023ad8d81515eabeaac9bb75df74d`. It composes the public `asset-catalog`,
+revision, now `fbdf2b5988edbf548f42fefb16821826d8b0e77b`. It composes the public `asset-catalog`,
 `authored-scene`, `content-store`, `entity-state`, `engine-inspector`, `render-model`, and
 `render-projection` crates while retaining Loading Bay schema, layout, and domain admission here.
 No Studio or adapter implementation was copied from Engine or Asha.
@@ -88,6 +87,22 @@ asset, and environment-authoring mechanisms into named Loading Bay project opera
 host-file publication, source-drift inspection, and private prepared-candidate state are downstream
 adapter responsibilities. No Asha replay, facade, generic command, Studio, or demo topology was
 transferred.
+
+## M11G Studio voxel-object and flipbook adaptation
+
+Protocol 7 was authored directly in this repository against the Engine voxel-object Studio provider
+landed at `f725962bce3e18ffdf202086e00e5b111ce31823` and consumed through reviewed descendant
+`fbdf2b5988edbf548f42fefb16821826d8b0e77b`. The adapter composes Engine-owned static and animated
+GLB inspection, bounded conversion planning, private candidate preview, exact output application,
+voxel-object runtime admission, and retained renderer projection. Loading Bay owns only its explicit
+project schema, catalog references, scene attachment operation, atomic publication, and typed
+protocol composition.
+
+The static proof reuses the already-recorded CC0 `kenney-wall-a.glb` fixture. The animated flipbook
+proof reuses the already-recorded CC0
+`content/assets/kenney-retro-character-medium.glb`; task #6257 introduced no new third-party source
+or generated binary asset. Persisted conversion provenance retains the exact source path, SHA-256,
+byte count, converter/settings hash, optional license path, and animated source-clip schedules.
 
 The animated appearance proof uses Kenney's CC0 `Animated Characters Retro` medium character as a
 checked-in product asset rather than an Engine fixture:
@@ -217,7 +232,7 @@ Rusty Engine task #6213 produced the renderer-owned timing seam at public SHA
 `2665b74566136fb77e3a26b0766394124c8f58d3`. That SHA is recorded here as reviewed-upstream
 integration evidence adopted by #6219. Rusty Engine task #6263 then produced the bounded
 camera-relative `viewmodel` layer and explicit world/depth-clear/viewmodel composition at public SHA
-`e622c941671bc0f167206b049ab94ea63495a86d`, which is the active exact browser-renderer dependency
-pin adopted by #6224.
+`e622c941671bc0f167206b049ab94ea63495a86d`, initially adopted by #6224 and retained in the current
+reviewed Engine descendant `fbdf2b5988edbf548f42fefb16821826d8b0e77b`.
 The downstream call site reads `surface.timing()` from the shared auto-started surface; no demo
 frame scheduler, backend clock, renderer object access, or private renderer was introduced.

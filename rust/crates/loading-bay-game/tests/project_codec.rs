@@ -148,7 +148,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 20, 99] {
+    for schema_version in [0, 5, 21, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -189,6 +189,36 @@ fn schema_eighteen_rejects_future_archetype_fields_and_migrates_when_absent() {
                     .encounter
                     .as_ref()
                     .is_none_or(|encounter| encounter.activation_radius.is_none()))));
+}
+
+#[test]
+fn schema_nineteen_migrates_without_objects_and_rejects_future_object_fields() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["schemaVersion"] = 19.into();
+    let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
+    assert_eq!(decoded.source_schema_version, 19);
+    assert_eq!(
+        decoded.project.schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
+    assert!(decoded
+        .project
+        .scenes
+        .iter()
+        .all(|scene| scene.voxel_object_instances.is_empty()));
+
+    previous["scenes"][0]["voxelObjectInstances"] = serde_json::json!([{
+        "instanceId": "future-object",
+        "voxelObjectAssetId": "voxel-object/future",
+        "frame": { "kind": "default" },
+        "translation": [0, 0, 0],
+        "rotation": [0, 0, 0, 1],
+        "scale": [1, 1, 1],
+        "materialOverrides": []
+    }]);
+    let error = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
+    assert!(error.diagnostic().message.contains("schema 19"));
 }
 
 #[test]

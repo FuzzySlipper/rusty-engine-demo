@@ -308,6 +308,97 @@ export interface StoredAssetDefinition {
       readonly max: Vec3;
     };
   };
+  readonly voxelObject?: StoredVoxelObjectAssetDefinition;
+}
+
+export interface StoredVoxelObjectAssetDefinition {
+  readonly schemaVersion: 1;
+  readonly assetId: string;
+  readonly grid: {
+    readonly coordinateSystem: "rightHandedYUp";
+    readonly cellSize: number;
+    readonly chunkSize: number;
+    readonly pivot: Vec3;
+  };
+  readonly bounds: {
+    readonly min: readonly [number, number, number];
+    readonly max: readonly [number, number, number];
+  };
+  readonly defaultFrame: StoredVoxelObjectFrameDefinition;
+  readonly clips: readonly {
+    readonly id: string;
+    readonly name?: string;
+    readonly framesPerSecond: number;
+    readonly frames: readonly {
+      readonly durationSeconds?: number;
+      readonly frame: StoredVoxelObjectFrameDefinition;
+    }[];
+  }[];
+  readonly defaultClip?: string;
+  readonly materialPalette: readonly {
+    readonly materialSlot: number;
+    readonly materialAssetId: string;
+    readonly displayName?: string;
+  }[];
+  readonly materialMap: readonly {
+    readonly sourceMaterialSlot: number;
+    readonly sourceMaterialName?: string;
+    readonly voxelMaterialSlot: number;
+  }[];
+  readonly provenance: {
+    readonly kind: "authored" | "convertedStaticMesh" | "convertedAnimatedMesh";
+    readonly sourcePath: string;
+    readonly sourceSha256: string;
+    readonly sourceByteCount: number;
+    readonly converter: string;
+    readonly settingsSha256: string;
+    readonly licensePath?: string;
+    readonly sourceClips?: readonly {
+      readonly outputClipId: string;
+      readonly sourceClipName: string;
+      readonly sourceAnimationIndex: number;
+      readonly startMicroseconds: number;
+      readonly endMicroseconds: number;
+      readonly sampleRateHz: number;
+      readonly includedClipEnd: boolean;
+    }[];
+  };
+  readonly contentHash: string;
+}
+
+export interface StoredVoxelObjectFrameDefinition {
+  readonly bounds: {
+    readonly min: readonly [number, number, number];
+    readonly max: readonly [number, number, number];
+  };
+  readonly representation: {
+    readonly kind: "sparseRuns";
+    readonly sparseRuns: readonly {
+      readonly start: readonly [number, number, number];
+      readonly length: number;
+      readonly materialSlot: number;
+    }[];
+  };
+  readonly voxelDataHash: string;
+}
+
+export interface StoredVoxelObjectInstanceDefinition {
+  readonly instanceId: string;
+  readonly voxelObjectAssetId: string;
+  readonly frame:
+    | { readonly kind: "default" }
+    | {
+        readonly kind: "clip";
+        readonly clipId: string;
+        readonly frameIndex: number;
+      };
+  readonly translation: Vec3;
+  readonly rotation: readonly [number, number, number, number];
+  readonly scale: Vec3;
+  readonly materialOverrides: readonly {
+    readonly materialSlot: number;
+    readonly materialAssetId: string;
+  }[];
 }
 
 export type StoredVoxelEnvironmentDefinition =
@@ -319,11 +410,12 @@ export interface StoredSceneDefinition {
   readonly id: string;
   readonly name: string;
   readonly voxelEnvironment?: StoredVoxelEnvironmentDefinition;
+  readonly voxelObjectInstances?: readonly StoredVoxelObjectInstanceDefinition[];
   readonly entities: readonly EntityDefinition[];
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 19;
+  readonly schemaVersion: 20;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

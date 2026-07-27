@@ -162,7 +162,8 @@ pub use stored_project::{
     StoredMaterialVoxelEnvironment, StoredNavigation, StoredPickup, StoredPlayerController,
     StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable,
     StoredRequiredKeyPolicy, StoredScene, StoredSecretRegion, StoredSolidVoxelEnvironment,
-    StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance, StoredWeapon,
+    StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance, StoredVoxelObjectFrameSelection,
+    StoredVoxelObjectInstance, StoredVoxelObjectMaterialOverride, StoredWeapon,
     StoredWeaponAttackMode, STORED_PROJECT_SCHEMA_VERSION,
 };
 pub use studio_adapter::{

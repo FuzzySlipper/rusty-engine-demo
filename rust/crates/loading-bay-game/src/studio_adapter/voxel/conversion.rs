@@ -97,7 +97,7 @@ pub(crate) fn prepare_conversion(
     Ok((prepared, plan, preview))
 }
 
-fn read_selection(
+pub(crate) fn read_selection(
     location: &ProjectLocation,
     selection: &StudioFileSelection,
     max_bytes: usize,
@@ -157,6 +157,7 @@ pub(crate) fn apply_prepared_conversion(
                     animated_mesh: None,
                     import: None,
                     voxel_volume: Some(candidate),
+                    voxel_object: None,
                     voxel_edit_history: None,
                     voxel_annotations: Vec::new(),
                     material: None,

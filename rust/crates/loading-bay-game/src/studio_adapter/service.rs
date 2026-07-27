@@ -27,11 +27,17 @@ use super::voxel::{
     remove_voxel_instance, replace_palette, revert_history, set_voxel_instance_transform,
     undo_edit, upsert_material, validate_pick, PreparedProjectHistoryRevert,
 };
+use super::voxel_object::{
+    apply_prepared_voxel_object_conversion, attach_voxel_object_instance,
+    inspect_voxel_object_source, prepare_voxel_object_conversion,
+    preview_prepared_voxel_object_conversion, PreparedProjectVoxelObjectConversion,
+};
 
 struct OpenProject {
     location: ProjectLocation,
     prepared_asset_import: Option<PreparedAssetImport>,
     prepared_conversion: Option<PreparedVoxelConversion>,
+    prepared_voxel_object_conversion: Option<PreparedProjectVoxelObjectConversion>,
     prepared_history_revert: Option<(String, PreparedProjectHistoryRevert)>,
     next_history_preview_id: u64,
 }
@@ -103,7 +109,7 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 6,
+                    adapter_version: 7,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -159,6 +165,12 @@ impl StudioAdapterService {
                         "prepareVoxelConversion",
                         "applyVoxelConversion",
                         "discardVoxelConversion",
+                        "inspectVoxelObjectSource",
+                        "prepareVoxelObjectConversion",
+                        "previewVoxelObjectConversion",
+                        "applyVoxelObjectConversion",
+                        "discardVoxelObjectConversion",
+                        "attachVoxelObjectInstance",
                         "closeProject",
                     ],
                 },
@@ -1048,6 +1060,201 @@ impl StudioAdapterService {
                     plan_id,
                 }
             }
+            StudioAdapterRequest::InspectVoxelObjectSource {
+                expected_project_hash,
+                source_kind,
+                source_asset_id,
+                source,
+                mesh_primitive,
+                ..
+            } => {
+                let Some(open) = self.open.as_ref() else {
+                    return not_open(request_id);
+                };
+                match inspect_voxel_object_source(
+                    &open.location,
+                    &expected_project_hash,
+                    source_kind,
+                    source_asset_id,
+                    source,
+                    mesh_primitive,
+                ) {
+                    Ok(inspection) => StudioAdapterResponse::VoxelObjectSourceInspected {
+                        protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                        request_id,
+                        inspection,
+                    },
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::PrepareVoxelObjectConversion {
+                expected_project_hash,
+                source_kind,
+                source_asset_id,
+                source,
+                target_asset_id,
+                license,
+                mesh_primitive,
+                settings,
+                clips,
+                default_clip,
+                frame,
+                max_preview_samples,
+                ..
+            } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                match prepare_voxel_object_conversion(
+                    &open.location,
+                    &expected_project_hash,
+                    source_kind,
+                    source_asset_id,
+                    source,
+                    target_asset_id,
+                    license,
+                    mesh_primitive,
+                    *settings,
+                    clips,
+                    default_clip,
+                    frame,
+                    max_preview_samples,
+                ) {
+                    Ok((prepared, plan, preview, projection, projection_readout)) => {
+                        open.prepared_voxel_object_conversion = Some(prepared);
+                        StudioAdapterResponse::VoxelObjectConversionPrepared {
+                            protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                            request_id,
+                            plan,
+                            preview,
+                            projection,
+                            projection_readout,
+                        }
+                    }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::PreviewVoxelObjectConversion {
+                plan_id,
+                expected_plan_hash,
+                frame,
+                max_preview_samples,
+                ..
+            } => {
+                let Some(open) = self.open.as_ref() else {
+                    return not_open(request_id);
+                };
+                let Some(prepared) = open
+                    .prepared_voxel_object_conversion
+                    .as_ref()
+                    .filter(|prepared| prepared.plan_id() == plan_id)
+                else {
+                    return StudioAdapterResponse::rejected(
+                        Some(request_id),
+                        AdapterRejection::new(
+                            "conversion.planMissing",
+                            format!("no prepared voxel-object conversion `{plan_id}`"),
+                        ),
+                    );
+                };
+                match preview_prepared_voxel_object_conversion(
+                    &open.location,
+                    prepared,
+                    plan_id,
+                    expected_plan_hash,
+                    frame,
+                    max_preview_samples,
+                ) {
+                    Ok((preview, projection, projection_readout)) => {
+                        StudioAdapterResponse::VoxelObjectConversionPreviewed {
+                            protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                            request_id,
+                            preview,
+                            projection,
+                            projection_readout,
+                        }
+                    }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::ApplyVoxelObjectConversion {
+                expected_project_hash,
+                plan_id,
+                expected_plan_hash,
+                expected_output_hash,
+                ..
+            } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                let Some(prepared) = open
+                    .prepared_voxel_object_conversion
+                    .as_ref()
+                    .filter(|prepared| prepared.plan_id() == plan_id)
+                else {
+                    return StudioAdapterResponse::rejected(
+                        Some(request_id),
+                        AdapterRejection::new(
+                            "conversion.planMissing",
+                            format!("no prepared voxel-object conversion `{plan_id}`"),
+                        ),
+                    );
+                };
+                match apply_prepared_voxel_object_conversion(
+                    &open.location,
+                    &expected_project_hash,
+                    prepared,
+                    plan_id,
+                    expected_plan_hash,
+                    expected_output_hash,
+                ) {
+                    Ok((receipt, project)) => {
+                        open.prepared_voxel_object_conversion = None;
+                        mutation_response(request_id, receipt, project)
+                    }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::DiscardVoxelObjectConversion { plan_id, .. } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                if open
+                    .prepared_voxel_object_conversion
+                    .as_ref()
+                    .is_none_or(|prepared| prepared.plan_id() != plan_id)
+                {
+                    return StudioAdapterResponse::rejected(
+                        Some(request_id),
+                        AdapterRejection::new(
+                            "conversion.planMissing",
+                            format!("no prepared voxel-object conversion `{plan_id}`"),
+                        ),
+                    );
+                }
+                match OpenedOwnerProject::load(&open.location).and_then(|project| project.readout())
+                {
+                    Ok(project) => {
+                        open.prepared_voxel_object_conversion = None;
+                        StudioAdapterResponse::VoxelObjectConversionDiscarded {
+                            protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                            request_id,
+                            plan_id,
+                            projection: project.projection,
+                            projection_readout: project.projection_readout,
+                        }
+                    }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::AttachVoxelObjectInstance {
+                expected_project_hash,
+                scene_id,
+                instance,
+                ..
+            } => self.mutate(request_id, |location| {
+                attach_voxel_object_instance(location, &expected_project_hash, scene_id, instance)
+            }),
             StudioAdapterRequest::CloseProject { .. } => {
                 self.open = None;
                 StudioAdapterResponse::ProjectClosed {
@@ -1077,6 +1284,7 @@ impl StudioAdapterService {
                     location,
                     prepared_asset_import: None,
                     prepared_conversion: None,
+                    prepared_voxel_object_conversion: None,
                     prepared_history_revert: None,
                     next_history_preview_id: 1,
                 });
@@ -1219,6 +1427,7 @@ fn new_open_project(location: ProjectLocation) -> OpenProject {
         location,
         prepared_asset_import: None,
         prepared_conversion: None,
+        prepared_voxel_object_conversion: None,
         prepared_history_revert: None,
         next_history_preview_id: 1,
     }

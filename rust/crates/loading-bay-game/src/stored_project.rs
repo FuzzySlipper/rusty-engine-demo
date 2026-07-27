@@ -13,7 +13,8 @@ use engine_spatial::{decode_voxel_edit_history, MaterialVoxel, VoxelEditHistoryL
 use render_model::{AnimatedMeshAsset, StaticMeshAsset};
 use serde::{Deserialize, Serialize};
 use voxel_annotation::{validate_annotation_layer, VoxelAnnotationLayer, VoxelAnnotationLimits};
-use voxel_asset::VoxelAsset;
+use voxel_asset::{VoxelAsset, VoxelObjectAsset};
+use voxel_object_runtime::{admit_voxel_object, VoxelObjectRuntimeLimits};
 
 use crate::combat::{
     MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_PELLETS,
@@ -21,7 +22,7 @@ use crate::combat::{
 };
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 19;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 20;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -47,6 +48,8 @@ pub mod diagnostic_code {
     pub const INVALID_VOXEL_HISTORY: &str = "project.invalidVoxelHistory";
     pub const INVALID_VOXEL_ANNOTATION: &str = "project.invalidVoxelAnnotation";
     pub const INVALID_VOXEL_INSTANCE: &str = "project.invalidVoxelInstance";
+    pub const INVALID_VOXEL_OBJECT: &str = "project.invalidVoxelObject";
+    pub const INVALID_VOXEL_OBJECT_INSTANCE: &str = "project.invalidVoxelObjectInstance";
     pub const INVALID_MATERIAL: &str = "project.invalidMaterial";
     pub const INVALID_IMPORT: &str = "project.invalidImport";
 }
@@ -134,6 +137,8 @@ pub struct StoredAsset {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel_volume: Option<VoxelAsset>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub voxel_object: Option<VoxelObjectAsset>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel_edit_history: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub voxel_annotations: Vec<VoxelAnnotationLayer>,
@@ -193,6 +198,8 @@ pub struct StoredScene {
     pub voxel_environment: Option<StoredVoxelEnvironment>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub voxel_instances: Vec<StoredVoxelInstance>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub voxel_object_instances: Vec<StoredVoxelObjectInstance>,
     pub entities: Vec<StoredEntityDefinition>,
 }
 
@@ -204,6 +211,38 @@ pub struct StoredVoxelInstance {
     pub translation: [f32; 3],
     pub rotation: [f32; 4],
     pub scale: [f32; 3],
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredVoxelObjectInstance {
+    pub instance_id: String,
+    pub voxel_object_asset_id: String,
+    pub frame: StoredVoxelObjectFrameSelection,
+    pub translation: [f32; 3],
+    pub rotation: [f32; 4],
+    pub scale: [f32; 3],
+    #[serde(default)]
+    pub material_overrides: Vec<StoredVoxelObjectMaterialOverride>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum StoredVoxelObjectFrameSelection {
+    Default,
+    Clip { clip_id: String, frame_index: u32 },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredVoxelObjectMaterialOverride {
+    pub material_slot: u16,
+    pub material_asset_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -797,9 +836,11 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
         }
         match id.kind() {
             AssetKind::VoxelVolume => validate_stored_voxel_asset(asset, index)?,
+            AssetKind::VoxelObject => validate_stored_voxel_object(asset, index)?,
             AssetKind::Material => {
                 if asset.material.is_none()
                     || asset.voxel_volume.is_some()
+                    || asset.voxel_object.is_some()
                     || asset.voxel_edit_history.is_some()
                     || !asset.voxel_annotations.is_empty()
                     || asset.static_mesh.is_some()
@@ -837,6 +878,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     ));
                 }
                 if asset.voxel_volume.is_some()
+                    || asset.voxel_object.is_some()
                     || asset.voxel_edit_history.is_some()
                     || !asset.voxel_annotations.is_empty()
                     || asset.material.is_some()
@@ -893,6 +935,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     ));
                 }
                 if asset.voxel_volume.is_some()
+                    || asset.voxel_object.is_some()
                     || asset.voxel_edit_history.is_some()
                     || !asset.voxel_annotations.is_empty()
                     || asset.material.is_some()
@@ -908,6 +951,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             }
             _ => {
                 if asset.voxel_volume.is_some()
+                    || asset.voxel_object.is_some()
                     || asset.voxel_edit_history.is_some()
                     || !asset.voxel_annotations.is_empty()
                     || asset.material.is_some()
@@ -937,15 +981,25 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
     }
 
     for (asset_index, asset) in document.assets.iter().enumerate() {
-        let Some(voxel) = &asset.voxel_volume else {
+        let palette = asset
+            .voxel_volume
+            .as_ref()
+            .map(|voxel| (voxel.material_palette.as_slice(), "voxelVolume"))
+            .or_else(|| {
+                asset
+                    .voxel_object
+                    .as_ref()
+                    .map(|object| (object.material_palette.as_slice(), "voxelObject"))
+            });
+        let Some((palette, payload_path)) = palette else {
             continue;
         };
-        for (binding_index, binding) in voxel.material_palette.iter().enumerate() {
+        for (binding_index, binding) in palette.iter().enumerate() {
             let Some(material_index) = assets.get(&binding.material_asset_id).copied() else {
                 return Err(failure(
                     diagnostic_code::MISSING_ASSET,
                     format!(
-                        "assets[{asset_index}].voxelVolume.materialPalette[{binding_index}].materialAssetId"
+                        "assets[{asset_index}].{payload_path}.materialPalette[{binding_index}].materialAssetId"
                     ),
                     format!(
                         "voxel material binding references missing asset `{}`",
@@ -957,7 +1011,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                 return Err(failure(
                     diagnostic_code::INVALID_MATERIAL,
                     format!(
-                        "assets[{asset_index}].voxelVolume.materialPalette[{binding_index}].materialAssetId"
+                        "assets[{asset_index}].{payload_path}.materialPalette[{binding_index}].materialAssetId"
                     ),
                     "voxel material binding must resolve to an asset-catalog material definition",
                 ));
@@ -1019,6 +1073,44 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                 ));
             }
             validate_voxel_instance_transform(instance, &instance_path)?;
+        }
+        let mut object_instance_ids = BTreeMap::new();
+        for (instance_index, instance) in scene.voxel_object_instances.iter().enumerate() {
+            let instance_path = format!("scenes[{index}].voxelObjectInstances[{instance_index}]");
+            if !is_kebab_segment(&instance.instance_id) {
+                return Err(failure(
+                    diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
+                    format!("{instance_path}.instanceId"),
+                    "voxel-object instance identity must be one kebab-case segment",
+                ));
+            }
+            if let Some(first) = object_instance_ids.insert(&instance.instance_id, instance_index) {
+                return Err(failure(
+                    diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
+                    format!("{instance_path}.instanceId"),
+                    format!(
+                        "instance identity was already declared at voxelObjectInstances[{first}]"
+                    ),
+                ));
+            }
+            let Some(asset_index) = assets.get(&instance.voxel_object_asset_id).copied() else {
+                return Err(failure(
+                    diagnostic_code::MISSING_ASSET,
+                    format!("{instance_path}.voxelObjectAssetId"),
+                    format!(
+                        "voxel-object instance references missing asset `{}`",
+                        instance.voxel_object_asset_id
+                    ),
+                ));
+            };
+            let Some(object) = document.assets[asset_index].voxel_object.as_ref() else {
+                return Err(failure(
+                    diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
+                    format!("{instance_path}.voxelObjectAssetId"),
+                    "voxel-object instance must reference a canonical voxel-object asset",
+                ));
+            };
+            validate_voxel_object_instance(instance, object, &assets, document, &instance_path)?;
         }
         validate_scene_entities(scene, index, document, &assets)?;
     }
@@ -1541,11 +1633,16 @@ fn validate_stored_voxel_asset(
     asset: &StoredAsset,
     index: usize,
 ) -> Result<(), StoredProjectError> {
-    if asset.material.is_some() {
+    if asset.material.is_some()
+        || asset.voxel_object.is_some()
+        || asset.static_mesh.is_some()
+        || asset.animated_mesh.is_some()
+        || asset.import.is_some()
+    {
         return Err(failure(
             diagnostic_code::WRONG_ASSET_KIND,
-            format!("assets[{index}].material"),
-            "voxel-volume assets cannot carry a material definition",
+            format!("assets[{index}]"),
+            "voxel-volume assets cannot carry unrelated payloads",
         ));
     }
     let Some(voxel) = &asset.voxel_volume else {
@@ -1604,6 +1701,48 @@ fn validate_stored_voxel_asset(
             },
         )?;
     }
+    Ok(())
+}
+
+fn validate_stored_voxel_object(
+    asset: &StoredAsset,
+    index: usize,
+) -> Result<(), StoredProjectError> {
+    let Some(object) = &asset.voxel_object else {
+        return Err(failure(
+            diagnostic_code::INVALID_VOXEL_OBJECT,
+            format!("assets[{index}].voxelObject"),
+            "voxel-object identity requires an embedded canonical voxel object",
+        ));
+    };
+    if object.asset_id != asset.id {
+        return Err(failure(
+            diagnostic_code::INVALID_VOXEL_OBJECT,
+            format!("assets[{index}].voxelObject.assetId"),
+            "embedded voxel-object identity must match the stored asset identity",
+        ));
+    }
+    if asset.voxel_volume.is_some()
+        || asset.voxel_edit_history.is_some()
+        || !asset.voxel_annotations.is_empty()
+        || asset.material.is_some()
+        || asset.static_mesh.is_some()
+        || asset.animated_mesh.is_some()
+        || asset.import.is_some()
+    {
+        return Err(failure(
+            diagnostic_code::WRONG_ASSET_KIND,
+            format!("assets[{index}]"),
+            "voxel-object assets cannot carry unrelated payloads",
+        ));
+    }
+    admit_voxel_object(object, VoxelObjectRuntimeLimits::default()).map_err(|error| {
+        failure(
+            diagnostic_code::INVALID_VOXEL_OBJECT,
+            format!("assets[{index}].voxelObject"),
+            error.to_string(),
+        )
+    })?;
     Ok(())
 }
 
@@ -1670,6 +1809,102 @@ fn validate_voxel_instance_transform(
             format!("{path}.rotation"),
             "voxel instance rotation must be a normalized quaternion",
         ));
+    }
+    Ok(())
+}
+
+fn validate_voxel_object_instance(
+    instance: &StoredVoxelObjectInstance,
+    object: &VoxelObjectAsset,
+    assets: &BTreeMap<String, usize>,
+    project: &StoredProject,
+    path: &str,
+) -> Result<(), StoredProjectError> {
+    if instance.translation.iter().any(|value| !value.is_finite())
+        || instance.rotation.iter().any(|value| !value.is_finite())
+        || instance
+            .scale
+            .iter()
+            .any(|value| !value.is_finite() || *value <= 0.0)
+    {
+        return Err(failure(
+            diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
+            path,
+            "voxel-object instance transform must be finite with positive scale",
+        ));
+    }
+    let rotation_norm = instance
+        .rotation
+        .iter()
+        .map(|value| value * value)
+        .sum::<f32>();
+    if (rotation_norm - 1.0).abs() > 0.002 {
+        return Err(failure(
+            diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
+            format!("{path}.rotation"),
+            "voxel-object instance rotation must be a normalized quaternion",
+        ));
+    }
+    match &instance.frame {
+        StoredVoxelObjectFrameSelection::Default => {}
+        StoredVoxelObjectFrameSelection::Clip {
+            clip_id,
+            frame_index,
+        } => {
+            let Some(clip) = object.clip(clip_id) else {
+                return Err(failure(
+                    diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
+                    format!("{path}.frame.clipId"),
+                    format!("voxel object has no clip `{clip_id}`"),
+                ));
+            };
+            if *frame_index as usize >= clip.frames.len() {
+                return Err(failure(
+                    diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
+                    format!("{path}.frame.frameIndex"),
+                    format!(
+                        "frame {} is outside clip `{clip_id}` with {} frames",
+                        frame_index,
+                        clip.frames.len()
+                    ),
+                ));
+            }
+        }
+    }
+    let bound_slots = object
+        .material_palette
+        .iter()
+        .map(|binding| binding.material_slot)
+        .collect::<BTreeSet<_>>();
+    let mut override_slots = BTreeSet::new();
+    for (override_index, binding) in instance.material_overrides.iter().enumerate() {
+        let override_path = format!("{path}.materialOverrides[{override_index}]");
+        if !bound_slots.contains(&binding.material_slot)
+            || !override_slots.insert(binding.material_slot)
+        {
+            return Err(failure(
+                diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
+                format!("{override_path}.materialSlot"),
+                "material override slots must be bound by the object and unique",
+            ));
+        }
+        let Some(material_index) = assets.get(&binding.material_asset_id).copied() else {
+            return Err(failure(
+                diagnostic_code::MISSING_ASSET,
+                format!("{override_path}.materialAssetId"),
+                format!(
+                    "material override references missing asset `{}`",
+                    binding.material_asset_id
+                ),
+            ));
+        };
+        if project.assets[material_index].material.is_none() {
+            return Err(failure(
+                diagnostic_code::INVALID_MATERIAL,
+                format!("{override_path}.materialAssetId"),
+                "material override must reference a material definition",
+            ));
+        }
     }
     Ok(())
 }

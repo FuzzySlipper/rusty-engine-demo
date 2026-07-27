@@ -7,7 +7,7 @@ mod mutation;
 mod projection;
 mod query;
 
-pub(crate) use conversion::{apply_prepared_conversion, prepare_conversion};
+pub(crate) use conversion::{apply_prepared_conversion, prepare_conversion, read_selection};
 pub(crate) use environment::materialize_project_environment;
 pub(crate) use file::{export_voxel_asset_file, import_voxel_asset_file};
 pub(crate) use history::{

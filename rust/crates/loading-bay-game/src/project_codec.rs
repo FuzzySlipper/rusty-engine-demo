@@ -6,7 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Deserialize;
-use voxel_asset::canonicalize_voxel_asset;
+use voxel_asset::{canonicalize_voxel_asset, canonicalize_voxel_object};
 
 use crate::content::PROJECT_CONTENT_SCHEMA_VERSION;
 use crate::stored_project::{
@@ -19,7 +19,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 18;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 19;
+const LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION: u32 = 18;
 const LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION: u32 = 17;
 const LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION: u32 = 16;
 const LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION: u32 = 15;
@@ -62,7 +63,8 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v18(decode_legacy_project(input)?)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v19(decode_legacy_project(input)?)?,
+        LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION => migrate_v18(decode_legacy_project(input)?)?,
         LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION => migrate_v17(decode_legacy_project(input)?)?,
         LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION => migrate_v16(decode_legacy_project(input)?)?,
         LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION => migrate_v15(decode_legacy_project(input)?)?,
@@ -80,7 +82,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
                     LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
@@ -93,6 +95,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                     LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -204,17 +207,50 @@ fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectErro
     if document.schema_version <= LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION {
         reject_future_enemy_combat_fields(&document)?;
     }
-    reject_future_enemy_archetype_fields(&document)?;
+    if document.schema_version <= LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION {
+        reject_future_enemy_archetype_fields(&document)?;
+    }
+    if document.schema_version <= PREVIOUS_STORED_PROJECT_SCHEMA_VERSION {
+        reject_future_voxel_object_fields(&document)?;
+    }
     Ok(document)
 }
 
-fn migrate_v18(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+fn migrate_v19(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
     );
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
+}
+
+fn migrate_v18(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION
+    );
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn reject_future_voxel_object_fields(legacy: &StoredProject) -> Result<(), StoredProjectError> {
+    if legacy
+        .assets
+        .iter()
+        .any(|asset| asset.voxel_object.is_some())
+        || legacy
+            .scenes
+            .iter()
+            .any(|scene| !scene.voxel_object_instances.is_empty())
+    {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "$",
+            "schema 19 projects cannot carry schema 20 voxel-object fields",
+        ));
+    }
+    Ok(())
 }
 
 fn migrate_v17(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
@@ -508,6 +544,7 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
                 animated_mesh: None,
                 import: None,
                 voxel_volume: None,
+                voxel_object: None,
                 voxel_edit_history: None,
                 voxel_annotations: Vec::new(),
                 material: None,
@@ -519,6 +556,7 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
             name: "Migrated Schema 6 Entry".to_string(),
             voxel_environment,
             voxel_instances: Vec::new(),
+            voxel_object_instances: Vec::new(),
             entities: legacy.entities,
         }],
     };
@@ -892,6 +930,15 @@ fn canonicalize(mut document: StoredProject) -> Result<StoredProject, StoredProj
                 )
             })?;
         }
+        if let Some(voxel_object) = &mut asset.voxel_object {
+            *voxel_object = canonicalize_voxel_object(voxel_object).map_err(|error| {
+                StoredProjectError::new(
+                    diagnostic_code::ENCODE,
+                    format!("assets[{asset_index}].voxelObject"),
+                    error.to_string(),
+                )
+            })?;
+        }
     }
     document
         .assets
@@ -907,6 +954,14 @@ fn canonicalize(mut document: StoredProject) -> Result<StoredProject, StoredProj
         scene
             .voxel_instances
             .sort_by(|left, right| left.instance_id.cmp(&right.instance_id));
+        scene
+            .voxel_object_instances
+            .sort_by(|left, right| left.instance_id.cmp(&right.instance_id));
+        for instance in &mut scene.voxel_object_instances {
+            instance
+                .material_overrides
+                .sort_by_key(|binding| binding.material_slot);
+        }
         if let Some(StoredVoxelEnvironment::Solid(environment)) = &mut scene.voxel_environment {
             environment.solid_voxels.sort_unstable();
             environment.solid_voxels.dedup();
@@ -1066,6 +1121,12 @@ fn normalize_numbers(document: &mut StoredProject) -> Result<(), StoredProjectEr
         }
         for (instance_index, instance) in scene.voxel_instances.iter_mut().enumerate() {
             let root = format!("scenes[{scene_index}].voxelInstances[{instance_index}]");
+            normalize_vec3(&mut instance.translation, format!("{root}.translation"))?;
+            normalize_vec4(&mut instance.rotation, format!("{root}.rotation"))?;
+            normalize_vec3(&mut instance.scale, format!("{root}.scale"))?;
+        }
+        for (instance_index, instance) in scene.voxel_object_instances.iter_mut().enumerate() {
+            let root = format!("scenes[{scene_index}].voxelObjectInstances[{instance_index}]");
             normalize_vec3(&mut instance.translation, format!("{root}.translation"))?;
             normalize_vec4(&mut instance.rotation, format!("{root}.rotation"))?;
             normalize_vec3(&mut instance.scale, format!("{root}.scale"))?;

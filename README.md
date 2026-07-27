@@ -6,13 +6,12 @@ components, services, project schema, scheduling, persistence, authored content,
 and user-facing acceptance. Rusty Engine owns reusable entity, spatial, collision, navigation,
 voxel, mesh, asset, and conversion mechanisms.
 
-The Rust game vertical is named `loading-bay-game`. Its Engine dependencies are public Git
-dependencies: Rust remains pinned to reviewed authoring revision
-`464dd5e16bb023ad8d81515eabeaac9bb75df74d`, while the browser renderer is pinned to review-fix
-revision `e622c941671bc0f167206b049ab94ea63495a86d`; a sibling checkout is not required. The demo owns
-its Angular/Nx browser shell, route-scoped input lifecycle, and semantic projection adapter, while
-Rusty Engine owns the shared render contracts, retained projection, Three/WebGL backend, surface
-host, audio, particle, billboard, and telemetry hosts.
+The Rust game vertical is named `loading-bay-game`. Its Rust and browser Engine dependencies are
+public Git dependencies pinned to reviewed provider revision
+`fbdf2b5988edbf548f42fefb16821826d8b0e77b`; a sibling checkout is not required. The demo owns its
+Angular/Nx browser shell, route-scoped input lifecycle, and semantic projection adapter, while Rusty
+Engine owns the shared render contracts, retained projection, Three/WebGL backend, surface host,
+audio, particle, billboard, and telemetry hosts.
 
 The demo-owned `ExtractionBeacon` is the first post-extraction gameplay addition. Its authored
 configuration and live state remain on the beacon entity, `ExtractionBeaconService` owns the

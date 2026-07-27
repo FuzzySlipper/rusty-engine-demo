@@ -50,6 +50,7 @@ pub(crate) fn import_voxel_asset_file(
                 animated_mesh: None,
                 import: None,
                 voxel_volume: Some(asset),
+                voxel_object: None,
                 voxel_edit_history: None,
                 voxel_annotations: Vec::new(),
                 material: None,

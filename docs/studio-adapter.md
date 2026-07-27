@@ -4,20 +4,23 @@ The `studio-adapter` binary is Loading Bay's project-owned Rust composition boun
 Engine Studio. It is not a gameplay runtime facade and it does not generalize Loading Bay concepts
 into Engine vocabulary.
 
-Protocol version 6 is a closed, named operation set. It covers project create/open/save-as/read/close;
-typed scene, hierarchy, transform, appearance, collision, and kinematic authoring; deterministic
-source-mesh import/reimport with catalog dependencies and locks; material and palette authoring;
-canonical voxel asset and transformed-instance lifecycle; authoritative picking; brush and
-primitive edits; deterministic templates; durable history query/preview/apply; every typed
-annotation edit/query/export family; bounded model and GLB conversion planning; trusted host
-voxel/mesh/GLB/license files; and deterministic environment materialization. Requests and responses
-are one bounded JSON value per line. There is no method-name dispatch, provider registry, arbitrary
-command payload, callback subscription, HTTP route, or browser persistence seam.
+Protocol version 7 is a closed, named operation set. It covers project
+create/open/save-as/read/close; typed scene, hierarchy, transform, appearance, collision, and
+kinematic authoring; deterministic source-mesh import/reimport with catalog dependencies and locks;
+material and palette authoring; canonical voxel asset and transformed-instance lifecycle;
+authoritative picking; brush and primitive edits; deterministic templates; durable history
+query/preview/apply; every typed annotation edit/query/export family; bounded model, GLB, static
+voxel-object, and animated flipbook conversion planning; trusted host voxel/mesh/GLB/license files;
+and deterministic environment materialization. Requests and responses are one bounded JSON value
+per line. There is no method-name dispatch, provider registry, arbitrary command payload, callback
+subscription, HTTP route, or browser persistence seam.
 
-Prepared source imports, conversion plans, and history reverts remain private adapter state. A later
-apply must name the exact plan/preview identity and current project hash; discard releases the
-private candidate. Studio receives bounded typed previews, diagnostics, and generated-artifact
-identities, never a callback or executable recipe.
+Prepared source imports, voxel and voxel-object conversion plans, and history reverts remain private
+adapter state. Preparing a second candidate replaces the first. A later apply must name the exact
+plan, output, source, and current project identities; discard releases the private candidate. A
+rejected preview or apply preserves both project bytes and the candidate so the caller can correct
+its request. Studio receives bounded typed previews, diagnostics, complete shared-renderer frames,
+and generated-artifact identities, never a callback or executable recipe.
 
 ## Owner path
 
@@ -30,10 +33,14 @@ the public Engine owners:
    assets, import provenance, dependency graphs, and generated locks.
 4. `authored-scene`, `entity-state`, and `engine-spatial` own scene, entity, voxel, history,
    collision, navigation, and mesh authority.
-5. `voxel-convert` owns bounded mesh inspection, material policy, planning, preview, and exact output.
+5. `voxel-convert` owns bounded static and animated mesh inspection, material policy, object and
+   flipbook planning, frame preview, source fingerprints, and exact output.
 6. `environment-authoring` owns deterministic preset/seed generation; Loading Bay atomically maps
    the resulting voxel asset, instance, and markers into its named project entities.
-7. `engine-inspector` and `render-projection` produce owner readouts and the shared renderer frame.
+7. `voxel-object-runtime` admits persisted object frames and clip selection.
+8. `engine-inspector` and `render-projection` produce owner readouts and the complete shared
+   renderer frame. Candidate and attached objects use Engine `defineVoxelObject` and
+   `createVoxelObjectInstance` operations rather than a downstream preview renderer.
 
 The response includes canonical owner codecs as strings so Studio can display or retain them without
 reimplementing their semantics. TypeScript performs closed structural decoding and delegates frames
@@ -62,12 +69,22 @@ source drift without mutating content. Reimport replaces only the prior generate
 then runs complete project admission, so unrelated collisions, removed dependencies, stale plans,
 and invalid renderer payloads fail atomically.
 
+Voxel objects persist the Engine-owned asset, default frame, clips and per-frame timing, palette,
+source-material mapping, exact conversion provenance, and game-owned scene instances. Instances
+select the default frame or a named clip frame and retain transform plus bounded material overrides.
+Opening the project in a fresh adapter process reconstructs the same typed authoring readout and
+complete renderer frame from those canonical bytes. Schema-19 documents migrate only when the new
+object fields are absent; relabeling schema-20 object content as an older schema fails closed.
+
 ## Verification
 
 Focused protocol and voxel-owner proof:
 
 ```bash
-cargo test --locked -p loading-bay-game --test studio_adapter --test studio_voxel_authoring
+cargo test --locked -p loading-bay-game \
+  --test studio_adapter \
+  --test studio_voxel_authoring \
+  --test studio_voxel_objects
 ```
 
 The complete downstream gate is `pnpm run verify`; it also checks exact Engine resolution, boundary

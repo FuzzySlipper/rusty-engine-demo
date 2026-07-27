@@ -12,6 +12,7 @@ mod project;
 mod protocol;
 mod service;
 mod voxel;
+mod voxel_object;
 
 pub use path::{PathSafetyError, ProjectLocation, MAX_PROJECT_PATH_BYTES, MAX_ROOT_PATH_BYTES};
 pub use protocol::*;

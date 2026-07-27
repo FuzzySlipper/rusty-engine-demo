@@ -5,10 +5,10 @@ packages:
 
 allowBuilds:
   "@parcel/watcher": true
-  "@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e622c941671bc0f167206b049ab94ea63495a86d#path:render/packages/render-contracts": true
-  "@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e622c941671bc0f167206b049ab94ea63495a86d#path:render/packages/render-projection": true
-  "@rusty-engine/renderer-host@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e622c941671bc0f167206b049ab94ea63495a86d#path:render/packages/renderer-host": true
-  "@rusty-engine/renderer-three@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e622c941671bc0f167206b049ab94ea63495a86d#path:render/packages/renderer-three": true
+  "@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/fbdf2b5988edbf548f42fefb16821826d8b0e77b#path:render/packages/render-contracts": true
+  "@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/fbdf2b5988edbf548f42fefb16821826d8b0e77b#path:render/packages/render-projection": true
+  "@rusty-engine/renderer-host@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/fbdf2b5988edbf548f42fefb16821826d8b0e77b#path:render/packages/renderer-host": true
+  "@rusty-engine/renderer-three@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/fbdf2b5988edbf548f42fefb16821826d8b0e77b#path:render/packages/renderer-three": true
   "esbuild": true
   "less": true
   "lmdb": true

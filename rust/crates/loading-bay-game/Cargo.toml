@@ -31,3 +31,4 @@ entity-state.workspace = true
 voxel-asset.workspace = true
 voxel-annotation.workspace = true
 voxel-convert.workspace = true
+voxel-object-runtime.workspace = true
