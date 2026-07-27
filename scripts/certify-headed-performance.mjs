@@ -520,11 +520,23 @@ function connectDevTools(url) {
     socket.addEventListener("open", () => {
       resolveConnect({
         send(method, params = {}) {
+          if (socket.readyState !== WebSocket.OPEN) {
+            return Promise.reject(
+              new Error(
+                `Chromium debugging connection is not open (${method})`,
+              ),
+            );
+          }
           nextId += 1;
           const id = nextId;
           return new Promise((resolveCommand, rejectCommand) => {
             pending.set(id, { resolveCommand, rejectCommand });
-            socket.send(JSON.stringify({ id, method, params }));
+            try {
+              socket.send(JSON.stringify({ id, method, params }));
+            } catch (error) {
+              pending.delete(id);
+              rejectCommand(error);
+            }
           });
         },
         close() {

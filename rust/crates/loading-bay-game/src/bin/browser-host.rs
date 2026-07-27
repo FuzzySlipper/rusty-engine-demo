@@ -484,6 +484,20 @@ struct BrowserVoxelEditResponse {
     voxel_edit_receipt: BrowserVoxelEditReceipt,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserMenuState {
+    host_session_id: String,
+    save_slots: Vec<SaveSlotSummary>,
+}
+
+fn browser_menu_state(runtime: &BrowserRuntime) -> BrowserMenuState {
+    BrowserMenuState {
+        host_session_id: runtime.host_session_id.clone(),
+        save_slots: runtime.save_slots.clone(),
+    }
+}
+
 fn main() {
     let (address, dist, project_path, save_root) = arguments();
     let dist = dist.canonicalize().unwrap_or_else(|error| {
@@ -740,6 +754,10 @@ fn route(
                 200,
                 browser_state(&runtime, Vec::new(), BrowserFeedbackProjection::default()),
             )
+        }
+        ("GET", "/api/menu-state") => {
+            let runtime = runtime.lock().expect("runtime lock");
+            json_response(200, browser_menu_state(&runtime))
         }
         ("POST", "/api/voxel-edit") => {
             let request: BrowserVoxelEditRequest = match serde_json::from_slice(body) {
@@ -1203,6 +1221,31 @@ mod tests {
             serde_json::from_slice::<serde_json::Value>(&response.2).unwrap(),
             serde_json::json!({ "project": DEN_PROJECT, "status": "ok" })
         );
+    }
+
+    #[test]
+    fn menu_state_exposes_only_rust_owned_continue_identity_and_slots() {
+        let runtime = shared_browser_runtime();
+        let response = route("GET", "/api/menu-state", &[], &runtime, Path::new("."));
+        assert_eq!(response.0, 200);
+        assert_eq!(response.1, "application/json; charset=utf-8");
+        assert!(
+            response.2.len() < 16 * 1_024,
+            "menu state unexpectedly expanded to {} bytes",
+            response.2.len()
+        );
+        let value: serde_json::Value = serde_json::from_slice(&response.2).unwrap();
+        assert_eq!(
+            value["hostSessionId"],
+            runtime.lock().unwrap().host_session_id
+        );
+        assert_eq!(value["saveSlots"].as_array().unwrap().len(), 4);
+        assert_eq!(
+            value.as_object().unwrap().keys().collect::<Vec<_>>(),
+            ["hostSessionId", "saveSlots"]
+        );
+        assert!(value.get("voxelMeshes").is_none());
+        assert!(value.get("projection").is_none());
     }
 
     fn response_json(response: (u16, &'static str, Vec<u8>)) -> serde_json::Value {

@@ -10,6 +10,7 @@ pnpm run check:content
 pnpm run test:ts
 pnpm run test:platform
 pnpm run test:shell
+pnpm run test:performance-tools
 pnpm run build:shell
 ./scripts/verify-rust.sh
 pnpm run test:browser

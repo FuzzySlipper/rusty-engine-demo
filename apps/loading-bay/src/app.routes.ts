@@ -1,20 +1,30 @@
 import type { Routes } from "@angular/router";
-import { DiagnosticsScreenComponent } from "./diagnostics-screen.component";
-import { GameScreenComponent } from "./game-screen.component";
 import { MainMenuComponent } from "./main-menu.component";
-import { SettingsScreenComponent } from "./settings-screen.component";
 
 export const appRoutes: Routes = [
   { path: "", component: MainMenuComponent, title: "Loading Bay" },
-  { path: "game", component: GameScreenComponent, title: "Loading Bay" },
+  {
+    path: "game",
+    loadComponent: () =>
+      import("./game-screen.component").then(
+        ({ GameScreenComponent }) => GameScreenComponent,
+      ),
+    title: "Loading Bay",
+  },
   {
     path: "settings",
-    component: SettingsScreenComponent,
+    loadComponent: () =>
+      import("./settings-screen.component").then(
+        ({ SettingsScreenComponent }) => SettingsScreenComponent,
+      ),
     title: "Loading Bay settings",
   },
   {
     path: "diagnostics",
-    component: DiagnosticsScreenComponent,
+    loadComponent: () =>
+      import("./diagnostics-screen.component").then(
+        ({ DiagnosticsScreenComponent }) => DiagnosticsScreenComponent,
+      ),
     title: "Loading Bay diagnostics",
   },
   { path: "**", redirectTo: "" },

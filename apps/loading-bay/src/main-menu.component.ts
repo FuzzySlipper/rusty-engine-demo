@@ -105,7 +105,7 @@ export class MainMenuComponent {
 
   private async resolveContinueAvailability(): Promise<void> {
     try {
-      const response = await fetch("/api/state", { cache: "no-store" });
+      const response = await fetch("/api/menu-state", { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`host state returned ${String(response.status)}`);
       }
