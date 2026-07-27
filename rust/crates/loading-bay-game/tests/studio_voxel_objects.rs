@@ -4,7 +4,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use loading_bay_game::{
     admit_stored_project, decode_project_document, diagnostic_code, encode_project_document,
-    StoredAsset, StudioAdapterService, MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS,
+    StoredAsset, StoredVoxelObjectFrameSelection, StoredVoxelObjectInstance, StudioAdapterService,
+    MAX_PROJECT_VOXEL_OBJECT_INSTANCES, MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS,
 };
 use serde_json::{json, Value};
 use voxel_asset::{
@@ -345,6 +346,24 @@ fn aggregate_object_budget_preflights_projects_and_preserves_private_candidate()
     let admission_error = admit_stored_project(one_over.clone()).unwrap_err();
     assert_eq!(
         admission_error.diagnostic().code,
+        diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT
+    );
+
+    let mut too_many_instances = exact.clone();
+    too_many_instances.scenes[0].voxel_object_instances = (0..=MAX_PROJECT_VOXEL_OBJECT_INSTANCES)
+        .map(|index| StoredVoxelObjectInstance {
+            instance_id: format!("budget-instance-{index}"),
+            voxel_object_asset_id: "voxel-object/budget-a".to_string(),
+            frame: StoredVoxelObjectFrameSelection::Default,
+            translation: [0.0, 0.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            material_overrides: Vec::new(),
+        })
+        .collect();
+    let instance_error = admit_stored_project(too_many_instances).unwrap_err();
+    assert_eq!(
+        instance_error.diagnostic().code,
         diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT
     );
     let mut one_over_bytes = serde_json::to_string_pretty(&one_over).unwrap();

@@ -164,7 +164,9 @@ pub use stored_project::{
     StoredRequiredKeyPolicy, StoredScene, StoredSecretRegion, StoredSolidVoxelEnvironment,
     StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance, StoredVoxelObjectFrameSelection,
     StoredVoxelObjectInstance, StoredVoxelObjectMaterialOverride, StoredWeapon,
-    StoredWeaponAttackMode, MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS, STORED_PROJECT_SCHEMA_VERSION,
+    StoredWeaponAttackMode, MAX_PROJECT_VOXEL_OBJECTS, MAX_PROJECT_VOXEL_OBJECT_FRAMES,
+    MAX_PROJECT_VOXEL_OBJECT_INSTANCES, MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK,
+    MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS, STORED_PROJECT_SCHEMA_VERSION,
 };
 pub use studio_adapter::{
     AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,

@@ -23,7 +23,12 @@ use crate::combat::{
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
 pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 20;
+pub const MAX_PROJECT_VOXEL_OBJECTS: u64 = 256;
+pub const MAX_PROJECT_VOXEL_OBJECT_FRAMES: u64 = 8_193;
 pub const MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS: u64 = 65_536;
+pub const MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK: u64 =
+    MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS * 6;
+pub const MAX_PROJECT_VOXEL_OBJECT_INSTANCES: u64 = 4_096;
 
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
@@ -1135,6 +1140,8 @@ pub(crate) fn validate_voxel_object_aggregate_budget(
     replacement: Option<&VoxelObjectAsset>,
 ) -> Result<(), StoredProjectError> {
     let replacement_id = replacement.map(|object| object.asset_id.as_str());
+    let mut object_count = 0_u64;
+    let mut frame_count = 0_u64;
     let mut resolved_cells = 0_u64;
     for object in document
         .assets
@@ -1142,38 +1149,97 @@ pub(crate) fn validate_voxel_object_aggregate_budget(
         .filter_map(|asset| asset.voxel_object.as_ref())
         .filter(|object| replacement_id != Some(object.asset_id.as_str()))
     {
-        resolved_cells = add_voxel_object_cells(resolved_cells, object)?;
+        object_count = checked_aggregate_add(object_count, 1)?;
+        (frame_count, resolved_cells) =
+            add_voxel_object_resources(frame_count, resolved_cells, object)?;
     }
     if let Some(replacement) = replacement {
-        resolved_cells = add_voxel_object_cells(resolved_cells, replacement)?;
+        object_count = checked_aggregate_add(object_count, 1)?;
+        (frame_count, resolved_cells) =
+            add_voxel_object_resources(frame_count, resolved_cells, replacement)?;
     }
-    if resolved_cells > MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS {
+    let instance_count =
+        document
+            .scenes
+            .iter()
+            .try_fold(u64::from(replacement.is_some()), |count, scene| {
+                checked_aggregate_add(
+                    count,
+                    u64::try_from(scene.voxel_object_instances.len()).unwrap_or(u64::MAX),
+                )
+            })?;
+    let mesh_face_work = resolved_cells.checked_mul(6).ok_or_else(|| {
+        aggregate_limit_failure("voxel-object mesh-face work estimate overflowed")
+    })?;
+    let object_path = if replacement.is_some() {
+        "voxelObjectCandidate"
+    } else {
+        "assets"
+    };
+    let instance_path = if replacement.is_some() {
+        "voxelObjectCandidate"
+    } else {
+        "scenes"
+    };
+
+    let exceeded = [
+        (
+            "objects",
+            object_count,
+            MAX_PROJECT_VOXEL_OBJECTS,
+            object_path,
+        ),
+        (
+            "frames",
+            frame_count,
+            MAX_PROJECT_VOXEL_OBJECT_FRAMES,
+            object_path,
+        ),
+        (
+            "resolved cells",
+            resolved_cells,
+            MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS,
+            object_path,
+        ),
+        (
+            "worst-case mesh faces",
+            mesh_face_work,
+            MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK,
+            object_path,
+        ),
+        (
+            "instances",
+            instance_count,
+            MAX_PROJECT_VOXEL_OBJECT_INSTANCES,
+            instance_path,
+        ),
+    ]
+    .into_iter()
+    .find(|(_, count, limit, _)| count > limit);
+    if let Some((resource, count, limit, path)) = exceeded {
         return Err(failure(
             diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT,
-            if replacement.is_some() {
-                "voxelObjectCandidate"
-            } else {
-                "assets"
-            },
-            format!(
-                "voxel-object frames resolve {resolved_cells} aggregate cells; project limit is {MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS}"
-            ),
+            path,
+            format!("voxel-object project resolves {count} {resource}; aggregate limit is {limit}"),
         ));
     }
     Ok(())
 }
 
-fn add_voxel_object_cells(
+fn add_voxel_object_resources(
+    mut frame_count: u64,
     mut total: u64,
     object: &VoxelObjectAsset,
-) -> Result<u64, StoredProjectError> {
+) -> Result<(u64, u64), StoredProjectError> {
+    frame_count = checked_aggregate_add(frame_count, 1)?;
     total = add_voxel_frame_cells(total, &object.default_frame)?;
     for clip in &object.clips {
         for frame in &clip.frames {
+            frame_count = checked_aggregate_add(frame_count, 1)?;
             total = add_voxel_frame_cells(total, &frame.frame)?;
         }
     }
-    Ok(total)
+    Ok((frame_count, total))
 }
 
 fn add_voxel_frame_cells(
@@ -1185,14 +1251,22 @@ fn add_voxel_frame_cells(
         .sparse_runs
         .iter()
         .try_fold(total, |total, run| {
-            total.checked_add(u64::from(run.length)).ok_or_else(|| {
-                failure(
-                    diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT,
-                    "assets",
-                    "voxel-object aggregate cell count overflowed",
-                )
-            })
+            checked_aggregate_add(total, u64::from(run.length))
         })
+}
+
+fn checked_aggregate_add(total: u64, increment: u64) -> Result<u64, StoredProjectError> {
+    total
+        .checked_add(increment)
+        .ok_or_else(|| aggregate_limit_failure("voxel-object aggregate resource count overflowed"))
+}
+
+fn aggregate_limit_failure(message: impl Into<String>) -> StoredProjectError {
+    failure(
+        diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT,
+        "assets",
+        message,
+    )
 }
 
 fn validate_stored_import(
