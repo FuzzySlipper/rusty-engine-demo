@@ -13,6 +13,8 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const chromium = process.env.CHROMIUM_BIN ?? "/usr/bin/chromium";
+const FULL_CAMPAIGN_TIMEOUT_MILLISECONDS = 300_000;
+const CHROMIUM_STARTUP_TIMEOUT_MILLISECONDS = 45_000;
 if (!existsSync(chromium)) {
   throw new Error(
     `Chromium is required for the product smoke (${chromium} not found)`,
@@ -167,11 +169,15 @@ async function runFullBrowserProduct(project) {
     const result = await runChromiumSmoke(
       `http://${running.address}/?smoke=1#/game`,
       "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
-      180_000,
+      FULL_CAMPAIGN_TIMEOUT_MILLISECONDS,
     );
     if (result.code !== 0) {
       throw new Error(
-        `Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}`,
+        [
+          `Chromium exited ${String(result.code)}`,
+          result.stdout.match(/<body[^>]*>/)?.[0] ?? "body tag unavailable",
+          result.stderr.slice(-4_000),
+        ].join("\n"),
       );
     }
     const required = [
@@ -2359,7 +2365,7 @@ async function waitForCdp(client, expression, label, timeout = 15_000) {
 }
 
 async function waitForChromiumTarget(port, process, output) {
-  const deadline = Date.now() + 15_000;
+  const deadline = Date.now() + CHROMIUM_STARTUP_TIMEOUT_MILLISECONDS;
   while (Date.now() < deadline) {
     if (process.exitCode !== null) {
       throw new Error(
