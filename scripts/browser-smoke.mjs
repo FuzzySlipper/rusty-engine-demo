@@ -460,7 +460,7 @@ async function runFullBrowserProduct(project) {
       label: "narrow",
     });
     await runDeadDialogFocusProof(project);
-    await runCampaignSaveReconnectProof(project);
+    await runCampaignSaveReconnectProof(project, running);
     await runHostReplacementContinueProof(project);
     const startup = running.output();
     for (const marker of [
@@ -481,137 +481,107 @@ async function runFullBrowserProduct(project) {
   }
 }
 
-async function runCampaignSaveReconnectProof(project) {
-  const saveRoot = resolve(proofDirectory, "campaign-save-slots");
+async function runCampaignSaveReconnectProof(project, completedHost) {
+  const saveRoot = resolve(proofDirectory, "save-slots");
+  const completed = await waitForHostState(
+    completedHost.address,
+    (state) =>
+      state.levelComplete === true &&
+      state.saveSlots?.some(
+        (slot) =>
+          slot.slot === "slot3" &&
+          slot.compatibility === "available" &&
+          slot.metadata?.levelComplete === true,
+      ) === true,
+    "completed cold-root campaign before fresh host",
+  );
   const running = await launchHost(project, undefined, saveRoot);
-  let firstHostStopped = false;
   try {
     await waitForHealth(
       `http://${running.address}/health`,
       running.host,
       running.output,
     );
-    const result = await runChromiumSmoke(
-      `http://${running.address}/?smoke=1#/game`,
-      "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
-      180_000,
-    );
-    if (
-      result.code !== 0 ||
-      !result.stdout.includes('data-progression-route="pass"') ||
-      !result.stdout.includes('data-completed-save="pass"')
-    ) {
-      throw new Error(
-        `campaign save proof failed\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-8_000)}`,
-      );
-    }
-    const completed = await waitForHostState(
+    const fresh = await waitForHostState(
       running.address,
       (state) =>
-        state.levelComplete === true &&
+        state.hostSessionId !== completed.hostSessionId &&
+        state.levelComplete === false &&
         state.saveSlots?.some(
           (slot) =>
             slot.slot === "slot3" &&
             slot.compatibility === "available" &&
             slot.metadata?.levelComplete === true,
         ) === true,
-      "completed campaign before fresh host",
+      "fresh host with compatible campaign save",
     );
-    await stopHost(running.host);
-    firstHostStopped = true;
-
-    const reopened = await launchHost(project, undefined, saveRoot);
-    try {
-      await waitForHealth(
-        `http://${reopened.address}/health`,
-        reopened.host,
-        reopened.output,
-      );
-      const fresh = await waitForHostState(
-        reopened.address,
-        (state) =>
-          state.hostSessionId !== completed.hostSessionId &&
-          state.levelComplete === false &&
-          state.saveSlots?.some(
-            (slot) =>
-              slot.slot === "slot3" &&
-              slot.compatibility === "available" &&
-              slot.metadata?.levelComplete === true,
-          ) === true,
-        "fresh host with compatible campaign save",
-      );
-      if (
-        fresh.player.position.join(",") === completed.player.position.join(",")
-      ) {
-        throw new Error("fresh host started from saved runtime before load");
-      }
-      const restore = await runChromiumSmoke(
-        `http://${reopened.address}/#/`,
-        "document.body?.dataset.completedSaveRestore === 'pass' || document.body?.dataset.completedSaveRestore === 'fail'",
-        30_000,
-        {
-          viewport: { width: 1440, height: 900 },
-          interactiveSetup: async (client) => {
-            await waitForCdp(
-              client,
-              `document.querySelector("red-main-menu") !== null`,
-              "fresh-host campaign main menu",
-            );
-            await waitForCdp(
-              client,
-              `(() => {
-                const button = [...document.querySelectorAll("button")].find(
-                  (candidate) => candidate.textContent?.trim() === "Continue",
-                );
-                return button?.disabled === false &&
-                  document.querySelector(".availability")?.textContent?.includes(
-                    "Rust-owned storage",
-                  ) === true;
-              })()`,
-              "persisted campaign Continue availability",
-            );
-            await client.send("Runtime.evaluate", {
-              expression: `[...document.querySelectorAll("button")].find(
-                (button) => button.textContent?.trim() === "Continue",
-              )?.click()`,
-            });
-            await waitForHostState(
-              reopened.address,
-              (state) =>
-                state.levelComplete === true &&
-                state.levelExits?.some(
-                  (exit) => exit.id === 32 && exit.state === "completed",
-                ) === true &&
-                state.player.position.join(",") ===
-                  completed.player.position.join(","),
-              "completed campaign save restoration",
-            );
-            await waitForCdp(
-              client,
-              `document.querySelector(".game-state-overlay")?.textContent?.includes("LOADING BAY COMPLETE") === true`,
-              "restored campaign completion dialog",
-            );
-            await client.send("Runtime.evaluate", {
-              expression: `document.body.dataset.completedSaveRestore = "pass"`,
-            });
-          },
+    if (
+      fresh.player.position.join(",") === completed.player.position.join(",")
+    ) {
+      throw new Error("fresh host started from saved runtime before load");
+    }
+    const restore = await runChromiumSmoke(
+      `http://${running.address}/#/`,
+      "document.body?.dataset.completedSaveRestore === 'pass' || document.body?.dataset.completedSaveRestore === 'fail'",
+      30_000,
+      {
+        viewport: { width: 1440, height: 900 },
+        interactiveSetup: async (client) => {
+          await waitForCdp(
+            client,
+            `document.querySelector("red-main-menu") !== null`,
+            "fresh-host campaign main menu",
+          );
+          await waitForCdp(
+            client,
+            `(() => {
+              const button = [...document.querySelectorAll("button")].find(
+                (candidate) => candidate.textContent?.trim() === "Continue",
+              );
+              return button?.disabled === false &&
+                document.querySelector(".availability")?.textContent?.includes(
+                  "Rust-owned storage",
+                ) === true;
+            })()`,
+            "persisted campaign Continue availability",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `[...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "Continue",
+            )?.click()`,
+          });
+          await waitForHostState(
+            running.address,
+            (state) =>
+              state.levelComplete === true &&
+              state.levelExits?.some(
+                (exit) => exit.id === 32 && exit.state === "completed",
+              ) === true &&
+              state.player.position.join(",") ===
+                completed.player.position.join(","),
+            "completed campaign save restoration",
+          );
+          await waitForCdp(
+            client,
+            `document.querySelector(".game-state-overlay")?.textContent?.includes("LOADING BAY COMPLETE") === true`,
+            "restored campaign completion dialog",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `document.body.dataset.completedSaveRestore = "pass"`,
+          });
         },
+      },
+    );
+    if (
+      restore.code !== 0 ||
+      !restore.stdout.includes('data-completed-save-restore="pass"')
+    ) {
+      throw new Error(
+        `fresh-process campaign restore failed\n${restore.stderr.slice(-4_000)}\n${restore.stdout.slice(-8_000)}`,
       );
-      if (
-        restore.code !== 0 ||
-        !restore.stdout.includes('data-completed-save-restore="pass"')
-      ) {
-        throw new Error(
-          `fresh-process campaign restore failed\n${restore.stderr.slice(-4_000)}\n${restore.stdout.slice(-8_000)}`,
-        );
-      }
-    } finally {
-      await stopHost(reopened.host);
     }
   } finally {
-    if (!firstHostStopped) {
-      await stopHost(running.host);
-    }
+    await stopHost(running.host);
   }
 }
 
