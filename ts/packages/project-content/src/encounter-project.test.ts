@@ -405,6 +405,14 @@ test("loading bay route composes encounters, upgrades, key loop, secret, and exi
     byId(ENCOUNTER_IDS.secretRegion)?.translation,
     [3.5, 1.5, 24.5],
   );
+  assert.deepEqual(byId(ENCOUNTER_IDS.generatorMelee)?.enemyCombat?.attack, {
+    kind: "melee",
+    damage: 8,
+    range: 1.25,
+    cooldownTicks: 120,
+    originOffset: [0, 0, 0],
+    presentation: "sentry-strike",
+  });
   assert.deepEqual(
     byId(ENCOUNTER_IDS.levelExit)?.translation,
     [21.5, 1.5, 50.5],
@@ -444,6 +452,53 @@ test("relay annex is a distinct content-only composition with settled demo meani
   assert.deepEqual(player?.translation, [6.5, 1.5, 3.5]);
   assert.deepEqual(beacon?.translation, [18.5, 1.5, 46.5]);
   assert.deepEqual(beacon?.extractionBeacon, { activationRadius: 4 });
+});
+
+test("settled items, weapon tuning, enemy tuning, and layout remain content-local", () => {
+  const loadingBay = loadingBayStoredProject();
+  const relayAnnex = relayAnnexStoredProject();
+  const loadingBayScene = loadingBay.scenes[0];
+  const relayAnnexScene = relayAnnex.scenes[0];
+  assert.ok(loadingBayScene);
+  assert.ok(relayAnnexScene);
+
+  const definition = (project: typeof loadingBay, id: string) =>
+    project.itemDefinitions.find((candidate) => candidate.id === id);
+  const entity = (scene: typeof loadingBayScene, id: number) =>
+    scene.entities.find((candidate) => candidate.id === id);
+
+  assert.deepEqual(
+    definition(loadingBay, LOADING_BAY_ITEM_IDS.inertInspectionTag),
+    definition(relayAnnex, LOADING_BAY_ITEM_IDS.inertInspectionTag),
+  );
+  assert.equal(
+    definition(loadingBay, LOADING_BAY_ITEM_IDS.arcPistol)?.kind.kind,
+    "weapon",
+  );
+  assert.equal(
+    definition(relayAnnex, LOADING_BAY_ITEM_IDS.arcPistol)?.kind.kind,
+    "weapon",
+  );
+  assert.notDeepEqual(
+    definition(loadingBay, LOADING_BAY_ITEM_IDS.arcPistol),
+    definition(relayAnnex, LOADING_BAY_ITEM_IDS.arcPistol),
+  );
+  assert.deepEqual(entity(loadingBayScene, ENCOUNTER_IDS.firstEnemy)?.health, {
+    max: 100,
+    hitboxHalfExtents: [0.55, 0.9, 0.55],
+  });
+  assert.deepEqual(entity(relayAnnexScene, ENCOUNTER_IDS.firstEnemy)?.health, {
+    max: 80,
+    hitboxHalfExtents: [0.55, 0.9, 0.55],
+  });
+  assert.notDeepEqual(
+    loadingBayScene.voxelEnvironment,
+    relayAnnexScene.voxelEnvironment,
+  );
+  assert.notDeepEqual(
+    entity(loadingBayScene, ENCOUNTER_IDS.actor)?.translation,
+    entity(relayAnnexScene, ENCOUNTER_IDS.actor)?.translation,
+  );
 });
 
 test("relay annex authoring materializes its checked project artifact", () => {

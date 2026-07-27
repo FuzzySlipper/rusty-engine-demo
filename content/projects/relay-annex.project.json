@@ -31873,9 +31873,9 @@
             "hearingRange": 2.5,
             "attack": {
               "kind": "melee",
-              "damage": 12,
+              "damage": 8,
               "range": 1.25,
-              "cooldownTicks": 45,
+              "cooldownTicks": 120,
               "originOffset": [
                 0,
                 0,
@@ -32662,9 +32662,9 @@
             "hearingRange": 2.5,
             "attack": {
               "kind": "melee",
-              "damage": 12,
+              "damage": 8,
               "range": 1.25,
-              "cooldownTicks": 45,
+              "cooldownTicks": 120,
               "originOffset": [
                 0,
                 0,
@@ -32823,9 +32823,9 @@
             "hearingRange": 2.5,
             "attack": {
               "kind": "melee",
-              "damage": 12,
+              "damage": 8,
               "range": 1.25,
-              "cooldownTicks": 45,
+              "cooldownTicks": 120,
               "originOffset": [
                 0,
                 0,
@@ -32965,9 +32965,9 @@
             "hearingRange": 2.5,
             "attack": {
               "kind": "melee",
-              "damage": 12,
+              "damage": 8,
               "range": 1.25,
-              "cooldownTicks": 45,
+              "cooldownTicks": 120,
               "originOffset": [
                 0,
                 0,

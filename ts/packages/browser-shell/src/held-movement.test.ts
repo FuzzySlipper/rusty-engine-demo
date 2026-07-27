@@ -137,3 +137,39 @@ test("transitions coalesce behind one in-flight dispatch and still deliver keyup
     { kind: "move", forward: 0, right: 0 },
   ]);
 });
+
+test("a delayed transport burst stays bounded and settles the latest held state", async () => {
+  const scheduler = new ManualScheduler();
+  const actions: ResolvedMovementAction[] = [];
+  let releaseDispatch = (): void => {
+    throw new Error("first dispatch was not pending");
+  };
+  const input = new HeldMovementInput({
+    bindings: () => bindings,
+    intervalMilliseconds: () => 16,
+    dispatch: async (action) => {
+      actions.push(action);
+      if (actions.length === 1) {
+        await new Promise<void>((resolve) => {
+          releaseDispatch = resolve;
+        });
+      }
+    },
+    scheduler,
+  });
+
+  input.press("KeyW");
+  for (let tick = 0; tick < 1_000; tick += 1) {
+    scheduler.tick();
+  }
+  input.release("KeyW");
+  const settled = input.settled();
+  assert.deepEqual(actions, [{ kind: "move", forward: 1, right: 0 }]);
+
+  releaseDispatch();
+  await settled;
+  assert.deepEqual(actions, [
+    { kind: "move", forward: 1, right: 0 },
+    { kind: "move", forward: 0, right: 0 },
+  ]);
+});

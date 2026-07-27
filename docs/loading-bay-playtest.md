@@ -13,8 +13,8 @@ the inventory rather than from slow movement.
 
 | Artifact                                    | SHA-256                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------ |
-| `content/projects/loading-bay.project.json` | `98905a4a139137993e6172f153261d1e06d4ae77caa20ee405767010f0ea51d6` |
-| `content/projects/relay-annex.project.json` | `d98982841e9af7e53fdd16262d28c752e63d17be7fe3dbeed3ac3e1368a2f0c7` |
+| `content/projects/loading-bay.project.json` | `c5d74f5a99ccffd7a1ba6d85c73c1beab31d1ea4b76827ce982bc1cd22148d7a` |
+| `content/projects/relay-annex.project.json` | `a9af27efa9ffbff4bd4f692235397334e25ca2e95d4b0a735a2efd99e056bc69` |
 
 The Loading Bay artifact contains one scene, 3,931 material voxels, 47 entities, 15 retained asset
 identities, nine item definitions, eight enemies, three encounters, eight authored pickup caches,
@@ -27,6 +27,11 @@ Relay Annex changes the room arrangement, player start, initial enemy placement 
 navigation target/speed, and beacon radius through immutable authoring options. It uses the same
 Rust services, host loop, protocol, renderer, and browser shell; there is no variant-specific
 gameplay loop.
+
+Bay Rusher melee remains meaningful but leaves room for real delayed input: an accepted strike
+deals eight damage on a 120-tick cadence. The campaign proof uses the same bounded held-input path
+as physical keys and consumes authored med patches through Rust during a prolonged fight; it does
+not grant invulnerability, disable damage, or mutate vitality from the browser.
 
 ## Route checkpoints
 

@@ -46,6 +46,7 @@ export class HeldMovementInput {
   #intervalHandle: unknown = null;
   #dispatchPending = false;
   #dispatchAgain = false;
+  readonly #settledWaiters = new Set<() => void>();
 
   constructor(options: HeldMovementInputOptions) {
     this.#bindings = options.bindings;
@@ -99,6 +100,15 @@ export class HeldMovementInput {
     return resolveHeldMovementAction(this.#heldCodes, this.#bindings());
   }
 
+  settled(): Promise<void> {
+    if (!this.#dispatchPending) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      this.#settledWaiters.add(resolve);
+    });
+  }
+
   async #emitCurrentIntent(): Promise<void> {
     if (this.#dispatchPending) {
       this.#dispatchAgain = true;
@@ -112,6 +122,10 @@ export class HeldMovementInput {
       } while (this.#dispatchAgain);
     } finally {
       this.#dispatchPending = false;
+      for (const resolve of this.#settledWaiters) {
+        resolve();
+      }
+      this.#settledWaiters.clear();
     }
   }
 

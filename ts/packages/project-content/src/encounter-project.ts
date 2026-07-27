@@ -919,9 +919,9 @@ function enemyEntity(options: {
       attack: melee
         ? {
             kind: "melee",
-            damage: 12,
+            damage: 8,
             range: 1.25,
-            cooldownTicks: 45,
+            cooldownTicks: 120,
             originOffset: [0, 0, 0],
             presentation: "sentry-strike",
           }

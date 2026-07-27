@@ -2138,11 +2138,7 @@ async function launchHost(
 }
 
 async function stopHost(host) {
-  host.kill("SIGTERM");
-  await Promise.race([onceExit(host), delay(1_000)]);
-  if (host.exitCode === null) {
-    host.kill("SIGKILL");
-  }
+  await terminateProcess(host);
 }
 
 async function reservePort() {
@@ -2336,11 +2332,7 @@ async function runChromiumSmoke(
     };
   } finally {
     client?.close();
-    browser.kill("SIGTERM");
-    await Promise.race([onceExit(browser), delay(1_000)]);
-    if (browser.exitCode === null) {
-      browser.kill("SIGKILL");
-    }
+    await terminateProcess(browser);
     if (ownsProfile) {
       rmSync(profileDirectory, { recursive: true, force: true });
     }
@@ -2452,10 +2444,22 @@ function connectDevTools(url) {
 }
 
 function onceExit(process) {
-  if (process.exitCode !== null) {
+  if (process.exitCode !== null || process.signalCode !== null) {
     return Promise.resolve();
   }
   return new Promise((resolveExit) => process.once("exit", resolveExit));
+}
+
+async function terminateProcess(process) {
+  if (process.exitCode !== null || process.signalCode !== null) {
+    return;
+  }
+  process.kill("SIGTERM");
+  await Promise.race([onceExit(process), delay(1_000)]);
+  if (process.exitCode === null && process.signalCode === null) {
+    process.kill("SIGKILL");
+    await onceExit(process);
+  }
 }
 
 function delay(milliseconds) {

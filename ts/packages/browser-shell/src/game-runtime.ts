@@ -1185,6 +1185,7 @@ export async function mountLoadingBayGame(
       if (health !== undefined && health <= targetHealth) {
         return true;
       }
+      await useCampaignMedPatchIfNeeded();
       await aimAtEnemy(enemyId);
       await firePrimary();
     }
@@ -1665,41 +1666,42 @@ export async function mountLoadingBayGame(
       return true;
     }
     await turnPlayerToward(initialOffsetX, initialOffsetZ);
-    const action = resolveKeyboardAction(
-      current.player.bindings.moveForward,
-      current.player.bindings,
-    );
-    if (action?.kind !== "move") {
+    const moveForward = current.player.bindings.moveForward;
+    const action = resolveKeyboardAction(moveForward, current.player.bindings);
+    if (action?.kind !== "move" || !heldMovement.press(moveForward)) {
       throw new Error(
         "authored move-forward binding did not resolve to movement",
       );
     }
-    latestMovement = action;
-    for (let step = 0; step < maxSteps; step += 1) {
-      const offsetX = target[0] - current.player.position[0];
-      const offsetZ = target[1] - current.player.position[2];
-      if (Math.hypot(offsetX, offsetZ) <= 0.25) {
-        latestMovement = { kind: "move", forward: 0, right: 0 };
-        await performInputIntent([0, 0]);
-        return true;
+    let observedSteps = 0;
+    let observedPosition = current.player.position;
+    let lastProgressAt = performance.now();
+    try {
+      while (observedSteps < maxSteps) {
+        const offsetX = target[0] - current.player.position[0];
+        const offsetZ = target[1] - current.player.position[2];
+        if (Math.hypot(offsetX, offsetZ) <= 0.25) {
+          return true;
+        }
+        if (current.player.vitalityState === "dead") {
+          return false;
+        }
+        if (
+          vectorChanged(current.player.position, observedPosition, 0.000_001)
+        ) {
+          observedPosition = current.player.position;
+          observedSteps += 1;
+          lastProgressAt = performance.now();
+        } else if (performance.now() - lastProgressAt > 5_000) {
+          return false;
+        }
+        await delay(16);
       }
-      if (step > 0 && step % 8 === 0) {
-        latestMovement = { kind: "move", forward: 0, right: 0 };
-        await performInputIntent([0, 0]);
-        await turnPlayerToward(offsetX, offsetZ);
-        latestMovement = action;
-      }
-      const before = current.player.position;
-      await performInputIntent([0, 0]);
-      if (!vectorChanged(current.player.position, before, 0.000_001)) {
-        latestMovement = { kind: "move", forward: 0, right: 0 };
-        await performInputIntent([0, 0]);
-        return false;
-      }
+      return false;
+    } finally {
+      heldMovement.release(moveForward);
+      await heldMovement.settled();
     }
-    latestMovement = { kind: "move", forward: 0, right: 0 };
-    await performInputIntent([0, 0]);
-    return false;
   }
 
   async function turnPlayerToward(
