@@ -470,6 +470,9 @@ type ConnectionState =
                   "
                   (invertYChanged)="updateSetting('invertY', $event)"
                   (sfxVolumeChanged)="updateSetting('sfxVolume', $event)"
+                  (flashIntensityChanged)="
+                    updateSetting('flashIntensity', $event)
+                  "
                   (hudVisibleChanged)="updateSetting('hudVisible', $event)"
                   (telemetryVisibleChanged)="
                     updateSetting('telemetryVisible', $event)
@@ -1286,6 +1289,7 @@ function runtimePreferences(
     mouseSensitivity: settings.mouseSensitivity,
     invertY: settings.invertY,
     sfxVolume: settings.sfxVolume,
+    flashIntensity: settings.flashIntensity,
     telemetryVisible: settings.telemetryVisible,
   };
 }

@@ -7,6 +7,7 @@ export interface HostUserSettings {
   readonly mouseSensitivity: number;
   readonly invertY: boolean;
   readonly sfxVolume: number;
+  readonly flashIntensity: number;
   readonly hudVisible: boolean;
   readonly telemetryVisible: boolean;
 }
@@ -27,6 +28,7 @@ export const DEFAULT_HOST_USER_SETTINGS: HostUserSettings = {
   mouseSensitivity: 1,
   invertY: false,
   sfxVolume: 0.8,
+  flashIntensity: 0.8,
   hudVisible: true,
   telemetryVisible: false,
 };
@@ -62,6 +64,12 @@ export function normalizeHostUserSettings(value: unknown): HostUserSettings {
       0,
       1,
       DEFAULT_HOST_USER_SETTINGS.sfxVolume,
+    ),
+    flashIntensity: boundedNumber(
+      value.flashIntensity,
+      0,
+      1,
+      DEFAULT_HOST_USER_SETTINGS.flashIntensity,
     ),
     hudVisible: booleanOr(
       value.hudVisible,

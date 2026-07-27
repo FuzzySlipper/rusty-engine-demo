@@ -25,8 +25,8 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
     "blocked",
     "arc-pistol-attack",
     "arc-pistol-dry",
-    "damage",
-    "defeat",
+    "enemy-hurt",
+    "enemy-defeated",
     "open",
     "active",
     "pickup",
@@ -314,7 +314,7 @@ test("enemy perception attacks misses and damage stay typed disposable presentat
     "enemy-alert-sight",
     "sentry-pulse-attack",
     "enemy-miss-worldBlocked",
-    "damage",
+    "player-damage",
   ]);
   assert.deepEqual(projected.particleKinds, [
     "blocked",
@@ -322,7 +322,7 @@ test("enemy perception attacks misses and damage stay typed disposable presentat
     "blocked",
     "impact",
   ]);
-  assert.deepEqual(projected.billboardValues, ["ENEMY ALERT", "-4"]);
+  assert.deepEqual(projected.billboardValues, ["ENEMY ALERT", "PLAYER -4"]);
   assert.deepEqual(projected.soundKinds, ["beacon", "shot", "blocked", "hit"]);
 });
 
@@ -342,6 +342,66 @@ test("host-user effects volume scales disposable audio descriptors only", () => 
   );
   assert.deepEqual(quiet.particleKinds, full.particleKinds);
   assert.deepEqual(quiet.billboardValues, full.billboardValues);
+});
+
+test("player outcomes switches and checkpoints retain distinct typed feedback", () => {
+  const state = feedbackState();
+  const projected = new PresentationFeedbackAdapter().project({
+    ...state,
+    presentation: {
+      animationStates: [],
+      cues: [
+        { kind: "attackHit", attacker: 1, target: 4 },
+        { kind: "attackMissed", attacker: 1, reason: "worldBlocked" },
+        { kind: "switchActivated", entity: 12, actor: 1 },
+        { kind: "checkpoint", player: 1, action: "saved" },
+        { kind: "checkpoint", player: 1, action: "restored" },
+        { kind: "defeat", attacker: 4, entity: 1 },
+      ],
+    },
+  });
+
+  assert.deepEqual(projected.animationPulses, [
+    "attack-hit",
+    "attack-miss-worldBlocked",
+    "switch-activated",
+    "checkpoint-saved",
+    "checkpoint-restored",
+    "player-defeated",
+  ]);
+  assert.deepEqual(projected.billboardValues, [
+    "HIT",
+    "MISS",
+    "SWITCH ACTIVE",
+    "CHECKPOINT SAVED",
+    "CHECKPOINT RESTORED",
+    "PLAYER DOWN",
+  ]);
+});
+
+test("flash intensity scales disposable particles without suppressing readable billboards", () => {
+  const full = new PresentationFeedbackAdapter().project(feedbackState(), 1, 1);
+  const reduced = new PresentationFeedbackAdapter().project(
+    feedbackState(),
+    1,
+    0.25,
+  );
+  const disabled = new PresentationFeedbackAdapter().project(
+    feedbackState(),
+    1,
+    0,
+  );
+  const fullParticles = particleDescriptors(full.frame);
+  const reducedParticles = particleDescriptors(reduced.frame);
+  const disabledParticles = particleDescriptors(disabled.frame);
+
+  assert.equal(reducedParticles[0]?.sizeCurve[0]?.value, 0.175);
+  assert.equal(
+    reducedParticles[0]?.colorCurve[0]?.color[3],
+    (fullParticles[0]?.colorCurve[0]?.color[3] ?? 0) * 0.25,
+  );
+  assert.ok(disabledParticles.every((descriptor) => !descriptor.visible));
+  assert.deepEqual(disabled.billboardValues, full.billboardValues);
 });
 
 test("renderer telemetry uses the shared surface timing without a downstream clock", () => {
@@ -389,6 +449,16 @@ function audioVolumes(
   return frame.ops.flatMap((operation) =>
     operation.domain === "audio" && operation.op.op === "emit"
       ? [operation.op.descriptor.volume]
+      : [],
+  );
+}
+
+function particleDescriptors(
+  frame: ReturnType<PresentationFeedbackAdapter["project"]>["frame"],
+) {
+  return frame.ops.flatMap((operation) =>
+    operation.domain === "particle" && operation.op.op === "emit"
+      ? [operation.op.descriptor]
       : [],
   );
 }

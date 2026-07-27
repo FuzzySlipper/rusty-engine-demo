@@ -47,6 +47,7 @@ export interface LoadingBayHostPresentationPreferences {
   readonly mouseSensitivity: number;
   readonly invertY: boolean;
   readonly sfxVolume: number;
+  readonly flashIntensity: number;
   readonly telemetryVisible: boolean;
 }
 
@@ -245,6 +246,7 @@ export async function mountLoadingBayGame(
     viewmodel: new WeaponViewmodelAdapter(),
   });
   presentationFeedback.setAudioLevel(hostPreferences.sfxVolume);
+  presentationFeedback.setFlashIntensity(hostPreferences.flashIntensity);
   telemetryLayer.hidden = !hostPreferences.telemetryVisible;
   session.setStateListener(applySessionState);
   session.setFailureListener((error) => {
@@ -805,6 +807,7 @@ export async function mountLoadingBayGame(
   ): void {
     hostPreferences = normalizeHostPreferences(preferences);
     presentationFeedback.setAudioLevel(hostPreferences.sfxVolume);
+    presentationFeedback.setFlashIntensity(hostPreferences.flashIntensity);
     telemetryLayer.hidden = !hostPreferences.telemetryVisible;
   }
 
@@ -1405,6 +1408,39 @@ export async function mountLoadingBayGame(
       (await walkPlayerPath([[24.5, 27.5]])) &&
       (await damageEnemyTo(42, 0, 10));
     await useCampaignMedPatchIfNeeded();
+    const lockedDoorReached = await walkPlayerPath([
+      [23.5, 29.2],
+      [23.5, 31.5],
+      [15.5, 32.5],
+      [11.5, 28.5],
+      [11.5, 19.5],
+    ]);
+    if (lockedDoorReached) {
+      await enqueueInteraction(30);
+    }
+    await presentationFeedback.settled();
+    const lockedDoorDenied =
+      lockedDoorReached &&
+      current.doorAccess.some(
+        (door) => door.id === 30 && door.state === "closed",
+      ) &&
+      inventoryQuantity("key/maintenance-pass") === 0 &&
+      includesEvery(feedbackLayer.dataset.animationPulses, ["access-denied"]);
+    document.body.dataset.campaignLockedDoor = lockedDoorDenied
+      ? "pass"
+      : "fail";
+    if (
+      !lockedDoorDenied ||
+      !(await walkPlayerPath([
+        [11.5, 28.5],
+        [15.5, 32.5],
+        [23.5, 31.5],
+        [23.5, 29.2],
+        [24.5, 27.5],
+      ]))
+    ) {
+      return false;
+    }
     const generatorPickupsReached = await walkPlayerPath([
       [24.5, 28.5],
       [27.5, 28.5],
@@ -1559,6 +1595,30 @@ export async function mountLoadingBayGame(
     const finalDoorOpened =
       (current.projection.find((node) => node.id === 3)?.translation?.[1] ??
         0) > 4;
+    let dryFireInitialAmmo = -1;
+    let dryFireAttempts = 0;
+    if (
+      allEnemiesDefeated &&
+      finalDoorOpened &&
+      current.weapon.item !== "weapon/arc-pistol"
+    ) {
+      await enqueueWeaponSelection(0);
+    }
+    if (allEnemiesDefeated && finalDoorOpened) {
+      await aimAtEnemy(54);
+      dryFireInitialAmmo = current.weapon.ammoRemaining;
+      const dryFireAttemptBudget = Math.min(dryFireInitialAmmo * 4 + 8, 512);
+      for (
+        dryFireAttempts = 0;
+        current.weapon.ammoRemaining > 0 &&
+        dryFireAttempts < dryFireAttemptBudget;
+        dryFireAttempts += 1
+      ) {
+        await firePrimary();
+      }
+      await firePrimary();
+      await presentationFeedback.settled();
+    }
     const beaconReached =
       allEnemiesDefeated &&
       (await walkPlayerPath([
@@ -1588,6 +1648,33 @@ export async function mountLoadingBayGame(
           exit.state === "completed" &&
           exit.completedBy === current.player.id,
       );
+    if (levelCompleted) {
+      await performSaveGame("checkpoint", false, null);
+      await presentationFeedback.settled();
+    }
+    const checkpointSaved =
+      current.saveSlots.some(
+        (slot) =>
+          slot.slot === "checkpoint" &&
+          slot.compatibility === "available" &&
+          slot.metadata?.levelComplete === true,
+      ) &&
+      includesEvery(feedbackLayer.dataset.animationPulses, [
+        "checkpoint-saved",
+      ]);
+    const terminalWeaponFeedback =
+      includesEvery(feedbackLayer.dataset.animationPulses, [
+        "attack-hit",
+        "arc-pistol-dry",
+      ]) &&
+      (feedbackLayer.dataset.animationPulses ?? "").includes("attack-miss-");
+    document.body.dataset.campaignWeaponEvidence = [
+      dryFireInitialAmmo,
+      dryFireAttempts,
+      current.weapon.ammoRemaining,
+      terminalWeaponFeedback,
+      feedbackLayer.dataset.animationPulses ?? "",
+    ].join(":");
     const materializedDrops = current.pickups.filter(
       (pickup) => pickup.id >= 33 && pickup.state !== "dormant",
     ).length;
@@ -1603,7 +1690,14 @@ export async function mountLoadingBayGame(
       includesEvery(feedbackLayer.dataset.animationPulses, [
         "pickup",
         "encounter-activated",
-        "defeat",
+        "attack-hit",
+        "enemy-hurt",
+        "enemy-defeated",
+        "player-damage",
+        "access-denied",
+        "switch-activated",
+        "checkpoint-saved",
+        "arc-pistol-dry",
         "drop-materialized",
         "open",
         "active",
@@ -1643,6 +1737,9 @@ export async function mountLoadingBayGame(
       materializedDrops,
       spreadObserved,
       automaticObserved,
+      lockedDoorDenied,
+      checkpointSaved,
+      terminalWeaponFeedback,
     ].join(":");
     return (
       authoredBaseline &&
@@ -1669,6 +1766,9 @@ export async function mountLoadingBayGame(
       beaconActivated &&
       levelCompleted &&
       materializedDrops === enemyIds.length &&
+      lockedDoorDenied &&
+      checkpointSaved &&
+      terminalWeaponFeedback &&
       routePresentation
     );
   }
@@ -1924,6 +2024,7 @@ export async function mountLoadingBayGame(
       ),
       invertY: preferences?.invertY ?? false,
       sfxVolume: boundedPreference(preferences?.sfxVolume, 0, 1, 1),
+      flashIntensity: boundedPreference(preferences?.flashIntensity, 0, 1, 1),
       telemetryVisible: preferences?.telemetryVisible ?? true,
     };
   }

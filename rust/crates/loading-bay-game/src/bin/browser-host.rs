@@ -254,7 +254,14 @@ impl BrowserRuntime {
         );
         self.save_slots = self.save_store.inspect_all(&self.save_identity);
         match result {
-            Ok(_) => self.push_session_fact("GameSaved", Some(sequence)),
+            Ok(_) => self.push_session_fact(
+                if slot == SaveSlotId::Checkpoint {
+                    "CheckpointSaved"
+                } else {
+                    "GameSaved"
+                },
+                Some(sequence),
+            ),
             Err(error) => {
                 eprintln!("browser-host save {} failed: {error}", slot.display_name());
                 self.push_session_fact(save_error_fact_name(&error), Some(sequence));

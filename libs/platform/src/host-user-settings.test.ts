@@ -16,6 +16,7 @@ test("host-user settings clamp numeric input and default malformed fields", () =
       mouseSensitivity: 99,
       invertY: true,
       sfxVolume: -4,
+      flashIntensity: 9,
       hudVisible: "yes",
       telemetryVisible: true,
     }),
@@ -23,6 +24,7 @@ test("host-user settings clamp numeric input and default malformed fields", () =
       mouseSensitivity: 2,
       invertY: true,
       sfxVolume: 0,
+      flashIntensity: 1,
       hudVisible: true,
       telemetryVisible: true,
     },
@@ -44,6 +46,7 @@ test("host-user repository persists presentation preferences and session availab
     mouseSensitivity: 1.5,
     invertY: true,
     sfxVolume: 0.4,
+    flashIntensity: 0.25,
     hudVisible: false,
     telemetryVisible: true,
   });
@@ -75,7 +78,5 @@ test("host-user repository fails safe when host storage is unavailable", () => {
       invertY: true,
     }),
   );
-  assert.doesNotThrow(() =>
-    repository.markContinueSessionAvailable("host-a"),
-  );
+  assert.doesNotThrow(() => repository.markContinueSessionAvailable("host-a"));
 });

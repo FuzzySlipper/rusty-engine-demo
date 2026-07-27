@@ -55,6 +55,14 @@ enum BrowserFeedbackCue {
         weapon: String,
         presentation: String,
     },
+    AttackHit {
+        attacker: u64,
+        target: u64,
+    },
+    AttackMissed {
+        attacker: u64,
+        reason: &'static str,
+    },
     Damage {
         attacker: u64,
         target: u64,
@@ -97,6 +105,14 @@ enum BrowserFeedbackCue {
     DoorChanged {
         entity: u64,
         state: &'static str,
+    },
+    SwitchActivated {
+        entity: u64,
+        actor: u64,
+    },
+    Checkpoint {
+        player: u64,
+        action: &'static str,
     },
     ExtractionBeaconActivated {
         entity: u64,
@@ -202,10 +218,32 @@ impl BrowserFeedbackProjection {
                         position: drop.position.to_array(),
                     });
                 }
-                CombatFact::Inventory(_)
-                | CombatFact::Vitality(_)
-                | CombatFact::AttackHit { .. }
-                | CombatFact::AttackMissed { .. } => {}
+                CombatFact::AttackHit {
+                    attacker, target, ..
+                } => {
+                    let cue = BrowserFeedbackCue::AttackHit {
+                        attacker: attacker.raw(),
+                        target: target.raw(),
+                    };
+                    if !self.cues.contains(&cue) {
+                        self.cues.push(cue);
+                    }
+                }
+                CombatFact::AttackMissed {
+                    attacker, reason, ..
+                } => {
+                    let cue = BrowserFeedbackCue::AttackMissed {
+                        attacker: attacker.raw(),
+                        reason: match reason {
+                            loading_bay_game::CombatMissReason::NoTarget => "noTarget",
+                            loading_bay_game::CombatMissReason::WorldBlocked => "worldBlocked",
+                        },
+                    };
+                    if !self.cues.contains(&cue) {
+                        self.cues.push(cue);
+                    }
+                }
+                CombatFact::Inventory(_) | CombatFact::Vitality(_) => {}
             }
         }
     }
@@ -316,8 +354,32 @@ impl BrowserFeedbackProjection {
                         player: player.raw(),
                     });
                 }
-                GameEvent::SwitchActivated { .. } | GameEvent::EncounterCleared { .. } => {}
+                GameEvent::SwitchActivated { switch, actor } => {
+                    self.cues.push(BrowserFeedbackCue::SwitchActivated {
+                        entity: switch.raw(),
+                        actor: actor.raw(),
+                    });
+                }
+                GameEvent::EncounterCleared { .. } => {}
             }
+        }
+    }
+
+    pub(super) fn extend_session_facts(
+        &mut self,
+        facts: &[(String, Option<u64>)],
+        player: EntityId,
+    ) {
+        for (kind, _) in facts {
+            let action = match kind.as_str() {
+                "CheckpointSaved" => "saved",
+                "CheckpointRestored" => "restored",
+                _ => continue,
+            };
+            self.cues.push(BrowserFeedbackCue::Checkpoint {
+                player: player.raw(),
+                action,
+            });
         }
     }
 
@@ -676,6 +738,83 @@ mod tests {
                 amount: 15,
                 remaining: 85,
             }]
+        );
+    }
+
+    #[test]
+    fn player_outcomes_switches_and_checkpoints_remain_response_local_cues() {
+        let player = EntityId::new(1);
+        let enemy = EntityId::new(4);
+        let switch = EntityId::new(12);
+        let mut projection = BrowserFeedbackProjection::default();
+
+        projection.extend_combat(&[
+            CombatFact::AttackHit {
+                attacker: player,
+                target: enemy,
+                ray_index: 0,
+                direction: Vec3::new(0.0, 0.0, -1.0),
+                distance: 3.0,
+                damage: 60,
+            },
+            CombatFact::AttackHit {
+                attacker: player,
+                target: enemy,
+                ray_index: 1,
+                direction: Vec3::new(0.1, 0.0, -0.9),
+                distance: 3.0,
+                damage: 60,
+            },
+            CombatFact::AttackMissed {
+                attacker: player,
+                ray_index: 2,
+                direction: Vec3::new(0.0, 0.0, -1.0),
+                reason: loading_bay_game::CombatMissReason::WorldBlocked,
+            },
+            CombatFact::AttackMissed {
+                attacker: player,
+                ray_index: 3,
+                direction: Vec3::new(0.0, 0.0, -1.0),
+                reason: loading_bay_game::CombatMissReason::WorldBlocked,
+            },
+        ]);
+        projection.extend_events(&[GameEvent::SwitchActivated {
+            switch,
+            actor: player,
+        }]);
+        projection.extend_session_facts(
+            &[
+                ("CheckpointSaved".to_owned(), Some(8)),
+                ("GameSaved".to_owned(), Some(9)),
+                ("CheckpointRestored".to_owned(), Some(10)),
+            ],
+            player,
+        );
+
+        assert_eq!(
+            projection.cues,
+            [
+                BrowserFeedbackCue::AttackHit {
+                    attacker: 1,
+                    target: 4,
+                },
+                BrowserFeedbackCue::AttackMissed {
+                    attacker: 1,
+                    reason: "worldBlocked",
+                },
+                BrowserFeedbackCue::SwitchActivated {
+                    entity: 12,
+                    actor: 1,
+                },
+                BrowserFeedbackCue::Checkpoint {
+                    player: 1,
+                    action: "saved",
+                },
+                BrowserFeedbackCue::Checkpoint {
+                    player: 1,
+                    action: "restored",
+                },
+            ]
         );
     }
 }

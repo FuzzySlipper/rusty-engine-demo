@@ -31,6 +31,7 @@ import {
           (sensitivityChanged)="update('mouseSensitivity', $event)"
           (invertYChanged)="update('invertY', $event)"
           (sfxVolumeChanged)="update('sfxVolume', $event)"
+          (flashIntensityChanged)="update('flashIntensity', $event)"
           (hudVisibleChanged)="update('hudVisible', $event)"
           (telemetryVisibleChanged)="update('telemetryVisible', $event)"
         />

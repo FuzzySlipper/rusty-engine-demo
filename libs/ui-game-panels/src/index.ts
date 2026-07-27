@@ -302,6 +302,7 @@ export interface HostSettingsView {
   readonly mouseSensitivity: number;
   readonly invertY: boolean;
   readonly sfxVolume: number;
+  readonly flashIntensity: number;
   readonly hudVisible: boolean;
   readonly telemetryVisible: boolean;
 }
@@ -427,6 +428,19 @@ export interface KeyBindingView {
         />
         <output>{{ (settings().sfxVolume * 100).toFixed(0) }}%</output>
       </label>
+      <label>
+        <span>Flash intensity</span>
+        <input
+          #flashIntensity
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          [value]="settings().flashIntensity"
+          (input)="flashIntensityChanged.emit(flashIntensity.valueAsNumber)"
+        />
+        <output>{{ (settings().flashIntensity * 100).toFixed(0) }}%</output>
+      </label>
       <label class="toggle">
         <span>Show game HUD</span>
         <input
@@ -474,6 +488,7 @@ export class SettingsPanelComponent {
   readonly sensitivityChanged = output<number>();
   readonly invertYChanged = output<boolean>();
   readonly sfxVolumeChanged = output<number>();
+  readonly flashIntensityChanged = output<number>();
   readonly hudVisibleChanged = output<boolean>();
   readonly telemetryVisibleChanged = output<boolean>();
 }

@@ -121,6 +121,7 @@ export class PresentationFeedbackAdapter {
   project(
     state: RuntimeBrowserState,
     audioLevel = 1,
+    flashIntensity = 1,
   ): ProjectedPresentationFeedback {
     this.#generation += 1;
     const operations: PresentationOp[] = [];
@@ -137,7 +138,7 @@ export class PresentationFeedbackAdapter {
 
     state.presentation.cues.forEach((cue, index) => {
       const anchor = cueAnchor(state, cue);
-      const feedback = cueFeedback(cue);
+      const feedback = cueFeedback(state, cue);
       const signalStem = [
         "loading-bay",
         String(this.#generation),
@@ -155,6 +156,7 @@ export class PresentationFeedbackAdapter {
           feedback.particle,
           anchor,
           state.tick + this.#generation + index,
+          flashIntensity,
         ),
       );
       operations.push(
@@ -232,6 +234,7 @@ export class BrowserPresentationFeedback {
   #soundAttempts = 0;
   #scheduledSounds = 0;
   #audioLevel = 1;
+  #flashIntensity = 1;
   #viewmodelImpulseGeneration = 0;
   #disposed = false;
 
@@ -271,6 +274,13 @@ export class BrowserPresentationFeedback {
       ? Math.min(1, Math.max(0, level))
       : 1;
     this.#audioStatus.dataset.volume = this.#audioLevel.toFixed(2);
+  }
+
+  setFlashIntensity(level: number): void {
+    this.#flashIntensity = Number.isFinite(level)
+      ? Math.min(1, Math.max(0, level))
+      : 1;
+    this.#layer.dataset.flashIntensity = this.#flashIntensity.toFixed(2);
   }
 
   apply(
@@ -320,7 +330,7 @@ export class BrowserPresentationFeedback {
       await this.#resetTransient();
     }
     const viewmodel = this.#applyViewmodel(
-      this.#viewmodel.project(state, reset),
+      this.#viewmodel.project(state, reset, this.#flashIntensity),
     );
     const impulse = state.presentation.cues.some(
       (cue) =>
@@ -330,7 +340,11 @@ export class BrowserPresentationFeedback {
     if (viewmodel.failedOperations === 0 && impulse) {
       this.#scheduleViewmodelImpulseClear();
     }
-    const projected = this.#adapter.project(state, this.#audioLevel);
+    const projected = this.#adapter.project(
+      state,
+      this.#audioLevel,
+      this.#flashIntensity,
+    );
     projected.animationStates.forEach((animation) =>
       this.#setAnimationState(animation),
     );
@@ -773,7 +787,10 @@ export class BrowserPresentationFeedback {
   }
 }
 
-function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
+function cueFeedback(
+  state: RuntimeBrowserState,
+  cue: RuntimeFeedbackCue,
+): CueFeedback {
   switch (cue.kind) {
     case "movement":
       return { particle: "movement", pulse: "movement", sound: "step" };
@@ -797,13 +814,40 @@ function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
         sound: "dryFire",
         billboard: { text: "EMPTY", tone: "warning" },
       };
-    case "damage":
+    case "attackHit":
       return {
         particle: "impact",
-        pulse: "damage",
+        pulse: "attack-hit",
         sound: "hit",
-        billboard: { text: `-${String(cue.amount)}`, tone: "warning" },
+        billboard: { text: "HIT", tone: "success" },
       };
+    case "attackMissed":
+      return {
+        particle: "blocked",
+        pulse: `attack-miss-${cue.reason}`,
+        sound: "blocked",
+        billboard: { text: "MISS", tone: "neutral" },
+      };
+    case "damage":
+      return cue.target === state.player.id
+        ? {
+            particle: "impact",
+            pulse: "player-damage",
+            sound: "hit",
+            billboard: {
+              text: `PLAYER -${String(cue.amount)}`,
+              tone: "warning",
+            },
+          }
+        : {
+            particle: "impact",
+            pulse: "enemy-hurt",
+            sound: "hit",
+            billboard: {
+              text: `-${String(cue.amount)}`,
+              tone: "warning",
+            },
+          };
     case "enemyAlert":
       return {
         particle: "blocked",
@@ -824,12 +868,19 @@ function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
         sound: "blocked",
       };
     case "defeat":
-      return {
-        particle: "defeat",
-        pulse: "defeat",
-        sound: "defeat",
-        billboard: { text: "DEFEATED", tone: "neutral" },
-      };
+      return cue.entity === state.player.id
+        ? {
+            particle: "defeat",
+            pulse: "player-defeated",
+            sound: "defeat",
+            billboard: { text: "PLAYER DOWN", tone: "warning" },
+          }
+        : {
+            particle: "defeat",
+            pulse: "enemy-defeated",
+            sound: "defeat",
+            billboard: { text: "DEFEATED", tone: "neutral" },
+          };
     case "enemyDropMaterialized":
       return {
         particle: "pickup",
@@ -855,6 +906,24 @@ function cueFeedback(cue: RuntimeFeedbackCue): CueFeedback {
         billboard: {
           text: cue.state === "open" ? "EXIT OPEN" : "EXIT SEALED",
           tone: cue.state === "open" ? "success" : "neutral",
+        },
+      };
+    case "switchActivated":
+      return {
+        particle: "door",
+        pulse: "switch-activated",
+        sound: "doorOpen",
+        billboard: { text: "SWITCH ACTIVE", tone: "success" },
+      };
+    case "checkpoint":
+      return {
+        particle: "beacon",
+        pulse: `checkpoint-${cue.action}`,
+        sound: "beacon",
+        billboard: {
+          text:
+            cue.action === "saved" ? "CHECKPOINT SAVED" : "CHECKPOINT RESTORED",
+          tone: "success",
         },
       };
     case "extractionBeaconActivated":
@@ -915,7 +984,10 @@ function cueAnchor(
     case "attack":
       return { entity: cue.attacker, position: cue.origin };
     case "dryFire":
+    case "attackMissed":
       return entityAnchor(state, cue.attacker);
+    case "attackHit":
+      return entityAnchor(state, cue.target);
     case "movementBlocked":
       return entityAnchor(state, cue.entity);
     case "damage":
@@ -934,6 +1006,10 @@ function cueAnchor(
       return entityAnchor(state, cue.entity);
     case "doorChanged":
       return entityAnchor(state, cue.entity);
+    case "switchActivated":
+      return entityAnchor(state, cue.entity);
+    case "checkpoint":
+      return entityAnchor(state, cue.player);
     case "extractionBeaconActivated":
       return entityAnchor(state, cue.entity);
     case "pickupCollected":
@@ -954,7 +1030,10 @@ function cueEntity(cue: RuntimeFeedbackCue): number {
       return cue.entity;
     case "attack":
     case "dryFire":
+    case "attackMissed":
       return cue.attacker;
+    case "attackHit":
+      return cue.target;
     case "damage":
       return cue.target;
     case "enemyAlert":
@@ -965,8 +1044,11 @@ function cueEntity(cue: RuntimeFeedbackCue): number {
     case "defeat":
     case "encounterActivated":
     case "doorChanged":
+    case "switchActivated":
     case "extractionBeaconActivated":
       return cue.entity;
+    case "checkpoint":
+      return cue.player;
     case "enemyDropMaterialized":
       return cue.pickup;
     case "pickupCollected":
@@ -1036,8 +1118,12 @@ function particleEmit(
   kind: FeedbackParticleKind,
   anchor: FeedbackAnchor,
   seed: number,
+  flashIntensity: number,
 ): PresentationOp {
   const color = PARTICLE_COLORS[kind];
+  const intensity = Number.isFinite(flashIntensity)
+    ? Math.min(1, Math.max(0, flashIntensity))
+    : 1;
   return {
     domain: "particle",
     meta: { sequence },
@@ -1058,17 +1144,20 @@ function particleEmit(
         velocityMax: [0.35, 0.9, 0.35],
         acceleration: [0, -0.65, 0],
         sizeCurve: [
-          { age: 0, value: 0.7 },
-          { age: 1, value: 0.08 },
+          { age: 0, value: 0.7 * intensity },
+          { age: 1, value: 0.08 * intensity },
         ],
         colorCurve: [
-          { age: 0, color },
+          {
+            age: 0,
+            color: [color[0], color[1], color[2], color[3] * intensity],
+          },
           { age: 1, color: [color[0], color[1], color[2], 0] },
         ],
         flipbookFramesPerSecond: 0,
         seed: Math.max(0, seed),
         maxParticles: 1,
-        visible: true,
+        visible: intensity > 0,
       },
     },
   };

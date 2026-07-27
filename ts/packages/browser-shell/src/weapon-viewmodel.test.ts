@@ -166,6 +166,47 @@ test("movement bob and Rust attack cues drive only disposable local offsets", ()
   assert.equal(JSON.stringify(accepted), authorityBefore);
 });
 
+test("flash intensity scales only the disposable muzzle descriptor", () => {
+  const accepted = state({
+    presentation: {
+      animationStates: [],
+      cues: [
+        {
+          kind: "attack",
+          attacker: 1,
+          weapon: "weapon/arc-pistol",
+          presentation: "arc-pistol",
+          attackMode: "hitscan",
+          rayCount: 1,
+          origin: [0.5, 1.5, 0.5],
+          direction: [0, 0, -1],
+        },
+      ],
+    },
+  });
+  const adapter = new WeaponViewmodelAdapter();
+  adapter.project(state()).commit();
+  const reduced = updateNodes(adapter.project(accepted, false, 0.25).ops);
+  const flash = reduced.find(
+    (node) => node.metadata?.label === "loading-bay-viewmodel-muzzle-flash",
+  );
+  const root = reduced.find(
+    (node) => node.metadata?.label === "loading-bay-viewmodel-root",
+  );
+
+  assert.equal(flash?.visible, true);
+  assert.deepEqual(flash?.transform?.scale, [0.0275, 0.0275, 0.0275]);
+  assert.equal(flash?.material?.color[3], 0.23);
+  assert.notDeepEqual(root?.transform?.translation, [0, 0, 0]);
+
+  const disabled = new WeaponViewmodelAdapter();
+  disabled.project(state()).commit();
+  const noFlash = updateNodes(disabled.project(accepted, false, 0).ops).find(
+    (node) => node.metadata?.label === "loading-bay-viewmodel-muzzle-flash",
+  );
+  assert.equal(noFlash?.visible, false);
+});
+
 test("death hides, reset clears, and disposal destroys the retained hierarchy", () => {
   const adapter = new WeaponViewmodelAdapter();
   adapter.project(state()).commit();

@@ -49,6 +49,7 @@ interface WeaponPreset {
 
 interface ViewmodelState {
   readonly bobPhase: number;
+  readonly flashIntensity: number;
   readonly impulse: WeaponViewmodelImpulse;
   readonly mounted: boolean;
   readonly moving: boolean;
@@ -188,6 +189,7 @@ const WEAPON_PRESETS: Readonly<Record<string, WeaponPreset>> = {
 
 const EMPTY_STATE: ViewmodelState = {
   bobPhase: 0,
+  flashIntensity: 1,
   impulse: "idle",
   mounted: false,
   moving: false,
@@ -205,7 +207,11 @@ export class WeaponViewmodelAdapter {
   #revision = 0;
   #state: ViewmodelState = EMPTY_STATE;
 
-  project(state: RuntimeBrowserState, reset = false): WeaponViewmodelPlan {
+  project(
+    state: RuntimeBrowserState,
+    reset = false,
+    flashIntensity = 1,
+  ): WeaponViewmodelPlan {
     const weapon = WEAPON_PRESETS[state.weapon.item] ?? null;
     const moving =
       state.playerMotionState === "moved" ||
@@ -224,6 +230,9 @@ export class WeaponViewmodelAdapter {
         : moving
           ? (this.#state.bobPhase + 0.82) % (Math.PI * 2)
           : this.#state.bobPhase,
+      flashIntensity: Number.isFinite(flashIntensity)
+        ? Math.min(1, Math.max(0, flashIntensity))
+        : 1,
       impulse: reset
         ? "idle"
         : attack
@@ -367,11 +376,16 @@ function partNode(state: ViewmodelState, index: number): RenderNode {
 }
 
 function muzzleNode(state: ViewmodelState): RenderNode {
+  const intensity = state.flashIntensity;
+  const size = Math.max(0.001, 0.11 * intensity);
   return {
     geometry: { kind: "sphere" },
-    material: { color: [1, 0.86, 0.28, 0.92], wireframe: false },
-    transform: transform(state.weapon?.muzzle ?? [0, 0, 0], [0.11, 0.11, 0.11]),
-    visible: state.visible && state.impulse === "attack",
+    material: {
+      color: [1, 0.86, 0.28, 0.92 * intensity],
+      wireframe: false,
+    },
+    transform: transform(state.weapon?.muzzle ?? [0, 0, 0], [size, size, size]),
+    visible: state.visible && state.impulse === "attack" && intensity > 0,
     layer: "viewmodel",
     metadata: metadata("loading-bay-viewmodel-muzzle-flash", [
       "loading-bay",

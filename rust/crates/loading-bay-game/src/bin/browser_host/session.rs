@@ -22,6 +22,7 @@ use super::state::{
 };
 use super::{
     drain_game_loop_feedback, BrowserFeedbackProjection, BrowserRuntime, SharedBrowserRuntime,
+    ACTOR,
 };
 
 const PROTOCOL_VERSION: u16 = 1;
@@ -798,8 +799,10 @@ fn send_latest_update(
         context.force_full = true;
         context.metrics.dropped_fact_count = dropped_facts;
     }
-    let (mut fact_projection, feedback) = drain_game_loop_feedback(&mut host.runtime);
-    fact_projection.extend(host.drain_session_facts());
+    let (mut fact_projection, mut feedback) = drain_game_loop_feedback(&mut host.runtime);
+    let session_facts = host.drain_session_facts();
+    feedback.extend_session_facts(&session_facts, ACTOR);
+    fact_projection.extend(session_facts);
     if let Some(sequence) = context.pending_restart_sequence {
         let restart_rejected = fact_projection.iter().any(|(kind, command_sequence)| {
             *command_sequence == Some(sequence) && kind == "InputEdgeRejectedPaused"

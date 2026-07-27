@@ -276,6 +276,16 @@ export type RuntimeFeedbackCue =
       readonly presentation: string;
     }
   | {
+      readonly kind: "attackHit";
+      readonly attacker: number;
+      readonly target: number;
+    }
+  | {
+      readonly kind: "attackMissed";
+      readonly attacker: number;
+      readonly reason: "noTarget" | "worldBlocked";
+    }
+  | {
       readonly kind: "damage";
       readonly attacker: number;
       readonly target: number;
@@ -325,6 +335,16 @@ export type RuntimeFeedbackCue =
       readonly kind: "doorChanged";
       readonly entity: number;
       readonly state: "open" | "closed";
+    }
+  | {
+      readonly kind: "switchActivated";
+      readonly entity: number;
+      readonly actor: number;
+    }
+  | {
+      readonly kind: "checkpoint";
+      readonly player: number;
+      readonly action: "saved" | "restored";
     }
   | {
       readonly kind: "extractionBeaconActivated";

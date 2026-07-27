@@ -186,6 +186,7 @@ async function runFullBrowserProduct(project) {
       'data-campaign-baseline="pass"',
       'data-campaign-arrival="pass"',
       'data-campaign-storage="pass"',
+      'data-campaign-locked-door="pass"',
       'data-campaign-generator="pass"',
       'data-campaign-loopback="pass"',
       'data-campaign-finale="pass"',
@@ -1095,7 +1096,11 @@ async function runGameShellProof(address, viewport) {
 }
 
 async function runDeadDialogFocusProof(project) {
-  const running = await launchHost(project);
+  const running = await launchHost(
+    project,
+    undefined,
+    resolve(proofDirectory, "dead-dialog-save-slots"),
+  );
   try {
     await waitForHealth(
       `http://${running.address}/health`,
@@ -1145,15 +1150,31 @@ async function runDeadDialogFocusProof(project) {
             // cargo-floor melee enemy owns the full death transition.
             45_000,
           );
-          await waitForCdp(
-            client,
-            `document.querySelector(".game-state-overlay")?.textContent?.includes("PLAYER DOWN") === true &&
-              document.activeElement?.textContent?.trim() === "Restart loading bay" &&
-              document.querySelector("#feedback-layer")?.dataset.viewmodelStatus === "hidden" &&
-              document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7" &&
-              document.body.dataset.weaponViewmodelLifecycle === "mounted"`,
-            "focused dead dialog",
-          );
+          try {
+            await waitForCdp(
+              client,
+              `document.querySelector(".game-state-overlay")?.textContent?.includes("PLAYER DOWN") === true &&
+                document.activeElement?.textContent?.trim() === "Restart loading bay" &&
+                document.querySelector("#feedback-layer")?.dataset.viewmodelStatus === "hidden" &&
+                document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7" &&
+                document.body.dataset.weaponViewmodelLifecycle === "mounted"`,
+              "focused dead dialog",
+            );
+          } catch (error) {
+            const diagnostic = await client.send("Runtime.evaluate", {
+              expression: `({
+                dialog: document.querySelector(".game-state-overlay")?.textContent?.trim() ?? "",
+                active: document.activeElement?.textContent?.trim() ?? "",
+                viewmodelStatus: document.querySelector("#feedback-layer")?.dataset.viewmodelStatus ?? "",
+                viewmodelNodes: document.querySelector("#feedback-layer")?.dataset.viewmodelNodes ?? "",
+                lifecycle: document.body.dataset.weaponViewmodelLifecycle ?? "",
+              })`,
+              returnByValue: true,
+            });
+            throw new Error(
+              `${error instanceof Error ? error.message : String(error)}: ${JSON.stringify(diagnostic?.result?.value)}`,
+            );
+          }
           await client.send("Input.dispatchKeyEvent", {
             type: "keyDown",
             key: "Tab",
@@ -1409,11 +1430,13 @@ function gameShellScenario(viewportLabel) {
       const sensitivity = control("Mouse sensitivity");
       const invert = control("Invert vertical look");
       const volume = control("Effects volume");
+      const flash = control("Flash intensity");
       const hud = control("Show game HUD");
       const telemetry = control("Show renderer telemetry");
       if (!(sensitivity instanceof HTMLInputElement) ||
           !(invert instanceof HTMLInputElement) ||
           !(volume instanceof HTMLInputElement) ||
+          !(flash instanceof HTMLInputElement) ||
           !(hud instanceof HTMLInputElement) ||
           !(telemetry instanceof HTMLInputElement)) {
         throw new Error("settings controls were incomplete");
@@ -1424,6 +1447,8 @@ function gameShellScenario(viewportLabel) {
       invert.dispatchEvent(new Event("change", { bubbles: true }));
       volume.value = "0.35";
       volume.dispatchEvent(new Event("input", { bubbles: true }));
+      flash.value = "0.25";
+      flash.dispatchEvent(new Event("input", { bubbles: true }));
       telemetry.checked = true;
       telemetry.dispatchEvent(new Event("change", { bubbles: true }));
       hud.checked = false;
@@ -1440,9 +1465,12 @@ function gameShellScenario(viewportLabel) {
         stored.mouseSensitivity === 1.35 &&
         stored.invertY === true &&
         stored.sfxVolume === 0.35 &&
+        stored.flashIntensity === 0.25 &&
         stored.telemetryVisible === true &&
         hudHidden === true &&
         document.querySelector("#feedback-audio-status")?.dataset.volume === "0.35" &&
+        document.querySelector("#feedback-layer")?.dataset.flashIntensity ===
+          "0.25" &&
         document.querySelector("#renderer-telemetry")?.hidden === false;
       byText(".panel-actions button", "Done")?.click();
       await waitFor(
