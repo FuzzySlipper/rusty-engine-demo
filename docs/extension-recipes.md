@@ -49,10 +49,10 @@ inert item whose existing `ItemKind` already expresses its meaning.
 5. For visible content, update `docs/source-provenance.md` and make
    `pnpm run test:browser` walk through the accepted Rust pickup.
 
-Rust admission is in `stored_project.rs` and `project_admission.rs`; live quantities and atomic
-grant/consume behavior are in `item.rs`, `inventory.rs`, and `pickup.rs`. Add a new Rust item kind
-only when the item has a genuinely new game-owned transaction. Do not encode behavior in an asset
-name or a TypeScript switch.
+Rust admission is in `stored_project.rs` and `project_admission.rs`; item identities, kinds,
+definitions, live quantities, and atomic grant/consume behavior are in `inventory.rs`, while
+pickup transactions are in `pickup.rs`. Add a new Rust item kind only when the item has a genuinely
+new game-owned transaction. Do not encode behavior in an asset name or a TypeScript switch.
 
 The existing `key/inert-inspection-tag` is the locality proof: it required only the TypeScript
 composer, checked-in generated JSON, composer assertion, and provenance. No Rust behavior changed.
@@ -148,8 +148,8 @@ phase order, damage policy, and facts stay here.
    Chromium.
 7. Update `docs/source-provenance.md` for new door, key, control, secret, audio, or text assets.
 
-The live owners are `door.rs`, `switch.rs`, and `progression.rs`. Browser route navigation or DOM
-visibility must never open a door, grant a key, count a secret, or complete a level.
+The live owners are `door.rs`, `interaction.rs`, and `progression.rs`. Browser route navigation or
+DOM visibility must never open a door, grant a key, count a secret, or complete a level.
 Open an Engine task only if a second consumer needs a smaller generic collision, trigger, or
 retained-transform mechanism. Access policy, item consumption, switch consequences, discovery,
 completion, facts, and persistence stay here.
