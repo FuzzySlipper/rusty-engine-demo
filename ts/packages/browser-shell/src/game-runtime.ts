@@ -2,6 +2,12 @@ import { mountRendererSurface } from "@rusty-engine/renderer-host";
 
 import { SerializedActionQueue } from "./action-queue.js";
 import { CoalescedLookInput } from "./coalesced-look.js";
+import {
+  MAX_PRESENTATION_EVENT_HISTORY,
+  MAX_PRESENTATION_EVENT_KINDS,
+  appendPresentationEvents,
+  observePresentationEventKinds,
+} from "./event-history.js";
 import { GameSessionError, LoadingBayGameSession } from "./game-session.js";
 import { HeldMovementInput } from "./held-movement.js";
 import {
@@ -167,6 +173,8 @@ export async function mountLoadingBayGame(
   const sessionTelemetry = requiredElement("session-telemetry", HTMLElement);
   const projection = new RuntimeProjectionAdapter();
   const eventHistory: string[] = [];
+  const observedEventKinds = new Set<string>();
+  let eventKindOverflow = false;
   const query = new URLSearchParams(location.search);
   const smokeMode = query.has("smoke");
   const reloadSmokeMode = query.has("reload-smoke");
@@ -737,6 +745,8 @@ export async function mountLoadingBayGame(
     );
     current = await session.sendEdge(command);
     eventHistory.length = 0;
+    observedEventKinds.clear();
+    eventKindOverflow = false;
     lastActionRejection = null;
     const frame = projection.apply(current);
     applyRendererFrame(frame);
@@ -810,7 +820,7 @@ export async function mountLoadingBayGame(
       releaseCapturedInput();
     }
     current = state;
-    eventHistory.push(...state.lastEvents);
+    recordCommittedEvents(state.lastEvents);
     const frame = projection.apply(state);
     applyRendererFrame(frame);
     applyPresentationCamera();
@@ -834,7 +844,7 @@ export async function mountLoadingBayGame(
       edits,
     });
     lastActionRejection = null;
-    eventHistory.push(...current.lastEvents);
+    recordCommittedEvents(current.lastEvents);
     const frame = projection.apply(current);
     applyRendererFrame(frame);
     applyPresentationCamera();
@@ -845,6 +855,20 @@ export async function mountLoadingBayGame(
 
   function renderReadout(state: RuntimeBrowserState): void {
     eventList.dataset.history = eventHistory.join(",");
+    document.body.dataset.eventHistoryCount = String(eventHistory.length);
+    document.body.dataset.eventHistoryCapacity = String(
+      MAX_PRESENTATION_EVENT_HISTORY,
+    );
+    document.body.dataset.eventHistoryBounded =
+      eventHistory.length <= MAX_PRESENTATION_EVENT_HISTORY ? "pass" : "fail";
+    document.body.dataset.eventKinds = [...observedEventKinds].join(",");
+    document.body.dataset.eventKindCount = String(observedEventKinds.size);
+    document.body.dataset.eventKindCapacity = String(
+      MAX_PRESENTATION_EVENT_KINDS,
+    );
+    document.body.dataset.eventKindsBounded = eventKindOverflow
+      ? "fail"
+      : "pass";
     encounterState.textContent = state.encounterState.toUpperCase();
     encounterState.dataset.state = state.encounterState;
     revision.textContent = `REV ${String(state.entityRevision)}`;
@@ -1868,12 +1892,20 @@ export async function mountLoadingBayGame(
         : error instanceof Error
           ? error.message
           : String(error);
-    eventHistory.push(
+    recordCommittedEvents([
       lastActionRejection.includes("CombatRejected")
         ? "CombatRejected"
         : "ActionRejected",
-    );
+    ]);
     renderReadout(current);
+  }
+
+  function recordCommittedEvents(events: readonly string[]): void {
+    appendPresentationEvents(eventHistory, events);
+    eventKindOverflow ||= !observePresentationEventKinds(
+      observedEventKinds,
+      events,
+    );
   }
 
   function normalizeDegrees(value: number): number {

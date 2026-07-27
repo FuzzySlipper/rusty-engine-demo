@@ -201,6 +201,8 @@ async function runFullBrowserProduct(project) {
       'data-session-dropped-facts="0"',
       'data-session-pending-input="0"',
       'data-session-pending-edges="0"',
+      'data-event-history-bounded="pass"',
+      'data-event-kinds-bounded="pass"',
       'data-renderer-telemetry="pass"',
       'data-renderer-single-loop="pass"',
       'data-renderer-telemetry-refresh="pass"',
@@ -266,6 +268,19 @@ async function runFullBrowserProduct(project) {
         result.stdout,
         "data-session-rtt-max-milliseconds",
       ),
+      eventHistoryCount: bodyDataNumber(
+        result.stdout,
+        "data-event-history-count",
+      ),
+      eventHistoryCapacity: bodyDataNumber(
+        result.stdout,
+        "data-event-history-capacity",
+      ),
+      eventKindCount: bodyDataNumber(result.stdout, "data-event-kind-count"),
+      eventKindCapacity: bodyDataNumber(
+        result.stdout,
+        "data-event-kind-capacity",
+      ),
     };
     if (
       sessionEvidence.legacyBytes <= 0 ||
@@ -278,6 +293,11 @@ async function runFullBrowserProduct(project) {
       sessionEvidence.pendingInputMax > 2 ||
       sessionEvidence.pendingEdgesMax > 32 ||
       sessionEvidence.droppedFacts !== 0 ||
+      sessionEvidence.eventHistoryCapacity !== 256 ||
+      sessionEvidence.eventHistoryCount >
+        sessionEvidence.eventHistoryCapacity ||
+      sessionEvidence.eventKindCapacity !== 64 ||
+      sessionEvidence.eventKindCount > sessionEvidence.eventKindCapacity ||
       sessionEvidence.roundTripMaxMilliseconds <= 0 ||
       sessionEvidence.roundTripMaxMilliseconds >= 2_000
     ) {
