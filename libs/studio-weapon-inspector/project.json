@@ -15,7 +15,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node --test libs/studio-weapon-inspector/src/*.test.ts"
+        "command": "ngc -p libs/studio-weapon-inspector/tsconfig.test.json && node --test dist/tests/studio-weapon-inspector/*.test.js"
       }
     }
   }

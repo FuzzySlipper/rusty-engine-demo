@@ -12,7 +12,7 @@ import {
   LoadingBayWeaponProtocolError,
   MAX_LOADING_BAY_WEAPON_AUTHORING_REQUEST_BYTES,
   MAX_LOADING_BAY_WEAPON_AUTHORING_RESPONSE_BYTES,
-} from "./weapon-authoring-codec.ts";
+} from "./weapon-authoring-codec.js";
 
 const FIXTURE_ROOT = new URL(
   "../../../contracts/loading-bay-weapon-authoring-v1/",
@@ -250,6 +250,53 @@ test("typed client rejects stale correlation before exposing a response", async 
   );
 });
 
+test("typed client rejects a well-formed response for a different owner or receipt", async () => {
+  const readResponse = fixture("read-response.json");
+  readResponse.weapon = {
+    ...(readResponse.weapon as Record<string, unknown>),
+    ownerEntityId: 89,
+  };
+  await assert.rejects(
+    new LoadingBayWeaponAuthoringClient(
+      {
+        exchange: () => Promise.resolve(JSON.stringify(readResponse)),
+      },
+      () => "fixture-read-arc-pistol",
+    ).read(
+      {
+        expectedProjectHash: "0".repeat(64),
+        ownerEntityId: 88,
+      },
+      new AbortController().signal,
+    ),
+    /expected owner 88/u,
+  );
+
+  const replaceResponse = fixture("replace-response.json");
+  replaceResponse.receipt = {
+    ...(replaceResponse.receipt as Record<string, unknown>),
+    projectHashBefore: "f".repeat(64),
+  };
+  await assert.rejects(
+    new LoadingBayWeaponAuthoringClient(
+      {
+        exchange: () => Promise.resolve(JSON.stringify(replaceResponse)),
+      },
+      () => "fixture-replace-arc-pistol",
+    ).replace(
+      {
+        expectedProjectHash: "0".repeat(64),
+        ownerEntityId: 88,
+        expectedComponentRevision: "0".repeat(64),
+        candidate: fixture("replace-request.json")
+          .candidate as unknown as LoadingBayWeaponCandidate,
+      },
+      new AbortController().signal,
+    ),
+    /requested project hash/u,
+  );
+});
+
 function fixture(name: string): Record<string, unknown> {
   return JSON.parse(fixtureText(name)) as Record<string, unknown>;
 }
@@ -263,7 +310,9 @@ function requestIds(ids: readonly string[]): () => string {
   return () => {
     const value = ids[index];
     index += 1;
-    assert.notEqual(value, undefined);
+    if (value === undefined) {
+      throw new Error("request identity fixture was exhausted");
+    }
     return value;
   };
 }

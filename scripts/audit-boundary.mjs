@@ -22,8 +22,8 @@ const operationalRoots = [
   "rust",
   "ts",
 ];
-const rustEngineRevision = "ff87c425be4167a5bdd06c059b042967f2808e2b";
-const renderEngineRevision = "ff87c425be4167a5bdd06c059b042967f2808e2b";
+const rustEngineRevision = "198dccaa3f6b15d776b58d0f60c0f025e4b12171";
+const renderEngineRevision = "198dccaa3f6b15d776b58d0f60c0f025e4b12171";
 
 const files = operationalRoots.flatMap((entry) =>
   collect(resolve(repoRoot, entry)),
@@ -142,6 +142,9 @@ const browserPackage = JSON.parse(
     "utf8",
   ),
 );
+const rootPackage = JSON.parse(
+  readFileSync(resolve(repoRoot, "package.json"), "utf8"),
+);
 const browserGameRuntime = readFileSync(
   resolve(repoRoot, "ts/packages/browser-shell/src/game-runtime.ts"),
   "utf8",
@@ -198,6 +201,26 @@ for (const packageName of [
   if (browserPackage.dependencies?.[dependencyName] !== expected) {
     violations.push(
       `ts/packages/browser-shell/package.json: ${dependencyName} must resolve from exact Engine revision ${renderEngineRevision}`,
+    );
+  }
+  if (rootPackage.dependencies?.[dependencyName] !== expected) {
+    violations.push(
+      `package.json: ${dependencyName} must resolve from exact Engine revision ${renderEngineRevision}`,
+    );
+  }
+}
+for (const [packageName, packagePath] of [
+  ["studio-adapter-client", "studio/libs/adapter-client"],
+  ["studio-editor-shell", "studio/libs/editor-shell"],
+  ["studio-user-settings", "studio/libs/user-settings"],
+  ["studio-viewport", "studio/libs/viewport"],
+  ["studio-voxel-editor", "studio/libs/voxel-editor"],
+]) {
+  const dependencyName = `@rusty-engine/${packageName}`;
+  const expected = `github:FuzzySlipper/rusty-engine#${renderEngineRevision}&path:${packagePath}`;
+  if (rootPackage.dependencies?.[dependencyName] !== expected) {
+    violations.push(
+      `package.json: ${dependencyName} must resolve from exact Engine revision ${renderEngineRevision}`,
     );
   }
 }

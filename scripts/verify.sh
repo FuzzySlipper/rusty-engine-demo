@@ -12,5 +12,7 @@ pnpm run test:platform
 pnpm run test:shell
 pnpm run test:performance-tools
 pnpm run build:shell
+pnpm run test:studio
+pnpm run build:studio
 ./scripts/verify-rust.sh
 pnpm run test:browser

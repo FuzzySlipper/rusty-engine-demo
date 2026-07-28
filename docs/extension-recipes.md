@@ -90,6 +90,34 @@ Open an Engine task only for a renderer-neutral retained/picking/spatial capabil
 consumer. Weapon modes, ammunition policy, cadence, hit selection, damage, and combat facts are
 gameplay and stay here.
 
+## Recipe: expose a game-owned project component in Studio
+
+Follow the Loading Bay Weapon path when a durable downstream component needs a typed Studio form:
+
+1. Freeze a small named downstream contract and fixtures under `contracts/`. Do not add the
+   component value, fields, or operation name to Engine's core Studio protocol.
+2. Put the read, candidate validation, complete-project admission, optimistic guards, and atomic
+   publication in the responsible downstream Rust owner. The concrete example is
+   `rust/crates/loading-bay-game/src/weapon_authoring.rs`, routed as a closed companion operation by
+   `rust/crates/loading-bay-game/src/studio_adapter/service.rs`.
+3. Emit only the bounded owner/component/contract identity through the core adapter readout. A
+   contract-bearing read is invalid until `describe` has advertised that exact contract version.
+4. Put the strict decoder, concrete transport, disposable form lifecycle, and panel in one
+   downstream feature package. The example is `libs/studio-weapon-inspector`.
+5. Import the Engine built-ins and the downstream contribution explicitly in the product
+   application root. See `apps/loading-bay-studio`; do not use an Angular multi-provider, registry,
+   adapter-selected module, or runtime package scan.
+6. Acquire the host mutation lease before the named downstream replacement and settle it with the
+   Rust receipt's before/after project hashes. The host owns serialization and canonical reread;
+   the panel owns neither the workspace store nor project authority.
+7. Test exact version matching, unsupported identity-only fallback, read, replacement, semantic
+   rejection, host-busy rejection, stale project or selection disposal, canonical reread, and
+   fresh-process persistence.
+
+Changing the downstream contract shape requires a new positive contract version and an exact
+matching panel. Do not make version 1 permissive and do not teach Engine a generic component schema
+to avoid that version cut.
+
 ## Recipe: add an enemy content variant
 
 Use this when sight/hearing range, body size, health, movement speed, attack kind/range/damage,

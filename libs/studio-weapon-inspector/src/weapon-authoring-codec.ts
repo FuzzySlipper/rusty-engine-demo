@@ -114,6 +114,73 @@ export interface LoadingBayWeaponAuthoringPort {
   readonly exchange: (request: string, signal: AbortSignal) => Promise<string>;
 }
 
+export type LoadingBayWeaponFetch = (
+  input: string,
+  init: RequestInit,
+) => Promise<Pick<Response, "headers" | "ok" | "status" | "text">>;
+
+export class LoadingBayWeaponTransportError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LoadingBayWeaponTransportError";
+  }
+}
+
+export class HttpLoadingBayWeaponAuthoringPort
+  implements LoadingBayWeaponAuthoringPort
+{
+  readonly #endpoint: string;
+  readonly #fetch: LoadingBayWeaponFetch;
+
+  constructor(
+    endpoint = "/api/studio-adapter",
+    fetchImplementation: LoadingBayWeaponFetch = globalThis.fetch.bind(
+      globalThis,
+    ),
+  ) {
+    this.#endpoint = endpoint;
+    this.#fetch = fetchImplementation;
+  }
+
+  async exchange(request: string, signal: AbortSignal): Promise<string> {
+    const requestBytes = new TextEncoder().encode(request).byteLength;
+    if (requestBytes > MAX_LOADING_BAY_WEAPON_AUTHORING_REQUEST_BYTES) {
+      throw new LoadingBayWeaponTransportError(
+        `weapon authoring request is ${String(requestBytes)} bytes, exceeding the ${String(
+          MAX_LOADING_BAY_WEAPON_AUTHORING_REQUEST_BYTES,
+        )}-byte bound`,
+      );
+    }
+    const response = await this.#fetch(this.#endpoint, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      body: request,
+      signal,
+    });
+    const declaredLength = response.headers.get("content-length");
+    if (
+      declaredLength !== null &&
+      Number(declaredLength) > MAX_LOADING_BAY_WEAPON_AUTHORING_RESPONSE_BYTES
+    ) {
+      throw responseTooLarge(Number(declaredLength));
+    }
+    const body = await response.text();
+    const responseBytes = new TextEncoder().encode(body).byteLength;
+    if (responseBytes > MAX_LOADING_BAY_WEAPON_AUTHORING_RESPONSE_BYTES) {
+      throw responseTooLarge(responseBytes);
+    }
+    if (!response.ok) {
+      throw new LoadingBayWeaponTransportError(
+        hostError(body, response.status),
+      );
+    }
+    return body;
+  }
+}
+
 export class LoadingBayWeaponAuthoringClient {
   private readonly port: LoadingBayWeaponAuthoringPort;
   private readonly nextRequestId: () => string;
@@ -145,6 +212,14 @@ export class LoadingBayWeaponAuthoringClient {
         `expected loadingBayWeaponRead, received ${response.type}`,
       );
     }
+    if (response.weapon.ownerEntityId !== input.ownerEntityId) {
+      throw protocolError(
+        "$.weapon.ownerEntityId",
+        `expected owner ${String(input.ownerEntityId)}, received ${String(
+          response.weapon.ownerEntityId,
+        )}`,
+      );
+    }
     return response.weapon;
   }
 
@@ -172,6 +247,7 @@ export class LoadingBayWeaponAuthoringClient {
         `expected loadingBayWeaponReplaced, received ${response.type}`,
       );
     }
+    requireReplacementCorrelation(response, input);
     return { receipt: response.receipt, weapon: response.weapon };
   }
 
@@ -198,6 +274,52 @@ export class LoadingBayWeaponAuthoringClient {
       );
     }
     return response;
+  }
+}
+
+function requireReplacementCorrelation(
+  response: Extract<
+    LoadingBayWeaponAuthoringResponse,
+    { readonly type: "loadingBayWeaponReplaced" }
+  >,
+  input: {
+    readonly expectedProjectHash: string;
+    readonly ownerEntityId: number;
+    readonly expectedComponentRevision: string;
+  },
+): void {
+  const { receipt, weapon } = response;
+  if (
+    receipt.ownerEntityId !== input.ownerEntityId ||
+    weapon.ownerEntityId !== input.ownerEntityId
+  ) {
+    throw protocolError(
+      "$.receipt.ownerEntityId",
+      `replacement owner does not match requested owner ${String(
+        input.ownerEntityId,
+      )}`,
+    );
+  }
+  if (receipt.projectHashBefore !== input.expectedProjectHash) {
+    throw protocolError(
+      "$.receipt.projectHashBefore",
+      "replacement receipt does not begin at the requested project hash",
+    );
+  }
+  if (receipt.componentRevisionBefore !== input.expectedComponentRevision) {
+    throw protocolError(
+      "$.receipt.componentRevisionBefore",
+      "replacement receipt does not begin at the requested component revision",
+    );
+  }
+  if (
+    receipt.itemDefinitionId !== weapon.itemDefinitionId ||
+    receipt.componentRevisionAfter !== weapon.componentRevision
+  ) {
+    throw protocolError(
+      "$.weapon",
+      "replacement weapon does not match its durable mutation receipt",
+    );
   }
 }
 
@@ -601,4 +723,29 @@ function protocolError(
   message: string,
 ): LoadingBayWeaponProtocolError {
   return new LoadingBayWeaponProtocolError(`${message} at ${path}`);
+}
+
+function responseTooLarge(actual: number): LoadingBayWeaponTransportError {
+  return new LoadingBayWeaponTransportError(
+    `weapon authoring response is ${String(actual)} bytes, exceeding the ${String(
+      MAX_LOADING_BAY_WEAPON_AUTHORING_RESPONSE_BYTES,
+    )}-byte bound`,
+  );
+}
+
+function hostError(body: string, status: number): string {
+  try {
+    const decoded = JSON.parse(body) as unknown;
+    if (
+      decoded !== null &&
+      typeof decoded === "object" &&
+      !Array.isArray(decoded)
+    ) {
+      const message = (decoded as Record<string, unknown>).message;
+      if (typeof message === "string" && message.length > 0) return message;
+    }
+  } catch {
+    // Preserve the stable HTTP fallback for non-JSON host failures.
+  }
+  return `Studio host rejected weapon authoring with HTTP ${String(status)}`;
 }

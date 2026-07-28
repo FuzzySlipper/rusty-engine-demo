@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.angular.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc",
+    "tsBuildInfoFile": "../../dist/out-tsc/loading-bay-studio.tsbuildinfo",
+    "types": []
+  },
+  "files": ["src/main.ts"],
+  "include": ["src/**/*.d.ts"]
+}

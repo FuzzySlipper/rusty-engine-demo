@@ -1,0 +1,16 @@
+:root {
+  --rusty-studio-canvas: #0d1114;
+  --rusty-studio-chrome: #171d20;
+  --rusty-studio-panel: #1e2529;
+  --rusty-studio-control: #2b353a;
+  --rusty-studio-border: #3a474d;
+  --rusty-studio-ink: #edf4f2;
+  --rusty-studio-muted: #9eadaa;
+  --rusty-studio-accent: #57c9bb;
+  --rusty-studio-warning: #e1b85c;
+  --rusty-studio-selected: #d99b4d;
+  --rusty-studio-space-xs: 0.35rem;
+  --rusty-studio-space-sm: 0.5rem;
+  --rusty-studio-space-md: 0.75rem;
+  --rusty-studio-font: Inter, ui-sans-serif, system-ui, sans-serif;
+}

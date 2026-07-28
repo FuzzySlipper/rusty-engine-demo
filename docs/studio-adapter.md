@@ -34,6 +34,33 @@ mutation request remain in the separate closed downstream contract described
 above. A client must complete `describe` before accepting a contract-bearing
 project readout.
 
+## Loading Bay Studio composition
+
+`apps/loading-bay-studio` is the product-owned Studio application root. It
+constructs one Engine `StudioWorkspaceStore`, one Loading Bay v1 weapon client,
+and one immutable contribution list:
+
+```ts
+[
+  ...RUSTY_ENGINE_ENTITY_INSPECTOR_CONTRIBUTIONS,
+  LOADING_BAY_WEAPON_INSPECTOR_CONTRIBUTION,
+];
+```
+
+The list is compiled into the application. It is not populated by adapter
+bytes, an Angular multi-provider, a package scan, or runtime loading. The
+Loading Bay panel receives only Engine's selected-owner context and mutation
+lease. It reads and replaces the durable weapon through the closed downstream
+client, then gives the receipt hashes back to the lease so the Engine host can
+perform the canonical project reread. It never receives `StudioWorkspaceStore`,
+renderer handles, a generic operation callback, or live gameplay state.
+
+The form is disposable. Project, selection, or contract generation changes
+abort its outstanding read and remount it from Rust. Host busy state disables
+editing without restarting an in-flight panel mutation. Unsupported contract
+versions remain the Engine outlet's identity-only readout and do not mount this
+v1 panel.
+
 Prepared source imports, voxel and voxel-object conversion plans, and history reverts remain private
 adapter state. Preparing a second candidate replaces the first. A later apply must name the exact
 plan, output, source, and current project identities; discard releases the private candidate. A
@@ -133,3 +160,15 @@ The complete downstream gate is `pnpm run verify`; it also checks exact Engine r
 isolation, the full Rust suite and Clippy, TypeScript content/presentation, and real Chromium/WebGL.
 Rusty Engine's Studio integration command takes this checkout as an explicit argument. Neither
 repository has an ordinary sibling-checkout dependency.
+
+Focused downstream Studio checks are:
+
+```bash
+pnpm run test:studio
+pnpm run build:studio
+```
+
+The exact-provider cross-repository gate additionally serves that production
+bundle with the real Loading Bay `studio-adapter`, selects a provider-derived
+weapon owner, commits a complete replacement, observes the Engine canonical
+reread, and reconstructs the edit from a fresh adapter process.
