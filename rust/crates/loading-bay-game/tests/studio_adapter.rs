@@ -15,12 +15,35 @@ const PROJECT_FILE: &str = "content/projects/loading-bay.project.json";
 fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts() {
     let root = TestProjectRoot::new(CURRENT_PROJECT);
     let mut service = StudioAdapterService::new();
+    let described = send(
+        &mut service,
+        json!({
+            "type": "describe",
+            "protocolVersion": 10,
+            "requestId": "describe",
+        }),
+    );
+    assert_eq!(described["type"], "described");
+    assert_eq!(described["adapter"]["adapterVersion"], 10);
+    assert_eq!(
+        described["adapter"]["entityInspectorContracts"],
+        json!([
+            {
+                "contractId": "rusty.studio.voxel-object-authoring",
+                "contractVersion": 1,
+            },
+            {
+                "contractId": "rusty-engine-demo.loading-bay.weapon-authoring",
+                "contractVersion": 1,
+            },
+        ])
+    );
 
     let response = send(
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -50,8 +73,36 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         1
     );
     assert_eq!(response["project"]["voxel"]["solidVoxelCount"], 3_931);
-    assert_eq!(response["project"]["loadingBay"]["doorCount"], 5);
-    assert_eq!(response["project"]["loadingBay"]["enemyCount"], 8);
+    assert!(response["project"].get("loadingBay").is_none());
+    assert_eq!(
+        response["project"]["entityComponents"],
+        json!([
+            {
+                "ownerEntityId": 88,
+                "componentTypeId": "rusty-engine-demo.loading-bay.weapon",
+                "inspectorContract": {
+                    "contractId": "rusty-engine-demo.loading-bay.weapon-authoring",
+                    "contractVersion": 1,
+                },
+            },
+            {
+                "ownerEntityId": 89,
+                "componentTypeId": "rusty-engine-demo.loading-bay.weapon",
+                "inspectorContract": {
+                    "contractId": "rusty-engine-demo.loading-bay.weapon-authoring",
+                    "contractVersion": 1,
+                },
+            },
+            {
+                "ownerEntityId": 90,
+                "componentTypeId": "rusty-engine-demo.loading-bay.weapon",
+                "inspectorContract": {
+                    "contractId": "rusty-engine-demo.loading-bay.weapon-authoring",
+                    "contractVersion": 1,
+                },
+            },
+        ])
+    );
     assert_eq!(response["project"]["sceneHierarchy"]["sceneId"], 1);
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"]
@@ -136,7 +187,7 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "move-player",
             "expectedProjectHash": project_hash,
             "expectedSceneRevision": scene_revision,
@@ -177,7 +228,7 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "stale-move",
             "expectedProjectHash": project_hash,
             "expectedSceneRevision": scene_revision,
@@ -202,7 +253,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "missing",
             "expectedProjectHash": identity["projectHash"],
             "expectedSceneRevision": identity["sceneRevision"],
@@ -218,7 +269,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "invalid",
             "expectedProjectHash": identity["projectHash"],
             "expectedSceneRevision": identity["sceneRevision"],
@@ -246,7 +297,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut StudioAdapterService::new(),
         json!({
             "type": "openProject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "bad-domain",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -265,7 +316,7 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
         &mut service,
         json!({
             "type": "createProject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "create-project",
             "root": root.path(),
             "projectFile": "content/projects/new-project.project.json",
@@ -297,7 +348,7 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
         &mut service,
         json!({
             "type": "createProject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "duplicate-project",
             "root": root.path(),
             "projectFile": "content/projects/new-project.project.json",
@@ -314,7 +365,7 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
         &mut service,
         json!({
             "type": "saveProjectAs",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "save-as",
             "expectedProjectHash": created["project"]["identity"]["projectHash"],
             "root": root.path(),
@@ -352,7 +403,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "createSceneObject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "create-object",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -379,7 +430,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "createSceneObject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "create-light",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -423,7 +474,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setSceneObjectTransform",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "full-transform",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -442,7 +493,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setSceneObjectAppearance",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "appearance",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -478,7 +529,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setSceneObjectAppearance",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "animated-appearance",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -518,7 +569,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setSceneObjectAppearance",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "invalid-animation-clip",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -538,7 +589,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setEntityCollision",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "collision",
             "expectedProjectHash": hash,
             "entityId": 200,
@@ -552,7 +603,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setEntityKinematic",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "kinematic",
             "expectedProjectHash": hash,
             "entityId": 200,
@@ -569,7 +620,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "renameSceneObject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "rename",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -585,7 +636,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "reparentSceneObject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "cycle",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -602,7 +653,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "deleteSceneObject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "delete-subtree",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
@@ -640,7 +691,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "prepareAssetImport",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "prepare-import",
             "expectedProjectHash": project_hash,
             "source": { "scope": "project", "path": source_path },
@@ -664,7 +715,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "applyAssetImport",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "apply-import",
             "expectedProjectHash": project_hash,
             "planId": prepared["plan"]["planId"],
@@ -718,7 +769,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "readProject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "read-drift"
         }),
     );
@@ -734,7 +785,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "prepareAssetReimport",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "prepare-reimport",
             "expectedProjectHash": project_hash,
             "assetId": "mesh/studio-triangle"
@@ -746,7 +797,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "applyAssetImport",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "apply-reimport",
             "expectedProjectHash": project_hash,
             "planId": reimport["plan"]["planId"],
@@ -774,7 +825,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "prepareAssetImport",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "prepare-invalid",
             "expectedProjectHash": project_hash,
             "source": { "scope": "project", "path": rejected_source },
@@ -794,7 +845,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "applyAssetImport",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "apply-invalid",
             "expectedProjectHash": project_hash,
             "planId": failed_plan["plan"]["planId"],
@@ -860,7 +911,7 @@ fn malformed_unbounded_and_unsafe_paths_fail_closed() {
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "traversal",
             "root": root.path(),
             "projectFile": "../outside.project.json",
@@ -872,7 +923,7 @@ fn malformed_unbounded_and_unsafe_paths_fail_closed() {
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "relative-root",
             "root": "relative",
             "projectFile": PROJECT_FILE,
@@ -893,7 +944,7 @@ fn symlinked_project_paths_are_rejected_even_when_the_target_stays_inside_root()
         &mut StudioAdapterService::new(),
         json!({
             "type": "openProject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "symlink",
             "root": root.path(),
             "projectFile": "content/projects/linked.project.json",
@@ -903,12 +954,127 @@ fn symlinked_project_paths_are_rejected_even_when_the_target_stays_inside_root()
     assert_eq!(response["error"]["code"], "path.rejected");
 }
 
+#[test]
+fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
+    let root = TestProjectRoot::new(CURRENT_PROJECT);
+    let mut service = StudioAdapterService::new();
+    let not_open = send(
+        &mut service,
+        json!({
+            "type": "readLoadingBayWeapon",
+            "contractVersion": 1,
+            "requestId": "not-open",
+            "expectedProjectHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "ownerEntityId": 88,
+        }),
+    );
+    assert_eq!(not_open["type"], "loadingBayWeaponRejected");
+    assert_eq!(not_open["rejection"]["code"], "projectStoreFailure");
+
+    let opened = open(&mut service, &root);
+    let project_hash = opened["project"]["identity"]["projectHash"]
+        .as_str()
+        .unwrap();
+    let read = send(
+        &mut service,
+        json!({
+            "type": "readLoadingBayWeapon",
+            "contractVersion": 1,
+            "requestId": "read-weapon",
+            "expectedProjectHash": project_hash,
+            "ownerEntityId": 88,
+        }),
+    );
+    assert_eq!(read["type"], "loadingBayWeaponRead", "{read:#}");
+    assert_eq!(read["weapon"]["itemDefinitionId"], "weapon/arc-pistol");
+    assert_eq!(read["weapon"]["definition"]["damage"], 60);
+
+    let mut candidate = read["weapon"]["definition"].clone();
+    candidate["damage"] = json!(61);
+    let replaced = send(
+        &mut service,
+        json!({
+            "type": "replaceLoadingBayWeapon",
+            "contractVersion": 1,
+            "requestId": "replace-weapon",
+            "expectedProjectHash": project_hash,
+            "ownerEntityId": 88,
+            "expectedComponentRevision": read["weapon"]["componentRevision"],
+            "candidate": candidate,
+        }),
+    );
+    assert_eq!(replaced["type"], "loadingBayWeaponReplaced", "{replaced:#}");
+    assert_eq!(replaced["weapon"]["definition"]["damage"], 61);
+
+    let canonical = send(
+        &mut service,
+        json!({
+            "type": "readProject",
+            "protocolVersion": 10,
+            "requestId": "canonical-reread",
+        }),
+    );
+    assert_eq!(canonical["type"], "projectRead", "{canonical:#}");
+    assert_eq!(
+        canonical["project"]["identity"]["projectHash"],
+        replaced["receipt"]["projectHashAfter"]
+    );
+    let canonical_project: Value = serde_json::from_str(
+        canonical["project"]["canonical"]["projectJson"]
+            .as_str()
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        canonical_project["itemDefinitions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|definition| definition["id"] == "weapon/arc-pistol")
+            .unwrap()["kind"]["damage"],
+        61
+    );
+
+    drop(service);
+    let mut fresh_service = StudioAdapterService::new();
+    let reopened = open(&mut fresh_service, &root);
+    let reopened_hash = reopened["project"]["identity"]["projectHash"]
+        .as_str()
+        .unwrap();
+    let reconstructed = send(
+        &mut fresh_service,
+        json!({
+            "type": "readLoadingBayWeapon",
+            "contractVersion": 1,
+            "requestId": "reconstructed",
+            "expectedProjectHash": reopened_hash,
+            "ownerEntityId": 88,
+        }),
+    );
+    assert_eq!(reconstructed["type"], "loadingBayWeaponRead");
+    assert_eq!(reconstructed["weapon"]["definition"]["damage"], 61);
+
+    let malformed = send(
+        &mut fresh_service,
+        json!({
+            "type": "readLoadingBayWeapon",
+            "contractVersion": 1,
+            "requestId": "malformed",
+            "expectedProjectHash": reopened_hash,
+            "ownerEntityId": 88,
+            "operation": "genericGet",
+        }),
+    );
+    assert_eq!(malformed["type"], "rejected");
+    assert_eq!(malformed["error"]["code"], "protocol.malformedRequest");
+}
+
 fn open(service: &mut StudioAdapterService, root: &TestProjectRoot) -> Value {
     let response = send(
         service,
         json!({
             "type": "openProject",
-            "protocolVersion": 9,
+            "protocolVersion": 10,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE,

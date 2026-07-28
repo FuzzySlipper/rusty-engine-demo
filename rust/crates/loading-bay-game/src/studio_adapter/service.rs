@@ -1,7 +1,14 @@
 use render_projection::VoxelObjectRenderProjector;
+use serde_json::Value;
 use voxel_convert::PreparedVoxelConversion;
 
-use crate::STORED_PROJECT_SCHEMA_VERSION;
+use crate::{
+    decode_loading_bay_weapon_authoring_request, encode_loading_bay_weapon_authoring_response,
+    LoadingBayWeaponAuthoringCodecError, LoadingBayWeaponAuthoringRejectionCode,
+    LoadingBayWeaponAuthoringResponse, LoadingBayWeaponAuthoringService,
+    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION,
+    STORED_PROJECT_SCHEMA_VERSION,
+};
 
 use super::asset_import::{
     apply_prepared_asset_import, prepare_asset_import, prepare_asset_reimport, PreparedAssetImport,
@@ -16,9 +23,10 @@ use super::project::{
 };
 use super::protocol::{
     AdapterDescription, AdapterRejection, ProjectMutationReceipt, StudioAdapterRequest,
-    StudioAdapterResponse, StudioProjectReadout, VoxelReadout, MAX_REQUEST_ID_BYTES,
-    MAX_STUDIO_ADAPTER_REQUEST_BYTES, MAX_STUDIO_ADAPTER_RESPONSE_BYTES,
-    STUDIO_ADAPTER_PROTOCOL_VERSION,
+    StudioAdapterResponse, StudioEntityInspectorContractIdentity, StudioProjectReadout,
+    VoxelReadout, MAX_REQUEST_ID_BYTES, MAX_STUDIO_ADAPTER_REQUEST_BYTES,
+    MAX_STUDIO_ADAPTER_RESPONSE_BYTES, STUDIO_ADAPTER_PROTOCOL_VERSION,
+    VOXEL_OBJECT_INSPECTOR_CONTRACT_ID, VOXEL_OBJECT_INSPECTOR_CONTRACT_VERSION,
 };
 use super::voxel::{
     apply_brush, apply_prepared_conversion, apply_prepared_history_revert, apply_primitive,
@@ -70,6 +78,9 @@ impl StudioAdapterService {
                 ),
             ));
         }
+        if is_loading_bay_weapon_request(input) {
+            return self.handle_loading_bay_weapon_json(input);
+        }
         let request = match serde_json::from_str::<StudioAdapterRequest>(input.trim_end()) {
             Ok(request) => request,
             Err(error) => {
@@ -80,6 +91,25 @@ impl StudioAdapterService {
             }
         };
         encode_response(self.handle(request))
+    }
+
+    fn handle_loading_bay_weapon_json(&mut self, input: &str) -> String {
+        let request = match decode_loading_bay_weapon_authoring_request(input.trim_end()) {
+            Ok(request) => request,
+            Err(error) => return encode_weapon_codec_rejection(input, error),
+        };
+        let request_id = request.request_id().to_string();
+        let response = match self.open.as_ref() {
+            Some(open) => LoadingBayWeaponAuthoringService::new().handle(&open.location, request),
+            None => LoadingBayWeaponAuthoringResponse::rejected(
+                request_id,
+                LoadingBayWeaponAuthoringRejectionCode::ProjectStoreFailure,
+                "open a project before reading or replacing a Loading Bay weapon",
+                None,
+            ),
+        };
+        encode_loading_bay_weapon_authoring_response(&response)
+            .expect("bounded Loading Bay weapon response")
     }
 
     pub fn handle(&mut self, request: StudioAdapterRequest) -> StudioAdapterResponse {
@@ -113,7 +143,7 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 9,
+                    adapter_version: 10,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -177,6 +207,16 @@ impl StudioAdapterService {
                         "attachVoxelObjectInstance",
                         "previewVoxelObjectInstance",
                         "closeProject",
+                    ],
+                    entity_inspector_contracts: vec![
+                        StudioEntityInspectorContractIdentity {
+                            contract_id: VOXEL_OBJECT_INSPECTOR_CONTRACT_ID,
+                            contract_version: VOXEL_OBJECT_INSPECTOR_CONTRACT_VERSION,
+                        },
+                        StudioEntityInspectorContractIdentity {
+                            contract_id: LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID,
+                            contract_version: LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION,
+                        },
                     ],
                 },
             },
@@ -1496,6 +1536,42 @@ impl StudioAdapterService {
             Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
         }
     }
+}
+
+fn is_loading_bay_weapon_request(input: &str) -> bool {
+    serde_json::from_str::<Value>(input.trim_end())
+        .ok()
+        .and_then(|value| value.get("type")?.as_str().map(str::to_string))
+        .is_some_and(|request_type| {
+            matches!(
+                request_type.as_str(),
+                "readLoadingBayWeapon" | "replaceLoadingBayWeapon"
+            )
+        })
+}
+
+fn encode_weapon_codec_rejection(
+    input: &str,
+    error: LoadingBayWeaponAuthoringCodecError,
+) -> String {
+    let request_id = serde_json::from_str::<Value>(input.trim_end())
+        .ok()
+        .and_then(|value| {
+            value
+                .get("requestId")?
+                .as_str()
+                .filter(|request_id| request_id.len() <= MAX_REQUEST_ID_BYTES)
+                .map(str::to_string)
+        })
+        .unwrap_or_default();
+    let code = match &error {
+        LoadingBayWeaponAuthoringCodecError::RequestTooLarge { .. } => "protocol.requestTooLarge",
+        _ => "protocol.malformedRequest",
+    };
+    encode_response(StudioAdapterResponse::rejected(
+        (!request_id.is_empty()).then_some(request_id),
+        AdapterRejection::new(code, error.to_string()),
+    ))
 }
 
 fn new_open_project(location: ProjectLocation) -> OpenProject {

@@ -43,12 +43,15 @@ use voxel_convert::VoxelObjectFrameSelection;
 use voxel_object_runtime::{admit_voxel_object, AdmittedVoxelObject, VoxelObjectRuntimeLimits};
 
 use crate::stored_project::validate_voxel_object_aggregate_budget;
+use crate::weapon_authoring::loading_bay_weapon_owner_entity_ids;
 use crate::{
     admit_stored_project_with_document, encode_project_document, AdmittedProject,
     AdmittedStoredProject, DecodedProjectDocument, ProjectSaveMode, ProjectStore,
     StoredAssetImport, StoredCollision, StoredEntityDefinition, StoredImportSource,
     StoredKinematic, StoredLight, StoredProject, StoredRenderable, StoredScene,
-    StoredVoxelEnvironment, StoredVoxelObjectFrameSelection, STORED_PROJECT_SCHEMA_VERSION,
+    StoredVoxelObjectFrameSelection, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID,
+    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION, LOADING_BAY_WEAPON_COMPONENT_TYPE_ID,
+    STORED_PROJECT_SCHEMA_VERSION,
 };
 
 use super::host_file::read_host_file;
@@ -56,12 +59,15 @@ use super::path::ProjectLocation;
 use super::protocol::{
     AdapterRejection, AnimatedMeshResourceReadout, AssetBrowserReadout, AssetEntryReadout,
     AssetImportReadout, AssetLockEntryReadout, CanonicalOwnerContent, EntityTranslationReceipt,
-    LoadingBayDomainReadout, OwnerInspections, ProjectMutationReceipt, ProjectionDiagnosticReadout,
-    ProjectionReadout, SceneHierarchyNodeReadout, SceneHierarchyReadout, StudioProjectIdentity,
-    StudioProjectReadout, StudioSceneAppearance, StudioSceneObjectDraft, StudioVoxelObjectInstance,
-    TransformReadout, VoxelObjectAssetAuthoringReadout, VoxelObjectAuthoringReadout,
-    VoxelObjectClipAuthoringReadout, VoxelObjectFrameAuthoringReadout, VoxelObjectGridReadout,
-    VoxelObjectInstanceReadout, VoxelObjectProvenanceReadout,
+    OwnerInspections, ProjectMutationReceipt, ProjectionDiagnosticReadout, ProjectionReadout,
+    SceneHierarchyNodeReadout, SceneHierarchyReadout, StudioEntityComponentReference,
+    StudioEntityInspectorContractIdentity, StudioProjectIdentity, StudioProjectReadout,
+    StudioSceneAppearance, StudioSceneObjectDraft, StudioVoxelObjectInstance, TransformReadout,
+    VoxelObjectAssetAuthoringReadout, VoxelObjectAuthoringReadout, VoxelObjectClipAuthoringReadout,
+    VoxelObjectFrameAuthoringReadout, VoxelObjectGridReadout, VoxelObjectInstanceReadout,
+    VoxelObjectProvenanceReadout, MAX_STUDIO_ENTITY_COMPONENTS_PER_OWNER,
+    MAX_STUDIO_ENTITY_COMPONENT_REFERENCES, VOXEL_OBJECT_COMPONENT_TYPE_ID,
+    VOXEL_OBJECT_INSPECTOR_CONTRACT_ID, VOXEL_OBJECT_INSPECTOR_CONTRACT_VERSION,
 };
 use super::voxel::{project_voxel_authoring, voxel_authoring_readout};
 
@@ -165,7 +171,6 @@ impl OpenedOwnerProject {
         voxel_object_projector: &mut VoxelObjectRenderProjector,
     ) -> Result<StudioProjectReadout, AdapterRejection> {
         let project = self.stored.document();
-        let entry_scene = entry_scene(project);
         let catalog_json = encode_catalog(&self.catalog)
             .map_err(|error| reject("catalog.encode", error.to_string()))?;
         let scene_json =
@@ -216,8 +221,7 @@ impl OpenedOwnerProject {
                 });
             }
         }
-        let mut loading_bay = loading_bay_readout(entry_scene);
-        loading_bay.entity_count = self.admitted.session.entities().total_count();
+        let entity_components = entity_component_references(project, &scene_hierarchy)?;
 
         Ok(StudioProjectReadout {
             identity: StudioProjectIdentity {
@@ -253,7 +257,7 @@ impl OpenedOwnerProject {
             voxel_authoring: voxel_authoring_readout(project)?,
             voxel_object_authoring: voxel_object_authoring_readout(project),
             animated_mesh_resources: animated_mesh_resources(project)?,
-            loading_bay,
+            entity_components,
             projection,
             projection_readout,
         })
@@ -2338,33 +2342,89 @@ fn animated_mesh_resources(
         .collect()
 }
 
-fn loading_bay_readout(scene: &StoredScene) -> LoadingBayDomainReadout {
-    LoadingBayDomainReadout {
-        scene_name: scene.name.clone(),
-        entity_count: scene.entities.len(),
-        door_count: count_where(scene, |entity| entity.door.is_some()),
-        switch_count: count_where(scene, |entity| entity.switch.is_some()),
-        enemy_count: count_where(scene, |entity| entity.enemy),
-        encounter_count: count_where(scene, |entity| entity.encounter.is_some()),
-        extraction_beacon_count: count_where(scene, |entity| entity.extraction_beacon.is_some()),
-        navigator_count: count_where(scene, |entity| entity.navigation.is_some()),
-        player_controller_count: count_where(scene, |entity| entity.player_controller.is_some()),
-        weapon_count: count_where(scene, |entity| entity.weapon.is_some()),
-        voxel_environment: match scene.voxel_environment {
-            Some(StoredVoxelEnvironment::Solid(_)) => "solid",
-            Some(StoredVoxelEnvironment::Material(_)) => "material",
-            Some(StoredVoxelEnvironment::GeneratedRoom(_)) => "generatedRoom",
-            None => "none",
-        },
-    }
-}
-
-fn count_where(scene: &StoredScene, predicate: impl Fn(&StoredEntityDefinition) -> bool) -> usize {
-    scene
-        .entities
+fn entity_component_references(
+    project: &StoredProject,
+    hierarchy: &SceneHierarchyReadout,
+) -> Result<Vec<StudioEntityComponentReference>, AdapterRejection> {
+    let voxel_contract = StudioEntityInspectorContractIdentity {
+        contract_id: VOXEL_OBJECT_INSPECTOR_CONTRACT_ID,
+        contract_version: VOXEL_OBJECT_INSPECTOR_CONTRACT_VERSION,
+    };
+    let weapon_contract = StudioEntityInspectorContractIdentity {
+        contract_id: LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID,
+        contract_version: LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION,
+    };
+    let mut references = project
+        .scenes
         .iter()
-        .filter(|entity| predicate(entity))
-        .count()
+        .flat_map(|scene| scene.voxel_object_instances.iter())
+        .map(|instance| StudioEntityComponentReference {
+            owner_entity_id: instance.owner_entity_id,
+            component_type_id: VOXEL_OBJECT_COMPONENT_TYPE_ID,
+            inspector_contract: Some(voxel_contract),
+        })
+        .collect::<Vec<_>>();
+    references.extend(
+        loading_bay_weapon_owner_entity_ids(project)
+            .map_err(|message| reject("project.entityComponents", message))?
+            .into_iter()
+            .map(|owner_entity_id| StudioEntityComponentReference {
+                owner_entity_id,
+                component_type_id: LOADING_BAY_WEAPON_COMPONENT_TYPE_ID,
+                inspector_contract: Some(weapon_contract),
+            }),
+    );
+    references.sort_by_key(|reference| (reference.owner_entity_id, reference.component_type_id));
+
+    if references.len() > MAX_STUDIO_ENTITY_COMPONENT_REFERENCES {
+        return Err(reject(
+            "project.entityComponents",
+            format!(
+                "project has {} component references, exceeding {}",
+                references.len(),
+                MAX_STUDIO_ENTITY_COMPONENT_REFERENCES
+            ),
+        ));
+    }
+    let known_owners = hierarchy
+        .nodes
+        .iter()
+        .filter_map(|node| node.entity_id)
+        .collect::<BTreeSet<_>>();
+    let mut seen = BTreeSet::new();
+    let mut per_owner = BTreeMap::<u64, usize>::new();
+    for reference in &references {
+        if !known_owners.contains(&reference.owner_entity_id) {
+            return Err(reject(
+                "project.entityComponents",
+                format!(
+                    "component owner {} is absent from the canonical entry-scene hierarchy",
+                    reference.owner_entity_id
+                ),
+            ));
+        }
+        if !seen.insert((reference.owner_entity_id, reference.component_type_id)) {
+            return Err(reject(
+                "project.entityComponents",
+                format!(
+                    "owner {} repeats component `{}`",
+                    reference.owner_entity_id, reference.component_type_id
+                ),
+            ));
+        }
+        let count = per_owner.entry(reference.owner_entity_id).or_default();
+        *count += 1;
+        if *count > MAX_STUDIO_ENTITY_COMPONENTS_PER_OWNER {
+            return Err(reject(
+                "project.entityComponents",
+                format!(
+                    "owner {} exceeds {} component references",
+                    reference.owner_entity_id, MAX_STUDIO_ENTITY_COMPONENTS_PER_OWNER
+                ),
+            ));
+        }
+    }
+    Ok(references)
 }
 
 fn domain_tags(entity: &StoredEntityDefinition) -> Vec<String> {

@@ -9,7 +9,7 @@ The `studio-adapter` binary is Loading Bay's project-owned Rust composition boun
 Engine Studio. It is not a gameplay runtime facade and it does not generalize Loading Bay concepts
 into Engine vocabulary.
 
-Protocol version 9 is a closed, named operation set. It covers project
+Protocol version 10 is a closed, named operation set. It covers project
 create/open/save-as/read/close; typed scene, hierarchy, transform, appearance, collision, and
 kinematic authoring; deterministic source-mesh import/reimport with catalog dependencies and locks;
 material and palette authoring; canonical voxel asset and transformed-instance lifecycle;
@@ -21,6 +21,18 @@ entity owners and Rust-owned transient scrub/play/pause/sample/stop playback dri
 timestamps. Requests and responses are one bounded JSON value per line. There is no method-name
 dispatch, provider registry, arbitrary command payload, callback subscription, HTTP route, browser
 timer authority, or browser persistence seam.
+
+The core protocol advertises only the bounded inspector contracts this adapter
+can satisfy and emits only `(ownerEntityId, componentTypeId,
+inspectorContract?)` references in each project readout. It does not carry a
+Loading Bay component value or field schema. Voxel Object owners use Engine's
+`rusty.voxel-object.instance` / `rusty.studio.voxel-object-authoring` v1
+identity, while provider-derived weapon owners use
+`rusty-engine-demo.loading-bay.weapon` /
+`rusty-engine-demo.loading-bay.weapon-authoring` v1. The latter value and
+mutation request remain in the separate closed downstream contract described
+above. A client must complete `describe` before accepting a contract-bearing
+project readout.
 
 Prepared source imports, voxel and voxel-object conversion plans, and history reverts remain private
 adapter state. Preparing a second candidate replaces the first. A later apply must name the exact
@@ -85,7 +97,8 @@ the instance, and owner deletion removes it. Missing, dangling, duplicate, or am
 fails admission. The protocol readout maps Engine component inspection to Studio's named
 `capabilities` field and adds provider-derived live entities (such as unique contained inventory
 items) to the hierarchy as `runtime-derived` entity instances, keeping hierarchy, entity-state,
-domain, and retained-projection counts coherent without adding them to authored project bytes.
+component-reference, and retained-projection counts coherent without adding them to authored
+project bytes.
 Instances select the default frame or a named clip frame and retain transform plus bounded material
 overrides.
 Before any object runtime admission or complete projection, Loading Bay counts objects, frames,

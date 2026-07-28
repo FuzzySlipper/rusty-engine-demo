@@ -366,6 +366,30 @@ impl LoadingBayWeaponAuthoringService {
     }
 }
 
+impl LoadingBayWeaponAuthoringRequest {
+    pub(crate) fn request_id(&self) -> &str {
+        match self {
+            Self::ReadLoadingBayWeapon { request_id, .. }
+            | Self::ReplaceLoadingBayWeapon { request_id, .. } => request_id,
+        }
+    }
+}
+
+impl LoadingBayWeaponAuthoringResponse {
+    pub(crate) fn rejected(
+        request_id: impl Into<String>,
+        code: LoadingBayWeaponAuthoringRejectionCode,
+        message: impl Into<String>,
+        path: Option<String>,
+    ) -> Self {
+        Self::LoadingBayWeaponRejected {
+            contract_version: LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION,
+            request_id: request_id.into(),
+            rejection: rejection(code, message, path),
+        }
+    }
+}
+
 fn request_identity(request: &LoadingBayWeaponAuthoringRequest) -> (u32, String) {
     match request {
         LoadingBayWeaponAuthoringRequest::ReadLoadingBayWeapon {
@@ -523,19 +547,42 @@ fn resolve_binding(
     project: &StoredProject,
     requested_entity_id: u64,
 ) -> Result<ResolvedBinding<'_>, LoadingBayWeaponAuthoringRejection> {
+    all_bindings(project)
+        .map_err(|message| {
+            rejection(
+                LoadingBayWeaponAuthoringRejectionCode::ProjectRejected,
+                message,
+                None,
+            )
+        })?
+        .into_iter()
+        .find(|binding| binding.owner_entity_id == requested_entity_id)
+        .ok_or_else(|| weapon_not_found(requested_entity_id))
+}
+
+pub(crate) fn loading_bay_weapon_owner_entity_ids(
+    project: &StoredProject,
+) -> Result<Vec<u64>, &'static str> {
+    Ok(all_bindings(project)?
+        .into_iter()
+        .map(|binding| binding.owner_entity_id)
+        .collect())
+}
+
+fn all_bindings(project: &StoredProject) -> Result<Vec<ResolvedBinding<'_>>, &'static str> {
     let scene = project
         .scenes
         .iter()
         .find(|scene| scene.id == project.entry_scene)
-        .ok_or_else(|| weapon_not_found(requested_entity_id))?;
-    let mut next = scene
+        .ok_or("entry scene is missing while resolving weapon inspector owners")?;
+    let first = scene
         .entities
         .iter()
         .map(|entity| entity.id)
         .max()
         .unwrap_or(0)
         .checked_add(1)
-        .ok_or_else(|| weapon_not_found(requested_entity_id))?;
+        .ok_or("weapon inspector owner identity exceeds the supported range")?;
     let inventories: BTreeMap<_, _> = scene
         .entities
         .iter()
@@ -546,23 +593,24 @@ fn resolve_binding(
                 .map(|inventory| (entity.id, inventory))
         })
         .collect();
+    let mut bindings = Vec::new();
     for (inventory_owner_entity_id, inventory) in inventories {
         for (slot_index, item_definition_id) in inventory.weapon_slots.iter().enumerate() {
-            if next == requested_entity_id {
-                return Ok(ResolvedBinding {
-                    owner_entity_id: next,
-                    inventory_owner_entity_id,
-                    slot_index,
-                    item_definition_id,
-                    inventory,
-                });
-            }
-            next = next
-                .checked_add(1)
-                .ok_or_else(|| weapon_not_found(requested_entity_id))?;
+            let offset = u64::try_from(bindings.len())
+                .map_err(|_| "weapon inspector owner identity exceeds the supported range")?;
+            let owner_entity_id = first
+                .checked_add(offset)
+                .ok_or("weapon inspector owner identity exceeds the supported range")?;
+            bindings.push(ResolvedBinding {
+                owner_entity_id,
+                inventory_owner_entity_id,
+                slot_index,
+                item_definition_id,
+                inventory,
+            });
         }
     }
-    Err(weapon_not_found(requested_entity_id))
+    Ok(bindings)
 }
 
 fn candidate_from_definition(

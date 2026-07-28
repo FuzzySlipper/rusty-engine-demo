@@ -172,11 +172,15 @@ pub use stored_project::{
 };
 pub use studio_adapter::{
     AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,
-    LoadingBayDomainReadout, OwnerInspections, PathSafetyError, ProjectLocation,
-    ProjectionDiagnosticReadout, ProjectionReadout, StudioAdapterRequest, StudioAdapterResponse,
-    StudioAdapterService, StudioProjectIdentity, StudioProjectReadout, MAX_PROJECT_PATH_BYTES,
-    MAX_REQUEST_ID_BYTES, MAX_ROOT_PATH_BYTES, MAX_STUDIO_ADAPTER_REQUEST_BYTES,
-    MAX_STUDIO_ADAPTER_RESPONSE_BYTES, STUDIO_ADAPTER_PROTOCOL_VERSION,
+    OwnerInspections, PathSafetyError, ProjectLocation, ProjectionDiagnosticReadout,
+    ProjectionReadout, StudioAdapterRequest, StudioAdapterResponse, StudioAdapterService,
+    StudioEntityComponentReference, StudioEntityInspectorContractIdentity, StudioProjectIdentity,
+    StudioProjectReadout, MAX_PROJECT_PATH_BYTES, MAX_REQUEST_ID_BYTES, MAX_ROOT_PATH_BYTES,
+    MAX_STUDIO_ADAPTER_REQUEST_BYTES, MAX_STUDIO_ADAPTER_RESPONSE_BYTES,
+    MAX_STUDIO_ENTITY_COMPONENTS_PER_OWNER, MAX_STUDIO_ENTITY_COMPONENT_REFERENCES,
+    MAX_STUDIO_ENTITY_INSPECTOR_CONTRACTS, STUDIO_ADAPTER_PROTOCOL_VERSION,
+    VOXEL_OBJECT_COMPONENT_TYPE_ID, VOXEL_OBJECT_INSPECTOR_CONTRACT_ID,
+    VOXEL_OBJECT_INSPECTOR_CONTRACT_VERSION,
 };
 pub use vitality::{
     DamageCommand, DamageDisposition, DamageService, DamageSource, HealthConfig, HealthView,

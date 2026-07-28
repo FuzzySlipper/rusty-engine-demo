@@ -133,6 +133,15 @@ render operations. No timer, durable gameplay state, alternate projector, or sib
 dependency was introduced. The proof reuses the already recorded CC0 wall and character assets and
 adds no third-party source.
 
+## Protocol-10 downstream Entity inspector composition
+
+The protocol-10 component-reference vocabulary and static Studio inspector
+outlet are consumed from the exact reviewed Rusty Engine provider selected by
+Den task #6304. Loading Bay contributes only its original weapon configuration
+form, closed v1 client/decoder, and Rust authoring service; it adds no third-party
+art, code, generated binary asset, generic component schema, or runtime-loaded
+extension.
+
 ## Proper FPS campaign design
 
 The product architecture, protocol targets, content vocabulary, and original level route in

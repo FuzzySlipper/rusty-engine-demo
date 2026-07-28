@@ -27,10 +27,17 @@ use crate::{
     StoredVoxelObjectFrameSelection, StoredVoxelObjectMaterialOverride,
 };
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 9;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 10;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
+pub const MAX_STUDIO_ENTITY_INSPECTOR_CONTRACTS: usize = 64;
+pub const MAX_STUDIO_ENTITY_COMPONENT_REFERENCES: usize = 4_096;
+pub const MAX_STUDIO_ENTITY_COMPONENTS_PER_OWNER: usize = 32;
+
+pub const VOXEL_OBJECT_COMPONENT_TYPE_ID: &str = "rusty.voxel-object.instance";
+pub const VOXEL_OBJECT_INSPECTOR_CONTRACT_ID: &str = "rusty.studio.voxel-object-authoring";
+pub const VOXEL_OBJECT_INSPECTOR_CONTRACT_VERSION: u32 = 1;
 
 #[derive(Debug, Deserialize)]
 #[serde(
@@ -1046,6 +1053,22 @@ pub struct AdapterDescription {
     pub project_kind: &'static str,
     pub project_schema_version: u32,
     pub operations: Vec<&'static str>,
+    pub entity_inspector_contracts: Vec<StudioEntityInspectorContractIdentity>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioEntityInspectorContractIdentity {
+    pub contract_id: &'static str,
+    pub contract_version: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioEntityComponentReference {
+    pub owner_entity_id: u64,
+    pub component_type_id: &'static str,
+    pub inspector_contract: Option<StudioEntityInspectorContractIdentity>,
 }
 
 #[derive(Debug, Serialize)]
@@ -1061,7 +1084,7 @@ pub struct StudioProjectReadout {
     pub voxel_authoring: VoxelAuthoringReadout,
     pub voxel_object_authoring: VoxelObjectAuthoringReadout,
     pub animated_mesh_resources: Vec<AnimatedMeshResourceReadout>,
-    pub loading_bay: LoadingBayDomainReadout,
+    pub entity_components: Vec<StudioEntityComponentReference>,
     pub projection: RenderFrameDiff,
     pub projection_readout: ProjectionReadout,
 }
@@ -1433,22 +1456,6 @@ pub struct TransformReadout {
     pub translation: [f32; 3],
     pub rotation: [f32; 4],
     pub scale: [f32; 3],
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LoadingBayDomainReadout {
-    pub scene_name: String,
-    pub entity_count: usize,
-    pub door_count: usize,
-    pub switch_count: usize,
-    pub enemy_count: usize,
-    pub encounter_count: usize,
-    pub extraction_beacon_count: usize,
-    pub navigator_count: usize,
-    pub player_controller_count: usize,
-    pub weapon_count: usize,
-    pub voxel_environment: &'static str,
 }
 
 #[derive(Debug, Serialize)]
