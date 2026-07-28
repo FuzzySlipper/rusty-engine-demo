@@ -22,7 +22,7 @@ use core_ids::{SceneId, SceneNodeId};
 use core_math::Vec3;
 use engine_inspector::{
     inspect_catalog, inspect_content_manifest, inspect_entity_state, inspect_scene,
-    inspect_voxel_state,
+    inspect_voxel_state, NamedCount,
 };
 use entity_state::{encode_durable_snapshot, EntityState, EntityTransform, Quat};
 use render_model::{
@@ -196,6 +196,28 @@ impl OpenedOwnerProject {
             None,
         )?;
         let catalog_lock = generate_lock(&self.catalog);
+        let scene_hierarchy = scene_hierarchy(&self.scene, self.admitted.session.entities());
+        let mut scene_inspection = inspect_scene(&self.scene, Some(&self.catalog));
+        let composed_node_count = scene_hierarchy.nodes.len();
+        let derived_entity_count = composed_node_count.saturating_sub(scene_inspection.node_count);
+        scene_inspection.node_count = composed_node_count;
+        scene_inspection.root_count = scene_hierarchy.root_node_ids.len();
+        if derived_entity_count > 0 {
+            if let Some(kind) = scene_inspection
+                .node_kinds
+                .iter_mut()
+                .find(|kind| kind.name == "entityInstance")
+            {
+                kind.count += derived_entity_count;
+            } else {
+                scene_inspection.node_kinds.push(NamedCount {
+                    name: "entityInstance".to_string(),
+                    count: derived_entity_count,
+                });
+            }
+        }
+        let mut loading_bay = loading_bay_readout(entry_scene);
+        loading_bay.entity_count = self.admitted.session.entities().total_count();
 
         Ok(StudioProjectReadout {
             identity: StudioProjectIdentity {
@@ -217,11 +239,11 @@ impl OpenedOwnerProject {
             },
             inspections: OwnerInspections {
                 catalog: inspect_catalog(&self.catalog, Some(&catalog_lock)),
-                scene: inspect_scene(&self.scene, Some(&self.catalog)),
-                entity_state: inspect_entity_state(self.admitted.session.entities()),
+                scene: scene_inspection,
+                entity_state: inspect_entity_state(self.admitted.session.entities()).into(),
                 persistence: inspect_content_manifest(&self.manifest),
             },
-            scene_hierarchy: scene_hierarchy(&self.scene, self.admitted.session.entities()),
+            scene_hierarchy,
             asset_browser: asset_browser_readout(project, &self.catalog, &self.location),
             voxel: self
                 .admitted
@@ -231,7 +253,7 @@ impl OpenedOwnerProject {
             voxel_authoring: voxel_authoring_readout(project)?,
             voxel_object_authoring: voxel_object_authoring_readout(project),
             animated_mesh_resources: animated_mesh_resources(project)?,
-            loading_bay: loading_bay_readout(entry_scene),
+            loading_bay,
             projection,
             projection_readout,
         })
@@ -1822,15 +1844,65 @@ fn scene_hierarchy(scene: &FlatSceneDocument, state: &EntityState) -> SceneHiera
         .entities()
         .map(|entity| (SceneNodeId::new(entity.id.raw()), entity.id))
         .collect::<BTreeMap<_, _>>();
-    let mut nodes = Vec::with_capacity(scene.nodes.len());
+    let mut nodes = Vec::with_capacity(state.total_count().max(scene.nodes.len()));
     for root in &tree.roots {
         append_hierarchy_node(root, None, 0, &world, &child_orders, &entities, &mut nodes);
+    }
+    let authored_node_ids = scene
+        .nodes
+        .iter()
+        .map(|node| node.id.raw())
+        .collect::<BTreeSet<_>>();
+    let mut root_node_ids = tree
+        .roots
+        .iter()
+        .map(|node| node.id.raw())
+        .collect::<Vec<_>>();
+    let mut used_root_orders = scene
+        .nodes
+        .iter()
+        .filter(|node| node.parent.is_none())
+        .map(|node| node.child_order)
+        .collect::<BTreeSet<_>>();
+    let mut next_child_order = 0_u32;
+    for entity in state
+        .entities()
+        .filter(|entity| !authored_node_ids.contains(&entity.id.raw()))
+    {
+        while used_root_orders.contains(&next_child_order) {
+            next_child_order = next_child_order
+                .checked_add(1)
+                .expect("bounded hierarchy cannot exhaust every u32 child order");
+        }
+        let transform = state
+            .transform(entity.id)
+            .map_or(EntityTransform::IDENTITY, |transform| transform.transform());
+        let world_transform = state.world_transform(entity.id).unwrap_or(transform);
+        let display_order = nodes.len() as u32;
+        root_node_ids.push(entity.id.raw());
+        nodes.push(SceneHierarchyNodeReadout {
+            node_id: entity.id.raw(),
+            parent_node_id: None,
+            child_order: next_child_order,
+            display_order,
+            depth: 0,
+            node_kind: "entityInstance",
+            label: entity.name.clone(),
+            tags: vec!["runtime-derived".to_string()],
+            asset: state
+                .renderable(entity.id)
+                .map(|renderable| renderable.asset.clone()),
+            entity_id: Some(entity.id.raw()),
+            local_transform: transform_readout(transform),
+            world_transform: transform_readout(world_transform),
+        });
+        used_root_orders.insert(next_child_order);
     }
     SceneHierarchyReadout {
         scene_id: scene.id.raw(),
         revision: scene.revision,
         name: scene.metadata.name.clone(),
-        root_node_ids: tree.roots.iter().map(|node| node.id.raw()).collect(),
+        root_node_ids,
         nodes,
     }
 }

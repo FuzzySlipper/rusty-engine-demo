@@ -77,8 +77,12 @@ source-material mapping, exact conversion provenance, and game-owned scene insta
 instance names one unique entity owner in the same scene; the outer Studio readout exposes
 `ownerEntityId`, hierarchy and projection metadata resolve to that entity, owner transforms update
 the instance, and owner deletion removes it. Missing, dangling, duplicate, or ambiguous ownership
-fails admission. Instances select the default frame or a named clip frame and retain transform plus
-bounded material overrides.
+fails admission. The protocol readout maps Engine component inspection to Studio's named
+`capabilities` field and adds provider-derived live entities (such as unique contained inventory
+items) to the hierarchy as `runtime-derived` entity instances, keeping hierarchy, entity-state,
+domain, and retained-projection counts coherent without adding them to authored project bytes.
+Instances select the default frame or a named clip frame and retain transform plus bounded material
+overrides.
 Before any object runtime admission or complete projection, Loading Bay counts objects, frames,
 sparse-run cells, worst-case mesh faces, and instances, treating a same-identity private candidate
 as a replacement. The project bounds are 256 objects, 8,193 frames, 65,536 resolved cells, 393,216

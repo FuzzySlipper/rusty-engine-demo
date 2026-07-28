@@ -33,11 +33,18 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         response["project"]["inspections"]["catalog"]["entryCount"],
         15
     );
-    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 47);
+    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 50);
     assert_eq!(
         response["project"]["inspections"]["entityState"]["entityCount"],
         50
     );
+    let entity_inspection = response["project"]["inspections"]["entityState"]
+        .as_object()
+        .expect("entity-state inspection is an object");
+    assert!(entity_inspection["capabilities"]
+        .as_array()
+        .is_some_and(|capabilities| !capabilities.is_empty()));
+    assert!(!entity_inspection.contains_key("components"));
     assert_eq!(
         response["project"]["inspections"]["persistence"]["artifactCount"],
         1
@@ -51,7 +58,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        47
+        50
     );
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"][0]["label"],
@@ -60,6 +67,14 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"][0]["entityId"],
         1
+    );
+    assert_eq!(
+        response["project"]["sceneHierarchy"]["nodes"][47]["entityId"],
+        88
+    );
+    assert_eq!(
+        response["project"]["sceneHierarchy"]["nodes"][47]["tags"],
+        json!(["runtime-derived"])
     );
     assert_eq!(response["project"]["projection"]["schemaVersion"], 1);
     assert_eq!(

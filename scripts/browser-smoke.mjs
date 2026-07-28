@@ -919,7 +919,11 @@ async function runHostReplacementContinueProof(project) {
 }
 
 async function runIsolatedGameShellProof(project, viewport) {
-  const running = await launchHost(project);
+  const running = await launchHost(
+    project,
+    undefined,
+    resolve(proofDirectory, `${viewport.label}-game-shell-save-slots`),
+  );
   try {
     await waitForHealth(
       `http://${running.address}/health`,

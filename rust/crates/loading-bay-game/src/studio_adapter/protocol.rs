@@ -1,7 +1,7 @@
 use asset_catalog::StoredMaterialDefinition;
 use engine_inspector::{
-    CatalogInspection, EntityStateInspection, PersistenceInspection, SceneInspection,
-    VoxelAssetInspection, VoxelStateInspection,
+    CatalogInspection, DiagnosticSet, EntityStateInspection, NamedCount, PersistenceInspection,
+    SceneInspection, VoxelAssetInspection, VoxelStateInspection,
 };
 use engine_spatial::{VoxelEditDelta, VoxelPrimitiveRequest, VoxelTemplateRequest};
 use render_model::{RenderFrameDiff, Transform};
@@ -1366,8 +1366,38 @@ pub struct CanonicalOwnerContent {
 pub struct OwnerInspections {
     pub catalog: CatalogInspection,
     pub scene: SceneInspection,
-    pub entity_state: EntityStateInspection,
+    pub entity_state: StudioEntityStateInspection,
     pub persistence: PersistenceInspection,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioEntityStateInspection {
+    pub schema_version: u32,
+    pub revision: u64,
+    pub entity_count: usize,
+    pub lifecycle: Vec<NamedCount>,
+    pub sources: Vec<NamedCount>,
+    pub capabilities: Vec<NamedCount>,
+    pub relationships: Vec<NamedCount>,
+    pub entity_ids: Vec<u64>,
+    pub diagnostics: DiagnosticSet,
+}
+
+impl From<EntityStateInspection> for StudioEntityStateInspection {
+    fn from(value: EntityStateInspection) -> Self {
+        Self {
+            schema_version: value.schema_version,
+            revision: value.revision,
+            entity_count: value.entity_count,
+            lifecycle: value.lifecycle,
+            sources: value.sources,
+            capabilities: value.components,
+            relationships: value.relationships,
+            entity_ids: value.entity_ids,
+            diagnostics: value.diagnostics,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
