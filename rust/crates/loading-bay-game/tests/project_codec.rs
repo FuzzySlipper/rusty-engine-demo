@@ -148,7 +148,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 21, 99] {
+    for schema_version in [0, 5, 22, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -158,6 +158,32 @@ fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
     let error = decode_project_document("{}").unwrap_err();
     assert_eq!(error.diagnostic().code, diagnostic_code::DECODE);
     assert_eq!(error.diagnostic().path, "schemaVersion");
+}
+
+#[test]
+fn schema_twenty_migrates_without_instances_and_rejects_unowned_instances() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["schemaVersion"] = 20.into();
+    let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
+    assert_eq!(decoded.source_schema_version, 20);
+    assert_eq!(
+        decoded.project.schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
+
+    previous["scenes"][0]["voxelObjectInstances"] = serde_json::json!([{
+        "instanceId": "legacy-unowned-object",
+        "voxelObjectAssetId": "voxel-object/future",
+        "frame": { "kind": "default" },
+        "translation": [0, 0, 0],
+        "rotation": [0, 0, 0, 1],
+        "scale": [1, 1, 1],
+        "materialOverrides": []
+    }]);
+    let error = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
+    assert_eq!(error.diagnostic().path, "scenes");
+    assert!(error.diagnostic().message.contains("explicit entity owner"));
 }
 
 #[test]
@@ -208,6 +234,7 @@ fn schema_nineteen_migrates_without_objects_and_rejects_future_object_fields() {
         .all(|scene| scene.voxel_object_instances.is_empty()));
 
     previous["scenes"][0]["voxelObjectInstances"] = serde_json::json!([{
+        "ownerEntityId": 1,
         "instanceId": "future-object",
         "voxelObjectAssetId": "voxel-object/future",
         "frame": { "kind": "default" },

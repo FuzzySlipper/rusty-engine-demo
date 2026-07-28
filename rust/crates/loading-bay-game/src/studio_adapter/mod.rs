@@ -8,6 +8,7 @@
 mod asset_import;
 mod host_file;
 mod path;
+mod playback;
 mod project;
 mod protocol;
 mod service;

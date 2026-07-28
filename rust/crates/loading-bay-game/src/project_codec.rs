@@ -19,7 +19,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 19;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 20;
+const LEGACY_V19_STORED_PROJECT_SCHEMA_VERSION: u32 = 19;
 const LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION: u32 = 18;
 const LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION: u32 = 17;
 const LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION: u32 = 16;
@@ -63,7 +64,11 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let source_schema_version = probe_schema_version(input)?;
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
-        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => migrate_v19(decode_legacy_project(input)?)?,
+        PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => {
+            reject_schema_twenty_instances_without_owners(input)?;
+            migrate_v20(decode_legacy_project(input)?)?
+        }
+        LEGACY_V19_STORED_PROJECT_SCHEMA_VERSION => migrate_v19(decode_legacy_project(input)?)?,
         LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION => migrate_v18(decode_legacy_project(input)?)?,
         LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION => migrate_v17(decode_legacy_project(input)?)?,
         LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION => migrate_v16(decode_legacy_project(input)?)?,
@@ -82,7 +87,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
                     LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
@@ -96,6 +101,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                     LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V19_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -210,16 +216,50 @@ fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectErro
     if document.schema_version <= LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION {
         reject_future_enemy_archetype_fields(&document)?;
     }
-    if document.schema_version <= PREVIOUS_STORED_PROJECT_SCHEMA_VERSION {
+    if document.schema_version <= LEGACY_V19_STORED_PROJECT_SCHEMA_VERSION {
         reject_future_voxel_object_fields(&document)?;
     }
     Ok(document)
 }
 
-fn migrate_v19(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+fn migrate_v20(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
+    );
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn reject_schema_twenty_instances_without_owners(input: &str) -> Result<(), StoredProjectError> {
+    let value: serde_json::Value = serde_json::from_str(input).map_err(|error| {
+        StoredProjectError::new(diagnostic_code::DECODE, "$", error.to_string())
+    })?;
+    if value
+        .get("scenes")
+        .and_then(serde_json::Value::as_array)
+        .is_some_and(|scenes| {
+            scenes.iter().any(|scene| {
+                scene
+                    .get("voxelObjectInstances")
+                    .and_then(serde_json::Value::as_array)
+                    .is_some_and(|instances| !instances.is_empty())
+            })
+        })
+    {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "scenes",
+            "schema 20 voxel-object instances have no explicit entity owner and cannot migrate",
+        ));
+    }
+    Ok(())
+}
+
+fn migrate_v19(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
+        LEGACY_V19_STORED_PROJECT_SCHEMA_VERSION
     );
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)

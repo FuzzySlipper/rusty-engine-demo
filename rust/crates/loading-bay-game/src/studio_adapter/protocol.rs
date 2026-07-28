@@ -20,13 +20,14 @@ use voxel_convert::{
     VoxelObjectConversionPlan, VoxelObjectConversionPreview, VoxelObjectConversionSettings,
     VoxelObjectFrameSelection,
 };
+use voxel_object_runtime::{VoxelObjectLoopMode, VoxelObjectPlaybackRate};
 
 use crate::{
     StoredCollision, StoredImportSource, StoredKinematic, StoredLight, StoredVoxelInstance,
-    StoredVoxelObjectInstance,
+    StoredVoxelObjectFrameSelection, StoredVoxelObjectMaterialOverride,
 };
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 7;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 9;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
@@ -494,12 +495,53 @@ pub enum StudioAdapterRequest {
         request_id: String,
         expected_project_hash: String,
         scene_id: String,
-        instance: StoredVoxelObjectInstance,
+        instance: StudioVoxelObjectInstance,
+    },
+    PreviewVoxelObjectInstance {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        scene_id: String,
+        instance_id: String,
+        now_microseconds: u64,
+        command: VoxelObjectPlaybackCommand,
     },
     CloseProject {
         protocol_version: u32,
         request_id: String,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StudioVoxelObjectInstance {
+    pub instance_id: String,
+    pub voxel_object_asset_id: String,
+    pub frame: StoredVoxelObjectFrameSelection,
+    pub translation: [f32; 3],
+    pub rotation: [f32; 4],
+    pub scale: [f32; 3],
+    #[serde(default)]
+    pub material_overrides: Vec<StoredVoxelObjectMaterialOverride>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum VoxelObjectPlaybackCommand {
+    Scrub {
+        clip_id: String,
+        clip_frame: u32,
+        loop_mode: VoxelObjectLoopMode,
+    },
+    Play,
+    Pause,
+    Sample,
+    Stop,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -709,6 +751,9 @@ impl StudioAdapterRequest {
             | Self::AttachVoxelObjectInstance {
                 protocol_version, ..
             }
+            | Self::PreviewVoxelObjectInstance {
+                protocol_version, ..
+            }
             | Self::CloseProject {
                 protocol_version, ..
             } => *protocol_version,
@@ -774,6 +819,7 @@ impl StudioAdapterRequest {
             | Self::ApplyVoxelObjectConversion { request_id, .. }
             | Self::DiscardVoxelObjectConversion { request_id, .. }
             | Self::AttachVoxelObjectInstance { request_id, .. }
+            | Self::PreviewVoxelObjectInstance { request_id, .. }
             | Self::CloseProject { request_id, .. } => request_id,
         }
     }
@@ -930,6 +976,13 @@ pub enum StudioAdapterResponse {
         protocol_version: u32,
         request_id: String,
         plan_id: String,
+        projection: RenderFrameDiff,
+        projection_readout: ProjectionReadout,
+    },
+    VoxelObjectInstancePreviewed {
+        protocol_version: u32,
+        request_id: String,
+        playback: VoxelObjectInstancePlaybackReadout,
         projection: RenderFrameDiff,
         projection_readout: ProjectionReadout,
     },
@@ -1121,7 +1174,27 @@ pub struct VoxelObjectClipAuthoringReadout {
 #[serde(rename_all = "camelCase")]
 pub struct VoxelObjectInstanceReadout {
     pub scene_id: String,
-    pub instance: StoredVoxelObjectInstance,
+    pub owner_entity_id: u64,
+    pub instance: StudioVoxelObjectInstance,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectInstancePlaybackReadout {
+    pub scene_id: String,
+    pub instance_id: String,
+    pub voxel_object_asset_id: String,
+    pub project_hash: String,
+    pub object_content_hash: String,
+    pub durable_frame: StoredVoxelObjectFrameSelection,
+    pub status: &'static str,
+    pub clip_id: Option<String>,
+    pub loop_mode: VoxelObjectLoopMode,
+    pub rate: VoxelObjectPlaybackRate,
+    pub elapsed_microseconds: u64,
+    pub runtime_frame: u32,
+    pub clip_frame: Option<u32>,
+    pub ended: bool,
 }
 
 #[derive(Debug, Serialize)]

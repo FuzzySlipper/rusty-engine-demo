@@ -7,27 +7,27 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
-asset-catalog = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-asset-import = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-authored-scene = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-content-store = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-core-assets = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-core-ids = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-core-math = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-core-space = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-core-time = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-core-voxel = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-engine-inspector = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-engine-spatial = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-entity-state = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-environment-authoring = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-gameplay-mechanics = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-render-model = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-render-projection = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-voxel-annotation = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-voxel-asset = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-voxel-convert = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
-voxel-object-runtime = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "1ee4af531c848e3931cce33b22dc63405d48e3e7" }
+asset-catalog = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+asset-import = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+authored-scene = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+content-store = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+core-assets = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+core-ids = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+core-math = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+core-space = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+core-time = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+core-voxel = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+engine-inspector = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+engine-spatial = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+entity-state = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+environment-authoring = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+gameplay-mechanics = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+render-model = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+render-projection = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+voxel-annotation = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+voxel-asset = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+voxel-convert = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
+voxel-object-runtime = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "ff87c425be4167a5bdd06c059b042967f2808e2b" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_path_to_error = "0.1"
@@ -38,4 +38,4 @@ unsafe_code = "forbid"
 
 [workspace.metadata.rusty-engine]
 repository = "https://github.com/FuzzySlipper/rusty-engine"
-revision = "1ee4af531c848e3931cce33b22dc63405d48e3e7"
+revision = "ff87c425be4167a5bdd06c059b042967f2808e2b"

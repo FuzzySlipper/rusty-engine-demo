@@ -4,16 +4,18 @@ The `studio-adapter` binary is Loading Bay's project-owned Rust composition boun
 Engine Studio. It is not a gameplay runtime facade and it does not generalize Loading Bay concepts
 into Engine vocabulary.
 
-Protocol version 7 is a closed, named operation set. It covers project
+Protocol version 9 is a closed, named operation set. It covers project
 create/open/save-as/read/close; typed scene, hierarchy, transform, appearance, collision, and
 kinematic authoring; deterministic source-mesh import/reimport with catalog dependencies and locks;
 material and palette authoring; canonical voxel asset and transformed-instance lifecycle;
 authoritative picking; brush and primitive edits; deterministic templates; durable history
 query/preview/apply; every typed annotation edit/query/export family; bounded model, GLB, static
 voxel-object, and animated flipbook conversion planning; trusted host voxel/mesh/GLB/license files;
-and deterministic environment materialization. Requests and responses are one bounded JSON value
-per line. There is no method-name dispatch, provider registry, arbitrary command payload, callback
-subscription, HTTP route, or browser persistence seam.
+and deterministic environment materialization. Applied voxel-object instances have explicit real
+entity owners and Rust-owned transient scrub/play/pause/sample/stop playback driven only by caller
+timestamps. Requests and responses are one bounded JSON value per line. There is no method-name
+dispatch, provider registry, arbitrary command payload, callback subscription, HTTP route, browser
+timer authority, or browser persistence seam.
 
 Prepared source imports, voxel and voxel-object conversion plans, and history reverts remain private
 adapter state. Preparing a second candidate replaces the first. A later apply must name the exact
@@ -37,7 +39,8 @@ the public Engine owners:
    flipbook planning, frame preview, source fingerprints, and exact output.
 6. `environment-authoring` owns deterministic preset/seed generation; Loading Bay atomically maps
    the resulting voxel asset, instance, and markers into its named project entities.
-7. `voxel-object-runtime` admits persisted object frames and clip selection.
+7. `voxel-object-runtime` admits persisted object frames and clip selection, and its
+   `VoxelObjectPlayer` alone derives transient once/repeat/ping-pong playback frames.
 8. `engine-inspector` and `render-projection` produce owner readouts and the complete shared
    renderer frame. Candidate and attached objects use Engine `defineVoxelObject` and
    `createVoxelObjectInstance` operations rather than a downstream preview renderer.
@@ -70,8 +73,12 @@ then runs complete project admission, so unrelated collisions, removed dependenc
 and invalid renderer payloads fail atomically.
 
 Voxel objects persist the Engine-owned asset, default frame, clips and per-frame timing, palette,
-source-material mapping, exact conversion provenance, and game-owned scene instances. Instances
-select the default frame or a named clip frame and retain transform plus bounded material overrides.
+source-material mapping, exact conversion provenance, and game-owned scene instances. Every
+instance names one unique entity owner in the same scene; the outer Studio readout exposes
+`ownerEntityId`, hierarchy and projection metadata resolve to that entity, owner transforms update
+the instance, and owner deletion removes it. Missing, dangling, duplicate, or ambiguous ownership
+fails admission. Instances select the default frame or a named clip frame and retain transform plus
+bounded material overrides.
 Before any object runtime admission or complete projection, Loading Bay counts objects, frames,
 sparse-run cells, worst-case mesh faces, and instances, treating a same-identity private candidate
 as a replacement. The project bounds are 256 objects, 8,193 frames, 65,536 resolved cells, 393,216
@@ -79,9 +86,15 @@ worst-case faces, and 4,096 instances; excess is rejected with
 `project.voxelObjectAggregateLimit`. The checked preflight applies equally to open, read, prepare,
 preview, apply, and attachment publication, so the later 32 MiB response bound is not the first
 limit on object expansion work.
+Applied playback is private adapter state. A retained canonical
+`VoxelObjectRenderProjector` emits incremental `setVoxelObjectFrame` patches; control-only
+responses may be empty. Open, explicit read, close, and every durable mutation invalidate playback,
+and no playback command changes project bytes, revision, hash, or persisted frame selection.
+
 Opening the project in a fresh adapter process reconstructs the same typed authoring readout and
-complete renderer frame from those canonical bytes. Schema-19 documents migrate only when the new
-object fields are absent; relabeling schema-20 object content as an older schema fails closed.
+complete renderer frame from those canonical bytes. Schema-20 documents migrate only when they
+contain no unowned object instances; schema-19 documents migrate only when all object fields are
+absent. Relabeling newer object content as an older schema fails closed.
 
 ## Verification
 

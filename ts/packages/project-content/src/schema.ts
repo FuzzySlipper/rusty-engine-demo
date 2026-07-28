@@ -383,6 +383,7 @@ export interface StoredVoxelObjectFrameDefinition {
 }
 
 export interface StoredVoxelObjectInstanceDefinition {
+  readonly ownerEntityId: number;
   readonly instanceId: string;
   readonly voxelObjectAssetId: string;
   readonly frame:
@@ -415,7 +416,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 20;
+  readonly schemaVersion: 21;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

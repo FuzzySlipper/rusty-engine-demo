@@ -58,10 +58,10 @@ use super::protocol::{
     AssetImportReadout, AssetLockEntryReadout, CanonicalOwnerContent, EntityTranslationReceipt,
     LoadingBayDomainReadout, OwnerInspections, ProjectMutationReceipt, ProjectionDiagnosticReadout,
     ProjectionReadout, SceneHierarchyNodeReadout, SceneHierarchyReadout, StudioProjectIdentity,
-    StudioProjectReadout, StudioSceneAppearance, StudioSceneObjectDraft, TransformReadout,
-    VoxelObjectAssetAuthoringReadout, VoxelObjectAuthoringReadout, VoxelObjectClipAuthoringReadout,
-    VoxelObjectFrameAuthoringReadout, VoxelObjectGridReadout, VoxelObjectInstanceReadout,
-    VoxelObjectProvenanceReadout,
+    StudioProjectReadout, StudioSceneAppearance, StudioSceneObjectDraft, StudioVoxelObjectInstance,
+    TransformReadout, VoxelObjectAssetAuthoringReadout, VoxelObjectAuthoringReadout,
+    VoxelObjectClipAuthoringReadout, VoxelObjectFrameAuthoringReadout, VoxelObjectGridReadout,
+    VoxelObjectInstanceReadout, VoxelObjectProvenanceReadout,
 };
 use super::voxel::{project_voxel_authoring, voxel_authoring_readout};
 
@@ -157,6 +157,13 @@ impl OpenedOwnerProject {
     }
 
     pub fn readout(&self) -> Result<StudioProjectReadout, AdapterRejection> {
+        self.readout_with_voxel_object_projector(&mut VoxelObjectRenderProjector::new())
+    }
+
+    pub(crate) fn readout_with_voxel_object_projector(
+        &self,
+        voxel_object_projector: &mut VoxelObjectRenderProjector,
+    ) -> Result<StudioProjectReadout, AdapterRejection> {
         let project = self.stored.document();
         let entry_scene = entry_scene(project);
         let catalog_json = encode_catalog(&self.catalog)
@@ -180,8 +187,14 @@ impl OpenedOwnerProject {
             .map(projection_diagnostic)
             .collect();
 
-        let (projection, projection_readout) =
-            self.compose_projection(projected.frame, projected.readout, diagnostics, None)?;
+        let (projection, projection_readout) = self.compose_projection(
+            projected.frame,
+            projected.readout,
+            diagnostics,
+            None,
+            voxel_object_projector,
+            None,
+        )?;
         let catalog_lock = generate_lock(&self.catalog);
 
         Ok(StudioProjectReadout {
@@ -244,7 +257,51 @@ impl OpenedOwnerProject {
             projected.readout,
             diagnostics,
             Some((candidate, frame)),
+            &mut VoxelObjectRenderProjector::new(),
+            None,
         )
+    }
+
+    pub(crate) fn project_voxel_object_frame(
+        &self,
+        projector: &mut VoxelObjectRenderProjector,
+        instance_id: &str,
+        runtime_frame: u32,
+    ) -> Result<(RenderFrameDiff, ProjectionReadout), AdapterRejection> {
+        let projected = project_voxel_objects(
+            self.stored.document(),
+            &self.catalog,
+            None,
+            projector,
+            Some((instance_id, runtime_frame)),
+        )?;
+        let voxel_projected = project_voxel_authoring(self.stored.document(), &self.catalog)?;
+        let retained_lights = self
+            .scene
+            .nodes
+            .iter()
+            .filter(|node| matches!(node.kind, SceneNodeKind::Light(_)))
+            .count();
+        Ok((
+            projected.frame,
+            ProjectionReadout {
+                frame_kind: "incremental",
+                source_revision: self.scene.revision,
+                retained_entities: entry_scene(self.stored.document()).entities.len(),
+                retained_lights,
+                retained_voxel_instances: voxel_projected.instance_count,
+                retained_voxel_chunks: voxel_projected.chunk_count,
+                diagnostics: Vec::new(),
+            },
+        ))
+    }
+
+    pub(crate) fn prime_voxel_object_projector(
+        &self,
+        projector: &mut VoxelObjectRenderProjector,
+    ) -> Result<(), AdapterRejection> {
+        project_voxel_objects(self.stored.document(), &self.catalog, None, projector, None)?;
+        Ok(())
     }
 
     pub(crate) fn validate_voxel_object_candidate(
@@ -261,10 +318,18 @@ impl OpenedOwnerProject {
         entity_readout: EntityProjectionReadout,
         diagnostics: Vec<ProjectionDiagnosticReadout>,
         candidate: Option<(&VoxelObjectAsset, &VoxelObjectFrameSelection)>,
+        voxel_object_projector: &mut VoxelObjectRenderProjector,
+        frame_override: Option<(&str, u32)>,
     ) -> Result<(RenderFrameDiff, ProjectionReadout), AdapterRejection> {
         let project = self.stored.document();
         let voxel_projected = project_voxel_authoring(project, &self.catalog)?;
-        let object_projected = project_voxel_objects(project, &self.catalog, candidate)?;
+        let object_projected = project_voxel_objects(
+            project,
+            &self.catalog,
+            candidate,
+            voxel_object_projector,
+            frame_override,
+        )?;
         let light_projection = project_scene_lights(&self.scene)?;
         let retained_lights = self
             .scene
@@ -449,6 +514,13 @@ pub fn apply_entity_translation(
                 ));
             };
             entity.translation = Some(translation);
+            if let Some(instance) = scene
+                .voxel_object_instances
+                .iter_mut()
+                .find(|instance| instance.owner_entity_id == entity_id)
+            {
+                instance.translation = translation;
+            }
             Ok(())
         },
     )?;
@@ -748,6 +820,9 @@ pub fn delete_scene_object(
             stored_scene
                 .entities
                 .retain(|entity| retained.contains(&entity.id));
+            stored_scene
+                .voxel_object_instances
+                .retain(|instance| retained.contains(&instance.owner_entity_id));
             Ok(ProjectMutationReceipt::SceneObjectDeleted {
                 entity_id,
                 removed_objects: removed,
@@ -829,10 +904,29 @@ pub fn set_scene_object_transform(
                     transform: scene_transform(transform),
                 },
             )?;
-            let entity = stored_entity_mut(candidate, entity_id)?;
+            let scene = entry_scene_mut(candidate);
+            let entity = scene
+                .entities
+                .iter_mut()
+                .find(|entity| entity.id == entity_id)
+                .ok_or_else(|| {
+                    reject(
+                        "project.missingEntity",
+                        format!("entry scene has no entity {entity_id}"),
+                    )
+                })?;
             entity.translation = Some(transform.translation);
             entity.rotation = transform.rotation;
             entity.scale = transform.scale;
+            if let Some(instance) = scene
+                .voxel_object_instances
+                .iter_mut()
+                .find(|instance| instance.owner_entity_id == entity_id)
+            {
+                instance.translation = transform.translation;
+                instance.rotation = transform.rotation;
+                instance.scale = transform.scale;
+            }
             Ok(ProjectMutationReceipt::SceneObjectTransformSet { entity_id })
         },
     )?)
@@ -1124,6 +1218,8 @@ fn project_voxel_objects(
     project: &StoredProject,
     catalog: &AssetCatalog,
     candidate: Option<(&VoxelObjectAsset, &VoxelObjectFrameSelection)>,
+    projector: &mut VoxelObjectRenderProjector,
+    frame_override: Option<(&str, u32)>,
 ) -> Result<ProjectedVoxelObjects, AdapterRejection> {
     validate_voxel_object_aggregate_budget(project, candidate.map(|(object, _)| object))
         .map_err(stored_project_rejection)?;
@@ -1161,7 +1257,12 @@ fn project_voxel_objects(
             resolved.push((
                 instance.instance_id.clone(),
                 instance.voxel_object_asset_id.clone(),
-                stored_object_frame(object, &instance.frame)?,
+                frame_override
+                    .filter(|(instance_id, _)| *instance_id == instance.instance_id)
+                    .map_or_else(
+                        || stored_object_frame(object, &instance.frame),
+                        |(_, frame)| Ok(frame),
+                    )?,
                 Transform {
                     translation: instance.translation,
                     rotation: instance.rotation,
@@ -1176,8 +1277,8 @@ fn project_voxel_objects(
                     })
                     .collect::<Vec<_>>(),
                 RenderMetadata {
-                    source_entity: None,
-                    source_scene_node: None,
+                    source_entity: Some(instance.owner_entity_id),
+                    source_scene_node: Some(instance.owner_entity_id),
                     tags: vec!["studio".to_string(), "voxel-object".to_string()],
                     label: Some(instance.instance_id.clone()),
                 },
@@ -1225,7 +1326,7 @@ fn project_voxel_objects(
             },
         )
         .collect::<Vec<_>>();
-    let projected = VoxelObjectRenderProjector::new()
+    let projected = projector
         .project(&instances, &project_material_descriptors(catalog))
         .map_err(|error| reject("projection.voxelObjectRejected", format!("{error:?}")))?;
     Ok(ProjectedVoxelObjects {
@@ -1337,7 +1438,16 @@ fn voxel_object_authoring_readout(project: &StoredProject) -> VoxelObjectAuthori
                 .cloned()
                 .map(|instance| VoxelObjectInstanceReadout {
                     scene_id: scene.id.clone(),
-                    instance,
+                    owner_entity_id: instance.owner_entity_id,
+                    instance: StudioVoxelObjectInstance {
+                        instance_id: instance.instance_id,
+                        voxel_object_asset_id: instance.voxel_object_asset_id,
+                        frame: instance.frame,
+                        translation: instance.translation,
+                        rotation: instance.rotation,
+                        scale: instance.scale,
+                        material_overrides: instance.material_overrides,
+                    },
                 })
         })
         .collect();

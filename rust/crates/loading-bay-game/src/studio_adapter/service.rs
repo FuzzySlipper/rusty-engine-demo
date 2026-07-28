@@ -1,3 +1,4 @@
+use render_projection::VoxelObjectRenderProjector;
 use voxel_convert::PreparedVoxelConversion;
 
 use crate::STORED_PROJECT_SCHEMA_VERSION;
@@ -6,6 +7,7 @@ use super::asset_import::{
     apply_prepared_asset_import, prepare_asset_import, prepare_asset_reimport, PreparedAssetImport,
 };
 use super::path::ProjectLocation;
+use super::playback::StudioVoxelObjectPlayback;
 use super::project::{
     apply_entity_translation, create_project, create_scene, create_scene_object, delete_scene,
     delete_scene_object, rename_scene, rename_scene_object, reparent_scene_object, save_project_as,
@@ -35,6 +37,8 @@ use super::voxel_object::{
 
 struct OpenProject {
     location: ProjectLocation,
+    voxel_object_projector: VoxelObjectRenderProjector,
+    voxel_object_playback: StudioVoxelObjectPlayback,
     prepared_asset_import: Option<PreparedAssetImport>,
     prepared_conversion: Option<PreparedVoxelConversion>,
     prepared_voxel_object_conversion: Option<PreparedProjectVoxelObjectConversion>,
@@ -103,13 +107,13 @@ impl StudioAdapterService {
             );
         }
 
-        match request {
+        let response = match request {
             StudioAdapterRequest::Describe { .. } => StudioAdapterResponse::Described {
                 protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 7,
+                    adapter_version: 9,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -171,6 +175,7 @@ impl StudioAdapterService {
                         "applyVoxelObjectConversion",
                         "discardVoxelObjectConversion",
                         "attachVoxelObjectInstance",
+                        "previewVoxelObjectInstance",
                         "closeProject",
                     ],
                 },
@@ -1255,6 +1260,46 @@ impl StudioAdapterService {
             } => self.mutate(request_id, |location| {
                 attach_voxel_object_instance(location, &expected_project_hash, scene_id, instance)
             }),
+            StudioAdapterRequest::PreviewVoxelObjectInstance {
+                expected_project_hash,
+                scene_id,
+                instance_id,
+                now_microseconds,
+                command,
+                ..
+            } => {
+                let Some(open) = self.open.as_mut() else {
+                    return not_open(request_id);
+                };
+                match OpenedOwnerProject::load(&open.location).and_then(|project| {
+                    if project.source_hash().to_hex() != expected_project_hash {
+                        return Err(AdapterRejection::new(
+                            "project.staleHash",
+                            format!(
+                                "expected project hash {expected_project_hash}, found {}",
+                                project.source_hash()
+                            ),
+                        ));
+                    }
+                    open.voxel_object_playback.present(
+                        &project,
+                        &mut open.voxel_object_projector,
+                        &scene_id,
+                        &instance_id,
+                        now_microseconds,
+                        &command,
+                    )
+                }) {
+                    Ok(presentation) => StudioAdapterResponse::VoxelObjectInstancePreviewed {
+                        protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                        request_id,
+                        playback: presentation.readout,
+                        projection: presentation.projection,
+                        projection_readout: presentation.projection_readout,
+                    },
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
             StudioAdapterRequest::CloseProject { .. } => {
                 self.open = None;
                 StudioAdapterResponse::ProjectClosed {
@@ -1262,7 +1307,8 @@ impl StudioAdapterService {
                     request_id,
                 }
             }
-        }
+        };
+        self.refresh_transient_projection(response)
     }
 
     fn open_project(
@@ -1282,6 +1328,8 @@ impl StudioAdapterService {
             Ok((location, project)) => {
                 self.open = Some(OpenProject {
                     location,
+                    voxel_object_projector: VoxelObjectRenderProjector::new(),
+                    voxel_object_playback: StudioVoxelObjectPlayback::default(),
                     prepared_asset_import: None,
                     prepared_conversion: None,
                     prepared_voxel_object_conversion: None,
@@ -1420,11 +1468,41 @@ impl StudioAdapterService {
             Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
         }
     }
+
+    fn refresh_transient_projection(
+        &mut self,
+        response: StudioAdapterResponse,
+    ) -> StudioAdapterResponse {
+        let request_id = match &response {
+            StudioAdapterResponse::ProjectOpened { request_id, .. }
+            | StudioAdapterResponse::ProjectCreated { request_id, .. }
+            | StudioAdapterResponse::ProjectSavedAs { request_id, .. }
+            | StudioAdapterResponse::ProjectRead { request_id, .. }
+            | StudioAdapterResponse::EntityTranslationApplied { request_id, .. }
+            | StudioAdapterResponse::ProjectMutationApplied { request_id, .. } => {
+                request_id.clone()
+            }
+            _ => return response,
+        };
+        let Some(open) = self.open.as_mut() else {
+            return response;
+        };
+        open.voxel_object_playback.clear();
+        open.voxel_object_projector = VoxelObjectRenderProjector::new();
+        match OpenedOwnerProject::load(&open.location).and_then(|project| {
+            project.prime_voxel_object_projector(&mut open.voxel_object_projector)
+        }) {
+            Ok(()) => response,
+            Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+        }
+    }
 }
 
 fn new_open_project(location: ProjectLocation) -> OpenProject {
     OpenProject {
         location,
+        voxel_object_projector: VoxelObjectRenderProjector::new(),
+        voxel_object_playback: StudioVoxelObjectPlayback::default(),
         prepared_asset_import: None,
         prepared_conversion: None,
         prepared_voxel_object_conversion: None,

@@ -12,18 +12,22 @@ use voxel_convert::{
     VoxelObjectConversionSettings, VoxelObjectFrameSelection,
 };
 
-use crate::{StoredAsset, StoredVoxelObjectFrameSelection, StoredVoxelObjectInstance};
+use crate::{
+    StoredAsset, StoredEntityDefinition, StoredVoxelObjectFrameSelection, StoredVoxelObjectInstance,
+};
 
 use super::path::ProjectLocation;
 use super::project::{publish_project_mutation, OpenedOwnerProject};
 use super::protocol::{
     AdapterRejection, ProjectMutationReceipt, ProjectionReadout, StudioFileSelection,
-    StudioProjectReadout, StudioVoxelObjectSourceKind, VoxelObjectAnimationProperty,
-    VoxelObjectSourceClipReadout, VoxelObjectSourceDiagnostic, VoxelObjectSourceInspection,
+    StudioProjectReadout, StudioVoxelObjectInstance, StudioVoxelObjectSourceKind,
+    VoxelObjectAnimationProperty, VoxelObjectSourceClipReadout, VoxelObjectSourceDiagnostic,
+    VoxelObjectSourceInspection,
 };
 use super::voxel::{conversion_rejection, load_expected, read_selection};
 
 const MAX_LICENSE_BYTES: usize = 4 * 1024 * 1024;
+const JSON_SAFE_U64_MASK: u64 = (1_u64 << 53) - 1;
 
 pub(crate) struct PreparedProjectVoxelObjectConversion {
     expected_project_hash: String,
@@ -383,7 +387,7 @@ pub(crate) fn attach_voxel_object_instance(
     location: &ProjectLocation,
     expected_project_hash: &str,
     scene_id: String,
-    instance: StoredVoxelObjectInstance,
+    instance: StudioVoxelObjectInstance,
 ) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
     let instance_id = instance.instance_id.clone();
     let asset_id = instance.voxel_object_asset_id.clone();
@@ -403,7 +407,65 @@ pub(crate) fn attach_voxel_object_instance(
                         format!("project has no scene `{scene_id}`"),
                     )
                 })?;
-            scene.voxel_object_instances.push(instance);
+            if let Some(existing_index) = scene
+                .voxel_object_instances
+                .iter()
+                .position(|existing| existing.instance_id == instance.instance_id)
+            {
+                let owner_entity_id = scene.voxel_object_instances[existing_index].owner_entity_id;
+                let owner = scene
+                    .entities
+                    .iter_mut()
+                    .find(|entity| entity.id == owner_entity_id)
+                    .ok_or_else(|| {
+                        reject(
+                            "voxelObject.ownerMissing",
+                            format!(
+                                "voxel-object instance `{}` has no entity owner {}",
+                                instance.instance_id, owner_entity_id
+                            ),
+                        )
+                    })?;
+                owner.translation = Some(instance.translation);
+                owner.rotation = instance.rotation;
+                owner.scale = instance.scale;
+                scene.voxel_object_instances[existing_index] =
+                    stored_voxel_object_instance(owner_entity_id, instance);
+            } else {
+                let owner_entity_id = scene
+                    .entities
+                    .iter()
+                    .map(|entity| entity.id)
+                    .max()
+                    .unwrap_or(0)
+                    .checked_add(1)
+                    .filter(|entity_id| *entity_id <= JSON_SAFE_U64_MASK)
+                    .ok_or_else(|| {
+                        reject(
+                            "voxelObject.ownerIdentityExhausted",
+                            "cannot allocate another JSON-safe entity owner",
+                        )
+                    })?;
+                let child_order = scene
+                    .entities
+                    .iter()
+                    .filter(|entity| entity.parent.is_none())
+                    .map(|entity| entity.child_order)
+                    .max()
+                    .map_or(Some(0), |order| order.checked_add(1))
+                    .ok_or_else(|| {
+                        reject(
+                            "voxelObject.ownerOrderExhausted",
+                            "cannot allocate another root hierarchy order",
+                        )
+                    })?;
+                scene
+                    .entities
+                    .push(voxel_object_owner(owner_entity_id, child_order, &instance));
+                scene
+                    .voxel_object_instances
+                    .push(stored_voxel_object_instance(owner_entity_id, instance));
+            }
             Ok(ProjectMutationReceipt::VoxelObjectInstanceAttached {
                 scene_id,
                 instance_id,
@@ -412,6 +474,59 @@ pub(crate) fn attach_voxel_object_instance(
             })
         })?;
     Ok((published.value, published.readout))
+}
+
+fn stored_voxel_object_instance(
+    owner_entity_id: u64,
+    instance: StudioVoxelObjectInstance,
+) -> StoredVoxelObjectInstance {
+    StoredVoxelObjectInstance {
+        owner_entity_id,
+        instance_id: instance.instance_id,
+        voxel_object_asset_id: instance.voxel_object_asset_id,
+        frame: instance.frame,
+        translation: instance.translation,
+        rotation: instance.rotation,
+        scale: instance.scale,
+        material_overrides: instance.material_overrides,
+    }
+}
+
+fn voxel_object_owner(
+    entity_id: u64,
+    child_order: u32,
+    instance: &StudioVoxelObjectInstance,
+) -> StoredEntityDefinition {
+    StoredEntityDefinition {
+        id: entity_id,
+        name: instance.instance_id.clone(),
+        parent: None,
+        child_order,
+        translation: Some(instance.translation),
+        rotation: instance.rotation,
+        scale: instance.scale,
+        light: None,
+        bounds: None,
+        collision: None,
+        renderable: None,
+        door: None,
+        switch: None,
+        enemy: false,
+        enemy_combat: None,
+        defeat_drop: None,
+        health: None,
+        hazard: None,
+        encounter: None,
+        extraction_beacon: None,
+        kinematic: None,
+        navigation: None,
+        player_controller: None,
+        inventory: None,
+        pickup: None,
+        weapon: None,
+        secret_region: None,
+        level_exit: None,
+    }
 }
 
 fn source_import_request(

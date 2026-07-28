@@ -65,8 +65,8 @@ try {
     persistedProject,
   );
   if (
-    !currentReceipt.includes("sourceSchema=20") ||
-    !currentReceipt.includes("currentSchema=20")
+    !currentReceipt.includes("sourceSchema=21") ||
+    !currentReceipt.includes("currentSchema=21")
   ) {
     throw new Error(
       `current project persistence receipt was incomplete\n${currentReceipt}`,
@@ -81,7 +81,7 @@ try {
   );
   if (
     !convertedReceipt.includes("sourceSchema=11") ||
-    !convertedReceipt.includes("currentSchema=20")
+    !convertedReceipt.includes("currentSchema=21")
   ) {
     throw new Error(
       `converted project persistence receipt was incomplete\n${convertedReceipt}`,
@@ -96,7 +96,7 @@ try {
   );
   if (
     !migrationReceipt.includes("sourceSchema=6") ||
-    !migrationReceipt.includes("currentSchema=20")
+    !migrationReceipt.includes("currentSchema=21")
   ) {
     throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
   }
@@ -467,8 +467,8 @@ async function runFullBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
-      "sourceSchema=20",
-      "currentSchema=20",
+      "sourceSchema=21",
+      "currentSchema=21",
       "entryScene=scene/loading-bay",
       "assets=15",
       "scenes=1",
@@ -1617,7 +1617,7 @@ async function runMigratedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=migrated-v6-project",
-      "currentSchema=20",
+      "currentSchema=21",
       "assets=4",
       "scenes=1",
       "entities=6",
@@ -1675,8 +1675,8 @@ async function runConvertedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=converted-wall",
-      "sourceSchema=20",
-      "currentSchema=20",
+      "sourceSchema=21",
+      "currentSchema=21",
       "entryScene=scene/converted-wall",
       "assets=10",
       "scenes=1",

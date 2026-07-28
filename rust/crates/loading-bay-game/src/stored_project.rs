@@ -22,7 +22,7 @@ use crate::combat::{
 };
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 20;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 21;
 pub const MAX_PROJECT_VOXEL_OBJECTS: u64 = 256;
 pub const MAX_PROJECT_VOXEL_OBJECT_FRAMES: u64 = 8_193;
 pub const MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS: u64 = 65_536;
@@ -223,6 +223,7 @@ pub struct StoredVoxelInstance {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredVoxelObjectInstance {
+    pub owner_entity_id: u64,
     pub instance_id: String,
     pub voxel_object_asset_id: String,
     pub frame: StoredVoxelObjectFrameSelection,
@@ -1082,7 +1083,13 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             }
             validate_voxel_instance_transform(instance, &instance_path)?;
         }
+        let entity_ids = scene
+            .entities
+            .iter()
+            .map(|entity| entity.id)
+            .collect::<BTreeSet<_>>();
         let mut object_instance_ids = BTreeMap::new();
+        let mut object_owner_ids = BTreeMap::new();
         for (instance_index, instance) in scene.voxel_object_instances.iter().enumerate() {
             let instance_path = format!("scenes[{index}].voxelObjectInstances[{instance_index}]");
             if !is_kebab_segment(&instance.instance_id) {
@@ -1098,6 +1105,26 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     format!("{instance_path}.instanceId"),
                     format!(
                         "instance identity was already declared at voxelObjectInstances[{first}]"
+                    ),
+                ));
+            }
+            if instance.owner_entity_id == 0 || !entity_ids.contains(&instance.owner_entity_id) {
+                return Err(failure(
+                    diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
+                    format!("{instance_path}.ownerEntityId"),
+                    format!(
+                        "voxel-object owner {} must identify an entity in the same scene",
+                        instance.owner_entity_id
+                    ),
+                ));
+            }
+            if let Some(first) = object_owner_ids.insert(instance.owner_entity_id, instance_index) {
+                return Err(failure(
+                    diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
+                    format!("{instance_path}.ownerEntityId"),
+                    format!(
+                        "entity {} already owns voxelObjectInstances[{first}]",
+                        instance.owner_entity_id
                     ),
                 ));
             }
