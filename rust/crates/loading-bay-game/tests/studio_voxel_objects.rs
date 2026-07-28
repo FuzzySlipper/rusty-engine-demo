@@ -410,6 +410,8 @@ fn applied_playback_is_incremental_bounded_transient_and_lifecycle_scoped() {
     );
     assert_eq!(attached["type"], "projectMutationApplied", "{attached:#}");
     let durable_bytes = fs::read(root.project_file()).unwrap();
+    let complete_retained_entities =
+        attached["project"]["projectionReadout"]["retainedEntities"].clone();
 
     let scrubbed = preview_applied(
         &mut service,
@@ -430,6 +432,10 @@ fn applied_playback_is_incremental_bounded_transient_and_lifecycle_scoped() {
         &scrubbed["projection"],
         "createVoxelObjectInstance"
     ));
+    assert_eq!(
+        scrubbed["projectionReadout"]["retainedEntities"],
+        complete_retained_entities
+    );
 
     let playing = preview_applied(
         &mut service,
@@ -450,6 +456,10 @@ fn applied_playback_is_incremental_bounded_transient_and_lifecycle_scoped() {
     assert_eq!(repeated["playback"]["loopMode"], "repeat");
     assert_eq!(repeated["playback"]["runtimeFrame"], 1);
     assert!(has_op(&repeated["projection"], "setVoxelObjectFrame"));
+    assert_eq!(
+        repeated["projectionReadout"]["retainedEntities"],
+        complete_retained_entities
+    );
 
     let ping_pong = preview_applied(
         &mut service,

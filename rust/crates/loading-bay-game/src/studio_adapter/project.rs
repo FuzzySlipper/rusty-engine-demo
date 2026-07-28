@@ -290,6 +290,12 @@ impl OpenedOwnerProject {
         instance_id: &str,
         runtime_frame: u32,
     ) -> Result<(RenderFrameDiff, ProjectionReadout), AdapterRejection> {
+        let render_assets = resolved_render_assets(&self.catalog);
+        let retained_entities = EntityRenderProjector::new()
+            .project(self.admitted.session.entities(), &render_assets)
+            .map_err(|error| reject("projection.rejected", format!("{error:?}")))?
+            .readout
+            .retained_entities;
         let projected = project_voxel_objects(
             self.stored.document(),
             &self.catalog,
@@ -309,7 +315,7 @@ impl OpenedOwnerProject {
             ProjectionReadout {
                 frame_kind: "incremental",
                 source_revision: self.scene.revision,
-                retained_entities: entry_scene(self.stored.document()).entities.len(),
+                retained_entities,
                 retained_lights,
                 retained_voxel_instances: voxel_projected.instance_count,
                 retained_voxel_chunks: voxel_projected.chunk_count,
