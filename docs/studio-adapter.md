@@ -1,5 +1,10 @@
 # Loading Bay Studio adapter
 
+The project-specific, closed weapon Entity-inspector contract is frozen
+separately in [weapon-authoring-contract.md](weapon-authoring-contract.md). It
+uses the same Rust project store and atomic hash guard without adding a generic
+Studio adapter operation.
+
 The `studio-adapter` binary is Loading Bay's project-owned Rust composition boundary for Rusty
 Engine Studio. It is not a gameplay runtime facade and it does not generalize Loading Bay concepts
 into Engine vocabulary.

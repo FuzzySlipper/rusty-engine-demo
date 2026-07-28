@@ -35,6 +35,7 @@ mod snapshot;
 mod stored_project;
 mod studio_adapter;
 mod vitality;
+mod weapon_authoring;
 
 pub use combat::{
     CombatFact, CombatMissReason, CombatReceipt, CombatRejectionReason, EnemyComponent, EnemyState,
@@ -181,4 +182,16 @@ pub use vitality::{
     DamageCommand, DamageDisposition, DamageService, DamageSource, HealthConfig, HealthView,
     VitalityFact, VitalityReceipt, VitalityRejection, VitalityState, MAX_ARMOR,
     MAX_COMBAT_HITBOX_HALF_EXTENT, MAX_DAMAGE, MAX_HEALTH,
+};
+pub use weapon_authoring::{
+    decode_loading_bay_weapon_authoring_request, encode_loading_bay_weapon_authoring_response,
+    LoadingBayWeaponAuthoringAttackMode, LoadingBayWeaponAuthoringBinding,
+    LoadingBayWeaponAuthoringCandidate, LoadingBayWeaponAuthoringCodecError,
+    LoadingBayWeaponAuthoringReceipt, LoadingBayWeaponAuthoringRejection,
+    LoadingBayWeaponAuthoringRejectionCode, LoadingBayWeaponAuthoringRequest,
+    LoadingBayWeaponAuthoringResponse, LoadingBayWeaponAuthoringService,
+    LoadingBayWeaponAuthoringWeapon, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID,
+    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION, LOADING_BAY_WEAPON_COMPONENT_TYPE_ID,
+    MAX_LOADING_BAY_WEAPON_AUTHORING_REQUEST_BYTES,
+    MAX_LOADING_BAY_WEAPON_AUTHORING_RESPONSE_BYTES,
 };
