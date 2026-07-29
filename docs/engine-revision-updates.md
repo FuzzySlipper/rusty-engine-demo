@@ -42,6 +42,10 @@ The active carrier set is closed and tested:
 - the root and browser-shell `package.json` files
 - `pnpm-workspace.yaml` and `pnpm-lock.yaml`
 
+Every other repository `package.json` and `Cargo.toml` is discovered and audited as an adjacent
+dependency manifest. Those manifests may consume declared Rust workspace dependencies with
+`.workspace = true`, but cannot introduce another direct Engine source or package revision.
+
 If `check` reports a missing, renamed, mixed-revision, floating, path, sibling, stale-lock, or
 unexpected Engine source, preserve any intentional work first and use the update command to repair
 the whole set. Do not hand-edit only one dependency surface.

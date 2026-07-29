@@ -1,4 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -60,6 +66,17 @@ export const ACTIVE_CARRIER_PATHS = [
 ];
 
 const REPAIR_COMMAND = "./scripts/engine-revision update <sha>";
+const DECLARED_PACKAGE_MANIFESTS = new Set([
+  "package.json",
+  "ts/packages/browser-shell/package.json",
+]);
+const MANIFEST_SCAN_IGNORES = new Set([
+  ".git",
+  ".nx",
+  "dist",
+  "node_modules",
+  "target",
+]);
 
 export function loadEngineSource(repoRoot) {
   const relativePath = "engine-source.json";
@@ -121,6 +138,7 @@ export function checkEngineRevision(repoRoot) {
   );
   checkPnpmWorkspace(repoRoot, source, violations);
   checkPnpmLock(repoRoot, source, violations);
+  checkAdjacentDependencyManifests(repoRoot, violations);
   if (violations.length > 0) {
     throw new Error(
       `Engine revision check failed:\n${violations
@@ -141,6 +159,11 @@ export async function updateEngineRevision({
 }) {
   assertCommit(commit, "update commit");
   const before = loadEngineSource(repoRoot);
+  const unexpectedSourceViolations = [];
+  checkAdjacentDependencyManifests(repoRoot, unexpectedSourceViolations);
+  if (unexpectedSourceViolations.length > 0) {
+    throwRevisionViolations(unexpectedSourceViolations);
+  }
   await provePublic(before.repository, commit);
   assertCarrierFilesClean(repoRoot);
 
@@ -355,10 +378,16 @@ function checkCargoManifest(repoRoot, source, violations) {
     source.commit,
     violations,
   );
-  const hasSiblingPath = /path\s*=\s*"[^"]*rusty-engine[^"]*"/u.test(content);
+  const hasSiblingPath = [...content.matchAll(/path\s*=\s*"([^"]*)"/gmu)].some(
+    (match) => isEngineRepositoryReference(match[1]),
+  );
   const hasNonCanonicalEngineGit = [
-    ...content.matchAll(/git\s*=\s*"([^"]*rusty-engine[^"]*)"/gmu),
-  ].some((match) => match[1] !== `${ENGINE_REPOSITORY}.git`);
+    ...content.matchAll(/git\s*=\s*"([^"]*)"/gmu),
+  ].some(
+    (match) =>
+      isEngineRepositoryReference(match[1]) &&
+      match[1] !== `${ENGINE_REPOSITORY}.git`,
+  );
   if (hasSiblingPath || hasNonCanonicalEngineGit) {
     violations.push(
       `${relativePath}: path, sibling, or non-canonical Engine source is forbidden`,
@@ -413,17 +442,12 @@ function checkPackageManifest(
       );
     }
   }
-  for (const sectionName of [
-    "dependencies",
-    "devDependencies",
-    "optionalDependencies",
-    "peerDependencies",
-  ]) {
+  for (const sectionName of dependencySectionNames()) {
     for (const [name, observed] of Object.entries(
       manifest[sectionName] ?? {},
     )) {
       if (
-        name.startsWith("@rusty-engine/") &&
+        isEnginePackageReference(name, observed) &&
         (sectionName !== "dependencies" || !expectedNames.has(name))
       ) {
         violations.push(
@@ -439,7 +463,9 @@ function checkPnpmWorkspace(repoRoot, source, violations) {
   const content = readFile(repoRoot, relativePath, violations);
   if (content === null) return;
   const observed = [
-    ...content.matchAll(/^\s+"(@rusty-engine\/[^"]+)":\s+true$/gmu),
+    ...content.matchAll(
+      /^\s+"([^"]*(?:@rusty-engine\/|FuzzySlipper\/rusty-engine)[^"]*)":\s+true$/gmu,
+    ),
   ].map((match) => match[1]);
   const expected = [...ENGINE_PACKAGES.entries()].map(
     ([name, path]) => `${name}@${codeloadSpecifier(source.commit, path)}`,
@@ -498,6 +524,61 @@ function checkPnpmLock(repoRoot, source, violations) {
     violations.push(
       `${relativePath}: path, link, or sibling Engine package source is forbidden`,
     );
+  }
+}
+
+function checkAdjacentDependencyManifests(repoRoot, violations) {
+  for (const relativePath of discoverManifests(repoRoot, "package.json")) {
+    if (DECLARED_PACKAGE_MANIFESTS.has(relativePath)) continue;
+    let manifest;
+    try {
+      manifest = JSON.parse(
+        readFileSync(resolve(repoRoot, relativePath), "utf8"),
+      );
+    } catch (error) {
+      violations.push(
+        `${relativePath}: cannot decode discovered package manifest: ${error.message}`,
+      );
+      continue;
+    }
+    for (const sectionName of dependencySectionNames()) {
+      for (const [name, observed] of Object.entries(
+        manifest[sectionName] ?? {},
+      )) {
+        if (isEnginePackageReference(name, observed)) {
+          violations.push(
+            `${relativePath}: unexpected Engine source ${name} in ${sectionName} (${String(observed)}); Engine packages are allowed only in declared carrier manifests`,
+          );
+        }
+      }
+    }
+  }
+
+  for (const relativePath of discoverManifests(repoRoot, "Cargo.toml")) {
+    if (relativePath === "Cargo.toml") continue;
+    const content = readFile(repoRoot, relativePath, violations);
+    if (content === null) continue;
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      const directSource = trimmed.match(/(?:git|path)\s*=\s*"([^"]*)"/u)?.[1];
+      if (
+        (directSource !== undefined &&
+          isEngineRepositoryReference(directSource)) ||
+        ENGINE_CRATES.some((crate) => {
+          if (trimmed === `${crate}.workspace = true`) return false;
+          return (
+            trimmed.startsWith(`${crate} =`) ||
+            new RegExp(`\\bpackage\\s*=\\s*"${escapeRegExp(crate)}"`, "u").test(
+              trimmed,
+            )
+          );
+        })
+      ) {
+        violations.push(
+          `${relativePath}: unexpected direct Engine dependency carrier ${trimmed}; workspace members must inherit declared Engine crates with .workspace = true`,
+        );
+      }
+    }
   }
 }
 
@@ -592,6 +673,51 @@ function compareSets(path, expected, observed, violations) {
   }
 }
 
+function dependencySectionNames() {
+  return [
+    "dependencies",
+    "devDependencies",
+    "optionalDependencies",
+    "peerDependencies",
+  ];
+}
+
+function isEnginePackageReference(name, observed) {
+  if (name.startsWith("@rusty-engine/")) return true;
+  if (typeof observed !== "string") return false;
+  if (observed.includes("@rusty-engine/")) return true;
+  return isEngineRepositoryReference(observed);
+}
+
+function isEngineRepositoryReference(value) {
+  return (
+    value.includes("FuzzySlipper/rusty-engine") ||
+    /(?:^|[/])rusty-engine(?:[/#&.]|$)/u.test(value)
+  );
+}
+
+function discoverManifests(repoRoot, fileName) {
+  const discovered = [];
+  const visit = (directory, relativeDirectory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (entry.isSymbolicLink()) continue;
+      const relativePath =
+        relativeDirectory.length === 0
+          ? entry.name
+          : `${relativeDirectory}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (!MANIFEST_SCAN_IGNORES.has(entry.name)) {
+          visit(resolve(directory, entry.name), relativePath);
+        }
+      } else if (entry.isFile() && entry.name === fileName) {
+        discovered.push(relativePath);
+      }
+    }
+  };
+  visit(repoRoot, "");
+  return discovered.sort();
+}
+
 function packageSpecifier(commit, path) {
   return `github:FuzzySlipper/rusty-engine#${commit}&path:${path}`;
 }
@@ -606,6 +732,14 @@ function assertCommit(commit, label) {
       `${label} must be one lowercase 40-character hexadecimal commit; observed ${String(commit)}`,
     );
   }
+}
+
+function throwRevisionViolations(violations) {
+  throw new Error(
+    `Engine revision check failed:\n${violations
+      .map((violation) => `- ${violation}`)
+      .join("\n")}\nRepair with: ${REPAIR_COMMAND}`,
+  );
 }
 
 function escapeRegExp(value) {

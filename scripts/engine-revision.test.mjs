@@ -121,6 +121,43 @@ test("check rejects renderer Studio and allow-build drift", () => {
   );
 });
 
+test("check rejects Engine sources in adjacent dependency manifests", () => {
+  const packageFixture = copyCarrierFixture();
+  mkdirSync(resolve(packageFixture, "ts/packages/project-content"), {
+    recursive: true,
+  });
+  writeJson(packageFixture, "ts/packages/project-content/package.json", {
+    name: "@rusty-engine-demo/project-content",
+    private: true,
+    dependencies: {
+      "@rusty-engine/unexpected": `github:FuzzySlipper/rusty-engine#${NEXT}&path:tools/unexpected`,
+    },
+  });
+  assert.throws(
+    () => checkEngineRevision(packageFixture),
+    /ts\/packages\/project-content\/package\.json: unexpected Engine source @rusty-engine\/unexpected/u,
+  );
+
+  const cargoFixture = copyCarrierFixture();
+  mkdirSync(resolve(cargoFixture, "rust/crates/adjacent"), {
+    recursive: true,
+  });
+  writeFileSync(
+    resolve(cargoFixture, "rust/crates/adjacent/Cargo.toml"),
+    `[package]
+name = "adjacent"
+version = "0.1.0"
+
+[dependencies]
+asset-catalog = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "${NEXT}" }
+`,
+  );
+  assert.throws(
+    () => checkEngineRevision(cargoFixture),
+    /rust\/crates\/adjacent\/Cargo\.toml: unexpected direct Engine dependency carrier/u,
+  );
+});
+
 test("check rejects stale Cargo and pnpm locks and path fallback", () => {
   const cargoFixture = copyCarrierFixture();
   mutateFile(cargoFixture, "Cargo.lock", (content) =>
