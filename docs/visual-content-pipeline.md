@@ -1,0 +1,348 @@
+# Loading Bay visual-content pipeline
+
+This document freezes the pre-replacement visual baseline for Den campaign
+`rusty-engine-demo #6350`. The evidence revision is
+`cd25485445bfb581c4005b221a23caa21408d327`, with Rust, renderer, and Studio packages pinned to
+Rusty Engine `198dccaa3f6b15d776b58d0f60c0f025e4b12171`.
+
+Task #6351 imports no assets and changes no runtime authority. Its purpose is to make the current
+placeholder implementation, candidate sources, ownership decisions, and comparison measurements
+explicit before later tasks replace content.
+
+Raw structured measurements are in
+[`docs/evidence/visual-content-placeholder-baseline.json`](evidence/visual-content-placeholder-baseline.json).
+
+## Authority map
+
+| Concern                                                             | Canonical owner                                                                                   | Serialized source                                           | Runtime consumer                                                     | Must not become an owner                                   |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Project and scene composition                                       | Loading Bay stored-project schema admitted and published by Rust                                  | `content/projects/loading-bay.project.json` after VC3       | Rust project/session construction and Studio                         | A second TypeScript scene or browser storage               |
+| Asset identity, source hash, dependencies, bounds, clips, materials | Canonical project asset catalog plus copied asset/license files                                   | Project `assets` and `content/assets`                       | Rust admission, Studio inspection, shared renderer projection        | Rust mesh/voxel literals or a browser asset registry       |
+| Static and animated source conversion                               | Rust-owned Studio adapter composing exact-pinned Engine providers                                 | Prepared plan plus atomically published project/asset files | Studio and Rust project store                                        | Ad hoc Blender output copied without provenance            |
+| Voxel-brush definitions                                             | Canonical Engine voxel-object definitions admitted by Rust                                        | Project voxel-object assets                                 | Studio editing/placement and shared projection                       | One browser-owned world voxel grid                         |
+| Voxel-brush instances and transforms                                | Entity-owned project instances admitted by Rust                                                   | Scene entities and voxel-object instance records            | Studio hierarchy, project readout, shared renderer                   | Unique baked mesh copies for every placement               |
+| Gameplay meaning and live state                                     | Loading Bay Rust services and fixed-tick phases                                                   | Authored gameplay components plus runtime snapshot/save     | Typed immutable browser projection                                   | Asset names, animation clips, or TypeScript state machines |
+| Collision, navigation, occlusion, hitboxes, triggers                | Rust project admission and canonical Engine spatial services                                      | Explicit entity/world proxy components                      | Rust gameplay loop                                                   | Decorative mesh triangles or fine visual voxels            |
+| Animation posture                                                   | Rust-owned enemy/weapon/progression state and facts                                               | Typed visual binding in the canonical project               | Shared renderer animation facilities through disposable presentation | A browser animation clock that decides gameplay            |
+| Camera-relative weapon presentation                                 | Shared Engine `viewmodel` layer; Loading Bay supplies serialized assets and disposable transforms | Canonical viewmodel asset references                        | One shared `RendererSurface`                                         | A private Three scene, loader, scheduler, or picking path  |
+| Rendering, resources, picking, timing                               | Exact-pinned Rusty Engine render packages                                                         | Renderer-neutral retained descriptors                       | One auto-started `RendererSurface`                                   | A demo renderer, resource cache, or second frame loop      |
+| Performance evidence                                                | Reproducible scripts plus exact-revision evidence                                                 | `docs/performance.md` and `docs/evidence`                   | CI and headed desktop certification                                  | HUD counters as gameplay authority                         |
+
+### Visual and gameplay proxy boundary
+
+The replacement work deliberately separates appearance from gameplay geometry:
+
+- The current material voxel environment supplies both the visible room mesh and canonical voxel
+  collision. VC7 may retain a coarse hidden voxel/collision representation, but the detailed
+  repeated brush kit is visual content and cannot silently become a second collision truth.
+- Doors retain their Rust-owned `collision`, `kinematic`, `bounds`, `door`, access, and occlusion
+  behavior. A closed/open mesh follows the admitted door state and transform.
+- Enemies retain Rust-owned kinematic bounds, health hitboxes, navigation, perception, attacks,
+  encounter state, and drops. An actor armature or animation never selects a target or deals damage.
+- Pickups retain Rust-owned bounds, item identity, quantity, collection, visibility, and
+  consumption. Mesh scale is not pickup range.
+- Hazard and secret regions remain explicit Rust-owned bounds even if their visible prop or floor
+  treatment is larger, smaller, or absent.
+- Encounter contacts are invisible Rust-owned trigger entities. Authored lights are real retained
+  light descriptors, not mesh placeholders.
+- First-person viewmodels remain camera-relative, excluded from world picking/collision, and
+  rebuildable after reset, replacement, or disposal.
+
+Every task that changes a visual transform must prove the related proxy still aligns through the
+canonical project readout and normal gameplay route.
+
+## Current authoring state and VC3 decision
+
+Today `ts/packages/project-content/src/encounter-project.ts` is the complete source of truth for the
+Loading Bay scene. `loadingBayStoredProject()` composes the whole project, and
+`ts/packages/project-content/src/generate.ts` deep-compares that object with
+`content/projects/loading-bay.project.json`. `pnpm run generate:content` overwrites the checked-in
+project. A legitimate Studio edit therefore becomes “stale” and is either rejected or erased by
+the ordinary generation workflow.
+
+VC3 changes that ownership as follows:
+
+1. `content/projects/loading-bay.project.json` becomes the canonical durable Loading Bay visual and
+   scene artifact.
+2. `ts/packages/project-content` retains typed schemas, helpers for deliberately generated fixtures,
+   migrations, and semantic assertions. It no longer contains a second complete Loading Bay visual
+   scene that must equal the Studio project.
+3. `check:content` parses, canonicalizes, Rust-admits, round-trips, and checks stable semantic
+   invariants of the canonical project. It does not compare the file with
+   `loadingBayStoredProject()`.
+4. `content/generated` and explicitly generated projects such as Relay Annex may remain generated
+   fixtures, but their commands cannot overwrite the canonical Loading Bay file.
+5. If migration from the current composer needs tooling, it is one-shot, fail-closed, and removed
+   or retained only as an explicit migration fixture—not as an alternate authoring path.
+
+Until VC3 lands, the current README and extension recipes correctly describe the generator-owned
+state. VC3 owns updating those instructions at the same time as the authority actually changes.
+
+## Placeholder inventory
+
+The project catalog contains 15 asset identities. One is a real file-backed animated GLB used by
+Studio tests but referenced by no Loading Bay entity. The other 14 `mesh/*` identities have no
+catalog payload. `RuntimeProjectionAdapter.projectedNode()` interprets their names and creates
+colored cubes or spheres. That asset-name branching is presentation scaffolding, not a scalable
+asset pipeline.
+
+The stored scene has 47 entities, 35 renderables, 27 authored-visible renderables, and eight hidden
+enemy-drop renderables. The first-person player marker is also suppressed by the projection adapter.
+
+| Current identity                               | References / authored visible | Current presentation                                                | Classification                        | Replacement owner                                                           |
+| ---------------------------------------------- | ----------------------------: | ------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------- |
+| `mesh/arc-warden`                              |                         4 / 4 | Purple scaled sphere                                                | Primitive enemy fallback              | VC4 #6355 actor asset; VC8 #6358 posture binding                            |
+| `mesh/bay-rusher`                              |                         4 / 4 | Orange scaled cube                                                  | Primitive enemy fallback              | VC4 #6355 actor asset; VC8 #6358 posture binding                            |
+| `mesh/control-panel`                           |                         1 / 1 | Default red cube                                                    | Primitive interactive prop            | VC5 #6354                                                                   |
+| `mesh/extraction-beacon`                       |                         1 / 1 | Orange/green cube selected by asset-name and beacon state           | Primitive progression prop            | VC5 #6354; VC8 #6358 state binding                                          |
+| `mesh/hazard-pad`                              |                         1 / 1 | Default red cube                                                    | Primitive hazard marker               | VC5 #6354                                                                   |
+| `mesh/level-exit`                              |                         1 / 1 | Default red cube                                                    | Primitive completion marker           | VC5 #6354                                                                   |
+| `mesh/pickup-ammunition`                       |                         6 / 2 | Yellow spheres; four hidden drops                                   | Primitive pickup                      | VC5 #6354                                                                   |
+| `mesh/pickup-armor`                            |                         1 / 1 | Blue sphere                                                         | Primitive pickup                      | VC5 #6354                                                                   |
+| `mesh/pickup-health`                           |                         6 / 2 | Green spheres; four hidden drops                                    | Primitive pickup                      | VC5 #6354                                                                   |
+| `mesh/pickup-key`                              |                         1 / 1 | Magenta sphere                                                      | Primitive pickup                      | VC5 #6354                                                                   |
+| `mesh/pickup-weapon`                           |                         2 / 2 | Red spheres                                                         | Primitive pickup                      | VC5 #6354                                                                   |
+| `mesh/player-marker`                           |                         1 / 1 | Blue sphere descriptor, intentionally hidden in first person        | Invisible player proxy/debug marker   | Retain hidden unless a later explicit third-person/debug requirement exists |
+| `mesh/security-door`                           |                         5 / 5 | Orange cube with fixed name-derived scale                           | Primitive dynamic prop                | VC5 #6354; VC8 #6358 state binding                                          |
+| `mesh/spatial-probe`                           |                         1 / 1 | Green sphere                                                        | Visible movement-proof placeholder    | VC5 #6354 industrial status/runner prop or documented removal               |
+| `mesh-animation/kenney-retro-character-medium` |                         0 / 0 | Real GLB with `idle`, `run`, and `jump`; no gameplay entity uses it | File-backed animated-mesh proof asset | VC4 #6355 source/reimport baseline                                          |
+
+### Environment
+
+The scene has no voxel-object definitions or instances. Its one material voxel environment has:
+
+- `voxelSize: 1`, `chunkSize: 16`;
+- 3,931 authored material voxels across addresses `[0,0,0]` through `[30,4,51]`;
+- material-slot counts 2,243 / 1,612 / 76;
+- eight live renderer chunks;
+- 30,960 live vertices, 46,440 indices, and 20 material groups in the current projection.
+
+This environment is original Loading Bay content, but it is a monolithic one-unit grid rather than
+the planned reusable fine-grid brush workflow. VC6 #6356 authors and compares local brush
+treatments; VC7 #6357 rebuilds the visible level from repeated instances and explicit proxies.
+
+### Camera-relative viewmodels
+
+`ts/packages/browser-shell/src/weapon-viewmodel.ts` contains three inline `WEAPON_PRESETS`.
+Each preset is five colored cubes plus a sphere muzzle flash beneath a group root. One equipped
+weapon retains seven viewmodel handles. The shared Engine layer and disposal lifecycle are correct,
+but the geometry is still inline presentation scaffolding. VC5 #6354 now explicitly owns replacing
+all three presets with canonical serialized assets; VC8 #6358 binds them to authoritative weapon
+state and facts.
+
+### Intentional non-mesh entities
+
+These are not missing visual assets:
+
+- encounter contacts 2, 40, and 50;
+- secret region 31;
+- ambient light 80 and point lights 81–87.
+
+The contacts and secret region are invisible gameplay proxies. The lights are retained authored
+light descriptors. Later tasks may add nearby visible landmarks but must not turn those meshes into
+the trigger/light authority.
+
+## Candidate source inventory
+
+The preferred local source root is `/home/stash/mesh-resources` (plural). All shortlisted packs are
+created and distributed by Kenney, identify the author as `Kenney` / `www.kenney.nl`, and declare
+[CC0 1.0](http://creativecommons.org/publicdomain/zero/1.0/). The supplied metadata links to
+`https://kenney.nl/` and Kenney's 3D import documentation. These are candidates only; no file below
+is shipped by #6351.
+
+| Pack                      | Version / metadata      | Candidate use                                                                       | License SHA-256                                                    |
+| ------------------------- | ----------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Animated Characters Retro | 1.1                     | Base armature/model, idle/run/jump clips, human/zombie skins                        | `eaa916e20df30c26f18a752290f93ab0e5d95c3dd1057e6887d11aa4acc0e74b` |
+| Blocky Characters         | 2.0; created 2025-06-10 | Alternate pre-exported GLB actor silhouettes                                        | `610fec89c16826112e9d6b80497b726c43fea0e42c9cd9d7cb081f8ad550c0ec` |
+| Factory Kit               | 3.0; created 2026-05-01 | Doors, screens, switches, hazard signs, scanner/beacon, machinery, crates, catwalks | `61e86565dd297e143ad631594980eda0a17fc81a4cd7c6d71acf2f5e0cad30b6` |
+| City Kit Industrial       | 1.0; created 2025-06-25 | Tanks, chimneys, large exterior/landmark silhouettes                                | `bf1195a387c996ab4bb6d05bb7ead8c5b233c0532634fec916ef9e090936c3e5` |
+
+### Actor inputs
+
+| Local candidate                                                 | SHA-256                                                            | Intended treatment                                                     |
+| --------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `kenney_animated-characters-retro/Model/characterMedium.fbx`    | `18835fef534eede635b081ee7fe647d01a885550a591d2e6bf071010906167d8` | Blender armature/model source                                          |
+| `.../Animations/idle.fbx`                                       | `c8a24e0294376ee5a195c56752a13310e1c0b5f8588a4db50e094120e3e4cc74` | Merge as named idle clip                                               |
+| `.../Animations/run.fbx`                                        | `e635461fc8dace85ec67a7f7941e949a7c3f108b51ae4d2da1557e6e01749df8` | Merge as named locomotion clip                                         |
+| `.../Animations/jump.fbx`                                       | `b88429077a7a1af5d3f55f43cfd8ce0f7441b4f6f7bb15a8070d7ed15d275f74` | Candidate reaction/death source only if the reviewed mapping is honest |
+| `.../Skins/humanMaleA.png`                                      | `1590e08cea37f5aecbacabb40a57c176e389e9a95d5b2a4de00086604ef23e1c` | Bay Rusher material candidate                                          |
+| `.../Skins/zombieMaleA.png`                                     | `e0dab7c762bfc63e0fa29e4cad769bead9d990fb0c15a5d7aea2ba0b08d82c92` | Arc Warden material candidate                                          |
+| `kenney_blocky-characters_20/Models/GLB format/character-a.glb` | `8ee5dae167ec589863f6bba222467eb90ace8be357a4c5abfcab289290181616` | Static/alternate silhouette comparison                                 |
+| `.../character-r.glb`                                           | `b880654e0bcf4cfda119750d1ae0842ccfb73ae22f7844ab95015122b746808a` | Second alternate silhouette comparison                                 |
+
+The installed Blender baseline is 5.1.2, build
+`ec6e62d40fa9`. VC4 must record the exact Blender version, import/export settings, axes, scale,
+pivot, material handling, clip ranges/names, source hashes, and output GLB hashes. If attack, hit, or
+death clips are authored or derived, their changes must be reproducible and described rather than
+hidden behind renamed stock clips.
+
+### Prop and landmark inputs
+
+All paths below are under `kenney_factory-kit_3.0/Models/GLB format` unless noted.
+
+| Candidate                                               |  Bytes | SHA-256                                                            | Proposed use                                      |
+| ------------------------------------------------------- | -----: | ------------------------------------------------------------------ | ------------------------------------------------- |
+| `door-wide-closed.glb`                                  |  3,572 | `987837d7b45bca466c5f2268fa0193e014374cc0d2ef0784f6c37092856b71d0` | Closed security door                              |
+| `door-wide-open.glb`                                    |  3,000 | `bc8cfb0d899c512d85241c41db4247be11cfe833cab56949f19e2903789133d9` | Open-state comparison or Blender-combined door    |
+| `screen-panel-wide.glb`                                 | 16,000 | `092066a198f1f81c857ceab23497dd3ea6066d261a91497cf0f83f7ba951c4d0` | Interlock/control panel                           |
+| `lever-single.glb`                                      | 17,516 | `d7056a698ecb46c972d51848a77c8a9aca86f085cc5800347fce1c19c6c59477` | Switch silhouette                                 |
+| `button-floor-square.glb`                               |      — | `f32def1dd9a57939b096d64361fc5058a8ba240a0394951e8681fb7326ebdeb6` | Hazard/pressure marker                            |
+| `warning-orange.glb`                                    | 16,136 | `07974e9e78c2b2d2ed8198461a7fbac86d1744490ab687817543a07f163aa7d0` | Hazard and route warning                          |
+| `scanner-high.glb`                                      | 21,656 | `b71d8ab86fe1a12542eac14e4185e17babf15ac086c3343acf8600a080ed985a` | Extraction beacon base                            |
+| `indicator-special-arrow.glb`                           |  2,500 | `3cd514de3e283705df2baccf7cea62a70ba64e87311252fe26788be4377c0d49` | Exit/route marker                                 |
+| `box-small.glb`                                         |  7,500 | `fd2ea1ac4f24a9515dc9c53a4a589a8897c824fa5865771799f965a252f684f0` | Ammunition/supply container base                  |
+| `machine.glb`                                           | 25,620 | `a39e3042bcb7789274428357383317d70e1c31906e5301c99e7d9e90ac584863` | Generator-room landmark                           |
+| `crane.glb`                                             | 53,396 | `ceaf20fb976ce0415d2b3d40e723b6ad377845818fa4fa68b55434108b1a6880` | Loading-bay landmark                              |
+| `catwalk-straight.glb`                                  | 33,492 | `85797c6ce53e3f4373bc59ecd3ce951a3f6b707651def5e0bae46756051cd18d` | Elevated route landmark, not level-grid authority |
+| `City Kit Industrial/Models/GLB format/detail-tank.glb` | 23,456 | `b1edc2953c590c16f1d8280dfeb9073af6c710ac3d587f3dba144f69363d799b` | Generator/extraction silhouette                   |
+
+Health, armor, keys, ammunition variants, weapon pickups, and the three first-person weapons should
+prefer original Studio-authored voxel objects or Blender derivatives whose differences are visible
+and whose source steps are committed. A generic crate with asset-name color branching is not an
+acceptable final replacement.
+
+## Voxel-brush experiment
+
+VC6 compares at least two treatments at equal world dimensions:
+
+| Treatment           | Candidate local voxel size | Purpose                                                                                             | Required evidence                                                                                                          |
+| ------------------- | -------------------------: | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Conservative relief |            1/16 world unit | Readable trim, panel insets, vents, door surrounds, floor/ceiling bands with restrained cells/faces | Source cells, resolved cells, worst-case faces, meshed vertices/indices/groups, bytes, resource reuse, authoring usability |
+| Dense relief        |            1/32 world unit | Intentional texture-like modeled detail and renderer/mesher pressure                                | Same metrics plus aliasing/readability and repeated-instance stress                                                        |
+
+The proof room must reuse definitions for straight wall, compatible corner treatment, doorway,
+panel/vent, column, floor, ceiling, and landmark modules. It cannot bake every placement into a
+unique asset. The current project limits are hard admission boundaries, not targets:
+
+- 256 voxel-object definitions;
+- 8,193 total frames;
+- 65,536 total resolved cells;
+- 393,216 worst-case mesh faces;
+- 4,096 instances.
+
+Accepted content stays below those bounds with explicit headroom. One-over tests remain fail-closed
+before materialization.
+
+## Placeholder performance baseline
+
+The baseline uses the current production build and a fresh-host visible Chromium/Wayland profile,
+plus the managed LAN product at `http://192.168.1.22:37300/`. The machine is Arch Linux
+7.0.11, Ryzen 7 8845HS / Radeon 780M, Chromium 148.0.7778.215, at a 1600×900 browser viewport.
+`wayland-info` reported the active HDMI output at 2560×1440 and 59.951 Hz; EDID also advertises
+119.989 and 144 Hz modes. The automated window therefore measured approximately 16.7 ms
+animation-frame cadence. A human-observed 8.4 ms cadence on a 120 Hz mode is likewise expected
+refresh synchronization, not 8.4 ms of renderer work.
+
+### Content and startup
+
+| Measurement                                              |               Current value |
+| -------------------------------------------------------- | --------------------------: |
+| Canonical project JSON                                   |               617,996 bytes |
+| Project-referenced GLB plus license                      |               218,201 bytes |
+| All files under `content/assets`                         |               220,725 bytes |
+| Initial Angular JavaScript                               |           223,538 raw bytes |
+| Lazy game JavaScript                                     |           901,389 raw bytes |
+| All JavaScript                                           |         1,128,218 raw bytes |
+| Cold usable menu                                         |                  105.656 ms |
+| Warm usable menu                                         |                   66.296 ms |
+| First authoritative projection and shared-renderer frame |                    494.4 ms |
+| Session bootstrap / equivalent whole state               | 1,016,524 / 1,015,394 bytes |
+| Maximum initial update build                             |                  140.195 ms |
+| Static resource retransmissions during ordinary updates  |                           0 |
+
+The fresh gameplay profile used 11,553,112 bytes of JavaScript heap and 1,001,410,560 bytes across
+Chromium's entire browser/renderer/GPU/network/utility process tree. The latter is not a native
+Loading Bay memory footprint. One 166 ms startup long task occurred. A two-second gameplay idle
+sample accumulated 254.656 ms total task time and 124.260 ms script time with no event-listener
+growth; fixed simulation/projection and the shared render loop were active.
+
+### Five-second fresh-host input
+
+| Measurement                             |    p50 |    p95 |    p99 |    max |
+| --------------------------------------- | -----: | -----: | -----: | -----: |
+| Input event to next frame (ms)          |    0.9 |    1.6 |    1.7 |    3.8 |
+| Authoritative consumed-command RTT (ms) | 19.688 | 47.581 | 48.892 | 53.217 |
+| Renderer cadence (ms)                   |   16.7 |   16.8 |   50.1 |   50.1 |
+| Synchronous backend submission (ms)     |    0.4 |    0.7 |    1.2 |    1.2 |
+
+### Twenty-second managed-LAN input
+
+| Measurement                             |    p50 |    p95 |    p99 |    max |
+| --------------------------------------- | -----: | -----: | -----: | -----: |
+| Renderer cadence (ms)                   |   16.7 |   16.8 |   33.3 |   33.4 |
+| Synchronous backend submission (ms)     |    0.4 |    0.7 |    0.9 |    1.0 |
+| Snapshot cadence (ms)                   |   31.6 |   41.1 |   41.9 |   41.9 |
+| Authoritative consumed-command RTT (ms) | 18.523 | 47.286 | 48.254 | 49.267 |
+| Dynamic payload (bytes)                 |  2,124 |  2,393 |  2,739 |  2,752 |
+
+The LAN run collected 193 unique renderer samples and 440 authoritative commands. It held 35
+projected entities, eight resident voxel chunks, zero through three render diffs, at most two input
+frames, one edge, and one outbound message. Dropped facts and runtime errors were zero.
+
+Draw calls and backend resource counts are intentionally recorded as unavailable. The exact public
+surface accepts a `drawCallCount` telemetry counter but does not publish renderer-owned draw,
+geometry, material, texture, or animated-instance statistics. They are not inferred from authored
+entities because visibility, materials, viewmodels, animation, and backend batching can change the
+answer. Rusty Engine #6361 owns this generic provider gap; VC9 #6359 now depends on it.
+
+## Budgets and comparison rules
+
+The existing interactive budgets in `docs/performance.md` remain the pass/fail floor:
+
+- renderer cadence p95 ≤ 20 ms and p99 ≤ 33.5 ms on the supported profile;
+- local authoritative command RTT p95 ≤ 50 ms and maximum ≤ 100 ms;
+- dynamic payload p95 ≤ 4 KiB;
+- at most one in-flight plus one coalesced continuous input frame;
+- at most 32 edge commands, one outbound message, and zero dropped facts.
+
+VC9 must compare the placeholder baseline, brush proof room, and complete content-rich game without
+changing the route or substituting a reduced test scene. It also establishes explicit budgets for
+renderer-owned draw/resource counts, animated instances, voxel meshing, memory, cold/warm Studio
+open, save/reload, reset, and disposal once #6361 provides exact counters.
+
+Content byte growth is reported but is not itself a desktop failure. Startup, parse/decode,
+resource upload, memory, missed refresh intervals, submission duration, and input response decide
+whether richer assets create a performance problem.
+
+## Reproduction
+
+From a clean checkout at the exact revision:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm run check:content
+pnpm run profile:desktop
+RUSTY_ENGINE_DEMO_URL=http://192.168.1.22:37300/ pnpm run certify:performance
+wayland-info
+```
+
+Inventory checks:
+
+```bash
+jq '.assets' content/projects/loading-bay.project.json
+jq -r '.scenes[0].entities[] | select(.renderable != null) |
+  [.id, .name, .renderable.asset, .renderable.visible] | @tsv' \
+  content/projects/loading-bay.project.json
+curl -fsS http://192.168.1.22:37300/api/state | jq \
+  '{projectionCount:(.projection|length), voxelChunkCount:(.voxelMeshes|length)}'
+```
+
+The managed URL must identify `rusty-engine-demo` from `/health` before certification. Headless
+SwiftShader browser smoke remains lifecycle proof, not hardware performance evidence.
+
+## Review checklist
+
+- [ ] No imported or generated binary asset entered #6351.
+- [ ] Every current visual identity, environment, viewmodel, and invisible proxy has a
+      classification and follow-on owner.
+- [ ] The canonical project migration removes generator overwrite risk without introducing a
+      second scene authority.
+- [ ] Every shortlisted external source has author, version, license, local path, and hash.
+- [ ] Detailed visual assets remain separate from explicit gameplay proxies.
+- [ ] Object-local fine voxels are reusable mesh-authoring assets, not a unified world grid.
+- [ ] Placeholder and final measurements use the same route, viewport, commands, and metric
+      meanings.
+- [ ] Frame cadence is never described as GPU/render duration.
+- [ ] Missing renderer-owned counters remain unavailable until reviewed upstream #6361 is consumed.
+- [ ] No Doom map, texture, mesh, sound, name, or other licensed content is copied; only general
+      compact-FPS readability and industrial-detail vocabulary informs the original design.

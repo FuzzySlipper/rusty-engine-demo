@@ -115,3 +115,6 @@ limitation changes.
 Exact transfer provenance is recorded in [docs/source-provenance.md](docs/source-provenance.md).
 Renderer/session counter semantics, budgets, and the current headed LAN baseline are recorded in
 [docs/performance.md](docs/performance.md).
+The Studio-authored visual-content campaign's authority map, complete placeholder inventory, CC0
+source shortlist, voxel-brush experiment, and exact pre-replacement comparison baseline are in
+[docs/visual-content-pipeline.md](docs/visual-content-pipeline.md).

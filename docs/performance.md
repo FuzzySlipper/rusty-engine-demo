@@ -212,6 +212,37 @@ retransmissions. This is accepted for the supported local desktop direction: it 
 would justify a second resource authority or speculative Engine API. A future packaged-shell
 profile can reopen resource delivery work if those measurements change.
 
+## 2026-07-28 visual-content placeholder baseline
+
+Den task #6351 refreshed the same desktop and managed-LAN routes at exact Demo revision
+`cd25485445bfb581c4005b221a23caa21408d327`, before campaign #6350 replaces the placeholder
+geometry. The complete inventory, source shortlist, authority migration, and comparison method are
+in [`docs/visual-content-pipeline.md`](visual-content-pipeline.md). Structured raw evidence is in
+[`docs/evidence/visual-content-placeholder-baseline.json`](evidence/visual-content-placeholder-baseline.json).
+
+The fresh-host desktop profile measured 105.656 ms to the cold menu, 66.296 ms to the warm menu,
+494.4 ms through the first authoritative projection and shared-renderer frame, a 1,016,524-byte
+session bootstrap, and 11,553,112 bytes of gameplay JavaScript heap. The 20-second managed-LAN run
+measured:
+
+| Measurement                         |    p50 |    p95 |    p99 |    max |
+| ----------------------------------- | -----: | -----: | -----: | -----: |
+| Renderer cadence (ms)               |   16.7 |   16.8 |   33.3 |   33.4 |
+| Synchronous backend submission (ms) |    0.4 |    0.7 |    0.9 |    1.0 |
+| Snapshot arrival cadence (ms)       |   31.6 |   41.1 |   41.9 |   41.9 |
+| Command acknowledgement (ms)        | 18.523 | 47.286 | 48.254 | 49.267 |
+| Dynamic payload (bytes)             |  2,124 |  2,393 |  2,739 |  2,752 |
+
+The shared telemetry held 35 projected entities and eight resident voxel chunks, with zero dropped
+facts and queue maxima 2/1/1. The exact public surface does not expose renderer-owned draw,
+geometry, material, texture, or animated-instance counts. Those values are recorded as unavailable
+rather than inferred; Rusty Engine task #6361 owns the generic provider seam and final campaign
+profile #6359 depends on it.
+
+The active Wayland output reported 59.951 Hz during automation, so the observed 16.7 ms cadence is
+refresh synchronization. The monitor EDID also supports 119.989 and 144 Hz; an approximately 8.4 ms
+cadence in a 120 Hz session has the same meaning and is not a render-duration measurement.
+
 ## Camera policy
 
 The original hardware-backed LAN baseline measured command acknowledgement p95 at 54.3 ms. The
