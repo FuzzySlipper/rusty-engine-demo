@@ -48,6 +48,11 @@ time. The later renderer migration made the demo an external consumer of
 `@rusty-engine/render-contracts`, `render-projection`, `renderer-host`, and `renderer-three`.
 Only the game-specific input, semantic projection, and typed fact-to-descriptor mapping remain here.
 
+Den task #6378 advances that complete package family to Engine
+`a6857d03141e162511231c276ee751a3413c90e5` and consumes only the public immutable
+`RendererSurface.submission()` sample for renderer statistics. The downstream proof adds no Three
+import, WebGL inspection, private renderer object, resource cache, or second render loop.
+
 The CC0 conversion source is copied byte-for-byte into `fixtures/voxel-conversion` so the demo can
 inspect the source named by its persisted converted-wall provenance:
 

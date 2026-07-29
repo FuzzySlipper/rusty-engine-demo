@@ -234,14 +234,48 @@ measured:
 | Dynamic payload (bytes)             |  2,124 |  2,393 |  2,739 |  2,752 |
 
 The shared telemetry held 35 projected entities and eight resident voxel chunks, with zero dropped
-facts and queue maxima 2/1/1. The exact public surface does not expose renderer-owned draw,
-geometry, material, texture, or animated-instance counts. Those values are recorded as unavailable
-rather than inferred; Rusty Engine task #6361 owns the generic provider seam and final campaign
-profile #6359 depends on it.
+facts and queue maxima 2/1/1. The Engine revision pinned for that historical run did not expose
+renderer-owned draw, geometry, material, texture, or animated-instance counts. Those values remain
+recorded as unavailable rather than being reconstructed after the fact.
 
 The active Wayland output reported 59.951 Hz during automation, so the observed 16.7 ms cadence is
 refresh synchronization. The monitor EDID also supports 119.989 and 144 Hz; an approximately 8.4 ms
 cadence in a 120 Hz session has the same meaning and is not a render-duration measurement.
+
+## 2026-07-28 renderer statistics follow-up
+
+Rusty Engine #6361 introduced an immutable renderer-neutral statistics sample, and downstream
+#6378 adopted it at exact Engine revision
+`a6857d03141e162511231c276ee751a3413c90e5`. The exact tested Demo implementation is
+`602e8ed60312aaea308097abb9816b8523a5bd1f`; raw evidence is in
+[`docs/evidence/renderer-statistics-certification.json`](evidence/renderer-statistics-certification.json).
+
+One real Chromium/SwiftShader run used only the ordinary Loading Bay `RendererSurface`. It captured
+the placeholder, added 32 visible instances sharing four static resources under one temporary
+viewmodel tree, captured the richer load, removed the root, and captured the restored surface. The
+probe submitted explicit frames but created no surface, frame loop, timer, gameplay mutation, or
+Three/WebGL/private-object access.
+
+| Renderer statistic  | Scope          | Placeholder | Rich stress | Delta | Restored |
+| ------------------- | -------------- | ----------: | ----------: | ----: | -------: |
+| Draw calls          | per submission |          39 |          71 |   +32 |       39 |
+| Live handles        | live resident  |          51 |          84 |   +33 |       51 |
+| Geometry resources  | live resident  |          43 |          47 |    +4 |       43 |
+| Material resources  | live resident  |          55 |          59 |    +4 |       55 |
+| Texture resources   | live resident  |           0 |           0 |     0 |        0 |
+| Animated instances  | live resident  |           0 |           0 |     0 |        0 |
+| Submitted triangles | per submission |      14,380 |      14,444 |   +64 |   14,380 |
+
+Every observation was `available`; zero therefore means exact zero. `perSubmission` counters reset
+before the combined world/viewmodel render. `liveResident` counters describe backend-owned state
+after that submission, not authored entities or cumulative allocations. The three synchronous
+submission durations were 0.6, 8.3, and 1.0 ms under headless SwiftShader and are lifecycle evidence,
+not desktop GPU performance measurements.
+
+The ordinary telemetry path now consumes `RendererSurface.submission()`. `profile:desktop` retains
+the latest complete sample, while `certify:performance` reports status/scope plus available-value
+ranges and fails if the exact Three counters disappear or change scope. Frame cadence remains
+inter-submission timing and synchronous backend submission remains distinct from GPU completion.
 
 ## Camera policy
 

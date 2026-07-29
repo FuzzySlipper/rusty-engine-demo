@@ -279,11 +279,32 @@ The LAN run collected 193 unique renderer samples and 440 authoritative commands
 projected entities, eight resident voxel chunks, zero through three render diffs, at most two input
 frames, one edge, and one outbound message. Dropped facts and runtime errors were zero.
 
-Draw calls and backend resource counts are intentionally recorded as unavailable. The exact public
-surface accepts a `drawCallCount` telemetry counter but does not publish renderer-owned draw,
-geometry, material, texture, or animated-instance statistics. They are not inferred from authored
-entities because visibility, materials, viewmodels, animation, and backend batching can change the
-answer. Rusty Engine #6361 owns this generic provider gap; VC9 #6359 now depends on it.
+The original #6351 evidence records draw and backend resource counts as unavailable because its
+then-pinned public surface did not publish them. That historical baseline is not retroactively
+filled from authored entities: visibility, materials, viewmodels, animation, and backend batching
+can all change the real answer.
+
+Rusty Engine #6361 and downstream #6378 now close that observability gap at exact Engine revision
+`a6857d03141e162511231c276ee751a3413c90e5` and Demo implementation revision
+`602e8ed60312aaea308097abb9816b8523a5bd1f`. The shared surface publishes immutable typed
+statistics, and the ordinary desktop/headed tools retain the complete status, scope, and value.
+The exact browser proof records this current placeholder and a deterministic richer stress load:
+
+| Renderer statistic      | Scope          | Placeholder | Rich stress | Delta | Restored |
+| ----------------------- | -------------- | ----------: | ----------: | ----: | -------: |
+| Draw calls              | per submission |          39 |          71 |   +32 |       39 |
+| Live render handles     | live resident  |          51 |          84 |   +33 |       51 |
+| Geometry resources      | live resident  |          43 |          47 |    +4 |       43 |
+| Material resources      | live resident  |          55 |          59 |    +4 |       55 |
+| Texture resources       | live resident  |           0 |           0 |     0 |        0 |
+| Animated instances      | live resident  |           0 |           0 |     0 |        0 |
+| Triangles               | per submission |      14,380 |      14,444 |   +64 |   14,380 |
+
+All values above had `available` status. The zeros are therefore exact observations, not missing
+data. The rich sample is a 32-instance/four-shared-asset renderer-neutral stress overlay on the real
+Loading Bay surface. It proves counter sensitivity, resource sharing, and exact cleanup; it is not
+a substitute for measuring the final authored VC9 scene. Structured evidence is in
+[`docs/evidence/renderer-statistics-certification.json`](evidence/renderer-statistics-certification.json).
 
 ## Budgets and comparison rules
 
@@ -296,9 +317,10 @@ The existing interactive budgets in `docs/performance.md` remain the pass/fail f
 - at most 32 edge commands, one outbound message, and zero dropped facts.
 
 VC9 must compare the placeholder baseline, brush proof room, and complete content-rich game without
-changing the route or substituting a reduced test scene. It also establishes explicit budgets for
-renderer-owned draw/resource counts, animated instances, voxel meshing, memory, cold/warm Studio
-open, save/reload, reset, and disposal once #6361 provides exact counters.
+changing the route or substituting a reduced test scene. The #6361 public counters are now
+available, so VC9 establishes explicit budgets for renderer-owned draw/resource counts, animated
+instances, voxel meshing, memory, cold/warm Studio open, save/reload, reset, and disposal from the
+real authored workloads.
 
 Content byte growth is reported but is not itself a desktop failure. Startup, parse/decode,
 resource upload, memory, missed refresh intervals, submission duration, and input response decide
@@ -311,6 +333,8 @@ From a clean checkout at the exact revision:
 ```bash
 pnpm install --frozen-lockfile
 pnpm run check:content
+pnpm run build:shell
+pnpm run test:browser
 pnpm run profile:desktop
 RUSTY_ENGINE_DEMO_URL=http://192.168.1.22:37300/ pnpm run certify:performance
 wayland-info
