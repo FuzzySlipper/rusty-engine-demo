@@ -158,6 +158,43 @@ asset-catalog = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev 
   );
 });
 
+test("check rejects equivalent-case Engine repository identities", () => {
+  const packageFixture = copyCarrierFixture();
+  mkdirSync(resolve(packageFixture, "ts/packages/project-content"), {
+    recursive: true,
+  });
+  writeJson(packageFixture, "ts/packages/project-content/package.json", {
+    name: "@rusty-engine-demo/project-content",
+    private: true,
+    dependencies: {
+      unexpected: `github:FuzzySlipper/Rusty-Engine#${NEXT}&path:tools/unexpected`,
+    },
+  });
+  assert.throws(
+    () => checkEngineRevision(packageFixture),
+    /ts\/packages\/project-content\/package\.json: unexpected Engine source unexpected/u,
+  );
+
+  const cargoFixture = copyCarrierFixture();
+  mkdirSync(resolve(cargoFixture, "rust/crates/adjacent"), {
+    recursive: true,
+  });
+  writeFileSync(
+    resolve(cargoFixture, "rust/crates/adjacent/Cargo.toml"),
+    `[package]
+name = "adjacent"
+version = "0.1.0"
+
+[dependencies]
+unexpected = { git = "https://github.com/FuzzySlipper/Rusty-Engine.git", rev = "${NEXT}" }
+`,
+  );
+  assert.throws(
+    () => checkEngineRevision(cargoFixture),
+    /rust\/crates\/adjacent\/Cargo\.toml: unexpected direct Engine dependency carrier/u,
+  );
+});
+
 test("check rejects stale Cargo and pnpm locks and path fallback", () => {
   const cargoFixture = copyCarrierFixture();
   mutateFile(cargoFixture, "Cargo.lock", (content) =>
@@ -170,6 +207,27 @@ test("check rejects stale Cargo and pnpm locks and path fallback", () => {
     content.replace(CURRENT, NEXT),
   );
   assert.throws(() => checkEngineRevision(pnpmFixture), /pnpm-lock\.yaml/u);
+
+  const cargoCaseFixture = copyCarrierFixture();
+  mutateFile(cargoCaseFixture, "Cargo.lock", (content) =>
+    content.replaceAll(
+      "FuzzySlipper/rusty-engine",
+      "FuzzySlipper/Rusty-Engine",
+    ),
+  );
+  assert.throws(() => checkEngineRevision(cargoCaseFixture), /Cargo\.lock/u);
+
+  const pnpmCaseFixture = copyCarrierFixture();
+  mutateFile(pnpmCaseFixture, "pnpm-lock.yaml", (content) =>
+    content.replaceAll(
+      "FuzzySlipper/rusty-engine",
+      "FuzzySlipper/Rusty-Engine",
+    ),
+  );
+  assert.throws(
+    () => checkEngineRevision(pnpmCaseFixture),
+    /pnpm-lock\.yaml: Engine repository identity must use canonical spelling/u,
+  );
 
   const pathFixture = copyCarrierFixture();
   mutateFile(pathFixture, "pnpm-lock.yaml", (content) =>
@@ -197,6 +255,35 @@ test("update validates shape and public reachability before creating a worktree"
     }),
     /not public/u,
   );
+  assert.equal(worktreeCount(fixture), 1);
+});
+
+test("update rejects a case-variant adjacent source before fetch or worktree mutation", async () => {
+  const fixture = gitFixture();
+  const before = carrierSnapshot(fixture);
+  mkdirSync(resolve(fixture, "ts/packages/project-content"), {
+    recursive: true,
+  });
+  writeJson(fixture, "ts/packages/project-content/package.json", {
+    name: "@rusty-engine-demo/project-content",
+    private: true,
+    dependencies: {
+      unexpected: `github:FuzzySlipper/Rusty-Engine#${NEXT}&path:tools/unexpected`,
+    },
+  });
+  let publicFetchCalled = false;
+  await assert.rejects(
+    updateEngineRevision({
+      repoRoot: fixture,
+      commit: NEXT,
+      provePublic: async () => {
+        publicFetchCalled = true;
+      },
+    }),
+    /unexpected Engine source unexpected/u,
+  );
+  assert.equal(publicFetchCalled, false);
+  assert.deepEqual(carrierSnapshot(fixture), before);
   assert.equal(worktreeCount(fixture), 1);
 });
 

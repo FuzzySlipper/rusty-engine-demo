@@ -352,7 +352,7 @@ function checkCargoManifest(repoRoot, source, violations) {
   }
   for (const line of dependencySection.split("\n")) {
     if (
-      /rusty-engine|@rusty-engine/u.test(line) &&
+      /rusty-engine|@rusty-engine/iu.test(line) &&
       !ENGINE_CRATES.some((crate) => line.startsWith(`${crate} `))
     ) {
       violations.push(
@@ -400,7 +400,7 @@ function checkCargoLock(repoRoot, source, violations) {
   const content = readFile(repoRoot, relativePath, violations);
   if (content === null) return;
   const sources = [
-    ...content.matchAll(/^source = "(git\+[^"]*rusty-engine[^"]*)"$/gmu),
+    ...content.matchAll(/^source = "(git\+[^"]*rusty-engine[^"]*)"$/gimu),
   ].map((match) => match[1]);
   if (sources.length === 0) {
     violations.push(`${relativePath}: missing locked Engine sources`);
@@ -464,7 +464,7 @@ function checkPnpmWorkspace(repoRoot, source, violations) {
   if (content === null) return;
   const observed = [
     ...content.matchAll(
-      /^\s+"([^"]*(?:@rusty-engine\/|FuzzySlipper\/rusty-engine)[^"]*)":\s+true$/gmu,
+      /^\s+"([^"]*(?:@rusty-engine\/|FuzzySlipper\/rusty-engine)[^"]*)":\s+true$/gimu,
     ),
   ].map((match) => match[1]);
   const expected = [...ENGINE_PACKAGES.entries()].map(
@@ -479,7 +479,7 @@ function checkPnpmLock(repoRoot, source, violations) {
   if (content === null) return;
   const references = [
     ...content.matchAll(
-      /(?:github:FuzzySlipper\/rusty-engine#|codeload\.github\.com\/FuzzySlipper\/rusty-engine\/tar\.gz\/)([^&/#\s'")}\]]+)/gmu,
+      /(?:github:FuzzySlipper\/rusty-engine#|codeload\.github\.com\/FuzzySlipper\/rusty-engine\/tar\.gz\/)([^&/#\s'")}\]]+)/gimu,
     ),
   ].map((match) => match[1]);
   if (references.length === 0) {
@@ -506,7 +506,7 @@ function checkPnpmLock(repoRoot, source, violations) {
   }
   const enginePaths = [
     ...content.matchAll(
-      /(?:github:FuzzySlipper\/rusty-engine#[^&\s'")}\]]+&path:|codeload\.github\.com\/FuzzySlipper\/rusty-engine\/tar\.gz\/[^#\s'")}\]]+#path:)([A-Za-z0-9_./-]+)/gmu,
+      /(?:github:FuzzySlipper\/rusty-engine#[^&\s'")}\]]+&path:|codeload\.github\.com\/FuzzySlipper\/rusty-engine\/tar\.gz\/[^#\s'")}\]]+#path:)([A-Za-z0-9_./-]+)/gimu,
     ),
   ].map((match) => match[1]);
   for (const observed of new Set(enginePaths)) {
@@ -516,8 +516,20 @@ function checkPnpmLock(repoRoot, source, violations) {
       );
     }
   }
+  const repositorySpellings = [
+    ...content.matchAll(
+      /(?:github:|codeload\.github\.com\/)([^/\s]+\/rusty-engine)(?=[/#])/gimu,
+    ),
+  ].map((match) => match[1]);
+  for (const observed of new Set(repositorySpellings)) {
+    if (observed !== "FuzzySlipper/rusty-engine") {
+      violations.push(
+        `${relativePath}: Engine repository identity must use canonical spelling FuzzySlipper/rusty-engine; observed ${observed}`,
+      );
+    }
+  }
   if (
-    /(@rusty-engine\/[^\s]+)(?:file:|link:)|(?:file:|link:)[^\s]*rusty-engine/u.test(
+    /(@rusty-engine\/[^\s]+)(?:file:|link:)|(?:file:|link:)[^\s]*rusty-engine/iu.test(
       content,
     )
   ) {
@@ -683,16 +695,17 @@ function dependencySectionNames() {
 }
 
 function isEnginePackageReference(name, observed) {
-  if (name.startsWith("@rusty-engine/")) return true;
+  if (name.toLowerCase().startsWith("@rusty-engine/")) return true;
   if (typeof observed !== "string") return false;
-  if (observed.includes("@rusty-engine/")) return true;
+  if (observed.toLowerCase().includes("@rusty-engine/")) return true;
   return isEngineRepositoryReference(observed);
 }
 
 function isEngineRepositoryReference(value) {
+  const normalized = value.toLowerCase();
   return (
-    value.includes("FuzzySlipper/rusty-engine") ||
-    /(?:^|[/])rusty-engine(?:[/#&.]|$)/u.test(value)
+    normalized.includes("fuzzyslipper/rusty-engine") ||
+    /(?:^|[/])rusty-engine(?:[/#&.]|$)/u.test(normalized)
   );
 }
 
