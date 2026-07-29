@@ -29,6 +29,14 @@ Apply that same validated operation with:
 ./scripts/engine-revision update <sha>
 ```
 
+Rollback uses the same checked path rather than a separate restore mechanism. Preview the prior
+known-good public commit, then apply it:
+
+```console
+./scripts/engine-revision update <previous-sha> --dry-run
+./scripts/engine-revision update <previous-sha>
+```
+
 Before applying the candidate diff, the updater verifies that the caller's `HEAD` and active
 carriers have not changed. Unrelated dirty files remain untouched. A failure leaves the caller's
 active carriers unchanged. The command deliberately does not commit, push, change protocol
