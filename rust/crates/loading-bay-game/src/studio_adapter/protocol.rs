@@ -27,9 +27,9 @@ use crate::{
     StoredVoxelObjectFrameSelection, StoredVoxelObjectMaterialOverride,
 };
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 10;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 11;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
-pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
+pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
 pub const MAX_STUDIO_ENTITY_INSPECTOR_CONTRACTS: usize = 64;
 pub const MAX_STUDIO_ENTITY_COMPONENT_REFERENCES: usize = 4_096;
@@ -497,6 +497,13 @@ pub enum StudioAdapterRequest {
         request_id: String,
         plan_id: String,
     },
+    PrepareVoxelObjectPlacement {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        asset_id: String,
+        expected_object_content_hash: String,
+    },
     AttachVoxelObjectInstance {
         protocol_version: u32,
         request_id: String,
@@ -755,6 +762,9 @@ impl StudioAdapterRequest {
             | Self::DiscardVoxelObjectConversion {
                 protocol_version, ..
             }
+            | Self::PrepareVoxelObjectPlacement {
+                protocol_version, ..
+            }
             | Self::AttachVoxelObjectInstance {
                 protocol_version, ..
             }
@@ -825,6 +835,7 @@ impl StudioAdapterRequest {
             | Self::PreviewVoxelObjectConversion { request_id, .. }
             | Self::ApplyVoxelObjectConversion { request_id, .. }
             | Self::DiscardVoxelObjectConversion { request_id, .. }
+            | Self::PrepareVoxelObjectPlacement { request_id, .. }
             | Self::AttachVoxelObjectInstance { request_id, .. }
             | Self::PreviewVoxelObjectInstance { request_id, .. }
             | Self::CloseProject { request_id, .. } => request_id,
@@ -985,6 +996,13 @@ pub enum StudioAdapterResponse {
         plan_id: String,
         projection: RenderFrameDiff,
         projection_readout: ProjectionReadout,
+    },
+    VoxelObjectPlacementPrepared {
+        protocol_version: u32,
+        request_id: String,
+        asset_id: String,
+        object_content_hash: String,
+        resource_frame: RenderFrameDiff,
     },
     VoxelObjectInstancePreviewed {
         protocol_version: u32,

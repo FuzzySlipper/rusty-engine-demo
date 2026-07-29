@@ -39,7 +39,7 @@ use super::voxel::{
 };
 use super::voxel_object::{
     apply_prepared_voxel_object_conversion, attach_voxel_object_instance,
-    inspect_voxel_object_source, prepare_voxel_object_conversion,
+    inspect_voxel_object_source, prepare_voxel_object_conversion, prepare_voxel_object_placement,
     preview_prepared_voxel_object_conversion, PreparedProjectVoxelObjectConversion,
 };
 
@@ -143,7 +143,7 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 10,
+                    adapter_version: 11,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -204,6 +204,7 @@ impl StudioAdapterService {
                         "previewVoxelObjectConversion",
                         "applyVoxelObjectConversion",
                         "discardVoxelObjectConversion",
+                        "prepareVoxelObjectPlacement",
                         "attachVoxelObjectInstance",
                         "previewVoxelObjectInstance",
                         "closeProject",
@@ -1289,6 +1290,31 @@ impl StudioAdapterService {
                             projection_readout: project.projection_readout,
                         }
                     }
+                    Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
+                }
+            }
+            StudioAdapterRequest::PrepareVoxelObjectPlacement {
+                expected_project_hash,
+                asset_id,
+                expected_object_content_hash,
+                ..
+            } => {
+                let Some(open) = self.open.as_ref() else {
+                    return not_open(request_id);
+                };
+                match prepare_voxel_object_placement(
+                    &open.location,
+                    &expected_project_hash,
+                    &asset_id,
+                    &expected_object_content_hash,
+                ) {
+                    Ok(resource_frame) => StudioAdapterResponse::VoxelObjectPlacementPrepared {
+                        protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                        request_id,
+                        asset_id,
+                        object_content_hash: expected_object_content_hash,
+                        resource_frame,
+                    },
                     Err(error) => StudioAdapterResponse::rejected(Some(request_id), error),
                 }
             }

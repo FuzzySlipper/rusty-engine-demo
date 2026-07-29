@@ -288,6 +288,93 @@ impl OpenedOwnerProject {
         )
     }
 
+    pub(crate) fn voxel_object_placement_resource(
+        &self,
+        asset_id: &str,
+        expected_object_content_hash: &str,
+    ) -> Result<RenderFrameDiff, AdapterRejection> {
+        let expected_digest = expected_object_content_hash
+            .strip_prefix("sha256:")
+            .ok_or_else(|| {
+                reject(
+                    "voxelObject.invalidContentHash",
+                    "object content hash must use the sha256:<lowercase-hex> form",
+                )
+            })?;
+        ContentHash::parse(expected_digest)
+            .map_err(|error| reject("voxelObject.invalidContentHash", error.to_string()))?;
+        let object = self
+            .stored
+            .document()
+            .assets
+            .iter()
+            .find(|asset| asset.id == asset_id)
+            .ok_or_else(|| {
+                reject(
+                    "voxelObject.assetMissing",
+                    format!("project has no asset `{asset_id}`"),
+                )
+            })?
+            .voxel_object
+            .as_ref()
+            .ok_or_else(|| {
+                reject(
+                    "voxelObject.assetKindMismatch",
+                    format!("asset `{asset_id}` is not a voxel object"),
+                )
+            })?;
+        if object.content_hash != expected_object_content_hash {
+            return Err(reject(
+                "voxelObject.staleContent",
+                format!(
+                    "expected object content hash {expected_object_content_hash}, found {}",
+                    object.content_hash
+                ),
+            ));
+        }
+
+        let admitted = admit_voxel_object(object, VoxelObjectRuntimeLimits::default())
+            .map_err(|error| reject("voxelObject.admissionRejected", error.to_string()))?;
+        let projected = VoxelObjectRenderProjector::new()
+            .project(
+                &[VoxelObjectProjectionInstance {
+                    instance_id: "studio-voxel-object-placement-resource".to_string(),
+                    object: &admitted,
+                    frame: 0,
+                    transform: Transform::IDENTITY,
+                    visible: true,
+                    material_overrides: Vec::new(),
+                    metadata: RenderMetadata::default(),
+                }],
+                &project_material_descriptors(&self.catalog),
+            )
+            .map_err(|error| reject("projection.voxelObjectRejected", format!("{error:?}")))?;
+        let operations = projected
+            .frame
+            .ops
+            .into_iter()
+            .filter(|operation| {
+                matches!(
+                    operation,
+                    RenderDiff::DefineMaterial { .. }
+                        | RenderDiff::DefineTexture { .. }
+                        | RenderDiff::DefineVoxelObject { .. }
+                )
+            })
+            .collect::<Vec<_>>();
+        if operations.len() > 513 {
+            return Err(reject(
+                "voxelObject.placementResourceLimit",
+                format!(
+                    "placement resource frame has {} definitions, exceeding the 513-operation protocol bound",
+                    operations.len()
+                ),
+            ));
+        }
+        RenderFrameDiff::try_from_ops(operations)
+            .map_err(|error| reject("projection.voxelObjectRejected", format!("{error:?}")))
+    }
+
     pub(crate) fn project_voxel_object_frame(
         &self,
         projector: &mut VoxelObjectRenderProjector,

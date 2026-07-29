@@ -476,6 +476,36 @@ pub(crate) fn attach_voxel_object_instance(
     Ok((published.value, published.readout))
 }
 
+pub(crate) fn prepare_voxel_object_placement(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    asset_id: &str,
+    expected_object_content_hash: &str,
+) -> Result<render_model::RenderFrameDiff, AdapterRejection> {
+    const MAX_PRESENTATION_IDENTITY_BYTES: usize = 128;
+
+    if asset_id.len() > MAX_PRESENTATION_IDENTITY_BYTES {
+        return Err(reject(
+            "voxelObject.invalidAssetIdentity",
+            format!(
+                "asset identity is {} bytes, exceeding the {}-byte placement bound",
+                asset_id.len(),
+                MAX_PRESENTATION_IDENTITY_BYTES
+            ),
+        ));
+    }
+    let parsed = AssetId::parse(asset_id)
+        .map_err(|error| reject("voxelObject.invalidAssetIdentity", error.to_string()))?;
+    if parsed.kind() != AssetKind::VoxelObject {
+        return Err(reject(
+            "voxelObject.invalidAssetIdentity",
+            format!("expected voxel-object identity, found {}", parsed.kind()),
+        ));
+    }
+    let project = load_expected(location, expected_project_hash)?;
+    project.voxel_object_placement_resource(asset_id, expected_object_content_hash)
+}
+
 fn stored_voxel_object_instance(
     owner_entity_id: u64,
     instance: StudioVoxelObjectInstance,

@@ -5,7 +5,7 @@ Rusty Engine Demo was originally extracted from
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
 
 The current Rust dependencies, browser render packages, and Studio composition packages resolve
-from exact reviewed Engine revision `198dccaa3f6b15d776b58d0f60c0f025e4b12171`. The older revisions below remain historical
+from exact reviewed Engine revision `99d375399be5526c3ca79debbaf69737c7ca0391`. The older revisions below remain historical
 extraction and feature-provider points, not active dependency pins.
 
 That revision also supplies the reviewed `gameplay-mechanics` provider adopted by Den task #6290.
@@ -74,10 +74,17 @@ project path and headless beacon proof; it was not transferred from Engine.
 ## M11B Studio adapter and voxel-owner adaptation
 
 The project-owned Studio adapter was authored directly in this repository against an exact Engine
-revision, now `198dccaa3f6b15d776b58d0f60c0f025e4b12171`. It composes the public `asset-catalog`,
+revision, now `99d375399be5526c3ca79debbaf69737c7ca0391`. It composes the public `asset-catalog`,
 `authored-scene`, `content-store`, `entity-state`, `engine-inspector`, `render-model`, and
 `render-projection` crates while retaining Loading Bay schema, layout, and domain admission here.
 No Studio or adapter implementation was copied from Engine or Asha.
+
+Protocol 11 adds the downstream half of Engine's bounded voxel-object placement seam. The adapter
+resolves one already-authored object at exact project and object-content hashes, returns a
+resource-only renderer frame for Studio's disposable ghost, and performs no project mutation or
+retained preview-state change. `attachVoxelObjectInstance` remains the sole durable placement
+operation and atomically publishes the Loading Bay entity owner plus instance before returning a
+canonical reread.
 
 That Engine revision also made the converted-voxel owner contract explicit. The checked-in
 `kenney-wall-a.voxel.json` and its embedded project copy retain the same source mesh, sparse voxel
@@ -267,6 +274,6 @@ Rusty Engine task #6213 produced the renderer-owned timing seam at public SHA
 integration evidence adopted by #6219. Rusty Engine task #6263 then produced the bounded
 camera-relative `viewmodel` layer and explicit world/depth-clear/viewmodel composition at public SHA
 `e622c941671bc0f167206b049ab94ea63495a86d`, initially adopted by #6224 and retained in the current
-reviewed Engine descendant `198dccaa3f6b15d776b58d0f60c0f025e4b12171`.
+reviewed Engine descendant `99d375399be5526c3ca79debbaf69737c7ca0391`.
 The downstream call site reads `surface.timing()` from the shared auto-started surface; no demo
 frame scheduler, backend clock, renderer object access, or private renderer was introduced.
