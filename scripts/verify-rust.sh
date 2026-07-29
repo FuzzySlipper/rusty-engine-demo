@@ -4,6 +4,7 @@ set -euo pipefail
 DEMO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$DEMO_ROOT"
 
+./scripts/engine-revision check
 cargo fmt --all --check
 
 FORBIDDEN_ASHA_ENGINE="asha""-engine"
@@ -14,15 +15,6 @@ if rg -n "path\\s*=\\s*\".*rusty-engine|${FORBIDDEN_ASHA_ENGINE}|${FORBIDDEN_ASH
 fi
 
 cargo metadata --format-version 1 --locked --no-deps > /dev/null
-
-EXPECTED_ENGINE_SOURCE='git+https://github.com/FuzzySlipper/rusty-engine.git?rev=fcea0cd263ad965ccb19275f24c46c9fde346bc4#fcea0cd263ad965ccb19275f24c46c9fde346bc4'
-RESOLVED_GIT_SOURCES="$(sed -n 's/^source = "\(git+[^\"]*\)"$/\1/p' Cargo.lock | sort -u)"
-if [[ "$RESOLVED_GIT_SOURCES" != "$EXPECTED_ENGINE_SOURCE" ]]; then
-  echo "Cargo.lock does not resolve exactly the reviewed Rusty Engine revision" >&2
-  printf '%s\n' "$RESOLVED_GIT_SOURCES" >&2
-  exit 1
-fi
-
 cargo test --workspace --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo run -q --locked -p loading-bay-game --bin headless-door > /dev/null

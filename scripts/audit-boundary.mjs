@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkEngineRevision } from "./engine-revision-lib.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const auditPath = resolve(repoRoot, "scripts/audit-boundary.mjs");
@@ -22,8 +23,9 @@ const operationalRoots = [
   "rust",
   "ts",
 ];
-const rustEngineRevision = "fcea0cd263ad965ccb19275f24c46c9fde346bc4";
-const renderEngineRevision = "fcea0cd263ad965ccb19275f24c46c9fde346bc4";
+const engineSource = checkEngineRevision(repoRoot);
+const rustEngineRevision = engineSource.commit;
+const renderEngineRevision = engineSource.commit;
 
 const files = operationalRoots.flatMap((entry) =>
   collect(resolve(repoRoot, entry)),

@@ -4,6 +4,7 @@ set -euo pipefail
 DEMO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$DEMO_ROOT"
 
+pnpm run test:engine-revision
 pnpm run audit:boundary
 pnpm run typecheck
 pnpm run check:content

@@ -1,0 +1,41 @@
+#!/usr/bin/env node
+
+import { resolve } from "node:path";
+import {
+  checkEngineRevision,
+  updateEngineRevision,
+} from "./engine-revision-lib.mjs";
+
+const repoRoot = resolve(import.meta.dirname, "..");
+const [command, commit, flag, ...extra] = process.argv.slice(2);
+
+try {
+  if (command === "check" && commit === undefined) {
+    const source = checkEngineRevision(repoRoot);
+    console.log(
+      `Engine revision check passed: ${source.repository}#${source.commit}`,
+    );
+  } else if (
+    command === "update" &&
+    commit !== undefined &&
+    (flag === undefined || flag === "--dry-run") &&
+    extra.length === 0
+  ) {
+    const result = await updateEngineRevision({
+      repoRoot,
+      commit,
+      dryRun: flag === "--dry-run",
+    });
+    console.log(
+      `${result.dryRun ? "Prospective" : "Applied"} Engine revision diff ${result.before.commit} -> ${result.commit}:`,
+    );
+    process.stdout.write(result.diff || "(no carrier changes)\n");
+  } else {
+    throw new Error(
+      "usage: ./scripts/engine-revision check | update <40-character-public-sha> [--dry-run]",
+    );
+  }
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+}

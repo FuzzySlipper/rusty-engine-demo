@@ -118,3 +118,12 @@ Renderer/session counter semantics, budgets, and the current headed LAN baseline
 The Studio-authored visual-content campaign's authority map, complete placeholder inventory, CC0
 source shortlist, voxel-brush experiment, and exact pre-replacement comparison baseline are in
 [docs/visual-content-pipeline.md](docs/visual-content-pipeline.md).
+
+The repository's one active Rusty Engine revision is declared in
+[`engine-source.json`](engine-source.json). Check it with `./scripts/engine-revision check`, preview
+an update without mutating the checkout with
+`./scripts/engine-revision update <40-character-public-sha> --dry-run`, or apply the validated
+carrier-only update with `./scripts/engine-revision update <40-character-public-sha>`. The updater
+does not commit, push, rewrite historical evidence, or change protocol fixtures. Its complete
+preflight, candidate, failure, and recovery contract is documented in
+[docs/engine-revision-updates.md](docs/engine-revision-updates.md).

@@ -5,9 +5,9 @@ Rusty Engine Demo was originally extracted from
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
 
 The current Rust dependencies, browser render packages, and Studio composition packages resolve
-from exact reviewed Engine revision `fcea0cd263ad965ccb19275f24c46c9fde346bc4`. The older
-revisions below remain historical extraction and feature-provider points, not active dependency
-pins.
+from the one exact public Engine revision in [`engine-source.json`](../engine-source.json). The
+older revisions below remain historical extraction and feature-provider points, not active
+dependency pins.
 
 That revision also supplies the reviewed `gameplay-mechanics` provider adopted by Den task #6290.
 Loading Bay uses its registered component store and named inventory, equipment, track, effect, and
@@ -79,8 +79,8 @@ project path and headless beacon proof; it was not transferred from Engine.
 
 ## M11B Studio adapter and voxel-owner adaptation
 
-The project-owned Studio adapter was authored directly in this repository against an exact Engine
-revision, now `fcea0cd263ad965ccb19275f24c46c9fde346bc4`. It composes the public `asset-catalog`,
+The project-owned Studio adapter was authored directly in this repository against the exact Engine
+revision in [`engine-source.json`](../engine-source.json). It composes the public `asset-catalog`,
 `authored-scene`, `content-store`, `entity-state`, `engine-inspector`, `render-model`, and
 `render-projection` crates while retaining Loading Bay schema, layout, and domain admission here.
 No Studio or adapter implementation was copied from Engine or Asha.
