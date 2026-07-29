@@ -404,9 +404,9 @@ test("flash intensity scales disposable particles without suppressing readable b
   assert.deepEqual(disabled.billboardValues, full.billboardValues);
 });
 
-test("renderer telemetry uses the shared surface timing without a downstream clock", () => {
+test("renderer telemetry uses the complete shared submission without a downstream clock", () => {
   const state = feedbackState();
-  const timing = {
+  const submission = {
     schemaVersion: 1 as const,
     renderSequence: 42,
     source: "animationFrame" as const,
@@ -415,11 +415,21 @@ test("renderer telemetry uses the shared surface timing without a downstream clo
     frameIntervalStatus: "available" as const,
     backendSubmissionDurationMs: 0.85,
     backendSubmissionDurationStatus: "available" as const,
+    statistics: {
+      schemaVersion: 1 as const,
+      drawCallCount: { scope: "perSubmission" as const, status: "available" as const, value: 17 },
+      renderHandleCount: { scope: "liveResident" as const, status: "available" as const, value: 40 },
+      geometryResourceCount: { scope: "liveResident" as const, status: "available" as const, value: 9 },
+      materialResourceCount: { scope: "liveResident" as const, status: "available" as const, value: 8 },
+      textureResourceCount: { scope: "liveResident" as const, status: "available" as const, value: 2 },
+      animatedInstanceCount: { scope: "liveResident" as const, status: "available" as const, value: 1 },
+      triangleCount: { scope: "perSubmission" as const, status: "available" as const, value: 600 },
+    },
   };
 
-  const sample = captureRendererTelemetry({ timing: () => timing }, state, 3);
+  const sample = captureRendererTelemetry({ submission: () => submission }, state, 3);
 
-  assert.equal(sample.timing, timing);
+  assert.equal(sample.timing, submission);
   assert.equal(sample.sourceTick, state.tick);
   assert.deepEqual(sample.counters, {
     entityCount: state.projection.length,

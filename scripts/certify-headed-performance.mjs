@@ -227,6 +227,9 @@ try {
           entityCount: Number(data.rendererEntityCount),
           residentChunkCount: Number(data.rendererResidentChunkCount),
           renderDiffCount: Number(data.rendererRenderDiffCount),
+          rendererStatistics: data.rendererStatisticsSample
+            ? JSON.parse(data.rendererStatisticsSample)
+            : null,
           snapshotCadenceMs: Number(body.sessionSnapshotCadenceMilliseconds),
           commandRttMs: Number(body.sessionRttMilliseconds),
           steadyPayloadBytes: Number(body.sessionSteadyBytes),
@@ -334,6 +337,7 @@ try {
     report.timingSources.some((source) => source !== "animationFrame")
       ? `unexpected renderer timing source ${report.timingSources.join(", ")}`
       : null,
+    rendererStatisticsFailure(report.rendererStatistics),
     environment.runtimeError.length > 0
       ? `runtime error: ${environment.runtimeError}`
       : null,
@@ -402,6 +406,7 @@ function buildReport(
       renderDiffCount: range(samples.map((sample) => sample.renderDiffCount)),
       renderSequence: range(samples.map((sample) => sample.renderSequence)),
     },
+    rendererStatistics: summarizeRendererStatistics(samples),
     bounds: {
       pendingInputMax: Math.max(
         ...samples.map((sample) => sample.pendingInputMax),
@@ -416,6 +421,63 @@ function buildReport(
     },
     largestNetworkUpdates,
   };
+}
+
+function summarizeRendererStatistics(samples) {
+  const expectedScopes = {
+    drawCallCount: "perSubmission",
+    renderHandleCount: "liveResident",
+    geometryResourceCount: "liveResident",
+    materialResourceCount: "liveResident",
+    textureResourceCount: "liveResident",
+    animatedInstanceCount: "liveResident",
+    triangleCount: "perSubmission",
+  };
+  return Object.fromEntries(
+    Object.entries(expectedScopes).map(([counter, expectedScope]) => {
+      const observations = samples.map(
+        (sample) => sample.rendererStatistics?.[counter] ?? null,
+      );
+      const statuses = [
+        ...new Set(
+          observations.map((observation) => observation?.status ?? "missing"),
+        ),
+      ];
+      const scopes = [
+        ...new Set(
+          observations.map((observation) => observation?.scope ?? "missing"),
+        ),
+      ];
+      const availableValues = observations
+        .filter((observation) => observation?.status === "available")
+        .map((observation) => observation.value);
+      return [
+        counter,
+        {
+          expectedScope,
+          scopes,
+          statuses,
+          availableRange:
+            availableValues.length > 0 ? range(availableValues) : null,
+        },
+      ];
+    }),
+  );
+}
+
+function rendererStatisticsFailure(statistics) {
+  for (const [counter, observation] of Object.entries(statistics)) {
+    if (
+      observation.statuses.length !== 1 ||
+      observation.statuses[0] !== "available" ||
+      observation.scopes.length !== 1 ||
+      observation.scopes[0] !== observation.expectedScope ||
+      observation.availableRange === null
+    ) {
+      return `renderer statistic ${counter} was not exact: ${JSON.stringify(observation)}`;
+    }
+  }
+  return null;
 }
 
 function distribution(values) {

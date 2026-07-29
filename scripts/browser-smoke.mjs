@@ -135,6 +135,68 @@ function bodyDataValue(html, attribute) {
   return match[1];
 }
 
+function bodyJsonScript(html, id) {
+  const match = html.match(
+    new RegExp(`<script(?=[^>]*id="${id}")[^>]*>([\\s\\S]*?)<\\/script>`),
+  );
+  if (match?.[1] === undefined) {
+    throw new Error(`browser smoke did not publish JSON script #${id}`);
+  }
+  return JSON.parse(match[1]);
+}
+
+function assertRendererStatisticsProof(proof) {
+  if (
+    proof?.kind !== "loading_bay_renderer_statistics_proof.v1" ||
+    proof.schemaVersion !== 1 ||
+    proof.contentRichAssetCount !== 4 ||
+    proof.contentRichInstanceCount !== 32
+  ) {
+    throw new Error(
+      `renderer statistics proof identity was invalid\n${JSON.stringify(proof)}`,
+    );
+  }
+  const deltas = {
+    drawCallCount: ["perSubmission", 32],
+    renderHandleCount: ["liveResident", 33],
+    geometryResourceCount: ["liveResident", 4],
+    materialResourceCount: ["liveResident", 4],
+    textureResourceCount: ["liveResident", 0],
+    animatedInstanceCount: ["liveResident", 0],
+    triangleCount: ["perSubmission", 64],
+  };
+  for (const [counter, [scope, delta]] of Object.entries(deltas)) {
+    const placeholder = proof.placeholder?.statistics?.[counter];
+    const contentRich = proof.contentRich?.statistics?.[counter];
+    const restored = proof.restored?.statistics?.[counter];
+    if (
+      placeholder?.status !== "available" ||
+      contentRich?.status !== "available" ||
+      restored?.status !== "available" ||
+      placeholder.scope !== scope ||
+      contentRich.scope !== scope ||
+      restored.scope !== scope ||
+      contentRich.value - placeholder.value !== delta ||
+      restored.value !== placeholder.value
+    ) {
+      throw new Error(
+        `renderer statistics proof failed for ${counter}\n${JSON.stringify({ placeholder, contentRich, restored, delta })}`,
+      );
+    }
+  }
+  if (
+    proof.placeholder.source !== "explicit" ||
+    proof.contentRich.source !== "explicit" ||
+    proof.restored.source !== "explicit" ||
+    proof.contentRich.renderSequence !== proof.placeholder.renderSequence + 1 ||
+    proof.restored.renderSequence !== proof.contentRich.renderSequence + 1
+  ) {
+    throw new Error(
+      `renderer statistics proof added scheduling or lost submission order\n${JSON.stringify(proof)}`,
+    );
+  }
+}
+
 async function persistProject(input, output) {
   const result = await run("cargo", [
     "run",
@@ -167,7 +229,7 @@ async function runFullBrowserProduct(project) {
       running.output,
     );
     const result = await runChromiumSmoke(
-      `http://${running.address}/?smoke=1#/game`,
+      `http://${running.address}/?smoke=1&renderer-statistics-proof=1#/game`,
       "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
       FULL_CAMPAIGN_TIMEOUT_MILLISECONDS,
     );
@@ -208,6 +270,7 @@ async function runFullBrowserProduct(project) {
       'data-renderer-telemetry="pass"',
       'data-renderer-single-loop="pass"',
       'data-renderer-telemetry-refresh="pass"',
+      'data-renderer-statistics-proof="pass"',
       'data-weapon-viewmodel="pass"',
       'data-weapon-viewmodel-layer="viewmodel"',
       "PASS · Original Loading Bay campaign completed through Rust authority",
@@ -357,6 +420,14 @@ async function runFullBrowserProduct(project) {
     }
     console.log(
       `shared-renderer correctness proof ${JSON.stringify(rendererEvidence)} (headless SwiftShader; not GPU performance evidence)`,
+    );
+    const rendererStatisticsProof = bodyJsonScript(
+      result.stdout,
+      "renderer-statistics-proof",
+    );
+    assertRendererStatisticsProof(rendererStatisticsProof);
+    console.log(
+      `renderer-statistics proof ${JSON.stringify(rendererStatisticsProof)} (headless SwiftShader; exact counts, not GPU performance evidence)`,
     );
     const beforeReloadResponse = await fetch(
       `http://${running.address}/api/state`,

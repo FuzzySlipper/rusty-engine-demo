@@ -25,6 +25,10 @@ import {
 import { LocalLookPresentationOffset } from "./local-look-offset.js";
 import { BrowserPresentationFeedback } from "./presentation-feedback.js";
 import {
+  captureLoadingBayRendererStatisticsProof,
+  type LoadingBayRendererStatisticsProof,
+} from "./renderer-statistics-proof.js";
+import {
   RuntimeProjectionAdapter,
   derivePlayerCameraPose,
   type RuntimeBrowserState,
@@ -188,6 +192,7 @@ export async function mountLoadingBayGame(
   const reloadSmokeMode = query.has("reload-smoke");
   const convertedSmokeMode = query.has("converted-smoke");
   const inputProofMode = query.has("input-proof");
+  const rendererStatisticsProofMode = query.has("renderer-statistics-proof");
   let lastActionRejection: string | null = null;
   const authoringQueue = new SerializedActionQueue(recordActionRejection);
 
@@ -251,6 +256,11 @@ export async function mountLoadingBayGame(
     projection: { fovYDegrees: 50, near: 0.1, far: 100 },
   });
   initialFrame.commit();
+  if (rendererStatisticsProofMode) {
+    publishRendererStatisticsProof(
+      captureLoadingBayRendererStatisticsProof(surface),
+    );
+  }
   const presentationFeedback = new BrowserPresentationFeedback({
     audioStatus: feedbackAudioStatus,
     layer: feedbackLayer,
@@ -2255,6 +2265,18 @@ export async function mountLoadingBayGame(
       Math.abs(currentValue[2] - previousValue[2]) > threshold
     );
   }
+}
+
+function publishRendererStatisticsProof(
+  proof: LoadingBayRendererStatisticsProof,
+): void {
+  document.getElementById("renderer-statistics-proof")?.remove();
+  const evidence = document.createElement("script");
+  evidence.id = "renderer-statistics-proof";
+  evidence.type = "application/json";
+  evidence.textContent = JSON.stringify(proof);
+  document.body.append(evidence);
+  document.body.dataset.rendererStatisticsProof = "pass";
 }
 
 function isHighFrequencyDiagnosticEvent(event: string): boolean {

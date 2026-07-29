@@ -225,6 +225,9 @@ try {
           frameIntervalMs: Number(data.rendererFrameIntervalMilliseconds),
           rendererSampleSequence: Number(data.rendererSampleSequence),
           timingSource: data.rendererTimingSource ?? "",
+          rendererStatistics: data.rendererStatisticsSample
+            ? JSON.parse(data.rendererStatisticsSample)
+            : null,
         };
       })()
     `);
@@ -314,6 +317,7 @@ try {
       timingSources: [
         ...new Set(rendererSamples.map((sample) => sample.timingSource)),
       ],
+      rendererStatistics: rendererSamples.at(-1)?.rendererStatistics ?? null,
     },
     build: existsSync(buildStatsPath)
       ? analyzeBuildStats(JSON.parse(readFileSync(buildStatsPath, "utf8")))

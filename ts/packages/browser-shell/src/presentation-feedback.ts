@@ -15,8 +15,8 @@ import {
   RendererPresentationHostSet,
   RendererTelemetryOverlayHost,
   type RendererSurface,
+  type RendererSurfaceSubmissionSample,
   type RendererSurfaceTelemetrySample,
-  type RendererSurfaceTimingSample,
 } from "@rusty-engine/renderer-host";
 
 import type {
@@ -78,13 +78,15 @@ export interface ProjectedPresentationFeedback {
 }
 
 export function captureRendererTelemetry(
-  surface: Pick<RendererSurface, "timing">,
+  surface: Pick<RendererSurface, "submission">,
   state: RuntimeBrowserState,
   renderDiffCount: number,
-): RendererSurfaceTelemetrySample {
+): RendererSurfaceTelemetrySample & {
+  readonly timing: RendererSurfaceSubmissionSample;
+} {
   return {
     sourceTick: state.tick,
-    timing: surface.timing(),
+    timing: surface.submission(),
     counters: {
       entityCount: state.projection.length,
       residentChunkCount: state.voxelMeshes.length,
@@ -596,6 +598,13 @@ export class BrowserPresentationFeedback {
         "entityCount",
         "residentChunkCount",
         "renderDiffCount",
+        "renderHandleCount",
+        "drawCallCount",
+        "geometryResourceCount",
+        "materialResourceCount",
+        "textureResourceCount",
+        "animatedInstanceCount",
+        "triangleCount",
       ],
       maxFrameTimeSamples: 20,
     });
@@ -628,7 +637,7 @@ export class BrowserPresentationFeedback {
   }
 
   #recordTelemetryEvidence(
-    timing: RendererSurfaceTimingSample,
+    timing: RendererSurfaceSubmissionSample,
     snapshot: ReturnType<RendererLiveTelemetryCollector["readSnapshot"]>,
   ): void {
     this.#telemetryLayer.dataset.rendererSampleSequence = String(
@@ -648,6 +657,9 @@ export class BrowserPresentationFeedback {
       optionalMetric(timing.backendSubmissionDurationMs);
     this.#telemetryLayer.dataset.rendererFrameHistoryMilliseconds =
       snapshot.frameTimeHistoryMs.map((value) => value.toFixed(3)).join(",");
+    this.#telemetryLayer.dataset.rendererStatisticsSample = JSON.stringify(
+      timing.statistics,
+    );
     this.#telemetryLayer.dataset.rendererEntityCount = snapshotMetric(
       snapshot,
       "entityCount",
@@ -672,6 +684,7 @@ export class BrowserPresentationFeedback {
       "rendererBackendSubmissionStatus",
       "rendererBackendSubmissionMilliseconds",
       "rendererFrameHistoryMilliseconds",
+      "rendererStatisticsSample",
       "rendererEntityCount",
       "rendererResidentChunkCount",
       "rendererRenderDiffCount",
