@@ -49,20 +49,20 @@ export interface LoadingBayRendererStatisticsProof {
  * mutation, then removes the complete temporary handle tree before returning.
  */
 export function captureLoadingBayRendererStatisticsProof(
-  surface: Pick<RendererSurface, "applyFrame" | "renderOnce">,
+  surface: Pick<RendererSurface, "applyFrame" | "renderOnce" | "submission">,
   now: () => number = () => globalThis.performance?.now() ?? 0,
 ): LoadingBayRendererStatisticsProof {
-  const placeholder = surface.renderOnce(now());
+  const placeholder = submitAndObserve(surface, now());
   let contentRichApplied = false;
   try {
     surface.applyFrame(contentRichFrame());
     contentRichApplied = true;
-    const contentRich = surface.renderOnce(now());
+    const contentRich = submitAndObserve(surface, now());
     assertContentRichDelta(placeholder.statistics, contentRich.statistics);
 
     surface.applyFrame(cleanupFrame());
     contentRichApplied = false;
-    const restored = surface.renderOnce(now());
+    const restored = submitAndObserve(surface, now());
     assertStatisticsEqual(placeholder.statistics, restored.statistics);
 
     return Object.freeze({
@@ -77,9 +77,17 @@ export function captureLoadingBayRendererStatisticsProof(
   } finally {
     if (contentRichApplied) {
       surface.applyFrame(cleanupFrame());
-      surface.renderOnce(now());
+      submitAndObserve(surface, now());
     }
   }
+}
+
+function submitAndObserve(
+  surface: Pick<RendererSurface, "renderOnce" | "submission">,
+  sourceTimeMs: number,
+): RendererSurfaceSubmissionSample {
+  surface.renderOnce(sourceTimeMs);
+  return surface.submission();
 }
 
 export function contentRichFrame(): RenderFrameDiff {
@@ -106,16 +114,22 @@ export function contentRichFrame(): RenderFrameDiff {
       metadata: proofMetadata("content-rich-root"),
     },
   });
-  for (let instanceIndex = 0; instanceIndex < PROOF_INSTANCE_COUNT; instanceIndex += 1) {
+  for (
+    let instanceIndex = 0;
+    instanceIndex < PROOF_INSTANCE_COUNT;
+    instanceIndex += 1
+  ) {
     const assetIndex = instanceIndex % PROOF_ASSET_COUNT;
     const column = instanceIndex % 8;
     const row = Math.floor(instanceIndex / 8);
-    operations.push(instance(
-      PROOF_ROOT_HANDLE + 1 + instanceIndex,
-      `mesh/loading-bay-statistics-${String(assetIndex)}`,
-      `content-rich-panel-${String(instanceIndex)}`,
-      [-1.225 + column * 0.35, 0.525 - row * 0.35, -3],
-    ));
+    operations.push(
+      instance(
+        PROOF_ROOT_HANDLE + 1 + instanceIndex,
+        `mesh/loading-bay-statistics-${String(assetIndex)}`,
+        `content-rich-panel-${String(instanceIndex)}`,
+        [-1.225 + column * 0.35, 0.525 - row * 0.35, -3],
+      ),
+    );
   }
   return { schemaVersion: 1, ops: operations };
 }
@@ -132,12 +146,32 @@ function assertContentRichDelta(
   contentRich: RendererSurfaceStatisticsSample,
 ): void {
   assertDelta(placeholder, contentRich, "drawCallCount", PROOF_INSTANCE_COUNT);
-  assertDelta(placeholder, contentRich, "renderHandleCount", PROOF_INSTANCE_COUNT + 1);
-  assertDelta(placeholder, contentRich, "geometryResourceCount", PROOF_ASSET_COUNT);
-  assertDelta(placeholder, contentRich, "materialResourceCount", PROOF_ASSET_COUNT);
+  assertDelta(
+    placeholder,
+    contentRich,
+    "renderHandleCount",
+    PROOF_INSTANCE_COUNT + 1,
+  );
+  assertDelta(
+    placeholder,
+    contentRich,
+    "geometryResourceCount",
+    PROOF_ASSET_COUNT,
+  );
+  assertDelta(
+    placeholder,
+    contentRich,
+    "materialResourceCount",
+    PROOF_ASSET_COUNT,
+  );
   assertDelta(placeholder, contentRich, "textureResourceCount", 0);
   assertDelta(placeholder, contentRich, "animatedInstanceCount", 0);
-  assertDelta(placeholder, contentRich, "triangleCount", PROOF_INSTANCE_COUNT * 2);
+  assertDelta(
+    placeholder,
+    contentRich,
+    "triangleCount",
+    PROOF_INSTANCE_COUNT * 2,
+  );
 }
 
 function assertDelta(
@@ -146,8 +180,14 @@ function assertDelta(
   key: StatisticKey,
   expectedDelta: number,
 ): void {
-  const placeholderValue = availableValue(placeholder[key], `placeholder.${key}`);
-  const contentRichValue = availableValue(contentRich[key], `contentRich.${key}`);
+  const placeholderValue = availableValue(
+    placeholder[key],
+    `placeholder.${key}`,
+  );
+  const contentRichValue = availableValue(
+    contentRich[key],
+    `contentRich.${key}`,
+  );
   if (contentRichValue - placeholderValue !== expectedDelta) {
     throw new Error(
       `${key} delta was ${String(contentRichValue - placeholderValue)}; expected ${String(expectedDelta)}`,
@@ -161,14 +201,21 @@ function assertStatisticsEqual(
 ): void {
   for (const key of STATISTIC_KEYS) {
     if (JSON.stringify(restored[key]) !== JSON.stringify(placeholder[key])) {
-      throw new Error(`${key} did not return to the placeholder renderer statistic`);
+      throw new Error(
+        `${key} did not return to the placeholder renderer statistic`,
+      );
     }
   }
 }
 
-function availableValue(statistic: RendererSurfaceStatistic, label: string): number {
+function availableValue(
+  statistic: RendererSurfaceStatistic,
+  label: string,
+): number {
   if (statistic.status !== "available") {
-    throw new Error(`${label} is ${statistic.status}; exact Three proof requires an available value`);
+    throw new Error(
+      `${label} is ${statistic.status}; exact Three proof requires an available value`,
+    );
   }
   return statistic.value;
 }
@@ -176,7 +223,10 @@ function availableValue(statistic: RendererSurfaceStatistic, label: string): num
 function material(
   id: string,
   color: readonly [number, number, number, number],
-): { readonly op: "defineMaterial"; readonly material: RenderMaterialDescriptor } {
+): {
+  readonly op: "defineMaterial";
+  readonly material: RenderMaterialDescriptor;
+} {
   return {
     op: "defineMaterial",
     material: {
@@ -217,7 +267,9 @@ function quadPayload(): MeshPayloadDescriptor {
     bounds: { min: [-0.15, -0.15, 0], max: [0.15, 0.15, 0] },
     source: {
       kind: "inline",
-      positions: [-0.15, -0.15, 0, 0.15, -0.15, 0, 0.15, 0.15, 0, -0.15, 0.15, 0],
+      positions: [
+        -0.15, -0.15, 0, 0.15, -0.15, 0, 0.15, 0.15, 0, -0.15, 0.15, 0,
+      ],
       normals: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
       indices: [0, 1, 2, 0, 2, 3],
     },
@@ -267,10 +319,5 @@ function proofMetadata(label: string) {
 }
 
 function proofColor(index: number): readonly [number, number, number, number] {
-  return [
-    0.3 + index * 0.15,
-    0.75 - index * 0.1,
-    0.45 + index * 0.08,
-    1,
-  ];
+  return [0.3 + index * 0.15, 0.75 - index * 0.1, 0.45 + index * 0.08, 1];
 }

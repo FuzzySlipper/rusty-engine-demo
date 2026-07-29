@@ -14,16 +14,24 @@ import {
 
 test("content-rich probe uses shared assets under one disposable viewmodel tree", () => {
   const frame = contentRichFrame();
-  const definitions = frame.ops.filter((operation) => operation.op === "defineStaticMesh");
-  const instances = frame.ops.filter((operation) => operation.op === "createStaticMeshInstance");
+  const definitions = frame.ops.filter(
+    (operation) => operation.op === "defineStaticMesh",
+  );
+  const instances = frame.ops.filter(
+    (operation) => operation.op === "createStaticMeshInstance",
+  );
   const roots = frame.ops.filter((operation) => operation.op === "create");
 
   assert.equal(definitions.length, 4);
   assert.equal(instances.length, 32);
   assert.equal(roots.length, 1);
   assert.equal(roots[0]?.node.layer, "viewmodel");
-  assert.ok(instances.every((operation) => operation.parent === roots[0]?.handle));
-  assert.deepEqual(cleanupFrame().ops, [{ op: "destroy", handle: roots[0]?.handle }]);
+  assert.ok(
+    instances.every((operation) => operation.parent === roots[0]?.handle),
+  );
+  assert.deepEqual(cleanupFrame().ops, [
+    { op: "destroy", handle: roots[0]?.handle },
+  ]);
 });
 
 test("probe samples one surface explicitly and restores every renderer statistic", () => {
@@ -31,7 +39,13 @@ test("probe samples one surface explicitly and restores every renderer statistic
   const contentRich = submission(2, statistics(49, 73, 13, 12, 2, 1, 664));
   const restored = submission(3, placeholder.statistics);
   const submissions = [placeholder, contentRich, restored];
+  const renderReturns = [
+    submission(101, statistics(0, 0, 0, 0, 0, 0, 0)),
+    submission(102, statistics(0, 0, 0, 0, 0, 0, 0)),
+    submission(103, statistics(0, 0, 0, 0, 0, 0, 0)),
+  ];
   const frames = [];
+  let latest = submission(0, statistics(0, 0, 0, 0, 0, 0, 0));
   const surface = {
     applyFrame: (frame: ReturnType<typeof contentRichFrame>) => {
       frames.push(frame);
@@ -40,8 +54,12 @@ test("probe samples one surface explicitly and restores every renderer statistic
     renderOnce: () => {
       const next = submissions.shift();
       if (next === undefined) throw new Error("unexpected renderer submission");
-      return next;
+      latest = next;
+      const returned = renderReturns.shift();
+      if (returned === undefined) throw new Error("unexpected render return");
+      return returned;
     },
+    submission: () => latest,
   };
 
   const proof = captureLoadingBayRendererStatisticsProof(surface, () => 1);
@@ -52,14 +70,21 @@ test("probe samples one surface explicitly and restores every renderer statistic
   assert.equal(proof.restored, restored);
   assert.equal(frames.length, 2);
   assert.equal(submissions.length, 0);
+  assert.equal(renderReturns.length, 0);
 });
 
-test("probe rejects a fabricated richer count and still removes the retained tree", () => {
+test("probe reads stored submissions, rejects a bad richer count, and cleans up", () => {
   const placeholder = submission(1, statistics(17, 40, 9, 8, 2, 1, 600));
   const badContentRich = submission(2, statistics(48, 73, 13, 12, 2, 1, 664));
   const cleanupSubmission = submission(3, placeholder.statistics);
   const submissions = [placeholder, badContentRich, cleanupSubmission];
+  const renderReturns = [
+    submission(101, statistics(17, 40, 9, 8, 2, 1, 600)),
+    submission(102, statistics(49, 73, 13, 12, 2, 1, 664)),
+    submission(103, statistics(17, 40, 9, 8, 2, 1, 600)),
+  ];
   const frames = [];
+  let latest = submission(0, statistics(0, 0, 0, 0, 0, 0, 0));
   const surface = {
     applyFrame: (frame: ReturnType<typeof contentRichFrame>) => {
       frames.push(frame);
@@ -68,8 +93,12 @@ test("probe rejects a fabricated richer count and still removes the retained tre
     renderOnce: () => {
       const next = submissions.shift();
       if (next === undefined) throw new Error("unexpected renderer submission");
-      return next;
+      latest = next;
+      const returned = renderReturns.shift();
+      if (returned === undefined) throw new Error("unexpected render return");
+      return returned;
     },
+    submission: () => latest,
   };
 
   assert.throws(
@@ -77,7 +106,16 @@ test("probe rejects a fabricated richer count and still removes the retained tre
     /drawCallCount delta was 31; expected 32/u,
   );
   assert.equal(frames.length, 2, "finally applied the one cleanup frame");
-  assert.equal(submissions.length, 0, "finally submitted the restored surface once");
+  assert.equal(
+    submissions.length,
+    0,
+    "finally submitted the restored surface once",
+  );
+  assert.equal(
+    renderReturns.length,
+    0,
+    "renderOnce return values were not used as proof samples",
+  );
 });
 
 function statistics(
@@ -91,21 +129,41 @@ function statistics(
 ): RendererSurfaceStatisticsSample {
   return {
     schemaVersion: 1,
-    drawCallCount: { scope: "perSubmission", status: "available", value: drawCallCount },
-    renderHandleCount: { scope: "liveResident", status: "available", value: renderHandleCount },
+    drawCallCount: {
+      scope: "perSubmission",
+      status: "available",
+      value: drawCallCount,
+    },
+    renderHandleCount: {
+      scope: "liveResident",
+      status: "available",
+      value: renderHandleCount,
+    },
     geometryResourceCount: {
-      scope: "liveResident", status: "available", value: geometryResourceCount,
+      scope: "liveResident",
+      status: "available",
+      value: geometryResourceCount,
     },
     materialResourceCount: {
-      scope: "liveResident", status: "available", value: materialResourceCount,
+      scope: "liveResident",
+      status: "available",
+      value: materialResourceCount,
     },
     textureResourceCount: {
-      scope: "liveResident", status: "available", value: textureResourceCount,
+      scope: "liveResident",
+      status: "available",
+      value: textureResourceCount,
     },
     animatedInstanceCount: {
-      scope: "liveResident", status: "available", value: animatedInstanceCount,
+      scope: "liveResident",
+      status: "available",
+      value: animatedInstanceCount,
     },
-    triangleCount: { scope: "perSubmission", status: "available", value: triangleCount },
+    triangleCount: {
+      scope: "perSubmission",
+      status: "available",
+      value: triangleCount,
+    },
   };
 }
 
