@@ -1,55 +1,36 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { isDeepStrictEqual } from "node:util";
 
 import {
-  generatedEncounterProjects,
-  loadingBayStoredProject,
-  relayAnnexStoredProject,
-} from "./encounter-project.js";
+  CANONICAL_PROJECT_FILES,
+  readCanonicalProject,
+  synchronizeGeneratedProjects,
+} from "./content-artifacts.js";
+import { generatedEncounterProjects } from "./encounter-project.js";
 import { generatedMotionProjects } from "./motion-project.js";
 
-const outputDirectory = fileURLToPath(new URL("../../../../content/generated/", import.meta.url));
-const projectDirectory = fileURLToPath(new URL("../../../../content/projects/", import.meta.url));
+const outputDirectory = fileURLToPath(
+  new URL("../../../../content/generated/", import.meta.url),
+);
+const projectDirectory = fileURLToPath(
+  new URL("../../../../content/projects/", import.meta.url),
+);
 const mode = process.argv[2] ?? "--check";
 
 if (mode !== "--check" && mode !== "--write") {
   throw new Error(`unsupported generation mode ${mode}`);
 }
 
-if (mode === "--write") {
-  mkdirSync(outputDirectory, { recursive: true });
-}
-
-const generatedProjects = { ...generatedEncounterProjects, ...generatedMotionProjects };
-const authoredProjects = {
-  "loading-bay.project.json": loadingBayStoredProject(),
-  "relay-annex.project.json": relayAnnexStoredProject(),
+const generatedProjects = {
+  ...generatedEncounterProjects,
+  ...generatedMotionProjects,
 };
 
-for (const [directory, projects] of [
-  [outputDirectory, generatedProjects],
-  [projectDirectory, authoredProjects],
-] as const) {
-  if (mode === "--write") {
-    mkdirSync(directory, { recursive: true });
-  }
-  for (const [filename, project] of Object.entries(projects)) {
-    const expected = `${JSON.stringify(project, null, 2)}\n`;
-    const output = `${directory}${filename}`;
-    if (mode === "--write") {
-      writeFileSync(output, expected, "utf8");
-      continue;
-    }
-    const actual = readFileSync(output, "utf8");
-    const matches = directory === projectDirectory
-      ? isDeepStrictEqual(
-          JSON.parse(actual) as unknown,
-          JSON.parse(expected) as unknown,
-        )
-      : actual === expected;
-    if (!matches) {
-      throw new Error(`${filename} is stale; run pnpm run generate:content`);
-    }
-  }
+synchronizeGeneratedProjects(
+  outputDirectory,
+  generatedProjects,
+  mode === "--write" ? "write" : "check",
+);
+
+for (const filename of CANONICAL_PROJECT_FILES) {
+  readCanonicalProject(projectDirectory, filename);
 }

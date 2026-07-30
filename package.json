@@ -8,7 +8,7 @@
     "build:shell": "nx build loading-bay",
     "build:studio": "nx build loading-bay-studio",
     "certify:performance": "node scripts/certify-headed-performance.mjs",
-    "check:content": "pnpm --filter @rusty-engine-demo/project-content check",
+    "check:content": "pnpm --filter @rusty-engine-demo/project-content check && node scripts/check-canonical-projects.mjs",
     "engine:check": "./scripts/engine-revision check",
     "engine:update": "./scripts/engine-revision update",
     "generate:content": "pnpm --filter @rusty-engine-demo/project-content generate",

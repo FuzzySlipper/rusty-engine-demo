@@ -8,7 +8,7 @@ voxel, mesh, asset, and conversion mechanisms.
 
 The Rust game vertical is named `loading-bay-game`. Its Rust and browser Engine dependencies are
 public Git dependencies pinned to reviewed provider revision
-`ff87c425be4167a5bdd06c059b042967f2808e2b`; a sibling checkout is not required. The demo owns its
+`db5641fc4e9d033112bc2b374a35933c3838e39c`; a sibling checkout is not required. The demo owns its
 Angular/Nx browser shell, route-scoped input lifecycle, and semantic projection adapter, while Rusty
 Engine owns the shared render contracts, retained projection, Three/WebGL backend, surface host,
 audio, particle, billboard, and telemetry hosts.
@@ -30,8 +30,9 @@ cargo run --locked -p loading-bay-game --bin browser-host
 
 Then open `http://127.0.0.1:8787`. The default project is
 `content/projects/loading-bay.project.json`; pass `--project <path>` to select another admitted
-project. `content/projects/relay-annex.project.json` is a second, entirely TypeScript-authored
-arrangement using the same settled demo meanings.
+project. `content/projects/relay-annex.project.json` is a second serialized arrangement using the
+same settled demo meanings. Both files are canonical Studio-owned project
+artifacts; ordinary fixture generation never rewrites them.
 
 The root route is a full-viewport FPS surface with a disposable HUD projection. Its diagnostics
 drawer exposes only concrete Rust host actions. Renderer-owned frame cadence and synchronous
@@ -64,7 +65,7 @@ For Rust-only iteration, `./scripts/verify-rust.sh` remains available.
 For focused diagnosis:
 
 ```bash
-pnpm run check:content       # checked-in JSON exactly matches the TypeScript composer
+pnpm run check:content       # generated fixtures match; canonical projects Rust-admit and round-trip
 pnpm run test:shell          # protocol, projection, input, and presentation units
 pnpm run test:browser        # real Chromium campaign and lifecycle proof
 pnpm run audit:boundary      # exact pins and forbidden downstream shortcuts
@@ -72,8 +73,8 @@ pnpm run audit:boundary      # exact pins and forbidden downstream shortcuts
 
 `GET /health` identifies a running browser host and `GET /api/state` is a read-only diagnostic
 snapshot. Live gameplay commands use the bounded `/api/session` WebSocket; do not debug by adding
-HTTP gameplay mutators. A stale generated project should be corrected in the composer and
-rematerialized with `pnpm run generate:content`, never hand-edited into agreement.
+HTTP gameplay mutators. `pnpm run generate:content` updates only deliberate fixtures under
+`content/generated`; use the Studio/adapter save path for canonical project edits.
 
 The project-owned Studio adapter can be run as a bounded JSON-lines process:
 
@@ -90,8 +91,9 @@ renderer projection readouts while Loading Bay retains its schema and domain-ope
 
 - Rust owns live gameplay state, substantial logic, explicit scheduling, typed consequences, and
   persistence.
-- TypeScript may compose immutable project content and host input/presentation; it does not become a
-  second gameplay runtime.
+- TypeScript may compose deliberate migration fixtures and host input/presentation; canonical game
+  scenes remain serialized Studio-owned projects and TypeScript does not become a second gameplay
+  runtime.
 - Game-specific presentation code maps typed Rust facts into shared render descriptors. It does not
   own a second renderer, resource cache, effect simulation, or cleanup runtime.
 - Dependency direction is `rusty-engine-demo -> rusty-engine` only.

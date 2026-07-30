@@ -1,14 +1,25 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { readCanonicalProject } from "./content-artifacts.js";
 import {
   ENCOUNTER_IDS,
   LOADING_BAY_ITEM_IDS,
   encounterGateProject,
-  loadingBayStoredProject,
-  relayAnnexStoredProject,
 } from "./encounter-project.js";
+
+const projectDirectory = fileURLToPath(
+  new URL("../../../../content/projects/", import.meta.url),
+);
+
+function loadingBayProject() {
+  return readCanonicalProject(projectDirectory, "loading-bay.project.json");
+}
+
+function relayAnnexProject() {
+  return readCanonicalProject(projectDirectory, "relay-annex.project.json");
+}
 
 test("encounter membership and exit relationships are explicit authored content", () => {
   const project = encounterGateProject(["alpha", "beta"]);
@@ -163,22 +174,16 @@ test("navigation target and speed are content-only variations", () => {
   });
 });
 
-test("optional TypeScript authoring materializes the checked-in stored-project candidate", () => {
-  const artifact = JSON.parse(
-    readFileSync(
-      new URL(
-        "../../../../content/projects/loading-bay.project.json",
-        import.meta.url,
-      ),
-      "utf8",
-    ),
-  );
+test("the Loading Bay project is read directly from its canonical artifact", () => {
+  const project = loadingBayProject();
 
-  assert.deepEqual(loadingBayStoredProject(), artifact);
+  assert.equal(project.projectId, "loading-bay");
+  assert.equal(project.entryScene, "scene/loading-bay");
+  assert.equal(project.schemaVersion, 21);
 });
 
 test("stored item definitions and starting inventory remain immutable authored data", () => {
-  const project = loadingBayStoredProject();
+  const project = loadingBayProject();
   const player = project.scenes[0]?.entities.find(
     (entity) => entity.id === ENCOUNTER_IDS.actor,
   );
@@ -294,7 +299,7 @@ test("stored item definitions and starting inventory remain immutable authored d
 });
 
 test("the extraction beacon is game-owned data on its responsible entity", () => {
-  const project = loadingBayStoredProject({ beaconActivationRadius: 3 });
+  const project = loadingBayProject();
   const beacon = project.scenes[0]?.entities.find(
     (entity) => entity.id === ENCOUNTER_IDS.extractionBeacon,
   );
@@ -309,8 +314,8 @@ test("the extraction beacon is game-owned data on its responsible entity", () =>
 });
 
 test("loading bay material voxels are deterministic and preserve all authored gates", () => {
-  const first = loadingBayStoredProject();
-  const second = loadingBayStoredProject();
+  const first = loadingBayProject();
+  const second = loadingBayProject();
   const environment = first.scenes[0]?.voxelEnvironment;
 
   assert.equal(environment?.kind, "material");
@@ -349,7 +354,7 @@ test("loading bay material voxels are deterministic and preserve all authored ga
 });
 
 test("loading bay route composes encounters, upgrades, key loop, secret, and exit as entity data", () => {
-  const scene = loadingBayStoredProject().scenes[0];
+  const scene = loadingBayProject().scenes[0];
   assert.ok(scene);
   const byId = (id: number) =>
     scene.entities.find((entity) => entity.id === id);
@@ -424,7 +429,7 @@ test("loading bay route composes encounters, upgrades, key loop, secret, and exi
 });
 
 test("relay annex is a distinct content-only composition with settled demo meanings", () => {
-  const project = relayAnnexStoredProject();
+  const project = relayAnnexProject();
   const scene = project.scenes[0];
   const encounter = scene?.entities.find(
     (entity) => entity.id === ENCOUNTER_IDS.encounter,
@@ -440,7 +445,7 @@ test("relay annex is a distinct content-only composition with settled demo meani
   assert.equal(scene?.voxelEnvironment?.kind, "material");
   assert.notDeepEqual(
     scene?.voxelEnvironment,
-    loadingBayStoredProject().scenes[0]?.voxelEnvironment,
+    loadingBayProject().scenes[0]?.voxelEnvironment,
   );
   assert.deepEqual(encounter?.encounter?.members, [ENCOUNTER_IDS.firstEnemy]);
   assert.equal(
@@ -455,8 +460,8 @@ test("relay annex is a distinct content-only composition with settled demo meani
 });
 
 test("settled items, weapon tuning, enemy tuning, and layout remain content-local", () => {
-  const loadingBay = loadingBayStoredProject();
-  const relayAnnex = relayAnnexStoredProject();
+  const loadingBay = loadingBayProject();
+  const relayAnnex = relayAnnexProject();
   const loadingBayScene = loadingBay.scenes[0];
   const relayAnnexScene = relayAnnex.scenes[0];
   assert.ok(loadingBayScene);
@@ -501,16 +506,10 @@ test("settled items, weapon tuning, enemy tuning, and layout remain content-loca
   );
 });
 
-test("relay annex authoring materializes its checked project artifact", () => {
-  const artifact = JSON.parse(
-    readFileSync(
-      new URL(
-        "../../../../content/projects/relay-annex.project.json",
-        import.meta.url,
-      ),
-      "utf8",
-    ),
-  );
+test("the Relay Annex project is read directly from its canonical artifact", () => {
+  const project = relayAnnexProject();
 
-  assert.deepEqual(relayAnnexStoredProject(), artifact);
+  assert.equal(project.projectId, "relay-annex");
+  assert.equal(project.entryScene, "scene/relay-annex");
+  assert.equal(project.schemaVersion, 21);
 });

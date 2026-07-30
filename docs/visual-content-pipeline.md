@@ -51,16 +51,9 @@ The replacement work deliberately separates appearance from gameplay geometry:
 Every task that changes a visual transform must prove the related proxy still aligns through the
 canonical project readout and normal gameplay route.
 
-## Current authoring state and VC3 decision
+## Canonical project ownership
 
-Today `ts/packages/project-content/src/encounter-project.ts` is the complete source of truth for the
-Loading Bay scene. `loadingBayStoredProject()` composes the whole project, and
-`ts/packages/project-content/src/generate.ts` deep-compares that object with
-`content/projects/loading-bay.project.json`. `pnpm run generate:content` overwrites the checked-in
-project. A legitimate Studio edit therefore becomes “stale” and is either rejected or erased by
-the ordinary generation workflow.
-
-VC3 changes that ownership as follows:
+VC3 establishes this ownership:
 
 1. `content/projects/loading-bay.project.json` becomes the canonical durable Loading Bay visual and
    scene artifact.
@@ -70,13 +63,16 @@ VC3 changes that ownership as follows:
 3. `check:content` parses, canonicalizes, Rust-admits, round-trips, and checks stable semantic
    invariants of the canonical project. It does not compare the file with
    `loadingBayStoredProject()`.
-4. `content/generated` and explicitly generated projects such as Relay Annex may remain generated
-   fixtures, but their commands cannot overwrite the canonical Loading Bay file.
-5. If migration from the current composer needs tooling, it is one-shot, fail-closed, and removed
-   or retained only as an explicit migration fixture—not as an alternate authoring path.
+4. `content/generated` contains only explicit migration/workload fixtures. Both Loading Bay and
+   Relay Annex under `content/projects` are canonical project artifacts; generation commands
+   cannot overwrite either file.
+5. `scripts/check-canonical-projects.mjs` uses the Rust `ProjectStore` and complete admission path
+   to save each canonical artifact to a disposable directory, then requires exact byte equality.
+   The check leaves the project and caller worktree unchanged.
 
-Until VC3 lands, the current README and extension recipes correctly describe the generator-owned
-state. VC3 owns updating those instructions at the same time as the authority actually changes.
+The former full `loadingBayStoredProject()`/`relayAnnexStoredProject()` composition and its
+generator equality test have been removed. Stable gameplay identities remain exported only as
+small test/fixture constants; the serialized project is the sole complete scene.
 
 ## Placeholder inventory
 
@@ -290,15 +286,15 @@ Rusty Engine #6361 and downstream #6378 now close that observability gap at exac
 statistics, and the ordinary desktop/headed tools retain the complete status, scope, and value.
 The exact browser proof records this current placeholder and a deterministic richer stress load:
 
-| Renderer statistic      | Scope          | Placeholder | Rich stress | Delta | Restored |
-| ----------------------- | -------------- | ----------: | ----------: | ----: | -------: |
-| Draw calls              | per submission |          39 |          71 |   +32 |       39 |
-| Live render handles     | live resident  |          51 |          84 |   +33 |       51 |
-| Geometry resources      | live resident  |          43 |          47 |    +4 |       43 |
-| Material resources      | live resident  |          55 |          59 |    +4 |       55 |
-| Texture resources       | live resident  |           0 |           0 |     0 |        0 |
-| Animated instances      | live resident  |           0 |           0 |     0 |        0 |
-| Triangles               | per submission |      14,380 |      14,444 |   +64 |   14,380 |
+| Renderer statistic  | Scope          | Placeholder | Rich stress | Delta | Restored |
+| ------------------- | -------------- | ----------: | ----------: | ----: | -------: |
+| Draw calls          | per submission |          39 |          71 |   +32 |       39 |
+| Live render handles | live resident  |          51 |          84 |   +33 |       51 |
+| Geometry resources  | live resident  |          43 |          47 |    +4 |       43 |
+| Material resources  | live resident  |          55 |          59 |    +4 |       55 |
+| Texture resources   | live resident  |           0 |           0 |     0 |        0 |
+| Animated instances  | live resident  |           0 |           0 |     0 |        0 |
+| Triangles           | per submission |      14,380 |      14,444 |   +64 |   14,380 |
 
 All values above had `available` status. The zeros are therefore exact observations, not missing
 data. The rich sample is a 32-instance/four-shared-asset renderer-neutral stress overlay on the real

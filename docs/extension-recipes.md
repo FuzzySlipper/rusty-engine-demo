@@ -20,15 +20,15 @@ keyboard / pointer
 
 Ownership and failure behavior are deliberate:
 
-| Stage                                      | Owner                                                              | Failure rule                                                                                     |
-| ------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Authored definitions and level composition | `ts/packages/project-content` emits immutable JSON; Rust admits it | Invalid content fails before runtime publication                                                 |
-| Device capture and host-user preferences   | browser TypeScript                                                 | Blur, pointer-lock loss, pause, disposal, or disconnect neutralizes bounded input                |
-| Tick order and live gameplay state         | `LoadingBayGameLoop`, `GameRuntime`, and named Rust services       | Mutate a candidate session and publish only after every checked phase succeeds                   |
-| Save/project persistence                   | Rust project store and save store                                  | Authored projects and runtime snapshots stay distinct; replacement is fail-atomic                |
-| Transport                                  | game-specific Rust host plus `LoadingBayGameSession`               | No mutation retry; gaps resync, transport loss reconnects, queues reject visibly at their bounds |
-| HUD and retained world projection          | Angular components and `RuntimeProjectionAdapter`                  | Immutable projection only; rejection never creates local inventory, combat, or progression state |
-| Rendering and effects                      | exact-pinned shared Rusty Engine surface/hosts                     | Presentation may be dropped or reset without changing gameplay                                   |
+| Stage                                      | Owner                                                                            | Failure rule                                                                                     |
+| ------------------------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Authored definitions and level composition | Canonical `content/projects/*.project.json` saved through Studio; Rust admits it | Invalid content fails before runtime publication                                                 |
+| Device capture and host-user preferences   | browser TypeScript                                                               | Blur, pointer-lock loss, pause, disposal, or disconnect neutralizes bounded input                |
+| Tick order and live gameplay state         | `LoadingBayGameLoop`, `GameRuntime`, and named Rust services                     | Mutate a candidate session and publish only after every checked phase succeeds                   |
+| Save/project persistence                   | Rust project store and save store                                                | Authored projects and runtime snapshots stay distinct; replacement is fail-atomic                |
+| Transport                                  | game-specific Rust host plus `LoadingBayGameSession`                             | No mutation retry; gaps resync, transport loss reconnects, queues reject visibly at their bounds |
+| HUD and retained world projection          | Angular components and `RuntimeProjectionAdapter`                                | Immutable projection only; rejection never creates local inventory, combat, or progression state |
+| Rendering and effects                      | exact-pinned shared Rusty Engine surface/hosts                                   | Presentation may be dropped or reset without changing gameplay                                   |
 
 Before changing code, read [the product architecture](fps-product-architecture.md), [the session
 protocol](game-session-protocol.md), and the Den document
@@ -39,13 +39,14 @@ protocol](game-session-protocol.md), and the Den document
 Use this for another ammunition stack, access key, health supply, armor supply, or intentionally
 inert item whose existing `ItemKind` already expresses its meaning.
 
-1. Add the stable namespaced identity and immutable definition to
-   `ts/packages/project-content/src/encounter-project.ts`.
-2. Add a `pickupEntity(...)` at an authored translation. Pickups reference the item identity and
+1. Open the canonical project in Studio and add the stable namespaced item definition.
+2. Add a pickup entity at an authored translation. Pickups reference the item identity and
    quantity; do not add a browser click handler that grants it.
-3. Regenerate `content/projects/*.project.json` with `pnpm run generate:content`.
-4. Update the composer corpus in `encounter-project.test.ts` and the Rust pickup/inventory tests in
-   `rust/crates/loading-bay-game/tests/` when the shipped baseline changes.
+3. Save through the adapter, reload, and run `pnpm run check:content` to require stable JSON plus
+   Rust admission and exact round-trip.
+4. Update the semantic artifact assertions in `encounter-project.test.ts` and the Rust
+   pickup/inventory tests in `rust/crates/loading-bay-game/tests/` when the shipped baseline
+   changes.
 5. For visible content, update `docs/source-provenance.md` and make
    `pnpm run test:browser` walk through the accepted Rust pickup.
 
@@ -57,8 +58,8 @@ damage, and healing. Pickup transactions remain in `pickup.rs`. Add a new Rust i
 the item has a genuinely new game-owned transaction. Do not encode behavior in an asset name or a
 TypeScript switch.
 
-The existing `key/inert-inspection-tag` is the locality proof: it required only the TypeScript
-composer, checked-in generated JSON, composer assertion, and provenance. No Rust behavior changed.
+The existing `key/inert-inspection-tag` is the locality proof: it required only a canonical project
+edit, semantic artifact assertion, and provenance. No Rust behavior changed.
 Open an Engine task only if this work exposes a bounded, item-agnostic storage or trigger mechanism
 already required by another real consumer. Item kinds, grant policy, capacity, pickup facts, and
 use transactions remain Loading Bay Rust.
@@ -67,8 +68,9 @@ use transactions remain Loading Bay Rust.
 
 Use an existing explicit attack mode (`hitscan`, bounded `spread`, or `automatic`) when it fits.
 
-1. Add the ammo item and weapon item definitions in `encounter-project.ts`. The weapon definition
-   owns damage, range, cadence, ammo identity/cost, muzzle offset, and presentation identity.
+1. Add the ammo and weapon item definitions through the canonical Studio project. The weapon
+   definition owns damage, range, cadence, ammo identity/cost, muzzle offset, and presentation
+   identity.
 2. Add the weapon identity to the player's authored `weaponSlots`; add a pickup and starter ammo
    only if the level calls for it.
 3. Add an original renderer-neutral silhouette in
@@ -77,7 +79,7 @@ Use an existing explicit attack mode (`hitscan`, bounded `spread`, or `automatic
 4. Prove definition/ammo/cooldown/selection/snapshot behavior in
    `weapon_inventory_runtime.rs` and `game_loop.rs`; prove descriptor/reset behavior in
    `weapon-viewmodel.test.ts` and real selection/fire/dry-fire in Chromium.
-5. Regenerate content and update provenance.
+5. Save/reload the canonical project, run `pnpm run check:content`, and update provenance.
 
 `combat.rs` and the fixed combat phase remain the only hit/ammo/damage authority. A new firing
 mode is a Rust gameplay change: extend the closed stored schema, admission, definition, combat
@@ -118,16 +120,41 @@ Changing the downstream contract shape requires a new positive contract version 
 matching panel. Do not make version 1 permissive and do not teach Engine a generic component schema
 to avoid that version cut.
 
+## Recipe: add a serialized visual asset
+
+Use the real Studio/adapter asset path for a new actor, prop, landmark, or reusable voxel brush:
+
+1. Put the source and its license notice under `content/assets`, recording the original path or URL,
+   author, license, byte length, SHA-256, and every Blender/conversion modification in
+   `docs/source-provenance.md`.
+2. Open `content/projects/loading-bay.project.json` in Studio. Import or author the asset through
+   the named adapter operation, then inspect its catalog identity, source hash, dependencies,
+   bounds, material slots, clips or voxel-object content hash, and aggregate project budget.
+3. Attach the resource to a stable entity or place a voxel-object instance through the checked
+   Studio viewport workflow. Keep collision, navigation, interaction, pickup, and trigger proxies
+   explicit on responsible entities; visual bounds do not become gameplay truth.
+4. Save through the adapter mutation lease, reload, start a fresh adapter process, and verify the
+   same project/content hashes. `pnpm run generate:content` must leave the canonical project bytes
+   untouched.
+5. Run `pnpm run check:content`, focused Studio/renderer lifecycle tests, and the real browser for
+   visible content. Missing resources, stale hashes, one-over bounds, reset, disposal, and picking
+   must fail or recover through their typed owners.
+
+Do not hand-write renderer payloads, import Three loaders, copy an Engine package, or retain a
+second TypeScript catalog. Reimport is a guarded canonical project replacement, not an alternate
+asset cache.
+
 ## Recipe: add an enemy content variant
 
 Use this when sight/hearing range, body size, health, movement speed, attack kind/range/damage,
 cadence, presentation identity, encounter membership, or deterministic drop is enough.
 
-1. Compose another `enemyEntity(...)` in `encounter-project.ts` with a stable entity ID/name,
-   explicit `enemyCombat`, navigation, collision/body bounds, vitality, render asset, and drop.
+1. Add another entity in the canonical Studio project with a stable ID/name, explicit
+   `enemyCombat`, navigation, collision/body bounds, vitality, render asset, and drop.
 2. Put it in an explicit bounded encounter and define the dormant ordinary pickup that its defeat
    materializes.
-3. Add a distinct primitive silhouette/material mapping in `projection.ts` when necessary.
+3. Reference a reviewed serialized actor asset and posture binding; do not add another primitive
+   fallback for shipped content.
 4. Cover activation, tactical configuration, exact-once drop, reset, and snapshot reopen in
    `enemy_archetype_runtime.rs` and `enemy_combat_runtime.rs`.
 5. Exercise the variant in `test:browser`; update `docs/source-provenance.md` for the original or
@@ -187,19 +214,20 @@ completion, facts, and persistence stay here.
 
 ## Recipe: author a level variation
 
-1. Add a typed option or a second composition function in `encounter-project.ts`.
-2. Change immutable room voxels/materials, responsible entity transforms/configuration, lights,
-   pickups, encounter membership, or tuning. Use the same admitted schema and runtime services.
+1. Copy a canonical project to a new stable project/scene identity and open it through Studio.
+2. Change room/brush assets, responsible entity transforms/configuration, lights, pickups,
+   encounter membership, or tuning. Use the same admitted schema and runtime services.
 3. Keep material voxels in deterministic address order and entities in stable ID order.
-4. Run `pnpm run generate:content`; require deep equality between the composer and checked-in JSON.
+4. Save/reload through Studio and run `pnpm run check:content`; require Rust admission plus exact
+   byte-stable round-trip rather than equality with a TypeScript scene copy.
 5. Add Rust admission/spatial checks if the variation changes collision/navigation assumptions,
    and run the real browser when the change is product visible.
 6. Record original/permissive source and transformation provenance.
 
-`relayAnnexStoredProject()` is the change-amplification example. It changes layout, start/encounter
-placement, enemy health/navigation, weapon damage, and beacon radius through TypeScript content
-only. The relevant implementation is localized to the composer, its generated artifact, composer
-tests, and provenance; it does not add a Rust loop, protocol, or renderer branch.
+`content/projects/relay-annex.project.json` is the change-amplification example. It changes layout,
+start/encounter placement, enemy health/navigation, weapon damage, and beacon radius through
+serialized content only. The relevant implementation is localized to the canonical artifact,
+semantic artifact tests, and provenance; it does not add a Rust loop, protocol, or renderer branch.
 Open an Engine task only when the variation cannot be admitted by an existing game schema because
 of a reusable authoring, voxel, spatial, or renderer-neutral bound already required elsewhere.
 Room route, encounter composition, tuning, object names, and progression remain downstream content.
@@ -209,11 +237,11 @@ Room route, encounter composition, tuning, object names, and progression remain 
 These examples report their actual change surface; none hides a runtime feature behind “content
 only”:
 
-| Variation                                               | Files changed                                                                                                  | Proof                                                                                    | Owners intentionally unchanged                       |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Add inert inspection-tag definition                     | `encounter-project.ts`, both generated project JSON files, `encounter-project.test.ts`, `source-provenance.md` | definition present, absent from starting stacks, generated deep equality                 | Rust services/schema, protocol, renderer             |
-| Tune arc-pistol and enemy configuration for Relay Annex | `encounter-project.ts`, `relay-annex.project.json`, `encounter-project.test.ts`                                | weapon definitions differ; enemy vitality/navigation differ                              | combat/enemy services and phase order                |
-| Rearrange Relay Annex layout and player start           | `encounter-project.ts`, `relay-annex.project.json`, `encounter-project.test.ts`                                | voxel environments and player translations differ; generated artifact equals composition | Rust admission/runtime, WebSocket, Angular, renderer |
+| Variation                                               | Files changed                                         | Proof                                                                 | Owners intentionally unchanged                       |
+| ------------------------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------- |
+| Add inert inspection-tag definition                     | canonical project, semantic artifact test, provenance | definition present, absent from starting stacks, Rust round-trip      | Rust services/schema, protocol, renderer             |
+| Tune arc-pistol and enemy configuration for Relay Annex | `relay-annex.project.json`, semantic artifact test    | weapon definitions differ; enemy vitality/navigation differ           | combat/enemy services and phase order                |
+| Rearrange Relay Annex layout and player start           | `relay-annex.project.json`, semantic artifact test    | voxel environments and player translations differ; canonical readback | Rust admission/runtime, WebSocket, Angular, renderer |
 
 The test `settled items, weapon tuning, enemy tuning, and layout remain content-local` is the
 single executable summary. If a proposed “variation” also needs schema, migration, facts, wire
@@ -230,7 +258,7 @@ recipe instead.
 | `requestAnimationFrame` or a second `renderOnce` in downstream code                    | Creates another renderer/effect scheduler               | `audit:boundary`; shared surface lifecycle browser proof                                        |
 | Voxel meshes/lights in ordinary dynamic deltas                                         | Repeats cold resources and defeats bounded transport    | `StaticStateKey`/`RuntimeDynamicState` audit plus session tests and live static-update counters |
 | Local effect/resource caches or gameplay callbacks from audio/particles/viewmodels     | Lets presentation survive/reset or mutate independently | shared host usage, projection commit tests, reload/disposal Chromium proof                      |
-| Hand-editing generated project JSON                                                    | Splits authored truth                                   | `pnpm run check:content`                                                                        |
+| Bypassing Studio/adapter for canonical project changes                                 | Skips guarded admission and canonical publication       | Studio mutation tests, `pnpm run check:content`, review                                         |
 
 The audit catches known structural regressions; it is not permission to bypass code review with a
 different spelling. When a change crosses an owner, state the new contract and failure behavior in
@@ -242,7 +270,7 @@ Use the smallest focused loop while editing, then the complete gate for any visi
 cross-language change:
 
 ```bash
-pnpm run generate:content
+pnpm run generate:content # deliberate fixtures only
 pnpm run check:content
 pnpm run test:ts
 ./scripts/verify-rust.sh

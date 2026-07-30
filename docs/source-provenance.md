@@ -34,14 +34,14 @@ runtime claims.
 
 ## M10B browser transfer
 
-| Local surface                                 | Source path | Treatment                                                                                                                                           |
-| --------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ts/packages/project-content`                 | same path   | Copied as the optional immutable content composer and renamed to `@rusty-engine-demo/project-content`.                                              |
-| `ts/packages/browser-shell`                   | same path   | Copied as the product-owned input, projection, feedback, and browser shell; imports renamed to the demo package scope.                              |
-| `ts/packages/render-contracts`                | same path   | Initially copied into the demo; removed under #6162 after its complete successor became a shared exact-revision Engine package.                     |
-| `ts/packages/renderer-three`                  | same path   | Initially copied into the demo; removed under #6162 after the retained Three/WebGL backend and browser surface moved behind shared Engine packages. |
-| `scripts/browser-smoke.mjs`                   | same path   | Copied as the end-to-end product proof; the Rust package invocation changed from the source product name to `loading-bay-game`.                     |
-| Root pnpm, TypeScript, and Vite configuration | same paths  | Copied and narrowed to the demo-owned package identities and verification gate.                                                                     |
+| Local surface                                 | Source path | Treatment                                                                                                                                                             |
+| --------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ts/packages/project-content`                 | same path   | Copied as the immutable fixture composer and schema/assertion package, then narrowed under #6353 so it cannot reproduce or overwrite canonical Studio project scenes. |
+| `ts/packages/browser-shell`                   | same path   | Copied as the product-owned input, projection, feedback, and browser shell; imports renamed to the demo package scope.                                                |
+| `ts/packages/render-contracts`                | same path   | Initially copied into the demo; removed under #6162 after its complete successor became a shared exact-revision Engine package.                                       |
+| `ts/packages/renderer-three`                  | same path   | Initially copied into the demo; removed under #6162 after the retained Three/WebGL backend and browser surface moved behind shared Engine packages.                   |
+| `scripts/browser-smoke.mjs`                   | same path   | Copied as the end-to-end product proof; the Rust package invocation changed from the source product name to `loading-bay-game`.                                       |
+| Root pnpm, TypeScript, and Vite configuration | same paths  | Copied and narrowed to the demo-owned package identities and verification gate.                                                                                       |
 
 The browser packages initially moved together because all four served one product at extraction
 time. The later renderer migration made the demo an external consumer of
@@ -73,9 +73,10 @@ source path in Rusty Engine. Updating to the later shared renderer revision adde
 vocabulary, so this extension remains evidence of downstream ownership rather than another copied
 product surface.
 
-`content/projects/relay-annex.project.json` is likewise native downstream content. It is generated
-from the TypeScript `relayAnnexStoredProject` composition and admitted by the already-existing Rust
-project path and headless beacon proof; it was not transferred from Engine.
+`content/projects/relay-annex.project.json` is likewise native downstream content. Under #6353 it
+became a canonical Studio-owned serialized project admitted by the same Rust project path and
+headless beacon proof; it was not transferred from Engine and no complete TypeScript scene copy
+remains.
 
 ## M11B Studio adapter and voxel-owner adaptation
 
@@ -230,11 +231,12 @@ Browser silhouette materials, particles, billboards, synthesized audio, and post
 disposable presentation.
 
 The complete schema-19 Loading Bay campaign and its Relay Annex data-only variation were authored
-directly in this repository under Den task #6229. The source of truth is the immutable composition
-in `ts/packages/project-content/src/encounter-project.ts`; `pnpm run generate:content` materializes
-the checked-in project JSON. The floor plan, 3,931 material-voxel arrangement, room proportions,
-door and encounter placement, route, lighting, object names, combat values, and progression text
-are original Loading Bay content. Doom was used only as a high-level reference for the familiar
+directly in this repository under Den task #6229. Den task #6353 migrated their complete source of
+truth from the former TypeScript composition to the canonical serialized files in
+`content/projects`; `pnpm run generate:content` now materializes only deliberate fixtures under
+`content/generated`. The floor plan, 3,931 material-voxel arrangement, room proportions, door and
+encounter placement, route, lighting, object names, combat values, and progression text are
+original Loading Bay content. Doom was used only as a high-level reference for the familiar
 vocabulary of a compact key/switch/secret/weapon-upgrade FPS route. No Doom source code, map data,
 geometry, node/blockmap data, textures, flats, sprites, sounds, music, names, story text, or trade
 dress was read, converted, copied, or distributed.

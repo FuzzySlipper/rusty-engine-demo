@@ -8,25 +8,23 @@ the inventory rather than from slow movement.
 
 ## Authored artifact
 
-`ts/packages/project-content/src/encounter-project.ts` is the source of truth.
-`pnpm run generate:content` produces the checked-in artifacts:
+The checked-in files under `content/projects` are the canonical Studio-owned source:
 
 | Artifact                                    | SHA-256                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------ |
-| `content/projects/loading-bay.project.json` | `c5d74f5a99ccffd7a1ba6d85c73c1beab31d1ea4b76827ce982bc1cd22148d7a` |
-| `content/projects/relay-annex.project.json` | `a9af27efa9ffbff4bd4f692235397334e25ca2e95d4b0a735a2efd99e056bc69` |
+| `content/projects/loading-bay.project.json` | `58bda0ca3d14ed6156c5a8d880f6e4b5e4563169904592668c0bceb5250b660c` |
+| `content/projects/relay-annex.project.json` | `05d02fcd540024487b159125f0c6823e4e464c3e717cae9cac83529b10c7e38a` |
 
 The Loading Bay artifact contains one scene, 3,931 material voxels, 47 entities, 15 retained asset
 identities, nine item definitions, eight enemies, three encounters, eight authored pickup caches,
-eight dormant defeat drops, five doors, eight lights, one secret, and one level exit. The composer
-sorts entity IDs and emits voxels in deterministic address order. The content test regenerates both
-projects in memory and requires deep equality with the checked-in JSON, so content drift fails the
-normal verification gate.
+eight dormant defeat drops, five doors, eight lights, one secret, and one level exit. Stable
+pretty-printing plus Rust decode, canonical admission, save, and exact-byte round-trip make content
+drift fail the normal verification gate. Fixture generation cannot write either canonical file.
 
 Relay Annex changes the room arrangement, player start, initial enemy placement and tuning,
-navigation target/speed, and beacon radius through immutable authoring options. It uses the same
-Rust services, host loop, protocol, renderer, and browser shell; there is no variant-specific
-gameplay loop.
+navigation target/speed, and beacon radius through serialized project data. It uses the same Rust
+services, host loop, protocol, renderer, and browser shell; there is no variant-specific gameplay
+loop.
 
 Bay Rusher melee remains meaningful but leaves room for real delayed input: an accepted strike
 deals eight damage on a 120-tick cadence. The campaign proof uses the same bounded held-input path

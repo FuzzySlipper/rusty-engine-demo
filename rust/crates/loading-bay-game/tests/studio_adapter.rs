@@ -244,6 +244,26 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
     assert_eq!(stale["type"], "rejected");
     assert_eq!(stale["error"]["code"], "project.staleHash");
     assert_eq!(fs::read(root.project_file()).unwrap(), installed);
+
+    let mut fresh_service = StudioAdapterService::new();
+    let reopened = open(&mut fresh_service, &root);
+    assert_eq!(
+        reopened["project"]["identity"]["projectHash"],
+        response["receipt"]["projectHashAfter"]
+    );
+    let reopened_project: Value = serde_json::from_str(
+        reopened["project"]["canonical"]["projectJson"]
+            .as_str()
+            .unwrap(),
+    )
+    .unwrap();
+    let reopened_player = reopened_project["scenes"][0]["entities"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|entity| entity["id"] == 1)
+        .unwrap();
+    assert_eq!(reopened_player["translation"], json!([2.5, 1.5, 3.5]));
 }
 
 #[test]

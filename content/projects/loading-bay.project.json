@@ -10,8 +10,7 @@
         "version": 1,
         "hash": "c71255a41c0373f0d2ef52593369d5fd9d2f6220ae548aff8cd6bf5edb403674",
         "sourcePath": "content/assets/kenney-retro-character-medium.glb",
-        "label": "Kenney Retro Character",
-        "dependencies": []
+        "label": "Kenney Retro Character"
       },
       "animatedMesh": {
         "asset": "mesh-animation/kenney-retro-character-medium",
@@ -21,12 +20,12 @@
           {
             "id": "idle",
             "name": "Idle",
-            "durationSeconds": 1.04166662693024
+            "durationSeconds": 1.0416666
           },
           {
             "id": "run",
             "name": "Run",
-            "durationSeconds": 0.666666686534882
+            "durationSeconds": 0.6666667
           },
           {
             "id": "jump",
@@ -40,7 +39,7 @@
           "min": [
             -0.02,
             -0.01,
-            0
+            0.0
           ],
           "max": [
             0.02,
@@ -143,16 +142,16 @@
       "maxQuantity": 1,
       "kind": {
         "kind": "weapon",
+        "ammunition": "ammo/energy-cell",
         "attackMode": "hitscan",
         "damage": 60,
-        "maxDistance": 20,
+        "maxDistance": 20.0,
         "cooldownTicks": 2,
-        "ammunition": "ammo/energy-cell",
         "ammunitionCost": 1,
         "muzzleOffset": [
-          0,
-          0,
-          0
+          0.0,
+          0.0,
+          0.0
         ],
         "presentation": "arc-pistol"
       }
@@ -162,18 +161,18 @@
       "maxQuantity": 1,
       "kind": {
         "kind": "weapon",
+        "ammunition": "ammo/scatter-shell",
         "attackMode": "spread",
         "pelletCount": 7,
-        "spreadDegrees": 7,
+        "spreadDegrees": 7.0,
         "damage": 14,
-        "maxDistance": 12,
+        "maxDistance": 12.0,
         "cooldownTicks": 36,
-        "ammunition": "ammo/scatter-shell",
         "ammunitionCost": 1,
         "muzzleOffset": [
-          0,
-          0,
-          0
+          0.0,
+          0.0,
+          0.0
         ],
         "presentation": "breach-scattergun"
       }
@@ -183,16 +182,16 @@
       "maxQuantity": 1,
       "kind": {
         "kind": "weapon",
+        "ammunition": "ammo/energy-cell",
         "attackMode": "automatic",
         "damage": 18,
-        "maxDistance": 25,
+        "maxDistance": 25.0,
         "cooldownTicks": 4,
-        "ammunition": "ammo/energy-cell",
         "ammunitionCost": 1,
         "muzzleOffset": [
-          0,
-          0,
-          0
+          0.0,
+          0.0,
+          0.0
         ],
         "presentation": "rivet-carbine"
       }
@@ -204,7 +203,7 @@
       "name": "Loading Bay",
       "voxelEnvironment": {
         "kind": "material",
-        "voxelSize": 1,
+        "voxelSize": 1.0,
         "chunkSize": 16,
         "materialVoxels": [
           {
@@ -31666,6 +31665,18 @@
             1.5,
             3.5
           ],
+          "bounds": {
+            "min": [
+              -0.25,
+              -0.25,
+              -0.25
+            ],
+            "max": [
+              0.25,
+              0.25,
+              0.25
+            ]
+          },
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -31674,6 +31685,16 @@
             "asset": "mesh/player-marker",
             "visible": true
           },
+          "health": {
+            "max": 100,
+            "hitboxHalfExtents": [
+              0.25,
+              0.5,
+              0.25
+            ],
+            "maxArmor": 100,
+            "armorAbsorptionPercent": 50
+          },
           "kinematic": {
             "halfExtents": [
               0.25,
@@ -31681,17 +31702,17 @@
               0.25
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "playerController": {
-            "moveSpeedUnitsPerSecond": 6,
+            "moveSpeedUnitsPerSecond": 6.0,
             "moveStepSeconds": 0.1,
-            "lookDegreesPerUnit": 12,
-            "initialYawDegrees": 180,
-            "initialPitchDegrees": -6,
+            "lookDegreesPerUnit": 12.0,
+            "initialYawDegrees": 180.0,
+            "initialPitchDegrees": -6.0,
             "bindings": {
               "moveForward": "KeyW",
               "moveBackward": "KeyS",
@@ -31705,28 +31726,6 @@
                 "Digit3"
               ]
             }
-          },
-          "bounds": {
-            "min": [
-              -0.25,
-              -0.25,
-              -0.25
-            ],
-            "max": [
-              0.25,
-              0.25,
-              0.25
-            ]
-          },
-          "health": {
-            "max": 100,
-            "hitboxHalfExtents": [
-              0.25,
-              0.5,
-              0.25
-            ],
-            "maxArmor": 100,
-            "armorAbsorptionPercent": 50
           },
           "inventory": {
             "capacitySlots": 8,
@@ -31755,18 +31754,18 @@
         {
           "id": 2,
           "name": "cargo-floor-contact",
+          "translation": [
+            7.5,
+            1.5,
+            11.5
+          ],
           "encounter": {
             "members": [
               4
             ],
             "exit": 11,
-            "activationRadius": 6
-          },
-          "translation": [
-            7.5,
-            1.5,
-            11.5
-          ]
+            "activationRadius": 6.0
+          }
         },
         {
           "id": 3,
@@ -31774,36 +31773,8 @@
           "translation": [
             21.5,
             1.5,
-            49
+            49.0
           ],
-          "collision": {
-            "enabled": true,
-            "staticCollider": true
-          },
-          "renderable": {
-            "asset": "mesh/security-door",
-            "visible": true
-          },
-          "kinematic": {
-            "halfExtents": [
-              1.2,
-              1.5,
-              0.275
-            ],
-            "velocity": [
-              0,
-              0,
-              0
-            ]
-          },
-          "door": {
-            "openTranslation": [
-              21.5,
-              5.5,
-              49
-            ],
-            "autoCloseAfterTicks": null
-          },
           "bounds": {
             "min": [
               -1.2,
@@ -31815,6 +31786,34 @@
               1.5,
               0.275
             ]
+          },
+          "collision": {
+            "enabled": true,
+            "staticCollider": true
+          },
+          "renderable": {
+            "asset": "mesh/security-door",
+            "visible": true
+          },
+          "door": {
+            "openTranslation": [
+              21.5,
+              5.5,
+              49.0
+            ],
+            "autoCloseAfterTicks": null
+          },
+          "kinematic": {
+            "halfExtents": [
+              1.2,
+              1.5,
+              0.275
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
           }
         },
         {
@@ -31825,6 +31824,11 @@
             1.5,
             12.5
           ],
+          "scale": [
+            1.15,
+            0.85,
+            1.15
+          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -31834,6 +31838,25 @@
             "visible": true
           },
           "enemy": true,
+          "enemyCombat": {
+            "sightRange": 7.0,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "melee",
+              "damage": 8,
+              "range": 1.25,
+              "cooldownTicks": 120,
+              "originOffset": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "presentation": "sentry-strike"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 33
+          },
           "health": {
             "max": 100,
             "hitboxHalfExtents": [
@@ -31842,11 +31865,6 @@
               0.55
             ]
           },
-          "scale": [
-            1.15,
-            0.85,
-            1.15
-          ],
           "kinematic": {
             "halfExtents": [
               0.45,
@@ -31854,9 +31872,9 @@
               0.45
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "navigation": {
@@ -31865,27 +31883,8 @@
               1.5,
               12.5
             ],
-            "speedUnitsPerSecond": 4,
+            "speedUnitsPerSecond": 4.0,
             "maxVisited": 512
-          },
-          "enemyCombat": {
-            "sightRange": 7,
-            "hearingRange": 2.5,
-            "attack": {
-              "kind": "melee",
-              "damage": 8,
-              "range": 1.25,
-              "cooldownTicks": 120,
-              "originOffset": [
-                0,
-                0,
-                0
-              ],
-              "presentation": "sentry-strike"
-            }
-          },
-          "defeatDrop": {
-            "pickup": 33
           }
         },
         {
@@ -31896,6 +31895,11 @@
             1.5,
             21.5
           ],
+          "scale": [
+            0.75,
+            1.35,
+            0.75
+          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -31905,6 +31909,25 @@
             "visible": true
           },
           "enemy": true,
+          "enemyCombat": {
+            "sightRange": 8.0,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "rangedHitscan",
+              "damage": 4,
+              "range": 7.0,
+              "cooldownTicks": 120,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "sentry-pulse"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 34
+          },
           "health": {
             "max": 100,
             "hitboxHalfExtents": [
@@ -31913,11 +31936,6 @@
               0.55
             ]
           },
-          "scale": [
-            0.75,
-            1.35,
-            0.75
-          ],
           "kinematic": {
             "halfExtents": [
               0.3,
@@ -31925,9 +31943,9 @@
               0.3
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "navigation": {
@@ -31938,25 +31956,6 @@
             ],
             "speedUnitsPerSecond": 2.5,
             "maxVisited": 512
-          },
-          "enemyCombat": {
-            "sightRange": 8,
-            "hearingRange": 2.5,
-            "attack": {
-              "kind": "rangedHitscan",
-              "damage": 4,
-              "range": 7,
-              "cooldownTicks": 120,
-              "originOffset": [
-                0,
-                0.25,
-                0
-              ],
-              "presentation": "sentry-pulse"
-            }
-          },
-          "defeatDrop": {
-            "pickup": 34
           }
         },
         {
@@ -31994,7 +31993,7 @@
             "visible": true
           },
           "extractionBeacon": {
-            "activationRadius": 3
+            "activationRadius": 3.0
           }
         },
         {
@@ -32016,9 +32015,9 @@
               0.25
             ],
             "velocity": [
-              2,
-              0,
-              0
+              2.0,
+              0.0,
+              0.0
             ]
           }
         },
@@ -32028,7 +32027,7 @@
           "translation": [
             4.5,
             1.5,
-            17
+            17.0
           ],
           "bounds": {
             "min": [
@@ -32050,6 +32049,14 @@
             "asset": "mesh/security-door",
             "visible": true
           },
+          "door": {
+            "openTranslation": [
+              4.5,
+              5.5,
+              17.0
+            ],
+            "autoCloseAfterTicks": null
+          },
           "kinematic": {
             "halfExtents": [
               1.2,
@@ -32057,18 +32064,10 @@
               0.275
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
-          },
-          "door": {
-            "openTranslation": [
-              4.5,
-              5.5,
-              17
-            ],
-            "autoCloseAfterTicks": null
           }
         },
         {
@@ -32077,7 +32076,7 @@
           "translation": [
             21.5,
             1.5,
-            35
+            35.0
           ],
           "bounds": {
             "min": [
@@ -32099,6 +32098,14 @@
             "asset": "mesh/security-door",
             "visible": true
           },
+          "door": {
+            "openTranslation": [
+              21.5,
+              5.5,
+              35.0
+            ],
+            "autoCloseAfterTicks": null
+          },
           "kinematic": {
             "halfExtents": [
               1.7,
@@ -32106,18 +32113,10 @@
               0.275
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
-          },
-          "door": {
-            "openTranslation": [
-              21.5,
-              5.5,
-              35
-            ],
-            "autoCloseAfterTicks": null
           }
         },
         {
@@ -32126,7 +32125,7 @@
           "translation": [
             23.5,
             1.5,
-            30
+            30.0
           ],
           "bounds": {
             "min": [
@@ -32148,6 +32147,14 @@
             "asset": "mesh/security-door",
             "visible": true
           },
+          "door": {
+            "openTranslation": [
+              23.5,
+              5.5,
+              30.0
+            ],
+            "autoCloseAfterTicks": null
+          },
           "kinematic": {
             "halfExtents": [
               1.7,
@@ -32155,18 +32162,10 @@
               0.275
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
-          },
-          "door": {
-            "openTranslation": [
-              23.5,
-              5.5,
-              30
-            ],
-            "autoCloseAfterTicks": null
           }
         },
         {
@@ -32440,7 +32439,7 @@
           "translation": [
             11.5,
             1.5,
-            17
+            17.0
           ],
           "bounds": {
             "min": [
@@ -32462,6 +32461,20 @@
             "asset": "mesh/security-door",
             "visible": true
           },
+          "door": {
+            "openTranslation": [
+              11.5,
+              5.5,
+              17.0
+            ],
+            "autoCloseAfterTicks": null,
+            "access": {
+              "requiredKey": "key/maintenance-pass",
+              "keyPolicy": "retain",
+              "activationRadius": 3.0,
+              "deniedPresentation": "Maintenance pass required"
+            }
+          },
           "kinematic": {
             "halfExtents": [
               3.2,
@@ -32469,24 +32482,10 @@
               0.275
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
-          },
-          "door": {
-            "openTranslation": [
-              11.5,
-              5.5,
-              17
-            ],
-            "autoCloseAfterTicks": null,
-            "access": {
-              "requiredKey": "key/maintenance-pass",
-              "keyPolicy": "retain",
-              "activationRadius": 3,
-              "deniedPresentation": "Maintenance pass required"
-            }
           }
         },
         {
@@ -32526,7 +32525,7 @@
             "visible": true
           },
           "levelExit": {
-            "activationRadius": 2,
+            "activationRadius": 2.0,
             "presentation": "Loading Bay complete"
           }
         },
@@ -32534,9 +32533,9 @@
           "id": 33,
           "name": "cargo-loader-field-drop",
           "translation": [
-            -32,
-            -32,
-            -32
+            -32.0,
+            -32.0,
+            -32.0
           ],
           "bounds": {
             "min": [
@@ -32563,9 +32562,9 @@
           "id": 34,
           "name": "gantry-sentry-field-drop",
           "translation": [
-            -32,
-            -32,
-            -33
+            -32.0,
+            -32.0,
+            -33.0
           ],
           "bounds": {
             "min": [
@@ -32603,7 +32602,7 @@
               42
             ],
             "exit": 13,
-            "activationRadius": 8
+            "activationRadius": 8.0
           }
         },
         {
@@ -32614,6 +32613,11 @@
             1.5,
             23.5
           ],
+          "scale": [
+            1.15,
+            0.85,
+            1.15
+          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -32623,6 +32627,25 @@
             "visible": true
           },
           "enemy": true,
+          "enemyCombat": {
+            "sightRange": 7.0,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "melee",
+              "damage": 8,
+              "range": 1.25,
+              "cooldownTicks": 120,
+              "originOffset": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "presentation": "sentry-strike"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 60
+          },
           "health": {
             "max": 100,
             "hitboxHalfExtents": [
@@ -32631,11 +32654,6 @@
               0.55
             ]
           },
-          "scale": [
-            1.15,
-            0.85,
-            1.15
-          ],
           "kinematic": {
             "halfExtents": [
               0.45,
@@ -32643,9 +32661,9 @@
               0.45
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "navigation": {
@@ -32654,27 +32672,8 @@
               1.5,
               23.5
             ],
-            "speedUnitsPerSecond": 4,
+            "speedUnitsPerSecond": 4.0,
             "maxVisited": 512
-          },
-          "enemyCombat": {
-            "sightRange": 7,
-            "hearingRange": 2.5,
-            "attack": {
-              "kind": "melee",
-              "damage": 8,
-              "range": 1.25,
-              "cooldownTicks": 120,
-              "originOffset": [
-                0,
-                0,
-                0
-              ],
-              "presentation": "sentry-strike"
-            }
-          },
-          "defeatDrop": {
-            "pickup": 60
           }
         },
         {
@@ -32685,6 +32684,11 @@
             1.5,
             27.5
           ],
+          "scale": [
+            0.75,
+            1.35,
+            0.75
+          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -32694,6 +32698,25 @@
             "visible": true
           },
           "enemy": true,
+          "enemyCombat": {
+            "sightRange": 8.0,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "rangedHitscan",
+              "damage": 4,
+              "range": 7.0,
+              "cooldownTicks": 120,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "sentry-pulse"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 61
+          },
           "health": {
             "max": 100,
             "hitboxHalfExtents": [
@@ -32702,11 +32725,6 @@
               0.55
             ]
           },
-          "scale": [
-            0.75,
-            1.35,
-            0.75
-          ],
           "kinematic": {
             "halfExtents": [
               0.3,
@@ -32714,9 +32732,9 @@
               0.3
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "navigation": {
@@ -32727,25 +32745,6 @@
             ],
             "speedUnitsPerSecond": 2.5,
             "maxVisited": 512
-          },
-          "enemyCombat": {
-            "sightRange": 8,
-            "hearingRange": 2.5,
-            "attack": {
-              "kind": "rangedHitscan",
-              "damage": 4,
-              "range": 7,
-              "cooldownTicks": 120,
-              "originOffset": [
-                0,
-                0.25,
-                0
-              ],
-              "presentation": "sentry-pulse"
-            }
-          },
-          "defeatDrop": {
-            "pickup": 61
           }
         },
         {
@@ -32764,7 +32763,7 @@
               54
             ],
             "exit": 3,
-            "activationRadius": 5
+            "activationRadius": 5.0
           }
         },
         {
@@ -32775,6 +32774,11 @@
             1.5,
             39.5
           ],
+          "scale": [
+            1.15,
+            0.85,
+            1.15
+          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -32784,6 +32788,25 @@
             "visible": true
           },
           "enemy": true,
+          "enemyCombat": {
+            "sightRange": 7.0,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "melee",
+              "damage": 8,
+              "range": 1.25,
+              "cooldownTicks": 120,
+              "originOffset": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "presentation": "sentry-strike"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 62
+          },
           "health": {
             "max": 100,
             "hitboxHalfExtents": [
@@ -32792,11 +32815,6 @@
               0.55
             ]
           },
-          "scale": [
-            1.15,
-            0.85,
-            1.15
-          ],
           "kinematic": {
             "halfExtents": [
               0.45,
@@ -32804,9 +32822,9 @@
               0.45
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "navigation": {
@@ -32815,27 +32833,8 @@
               1.5,
               39.5
             ],
-            "speedUnitsPerSecond": 4,
+            "speedUnitsPerSecond": 4.0,
             "maxVisited": 512
-          },
-          "enemyCombat": {
-            "sightRange": 7,
-            "hearingRange": 2.5,
-            "attack": {
-              "kind": "melee",
-              "damage": 8,
-              "range": 1.25,
-              "cooldownTicks": 120,
-              "originOffset": [
-                0,
-                0,
-                0
-              ],
-              "presentation": "sentry-strike"
-            }
-          },
-          "defeatDrop": {
-            "pickup": 62
           }
         },
         {
@@ -32846,6 +32845,11 @@
             1.5,
             39.5
           ],
+          "scale": [
+            0.75,
+            1.35,
+            0.75
+          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -32855,6 +32859,25 @@
             "visible": true
           },
           "enemy": true,
+          "enemyCombat": {
+            "sightRange": 8.0,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "rangedHitscan",
+              "damage": 4,
+              "range": 7.0,
+              "cooldownTicks": 120,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "sentry-pulse"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 63
+          },
           "health": {
             "max": 100,
             "hitboxHalfExtents": [
@@ -32863,11 +32886,6 @@
               0.55
             ]
           },
-          "scale": [
-            0.75,
-            1.35,
-            0.75
-          ],
           "kinematic": {
             "halfExtents": [
               0.3,
@@ -32875,9 +32893,9 @@
               0.3
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "navigation": {
@@ -32888,25 +32906,6 @@
             ],
             "speedUnitsPerSecond": 2.5,
             "maxVisited": 512
-          },
-          "enemyCombat": {
-            "sightRange": 8,
-            "hearingRange": 2.5,
-            "attack": {
-              "kind": "rangedHitscan",
-              "damage": 4,
-              "range": 7,
-              "cooldownTicks": 120,
-              "originOffset": [
-                0,
-                0.25,
-                0
-              ],
-              "presentation": "sentry-pulse"
-            }
-          },
-          "defeatDrop": {
-            "pickup": 63
           }
         },
         {
@@ -32917,6 +32916,11 @@
             1.5,
             43.5
           ],
+          "scale": [
+            1.15,
+            0.85,
+            1.15
+          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -32926,6 +32930,25 @@
             "visible": true
           },
           "enemy": true,
+          "enemyCombat": {
+            "sightRange": 7.0,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "melee",
+              "damage": 8,
+              "range": 1.25,
+              "cooldownTicks": 120,
+              "originOffset": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "presentation": "sentry-strike"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 64
+          },
           "health": {
             "max": 100,
             "hitboxHalfExtents": [
@@ -32934,11 +32957,6 @@
               0.55
             ]
           },
-          "scale": [
-            1.15,
-            0.85,
-            1.15
-          ],
           "kinematic": {
             "halfExtents": [
               0.45,
@@ -32946,9 +32964,9 @@
               0.45
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "navigation": {
@@ -32957,27 +32975,8 @@
               1.5,
               43.5
             ],
-            "speedUnitsPerSecond": 4,
+            "speedUnitsPerSecond": 4.0,
             "maxVisited": 512
-          },
-          "enemyCombat": {
-            "sightRange": 7,
-            "hearingRange": 2.5,
-            "attack": {
-              "kind": "melee",
-              "damage": 8,
-              "range": 1.25,
-              "cooldownTicks": 120,
-              "originOffset": [
-                0,
-                0,
-                0
-              ],
-              "presentation": "sentry-strike"
-            }
-          },
-          "defeatDrop": {
-            "pickup": 64
           }
         },
         {
@@ -32988,6 +32987,11 @@
             1.5,
             44.5
           ],
+          "scale": [
+            0.75,
+            1.35,
+            0.75
+          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -32997,6 +33001,25 @@
             "visible": true
           },
           "enemy": true,
+          "enemyCombat": {
+            "sightRange": 8.0,
+            "hearingRange": 2.5,
+            "attack": {
+              "kind": "rangedHitscan",
+              "damage": 4,
+              "range": 7.0,
+              "cooldownTicks": 120,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "sentry-pulse"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 65
+          },
           "health": {
             "max": 100,
             "hitboxHalfExtents": [
@@ -33005,11 +33028,6 @@
               0.55
             ]
           },
-          "scale": [
-            0.75,
-            1.35,
-            0.75
-          ],
           "kinematic": {
             "halfExtents": [
               0.3,
@@ -33017,9 +33035,9 @@
               0.3
             ],
             "velocity": [
-              0,
-              0,
-              0
+              0.0,
+              0.0,
+              0.0
             ]
           },
           "navigation": {
@@ -33030,34 +33048,15 @@
             ],
             "speedUnitsPerSecond": 2.5,
             "maxVisited": 512
-          },
-          "enemyCombat": {
-            "sightRange": 8,
-            "hearingRange": 2.5,
-            "attack": {
-              "kind": "rangedHitscan",
-              "damage": 4,
-              "range": 7,
-              "cooldownTicks": 120,
-              "originOffset": [
-                0,
-                0.25,
-                0
-              ],
-              "presentation": "sentry-pulse"
-            }
-          },
-          "defeatDrop": {
-            "pickup": 65
           }
         },
         {
           "id": 60,
           "name": "generator-loader-field-drop",
           "translation": [
-            -32,
-            -32,
-            -34
+            -32.0,
+            -32.0,
+            -34.0
           ],
           "bounds": {
             "min": [
@@ -33084,9 +33083,9 @@
           "id": 61,
           "name": "generator-warden-field-drop",
           "translation": [
-            -32,
-            -32,
-            -35
+            -32.0,
+            -32.0,
+            -35.0
           ],
           "bounds": {
             "min": [
@@ -33113,9 +33112,9 @@
           "id": 62,
           "name": "dock-loader-west-field-drop",
           "translation": [
-            -32,
-            -32,
-            -36
+            -32.0,
+            -32.0,
+            -36.0
           ],
           "bounds": {
             "min": [
@@ -33142,9 +33141,9 @@
           "id": 63,
           "name": "dock-warden-west-field-drop",
           "translation": [
-            -32,
-            -32,
-            -37
+            -32.0,
+            -32.0,
+            -37.0
           ],
           "bounds": {
             "min": [
@@ -33171,9 +33170,9 @@
           "id": 64,
           "name": "dock-loader-east-field-drop",
           "translation": [
-            -32,
-            -32,
-            -38
+            -32.0,
+            -32.0,
+            -38.0
           ],
           "bounds": {
             "min": [
@@ -33200,9 +33199,9 @@
           "id": 65,
           "name": "dock-warden-east-field-drop",
           "translation": [
-            -32,
-            -32,
-            -39
+            -32.0,
+            -32.0,
+            -39.0
           ],
           "bounds": {
             "min": [
@@ -33257,8 +33256,8 @@
             ],
             "intensity": 1.3,
             "enabled": true,
-            "range": 15,
-            "decay": 2,
+            "range": 15.0,
+            "decay": 2.0,
             "shadows": false
           }
         },
@@ -33275,12 +33274,12 @@
             "color": [
               0.3,
               0.62,
-              1
+              1.0
             ],
-            "intensity": 1,
+            "intensity": 1.0,
             "enabled": true,
-            "range": 11,
-            "decay": 2,
+            "range": 11.0,
+            "decay": 2.0,
             "shadows": false
           }
         },
@@ -33295,14 +33294,14 @@
           "light": {
             "kind": "point",
             "color": [
-              1,
+              1.0,
               0.25,
               0.12
             ],
             "intensity": 1.5,
             "enabled": true,
-            "range": 14,
-            "decay": 2,
+            "range": 14.0,
+            "decay": 2.0,
             "shadows": false
           }
         },
@@ -33323,8 +33322,8 @@
             ],
             "intensity": 1.2,
             "enabled": true,
-            "range": 10,
-            "decay": 2,
+            "range": 10.0,
+            "decay": 2.0,
             "shadows": false
           }
         },
@@ -33341,12 +33340,12 @@
             "color": [
               0.55,
               0.72,
-              1
+              1.0
             ],
-            "intensity": 1,
+            "intensity": 1.0,
             "enabled": true,
-            "range": 14,
-            "decay": 2,
+            "range": 14.0,
+            "decay": 2.0,
             "shadows": false
           }
         },
@@ -33363,12 +33362,12 @@
             "color": [
               0.35,
               0.75,
-              1
+              1.0
             ],
             "intensity": 1.35,
             "enabled": true,
-            "range": 18,
-            "decay": 2,
+            "range": 18.0,
+            "decay": 2.0,
             "shadows": false
           }
         },
@@ -33378,19 +33377,19 @@
           "translation": [
             21.5,
             3.2,
-            48
+            48.0
           ],
           "light": {
             "kind": "point",
             "color": [
               0.3,
-              1,
+              1.0,
               0.45
             ],
             "intensity": 1.5,
             "enabled": true,
-            "range": 9,
-            "decay": 2,
+            "range": 9.0,
+            "decay": 2.0,
             "shadows": false
           }
         }
