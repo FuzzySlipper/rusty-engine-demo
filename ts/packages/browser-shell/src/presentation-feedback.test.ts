@@ -431,6 +431,21 @@ test("renderer telemetry uses the complete shared submission without a downstrea
     admittedAtMs: 920,
     admissionObservedAtMs: 920.25,
     observedAtMs: 903,
+    automaticSubmissionCapacity: 8,
+    automaticSubmissionLimit: 8,
+    completionFenceMode: "active" as const,
+    maximumPendingSubmissions: 8,
+    pendingSubmissionCount: 1,
+    maximumPendingMeasurements: 8,
+    pendingMeasurementCount: 1,
+    hostAdmission: {
+      schemaVersion: 1 as const,
+      attemptCount: 42,
+      admittedCount: 21,
+      backendBlockedCount: 21,
+      noDemandCount: 0,
+      recentAttempts: [],
+    },
   };
   const submission = {
     schemaVersion: 1 as const,

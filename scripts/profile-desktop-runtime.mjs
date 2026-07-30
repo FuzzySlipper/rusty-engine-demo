@@ -668,12 +668,104 @@ function summarizeAutomaticPacing(samples) {
     pendingSubmissionCount: distribution(
       available("pendingSubmissionCount"),
     ),
+    hostAdmission: summarizeHostAdmission(samples),
     timerDurationMs: distribution(available("timerDurationMs")),
     completionAgeMs: distribution(available("completionAgeMs")),
     completionAllowanceMs: distribution(available("completionAllowanceMs")),
     effectiveDurationMs: distribution(available("effectiveDurationMs")),
     targetDutyFraction: distribution(available("targetDutyFraction")),
     latest: samples.at(-1) ?? null,
+  };
+}
+
+function summarizeHostAdmission(samples) {
+  const latest = samples.at(-1)?.hostAdmission ?? null;
+  const attemptsBySequence = new Map();
+  for (const sample of samples) {
+    const attempts = sample.hostAdmission?.recentAttempts;
+    if (!Array.isArray(attempts)) {
+      continue;
+    }
+    for (const attempt of attempts) {
+      if (Number.isFinite(attempt.sequence)) {
+        attemptsBySequence.set(attempt.sequence, attempt);
+      }
+    }
+  }
+  const attempts = [...attemptsBySequence.values()].toSorted(
+    (left, right) => left.sequence - right.sequence,
+  );
+  const intervals = attempts
+    .slice(1)
+    .map(
+      (attempt, index) =>
+        attempt.sourceTimeMs - attempts[index].sourceTimeMs,
+    )
+    .filter(Number.isFinite);
+  const countBy = (values) =>
+    Object.fromEntries(
+      [...new Set(values)].map((value) => [
+        value,
+        values.filter((candidate) => candidate === value).length,
+      ]),
+    );
+  const availableBackend = (key) =>
+    attempts
+      .map((attempt) => attempt.backend?.[key])
+      .filter((value) => Number.isFinite(value));
+  const demandReasons = [
+    "requested",
+    "viewportChanged",
+    "controls",
+    "presentation",
+    "retainedAnimation",
+    "shouldSubmit",
+  ];
+  const blocked = attempts.filter(
+    (attempt) => attempt.outcome === "backendBlocked",
+  );
+  return {
+    lifetime: latest === null
+      ? null
+      : {
+          attemptCount: latest.attemptCount,
+          admittedCount: latest.admittedCount,
+          backendBlockedCount: latest.backendBlockedCount,
+          noDemandCount: latest.noDemandCount,
+        },
+    distinctAttemptCount: attempts.length,
+    attemptSequence:
+      attempts.length === 0
+        ? null
+        : {
+            first: attempts[0].sequence,
+            last: attempts.at(-1).sequence,
+          },
+    rafIntervalMs: distribution(intervals),
+    outcomes: countBy(attempts.map((attempt) => attempt.outcome)),
+    demandReasons: Object.fromEntries(
+      demandReasons.map((reason) => [
+        reason,
+        attempts.filter((attempt) => attempt.demand?.[reason] === true).length,
+      ]),
+    ),
+    backendModes: countBy(
+      attempts.map((attempt) => attempt.backend?.mode ?? "unavailable"),
+    ),
+    backendStates: countBy(
+      attempts.map((attempt) => attempt.backend?.state ?? "unavailable"),
+    ),
+    automaticSubmissionLimit: distribution(
+      availableBackend("automaticSubmissionLimit"),
+    ),
+    pendingMeasurementCount: distribution(
+      availableBackend("pendingMeasurementCount"),
+    ),
+    pendingSubmissionCount: distribution(
+      availableBackend("pendingSubmissionCount"),
+    ),
+    backendBlockedAttemptCount: blocked.length,
+    latestBackendBlockedAttempt: blocked.at(-1) ?? null,
   };
 }
 
