@@ -6,6 +6,7 @@ import {
   MAX_PRESENTATION_EVENT_HISTORY,
   MAX_PRESENTATION_EVENT_KINDS,
   appendPresentationEvents,
+  isHighFrequencyDiagnosticEvent,
   observePresentationEventKinds,
 } from "./event-history.js";
 import {
@@ -2296,14 +2297,6 @@ function publishRendererStatisticsProof(
   evidence.textContent = JSON.stringify(proof);
   document.body.append(evidence);
   document.body.dataset.rendererStatisticsProof = "pass";
-}
-
-function isHighFrequencyDiagnosticEvent(event: string): boolean {
-  return (
-    event === "PlayerMoved" ||
-    event === "PlayerLookChanged" ||
-    event === "InputExpired"
-  );
 }
 
 function setText(element: HTMLElement, value: string): void {

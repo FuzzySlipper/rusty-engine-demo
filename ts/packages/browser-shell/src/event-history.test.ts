@@ -5,6 +5,7 @@ import {
   MAX_PRESENTATION_EVENT_HISTORY,
   MAX_PRESENTATION_EVENT_KINDS,
   appendPresentationEvents,
+  isHighFrequencyDiagnosticEvent,
   observePresentationEventKinds,
 } from "./event-history.ts";
 
@@ -63,4 +64,26 @@ test("distinct whole-run event evidence stays bounded independently of the histo
   assert.equal(observePresentationEventKinds(full, ["event-overflow"]), false);
   assert.equal(full.size, MAX_PRESENTATION_EVENT_KINDS);
   assert.equal(full.has("event-overflow"), false);
+});
+
+test("continuous movement diagnostics do not drive full shell projections", () => {
+  for (const event of [
+    "InputExpired",
+    "NavigationAdvanced",
+    "NavigationBlocked",
+    "PlayerBlocked",
+    "PlayerLookChanged",
+    "PlayerMoved",
+  ]) {
+    assert.equal(isHighFrequencyDiagnosticEvent(event), true, event);
+  }
+
+  for (const event of [
+    "DamageApplied",
+    "EnemyPostureChanged",
+    "PickupCollected",
+    "LevelCompleted",
+  ]) {
+    assert.equal(isHighFrequencyDiagnosticEvent(event), false, event);
+  }
 });

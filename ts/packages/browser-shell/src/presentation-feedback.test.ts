@@ -6,6 +6,7 @@ import { decodePresentationFrameDiff } from "@rusty-engine/render-contracts";
 import {
   PresentationFeedbackAdapter,
   captureRendererTelemetry,
+  shouldInspectViewmodelProjection,
 } from "./presentation-feedback.ts";
 import type { RuntimeBrowserState } from "./projection.ts";
 
@@ -103,6 +104,12 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
       : null,
     { kind: "world", position: [4.5, 4, 10.5] },
   );
+});
+
+test("unchanged viewmodels do not clone the complete retained renderer projection", () => {
+  assert.equal(shouldInspectViewmodelProjection(false, 0), true);
+  assert.equal(shouldInspectViewmodelProjection(true, 0), false);
+  assert.equal(shouldInspectViewmodelProjection(true, 1), true);
 });
 
 test("encounter activation and exact enemy drops remain disposable presentation", () => {

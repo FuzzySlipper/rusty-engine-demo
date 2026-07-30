@@ -77,6 +77,13 @@ export interface ProjectedPresentationFeedback {
   readonly soundKinds: readonly FeedbackSoundKind[];
 }
 
+export function shouldInspectViewmodelProjection(
+  evidencePublished: boolean,
+  appliedOperations: number,
+): boolean {
+  return !evidencePublished || appliedOperations > 0;
+}
+
 export function captureRendererTelemetry(
   surface: Pick<RendererSurface, "submission">,
   state: RuntimeBrowserState,
@@ -238,6 +245,7 @@ export class BrowserPresentationFeedback {
   #audioLevel = 1;
   #flashIntensity = 1;
   #viewmodelImpulseGeneration = 0;
+  #viewmodelEvidencePublished = false;
   #disposed = false;
 
   constructor(options: BrowserPresentationFeedbackOptions) {
@@ -473,7 +481,11 @@ export class BrowserPresentationFeedback {
   } {
     if (plan.ops.length === 0) {
       plan.commit();
-      this.#publishViewmodelEvidence(0);
+      if (
+        shouldInspectViewmodelProjection(this.#viewmodelEvidencePublished, 0)
+      ) {
+        this.#publishViewmodelEvidence(0);
+      }
       return { appliedOperations: 0, failedOperations: 0 };
     }
     try {
@@ -540,6 +552,7 @@ export class BrowserPresentationFeedback {
     document.body.dataset.weaponViewmodelLifecycle = readout.mounted
       ? "mounted"
       : "disposed";
+    this.#viewmodelEvidencePublished = true;
   }
 
   #createHosts(): SharedPresentationHosts {

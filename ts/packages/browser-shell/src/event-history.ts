@@ -1,6 +1,19 @@
 export const MAX_PRESENTATION_EVENT_HISTORY = 256;
 export const MAX_PRESENTATION_EVENT_KINDS = 64;
 
+const HIGH_FREQUENCY_DIAGNOSTIC_EVENTS = new Set([
+  "InputExpired",
+  "NavigationAdvanced",
+  "NavigationBlocked",
+  "PlayerBlocked",
+  "PlayerLookChanged",
+  "PlayerMoved",
+]);
+
+export function isHighFrequencyDiagnosticEvent(event: string): boolean {
+  return HIGH_FREQUENCY_DIAGNOSTIC_EVENTS.has(event);
+}
+
 export function appendPresentationEvents(
   history: string[],
   events: readonly string[],
