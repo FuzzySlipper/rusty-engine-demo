@@ -8,9 +8,9 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@rusty-engine/render-contracts": "github:FuzzySlipper/rusty-engine#8fae5fb770a73baa3bec259a6b71cf12ed3de5e6&path:render/packages/render-contracts",
-    "@rusty-engine/render-projection": "github:FuzzySlipper/rusty-engine#8fae5fb770a73baa3bec259a6b71cf12ed3de5e6&path:render/packages/render-projection",
-    "@rusty-engine/renderer-host": "github:FuzzySlipper/rusty-engine#8fae5fb770a73baa3bec259a6b71cf12ed3de5e6&path:render/packages/renderer-host",
-    "@rusty-engine/renderer-three": "github:FuzzySlipper/rusty-engine#8fae5fb770a73baa3bec259a6b71cf12ed3de5e6&path:render/packages/renderer-three"
+    "@rusty-engine/render-contracts": "github:FuzzySlipper/rusty-engine#af8d34c7fef57965fa27f9b14b08e2a45c357439&path:render/packages/render-contracts",
+    "@rusty-engine/render-projection": "github:FuzzySlipper/rusty-engine#af8d34c7fef57965fa27f9b14b08e2a45c357439&path:render/packages/render-projection",
+    "@rusty-engine/renderer-host": "github:FuzzySlipper/rusty-engine#af8d34c7fef57965fa27f9b14b08e2a45c357439&path:render/packages/renderer-host",
+    "@rusty-engine/renderer-three": "github:FuzzySlipper/rusty-engine#af8d34c7fef57965fa27f9b14b08e2a45c357439&path:render/packages/renderer-three"
   }
 }

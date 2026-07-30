@@ -1,0 +1,692 @@
+{
+  "schemaVersion": 1,
+  "authority": "temporary Studio scene objects exercise imported actors; gameplay posture binding remains deferred to VC8",
+  "engineRevision": "af8d34c7fef57965fa27f9b14b08e2a45c357439",
+  "sourceProjectHash": "ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750",
+  "previewProjectHash": "7380d6aa585f4a053fde626bc878a6f05b746b4e86ff8fcc09ae831366afc06d",
+  "previewInstances": [
+    {
+      "entityId": 9001,
+      "name": "actor-proof-arc-warden-idle",
+      "asset": "mesh-animation/arc-warden",
+      "clip": "idle"
+    },
+    {
+      "entityId": 9002,
+      "name": "actor-proof-arc-warden-run",
+      "asset": "mesh-animation/arc-warden",
+      "clip": "run"
+    },
+    {
+      "entityId": 9003,
+      "name": "actor-proof-arc-warden-jump",
+      "asset": "mesh-animation/arc-warden",
+      "clip": "jump"
+    },
+    {
+      "entityId": 9004,
+      "name": "actor-proof-arc-warden-attack",
+      "asset": "mesh-animation/arc-warden",
+      "clip": "attack"
+    },
+    {
+      "entityId": 9005,
+      "name": "actor-proof-arc-warden-hit",
+      "asset": "mesh-animation/arc-warden",
+      "clip": "hit"
+    },
+    {
+      "entityId": 9006,
+      "name": "actor-proof-arc-warden-death",
+      "asset": "mesh-animation/arc-warden",
+      "clip": "death"
+    },
+    {
+      "entityId": 9007,
+      "name": "actor-proof-bay-rusher-idle",
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "idle"
+    },
+    {
+      "entityId": 9008,
+      "name": "actor-proof-bay-rusher-run",
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "run"
+    },
+    {
+      "entityId": 9009,
+      "name": "actor-proof-bay-rusher-jump",
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "jump"
+    },
+    {
+      "entityId": 9010,
+      "name": "actor-proof-bay-rusher-attack",
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "attack"
+    },
+    {
+      "entityId": 9011,
+      "name": "actor-proof-bay-rusher-hit",
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "hit"
+    },
+    {
+      "entityId": 9012,
+      "name": "actor-proof-bay-rusher-death",
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "death"
+    }
+  ],
+  "clips": [
+    "attack",
+    "attack",
+    "death",
+    "death",
+    "hit",
+    "hit",
+    "idle",
+    "idle",
+    "jump",
+    "jump",
+    "run",
+    "run"
+  ],
+  "projectedClips": [
+    {
+      "entityId": 9001,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "idle"
+    },
+    {
+      "entityId": 9002,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "run"
+    },
+    {
+      "entityId": 9003,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "jump"
+    },
+    {
+      "entityId": 9004,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "attack"
+    },
+    {
+      "entityId": 9005,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "hit"
+    },
+    {
+      "entityId": 9006,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "death"
+    },
+    {
+      "entityId": 9007,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "idle"
+    },
+    {
+      "entityId": 9008,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "run"
+    },
+    {
+      "entityId": 9009,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "jump"
+    },
+    {
+      "entityId": 9010,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "attack"
+    },
+    {
+      "entityId": 9011,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "hit"
+    },
+    {
+      "entityId": 9012,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "death"
+    }
+  ],
+  "reopenedClips": [
+    {
+      "entityId": 9001,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "idle"
+    },
+    {
+      "entityId": 9002,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "run"
+    },
+    {
+      "entityId": 9003,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "jump"
+    },
+    {
+      "entityId": 9004,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "attack"
+    },
+    {
+      "entityId": 9005,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "hit"
+    },
+    {
+      "entityId": 9006,
+      "asset": "mesh-animation/arc-warden",
+      "clip": "death"
+    },
+    {
+      "entityId": 9007,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "idle"
+    },
+    {
+      "entityId": 9008,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "run"
+    },
+    {
+      "entityId": 9009,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "jump"
+    },
+    {
+      "entityId": 9010,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "attack"
+    },
+    {
+      "entityId": 9011,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "hit"
+    },
+    {
+      "entityId": 9012,
+      "asset": "mesh-animation/bay-rusher",
+      "clip": "death"
+    }
+  ],
+  "submissions": {
+    "baseline": {
+      "count": 1,
+      "updateKinds": ["complete"],
+      "latest": {
+        "kind": "rusty_studio_viewport_frame_submitted.v1",
+        "generation": 1,
+        "updateKind": "complete",
+        "submission": {
+          "schemaVersion": 1,
+          "renderSequence": 2,
+          "source": "explicit",
+          "sourceTimeMs": 4845.300000190735,
+          "frameIntervalMs": 4845.300000190735,
+          "frameIntervalStatus": "available",
+          "backendSubmissionDurationMs": 21,
+          "backendSubmissionDurationStatus": "available",
+          "statistics": {
+            "schemaVersion": 1,
+            "drawCallCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 19
+            },
+            "renderHandleCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 406
+            },
+            "geometryResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 49
+            },
+            "materialResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 63
+            },
+            "textureResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 0
+            },
+            "animatedInstanceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 0
+            },
+            "triangleCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 34514
+            }
+          }
+        }
+      }
+    },
+    "preview": {
+      "count": 2,
+      "updateKinds": ["complete", "complete"],
+      "latest": {
+        "kind": "rusty_studio_viewport_frame_submitted.v1",
+        "generation": 2,
+        "updateKind": "complete",
+        "submission": {
+          "schemaVersion": 1,
+          "renderSequence": 3723,
+          "source": "explicit",
+          "sourceTimeMs": 154355.89999961853,
+          "frameIntervalMs": 506.29999961852445,
+          "frameIntervalStatus": "available",
+          "backendSubmissionDurationMs": 22.5,
+          "backendSubmissionDurationStatus": "available",
+          "statistics": {
+            "schemaVersion": 1,
+            "drawCallCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 19
+            },
+            "renderHandleCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 418
+            },
+            "geometryResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 51
+            },
+            "materialResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 65
+            },
+            "textureResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 2
+            },
+            "animatedInstanceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 12
+            },
+            "triangleCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 34514
+            }
+          }
+        }
+      }
+    },
+    "attackSelection": {
+      "count": 3,
+      "updateKinds": ["complete", "complete", "presentation"],
+      "latest": {
+        "kind": "rusty_studio_viewport_frame_submitted.v1",
+        "generation": 2,
+        "updateKind": "presentation",
+        "submission": {
+          "schemaVersion": 1,
+          "renderSequence": 3729,
+          "source": "explicit",
+          "sourceTimeMs": 156178.19999980927,
+          "frameIntervalMs": 745.299999809271,
+          "frameIntervalStatus": "available",
+          "backendSubmissionDurationMs": 42.89999961853027,
+          "backendSubmissionDurationStatus": "available",
+          "statistics": {
+            "schemaVersion": 1,
+            "drawCallCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 40
+            },
+            "renderHandleCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 418
+            },
+            "geometryResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 51
+            },
+            "materialResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 65
+            },
+            "textureResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 2
+            },
+            "animatedInstanceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 12
+            },
+            "triangleCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 102878
+            }
+          }
+        }
+      }
+    },
+    "deathSelection": {
+      "count": 4,
+      "updateKinds": ["complete", "complete", "presentation", "presentation"],
+      "latest": {
+        "kind": "rusty_studio_viewport_frame_submitted.v1",
+        "generation": 2,
+        "updateKind": "presentation",
+        "submission": {
+          "schemaVersion": 1,
+          "renderSequence": 3746,
+          "source": "explicit",
+          "sourceTimeMs": 158904.80000019073,
+          "frameIntervalMs": 688.700000190729,
+          "frameIntervalStatus": "available",
+          "backendSubmissionDurationMs": 40.59999942779541,
+          "backendSubmissionDurationStatus": "available",
+          "statistics": {
+            "schemaVersion": 1,
+            "drawCallCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 40
+            },
+            "renderHandleCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 418
+            },
+            "geometryResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 51
+            },
+            "materialResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 65
+            },
+            "textureResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 2
+            },
+            "animatedInstanceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 12
+            },
+            "triangleCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 103718
+            }
+          }
+        }
+      }
+    },
+    "remounted": {
+      "count": 5,
+      "updateKinds": [
+        "complete",
+        "complete",
+        "presentation",
+        "presentation",
+        "complete"
+      ],
+      "latest": {
+        "kind": "rusty_studio_viewport_frame_submitted.v1",
+        "generation": 1,
+        "updateKind": "complete",
+        "submission": {
+          "schemaVersion": 1,
+          "renderSequence": 2,
+          "source": "explicit",
+          "sourceTimeMs": 166212,
+          "frameIntervalMs": null,
+          "frameIntervalStatus": "sourceTimeGapExceeded",
+          "backendSubmissionDurationMs": 19.800000190734863,
+          "backendSubmissionDurationStatus": "available",
+          "statistics": {
+            "schemaVersion": 1,
+            "drawCallCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 19
+            },
+            "renderHandleCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 418
+            },
+            "geometryResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 51
+            },
+            "materialResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 65
+            },
+            "textureResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 2
+            },
+            "animatedInstanceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 12
+            },
+            "triangleCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 34514
+            }
+          }
+        }
+      }
+    },
+    "reloaded": {
+      "count": 1,
+      "updateKinds": ["complete"],
+      "latest": {
+        "kind": "rusty_studio_viewport_frame_submitted.v1",
+        "generation": 1,
+        "updateKind": "complete",
+        "submission": {
+          "schemaVersion": 1,
+          "renderSequence": 2,
+          "source": "explicit",
+          "sourceTimeMs": 4823.400000572205,
+          "frameIntervalMs": 4823.400000572205,
+          "frameIntervalStatus": "available",
+          "backendSubmissionDurationMs": 23.399999618530273,
+          "backendSubmissionDurationStatus": "available",
+          "statistics": {
+            "schemaVersion": 1,
+            "drawCallCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 19
+            },
+            "renderHandleCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 418
+            },
+            "geometryResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 51
+            },
+            "materialResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 65
+            },
+            "textureResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 2
+            },
+            "animatedInstanceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 12
+            },
+            "triangleCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 34514
+            }
+          }
+        }
+      }
+    }
+  },
+  "resourceDeltas": {
+    "renderHandles": 12,
+    "geometry": 2,
+    "materials": 2,
+    "textures": 2,
+    "animatedInstances": 12
+  },
+  "lifecycle": {
+    "resize": [
+      {
+        "viewport": [1280, 720],
+        "canvasCount": 1,
+        "rendererStatus": "ready",
+        "rendererError": ""
+      },
+      {
+        "viewport": [1600, 900],
+        "canvasCount": 1,
+        "rendererStatus": "ready",
+        "rendererError": ""
+      }
+    ],
+    "disposed": {
+      "canvasCount": 0
+    },
+    "remounted": {
+      "projectHash": "7380d6aa585f4a053fde626bc878a6f05b746b4e86ff8fcc09ae831366afc06d",
+      "canvasCount": 1,
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 19
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 418
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 51
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 65
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 2
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 12
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 34514
+        }
+      }
+    },
+    "reloaded": {
+      "projectHash": "7380d6aa585f4a053fde626bc878a6f05b746b4e86ff8fcc09ae831366afc06d",
+      "canvasCount": 1,
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 19
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 418
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 51
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 65
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 2
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 12
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 34514
+        }
+      }
+    }
+  },
+  "capture": {
+    "host": "http://127.0.0.1:4396",
+    "viewport": [1600, 900],
+    "screenshots": [
+      "docs/evidence/actor-kit-studio-arc-warden-attack.png",
+      "docs/evidence/actor-kit-studio-bay-rusher-death.png"
+    ],
+    "rendererSubmission": {
+      "event": "rusty_studio_viewport_frame_submitted.v1",
+      "outlet": "StudioShellComponent.frameSubmitted",
+      "collection": "public shell output and DOM readouts only; no WebGL, Three, private component, or second-loop access"
+    }
+  }
+}

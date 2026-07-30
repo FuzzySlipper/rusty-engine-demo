@@ -67,8 +67,7 @@ for (const variant of manifest.variants) {
   invariant(!assetIds.has(variant.assetId), `${variant.assetId} is duplicated`);
   assetIds.add(variant.assetId);
   invariant(
-    variant.assetId ===
-      `mesh-animation/actor-kit/${variant.file.replace(/\.glb$/u, "")}`,
+    variant.assetId === `mesh-animation/${variant.file.replace(/\.glb$/u, "")}`,
     `${variant.file} asset identity drifted`,
   );
   invariant(variant.targetHeight === 1.78, `${variant.file} height drifted`);

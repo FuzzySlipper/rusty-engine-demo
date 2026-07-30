@@ -2,8 +2,9 @@ use std::collections::BTreeSet;
 
 use asset_catalog::StoredAssetCatalog;
 use asset_import::{
-    decode_import_manifest, decode_sidecar, encode_import_manifest, encode_sidecar, import_text,
-    init_metadata, plan_import, ImportContext, ImportMode, ImportSettings, ImportedAssets,
+    decode_import_manifest, decode_sidecar, encode_import_manifest, encode_sidecar,
+    import_animated_glb_asset, import_text, init_metadata, plan_animated_glb_import, plan_import,
+    ImportContext, ImportMode, ImportSettings, ImportedAnimatedGlb, ImportedAssets,
     SidecarMetadata, SourceUri, IMPORTER_VERSION, MAX_SOURCE_BYTES,
 };
 use voxel_convert::source_sha256;
@@ -24,11 +25,33 @@ use super::ProjectLocation;
 
 pub(crate) struct PreparedAssetImport {
     pub readout: AssetImportPlanReadout,
-    assets: Option<ImportedAssets>,
+    assets: Option<PreparedImportedAssets>,
     manifest_json: Option<String>,
     sidecar_json: Option<String>,
     source: StoredImportSource,
     prior_generated_asset_ids: Vec<String>,
+}
+
+#[derive(Clone)]
+enum PreparedImportedAssets {
+    Static(ImportedAssets),
+    Animated(ImportedAnimatedGlb),
+}
+
+impl PreparedImportedAssets {
+    fn catalog(&self) -> &asset_catalog::AssetCatalog {
+        match self {
+            Self::Static(imported) => &imported.catalog,
+            Self::Animated(imported) => &imported.catalog,
+        }
+    }
+
+    fn asset_id(&self) -> &str {
+        match self {
+            Self::Static(imported) => &imported.static_mesh.asset,
+            Self::Animated(imported) => &imported.animated_mesh.asset,
+        }
+    }
 }
 
 pub(crate) fn prepare_asset_import(
@@ -121,24 +144,58 @@ fn prepare(
     sidecar: SidecarMetadata,
     prior_generated_asset_ids: Vec<String>,
 ) -> Result<PreparedAssetImport, AdapterRejection> {
-    let source_text = std::str::from_utf8(&loaded.bytes)
-        .map_err(|error| reject("assetImport.sourceNotUtf8", error.to_string()))?;
     let context = ImportContext {
         available_textures: None,
         settings: importer_settings,
     };
-    let plan = plan_import(
-        &loaded.uri,
-        source_text,
-        &context,
-        ImportMode::DryRun,
-        prior.as_ref(),
-        Some(&sidecar),
-    );
-    let assets = if plan.has_errors {
+    let animated = is_animated_glb(&loaded.uri);
+    if animated && !matches!(&loaded.stored, StoredImportSource::Project { .. }) {
+        return Err(reject(
+            "assetImport.animatedHostSourceUnsupported",
+            "animated GLB import requires a project-relative source so the retained runtime resource remains durable",
+        ));
+    }
+    let source_text = if animated {
         None
     } else {
-        import_text(source_text, loaded.uri.value(), &context).assets
+        Some(
+            std::str::from_utf8(&loaded.bytes)
+                .map_err(|error| reject("assetImport.sourceNotUtf8", error.to_string()))?,
+        )
+    };
+    let plan = if animated {
+        plan_animated_glb_import(
+            &loaded.uri,
+            &loaded.bytes,
+            &context,
+            ImportMode::DryRun,
+            prior.as_ref(),
+            Some(&sidecar),
+        )
+    } else {
+        plan_import(
+            &loaded.uri,
+            source_text.expect("non-GLB import has UTF-8 source"),
+            &context,
+            ImportMode::DryRun,
+            prior.as_ref(),
+            Some(&sidecar),
+        )
+    };
+    let assets = if plan.has_errors {
+        None
+    } else if animated {
+        import_animated_glb_asset(&loaded.uri, &loaded.bytes, &context)
+            .assets
+            .map(PreparedImportedAssets::Animated)
+    } else {
+        import_text(
+            source_text.expect("non-GLB import has UTF-8 source"),
+            loaded.uri.value(),
+            &context,
+        )
+        .assets
+        .map(PreparedImportedAssets::Static)
     };
     let manifest_json = plan
         .manifest
@@ -156,7 +213,7 @@ fn prepare(
         .as_ref()
         .map(|assets| {
             assets
-                .catalog
+                .catalog()
                 .canonical()
                 .entries
                 .into_iter()
@@ -270,9 +327,28 @@ pub(crate) fn apply_prepared_asset_import(
             "asset-import plan has no canonical sidecar",
         )
     })?;
-    let stored_catalog = StoredAssetCatalog::from_catalog(&assets.catalog)
+    let mut stored_catalog = StoredAssetCatalog::from_catalog(assets.catalog())
         .map_err(|error| reject("assetImport.catalogEncode", error.to_string()))?;
-    let mesh_asset_id = assets.static_mesh.asset.clone();
+    let mesh_asset_id = assets.asset_id().to_string();
+    if matches!(&assets, PreparedImportedAssets::Animated(_)) {
+        let StoredImportSource::Project { path } = &prepared.source else {
+            return Err(reject(
+                "assetImport.animatedHostSourceUnsupported",
+                "animated GLB import requires a durable project-relative source",
+            ));
+        };
+        let Some(entry) = stored_catalog
+            .entries
+            .iter_mut()
+            .find(|entry| entry.id == mesh_asset_id)
+        else {
+            return Err(reject(
+                "assetImport.catalogEncode",
+                "animated import catalog omitted its mesh identity",
+            ));
+        };
+        entry.source_path = Some(path.clone());
+    }
     let generated_asset_ids = stored_catalog
         .entries
         .iter()
@@ -325,7 +401,7 @@ pub(crate) fn apply_prepared_asset_import(
 
 fn install_imported_assets(
     project: &mut StoredProject,
-    imported: ImportedAssets,
+    imported: PreparedImportedAssets,
     stored_catalog: StoredAssetCatalog,
     import: StoredAssetImport,
     prior_generated: &BTreeSet<String>,
@@ -351,9 +427,17 @@ fn install_imported_assets(
     project
         .assets
         .retain(|asset| !prior_generated.contains(&asset.id));
-    let mesh_id = imported.static_mesh.asset.clone();
+    let mesh_id = imported.asset_id().to_string();
     for entry in stored_catalog.entries {
         let is_mesh = entry.id == mesh_id;
+        let (static_mesh, animated_mesh) = match &imported {
+            PreparedImportedAssets::Static(imported) => {
+                (is_mesh.then(|| imported.static_mesh.clone()), None)
+            }
+            PreparedImportedAssets::Animated(imported) => {
+                (None, is_mesh.then(|| imported.animated_mesh.clone()))
+            }
+        };
         project.assets.push(StoredAsset {
             id: entry.id,
             catalog: Some(StoredAssetCatalogMetadata {
@@ -363,8 +447,8 @@ fn install_imported_assets(
                 label: entry.label,
                 dependencies: entry.dependencies,
             }),
-            static_mesh: is_mesh.then(|| imported.static_mesh.clone()),
-            animated_mesh: None,
+            static_mesh,
+            animated_mesh,
             import: is_mesh.then(|| import.clone()),
             voxel_volume: None,
             voxel_object: None,
@@ -381,6 +465,10 @@ struct LoadedImportSource {
     stored: StoredImportSource,
     uri: SourceUri,
     bytes: Vec<u8>,
+}
+
+fn is_animated_glb(uri: &SourceUri) -> bool {
+    uri.value().to_ascii_lowercase().ends_with(".glb")
 }
 
 fn read_selection(

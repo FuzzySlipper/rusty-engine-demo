@@ -196,21 +196,47 @@ pivot, material handling, clip ranges/names, source hashes, and output GLB hashe
 death clips are authored or derived, their changes must be reproducible and described rather than
 hidden behind renamed stock clips.
 
-### VC4 actor source checkpoint
+### VC4 imported actor result
 
-The reproducible actor source stage is now checked in under `content/assets/actor-kit`. Blender
+The reproducible actor sources are checked in under `content/assets/actor-kit`. Blender
 5.1.2 produces two independently skinned 1.78-unit GLBs from the reviewed medium rig and installs
 the exact six-clip set `idle`, `run`, `jump`, `attack`, `hit`, `death`. Kenney owns the first three
 clips and both source skins under CC0; Loading Bay owns the explicit recipe-defined attack, hit, and
 death root actions. The completed GLBs are 339,812 and 334,232 bytes and retain one skinned mesh,
 one material, and one embedded texture each.
 
-This checkpoint intentionally stops at the supported authoring boundary. Protocol-11
-`prepareAssetImport` currently returns typed `assetImport.sourceNotUtf8` for the binary GLB because
-the public Engine importer admits textual static mesh sources only. Rusty Engine #6433 owns the
-bounded binary animated-mesh import, persistence, replacement, and preview seam. VC4 will pin that
-reviewed provider and publish through Studio; it will not decode GLB, hand-author retained payloads,
-or load Three.js privately downstream.
+Protocol 12 consumes Rusty Engine #6433 at exact revision
+`af8d34c7fef57965fa27f9b14b08e2a45c357439`. The Rust-owned Studio adapter imports both binary
+GLBs as durable `mesh-animation/*` assets, validates their embedded buffers, textures, bounds, and
+six clips, and atomically publishes canonical project hash
+`ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750`.
+The downstream never decodes GLB, hand-authors retained payloads, or loads Three.js privately.
+
+The real supported Studio browser proof places 12 temporary scene instances—every clip on both
+asset identities—and reconstructs the same owner-ordered playback through a fresh adapter process.
+Against a 406-handle baseline, the shared renderer reaches 418 handles while adding exactly two
+geometries, two materials, two textures, and 12 independently animated instances. Those exact
+resident counts survive project close/open, resize at 1280×720 and 1600×900, and a cache-bypassing
+page reload; close reaches zero canvases and remount/reload each return to one. The temporary
+instances are evidence only: Rust gameplay posture binding remains owned by VC8 #6358.
+
+Reproduce and inspect the evidence with:
+
+```sh
+node scripts/check-actor-kit.mjs
+node scripts/author-actor-kit.mjs
+# With the supported Studio host at 127.0.0.1:4396:
+node scripts/capture-actor-kit-studio.mjs
+```
+
+The exact import/reimport timings and fresh-process hashes are in
+[`docs/evidence/actor-kit-authoring.json`](evidence/actor-kit-authoring.json). Public shell
+submission counters and lifecycle evidence are in
+[`docs/evidence/actor-kit-studio-browser.json`](evidence/actor-kit-studio-browser.json).
+Screenshots:
+
+- [Arc Warden attack clip](evidence/actor-kit-studio-arc-warden-attack.png);
+- [Bay Rusher death clip](evidence/actor-kit-studio-bay-rusher-death.png).
 
 ### Prop and landmark inputs
 

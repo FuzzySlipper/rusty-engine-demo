@@ -1397,7 +1397,7 @@ fn voxel_object_authoring_readout(project: &StoredProject) -> VoxelObjectAuthori
             },
         })
         .collect();
-    let instances = project
+    let mut instances = project
         .scenes
         .iter()
         .flat_map(|scene| {
@@ -1419,7 +1419,13 @@ fn voxel_object_authoring_readout(project: &StoredProject) -> VoxelObjectAuthori
                     },
                 })
         })
-        .collect();
+        .collect::<Vec<_>>();
+    instances.sort_by(|left, right| {
+        left.owner_entity_id
+            .cmp(&right.owner_entity_id)
+            .then_with(|| left.scene_id.cmp(&right.scene_id))
+            .then_with(|| left.instance.instance_id.cmp(&right.instance.instance_id))
+    });
     VoxelObjectAuthoringReadout { assets, instances }
 }
 

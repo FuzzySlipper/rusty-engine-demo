@@ -96,7 +96,7 @@
       ],
       "targetHeight": 1.78,
       "fps": 30,
-      "assetId": "mesh-animation/actor-kit/arc-warden",
+      "assetId": "mesh-animation/arc-warden",
       "label": "Arc Warden"
     },
     {
@@ -150,7 +150,7 @@
       ],
       "targetHeight": 1.78,
       "fps": 30,
-      "assetId": "mesh-animation/actor-kit/bay-rusher",
+      "assetId": "mesh-animation/bay-rusher",
       "label": "Bay Rusher"
     }
   ]

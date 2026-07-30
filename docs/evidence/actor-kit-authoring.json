@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "authority": "Studio imports serialized actors; Rust admission owns durable project state; gameplay posture binding is deferred to VC8",
+  "project": {
+    "path": "content/projects/loading-bay.project.json",
+    "startingHash": "3a1518c45e7201865c5dc4c04b5e8d2a77be5ad760d3449fef3d56d327feb1ae",
+    "finalHash": "ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750",
+    "schemaVersion": 22,
+    "assetCount": 91
+  },
+  "staleImport": {
+    "code": "project.staleHash",
+    "projectHash": "3a1518c45e7201865c5dc4c04b5e8d2a77be5ad760d3449fef3d56d327feb1ae",
+    "nonMutation": true
+  },
+  "imports": [
+    {
+      "assetId": "mesh-animation/arc-warden",
+      "sourceHash": "b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+      "sourceBytes": 339812,
+      "generatedAssetIds": ["mesh-animation/arc-warden"],
+      "reimportKind": "structuralReload",
+      "prepareMs": 1358.111,
+      "applyMs": 6482.126,
+      "applyResponseBytes": 6237341
+    },
+    {
+      "assetId": "mesh-animation/bay-rusher",
+      "sourceHash": "2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+      "sourceBytes": 334232,
+      "generatedAssetIds": ["mesh-animation/bay-rusher"],
+      "reimportKind": "structuralReload",
+      "prepareMs": 1352.97,
+      "applyMs": 6468.754,
+      "applyResponseBytes": 6243810
+    }
+  ],
+  "assets": [
+    {
+      "assetId": "mesh-animation/arc-warden",
+      "sourceHash": "b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+      "sourceBytes": 339812,
+      "clipIds": ["idle", "run", "jump", "attack", "hit", "death"],
+      "bounds": {
+        "min": [-0.85534555, 0.00032364338, -0.25243944],
+        "max": [0.8555737, 1.7803226, 0.24313824]
+      },
+      "materialCount": 0
+    },
+    {
+      "assetId": "mesh-animation/bay-rusher",
+      "sourceHash": "2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+      "sourceBytes": 334232,
+      "clipIds": ["idle", "run", "jump", "attack", "hit", "death"],
+      "bounds": {
+        "min": [-0.85534555, 0.00032364338, -0.25243944],
+        "max": [0.8555737, 1.7803226, 0.24313824]
+      },
+      "materialCount": 0
+    }
+  ],
+  "noopReimport": {
+    "assetId": "mesh-animation/arc-warden",
+    "kind": "noop",
+    "sourceHash": "b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d"
+  },
+  "reload": {
+    "canonicalHash": "ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750",
+    "freshProcessHash": "ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750",
+    "passed": true
+  }
+}

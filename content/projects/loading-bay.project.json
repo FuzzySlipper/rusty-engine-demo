@@ -1604,6 +1604,154 @@
       }
     },
     {
+      "id": "mesh-animation/arc-warden",
+      "catalog": {
+        "version": 1,
+        "hash": "b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+        "sourcePath": "content/assets/actor-kit/arc-warden.glb",
+        "label": "arc-warden"
+      },
+      "animatedMesh": {
+        "asset": "mesh-animation/arc-warden",
+        "runtimeFormat": "glb",
+        "contentHash": "sha256:b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+        "clips": [
+          {
+            "id": "idle",
+            "name": "idle",
+            "durationSeconds": 1.375
+          },
+          {
+            "id": "run",
+            "name": "run",
+            "durationSeconds": 0.708333
+          },
+          {
+            "id": "jump",
+            "name": "jump",
+            "durationSeconds": 0.541667
+          },
+          {
+            "id": "attack",
+            "name": "attack",
+            "durationSeconds": 0.416667
+          },
+          {
+            "id": "hit",
+            "name": "hit",
+            "durationSeconds": 0.333333
+          },
+          {
+            "id": "death",
+            "name": "death",
+            "durationSeconds": 0.916667
+          }
+        ],
+        "defaultClip": "idle",
+        "materialSlots": [],
+        "bounds": {
+          "min": [
+            -0.85534555,
+            0.00032364338,
+            -0.25243944
+          ],
+          "max": [
+            0.8555737,
+            1.7803226,
+            0.24313824
+          ]
+        }
+      },
+      "import": {
+        "source": {
+          "scope": "project",
+          "path": "content/assets/actor-kit/arc-warden.glb"
+        },
+        "sourceHash": "b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+        "sourceByteCount": 339812,
+        "importerVersion": 2,
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/actor-kit/arc-warden.glb\",\n  \"sourceHash\": \"b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d\",\n  \"sourceSchemaVersion\": 2,\n  \"importerVersion\": 2,\n  \"meshAssetId\": \"mesh-animation/arc-warden\",\n  \"guid\": \"cc13b116c29a33a651edf381a21b327a\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"arc-warden.animated-mesh.json\",\n      \"contentHash\": \"8c6af9e72c7373f43d5801d20eb06cbc4116a85ad48af7ead2448b3d89ceff29\",\n      \"byteLen\": 926\n    },\n    {\n      \"relativePath\": \"arc-warden.catalog.json\",\n      \"contentHash\": \"3a4a997fb3ef197e767337c7e1310be98b15e26ba6f15f79a87cbbb75a88ea99\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"arc-warden.glb\",\n      \"contentHash\": \"b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d\",\n      \"byteLen\": 339812\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"cc13b116c29a33a651edf381a21b327a\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/actor-kit/arc-warden.glb\"\n  },\n  \"sourceHash\": \"b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d\",\n  \"importerVersion\": 2,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": null\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"arc-warden.animated-mesh.json\",\n      \"contentHash\": \"8c6af9e72c7373f43d5801d20eb06cbc4116a85ad48af7ead2448b3d89ceff29\",\n      \"byteLen\": 926\n    },\n    {\n      \"relativePath\": \"arc-warden.catalog.json\",\n      \"contentHash\": \"3a4a997fb3ef197e767337c7e1310be98b15e26ba6f15f79a87cbbb75a88ea99\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"arc-warden.glb\",\n      \"contentHash\": \"b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d\",\n      \"byteLen\": 339812\n    }\n  ]\n}\n",
+        "generatedAssetIds": [
+          "mesh-animation/arc-warden"
+        ]
+      }
+    },
+    {
+      "id": "mesh-animation/bay-rusher",
+      "catalog": {
+        "version": 1,
+        "hash": "2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+        "sourcePath": "content/assets/actor-kit/bay-rusher.glb",
+        "label": "bay-rusher"
+      },
+      "animatedMesh": {
+        "asset": "mesh-animation/bay-rusher",
+        "runtimeFormat": "glb",
+        "contentHash": "sha256:2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+        "clips": [
+          {
+            "id": "idle",
+            "name": "idle",
+            "durationSeconds": 1.375
+          },
+          {
+            "id": "run",
+            "name": "run",
+            "durationSeconds": 0.708333
+          },
+          {
+            "id": "jump",
+            "name": "jump",
+            "durationSeconds": 0.541667
+          },
+          {
+            "id": "attack",
+            "name": "attack",
+            "durationSeconds": 0.416667
+          },
+          {
+            "id": "hit",
+            "name": "hit",
+            "durationSeconds": 0.333333
+          },
+          {
+            "id": "death",
+            "name": "death",
+            "durationSeconds": 0.916667
+          }
+        ],
+        "defaultClip": "idle",
+        "materialSlots": [],
+        "bounds": {
+          "min": [
+            -0.85534555,
+            0.00032364338,
+            -0.25243944
+          ],
+          "max": [
+            0.8555737,
+            1.7803226,
+            0.24313824
+          ]
+        }
+      },
+      "import": {
+        "source": {
+          "scope": "project",
+          "path": "content/assets/actor-kit/bay-rusher.glb"
+        },
+        "sourceHash": "2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+        "sourceByteCount": 334232,
+        "importerVersion": 2,
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/actor-kit/bay-rusher.glb\",\n  \"sourceHash\": \"2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3\",\n  \"sourceSchemaVersion\": 2,\n  \"importerVersion\": 2,\n  \"meshAssetId\": \"mesh-animation/bay-rusher\",\n  \"guid\": \"ab7282d98709a8906e2eb2411965d59b\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"bay-rusher.animated-mesh.json\",\n      \"contentHash\": \"6b35d09d8465cd6c89cdbf9e426ee19ccaccb2890168ff9670c76555f2ee0abf\",\n      \"byteLen\": 926\n    },\n    {\n      \"relativePath\": \"bay-rusher.catalog.json\",\n      \"contentHash\": \"93ea958325a385d4e860e350628e711925cad085ecbd2845a24514c36a106a31\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"bay-rusher.glb\",\n      \"contentHash\": \"2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3\",\n      \"byteLen\": 334232\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"ab7282d98709a8906e2eb2411965d59b\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/actor-kit/bay-rusher.glb\"\n  },\n  \"sourceHash\": \"2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3\",\n  \"importerVersion\": 2,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": null\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"bay-rusher.animated-mesh.json\",\n      \"contentHash\": \"6b35d09d8465cd6c89cdbf9e426ee19ccaccb2890168ff9670c76555f2ee0abf\",\n      \"byteLen\": 926\n    },\n    {\n      \"relativePath\": \"bay-rusher.catalog.json\",\n      \"contentHash\": \"93ea958325a385d4e860e350628e711925cad085ecbd2845a24514c36a106a31\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"bay-rusher.glb\",\n      \"contentHash\": \"2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3\",\n      \"byteLen\": 334232\n    }\n  ]\n}\n",
+        "generatedAssetIds": [
+          "mesh-animation/bay-rusher"
+        ]
+      }
+    },
+    {
       "id": "mesh-animation/kenney-retro-character-medium",
       "catalog": {
         "version": 1,

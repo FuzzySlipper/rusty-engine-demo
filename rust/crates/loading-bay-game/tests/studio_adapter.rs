@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use asset_import::MAX_SOURCE_BYTES;
 use loading_bay_game::{
     decode_project_document, encode_project_document, StudioAdapterService,
     MAX_STUDIO_ADAPTER_REQUEST_BYTES, STORED_PROJECT_SCHEMA_VERSION,
@@ -9,6 +10,8 @@ use loading_bay_game::{
 use serde_json::{json, Value};
 
 const CURRENT_PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
+const ARC_WARDEN_GLB: &[u8] = include_bytes!("../../../../content/assets/actor-kit/arc-warden.glb");
+const BAY_RUSHER_GLB: &[u8] = include_bytes!("../../../../content/assets/actor-kit/bay-rusher.glb");
 const PROJECT_FILE: &str = "content/projects/loading-bay.project.json";
 const TEST_SCENE_ROOT_ID: u64 = 20_000;
 const TEST_SCENE_LIGHT_ID: u64 = 20_001;
@@ -61,7 +64,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(response["project"]["identity"]["projectId"], "loading-bay");
     assert_eq!(
         response["project"]["inspections"]["catalog"]["entryCount"],
-        89
+        91
     );
     assert_eq!(
         response["project"]["inspections"]["scene"]["nodeCount"],
@@ -189,14 +192,13 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         response["project"]["projectionReadout"]["diagnostics"],
         json!([])
     );
-    assert_eq!(
-        response["project"]["animatedMeshResources"][0]["asset"],
-        "mesh-animation/kenney-retro-character-medium"
-    );
-    assert_eq!(
-        response["project"]["animatedMeshResources"][0]["clipIds"],
-        json!(["idle", "run", "jump"])
-    );
+    let proof_resource = response["project"]["animatedMeshResources"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|resource| resource["asset"] == "mesh-animation/kenney-retro-character-medium")
+        .unwrap();
+    assert_eq!(proof_resource["clipIds"], json!(["idle", "run", "jump"]));
 
     for canonical in [
         "projectJson",
@@ -601,10 +603,13 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         }),
     );
     assert_eq!(animated["type"], "projectMutationApplied", "{animated:#}");
-    assert_eq!(
-        animated["project"]["animatedMeshResources"][0]["clipIds"],
-        json!(["idle", "run", "jump"])
-    );
+    let proof_resource = animated["project"]["animatedMeshResources"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|resource| resource["asset"] == "mesh-animation/kenney-retro-character-medium")
+        .unwrap();
+    assert_eq!(proof_resource["clipIds"], json!(["idle", "run", "jump"]));
     assert!(animated["project"]["projection"]["ops"]
         .as_array()
         .unwrap()
@@ -913,6 +918,310 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
     assert_eq!(rejected["type"], "rejected");
     assert_eq!(rejected["error"]["code"], "assetImport.planHasErrors");
     assert_eq!(fs::read(root.project_file()).unwrap(), before);
+}
+
+#[test]
+fn animated_glb_import_reimport_and_failures_are_atomic() {
+    let mut project: Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    project["assets"].as_array_mut().unwrap().retain(|asset| {
+        !matches!(
+            asset["id"].as_str(),
+            Some("mesh-animation/arc-warden" | "mesh-animation/bay-rusher")
+        )
+    });
+    let project = serde_json::to_string(&project).unwrap();
+    let root = TestProjectRoot::new(&project);
+    let source_path = "content/assets/actor-kit/arc-warden.glb";
+    let alternate_path = "content/assets/alternate/arc-warden.glb";
+    fs::create_dir_all(root.path().join("content/assets/actor-kit")).unwrap();
+    fs::create_dir_all(root.path().join("content/assets/alternate")).unwrap();
+    fs::write(root.path().join(source_path), ARC_WARDEN_GLB).unwrap();
+    fs::write(root.path().join(alternate_path), ARC_WARDEN_GLB).unwrap();
+
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+    let (project_hash, _) = owner_version(&opened);
+    let prepared =
+        prepare_asset_import(&mut service, "prepare-animated", &project_hash, source_path);
+    assert_eq!(prepared["type"], "assetImportPrepared", "{prepared:#}");
+    assert_eq!(prepared["plan"]["hasErrors"], false);
+    assert_eq!(prepared["plan"]["meshAssetId"], "mesh-animation/arc-warden");
+    assert_eq!(
+        prepared["plan"]["generatedAssetIds"],
+        json!(["mesh-animation/arc-warden"])
+    );
+    assert_eq!(
+        prepared["plan"]["generatedArtifacts"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|artifact| artifact["relativePath"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec![
+            "arc-warden.animated-mesh.json",
+            "arc-warden.catalog.json",
+            "arc-warden.glb",
+            "arc-warden.import.json",
+        ]
+    );
+
+    let applied = apply_asset_import(&mut service, "apply-animated", &project_hash, &prepared);
+    assert_eq!(applied["type"], "projectMutationApplied", "{applied:#}");
+    assert_eq!(applied["receipt"]["assetId"], "mesh-animation/arc-warden");
+    assert_eq!(
+        applied["project"]["animatedMeshResources"][0]["asset"],
+        "mesh-animation/arc-warden"
+    );
+    assert_eq!(
+        applied["project"]["animatedMeshResources"][0]["clipIds"],
+        json!(["idle", "run", "jump", "attack", "hit", "death"])
+    );
+    let canonical: Value = serde_json::from_str(
+        applied["project"]["canonical"]["projectJson"]
+            .as_str()
+            .unwrap(),
+    )
+    .unwrap();
+    let actor = canonical["assets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|asset| asset["id"] == "mesh-animation/arc-warden")
+        .unwrap();
+    assert_eq!(
+        actor["catalog"]["sourcePath"],
+        "content/assets/actor-kit/arc-warden.glb"
+    );
+    assert_eq!(
+        actor["import"]["sourceHash"],
+        "b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d"
+    );
+
+    let (project_hash, _) = owner_version(&applied);
+    let before_collision = fs::read(root.project_file()).unwrap();
+    let collision_plan = prepare_asset_import(
+        &mut service,
+        "prepare-animated-collision",
+        &project_hash,
+        alternate_path,
+    );
+    let collision = apply_asset_import(
+        &mut service,
+        "apply-animated-collision",
+        &project_hash,
+        &collision_plan,
+    );
+    assert_eq!(collision["type"], "rejected", "{collision:#}");
+    assert_eq!(collision["error"]["code"], "assetImport.assetCollision");
+    assert_eq!(fs::read(root.project_file()).unwrap(), before_collision);
+
+    fs::write(root.path().join(source_path), BAY_RUSHER_GLB).unwrap();
+    let drifted = send(
+        &mut service,
+        json!({
+            "type": "readProject",
+            "protocolVersion": 12,
+            "requestId": "read-animated-drift"
+        }),
+    );
+    let drifted_actor = drifted["project"]["assetBrowser"]["assets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|asset| asset["assetId"] == "mesh-animation/arc-warden")
+        .unwrap();
+    assert_eq!(drifted_actor["import"]["status"], "contentChanged");
+    let reimport = send(
+        &mut service,
+        json!({
+            "type": "prepareAssetReimport",
+            "protocolVersion": 12,
+            "requestId": "prepare-animated-reimport",
+            "expectedProjectHash": project_hash,
+            "assetId": "mesh-animation/arc-warden"
+        }),
+    );
+    assert_eq!(reimport["type"], "assetImportPrepared", "{reimport:#}");
+    assert_eq!(reimport["plan"]["hasErrors"], false);
+    assert_ne!(reimport["plan"]["reimportKind"], "noop");
+    let reapplied = apply_asset_import(
+        &mut service,
+        "apply-animated-reimport",
+        &project_hash,
+        &reimport,
+    );
+    assert_eq!(reapplied["type"], "projectMutationApplied", "{reapplied:#}");
+    assert_eq!(
+        reapplied["project"]["animatedMeshResources"][0]["clipIds"],
+        json!(["idle", "run", "jump", "attack", "hit", "death"])
+    );
+
+    let malformed_hash = owner_version(&reapplied).0;
+    fs::write(root.path().join(source_path), b"not a GLB").unwrap();
+    let before_malformed = fs::read(root.project_file()).unwrap();
+    let malformed = send(
+        &mut service,
+        json!({
+            "type": "prepareAssetReimport",
+            "protocolVersion": 12,
+            "requestId": "prepare-malformed-animated",
+            "expectedProjectHash": malformed_hash,
+            "assetId": "mesh-animation/arc-warden"
+        }),
+    );
+    assert_eq!(malformed["type"], "assetImportPrepared", "{malformed:#}");
+    assert_eq!(malformed["plan"]["hasErrors"], true);
+    assert!(malformed["plan"]["diagnostics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|diagnostic| diagnostic["code"] == "invalidContainer"));
+    let rejected = apply_asset_import(
+        &mut service,
+        "apply-malformed-animated",
+        &malformed_hash,
+        &malformed,
+    );
+    assert_eq!(rejected["type"], "rejected");
+    assert_eq!(rejected["error"]["code"], "assetImport.planHasErrors");
+    assert_eq!(fs::read(root.project_file()).unwrap(), before_malformed);
+
+    let external_path = "content/assets/actor-kit/external-image.glb";
+    fs::write(
+        root.path().join(external_path),
+        mutate_glb_json(ARC_WARDEN_GLB, |document| {
+            document["images"][0] = json!({ "uri": "missing.png" });
+        }),
+    )
+    .unwrap();
+    let external = prepare_asset_import(
+        &mut service,
+        "prepare-external-animated",
+        &malformed_hash,
+        external_path,
+    );
+    assert_eq!(external["plan"]["hasErrors"], true);
+    assert!(external["plan"]["diagnostics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|diagnostic| diagnostic["code"] == "externalResource"));
+
+    let duplicate_clip_path = "content/assets/actor-kit/duplicate-clip.glb";
+    fs::write(
+        root.path().join(duplicate_clip_path),
+        mutate_glb_json(ARC_WARDEN_GLB, |document| {
+            let first = document["animations"][0]["name"].clone();
+            document["animations"][1]["name"] = first;
+        }),
+    )
+    .unwrap();
+    let duplicate_clip = prepare_asset_import(
+        &mut service,
+        "prepare-duplicate-clip",
+        &malformed_hash,
+        duplicate_clip_path,
+    );
+    assert_eq!(duplicate_clip["plan"]["hasErrors"], true);
+    assert!(duplicate_clip["plan"]["diagnostics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|diagnostic| diagnostic["code"] == "invalidAnimation"));
+
+    let oversized_path = "content/assets/actor-kit/oversized.glb";
+    fs::write(
+        root.path().join(oversized_path),
+        vec![0_u8; MAX_SOURCE_BYTES + 1],
+    )
+    .unwrap();
+    let oversized = send(
+        &mut service,
+        json!({
+            "type": "prepareAssetImport",
+            "protocolVersion": 12,
+            "requestId": "prepare-oversized-animated",
+            "expectedProjectHash": malformed_hash,
+            "source": { "scope": "project", "path": oversized_path },
+            "settings": {
+                "scale": 1.0,
+                "generateCollision": false,
+                "materialNamespace": null
+            }
+        }),
+    );
+    assert_eq!(oversized["type"], "rejected", "{oversized:#}");
+    assert_eq!(
+        oversized["error"]["code"],
+        "assetImport.projectFileRejected"
+    );
+    assert_eq!(fs::read(root.project_file()).unwrap(), before_malformed);
+}
+
+fn prepare_asset_import(
+    service: &mut StudioAdapterService,
+    request_id: &str,
+    expected_project_hash: &str,
+    source_path: &str,
+) -> Value {
+    send(
+        service,
+        json!({
+            "type": "prepareAssetImport",
+            "protocolVersion": 12,
+            "requestId": request_id,
+            "expectedProjectHash": expected_project_hash,
+            "source": { "scope": "project", "path": source_path },
+            "settings": {
+                "scale": 1.0,
+                "generateCollision": false,
+                "materialNamespace": null
+            }
+        }),
+    )
+}
+
+fn apply_asset_import(
+    service: &mut StudioAdapterService,
+    request_id: &str,
+    expected_project_hash: &str,
+    prepared: &Value,
+) -> Value {
+    send(
+        service,
+        json!({
+            "type": "applyAssetImport",
+            "protocolVersion": 12,
+            "requestId": request_id,
+            "expectedProjectHash": expected_project_hash,
+            "planId": prepared["plan"]["planId"],
+            "expectedPlanHash": prepared["plan"]["planHash"]
+        }),
+    )
+}
+
+fn mutate_glb_json(source: &[u8], mutate: impl FnOnce(&mut Value)) -> Vec<u8> {
+    assert_eq!(&source[..4], b"glTF");
+    let json_length = u32::from_le_bytes(source[12..16].try_into().unwrap()) as usize;
+    assert_eq!(&source[16..20], b"JSON");
+    let mut document: Value = serde_json::from_slice(&source[20..20 + json_length]).unwrap();
+    mutate(&mut document);
+    let mut json_bytes = serde_json::to_vec(&document).unwrap();
+    while !json_bytes.len().is_multiple_of(4) {
+        json_bytes.push(b' ');
+    }
+
+    let mut result = Vec::with_capacity(source.len() + json_bytes.len());
+    result.extend_from_slice(b"glTF");
+    result.extend_from_slice(&source[4..8]);
+    result.extend_from_slice(&[0; 4]);
+    result.extend_from_slice(&(json_bytes.len() as u32).to_le_bytes());
+    result.extend_from_slice(b"JSON");
+    result.extend_from_slice(&json_bytes);
+    result.extend_from_slice(&source[20 + json_length..]);
+    let total_length = result.len() as u32;
+    result[8..12].copy_from_slice(&total_length.to_le_bytes());
+    result
 }
 
 fn imported_triangle(color: [f32; 4]) -> String {

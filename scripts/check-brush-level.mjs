@@ -12,6 +12,10 @@ const BROWSER_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/voxel-level-brush-studio-browser.json",
 );
+const ACTOR_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/actor-kit-authoring.json",
+);
 
 function invariant(condition, message) {
   if (!condition) {
@@ -26,6 +30,7 @@ function sha256(bytes) {
 const projectBytes = await readFile(PROJECT_PATH);
 const project = JSON.parse(projectBytes);
 const evidence = JSON.parse(await readFile(EVIDENCE_PATH, "utf8"));
+const actorEvidence = JSON.parse(await readFile(ACTOR_EVIDENCE_PATH, "utf8"));
 const scene = project.scenes.find(({ id }) => id === "scene/loading-bay");
 const brushAssets = project.assets.filter(({ voxelObject }) =>
   voxelObject?.assetId.startsWith("voxel-object/brush-"),
@@ -37,9 +42,11 @@ const levelInstances = allInstances.filter(({ instanceId }) =>
 
 invariant(scene !== undefined, "Loading Bay scene must exist");
 invariant(
-  sha256(projectBytes) === evidence.projectHashAfter &&
-    evidence.projectSha256 === evidence.projectHashAfter,
-  "current project bytes must match the exact batch-authored publication",
+  evidence.projectSha256 === evidence.projectHashAfter &&
+    (sha256(projectBytes) === evidence.projectHashAfter ||
+      (actorEvidence.project.startingHash === evidence.projectHashAfter &&
+        actorEvidence.project.finalHash === sha256(projectBytes))),
+  "current project bytes must match the batch publication or its recorded actor descendant",
 );
 invariant(
   scene.voxelEnvironment?.gameplayProxy === true &&

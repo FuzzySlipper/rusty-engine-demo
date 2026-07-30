@@ -263,10 +263,24 @@ byte-identical GLBs at both recorded hashes.
 normalizing its indentation, trailing whitespace, and line endings to repository text conventions
 (597 bytes, SHA-256
 `613d822181cefc9e55dfb8b59e9468e96feecb5bf4ca364b8ff579361eb859f0`). The original source
-`License.txt` hash remains recorded separately in the manifest. Final Studio binary
-animated-mesh import, Rust admission, project persistence, and shared-renderer preview are owned by
-Rusty Engine task #6433 and must be consumed through an exact public provider pin. The checked GLBs
-are source assets, not a downstream hand-written render model or private Three.js loading path.
+`License.txt` hash remains recorded separately in the manifest.
+
+Rusty Engine task #6433 supplies the bounded binary animated-mesh import and shared retained
+renderer at exact public revision `af8d34c7fef57965fa27f9b14b08e2a45c357439`. The Rust-owned
+Studio path publishes the two assets into schema-22 project hash
+`ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750`,
+preserving each source path, SHA-256, byte count, converter/settings hash, license path, bounds, and
+six source-clip schedules. No-op reimport preserves that hash; changed source requires explicit
+reimport; stale hash, duplicate identity, malformed GLB, missing external texture, duplicate clip,
+and oversized input failures are typed and non-mutating.
+
+The supported Studio browser proof uses the public shell submission event, two identities, and 12
+temporary instances spanning every clip. It records exact resident deltas of +2 geometries, +2
+materials, +2 textures, and +12 animated instances, plus owner-ordered fresh-adapter reconstruction,
+resize, project close/open, cache-bypassing page reload, and renderer disposal. The checked GLBs
+remain source assets rather than a downstream hand-written render model or private Three.js loading
+path. Evidence is in `docs/evidence/actor-kit-authoring.json` and
+`docs/evidence/actor-kit-studio-browser.json`.
 
 ## VC5 serialized industrial prop kit
 

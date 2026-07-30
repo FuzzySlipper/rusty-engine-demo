@@ -13,6 +13,10 @@ const LEVEL_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/voxel-level-brush-authoring.json",
 );
+const ACTOR_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/actor-kit-authoring.json",
+);
 
 function invariant(condition, message) {
   if (!condition) throw new Error(`prop-kit invariant failed: ${message}`);
@@ -27,6 +31,7 @@ const project = JSON.parse(projectBytes);
 const manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf8"));
 const evidence = JSON.parse(await readFile(EVIDENCE_PATH, "utf8"));
 const levelEvidence = JSON.parse(await readFile(LEVEL_EVIDENCE_PATH, "utf8"));
+const actorEvidence = JSON.parse(await readFile(ACTOR_EVIDENCE_PATH, "utf8"));
 const scene = project.scenes.find(({ id }) => id === project.entryScene);
 
 invariant(scene !== undefined, "entry scene must exist");
@@ -47,8 +52,10 @@ invariant(
 const currentProjectHash = sha256(projectBytes);
 invariant(
   currentProjectHash === evidence.project.finalHash ||
-    currentProjectHash === levelEvidence.projectHashAfter,
-  "canonical project must be the prop publication or its recorded brush-level descendant",
+    currentProjectHash === levelEvidence.projectHashAfter ||
+    (actorEvidence.project.startingHash === levelEvidence.projectHashAfter &&
+      actorEvidence.project.finalHash === currentProjectHash),
+  "canonical project must be the prop publication or a recorded descendant",
 );
 invariant(
   evidence.reload.passed &&

@@ -20,6 +20,10 @@ const LEVEL_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/voxel-level-brush-authoring.json",
 );
+const ACTOR_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/actor-kit-authoring.json",
+);
 
 const expectedModules = new Set([
   "wall-conservative",
@@ -59,6 +63,7 @@ const evidence = JSON.parse(await readFile(EVIDENCE_PATH, "utf8"));
 const browser = JSON.parse(await readFile(BROWSER_EVIDENCE_PATH, "utf8"));
 const propEvidence = JSON.parse(await readFile(PROP_EVIDENCE_PATH, "utf8"));
 const levelEvidence = JSON.parse(await readFile(LEVEL_EVIDENCE_PATH, "utf8"));
+const actorEvidence = JSON.parse(await readFile(ACTOR_EVIDENCE_PATH, "utf8"));
 const scene = project.scenes.find(
   ({ id }) => id === evidence.proofRoom.sceneId,
 );
@@ -69,7 +74,9 @@ invariant(
   currentProjectHash === evidence.finalHash ||
     (propEvidence.project.startingHash === evidence.finalHash &&
       propEvidence.project.finalHash === currentProjectHash) ||
-    currentProjectHash === levelEvidence.projectHashAfter,
+    currentProjectHash === levelEvidence.projectHashAfter ||
+    (actorEvidence.project.startingHash === levelEvidence.projectHashAfter &&
+      actorEvidence.project.finalHash === currentProjectHash),
   "current project must retain the exact brush proof in a recorded descendant",
 );
 invariant(

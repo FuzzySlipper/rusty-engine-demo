@@ -965,13 +965,15 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     || !asset.voxel_annotations.is_empty()
                     || asset.material.is_some()
                     || asset.static_mesh.is_some()
-                    || asset.import.is_some()
                 {
                     return Err(failure(
                         diagnostic_code::WRONG_ASSET_KIND,
                         format!("assets[{index}]"),
                         "animated mesh assets cannot carry unrelated payloads",
                     ));
+                }
+                if let Some(import) = &asset.import {
+                    validate_stored_import(import, &asset.id, index)?;
                 }
             }
             _ => {

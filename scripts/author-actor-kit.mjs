@@ -187,7 +187,7 @@ for (const variant of MANIFEST.variants) {
       settings: {
         scale: 1,
         generateCollision: false,
-        materialNamespace: "actor-kit",
+        materialNamespace: null,
       },
     });
   } else {
@@ -271,7 +271,7 @@ const assets = MANIFEST.variants.map((variant) => {
     (candidate) => candidate.id === variant.assetId,
   );
   if (
-    asset?.meshAnimation?.asset !== variant.assetId ||
+    asset?.animatedMesh?.asset !== variant.assetId ||
     asset.import?.sourceHash !== variant.sha256
   ) {
     throw new Error(`${variant.assetId} was not durably imported`);
@@ -280,10 +280,9 @@ const assets = MANIFEST.variants.map((variant) => {
     assetId: variant.assetId,
     sourceHash: asset.import.sourceHash,
     sourceBytes: asset.import.sourceByteCount,
-    clipIds: asset.meshAnimation.clips.map(({ id }) => id),
-    bounds: asset.meshAnimation.bounds,
-    materialCount: asset.meshAnimation.materials.length,
-    skeleton: asset.meshAnimation.skeleton,
+    clipIds: asset.animatedMesh.clips.map(({ id }) => id),
+    bounds: asset.animatedMesh.bounds,
+    materialCount: asset.animatedMesh.materialSlots.length,
   };
 });
 

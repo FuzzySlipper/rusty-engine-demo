@@ -356,7 +356,7 @@ def main() -> None:
     variants = []
     for asset_id, skin, label in VARIANTS:
         record = export_variant(source_root, output_dir / f"{asset_id}.glb", skin)
-        record["assetId"] = f"mesh-animation/actor-kit/{asset_id}"
+        record["assetId"] = f"mesh-animation/{asset_id}"
         record["label"] = label
         variants.append(record)
 
