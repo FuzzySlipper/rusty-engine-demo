@@ -388,6 +388,92 @@ picking, resize/reset/remount, disposal, and fresh-page posture tails with 1,139
 The scene remains 9 definitions, 42,266 authored cells, and 342 placements; no downstream renderer
 scheduler, cache, content reduction, timeout, budget, or alternate acceptance path was added.
 
+## 2026-07-30 VC9 content-rich desktop profile
+
+`pnpm run profile:desktop` now records the renderer-owned automatic-submission pacing sample beside
+the existing submission timing and statistics. Set
+`RUSTY_ENGINE_DEMO_PROFILE_OUTPUT=docs/evidence/content-rich-desktop-profile.json` to retain the
+machine-readable report. The profiler still creates a production build, an isolated fresh Rust
+host and save root, and one visible hardware-backed Chromium/Wayland surface. It neither creates a
+second renderer nor reaches into Three or WebGL.
+
+The first retained report is exact Demo revision
+`646cc89db70e8f1499e809152cfcd1cc4c485c14`, pinned to Engine
+`80ac6ed3f0bd1d9911edf44e33bcc90831d8909e`. The machine is the same Ryzen 7 8845HS / Radeon 780M
+desktop used by the placeholder baseline, with Chromium 148, a 1600 by 900 viewport, and the active
+Wayland output at 59.951 Hz. The EDID also exposes 119.989 and 144 Hz. A displayed 16.7, 8.4, or
+6.9 ms interval therefore identifies 60, 120, or 144 Hz presentation cadence; it is not a GPU
+duration claim.
+
+### Three measured scene stages
+
+| Stage                | Exact Demo revision                        | Serialized content                                                                                                                                      | Representative result                                                                                                              |
+| -------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Placeholder baseline | `cd25485445bfb581c4005b221a23caa21408d327` | 47 authored entities, 35 renderables, coarse hidden-compatible voxel environment, no voxel-object definitions                                           | 494.4 ms first authoritative frame; 1,016,524 B bootstrap; 11,553,112 B gameplay JS heap; 16.8 ms p95 cadence                      |
+| Brush proof room     | `030f45f78bad10cbb85ebbcb50eeaedba727bb56` | 9 definitions, 25 instances, 42,266 stored cells; both 32×32×4 conservative and 64×64×8 dense wall treatments                                           | 2,450,553 B Studio project; 139,584.899 ms for the historical sequence of 25 singular attachments; 5,886.366 ms maximum attachment |
+| Complete product     | `646cc89db70e8f1499e809152cfcd1cc4c485c14` | Same 9 definitions reused by 342 route placements plus the 25-instance proof room, 8 animated gameplay actors, and 25 serialized gameplay prop bindings | 3,402 ms first authoritative frame; 1,183,676 B bootstrap; 58,539,344 B gameplay JS heap; 49 draws, 415 handles, 76,399 triangles  |
+
+The proof-room timing is retained as an intentionally expensive predecessor, not the supported
+authoring workflow. Protocol 12 publishes the 342 route placements in 11 atomic batches of at most 32. The batches total 80,050.110 ms, the slowest is 7,956.815 ms, and the complete structural
+projection is 739,471 bytes. Singular attachment is not looped downstream.
+
+### Stress matrix
+
+| Dimension                   |                  Low / baseline |                                  Product |                                     High proof | Owning evidence                                            |
+| --------------------------- | ------------------------------: | ---------------------------------------: | ---------------------------------------------: | ---------------------------------------------------------- |
+| Repeated brush instances    |                               0 |                     342 route + 25 proof |                 4,097 typed one-over rejection | `voxel-level-brush-authoring.json`; `studio_voxel_objects` |
+| Voxel detail per definition | 2,228 cells, 219.531 ms prepare | 42,266 cells across 9 shared definitions |     16,386-cell dense wall, 881.433 ms prepare | `voxel-brush-kit-authoring.json`                           |
+| Animated instances          |                               0 |                                        8 | 12, covering both identities and all six clips | `actor-kit-studio-browser.json`                            |
+| Prop/static stress          |          Placeholder primitives |             25 bound props and landmarks |  Temporary +32 instances sharing 4 definitions | `renderer-statistics-certification.json`                   |
+
+The exact-limit and one-over tests run through Rust project/Studio admission before publication.
+They retain the accepted project bytes and private candidate on rejection. These are capacity and
+atomicity proofs; the high rows are not alternate degraded gameplay scenes.
+
+### Hardware measurements and budgets
+
+The following budgets are the VC9 desktop target. Historical interaction targets remain unchanged:
+renderer p95 <= 20 ms and p99 <= 33.5 ms; authoritative command acknowledgement p95 <= 50 ms and
+maximum <= 100 ms. A red row is retained as a real gap rather than relaxed to fit the sample.
+
+| Measurement                              |                Budget |        Exact result |  Status  |
+| ---------------------------------------- | --------------------: | ------------------: | :------: |
+| Cold / warm usable menu                  |       <= 500 / 250 ms | 220.464 / 72.737 ms |   pass   |
+| First authoritative projection and frame |           <= 5,000 ms |            3,402 ms |   pass   |
+| Session bootstrap                        |              <= 2 MiB |         1,183,676 B |   pass   |
+| Gameplay JavaScript heap                 |             <= 96 MiB |        58,539,344 B |   pass   |
+| Chromium process-tree RSS                |           <= 1.25 GiB |     1,053,200,384 B |   pass   |
+| Input event to next frame p95 / max      |          <= 8 / 16 ms |        2.7 / 8.0 ms |   pass   |
+| Authoritative command RTT p95 / max      |        <= 50 / 100 ms | 59.016 / 101.528 ms | **fail** |
+| Synchronous backend submission p95       |               <= 8 ms |              6.0 ms |   pass   |
+| Accelerated timer-query GPU work p95     |               <= 8 ms |            6.711 ms |   pass   |
+| Renderer cadence p95 / p99               |       <= 20 / 33.5 ms |    266.9 / 333.7 ms | **fail** |
+| Draws / live handles / triangles         | <= 64 / 512 / 100,000 |   49 / 415 / 76,399 |   pass   |
+| Geometry / material / texture resources  |       <= 64 / 128 / 8 |         38 / 97 / 2 |   pass   |
+| Animated instances                       |                 <= 16 |                   8 |   pass   |
+| Two-second gameplay idle listener growth |                     0 |                   0 |   pass   |
+
+The content itself is not saturating the hardware GPU. Timer-query work is p50 4.661 ms and p95
+6.711 ms, while synchronous submission is p50 1.5 ms and p95 6.0 ms. The current Engine observes
+the completed query 52–98.5 ms after submission, subtracts a 17 ms accelerated-renderer allowance,
+and treats the remaining 35–81.5 ms observation delay as GPU pressure. Its selected duty therefore
+falls near 20 percent and accepted presentation stretches to p50 155.9 ms / p95 266.9 ms. Input to
+the browser frame remains p95 2.7 ms and authoritative RTT remains p95 59.016 ms, isolating the
+large cadence error from gameplay scheduling and transport.
+
+Rusty Engine #6436 owns the reusable correction: a valid timer query on positively identified
+accelerated hardware must pace from measured GPU work without classifying delayed result polling
+as GPU execution, while the completion fence still prevents a second in-flight submission.
+Software-renderer backpressure, latest-wins demand, one RAF owner, animation/particles, explicit
+render/reset, picking, statistics, and lifecycle remain required. VC9 will consume the reviewed
+public Engine descendant and rerun this exact profile plus the unchanged full browser campaign
+before the red rows can close.
+
+Studio evidence remains within its explicit bounds: all 342 route placements publish in bounded
+32-entry batches; the structural readout is below 2 MiB; the 12-instance animated preview adds
+exactly two geometry, two material, two texture, and twelve animated resources; close reaches zero
+canvases; resize, reset, remount, reload, and fresh-process readback retain their canonical hashes.
+
 ## Camera policy
 
 The original hardware-backed LAN baseline measured command acknowledgement p95 at 54.3 ms. The
