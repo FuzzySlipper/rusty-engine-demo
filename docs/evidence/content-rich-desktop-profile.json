@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "1ea37cbe0200615cf5aa012f2fe59a706d99c4f3",
-  "targetUrl": "http://127.0.0.1:40853/",
+  "revision": "67e020072385ae6749f85205cfeabf5278ada496",
+  "targetUrl": "http://127.0.0.1:43535/",
   "desktopPackaging": {
     "available": false,
     "measuredSurface": "visible Chromium/Wayland against the installed production host"
@@ -24,15 +24,15 @@
   "startup": {
     "coldMenu": {
       "label": "cold-menu",
-      "wallMilliseconds": 206.67,
+      "wallMilliseconds": 150.571,
       "navigation": {
-        "domContentLoadedMs": 118.69999980926514,
-        "loadMs": 151.29999923706055,
+        "domContentLoadedMs": 70.69999980926514,
+        "loadMs": 71.40000057220459,
         "transferBytes": 1886,
         "encodedBodyBytes": 1586
       },
-      "firstPaintMs": 180,
-      "firstContentfulPaintMs": 180,
+      "firstPaintMs": 128,
+      "firstContentfulPaintMs": 128,
       "session": null,
       "resources": {
         "count": 7,
@@ -46,10 +46,10 @@
             "name": "/chunk-73X6SYPX.js",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 4.5
+            "durationMs": 4
           },
           {
-            "name": "/main-MC5BTBQP.js",
+            "name": "/main-ADEXB6X4.js",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
             "durationMs": 3.5
@@ -58,13 +58,13 @@
             "name": "/chunk-7ETO2MJG.js",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.7
+            "durationMs": 2.5
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 3.2
+            "durationMs": 3.3
           }
         ],
         "largestResources": [
@@ -73,17 +73,17 @@
             "initiatorType": "other",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 4.5
+            "durationMs": 4
           },
           {
             "name": "/styles-7ECWJBMY.css",
             "initiatorType": "link",
             "transferBytes": 16066,
             "encodedBodyBytes": 15766,
-            "durationMs": 2.5
+            "durationMs": 2.3
           },
           {
-            "name": "/main-MC5BTBQP.js",
+            "name": "/main-ADEXB6X4.js",
             "initiatorType": "script",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
@@ -94,28 +94,28 @@
             "initiatorType": "other",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.7
+            "durationMs": 2.5
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "initiatorType": "other",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 3.2
+            "durationMs": 3.3
           },
           {
             "name": "/api/menu-state",
             "initiatorType": "fetch",
             "transferBytes": 816,
             "encodedBodyBytes": 516,
-            "durationMs": 4.5
+            "durationMs": 1.4
           },
           {
             "name": "/favicon.ico",
             "initiatorType": "other",
             "transferBytes": 310,
             "encodedBodyBytes": 10,
-            "durationMs": 1.1
+            "durationMs": 1
           }
         ]
       },
@@ -125,24 +125,24 @@
         "maxDurationMs": 0
       },
       "memory": {
-        "rendererJavaScriptHeapBytes": 2449600,
+        "rendererJavaScriptHeapBytes": 2449644,
         "rendererJavaScriptHeapTotalBytes": 3670016,
-        "chromiumProcessTreeRssBytes": 847519744,
+        "chromiumProcessTreeRssBytes": 833236992,
         "nodes": 74,
         "eventListeners": 9
       }
     },
     "warmMenu": {
       "label": "warm-menu",
-      "wallMilliseconds": 73.181,
+      "wallMilliseconds": 69.067,
       "navigation": {
-        "domContentLoadedMs": 28,
-        "loadMs": 29.600000381469727,
+        "domContentLoadedMs": 27,
+        "loadMs": 29.09999942779541,
         "transferBytes": 1886,
         "encodedBodyBytes": 1586
       },
-      "firstPaintMs": 52,
-      "firstContentfulPaintMs": 52,
+      "firstPaintMs": 44,
+      "firstContentfulPaintMs": 44,
       "session": null,
       "resources": {
         "count": 6,
@@ -156,25 +156,25 @@
             "name": "/chunk-73X6SYPX.js",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.9
+            "durationMs": 2.6
           },
           {
-            "name": "/main-MC5BTBQP.js",
+            "name": "/main-ADEXB6X4.js",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.7
+            "durationMs": 2.3
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.4
+            "durationMs": 2.2
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.5
+            "durationMs": 2.1
           }
         ],
         "largestResources": [
@@ -183,42 +183,42 @@
             "initiatorType": "other",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.9
+            "durationMs": 2.6
           },
           {
             "name": "/styles-7ECWJBMY.css",
             "initiatorType": "link",
             "transferBytes": 16066,
             "encodedBodyBytes": 15766,
-            "durationMs": 1.2
+            "durationMs": 2.8
           },
           {
-            "name": "/main-MC5BTBQP.js",
+            "name": "/main-ADEXB6X4.js",
             "initiatorType": "script",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.7
+            "durationMs": 2.3
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "initiatorType": "other",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.4
+            "durationMs": 2.2
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "initiatorType": "other",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.5
+            "durationMs": 2.1
           },
           {
             "name": "/api/menu-state",
             "initiatorType": "fetch",
             "transferBytes": 816,
             "encodedBodyBytes": 516,
-            "durationMs": 1.3
+            "durationMs": 6.4
           }
         ]
       },
@@ -228,116 +228,116 @@
         "maxDurationMs": 0
       },
       "memory": {
-        "rendererJavaScriptHeapBytes": 3494344,
+        "rendererJavaScriptHeapBytes": 3511468,
         "rendererJavaScriptHeapTotalBytes": 6291456,
-        "chromiumProcessTreeRssBytes": 952696832,
+        "chromiumProcessTreeRssBytes": 936366080,
         "nodes": 141,
         "eventListeners": 24
       }
     },
-    "firstAuthoritativeProjectionAndFrameMs": 3420.2,
+    "firstAuthoritativeProjectionAndFrameMs": 3437,
     "gameplay": {
       "label": "gameplay",
-      "wallMilliseconds": 3420.2,
+      "wallMilliseconds": 3437,
       "navigation": {
-        "domContentLoadedMs": 28,
-        "loadMs": 29.600000381469727,
+        "domContentLoadedMs": 27,
+        "loadMs": 29.09999942779541,
         "transferBytes": 1886,
         "encodedBodyBytes": 1586
       },
-      "firstPaintMs": 52,
-      "firstContentfulPaintMs": 52,
+      "firstPaintMs": 44,
+      "firstContentfulPaintMs": 44,
       "session": {
         "bootstrapBytes": 1183676,
         "equivalentWholeStateBytes": 828076,
-        "maximumUpdateBuildMicroseconds": 90625,
+        "maximumUpdateBuildMicroseconds": 96013,
         "staticResourceUpdateCount": 0
       },
       "resources": {
         "count": 11,
-        "transferBytes": 1854624,
-        "encodedBodyBytes": 1851324,
+        "transferBytes": 1856007,
+        "encodedBodyBytes": 1852707,
         "scriptCount": 7,
-        "scriptTransferBytes": 1163098,
-        "scriptEncodedBodyBytes": 1160998,
+        "scriptTransferBytes": 1164481,
+        "scriptEncodedBodyBytes": 1162381,
         "scripts": [
           {
-            "name": "/chunk-ACQKSZAO.js",
+            "name": "/chunk-LM5PKMKK.js",
             "transferBytes": 754794,
             "encodedBodyBytes": 754494,
-            "durationMs": 2.1
+            "durationMs": 2.5
           },
           {
             "name": "/chunk-73X6SYPX.js",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.9
+            "durationMs": 2.6
           },
           {
-            "name": "/chunk-DKGZUZNV.js",
-            "transferBytes": 172140,
-            "encodedBodyBytes": 171840,
+            "name": "/chunk-CZ7RZJQL.js",
+            "transferBytes": 173523,
+            "encodedBodyBytes": 173223,
             "durationMs": 1.8
           },
           {
             "name": "/chunk-2A2C4SYQ.js",
             "transferBytes": 11257,
             "encodedBodyBytes": 10957,
-            "durationMs": 1.5
+            "durationMs": 1.7
           },
           {
-            "name": "/main-MC5BTBQP.js",
+            "name": "/main-ADEXB6X4.js",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.7
+            "durationMs": 2.3
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.4
+            "durationMs": 2.2
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.5
+            "durationMs": 2.1
           }
         ],
         "largestResources": [
           {
-            "name": "/chunk-ACQKSZAO.js",
+            "name": "/chunk-LM5PKMKK.js",
             "initiatorType": "script",
             "transferBytes": 754794,
             "encodedBodyBytes": 754494,
-            "durationMs": 2.1
+            "durationMs": 2.5
           },
           {
             "name": "/api/animated-mesh/0",
             "initiatorType": "fetch",
             "transferBytes": 340112,
             "encodedBodyBytes": 339812,
-            "durationMs": 7.4
+            "durationMs": 8.4
           },
           {
             "name": "/api/animated-mesh/1",
             "initiatorType": "fetch",
             "transferBytes": 334532,
             "encodedBodyBytes": 334232,
-            "durationMs": 7.6
+            "durationMs": 8.6
           },
           {
             "name": "/chunk-73X6SYPX.js",
             "initiatorType": "other",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.9
+            "durationMs": 2.6
           },
           {
-            "name": "/chunk-DKGZUZNV.js",
+            "name": "/chunk-CZ7RZJQL.js",
             "initiatorType": "script",
-            "transferBytes": 172140,
-            "encodedBodyBytes": 171840,
+            "transferBytes": 173523,
+            "encodedBodyBytes": 173223,
             "durationMs": 1.8
           },
           {
@@ -345,62 +345,62 @@
             "initiatorType": "link",
             "transferBytes": 16066,
             "encodedBodyBytes": 15766,
-            "durationMs": 1.2
+            "durationMs": 2.8
           },
           {
             "name": "/chunk-2A2C4SYQ.js",
             "initiatorType": "script",
             "transferBytes": 11257,
             "encodedBodyBytes": 10957,
-            "durationMs": 1.5
+            "durationMs": 1.7
           },
           {
-            "name": "/main-MC5BTBQP.js",
+            "name": "/main-ADEXB6X4.js",
             "initiatorType": "script",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.7
+            "durationMs": 2.3
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "initiatorType": "other",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.4
+            "durationMs": 2.2
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "initiatorType": "other",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.5
+            "durationMs": 2.1
           },
           {
             "name": "/api/menu-state",
             "initiatorType": "fetch",
             "transferBytes": 816,
             "encodedBodyBytes": 516,
-            "durationMs": 1.3
+            "durationMs": 6.4
           }
         ]
       },
       "longTasks": {
         "count": 1,
-        "totalDurationMs": 575,
-        "maxDurationMs": 575
+        "totalDurationMs": 584,
+        "maxDurationMs": 584
       },
       "memory": {
-        "rendererJavaScriptHeapBytes": 84584612,
-        "rendererJavaScriptHeapTotalBytes": 135761920,
-        "chromiumProcessTreeRssBytes": 1130508288,
-        "nodes": 350,
+        "rendererJavaScriptHeapBytes": 34579480,
+        "rendererJavaScriptHeapTotalBytes": 113741824,
+        "chromiumProcessTreeRssBytes": 1093349376,
+        "nodes": 347,
         "eventListeners": 45
       }
     }
   },
   "idle": {
     "coldMenu": {
-      "taskDurationMs": 3.163,
+      "taskDurationMs": 2.949,
       "scriptDurationMs": 0,
       "layoutCount": 0,
       "styleRecalculationCount": 0,
@@ -411,7 +411,7 @@
       "eventListenerDelta": 0
     },
     "warmMenu": {
-      "taskDurationMs": 2.478,
+      "taskDurationMs": 2.074,
       "scriptDurationMs": 0,
       "layoutCount": 0,
       "styleRecalculationCount": 0,
@@ -422,45 +422,45 @@
       "eventListenerDelta": 0
     },
     "gameplay": {
-      "taskDurationMs": 480.195,
-      "scriptDurationMs": 423.527,
+      "taskDurationMs": 467.128,
+      "scriptDurationMs": 409.367,
       "layoutCount": 20,
       "styleRecalculationCount": 20,
-      "layoutDurationMs": 4.732,
-      "styleRecalculationDurationMs": 0.865,
-      "heapGrowthBytes": -13487792,
-      "nodeDelta": 101,
+      "layoutDurationMs": 3.6,
+      "styleRecalculationDurationMs": 0.674,
+      "heapGrowthBytes": 20093028,
+      "nodeDelta": 102,
       "eventListenerDelta": 0
     }
   },
   "input": {
     "eventToNextFrameMs": {
-      "p50": 2,
-      "p95": 3.2,
-      "p99": 3.5,
-      "max": 3.5
+      "p50": 2.1,
+      "p95": 3.1,
+      "p99": 4.8,
+      "max": 4.8
     },
-    "eventToNextFrameSampleCount": 65,
+    "eventToNextFrameSampleCount": 60,
     "authoritativeCommandRttMs": {
-      "p50": 48.532,
-      "p95": 64.112,
-      "p99": 71.826,
-      "max": 71.826
+      "p50": 53.823,
+      "p95": 64.297,
+      "p99": 102.243,
+      "max": 102.243
     },
-    "authoritativeCommandRttSampleCount": 70,
+    "authoritativeCommandRttSampleCount": 66,
     "rendererCadenceMs": {
-      "p50": 50,
-      "p95": 83.3,
-      "p99": 83.3,
-      "max": 83.3
+      "p50": 50.1,
+      "p95": 83.4,
+      "p99": 100.1,
+      "max": 100.1
     },
     "backendSubmissionDurationMs": {
       "p50": 1.3,
-      "p95": 2.5,
-      "p99": 2.9,
-      "max": 2.9
+      "p95": 2.2,
+      "p99": 4,
+      "max": 4
     },
-    "rendererSampleCount": 51,
+    "rendererSampleCount": 49,
     "timingSources": [
       "animationFrame"
     ],
@@ -499,11 +499,11 @@
       "triangleCount": {
         "scope": "perSubmission",
         "status": "available",
-        "value": 74979
+        "value": 75075
       }
     },
     "automaticSubmissionPacing": {
-      "sampleCount": 51,
+      "sampleCount": 49,
       "rendererClasses": [
         "accelerated"
       ],
@@ -539,8 +539,8 @@
       "pendingMeasurementCount": {
         "p50": 1,
         "p95": 1,
-        "p99": 1,
-        "max": 1
+        "p99": 2,
+        "max": 2
       },
       "maximumPendingSubmissions": {
         "p50": 8,
@@ -551,20 +551,104 @@
       "pendingSubmissionCount": {
         "p50": 1,
         "p95": 1,
-        "p99": 1,
-        "max": 1
+        "p99": 2,
+        "max": 2
+      },
+      "hostAdmission": {
+        "lifetime": {
+          "attemptCount": 420,
+          "admittedCount": 380,
+          "backendBlockedCount": 40,
+          "noDemandCount": 0
+        },
+        "distinctAttemptCount": 208,
+        "attemptSequence": {
+          "first": 213,
+          "last": 420
+        },
+        "rafIntervalMs": {
+          "p50": 16.7,
+          "p95": 66.8,
+          "p99": 83.3,
+          "max": 83.4
+        },
+        "outcomes": {
+          "admitted": 180,
+          "backendBlocked": 28
+        },
+        "demandReasons": {
+          "requested": 144,
+          "viewportChanged": 0,
+          "controls": 0,
+          "presentation": 137,
+          "retainedAnimation": 208,
+          "shouldSubmit": 208
+        },
+        "backendModes": {
+          "timerQuery": 208
+        },
+        "backendStates": {
+          "ready": 180,
+          "waiting": 28
+        },
+        "automaticSubmissionLimit": {
+          "p50": 8,
+          "p95": 8,
+          "p99": 8,
+          "max": 8
+        },
+        "pendingMeasurementCount": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 1
+        },
+        "pendingSubmissionCount": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1,
+          "max": 1
+        },
+        "backendBlockedAttemptCount": 28,
+        "latestBackendBlockedAttempt": {
+          "schemaVersion": 1,
+          "sequence": 419,
+          "sourceTimeMs": 12384.8,
+          "outcome": "backendBlocked",
+          "demand": {
+            "schemaVersion": 1,
+            "requested": true,
+            "viewportChanged": false,
+            "controls": false,
+            "presentation": true,
+            "retainedAnimation": true,
+            "shouldSubmit": true
+          },
+          "backend": {
+            "mode": "timerQuery",
+            "state": "waiting",
+            "rendererClass": "accelerated",
+            "admittedAtMs": 12356.075041427795,
+            "admissionObservedAtMs": 12399.29999923706,
+            "automaticSubmissionLimit": 8,
+            "pendingMeasurementCount": 1,
+            "completionFenceMode": "active",
+            "maximumPendingSubmissions": 8,
+            "pendingSubmissionCount": 1
+          }
+        }
       },
       "timerDurationMs": {
-        "p50": 4.702,
-        "p95": 6.724,
-        "p99": 7.073,
-        "max": 7.073
+        "p50": 4.692,
+        "p95": 6.878,
+        "p99": 6.976,
+        "max": 6.976
       },
       "completionAgeMs": {
-        "p50": 53,
-        "p95": 58.7,
-        "p99": 63.3,
-        "max": 63.3
+        "p50": 54.5,
+        "p95": 63,
+        "p99": 102.2,
+        "max": 102.2
       },
       "completionAllowanceMs": {
         "p50": 17,
@@ -573,10 +657,10 @@
         "max": 17
       },
       "effectiveDurationMs": {
-        "p50": 4.702,
-        "p95": 6.724,
-        "p99": 7.073,
-        "max": 7.073
+        "p50": 4.692,
+        "p95": 6.878,
+        "p99": 6.976,
+        "max": 6.976
       },
       "targetDutyFraction": {
         "p50": 0.5,
@@ -589,21 +673,1758 @@
         "mode": "timerQuery",
         "state": "measuring",
         "rendererClass": "accelerated",
-        "timerDurationMs": 4.749023,
-        "completionAgeMs": 55.19999980926514,
+        "timerDurationMs": 4.712874,
+        "completionAgeMs": 57.09999942779541,
         "completionAllowanceMs": 17,
-        "effectiveDurationMs": 4.749023,
+        "effectiveDurationMs": 4.712874,
         "targetDutyFraction": 0.5,
-        "admittedAtMs": 12461.15551438147,
-        "admissionObservedAtMs": 12506.800000190735,
-        "observedAtMs": 12506.800000190735,
+        "admittedAtMs": 12410.175041809265,
+        "admissionObservedAtMs": 12457.79999923706,
+        "observedAtMs": 12457.79999923706,
         "maximumPendingMeasurements": 8,
         "pendingMeasurementCount": 1,
         "automaticSubmissionCapacity": 8,
         "automaticSubmissionLimit": 8,
         "completionFenceMode": "active",
         "maximumPendingSubmissions": 8,
-        "pendingSubmissionCount": 1
+        "pendingSubmissionCount": 1,
+        "hostAdmission": {
+          "schemaVersion": 1,
+          "attemptCount": 420,
+          "admittedCount": 380,
+          "backendBlockedCount": 40,
+          "noDemandCount": 0,
+          "recentAttempts": [
+            {
+              "schemaVersion": 1,
+              "sequence": 357,
+              "sourceTimeMs": 10483.3,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10478.24378123706,
+                "admissionObservedAtMs": 10483.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 358,
+              "sourceTimeMs": 10499.9,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10494.74378123706,
+                "admissionObservedAtMs": 10544.599999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 359,
+              "sourceTimeMs": 10533.4,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10555.511881427796,
+                "admissionObservedAtMs": 10601.099999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 360,
+              "sourceTimeMs": 10600,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": false,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10555.511881427796,
+                "admissionObservedAtMs": 10601.099999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 1,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 1
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 361,
+              "sourceTimeMs": 10616.7,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10611.746368,
+                "admissionObservedAtMs": 10617,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 362,
+              "sourceTimeMs": 10633.4,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10628.274902,
+                "admissionObservedAtMs": 10633.89999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 363,
+              "sourceTimeMs": 10650.1,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10645.17490161853,
+                "admissionObservedAtMs": 10650.29999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 364,
+              "sourceTimeMs": 10666.7,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10661.76929,
+                "admissionObservedAtMs": 10667.099999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 365,
+              "sourceTimeMs": 10683.4,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10678.360313427795,
+                "admissionObservedAtMs": 10683.599999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 366,
+              "sourceTimeMs": 10700.1,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10694.960313809264,
+                "admissionObservedAtMs": 10747.29999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 367,
+              "sourceTimeMs": 10733.5,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10758.035175809266,
+                "admissionObservedAtMs": 10802.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 368,
+              "sourceTimeMs": 10800.2,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": false,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10758.035175809266,
+                "admissionObservedAtMs": 10802.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 1,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 1
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 369,
+              "sourceTimeMs": 10816.9,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10815.136217237061,
+                "admissionObservedAtMs": 10869.29999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 370,
+              "sourceTimeMs": 10866.9,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10880.155643809265,
+                "admissionObservedAtMs": 10925.5,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 371,
+              "sourceTimeMs": 10917,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10880.155643809265,
+                "admissionObservedAtMs": 10925.5,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 1,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 1
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 372,
+              "sourceTimeMs": 10933.6,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10880.155643809265,
+                "admissionObservedAtMs": 10925.5,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 1,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 1
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 373,
+              "sourceTimeMs": 10950.3,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10936.455644,
+                "admissionObservedAtMs": 10951.099999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 374,
+              "sourceTimeMs": 10967,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10962.21260123706,
+                "admissionObservedAtMs": 10967.39999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 375,
+              "sourceTimeMs": 10983.7,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10979.528573237061,
+                "admissionObservedAtMs": 10984.199999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 376,
+              "sourceTimeMs": 11000.3,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 10995.795822,
+                "admissionObservedAtMs": 11045.79999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 377,
+              "sourceTimeMs": 11033.7,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11056.990319427796,
+                "admissionObservedAtMs": 11105.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 378,
+              "sourceTimeMs": 11100.5,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11056.990319427796,
+                "admissionObservedAtMs": 11105.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 1,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 1
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 379,
+              "sourceTimeMs": 11117.2,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11116.976223237061,
+                "admissionObservedAtMs": 11160.39999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 380,
+              "sourceTimeMs": 11150.5,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11171.676224,
+                "admissionObservedAtMs": 11215.199999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 381,
+              "sourceTimeMs": 11200.5,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11226.326067618531,
+                "admissionObservedAtMs": 11274.79999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 382,
+              "sourceTimeMs": 11267.3,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11287.135285809265,
+                "admissionObservedAtMs": 11332.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 383,
+              "sourceTimeMs": 11334,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11343.73528523706,
+                "admissionObservedAtMs": 11389.79999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 384,
+              "sourceTimeMs": 11384,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11400.701141237061,
+                "admissionObservedAtMs": 11449,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 385,
+              "sourceTimeMs": 11450.7,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11459.972335809265,
+                "admissionObservedAtMs": null,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 386,
+              "sourceTimeMs": 11467.4,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11459.972335809265,
+                "admissionObservedAtMs": 11467.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 387,
+              "sourceTimeMs": 11484.1,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11478.972335809265,
+                "admissionObservedAtMs": 11484.39999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 388,
+              "sourceTimeMs": 11500.7,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11495.63378361853,
+                "admissionObservedAtMs": 11501.39999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 389,
+              "sourceTimeMs": 11517.4,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11512.76980161853,
+                "admissionObservedAtMs": 11559.599999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 390,
+              "sourceTimeMs": 11550.8,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11570.596731809264,
+                "admissionObservedAtMs": 11612.39999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 391,
+              "sourceTimeMs": 11600.8,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11623.19673123706,
+                "admissionObservedAtMs": null,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 392,
+              "sourceTimeMs": 11617.6,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11623.19673123706,
+                "admissionObservedAtMs": null,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 393,
+              "sourceTimeMs": 11634.2,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11623.19673123706,
+                "admissionObservedAtMs": 11634.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 394,
+              "sourceTimeMs": 11650.9,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11645.951878,
+                "admissionObservedAtMs": 11651.099999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 395,
+              "sourceTimeMs": 11667.5,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11662.630185427795,
+                "admissionObservedAtMs": 11668.39999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 396,
+              "sourceTimeMs": 11684.3,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11680.730185809265,
+                "admissionObservedAtMs": 11684.5,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 397,
+              "sourceTimeMs": 11700.9,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11695.50861523706,
+                "admissionObservedAtMs": 11746.29999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 398,
+              "sourceTimeMs": 11734.3,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11756.974901809264,
+                "admissionObservedAtMs": 11804.29999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 399,
+              "sourceTimeMs": 11801,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11756.974901809264,
+                "admissionObservedAtMs": 11804.29999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 1,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 1
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 400,
+              "sourceTimeMs": 11817.7,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11815.074981237061,
+                "admissionObservedAtMs": 11864.5,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 401,
+              "sourceTimeMs": 11851,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11875.37888761853,
+                "admissionObservedAtMs": 11919.099999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 402,
+              "sourceTimeMs": 11917.8,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11875.37888761853,
+                "admissionObservedAtMs": 11919.099999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 1,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 1
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 403,
+              "sourceTimeMs": 11934.4,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11930.078887427795,
+                "admissionObservedAtMs": 11974.79999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 404,
+              "sourceTimeMs": 11967.8,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 11985.85363961853,
+                "admissionObservedAtMs": 12029.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 405,
+              "sourceTimeMs": 12017.8,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12040.86277761853,
+                "admissionObservedAtMs": 12083.599999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 406,
+              "sourceTimeMs": 12084.6,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12094.76277723706,
+                "admissionObservedAtMs": 12139.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 407,
+              "sourceTimeMs": 12134.6,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12150.75404123706,
+                "admissionObservedAtMs": null,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 408,
+              "sourceTimeMs": 12151.3,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12150.75404123706,
+                "admissionObservedAtMs": 12151.5,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 409,
+              "sourceTimeMs": 12168,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12163.25460123706,
+                "admissionObservedAtMs": 12168.29999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 410,
+              "sourceTimeMs": 12184.6,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12180.25460123706,
+                "admissionObservedAtMs": 12185,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 411,
+              "sourceTimeMs": 12201.4,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12196.337679809265,
+                "admissionObservedAtMs": 12201.79999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 412,
+              "sourceTimeMs": 12218,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12213.448451809265,
+                "admissionObservedAtMs": 12218.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 413,
+              "sourceTimeMs": 12234.7,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12229.848451427795,
+                "admissionObservedAtMs": 12235.39999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 414,
+              "sourceTimeMs": 12251.4,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12246.747248,
+                "admissionObservedAtMs": 12251.599999427795,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 415,
+              "sourceTimeMs": 12268.1,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12263.320108,
+                "admissionObservedAtMs": 12268.39999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 416,
+              "sourceTimeMs": 12284.7,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12279.845436,
+                "admissionObservedAtMs": 12284.89999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 417,
+              "sourceTimeMs": 12301.4,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12296.64543523706,
+                "admissionObservedAtMs": 12344.89999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 418,
+              "sourceTimeMs": 12334.7,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12356.075041427795,
+                "admissionObservedAtMs": 12399.29999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 419,
+              "sourceTimeMs": 12384.8,
+              "outcome": "backendBlocked",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "waiting",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12356.075041427795,
+                "admissionObservedAtMs": 12399.29999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 1,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 1
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 420,
+              "sourceTimeMs": 12401.5,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "admittedAtMs": 12410.175041809265,
+                "admissionObservedAtMs": 12457.79999923706,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            }
+          ]
+        }
       }
     }
   },
@@ -614,7 +2435,7 @@
         "chunk-73X6SYPX.js",
         "chunk-7CGTOI24.js",
         "chunk-7ETO2MJG.js",
-        "main-MC5BTBQP.js"
+        "main-ADEXB6X4.js"
       ],
       "rawBytes": 223707,
       "attribution": {
@@ -675,7 +2496,7 @@
           {
             "bytes": 3705,
             "input": "apps/loading-bay/src/main-menu.component.ts",
-            "output": "main-MC5BTBQP.js"
+            "output": "main-ADEXB6X4.js"
           },
           {
             "bytes": 3213,
@@ -703,8 +2524,8 @@
     "lazyRoutes": [
       {
         "entryPoint": "apps/loading-bay/src/game-screen.component.ts",
-        "output": "chunk-DKGZUZNV.js",
-        "rawBytes": 937291,
+        "output": "chunk-CZ7RZJQL.js",
+        "rawBytes": 938674,
         "attribution": {
           "categories": [
             {
@@ -713,76 +2534,76 @@
             },
             {
               "category": "rusty-engine-renderer",
-              "bytes": 187026
+              "bytes": 188394
             },
             {
               "category": "browser-game-runtime",
-              "bytes": 96892
+              "bytes": 96891
             },
             {
               "category": "loading-bay",
-              "bytes": 28322
+              "bytes": 28335
             },
             {
               "category": "demo-libraries",
-              "bytes": 14149
+              "bytes": 14151
             }
           ],
           "largestModules": [
             {
               "bytes": 345997,
               "input": "node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.module.js",
-              "output": "chunk-ACQKSZAO.js"
+              "output": "chunk-LM5PKMKK.js"
             },
             {
               "bytes": 219824,
               "input": "node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js",
-              "output": "chunk-ACQKSZAO.js"
+              "output": "chunk-LM5PKMKK.js"
             },
             {
               "bytes": 42581,
               "input": "node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/loaders/GLTFLoader.js",
-              "output": "chunk-ACQKSZAO.js"
+              "output": "chunk-LM5PKMKK.js"
             },
             {
               "bytes": 34787,
-              "input": "node_modules/.pnpm/@rusty-engine+renderer-three@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar._58ca8538a7805ff4b17dec625365215b/node_modules/@rusty-engine/renderer-three/dist/three-renderer.js",
-              "output": "chunk-ACQKSZAO.js"
+              "input": "node_modules/.pnpm/@rusty-engine+renderer-three@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar._7eeeba966a16041195d33b57c66084aa/node_modules/@rusty-engine/renderer-three/dist/three-renderer.js",
+              "output": "chunk-LM5PKMKK.js"
             },
             {
-              "bytes": 33225,
+              "bytes": 33227,
               "input": "ts/packages/browser-shell/src/game-runtime.ts",
-              "output": "chunk-DKGZUZNV.js"
+              "output": "chunk-CZ7RZJQL.js"
             },
             {
               "bytes": 28356,
-              "input": "node_modules/.pnpm/@rusty-engine+render-contracts@https+++codeload.github.com+FuzzySlipper+rusty-engine+ta_7e71ad6b937bbfd575cdf592d4fef01d/node_modules/@rusty-engine/render-contracts/dist/validation.js",
-              "output": "chunk-ACQKSZAO.js"
+              "input": "node_modules/.pnpm/@rusty-engine+render-contracts@https+++codeload.github.com+FuzzySlipper+rusty-engine+ta_9c5f5fbc31b01852b3e7967c9469898b/node_modules/@rusty-engine/render-contracts/dist/validation.js",
+              "output": "chunk-LM5PKMKK.js"
             },
             {
-              "bytes": 28322,
+              "bytes": 28335,
               "input": "apps/loading-bay/src/game-screen.component.ts",
-              "output": "chunk-DKGZUZNV.js"
+              "output": "chunk-CZ7RZJQL.js"
             },
             {
               "bytes": 26161,
-              "input": "node_modules/.pnpm/@rusty-engine+render-projection@https+++codeload.github.com+FuzzySlipper+rusty-engine+t_59b9b0fd59f7b5912201f569fdcebd09/node_modules/@rusty-engine/render-projection/dist/retained-projection.js",
-              "output": "chunk-ACQKSZAO.js"
+              "input": "node_modules/.pnpm/@rusty-engine+render-projection@https+++codeload.github.com+FuzzySlipper+rusty-engine+t_365cc5d1061ba1ba74cb72a384785190/node_modules/@rusty-engine/render-projection/dist/retained-projection.js",
+              "output": "chunk-LM5PKMKK.js"
             },
             {
               "bytes": 21916,
               "input": "ts/packages/browser-shell/src/game-session.ts",
-              "output": "chunk-DKGZUZNV.js"
+              "output": "chunk-CZ7RZJQL.js"
             },
             {
               "bytes": 20336,
               "input": "ts/packages/browser-shell/src/presentation-feedback.ts",
-              "output": "chunk-DKGZUZNV.js"
+              "output": "chunk-CZ7RZJQL.js"
             },
             {
               "bytes": 12636,
-              "input": "node_modules/.pnpm/@rusty-engine+renderer-host@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar.g_64f896b2c8a7491f6f3ba2309dd5cba8/node_modules/@rusty-engine/renderer-host/dist/editor-viewport.js",
-              "output": "chunk-ACQKSZAO.js"
+              "input": "node_modules/.pnpm/@rusty-engine+renderer-host@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar.g_4595c9f5491709ff72edfccfe8f0a901/node_modules/@rusty-engine/renderer-host/dist/editor-viewport.js",
+              "output": "chunk-LM5PKMKK.js"
             },
             {
               "bytes": 10733,
@@ -842,6 +2663,6 @@
         }
       }
     ],
-    "allJavaScriptRawBytes": 1164289
+    "allJavaScriptRawBytes": 1165672
   }
 }

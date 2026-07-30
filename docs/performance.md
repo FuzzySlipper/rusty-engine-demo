@@ -508,8 +508,22 @@ active eight-slot completion-fence ring. Across 51 product samples, however, pen
 measurements and pending fences both remain exactly one at p50, p95, p99, and maximum. Accepted
 cadence remains p50 50.0 ms and p95/p99 83.3 ms even though timer/effective p95 is 6.724 ms and
 synchronous backend p95 is 2.5 ms. This moves the remaining defect ahead of backend capacity into
-the renderer-host demand/RAF admission path. The exact report now distinguishes selected capacity
+the renderer-host/backend admission boundary. The exact report now distinguishes selected capacity
 from observed occupancy so a nominal ring is not mistaken for exercised concurrency.
+
+The host-admission-observable checkpoint,
+`266f60c93531631a6ce0cb0aff26d966e95a3903`, is measured at exact Demo revision
+`67e020072385ae6749f85205cfeabf5278ada496`. Its immutable 64-attempt ledger rules out both absent
+continuous demand and sparse browser callbacks. Across 208 deduplicated attempts, every attempt
+had retained-animation demand and `shouldSubmit=true`; 180 were admitted, 28 were backend-blocked,
+and none had no demand. Lifetime totals at the final sample were 420 attempts, 380 admissions, 40
+backend blocks, and zero no-demand decisions. Recent RAF intervals were p50 16.7 ms and p95
+66.8 ms. The backend selected limit 8 throughout, but pre-attempt timer-query and fence occupancy
+both remained p95/max 1/1. The latest rejected attempt carried requested, presentation, and
+retained-animation demand while the backend reported `waiting`, query occupancy 1, and fence
+occupancy 1. Product cadence remains p50 50.1 ms and p95 83.4 ms while timer/effective work is
+p95 6.878 ms. The host therefore reaches the backend with real continuous demand, but backend
+readiness rejects work while only one of eight slots is occupied; #6436 retains that owning fix.
 
 Studio evidence remains within its explicit bounds: all 342 route placements publish in bounded
 32-entry batches; the structural readout is below 2 MiB; the 12-instance animated preview adds
