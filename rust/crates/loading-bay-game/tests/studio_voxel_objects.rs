@@ -1037,7 +1037,12 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         applied["receipt"]["kind"], "voxelObjectConversionApplied",
         "{applied:#}"
     );
-    let asset = &applied["project"]["voxelObjectAuthoring"]["assets"][0];
+    let asset = applied["project"]["voxelObjectAuthoring"]["assets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|asset| asset["assetId"] == "voxel-object/character-idle")
+        .expect("applied animated object is present");
     assert_eq!(asset["defaultClip"], "idle");
     assert_eq!(asset["clips"][0]["clipId"], "idle");
     assert_eq!(
@@ -1264,10 +1269,13 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
 
     let mut restarted = StudioAdapterService::new();
     let reopened = open(&mut restarted, &root);
-    assert_eq!(
-        reopened["project"]["voxelObjectAuthoring"]["assets"][0],
-        *asset
-    );
+    let reopened_asset = reopened["project"]["voxelObjectAuthoring"]["assets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|candidate| candidate["assetId"] == "voxel-object/character-idle")
+        .expect("reopened animated object is present");
+    assert_eq!(reopened_asset, asset);
     assert_eq!(
         reopened["project"]["voxelObjectAuthoring"],
         attached["project"]["voxelObjectAuthoring"]

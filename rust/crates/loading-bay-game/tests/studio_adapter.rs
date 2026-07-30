@@ -59,12 +59,12 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(response["project"]["identity"]["projectId"], "loading-bay");
     assert_eq!(
         response["project"]["inspections"]["catalog"]["entryCount"],
-        15
+        42
     );
-    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 50);
+    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 75);
     assert_eq!(
         response["project"]["inspections"]["entityState"]["entityCount"],
-        50
+        75
     );
     let entity_inspection = response["project"]["inspections"]["entityState"]
         .as_object()
@@ -79,34 +79,27 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     );
     assert_eq!(response["project"]["voxel"]["solidVoxelCount"], 3_931);
     assert!(response["project"].get("loadingBay").is_none());
+    let component_references = response["project"]["entityComponents"]
+        .as_array()
+        .expect("entity component references are an array");
+    assert_eq!(component_references.len(), 28);
     assert_eq!(
-        response["project"]["entityComponents"],
-        json!([
-            {
-                "ownerEntityId": 88,
-                "componentTypeId": "rusty-engine-demo.loading-bay.weapon",
-                "inspectorContract": {
-                    "contractId": "rusty-engine-demo.loading-bay.weapon-authoring",
-                    "contractVersion": 1,
-                },
-            },
-            {
-                "ownerEntityId": 89,
-                "componentTypeId": "rusty-engine-demo.loading-bay.weapon",
-                "inspectorContract": {
-                    "contractId": "rusty-engine-demo.loading-bay.weapon-authoring",
-                    "contractVersion": 1,
-                },
-            },
-            {
-                "ownerEntityId": 90,
-                "componentTypeId": "rusty-engine-demo.loading-bay.weapon",
-                "inspectorContract": {
-                    "contractId": "rusty-engine-demo.loading-bay.weapon-authoring",
-                    "contractVersion": 1,
-                },
-            },
-        ])
+        component_references
+            .iter()
+            .filter(|reference| reference["componentTypeId"] == "rusty.voxel-object.instance")
+            .map(|reference| reference["ownerEntityId"].as_u64().unwrap())
+            .collect::<Vec<_>>(),
+        (88..=112).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        component_references
+            .iter()
+            .filter(|reference| {
+                reference["componentTypeId"] == "rusty-engine-demo.loading-bay.weapon"
+            })
+            .map(|reference| reference["ownerEntityId"].as_u64().unwrap())
+            .collect::<Vec<_>>(),
+        vec![113, 114, 115]
     );
     assert_eq!(response["project"]["sceneHierarchy"]["sceneId"], 1);
     assert_eq!(
@@ -114,7 +107,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        50
+        75
     );
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"][0]["label"],
@@ -125,11 +118,11 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         1
     );
     assert_eq!(
-        response["project"]["sceneHierarchy"]["nodes"][47]["entityId"],
-        88
+        response["project"]["sceneHierarchy"]["nodes"][72]["entityId"],
+        113
     );
     assert_eq!(
-        response["project"]["sceneHierarchy"]["nodes"][47]["tags"],
+        response["project"]["sceneHierarchy"]["nodes"][72]["tags"],
         json!(["runtime-derived"])
     );
     assert_eq!(response["project"]["projection"]["schemaVersion"], 1);
@@ -138,15 +131,26 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        72
+        124
     );
     assert_eq!(
         response["project"]["projection"]["ops"][0]["op"],
         "defineMaterial"
     );
+    let projection_ops = response["project"]["projection"]["ops"].as_array().unwrap();
     assert_eq!(
-        response["project"]["projection"]["ops"][1]["op"],
-        "defineStaticMesh"
+        projection_ops
+            .iter()
+            .filter(|operation| operation["op"] == "defineVoxelObject")
+            .count(),
+        9
+    );
+    assert_eq!(
+        projection_ops
+            .iter()
+            .filter(|operation| operation["op"] == "createVoxelObjectInstance")
+            .count(),
+        25
     );
     assert_eq!(
         response["project"]["projectionReadout"]["frameKind"],
@@ -990,7 +994,7 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
             "contractVersion": 1,
             "requestId": "not-open",
             "expectedProjectHash": "0000000000000000000000000000000000000000000000000000000000000000",
-            "ownerEntityId": 88,
+            "ownerEntityId": 113,
         }),
     );
     assert_eq!(not_open["type"], "loadingBayWeaponRejected");
@@ -1007,7 +1011,7 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
             "contractVersion": 1,
             "requestId": "read-weapon",
             "expectedProjectHash": project_hash,
-            "ownerEntityId": 88,
+            "ownerEntityId": 113,
         }),
     );
     assert_eq!(read["type"], "loadingBayWeaponRead", "{read:#}");
@@ -1023,7 +1027,7 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
             "contractVersion": 1,
             "requestId": "replace-weapon",
             "expectedProjectHash": project_hash,
-            "ownerEntityId": 88,
+            "ownerEntityId": 113,
             "expectedComponentRevision": read["weapon"]["componentRevision"],
             "candidate": candidate,
         }),
@@ -1073,7 +1077,7 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
             "contractVersion": 1,
             "requestId": "reconstructed",
             "expectedProjectHash": reopened_hash,
-            "ownerEntityId": 88,
+            "ownerEntityId": 113,
         }),
     );
     assert_eq!(reconstructed["type"], "loadingBayWeaponRead");
@@ -1086,7 +1090,7 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
             "contractVersion": 1,
             "requestId": "malformed",
             "expectedProjectHash": reopened_hash,
-            "ownerEntityId": 88,
+            "ownerEntityId": 113,
             "operation": "genericGet",
         }),
     );

@@ -1,0 +1,41 @@
+{
+  "projectHash": "dde061a1b27fdb8665bc0d7099a5ec364310272e618f23f6c6177a7bb8a6393a",
+  "selectedEntity": "96",
+  "canvasCount": 1,
+  "viewport": {
+    "status": "ready",
+    "retainedOps": 119,
+    "definitions": 9,
+    "instances": 25,
+    "placementGhosts": 0,
+    "selectedRenderHandle": "6597069766677",
+    "authoredFrameHash": "fnv1a64:053d9641c6306328",
+    "rendererError": ""
+  },
+  "viewportText": "↖\n✥\n⟳\n↗\nworld\nGrid\nSnap 0.5\nWork Light\nShared renderer · orbit / WASD / wheel\nwork light\n119 retained ops\ncamera 3\n35 entities\n8 lights\n0 voxel instances\ncomplete frame\nowner revision 32\nAssets 42\nDiagnostics 0\nOwners\nOutput\nNo owner diagnostics.",
+  "performance": {
+    "Documents": 1,
+    "Frames": 1,
+    "JSEventListeners": 263,
+    "Nodes": 644,
+    "LayoutCount": 9,
+    "RecalcStyleCount": 12,
+    "ScriptDuration": 12.616691,
+    "TaskDuration": 19.995405,
+    "JSHeapUsedSize": 288979108,
+    "JSHeapTotalSize": 379322368
+  },
+  "capture": {
+    "viewport": [
+      1600,
+      900
+    ],
+    "host": "http://127.0.0.1:4396",
+    "screenshots": [
+      "docs/evidence/voxel-brush-kit-studio-overview.png",
+      "docs/evidence/voxel-brush-kit-dense-wall.png",
+      "docs/evidence/voxel-brush-kit-conservative-wall.png"
+    ],
+    "rendererSubmission": "pending Rusty Engine #6406; no private WebGL or Three instrumentation used"
+  }
+}

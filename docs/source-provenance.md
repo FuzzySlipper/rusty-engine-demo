@@ -163,6 +163,41 @@ startup selector were independently authored against the public Engine
 composition API; no Engine app TypeScript, private workspace store, host
 script, or sibling checkout is copied into the supported product.
 
+## Original VC6 voxel-brush kit
+
+The nine Loading Bay brush sources under `content/assets/brush-kit` are original procedural
+geometry authored for Den task #6356 by
+`scripts/blender/build-loading-bay-brush-kit.py`. No external mesh, texture, palette, map, or game
+asset was read, copied, traced, or converted, so there is no third-party license notice for this
+kit. The source script's SHA-256 is
+`773b936bf0d0ebe5beb5d09264b4cfab7a9b933216f708d7922e393624e65fdc`; its generated source
+manifest is `8816e0e6ba66a9b35ea26169f6d75b25fdca818c567e6ce7023fd8088654ae5`.
+
+| Original source GLB     | Bytes | SHA-256                                                            |
+| ----------------------- | ----: | ------------------------------------------------------------------ |
+| `wall-conservative.glb` | 2,276 | `ce4c736ce80c0210c77098fbcb1f900f3119f196c8a97a34a97d5455aef89cca` |
+| `wall-dense.glb`        | 5,140 | `6dca2d9103849789bc596550f069ced651456c83df28a09e1f5642b146e9ce04` |
+| `corner.glb`            | 2,004 | `068b492c3ad7605d87e3fb9c372e45f4ad284b5e673cc7bfbe9e26af2a7e03cb` |
+| `doorway.glb`           | 2,248 | `933775b7a53c9aa37c888234b658c5c897b45794ed5f78982617ddb91c2cdcae` |
+| `vent-panel.glb`        | 2,980 | `0f270ff6d512b3c1c4a9b8c1559d3673bc910fe90ede8ae4aa87fc2ae3442fad` |
+| `column.glb`            | 2,004 | `773073a4aea11a33bf85a5aa32b8211ac5337ab2ae5d2a664edd46545fdb19ca` |
+| `floor-strip.glb`       | 2,500 | `da9f469ff48955db631d7b693632c4b0511fad7497d65e0ba6871e7fb9e8cdb6` |
+| `ceiling-strip.glb`     | 2,028 | `519308222335856fb05de4012daa17daca2452273cb49b1900543443bd558ffd` |
+| `landmark-relay.glb`    | 3,952 | `4592d5c7ddbac4355db126651cab0cfa454068b21be2b967bd00f9d815a19571` |
+
+The matching `.mesh.json` files are deterministic authoring intermediates for Studio source import,
+not an alternate retained or runtime format. Blender 5.1.2 on the authoring host could construct
+the meshes but its bundled glTF add-on could not load because that Blender installation lacks
+NumPy. The committed script therefore writes the small standards-compliant GLBs directly from the
+same Blender-created positions and indices. Studio then inspects those GLBs and owns conversion to
+the canonical sparse voxel-object definitions embedded in
+`content/projects/loading-bay.project.json`.
+
+All accepted definitions preserve exact source paths, byte counts, and SHA-256 values in their
+canonical conversion provenance. `scripts/check-brush-kit.mjs` verifies those values against disk,
+the canonical sparse-run counts, 25 shared-definition instances, decorative proxy separation,
+fresh-process Studio proof, and screenshots.
+
 ## Proper FPS campaign design
 
 The product architecture, protocol targets, content vocabulary, and original level route in

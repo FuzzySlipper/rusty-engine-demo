@@ -338,6 +338,7 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
         }
     }
     strip_project_weapon_item_fields(&mut project);
+    strip_project_voxel_object_fields(&mut project);
     let migrated = decode_project_document(&project.to_string()).unwrap();
     assert_eq!(migrated.source_schema_version, 12);
     assert!(migrated.was_migrated());
@@ -346,6 +347,19 @@ fn schema_twelve_project_rejects_future_pickups_and_migrates_without_inventing_t
             .unwrap();
     assert_eq!(runtime.session().pickups().len(), 0);
     assert_eq!(quantity(&runtime, "ammo/energy-cell"), 18);
+}
+
+fn strip_project_voxel_object_fields(project: &mut serde_json::Value) {
+    project["assets"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|asset| asset.get("voxelObject").is_none());
+    for scene in project["scenes"].as_array_mut().unwrap() {
+        scene
+            .as_object_mut()
+            .unwrap()
+            .remove("voxelObjectInstances");
+    }
 }
 
 fn project_with_energy_overflow() -> serde_json::Value {

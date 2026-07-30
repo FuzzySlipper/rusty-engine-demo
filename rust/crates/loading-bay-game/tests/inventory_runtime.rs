@@ -464,6 +464,14 @@ fn schema_eleven_migrates_with_no_invented_inventory_and_authored_truth_stays_st
     let future_fields = decode_project_document(&legacy.to_string()).unwrap_err();
     assert_eq!(future_fields.diagnostic().code, diagnostic_code::MIGRATION);
     legacy.as_object_mut().unwrap().remove("itemDefinitions");
+    legacy["assets"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|asset| asset.get("voxelObject").is_none());
+    legacy["scenes"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("voxelObjectInstances");
     legacy["scenes"][0]["entities"][0]
         .as_object_mut()
         .unwrap()

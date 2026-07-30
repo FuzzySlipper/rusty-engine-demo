@@ -63,6 +63,7 @@ fn real_schema_six_project_migrates_into_the_current_admitted_shape() {
 fn schema_seven_project_migrates_without_minting_new_beacon_meaning() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 7.into();
+    strip_future_voxel_objects(&mut previous);
     strip_future_inventory_and_pickups(&mut previous);
     previous["assets"]
         .as_array_mut()
@@ -92,6 +93,11 @@ fn schema_seven_project_migrates_without_minting_new_beacon_meaning() {
 fn schema_eight_project_migrates_with_empty_voxel_authoring_collections() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 8.into();
+    strip_future_voxel_objects(&mut previous);
+    previous["assets"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|asset| asset.get("material").is_none());
     strip_future_inventory_and_pickups(&mut previous);
 
     let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
@@ -119,6 +125,7 @@ fn schema_eight_project_migrates_with_empty_voxel_authoring_collections() {
 fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_transforms() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 9.into();
+    strip_future_voxel_objects(&mut previous);
     strip_future_inventory_and_pickups(&mut previous);
     for entity in previous["scenes"][0]["entities"].as_array_mut().unwrap() {
         entity.as_object_mut().unwrap().remove("light");
@@ -164,6 +171,12 @@ fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
 fn schema_twenty_migrates_without_instances_and_rejects_unowned_instances() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 20.into();
+    for scene in previous["scenes"].as_array_mut().unwrap() {
+        scene
+            .as_object_mut()
+            .unwrap()
+            .remove("voxelObjectInstances");
+    }
     let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
     assert_eq!(decoded.source_schema_version, 20);
     assert_eq!(
@@ -190,6 +203,7 @@ fn schema_twenty_migrates_without_instances_and_rejects_unowned_instances() {
 fn schema_eighteen_rejects_future_archetype_fields_and_migrates_when_absent() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 18.into();
+    strip_future_voxel_objects(&mut previous);
 
     let error = decode_project_document(&previous.to_string()).unwrap_err();
     assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
@@ -221,6 +235,7 @@ fn schema_eighteen_rejects_future_archetype_fields_and_migrates_when_absent() {
 fn schema_nineteen_migrates_without_objects_and_rejects_future_object_fields() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 19.into();
+    strip_future_voxel_objects(&mut previous);
     let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
     assert_eq!(decoded.source_schema_version, 19);
     assert_eq!(
@@ -252,6 +267,7 @@ fn schema_nineteen_migrates_without_objects_and_rejects_future_object_fields() {
 fn schema_seventeen_rejects_future_enemy_combat_and_migrates_when_absent() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 17.into();
+    strip_future_voxel_objects(&mut previous);
 
     let error = decode_project_document(&previous.to_string()).unwrap_err();
     assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
@@ -289,6 +305,7 @@ fn migration_rejects_the_ambiguous_legacy_spatial_shape() {
 fn schema_thirteen_multi_scene_weapon_migration_rejects_conflicting_authority() {
     let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     previous["schemaVersion"] = 13.into();
+    strip_future_voxel_objects(&mut previous);
     strip_future_vitality(&mut previous);
     strip_current_weapon_fields(&mut previous);
 
@@ -326,6 +343,7 @@ fn schema_thirteen_multi_scene_weapon_migration_rejects_conflicting_authority() 
 fn schema_fifteen_rejects_future_weapon_modes_and_migrates_hitscan_only_content() {
     let mut future: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
     future["schemaVersion"] = 15.into();
+    strip_future_voxel_objects(&mut future);
     strip_future_progression(&mut future);
     let error = decode_project_document(&future.to_string()).unwrap_err();
     assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
@@ -398,6 +416,19 @@ fn contains_object_key(value: &serde_json::Value, needle: &str) -> bool {
                     .any(|value| contains_object_key(value, needle))
         }
         _ => false,
+    }
+}
+
+fn strip_future_voxel_objects(project: &mut serde_json::Value) {
+    project["assets"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|asset| asset.get("voxelObject").is_none());
+    for scene in project["scenes"].as_array_mut().unwrap() {
+        scene
+            .as_object_mut()
+            .unwrap()
+            .remove("voxelObjectInstances");
     }
 }
 

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "modules": [
+    {
+      "name": "wall-conservative",
+      "sourceBoxes": 6,
+      "sourceVertices": 48,
+      "sourceTriangles": 72
+    },
+    {
+      "name": "wall-dense",
+      "sourceBoxes": 18,
+      "sourceVertices": 144,
+      "sourceTriangles": 216
+    },
+    {
+      "name": "corner",
+      "sourceBoxes": 5,
+      "sourceVertices": 40,
+      "sourceTriangles": 60
+    },
+    {
+      "name": "doorway",
+      "sourceBoxes": 6,
+      "sourceVertices": 48,
+      "sourceTriangles": 72
+    },
+    {
+      "name": "vent-panel",
+      "sourceBoxes": 9,
+      "sourceVertices": 72,
+      "sourceTriangles": 108
+    },
+    {
+      "name": "column",
+      "sourceBoxes": 5,
+      "sourceVertices": 40,
+      "sourceTriangles": 60
+    },
+    {
+      "name": "floor-strip",
+      "sourceBoxes": 7,
+      "sourceVertices": 56,
+      "sourceTriangles": 84
+    },
+    {
+      "name": "ceiling-strip",
+      "sourceBoxes": 5,
+      "sourceVertices": 40,
+      "sourceTriangles": 60
+    },
+    {
+      "name": "landmark-relay",
+      "sourceBoxes": 13,
+      "sourceVertices": 104,
+      "sourceTriangles": 156
+    }
+  ]
+}

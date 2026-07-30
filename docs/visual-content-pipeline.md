@@ -219,6 +219,69 @@ unique asset. The current project limits are hard admission boundaries, not targ
 Accepted content stays below those bounds with explicit headroom. One-over tests remain fail-closed
 before materialization.
 
+### VC6 authored result
+
+Task #6356 authors an original nine-definition Loading Bay brush kit through Studio protocol 11:
+source import, GLB inspection, private conversion preview, atomic apply, placement prepare, durable
+attach, canonical reread, and a fresh adapter process. The canonical project hash after publication
+is `dde061a1b27fdb8665bc0d7099a5ec364310272e618f23f6c6177a7bb8a6393a`.
+
+The proof room is outside the playable route at world extent `[31, 0, 3]`…`[35, 3, 7]`. Its 25
+instances reuse nine definitions; they include rotation, normalized scale, and one material
+override. Instance owners intentionally have no bounds, collision, kinematic, trigger, hazard, or
+secret component. The existing coarse material-voxel environment and explicit entity proxies
+remain the only gameplay collision, navigation, and occlusion truth.
+
+| Module            | Cell | Intended dimensions | Repeats |  Cells | Worst faces | Vertices / indices | Expanded mesh | Stored object | Prepare / response |
+| ----------------- | ---: | ------------------: | ------: | -----: | ----------: | -----------------: | ------------: | ------------: | -----------------: |
+| Wall conservative | 1/16 |        2 × 2 × 0.25 |       6 |  2,228 |      13,368 |     7,000 / 10,500 |       210 KiB |       6.4 KiB |   220 ms / 293 KiB |
+| Wall dense        | 1/32 |        2 × 2 × 0.25 |       2 | 16,386 |      98,316 |   81,400 / 122,100 |     2,385 KiB |      98.3 KiB |   881 ms / 3.3 MiB |
+| Corner            | 1/16 |           2 × 2 × 2 |       4 |  4,729 |      28,374 |    35,664 / 53,496 |     1,045 KiB |      93.5 KiB |   924 ms / 1.4 MiB |
+| Doorway           | 1/16 |       3 × 2.5 × .25 |       1 |    944 |       5,664 |      6,200 / 9,300 |       182 KiB |       9.0 KiB |   850 ms / 280 KiB |
+| Vent panel        | 1/16 |        2 × 2 × .375 |       1 |  2,201 |      13,206 |    10,704 / 16,056 |       314 KiB |      10.4 KiB |   905 ms / 450 KiB |
+| Column            | 1/16 |       .75 × 2 × .75 |       4 |  1,776 |      10,656 |    13,168 / 19,752 |       386 KiB |      29.8 KiB |   974 ms / 552 KiB |
+| Floor strip       | 1/16 |        2 × .375 × 2 |       4 |  2,968 |      17,808 |    19,280 / 28,920 |       565 KiB |      20.5 KiB | 1,075 ms / 790 KiB |
+| Ceiling strip     | 1/16 |          2 × .5 × 2 |       4 |  3,760 |      22,560 |    22,080 / 33,120 |       647 KiB |      25.4 KiB | 1,157 ms / 900 KiB |
+| Relay landmark    | 1/16 |           2 × 2 × 1 |       1 |  7,274 |      43,644 |    53,184 / 79,776 |     1,558 KiB |      84.2 KiB | 1,505 ms / 2.1 MiB |
+
+The full kit resolves 42,266 cells—64.5% of the 65,536 project limit—and has a conservative
+253,596-face worst-case estimate, 248,680 actual projected vertices, 373,020 indices, and about
+7.1 MiB of expanded mesh payload. The canonical project is 2,450,553 bytes. Attaching each instance
+through the intentionally atomic Studio mutation/reread path took 139.6 seconds total and up to
+5.89 seconds for the last, 12.3 MiB response. This is editing-path evidence, not renderer frame
+time: repeated publication currently re-admits and reprojects the growing project.
+
+The 1/32 wall has the same placed `2 × 2 × 0.25` dimensions as the 1/16 wall, but uses 7.35× the
+cells, 7.35× the face work, 11.63× the expanded mesh bytes, 15.44× the stored object bytes, and
+11.63× the vertices. Its narrow trim, alternating recessed channels, and raised center relief are
+visible at ordinary Studio camera distance, but the extra bands alias sooner while moving and the
+editing/response cost is disproportionate.
+
+**Production decision for VC7:** use 1/16-world-unit cells and conservative relief for repeatable
+walls, corners, floors, ceilings, and structural modules. Reserve 1/32 only for a small number of
+focal inserts where the silhouette or close-range relief is materially better. Keep world-space
+module dimensions on a 0.25-unit sub-grid and normalize placement scale when conversion occupancy
+does not fill the authored grid. This retains modeled detail while leaving roughly 23,000 resolved
+cells of project headroom for VC7 iteration.
+
+The real browser reconstruction uses one shared Studio canvas and reports nine definitions, 25
+instances, 119 retained operations, a valid selected render handle, no placement ghost, and no
+renderer error. The immutable browser readout and heap sample are in
+[`docs/evidence/voxel-brush-kit-studio-browser.json`](evidence/voxel-brush-kit-studio-browser.json);
+the complete conversion, admission, response, and reconstruction measurements are in
+[`docs/evidence/voxel-brush-kit-authoring.json`](evidence/voxel-brush-kit-authoring.json).
+Screenshots:
+
+- [complete proof room](evidence/voxel-brush-kit-studio-overview.png);
+- [1/32 dense relief](evidence/voxel-brush-kit-dense-wall.png);
+- [1/16 conservative relief](evidence/voxel-brush-kit-conservative-wall.png).
+
+Renderer-owned draw/resource/backend-submission observations are deliberately not inferred from
+the retained operations or project mesh counts. The exact-pinned surface already owns those
+statistics under #6361, while upstream Engine #6406 exposes the associated immutable submission
+sample through the shared Studio viewport. #6356 remains dependent on that outlet for its final
+renderer comparison; no downstream WebGL instrumentation or private Three access is used.
+
 ## Placeholder performance baseline
 
 The baseline uses the current production build and a fresh-host visible Chromium/Wayland profile,
@@ -347,6 +410,20 @@ curl -fsS http://192.168.1.22:37300/api/state | jq \
   '{projectionCount:(.projection|length), voxelChunkCount:(.voxelMeshes|length)}'
 ```
 
+VC6 brush-kit source and canonical evidence checks:
+
+```bash
+blender --background --python scripts/blender/build-loading-bay-brush-kit.py
+node scripts/check-brush-kit.mjs
+pnpm run check:content
+```
+
+`scripts/author-brush-kit.mjs` is the explicit Studio mutation recipe used to create the canonical
+artifact. Run it against a disposable copy of the pre-VC6 project when reproducing authoring
+timings; it intentionally publishes nine assets and 25 instances and therefore is not part of the
+ordinary read-only content check. `scripts/capture-brush-kit-studio.mjs` captures the supported
+browser proof from an already-running Studio host selected by `RUSTY_STUDIO_BRUSH_HOST`.
+
 The managed URL must identify `rusty-engine-demo` from `/health` before certification. Headless
 SwiftShader browser smoke remains lifecycle proof, not hardware performance evidence.
 
@@ -363,6 +440,7 @@ SwiftShader browser smoke remains lifecycle proof, not hardware performance evid
 - [ ] Placeholder and final measurements use the same route, viewport, commands, and metric
       meanings.
 - [ ] Frame cadence is never described as GPU/render duration.
-- [ ] Missing renderer-owned counters remain unavailable until reviewed upstream #6361 is consumed.
+- [ ] Renderer-owned counters come from the associated immutable shared-surface submission, never
+      authored-state inference or WebGL instrumentation.
 - [ ] No Doom map, texture, mesh, sound, name, or other licensed content is copied; only general
       compact-FPS readability and industrial-detail vocabulary informs the original design.
