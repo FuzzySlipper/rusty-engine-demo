@@ -1,3 +1,8 @@
+import type {
+  RenderMaterialDescriptor,
+  StaticMeshAsset,
+} from "@rusty-engine/render-contracts";
+
 import type { RuntimeBrowserState } from "./projection.js";
 
 export const LOADING_BAY_PROTOCOL_VERSION = 1;
@@ -75,6 +80,8 @@ type StaticStateKey =
   | "voxelProbePathLength"
   | "voxelMeshes"
   | "lights"
+  | "renderMaterials"
+  | "staticMeshes"
   | "generatedEnvironment";
 
 type RuntimeDynamicState = Omit<RuntimeBrowserState, StaticStateKey>;
@@ -206,6 +213,12 @@ export function applyServerUpdate(
       "contentRevisionMismatch",
       "state update does not include resources for its static revision",
       "resync",
+    );
+  }
+  if (!isRuntimeStaticResources(resources)) {
+    throw new GameSessionError(
+      "protocolMismatch",
+      "static resources do not match the bounded Loading Bay render projection",
     );
   }
 
@@ -1212,19 +1225,117 @@ function isSessionMetrics(value: unknown): value is SessionMetrics {
 function isRuntimeStaticResources(
   value: unknown,
 ): value is RuntimeStaticResources {
+  if (
+    !isRecord(value) ||
+    typeof value.staticRevision !== "string" ||
+    typeof value.hostSessionId !== "string" ||
+    !isFiniteNumber(value.voxelRevision) ||
+    typeof value.voxelAuthorityHash !== "string" ||
+    !isFiniteNumber(value.voxelSolidCount) ||
+    typeof value.voxelNavigationHash !== "string" ||
+    !isFiniteNumber(value.voxelProbePathLength) ||
+    !Array.isArray(value.voxelMeshes) ||
+    !Array.isArray(value.lights) ||
+    !Array.isArray(value.renderMaterials) ||
+    !value.renderMaterials.every(isRuntimeRenderMaterial) ||
+    !Array.isArray(value.staticMeshes) ||
+    !value.staticMeshes.every(isRuntimeStaticMesh) ||
+    (value.generatedEnvironment !== null &&
+      !isRecord(value.generatedEnvironment))
+  ) {
+    return false;
+  }
+  const materialIds = new Set(
+    value.renderMaterials.map((material) => material.id),
+  );
+  const meshIds = new Set(value.staticMeshes.map((mesh) => mesh.asset));
+  return (
+    materialIds.size === value.renderMaterials.length &&
+    meshIds.size === value.staticMeshes.length &&
+    value.staticMeshes.every((mesh) =>
+      mesh.materialSlots.every(({ material }) => materialIds.has(material)),
+    )
+  );
+}
+
+function isRuntimeRenderMaterial(
+  value: unknown,
+): value is RenderMaterialDescriptor {
   return (
     isRecord(value) &&
-    typeof value.staticRevision === "string" &&
-    typeof value.hostSessionId === "string" &&
-    isFiniteNumber(value.voxelRevision) &&
-    typeof value.voxelAuthorityHash === "string" &&
-    isFiniteNumber(value.voxelSolidCount) &&
-    typeof value.voxelNavigationHash === "string" &&
-    isFiniteNumber(value.voxelProbePathLength) &&
-    Array.isArray(value.voxelMeshes) &&
-    Array.isArray(value.lights) &&
-    (value.generatedEnvironment === null ||
-      isRecord(value.generatedEnvironment))
+    value.schemaVersion === 1 &&
+    typeof value.id === "string" &&
+    isFiniteVector4(value.color) &&
+    (value.texture === null || typeof value.texture === "string") &&
+    isFiniteNumber(value.roughness) &&
+    isFiniteVector4(value.textureTint) &&
+    isFiniteVector3(value.emissionColor) &&
+    isFiniteNumber(value.emissionIntensity) &&
+    (value.uvStrategy === "flat" ||
+      value.uvStrategy === "planar" ||
+      value.uvStrategy === "atlas")
+  );
+}
+
+function isRuntimeStaticMesh(value: unknown): value is StaticMeshAsset {
+  if (
+    !isRecord(value) ||
+    typeof value.asset !== "string" ||
+    !isRecord(value.payload) ||
+    !isRecord(value.payload.layout) ||
+    !isRecord(value.payload.bounds) ||
+    !isRecord(value.payload.source) ||
+    !Array.isArray(value.payload.groups) ||
+    !Array.isArray(value.materialSlots) ||
+    !isRecord(value.collision)
+  ) {
+    return false;
+  }
+  const { layout, bounds, source } = value.payload;
+  if (
+    !isSafeNonNegativeInteger(layout.vertexCount) ||
+    !isSafeNonNegativeInteger(layout.indexCount) ||
+    !Array.isArray(layout.attributes) ||
+    !isFiniteVector3(bounds.min) ||
+    !isFiniteVector3(bounds.max)
+  ) {
+    return false;
+  }
+  const vertexCount = layout.vertexCount;
+  const indexCount = layout.indexCount;
+  const boundsMin = bounds.min;
+  const boundsMax = bounds.max;
+  if (
+    boundsMin[0] > boundsMax[0] ||
+    boundsMin[1] > boundsMax[1] ||
+    boundsMin[2] > boundsMax[2] ||
+    source.kind !== "inline" ||
+    !Array.isArray(source.positions) ||
+    !Array.isArray(source.normals) ||
+    !Array.isArray(source.indices) ||
+    source.positions.length !== vertexCount * 3 ||
+    source.normals.length !== vertexCount * 3 ||
+    source.indices.length !== indexCount ||
+    !source.positions.every(isFiniteNumber) ||
+    !source.normals.every(isFiniteNumber) ||
+    !source.indices.every(
+      (index) =>
+        Number.isSafeInteger(index) && index >= 0 && index < vertexCount,
+    )
+  ) {
+    return false;
+  }
+  return (
+    value.materialSlots.every(
+      (slot) =>
+        isRecord(slot) &&
+        isSafeNonNegativeInteger(slot.slot) &&
+        typeof slot.material === "string",
+    ) &&
+    (value.collision.kind === "visualOnly" ||
+      value.collision.kind === "aabbFallback" ||
+      (value.collision.kind === "proxy" &&
+        typeof value.collision.proxyAsset === "string"))
   );
 }
 
@@ -1372,9 +1483,23 @@ function isRuntimeEnemyState(value: unknown): boolean {
   );
 }
 
-function isFiniteVector3(value: unknown): boolean {
+function isSafeNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function isFiniteVector3(
+  value: unknown,
+): value is readonly [number, number, number] {
   return (
     Array.isArray(value) && value.length === 3 && value.every(isFiniteNumber)
+  );
+}
+
+function isFiniteVector4(
+  value: unknown,
+): value is readonly [number, number, number, number] {
+  return (
+    Array.isArray(value) && value.length === 4 && value.every(isFiniteNumber)
   );
 }
 
@@ -1491,6 +1616,8 @@ function runtimeStateResources(
     voxelProbePathLength: resources.voxelProbePathLength,
     voxelMeshes: resources.voxelMeshes,
     lights: resources.lights,
+    renderMaterials: resources.renderMaterials,
+    staticMeshes: resources.staticMeshes,
     generatedEnvironment: resources.generatedEnvironment,
   };
 }

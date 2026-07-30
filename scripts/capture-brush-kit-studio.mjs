@@ -6,12 +6,41 @@ import { resolve } from "node:path";
 const ROOT = resolve(import.meta.dirname, "..");
 const OUTPUT = resolve(ROOT, "docs/evidence");
 const HOST = process.env.RUSTY_STUDIO_BRUSH_HOST ?? "http://127.0.0.1:4396";
-const PROJECT_HASH = JSON.parse(
-  await readFile(
-    resolve(ROOT, "docs/evidence/voxel-brush-kit-authoring.json"),
-    "utf8",
-  ),
-).finalHash;
+const EVIDENCE_STEM =
+  process.env.RUSTY_STUDIO_EVIDENCE_STEM ?? "voxel-brush-kit";
+const AUTHORING_EVIDENCE =
+  process.env.RUSTY_STUDIO_AUTHORING_EVIDENCE ??
+  "docs/evidence/voxel-brush-kit-authoring.json";
+const PRIMARY_FOCUS =
+  process.env.RUSTY_STUDIO_PRIMARY_FOCUS ?? "brush-proof-wall-north-east";
+const SECONDARY_FOCUS =
+  process.env.RUSTY_STUDIO_SECONDARY_FOCUS ?? "brush-proof-wall-north-west";
+const OVERVIEW_SCREENSHOT =
+  process.env.RUSTY_STUDIO_OVERVIEW_SCREENSHOT ??
+  "voxel-brush-kit-studio-overview.png";
+const PRIMARY_SCREENSHOT =
+  process.env.RUSTY_STUDIO_PRIMARY_SCREENSHOT ??
+  "voxel-brush-kit-dense-wall.png";
+const SECONDARY_SCREENSHOT =
+  process.env.RUSTY_STUDIO_SECONDARY_SCREENSHOT ??
+  "voxel-brush-kit-conservative-wall.png";
+const authoringEvidence = JSON.parse(
+  await readFile(resolve(ROOT, AUTHORING_EVIDENCE), "utf8"),
+);
+const PROJECT_HASH =
+  authoringEvidence.finalHash ?? authoringEvidence.project?.finalHash;
+if (typeof PROJECT_HASH !== "string") {
+  throw new Error("authoring evidence has no final project hash");
+}
+const ENGINE_REVISION = (JSON.parse(
+  await readFile(resolve(ROOT, "package.json"), "utf8"),
+).dependencies["@rusty-engine/renderer-host"].match(/#([0-9a-f]{40})&/u) ??
+  [])[1];
+if (ENGINE_REVISION === undefined) {
+  throw new Error(
+    "renderer-host dependency is not pinned to an exact revision",
+  );
+}
 const PORT = 9436;
 const profile = await mkdtemp(resolve(tmpdir(), "rusty-brush-studio-"));
 const browser = spawn(
@@ -81,7 +110,15 @@ async function waitFor(expression, description) {
     if (await evaluate(expression)) return;
     await delay(125);
   }
-  throw new Error(`timed out waiting for ${description}`);
+  const diagnostic = await evaluate(`({
+    title: document.title,
+    projectHash: document.querySelector('[data-project-hash]')
+      ?.getAttribute('data-project-hash'),
+    text: document.body?.innerText?.slice(0, 2000)
+  })`);
+  throw new Error(
+    `timed out waiting for ${description}: ${JSON.stringify(diagnostic)}`,
+  );
 }
 
 async function frameEvidence() {
@@ -203,21 +240,21 @@ try {
     "initial complete Studio submission",
   );
   await mkdir(OUTPUT, { recursive: true });
-  await screenshot("voxel-brush-kit-studio-overview.png");
-  await focus("brush-proof-wall-north-east");
+  await screenshot(OVERVIEW_SCREENSHOT);
+  await focus(PRIMARY_FOCUS);
   const denseSubmission = await waitForSubmission(
     initialSubmission.count + 1,
     "presentation",
     "dense-wall selection presentation",
   );
-  await screenshot("voxel-brush-kit-dense-wall.png");
-  await focus("brush-proof-wall-north-west");
+  await screenshot(PRIMARY_SCREENSHOT);
+  await focus(SECONDARY_FOCUS);
   const conservativeSubmission = await waitForSubmission(
     denseSubmission.count + 1,
     "presentation",
     "conservative-wall selection presentation",
   );
-  await screenshot("voxel-brush-kit-conservative-wall.png");
+  await screenshot(SECONDARY_SCREENSHOT);
 
   const resizeProof = [];
   for (const [width, height] of [
@@ -295,7 +332,7 @@ try {
     "complete",
     "reloaded complete Studio submission",
   );
-  await focus("brush-proof-wall-north-east");
+  await focus(PRIMARY_FOCUS);
   const reloadedPresentation = await waitForSubmission(
     reloadedSubmission.count + 1,
     "presentation",
@@ -363,12 +400,12 @@ try {
     viewport: [1600, 900],
     host: HOST,
     screenshots: [
-      "docs/evidence/voxel-brush-kit-studio-overview.png",
-      "docs/evidence/voxel-brush-kit-dense-wall.png",
-      "docs/evidence/voxel-brush-kit-conservative-wall.png",
+      `docs/evidence/${OVERVIEW_SCREENSHOT}`,
+      `docs/evidence/${PRIMARY_SCREENSHOT}`,
+      `docs/evidence/${SECONDARY_SCREENSHOT}`,
     ],
     rendererSubmission: {
-      engineRevision: "70808ba1b74b908c47edfbf3b1282fb2eb5f192d",
+      engineRevision: ENGINE_REVISION,
       event: "rusty_studio_viewport_frame_submitted.v1",
       outlet: "StudioShellComponent.frameSubmitted",
       collection:
@@ -376,7 +413,7 @@ try {
     },
   };
   await writeFile(
-    resolve(OUTPUT, "voxel-brush-kit-studio-browser.json"),
+    resolve(OUTPUT, `${EVIDENCE_STEM}-studio-browser.json`),
     `${JSON.stringify(proof, null, 2)}\n`,
   );
   process.stdout.write(`${JSON.stringify(proof, null, 2)}\n`);

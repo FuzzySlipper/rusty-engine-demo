@@ -12,6 +12,10 @@ const BROWSER_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/voxel-brush-kit-studio-browser.json",
 );
+const PROP_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/prop-kit-authoring.json",
+);
 
 const expectedModules = new Set([
   "wall-conservative",
@@ -49,14 +53,18 @@ const projectBytes = await readFile(PROJECT_PATH);
 const project = JSON.parse(projectBytes);
 const evidence = JSON.parse(await readFile(EVIDENCE_PATH, "utf8"));
 const browser = JSON.parse(await readFile(BROWSER_EVIDENCE_PATH, "utf8"));
+const propEvidence = JSON.parse(await readFile(PROP_EVIDENCE_PATH, "utf8"));
 const scene = project.scenes.find(
   ({ id }) => id === evidence.proofRoom.sceneId,
 );
+const currentProjectHash = sha256(projectBytes);
 
 invariant(scene !== undefined, "proof-room scene must exist");
 invariant(
-  sha256(projectBytes) === evidence.finalHash,
-  "evidence must name the exact canonical project bytes",
+  currentProjectHash === evidence.finalHash ||
+    (propEvidence.project.startingHash === evidence.finalHash &&
+      propEvidence.project.finalHash === currentProjectHash),
+  "current project must be the exact brush proof or its recorded prop-kit descendant",
 );
 invariant(
   evidence.finalHash === evidence.readbackHash,

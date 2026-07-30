@@ -205,6 +205,44 @@ canonical conversion provenance. `scripts/check-brush-kit.mjs` verifies those va
 the canonical sparse-run counts, 25 shared-definition instances, decorative proxy separation,
 fresh-process Studio proof, and screenshots.
 
+## VC5 serialized industrial prop kit
+
+Den task #6354 replaces the former non-actor primitive presentation with canonical Studio-imported
+static meshes. The exact derivative/source/bounds/material record is
+`content/assets/prop-kit/source-manifest.json`, and the exact Studio import, appearance mapping,
+no-op reimport, canonical reread, and fresh-process reconstruction receipt is
+`docs/evidence/prop-kit-authoring.json`.
+
+Eight mesh sources are copied from the local Kenney packs and retained with their unmodified
+source hashes:
+
+| Product asset                     | Kenney source                   | SHA-256                                                            |
+| --------------------------------- | ------------------------------- | ------------------------------------------------------------------ |
+| `mesh/prop-kit/security-door`     | Factory `door-wide-closed.glb`  | `987837d7b45bca466c5f2268fa0193e014374cc0d2ef0784f6c37092856b71d0` |
+| `mesh/prop-kit/control-panel`     | Factory `screen-panel-wide.glb` | `092066a198f1f81c857ceab23497dd3ea6066d261a91497cf0f83f7ba951c4d0` |
+| `mesh/prop-kit/hazard-marker`     | Factory `button-floor-square`   | `f32def1dd9a57939b096d64361fc5058a8ba240a0394951e8681fb7326ebdeb6` |
+| `mesh/prop-kit/extraction-beacon` | Factory `scanner-high.glb`      | `b71d8ab86fe1a12542eac14e4185e17babf15ac086c3343acf8600a080ed985a` |
+| `mesh/prop-kit/level-exit`        | Factory `indicator-special`     | `3cd514de3e283705df2baccf7cea62a70ba64e87311252fe26788be4377c0d49` |
+| `mesh/prop-kit/status-runner`     | Factory `scanner-low.glb`       | `0baa337bc3c653522ce01baa09cc02b8810640225e823fe735dc8e4167a7913b` |
+| `mesh/prop-kit/landmark-crane`    | Factory `crane.glb`             | `ceaf20fb976ce0415d2b3d40e723b6ad377845818fa4fa68b55434108b1a6880` |
+| `mesh/prop-kit/landmark-tank`     | Industrial `detail-tank.glb`    | `b1edc2953c590c16f1d8280dfeb9073af6c710ac3d587f3dba144f69363d799b` |
+
+The copied Factory Kit and City Kit Industrial notices are CC0 1.0, with SHA-256 values
+`61e86565dd297e143ad631594980eda0a17fc81a4cd7c6d71acf2f5e0cad30b6` and
+`bf1195a387c996ab4bb6d05bb7ead8c5b233c0532634fec916ef9e090936c3e5`.
+`scripts/build-loading-bay-prop-kit.mjs` directly extracts bounded GLB geometry because the
+installed Blender 5.1.2 glTF add-on cannot load without NumPy. It also deterministically authors
+the nine original Loading Bay derivatives for energy cells, scatter shells, med patches, impact
+vests, maintenance passes, three weapons, and the muzzle flash. Those original shapes, palette
+materials, and names do not derive from Doom or another game.
+
+Every imported static mesh declares `visualOnly`. Existing Rust entity bounds, collision,
+kinematic, trigger, hazard, pickup, door, and progression components remain the sole gameplay
+authority. The two new crane/tank landmarks intentionally have none of those components.
+`scripts/check-prop-kit.mjs` verifies the copied notices, source and derivative hashes, admitted
+bounds/material topology, Studio import provenance, exact mappings, viewmodel resources, and
+visual/gameplay proxy separation.
+
 ## Proper FPS campaign design
 
 The product architecture, protocol targets, content vocabulary, and original level route in
@@ -283,9 +321,11 @@ vocabulary of a compact key/switch/secret/weapon-upgrade FPS route. No Doom sour
 geometry, node/blockmap data, textures, flats, sprites, sounds, music, names, story text, or trade
 dress was read, converted, copied, or distributed.
 
-The authored primitive asset identities in the campaign resolve through the existing downstream
-projection adapter and the exact-pinned shared renderer. They are not imported art files. The only
-checked-in third-party visual assets remain the separately itemized Kenney CC0 sources above.
+The original authored placeholder identities described above remain historical introduction
+points. Under #6354 every visible non-actor gameplay entity instead references the serialized
+prop-kit assets recorded in the preceding section. The player and enemy archetypes remain the only
+bounded primitive fallbacks pending their separately owned actor task. All checked-in third-party
+visual sources are the separately itemized Kenney CC0 files in this document.
 Campaign route checkpoints, deterministic artifact hashes, and product proof are recorded in
 `docs/loading-bay-playtest.md`.
 

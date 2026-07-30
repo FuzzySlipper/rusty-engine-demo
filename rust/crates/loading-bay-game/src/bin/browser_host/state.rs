@@ -9,6 +9,7 @@ use loading_bay_game::{
     SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretRegionState, StoredLight,
     VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
 };
+use render_model::{MaterialUvStrategy, RenderMaterialDescriptor, StaticMeshAsset};
 use serde::Serialize;
 
 use super::presentation::{project_presentation, BrowserFeedbackProjection, BrowserPresentation};
@@ -22,6 +23,7 @@ struct BrowserProjectionNode {
     asset: String,
     translation: Option<[f32; 3]>,
     visible: bool,
+    visual_state: &'static str,
 }
 
 #[derive(Debug, Serialize)]
@@ -276,6 +278,8 @@ pub(super) struct BrowserStaticResources {
     voxel_meshes: Vec<BrowserVoxelMeshChunk>,
     lights: Vec<BrowserAuthoredLight>,
     generated_environment: Option<BrowserGeneratedEnvironment>,
+    render_materials: Vec<RenderMaterialDescriptor>,
+    static_meshes: Vec<StaticMeshAsset>,
 }
 
 pub(super) fn browser_state(
@@ -300,6 +304,7 @@ pub(super) fn browser_dynamic_state(
         .projection
         .into_iter()
         .map(|node| BrowserProjectionNode {
+            visual_state: projection_visual_state(runtime, node.entity),
             id: node.entity.raw(),
             name: node.name,
             asset: node.asset,
@@ -776,9 +781,10 @@ pub(super) fn browser_static_revision(host: &BrowserRuntime) -> String {
         .collision_scene()
         .expect("browser project collision scene");
     format!(
-        "{}:{:016x}",
+        "{}:{:016x}:{}",
         scene.source_revision().raw(),
-        scene.authority_hash()
+        scene.authority_hash(),
+        host.project.content_hash,
     )
 }
 
@@ -839,6 +845,39 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
             })
         })
         .collect();
+    let render_materials = document
+        .assets
+        .iter()
+        .filter_map(|asset| {
+            let material = asset.material.as_ref()?;
+            let style = &material.style;
+            Some(RenderMaterialDescriptor {
+                schema_version: 1,
+                id: asset.id.clone(),
+                color: style.color,
+                texture: style.texture.as_ref().map(|reference| reference.id.clone()),
+                roughness: style.roughness,
+                texture_tint: style.texture_tint,
+                emission_color: [
+                    style.emission_color[0],
+                    style.emission_color[1],
+                    style.emission_color[2],
+                ],
+                emission_intensity: style.emissive,
+                uv_strategy: match style.uv_strategy.as_str() {
+                    "flat" => MaterialUvStrategy::Flat,
+                    "planar" => MaterialUvStrategy::Planar,
+                    "atlas" => MaterialUvStrategy::Atlas,
+                    other => panic!("admitted material retained unknown UV strategy {other}"),
+                },
+            })
+        })
+        .collect();
+    let static_meshes = document
+        .assets
+        .iter()
+        .filter_map(|asset| asset.static_mesh.clone())
+        .collect();
     BrowserStaticResources {
         host_session_id: host.host_session_id.clone(),
         static_revision: browser_static_revision(host),
@@ -858,5 +897,50 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
         voxel_meshes,
         lights,
         generated_environment,
+        render_materials,
+        static_meshes,
     }
+}
+
+fn projection_visual_state(runtime: &GameRuntime, entity: EntityId) -> &'static str {
+    if let Some(door) = runtime.session().door(entity) {
+        return match door.state {
+            DoorState::Closed => "closed",
+            DoorState::Open => "open",
+        };
+    }
+    if let Some(switch) = runtime.session().switch(entity) {
+        return if switch.activation_count == 0 {
+            "inactive"
+        } else {
+            "active"
+        };
+    }
+    if let Some(pickup) = runtime.session().pickup(entity) {
+        return match pickup.state {
+            PickupState::Dormant => "dormant",
+            PickupState::Available => "available",
+            PickupState::Collected { .. } => "collected",
+        };
+    }
+    if let Some(hazard) = runtime.session().hazard(entity) {
+        return if hazard.ready_at_tick <= runtime.tick() {
+            "active"
+        } else {
+            "cooling"
+        };
+    }
+    if let Some(beacon) = runtime.session().extraction_beacon(entity) {
+        return match beacon.state {
+            ExtractionBeaconState::Standby => "standby",
+            ExtractionBeaconState::Active { .. } => "active",
+        };
+    }
+    if let Some(exit) = runtime.session().level_exit(entity) {
+        return match exit.state {
+            LevelExitState::Available => "available",
+            LevelExitState::Completed { .. } => "completed",
+        };
+    }
+    "default"
 }

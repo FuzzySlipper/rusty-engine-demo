@@ -1,11 +1,11 @@
 import {
   renderHandle,
-  type Material,
   type RenderDiff,
   type RenderFrameDiff,
   type RenderHandle,
   type RenderMetadata,
   type RenderNode,
+  type StaticMeshInstanceDescriptor,
   type Transform,
 } from "@rusty-engine/render-contracts";
 
@@ -27,23 +27,11 @@ export interface WeaponViewmodelPlan extends RenderFrameDiff {
   readonly commit: () => void;
 }
 
-interface WeaponPart {
-  readonly color: Material["color"];
-  readonly label: string;
-  readonly scale: readonly [number, number, number];
-  readonly translation: readonly [number, number, number];
-  readonly visible: boolean;
-}
-
 interface WeaponPreset {
   readonly item: string;
-  readonly parts: readonly [
-    WeaponPart,
-    WeaponPart,
-    WeaponPart,
-    WeaponPart,
-    WeaponPart,
-  ];
+  readonly asset: string;
+  readonly translation: readonly [number, number, number];
+  readonly scale: readonly [number, number, number];
   readonly muzzle: readonly [number, number, number];
 }
 
@@ -58,132 +46,31 @@ interface ViewmodelState {
 }
 
 const VIEWMODEL_ROOT = renderHandle(9_000_000);
-const VIEWMODEL_PARTS = [
-  renderHandle(9_000_001),
-  renderHandle(9_000_002),
-  renderHandle(9_000_003),
-  renderHandle(9_000_004),
-  renderHandle(9_000_005),
-] as const;
-const VIEWMODEL_MUZZLE = renderHandle(9_000_006);
-const VIEWMODEL_HANDLES = [...VIEWMODEL_PARTS, VIEWMODEL_MUZZLE] as const;
+const VIEWMODEL_WEAPON = renderHandle(9_000_001);
+const VIEWMODEL_MUZZLE = renderHandle(9_000_002);
 const IDENTITY_ROTATION = [0, 0, 0, 1] as const;
-const HIDDEN_PART: WeaponPart = {
-  color: [0, 0, 0, 0],
-  label: "unused",
-  scale: [0.001, 0.001, 0.001],
-  translation: [0, 0, 0],
-  visible: false,
-};
 
 const WEAPON_PRESETS: Readonly<Record<string, WeaponPreset>> = {
   "weapon/arc-pistol": {
     item: "weapon/arc-pistol",
+    asset: "mesh/prop-kit/arc-pistol",
+    translation: [0.23, -0.24, -0.78],
+    scale: [0.72, 0.72, 0.72],
     muzzle: [0.23, -0.14, -1.08],
-    parts: [
-      part(
-        "receiver",
-        [0.23, -0.21, -0.7],
-        [0.19, 0.14, 0.34],
-        [0.15, 0.3, 0.34, 1],
-      ),
-      part(
-        "barrel",
-        [0.23, -0.16, -0.91],
-        [0.08, 0.07, 0.27],
-        [0.16, 0.73, 0.92, 1],
-      ),
-      part(
-        "grip",
-        [0.23, -0.39, -0.59],
-        [0.12, 0.28, 0.13],
-        [0.1, 0.13, 0.16, 1],
-      ),
-      part(
-        "coil",
-        [0.23, -0.09, -0.66],
-        [0.13, 0.035, 0.14],
-        [0.22, 0.94, 1, 1],
-      ),
-      part(
-        "sight",
-        [0.23, -0.055, -0.83],
-        [0.025, 0.04, 0.11],
-        [0.88, 0.97, 1, 1],
-      ),
-    ],
   },
   "weapon/breach-scattergun": {
     item: "weapon/breach-scattergun",
+    asset: "mesh/prop-kit/breach-scattergun",
+    translation: [0.28, -0.27, -0.78],
+    scale: [0.7, 0.7, 0.7],
     muzzle: [0.28, -0.19, -1.34],
-    parts: [
-      part(
-        "receiver",
-        [0.28, -0.29, -0.73],
-        [0.24, 0.18, 0.42],
-        [0.22, 0.18, 0.13, 1],
-      ),
-      part(
-        "upper-barrel",
-        [0.24, -0.2, -1.03],
-        [0.075, 0.075, 0.57],
-        [0.62, 0.57, 0.48, 1],
-      ),
-      part(
-        "lower-barrel",
-        [0.32, -0.2, -1.03],
-        [0.075, 0.075, 0.57],
-        [0.52, 0.48, 0.42, 1],
-      ),
-      part(
-        "pump",
-        [0.28, -0.35, -0.96],
-        [0.26, 0.14, 0.25],
-        [0.68, 0.32, 0.13, 1],
-      ),
-      part(
-        "stock",
-        [0.28, -0.43, -0.45],
-        [0.21, 0.19, 0.31],
-        [0.36, 0.19, 0.1, 1],
-      ),
-    ],
   },
   "weapon/rivet-carbine": {
     item: "weapon/rivet-carbine",
+    asset: "mesh/prop-kit/rivet-carbine",
+    translation: [0.27, -0.23, -0.77],
+    scale: [0.72, 0.72, 0.72],
     muzzle: [0.27, -0.13, -1.24],
-    parts: [
-      part(
-        "receiver",
-        [0.27, -0.25, -0.72],
-        [0.23, 0.17, 0.46],
-        [0.13, 0.26, 0.29, 1],
-      ),
-      part(
-        "barrel",
-        [0.27, -0.14, -1.03],
-        [0.065, 0.065, 0.51],
-        [0.32, 0.64, 0.66, 1],
-      ),
-      part(
-        "shroud",
-        [0.27, -0.2, -0.91],
-        [0.16, 0.12, 0.3],
-        [0.15, 0.43, 0.44, 1],
-      ),
-      part(
-        "magazine",
-        [0.27, -0.46, -0.7],
-        [0.12, 0.31, 0.16],
-        [0.75, 0.36, 0.12, 1],
-      ),
-      part(
-        "sight",
-        [0.27, -0.055, -0.71],
-        [0.035, 0.07, 0.18],
-        [0.88, 0.58, 0.19, 1],
-      ),
-    ],
   },
 };
 
@@ -199,9 +86,9 @@ const EMPTY_STATE: ViewmodelState = {
 
 /**
  * Game-specific descriptor owner for the shared renderer's bounded,
- * camera-relative viewmodel layer. It derives only disposable transforms from
- * accepted Rust state and facts; it has no input, aim, damage, or clock
- * authority.
+ * camera-relative viewmodel layer. Geometry is always a serialized project
+ * asset; this adapter derives only disposable transforms and visibility from
+ * accepted Rust state and facts.
  */
 export class WeaponViewmodelAdapter {
   #revision = 0;
@@ -260,7 +147,7 @@ export class WeaponViewmodelAdapter {
     return {
       bobPhase: this.#state.bobPhase,
       impulse: this.#state.impulse,
-      liveNodeCount: this.#state.mounted ? VIEWMODEL_HANDLES.length + 1 : 0,
+      liveNodeCount: this.#state.mounted ? 3 : 0,
       mounted: this.#state.mounted,
       visible: this.#state.visible,
       weapon: this.#state.weapon?.item ?? null,
@@ -278,42 +165,47 @@ export class WeaponViewmodelAdapter {
         parent: null,
         node: rootNode(next),
       });
-      VIEWMODEL_PARTS.forEach((handle, index) => {
-        ops.push({
-          op: "create",
-          handle,
-          parent: VIEWMODEL_ROOT,
-          node: partNode(next, index),
-        });
+      ops.push({
+        op: "createStaticMeshInstance",
+        handle: VIEWMODEL_WEAPON,
+        parent: VIEWMODEL_ROOT,
+        instance: weaponInstance(next),
       });
       ops.push({
-        op: "create",
+        op: "createStaticMeshInstance",
         handle: VIEWMODEL_MUZZLE,
         parent: VIEWMODEL_ROOT,
-        node: muzzleNode(next),
+        instance: muzzleInstance(next),
       });
     } else if (previous.mounted && !next.mounted) {
-      for (const handle of [...VIEWMODEL_HANDLES].reverse()) {
-        ops.push({ op: "destroy", handle });
-      }
+      ops.push({ op: "destroy", handle: VIEWMODEL_MUZZLE });
+      ops.push({ op: "destroy", handle: VIEWMODEL_WEAPON });
       ops.push({ op: "destroy", handle: VIEWMODEL_ROOT });
     } else if (previous.mounted && next.mounted) {
       const previousRoot = rootNode(previous);
       const nextRoot = rootNode(next);
-      if (!sameNodePresentation(previousRoot, nextRoot)) {
+      if (!samePresentation(previousRoot, nextRoot)) {
         ops.push(updateNode(VIEWMODEL_ROOT, nextRoot));
       }
-      VIEWMODEL_PARTS.forEach((handle, index) => {
-        const previousPart = partNode(previous, index);
-        const nextPart = partNode(next, index);
-        if (!sameNodePresentation(previousPart, nextPart)) {
-          ops.push(updateNode(handle, nextPart));
+      if (previous.weapon?.asset !== next.weapon?.asset) {
+        ops.push({ op: "destroy", handle: VIEWMODEL_WEAPON });
+        ops.push({
+          op: "createStaticMeshInstance",
+          handle: VIEWMODEL_WEAPON,
+          parent: VIEWMODEL_ROOT,
+          instance: weaponInstance(next),
+        });
+      } else {
+        const previousWeapon = weaponInstance(previous);
+        const nextWeapon = weaponInstance(next);
+        if (!samePresentation(previousWeapon, nextWeapon)) {
+          ops.push(updateInstance(VIEWMODEL_WEAPON, nextWeapon));
         }
-      });
-      const previousMuzzle = muzzleNode(previous);
-      const nextMuzzle = muzzleNode(next);
-      if (!sameNodePresentation(previousMuzzle, nextMuzzle)) {
-        ops.push(updateNode(VIEWMODEL_MUZZLE, nextMuzzle));
+      }
+      const previousMuzzle = muzzleInstance(previous);
+      const nextMuzzle = muzzleInstance(next);
+      if (!samePresentation(previousMuzzle, nextMuzzle)) {
+        ops.push(updateInstance(VIEWMODEL_MUZZLE, nextMuzzle));
       }
     }
     let committed = false;
@@ -335,15 +227,6 @@ export class WeaponViewmodelAdapter {
   }
 }
 
-function part(
-  label: string,
-  translation: readonly [number, number, number],
-  scale: readonly [number, number, number],
-  color: Material["color"],
-): WeaponPart {
-  return { color, label, scale, translation, visible: true };
-}
-
 function rootNode(state: ViewmodelState): RenderNode {
   return {
     geometry: { kind: "group" },
@@ -359,41 +242,46 @@ function rootNode(state: ViewmodelState): RenderNode {
   };
 }
 
-function partNode(state: ViewmodelState, index: number): RenderNode {
-  const part = state.weapon?.parts[index] ?? HIDDEN_PART;
+function weaponInstance(state: ViewmodelState): StaticMeshInstanceDescriptor {
+  const weapon = requiredWeapon(state);
   return {
-    geometry: { kind: "cube" },
-    material: { color: part.color, wireframe: false },
-    transform: transform(part.translation, part.scale),
-    visible: state.visible && part.visible,
-    layer: "viewmodel",
-    metadata: metadata(`loading-bay-viewmodel-${part.label}`, [
+    asset: weapon.asset,
+    transform: transform(weapon.translation, weapon.scale),
+    visible: state.visible,
+    materialOverrides: [],
+    metadata: metadata("loading-bay-viewmodel-weapon", [
       "loading-bay",
       "weapon-viewmodel",
-      state.weapon?.item ?? "unavailable",
+      "serialized-asset",
+      weapon.item,
     ]),
   };
 }
 
-function muzzleNode(state: ViewmodelState): RenderNode {
+function muzzleInstance(state: ViewmodelState): StaticMeshInstanceDescriptor {
+  const weapon = requiredWeapon(state);
   const intensity = state.flashIntensity;
-  const size = Math.max(0.001, 0.11 * intensity);
+  const size = Math.max(0.001, 0.55 * intensity);
   return {
-    geometry: { kind: "sphere" },
-    material: {
-      color: [1, 0.86, 0.28, 0.92 * intensity],
-      wireframe: false,
-    },
-    transform: transform(state.weapon?.muzzle ?? [0, 0, 0], [size, size, size]),
+    asset: "mesh/prop-kit/muzzle-flash",
+    transform: transform(weapon.muzzle, [size, size, size]),
     visible: state.visible && state.impulse === "attack" && intensity > 0,
-    layer: "viewmodel",
+    materialOverrides: [],
     metadata: metadata("loading-bay-viewmodel-muzzle-flash", [
       "loading-bay",
       "weapon-viewmodel",
       "muzzle-flash",
-      state.weapon?.item ?? "unavailable",
+      "serialized-asset",
+      weapon.item,
     ]),
   };
+}
+
+function requiredWeapon(state: ViewmodelState): WeaponPreset {
+  if (state.weapon === null) {
+    throw new Error("mounted weapon viewmodel has no serialized asset");
+  }
+  return state.weapon;
 }
 
 function rootTransform(state: ViewmodelState): Transform {
@@ -442,11 +330,27 @@ function updateNode(handle: RenderHandle, node: RenderNode): RenderDiff {
   };
 }
 
-function sameNodePresentation(left: RenderNode, right: RenderNode): boolean {
+function updateInstance(
+  handle: RenderHandle,
+  instance: StaticMeshInstanceDescriptor,
+): RenderDiff {
+  return {
+    op: "update",
+    handle,
+    transform: instance.transform,
+    material: null,
+    visible: instance.visible,
+    metadata: instance.metadata,
+  };
+}
+
+function samePresentation(
+  left: RenderNode | StaticMeshInstanceDescriptor,
+  right: RenderNode | StaticMeshInstanceDescriptor,
+): boolean {
   return (
     left.visible === right.visible &&
     JSON.stringify(left.transform) === JSON.stringify(right.transform) &&
-    JSON.stringify(left.material) === JSON.stringify(right.material) &&
     JSON.stringify(left.metadata) === JSON.stringify(right.metadata)
   );
 }

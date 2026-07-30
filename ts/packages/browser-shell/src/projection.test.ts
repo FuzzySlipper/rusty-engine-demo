@@ -6,6 +6,7 @@ import {
   derivePlayerCameraPose,
   entityHandle,
   type RuntimeBrowserState,
+  type RuntimeProjectionNode,
 } from "./projection.ts";
 
 function state(
@@ -98,10 +99,58 @@ function state(
     interaction: null,
     voxelMeshes: [],
     lights: [],
+    renderMaterials: [],
+    staticMeshes: [],
     generatedEnvironment: null,
     enemies: [],
     presentation: { animationStates: [], cues: [] },
     lastEvents: [],
+  };
+}
+
+function serializedState(
+  projection: readonly RuntimeProjectionNode[],
+): RuntimeBrowserState {
+  return {
+    ...state(projection),
+    renderMaterials: [
+      {
+        schemaVersion: 1,
+        id: "material/test-prop",
+        color: [0.4, 0.5, 0.6, 1],
+        texture: null,
+        roughness: 0.8,
+        textureTint: [1, 1, 1, 1],
+        emissionColor: [0, 0, 0],
+        emissionIntensity: 0,
+        uvStrategy: "flat",
+      },
+    ],
+    staticMeshes: projection.map((node) => ({
+      asset: node.asset,
+      payload: {
+        layout: {
+          vertexCount: 3,
+          indexCount: 3,
+          indexWidth: "u32",
+          attributes: [
+            { name: "position", components: 3, kind: "f32" },
+            { name: "normal", components: 3, kind: "f32" },
+          ],
+        },
+        groups: [{ materialSlot: 0, start: 0, count: 3 }],
+        bounds: { min: [-0.1, -0.1, 0], max: [0.1, 0.1, 0] },
+        source: {
+          kind: "inline",
+          positions: [-0.1, -0.1, 0, 0.1, -0.1, 0, 0, 0.1, 0],
+          normals: [0, 0, 1, 0, 0, 1, 0, 0, 1],
+          indices: [0, 1, 2],
+        },
+        provenance: "generated",
+      },
+      materialSlots: [{ slot: 0, material: "material/test-prop" }],
+      collision: { kind: "visualOnly" },
+    })),
   };
 }
 
@@ -110,9 +159,10 @@ test("whole Rust readouts become create update and destroy diffs", () => {
   const original = {
     id: 3,
     name: "exit",
-    asset: "mesh/security-door",
+    asset: "mesh/bay-rusher",
     translation: [0, 0, 8] as const,
     visible: true,
+    visualState: "default" as const,
   };
 
   const created = adapter.apply(state([original]));
@@ -144,6 +194,21 @@ test("whole Rust readouts become create update and destroy diffs", () => {
   assert.equal(adapter.trackedEntityCount, 0);
 });
 
+test("a non-actor appearance cannot fall back when its serialized mesh is absent", () => {
+  const missing = {
+    id: 20,
+    name: "arrival-energy-cache",
+    asset: "mesh/prop-kit/energy-cell",
+    translation: [4.5, 1.5, 9.5] as const,
+    visible: true,
+    visualState: "available" as const,
+  };
+  assert.throws(
+    () => new RuntimeProjectionAdapter().apply(state([missing])),
+    /missing canonical static mesh mesh\/prop-kit\/energy-cell/,
+  );
+});
+
 test("enemy archetype assets project distinct silhouettes and materials", () => {
   const plan = new RuntimeProjectionAdapter().apply(
     state([
@@ -153,6 +218,7 @@ test("enemy archetype assets project distinct silhouettes and materials", () => 
         asset: "mesh/bay-rusher",
         translation: [1.5, 1.5, 6.5],
         visible: true,
+        visualState: "default",
       },
       {
         id: 5,
@@ -160,6 +226,7 @@ test("enemy archetype assets project distinct silhouettes and materials", () => 
         asset: "mesh/arc-warden",
         translation: [6.5, 1.5, 2.5],
         visible: true,
+        visualState: "default",
       },
     ]),
   );
@@ -180,16 +247,18 @@ test("collecting a pickup destroys only its retained entity handle", () => {
   const door = {
     id: 3,
     name: "exit",
-    asset: "mesh/security-door",
+    asset: "mesh/bay-rusher",
     translation: [0, 0, 8] as const,
     visible: true,
+    visualState: "default" as const,
   };
   const pickup = {
     id: 22,
     name: "scatter-shell-cache",
-    asset: "mesh/pickup-ammunition",
+    asset: "mesh/arc-warden",
     translation: [4.5, 1.5, 2.5] as const,
     visible: true,
+    visualState: "default" as const,
   };
   const created = adapter.apply(state([door, pickup]));
   created.commit();
@@ -323,9 +392,10 @@ test("camera pose is rebuilt as a presentation offset from accepted player state
   const localPlayer = {
     id: 1,
     name: "player",
-    asset: "primitive/player-marker",
+    asset: "mesh/player-marker",
     translation: [0.5, 0.5, 0.5] as const,
     visible: true,
+    visualState: "default" as const,
   };
   const localPlan = new RuntimeProjectionAdapter().apply(state([localPlayer]));
   const created = localPlan.ops[0];
@@ -341,9 +411,10 @@ test("demo-owned beacon state changes retained Three material without a generic 
     asset: "mesh/extraction-beacon",
     translation: [4.5, 1.5, 12.5] as const,
     visible: true,
+    visualState: "standby" as const,
   };
   const standby = {
-    ...state([beacon]),
+    ...serializedState([beacon]),
     extractionBeacon: {
       id: 7,
       state: "standby" as const,
@@ -354,10 +425,13 @@ test("demo-owned beacon state changes retained Three material without a generic 
   };
 
   const standbyPlan = adapter.apply(standby);
-  const standbyCreated = standbyPlan.ops[0];
+  const standbyCreated = standbyPlan.ops.find(
+    (operation) => operation.op === "createStaticMeshInstance",
+  );
   standbyPlan.commit();
   const activePlan = adapter.apply({
     ...standby,
+    projection: [{ ...beacon, visualState: "active" as const }],
     extractionBeacon: {
       ...standby.extractionBeacon,
       state: "active",
@@ -365,15 +439,21 @@ test("demo-owned beacon state changes retained Three material without a generic 
       activatedAtTick: 9,
     },
   });
-  const active = activePlan.ops[0];
+  const active = activePlan.ops.find(
+    (operation) => operation.op === "setMaterialInstanceParameters",
+  );
 
   assert.deepEqual(
-    standbyCreated?.op === "create" ? standbyCreated.node.material.color : null,
-    [0.85, 0.54, 0.18, 1],
+    standbyCreated?.op === "createStaticMeshInstance"
+      ? standbyCreated.instance.asset
+      : null,
+    "mesh/extraction-beacon",
   );
   assert.deepEqual(
-    active?.op === "update" ? active.material?.color : null,
-    [0.22, 0.95, 0.72, 1],
+    active?.op === "setMaterialInstanceParameters"
+      ? active.parameters?.emissionIntensity
+      : null,
+    0.35,
   );
   activePlan.commit();
 });
@@ -383,9 +463,10 @@ test("rejected create update destroy and mesh plans remain retryable until commi
   const original = {
     id: 3,
     name: "exit",
-    asset: "mesh/security-door",
+    asset: "mesh/bay-rusher",
     translation: [0, 0, 8] as const,
     visible: true,
+    visualState: "default" as const,
   };
 
   const rejectedCreate = adapter.apply(state([original]));

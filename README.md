@@ -8,7 +8,7 @@ voxel, mesh, asset, and conversion mechanisms.
 
 The Rust game vertical is named `loading-bay-game`. Its Rust and browser Engine dependencies are
 public Git dependencies pinned to reviewed provider revision
-`db5641fc4e9d033112bc2b374a35933c3838e39c`; a sibling checkout is not required. The demo owns its
+`70808ba1b74b908c47edfbf3b1282fb2eb5f192d`; a sibling checkout is not required. The demo owns its
 Angular/Nx browser shell, route-scoped input lifecycle, and semantic projection adapter, while Rusty
 Engine owns the shared render contracts, retained projection, Three/WebGL backend, surface host,
 audio, particle, billboard, and telemetry hosts.
@@ -117,9 +117,12 @@ limitation changes.
 Exact transfer provenance is recorded in [docs/source-provenance.md](docs/source-provenance.md).
 Renderer/session counter semantics, budgets, and the current headed LAN baseline are recorded in
 [docs/performance.md](docs/performance.md).
-The Studio-authored visual-content campaign's authority map, complete placeholder inventory, CC0
-source shortlist, voxel-brush experiment, and exact pre-replacement comparison baseline are in
+The Studio-authored visual-content campaign's authority map, serialized prop/weapon kit, CC0
+source and license hashes, voxel-brush experiment, and exact comparison baselines are in
 [docs/visual-content-pipeline.md](docs/visual-content-pipeline.md).
+The imported industrial prop sources are Kenney CC0 1.0 assets; their copied notices and exact
+source/derivative hashes are recorded in
+[docs/source-provenance.md](docs/source-provenance.md#vc5-serialized-industrial-prop-kit).
 
 The repository's one active Rusty Engine revision is declared in
 [`engine-source.json`](engine-source.json). Check it with `./scripts/engine-revision check`, preview

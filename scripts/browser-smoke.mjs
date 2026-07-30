@@ -1040,7 +1040,7 @@ async function runViewmodelResizeProof(project) {
               document.body.dataset.weaponViewmodelLifecycle === "mounted" &&
               document.body.dataset.rendererLifecycle === "mounted" &&
               document.querySelector(".game-state-overlay") === null &&
-              document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7"`,
+              document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "3"`,
             "initial retained viewmodel",
           );
           for (const viewport of [
@@ -1066,7 +1066,7 @@ async function runViewmodelResizeProof(project) {
                   document.body.dataset.weaponViewmodel === "pass" &&
                   document.body.dataset.weaponViewmodelLifecycle === "mounted" &&
                   document.querySelector("#feedback-layer")?.dataset.viewmodelStatus === "active" &&
-                  document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7";
+                  document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "3";
               })()`,
               `viewmodel at ${String(viewport.width)}x${String(viewport.height)}`,
             );
@@ -1108,7 +1108,7 @@ async function runViewmodelResizeProof(project) {
             `document.body.dataset.rendererLifecycle === "mounted" &&
               document.body.dataset.weaponViewmodelLifecycle === "mounted" &&
               document.querySelector("#feedback-layer")?.dataset.viewmodelStatus === "active" &&
-              document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7"`,
+              document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "3"`,
             "viewmodel remount",
           );
           await client.send("Runtime.evaluate", {
@@ -1229,7 +1229,7 @@ async function runDeadDialogFocusProof(project) {
               `document.querySelector(".game-state-overlay")?.textContent?.includes("PLAYER DOWN") === true &&
                 document.activeElement?.textContent?.trim() === "Restart loading bay" &&
                 document.querySelector("#feedback-layer")?.dataset.viewmodelStatus === "hidden" &&
-                document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "7" &&
+                document.querySelector("#feedback-layer")?.dataset.viewmodelNodes === "3" &&
                 document.body.dataset.weaponViewmodelLifecycle === "mounted"`,
               "focused dead dialog",
             );

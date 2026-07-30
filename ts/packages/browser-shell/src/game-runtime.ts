@@ -858,7 +858,11 @@ export async function mountLoadingBayGame(
     applyRendererFrame(frame);
     applyPresentationCamera();
     renderReadout(state, delivery.sessionReplaced);
-    const presentationFingerprint = JSON.stringify(state.presentation);
+    const presentationFingerprint = JSON.stringify({
+      presentation: state.presentation,
+      vitalityState: state.player.vitalityState,
+      weaponItem: state.weapon.item,
+    });
     const presentationChanged =
       presentationFingerprint !== lastPresentationFingerprint;
     const telemetryDue =
@@ -1419,7 +1423,7 @@ export async function mountLoadingBayGame(
       .projectionSnapshot()
       .nodes.filter((node) => node.layer === "viewmodel");
     const viewmodelPassed =
-      viewmodelNodes.length === 7 &&
+      viewmodelNodes.length === 3 &&
       surface.pick({
         ray: { kind: "viewport", point: [0, 0] },
         filter: { layers: ["viewmodel"] },
@@ -1785,6 +1789,7 @@ export async function mountLoadingBayGame(
       await performSaveGame("checkpoint", false, null);
       await presentationFeedback.settled();
     }
+    await presentationFeedback.settled();
     const checkpointSaved =
       current.saveSlots.some(
         (slot) =>
@@ -1806,6 +1811,7 @@ export async function mountLoadingBayGame(
       dryFireAttempts,
       current.weapon.ammoRemaining,
       terminalWeaponFeedback,
+      feedbackLayer.dataset.viewmodelWeapons ?? "",
       feedbackLayer.dataset.animationPulses ?? "",
     ].join(":");
     const materializedDrops = current.pickups.filter(

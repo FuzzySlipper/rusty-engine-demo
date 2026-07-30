@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { RenderDiff } from "@rusty-engine/render-contracts";
+import type {
+  RenderDiff,
+  StaticMeshAsset,
+} from "@rusty-engine/render-contracts";
+import { RenderProjection } from "@rusty-engine/render-projection";
 import { createRendererSurfaceProjection } from "@rusty-engine/renderer-host";
 
 import type { RuntimeBrowserState } from "./projection.ts";
@@ -10,37 +14,63 @@ import { WeaponViewmodelAdapter } from "./weapon-viewmodel.ts";
 test("the authoritative equipped weapon creates one bounded viewmodel hierarchy", () => {
   const adapter = new WeaponViewmodelAdapter();
   const plan = adapter.project(state());
-  const creates = plan.ops.filter(
+  const groups = plan.ops.filter(
     (operation): operation is Extract<RenderDiff, { readonly op: "create" }> =>
       operation.op === "create",
   );
+  const meshes = plan.ops.filter(
+    (
+      operation,
+    ): operation is Extract<
+      RenderDiff,
+      { readonly op: "createStaticMeshInstance" }
+    > => operation.op === "createStaticMeshInstance",
+  );
 
-  assert.equal(creates.length, 7);
-  assert.equal(creates[0]?.parent, null);
-  assert.equal(creates[0]?.node.geometry.kind, "group");
-  assert.ok(creates.every((operation) => operation.node.layer === "viewmodel"));
+  assert.equal(plan.ops.length, 3);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0]?.parent, null);
+  assert.equal(groups[0]?.node.geometry.kind, "group");
+  assert.equal(groups[0]?.node.layer, "viewmodel");
+  assert.equal(meshes.length, 2);
   assert.ok(
-    creates
-      .flatMap((operation) => operation.node.metadata.tags)
+    meshes.every((operation) => operation.parent === groups[0]?.handle),
+  );
+  assert.ok(
+    meshes
+      .flatMap((operation) => operation.instance.metadata.tags)
       .includes("weapon/arc-pistol"),
+  );
+  assert.deepEqual(
+    meshes.map((operation) => operation.instance.asset),
+    ["mesh/prop-kit/arc-pistol", "mesh/prop-kit/muzzle-flash"],
   );
   plan.commit();
   assert.deepEqual(adapter.readout(), {
     bobPhase: 0,
     impulse: "idle",
-    liveNodeCount: 7,
+    liveNodeCount: 3,
     mounted: true,
     visible: true,
     weapon: "weapon/arc-pistol",
   });
 });
 
-test("the exact shared surface projection accepts the retained viewmodel layer", () => {
+test("the exact shared surface projection accepts the serialized retained viewmodel layer", () => {
   const plan = new WeaponViewmodelAdapter().project(state());
-  const projection = createRendererSurfaceProjection(plan);
-  assert.equal(projection.snapshot.nodes.length, 7);
+  const projection = createRendererSurfaceProjection({
+    schemaVersion: 1,
+    ops: [...testAssetDefinitions(), ...plan.ops],
+  });
+  assert.equal(projection.snapshot.nodes.length, 3);
   assert.ok(
     projection.snapshot.nodes.every((node) => node.layer === "viewmodel"),
+  );
+  assert.deepEqual(
+    projection.snapshot.nodes.flatMap((node) =>
+      node.kind === "staticMesh" ? [node.asset] : [],
+    ),
+    ["mesh/prop-kit/arc-pistol", "mesh/prop-kit/muzzle-flash"],
   );
   assert.equal(
     projection.snapshot.nodes.find(
@@ -50,13 +80,17 @@ test("the exact shared surface projection accepts the retained viewmodel layer",
   );
 });
 
-test("three original weapons retain materially distinct descriptor silhouettes", () => {
+test("three original weapons select distinct serialized project assets", () => {
   const adapter = new WeaponViewmodelAdapter();
+  const projection = new RenderProjection();
+  projection.applyFrame({ schemaVersion: 1, ops: testAssetDefinitions() });
   const baseline = state();
   if (baseline.inventory === null) {
     throw new Error("weapon viewmodel fixture requires authored inventory");
   }
-  adapter.project(baseline).commit();
+  const initial = adapter.project(baseline);
+  projection.applyFrame(initial);
+  initial.commit();
 
   const scatter = adapter.project(
     state({
@@ -72,14 +106,20 @@ test("three original weapons retain materially distinct descriptor silhouettes",
       },
     }),
   );
-  const scatterUpdates = updateNodes(scatter.ops);
-  assert.ok(
-    scatterUpdates.some(
-      (node) =>
-        node.metadata?.tags.includes("weapon/breach-scattergun") === true &&
-        node.transform?.scale[2] === 0.57,
-    ),
+  assert.deepEqual(
+    scatter.ops.map((operation) => operation.op),
+    ["update", "destroy", "createStaticMeshInstance", "update"],
   );
+  assert.equal(
+    scatter.ops.find((operation) => operation.op === "createStaticMeshInstance")
+      ?.op === "createStaticMeshInstance"
+      ? scatter.ops.find(
+          (operation) => operation.op === "createStaticMeshInstance",
+        )?.instance.asset
+      : null,
+    "mesh/prop-kit/breach-scattergun",
+  );
+  projection.applyFrame(scatter);
   scatter.commit();
 
   const carbine = adapter.project(
@@ -95,18 +135,16 @@ test("three original weapons retain materially distinct descriptor silhouettes",
       },
     }),
   );
-  const carbineUpdates = updateNodes(carbine.ops);
-  assert.ok(
-    carbineUpdates.some(
-      (node) =>
-        node.metadata?.tags.includes("weapon/rivet-carbine") === true &&
-        node.transform?.scale[1] === 0.31,
-    ),
+  assert.equal(
+    carbine.ops.find((operation) => operation.op === "createStaticMeshInstance")
+      ?.op === "createStaticMeshInstance"
+      ? carbine.ops.find(
+          (operation) => operation.op === "createStaticMeshInstance",
+        )?.instance.asset
+      : null,
+    "mesh/prop-kit/rivet-carbine",
   );
-  assert.notDeepEqual(
-    scatterUpdates.map((node) => node.transform),
-    carbineUpdates.map((node) => node.transform),
-  );
+  projection.applyFrame(carbine);
   carbine.commit();
   assert.equal(adapter.readout().weapon, "weapon/rivet-carbine");
 });
@@ -195,8 +233,8 @@ test("flash intensity scales only the disposable muzzle descriptor", () => {
   );
 
   assert.equal(flash?.visible, true);
-  assert.deepEqual(flash?.transform?.scale, [0.0275, 0.0275, 0.0275]);
-  assert.equal(flash?.material?.color[3], 0.23);
+  assert.deepEqual(flash?.transform?.scale, [0.1375, 0.1375, 0.1375]);
+  assert.equal(flash?.material, null);
   assert.notDeepEqual(root?.transform?.translation, [0, 0, 0]);
 
   const disabled = new WeaponViewmodelAdapter();
@@ -242,15 +280,7 @@ test("death hides, reset clears, and disposal destroys the retained hierarchy", 
   const destroyed = adapter.destroy();
   assert.deepEqual(
     destroyed.ops.map((operation) => operation.op),
-    [
-      "destroy",
-      "destroy",
-      "destroy",
-      "destroy",
-      "destroy",
-      "destroy",
-      "destroy",
-    ],
+    ["destroy", "destroy", "destroy"],
   );
   destroyed.commit();
   assert.equal(adapter.readout().liveNodeCount, 0);
@@ -272,6 +302,69 @@ function updateNodes(
     (operation): operation is Extract<RenderDiff, { readonly op: "update" }> =>
       operation.op === "update",
   );
+}
+
+function testAssetDefinitions(): readonly RenderDiff[] {
+  return [
+    {
+      op: "defineMaterial",
+      material: {
+        schemaVersion: 1,
+        id: "material/viewmodel-test",
+        color: [0.2, 0.4, 0.7, 1],
+        texture: null,
+        roughness: 0.7,
+        textureTint: [1, 1, 1, 1],
+        emissionColor: [0, 0, 0],
+        emissionIntensity: 0,
+        uvStrategy: "flat",
+      },
+    },
+    {
+      op: "defineStaticMesh",
+      asset: testAsset("mesh/prop-kit/arc-pistol"),
+    },
+    {
+      op: "defineStaticMesh",
+      asset: testAsset("mesh/prop-kit/breach-scattergun"),
+    },
+    {
+      op: "defineStaticMesh",
+      asset: testAsset("mesh/prop-kit/rivet-carbine"),
+    },
+    {
+      op: "defineStaticMesh",
+      asset: testAsset("mesh/prop-kit/muzzle-flash"),
+    },
+  ];
+}
+
+function testAsset(asset: string): StaticMeshAsset {
+  return {
+    asset,
+    payload: {
+      layout: {
+        vertexCount: 3,
+        indexCount: 3,
+        indexWidth: "u32",
+        attributes: [
+          { name: "position", components: 3, kind: "f32" },
+          { name: "normal", components: 3, kind: "f32" },
+        ],
+      },
+      groups: [{ materialSlot: 0, start: 0, count: 3 }],
+      bounds: { min: [-0.1, -0.1, 0], max: [0.1, 0.1, 0] },
+      source: {
+        kind: "inline",
+        positions: [-0.1, -0.1, 0, 0.1, -0.1, 0, 0, 0.1, 0],
+        normals: [0, 0, 1, 0, 0, 1, 0, 0, 1],
+        indices: [0, 1, 2],
+      },
+      provenance: "generated",
+    },
+    materialSlots: [{ slot: 0, material: "material/viewmodel-test" }],
+    collision: { kind: "visualOnly" },
+  };
 }
 
 function state(
@@ -364,6 +457,8 @@ function state(
     interaction: null,
     voxelMeshes: [],
     lights: [],
+    renderMaterials: [],
+    staticMeshes: [],
     generatedEnvironment: null,
     enemies: [],
     presentation: { animationStates: [], cues: [] },

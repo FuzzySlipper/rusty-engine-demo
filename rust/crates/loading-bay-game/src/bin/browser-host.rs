@@ -10,13 +10,15 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use core_ids::EntityId;
 use loading_bay_game::{
-    admit_stored_project_with_document, materialize_stored_project_voxels, AdmittedStoredProject,
-    CombatFact, CombatMissReason, GameEvent, GameLoopFact, GameRuntime, LoadingBayGameLoop,
-    NavigationFact, PlayerControlFact, ProjectSaveMode, ProjectStore, SaveGameError, SaveGameStore,
-    SaveProjectIdentity, SaveSlotId, SaveSlotSummary, SaveWriteRequest, VoxelEdit,
-    VoxelEditTransaction, VoxelSourceRevision, MAX_PENDING_GAME_LOOP_FACTS,
+    admit_stored_project_with_document, encode_project_document, materialize_stored_project_voxels,
+    AdmittedStoredProject, CombatFact, CombatMissReason, GameEvent, GameLoopFact, GameRuntime,
+    LoadingBayGameLoop, NavigationFact, PlayerControlFact, ProjectSaveMode, ProjectStore,
+    SaveGameError, SaveGameStore, SaveProjectIdentity, SaveSlotId, SaveSlotSummary,
+    SaveWriteRequest, VoxelEdit, VoxelEditTransaction, VoxelSourceRevision,
+    MAX_PENDING_GAME_LOOP_FACTS,
 };
 use serde::{Deserialize, Serialize};
+use voxel_convert::source_sha256;
 
 #[path = "browser_host/presentation.rs"]
 mod presentation;
@@ -47,6 +49,7 @@ struct BrowserProjectSummary {
     asset_count: usize,
     scene_count: usize,
     entity_count: usize,
+    content_hash: String,
 }
 
 #[derive(Debug)]
@@ -102,6 +105,8 @@ impl BrowserRuntime {
                 path.display()
             )
         })?;
+        let canonical_project = encode_project_document(&decoded.project)
+            .map_err(|error| format!("could not encode admitted browser project: {error}"))?;
         let project = BrowserProjectSummary {
             project_id: decoded.project.project_id.clone(),
             source_schema_version: decoded.source_schema_version,
@@ -115,6 +120,7 @@ impl BrowserRuntime {
                 .iter()
                 .map(|scene| scene.entities.len())
                 .sum(),
+            content_hash: source_sha256(canonical_project.as_bytes()),
         };
         let (authored, admitted) = admit_stored_project_with_document(decoded.project)
             .map_err(|error| format!("project admission failed: {error}"))?;

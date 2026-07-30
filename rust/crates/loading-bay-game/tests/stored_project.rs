@@ -7,11 +7,11 @@ use loading_bay_game::{
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 
 #[test]
-fn hand_authored_project_is_static_typed_multi_family_content() {
+fn studio_authored_project_is_static_typed_multi_family_content() {
     let project = decode_stored_project(PROJECT).expect("stored project");
     assert_eq!(project.project_id, "loading-bay");
     assert_eq!(project.entry_scene, "scene/loading-bay");
-    assert_eq!(project.assets.len(), 42);
+    assert_eq!(project.assets.len(), 89);
     assert_eq!(
         project
             .assets
@@ -24,6 +24,24 @@ fn hand_authored_project_is_static_typed_multi_family_content() {
         .assets
         .iter()
         .any(|asset| asset.id.as_str() == "mesh-animation/kenney-retro-character-medium"));
+    assert_eq!(
+        project
+            .assets
+            .iter()
+            .filter(|asset| asset.id.as_str().starts_with("mesh/prop-kit/"))
+            .count(),
+        17
+    );
+    assert!(project
+        .assets
+        .iter()
+        .filter(|asset| asset.id.as_str().starts_with("mesh/prop-kit/"))
+        .all(
+            |asset| asset.static_mesh.as_ref().is_some_and(|mesh| matches!(
+                mesh.collision,
+                render_model::MeshCollisionPolicy::VisualOnly
+            ))
+        ));
     assert_eq!(project.scenes.len(), 1);
     assert_eq!(project.scenes[0].voxel_object_instances.len(), 25);
 

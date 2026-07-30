@@ -74,40 +74,39 @@ The former full `loadingBayStoredProject()`/`relayAnnexStoredProject()` composit
 generator equality test have been removed. Stable gameplay identities remain exported only as
 small test/fixture constants; the serialized project is the sole complete scene.
 
-## Placeholder inventory baseline
+## Serialized prop-kit result
 
-Before the VC6 brush publication, the project catalog contained 15 asset identities. One was a
-real file-backed animated GLB used by Studio tests but referenced by no Loading Bay entity. The
-other 14 `mesh/*` identities had no catalog payload. `RuntimeProjectionAdapter.projectedNode()`
-interprets their names and creates colored cubes or spheres. That asset-name branching is
-presentation scaffolding, not a scalable asset pipeline.
+VC5 #6354 replaces every visible non-actor gameplay primitive with 17 canonical static-mesh
+assets. Eight are bounded derivatives of the local Kenney CC0 Factory/Industrial source files and
+nine are original deterministic mesh derivatives for pickups, weapons, and their muzzle flash.
+Studio protocol 11 imported all 17 source derivatives, published 26 gameplay-entity appearance
+mappings, added two decorative landmarks, reread the canonical project, and reconstructed the same
+bytes through a fresh adapter process.
 
-That baseline scene had 47 entities, 35 renderables, 27 authored-visible renderables, and eight
-hidden enemy-drop renderables. The first-person player marker was also suppressed by the projection
-adapter. VC6 adds 25 decorative brush owners and 27 source/definition/render asset identities; its
-current totals and resource observations are recorded below.
+The current canonical project hash is
+`82982a06ed92eca705a71461200eb5b3f3e7c9cee6b7e142168ee5e3114db938`. The prop kit contains
+8,127 vertices and 2,709 triangles. Its exact sources, derivative hashes, bounds, material slots,
+license hashes, and collision intent are recorded in
+`content/assets/prop-kit/source-manifest.json`; the Studio receipt is
+`docs/evidence/prop-kit-authoring.json`.
 
-| Current identity                               | References / authored visible | Current presentation                                                | Classification                        | Replacement owner                                                           |
-| ---------------------------------------------- | ----------------------------: | ------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------- |
-| `mesh/arc-warden`                              |                         4 / 4 | Purple scaled sphere                                                | Primitive enemy fallback              | VC4 #6355 actor asset; VC8 #6358 posture binding                            |
-| `mesh/bay-rusher`                              |                         4 / 4 | Orange scaled cube                                                  | Primitive enemy fallback              | VC4 #6355 actor asset; VC8 #6358 posture binding                            |
-| `mesh/control-panel`                           |                         1 / 1 | Default red cube                                                    | Primitive interactive prop            | VC5 #6354                                                                   |
-| `mesh/extraction-beacon`                       |                         1 / 1 | Orange/green cube selected by asset-name and beacon state           | Primitive progression prop            | VC5 #6354; VC8 #6358 state binding                                          |
-| `mesh/hazard-pad`                              |                         1 / 1 | Default red cube                                                    | Primitive hazard marker               | VC5 #6354                                                                   |
-| `mesh/level-exit`                              |                         1 / 1 | Default red cube                                                    | Primitive completion marker           | VC5 #6354                                                                   |
-| `mesh/pickup-ammunition`                       |                         6 / 2 | Yellow spheres; four hidden drops                                   | Primitive pickup                      | VC5 #6354                                                                   |
-| `mesh/pickup-armor`                            |                         1 / 1 | Blue sphere                                                         | Primitive pickup                      | VC5 #6354                                                                   |
-| `mesh/pickup-health`                           |                         6 / 2 | Green spheres; four hidden drops                                    | Primitive pickup                      | VC5 #6354                                                                   |
-| `mesh/pickup-key`                              |                         1 / 1 | Magenta sphere                                                      | Primitive pickup                      | VC5 #6354                                                                   |
-| `mesh/pickup-weapon`                           |                         2 / 2 | Red spheres                                                         | Primitive pickup                      | VC5 #6354                                                                   |
-| `mesh/player-marker`                           |                         1 / 1 | Blue sphere descriptor, intentionally hidden in first person        | Invisible player proxy/debug marker   | Retain hidden unless a later explicit third-person/debug requirement exists |
-| `mesh/security-door`                           |                         5 / 5 | Orange cube with fixed name-derived scale                           | Primitive dynamic prop                | VC5 #6354; VC8 #6358 state binding                                          |
-| `mesh/spatial-probe`                           |                         1 / 1 | Green sphere                                                        | Visible movement-proof placeholder    | VC5 #6354 industrial status/runner prop or documented removal               |
-| `mesh-animation/kenney-retro-character-medium` |                         0 / 0 | Real GLB with `idle`, `run`, and `jump`; no gameplay entity uses it | File-backed animated-mesh proof asset | VC4 #6355 source/reimport baseline                                          |
+| Serialized family      | Project assets                                                                          | Durable use                                                |
+| ---------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Industrial interaction | security door, control panel, hazard marker, extraction beacon, level exit, status unit | 12 stateful route/progression entities                     |
+| Supplies and equipment | energy cell, scatter shells, med patch, impact vest, maintenance pass                   | 14 placed or enemy-drop pickup entities                    |
+| Weapon silhouettes     | arc pistol, breach scattergun, rivet carbine, muzzle flash                              | World pickups plus one camera-relative retained viewmodel  |
+| Visual-only landmarks  | overhead crane, coolant tank                                                            | Two serialized scene landmarks with no gameplay components |
+
+The browser receives admitted material and static-mesh resources from Rust. Only the player marker
+and the two enemy archetypes retain the explicitly bounded primitive fallback, pending VC4 #6355.
+An absent non-actor mesh now rejects projection instead of silently becoming a colored cube or
+sphere. Door, switch, pickup, hazard, beacon, and exit appearance variants are selected from typed
+Rust component state; asset-name matching no longer owns gameplay presentation state.
 
 ### Environment
 
-The scene has no voxel-object definitions or instances. Its one material voxel environment has:
+The scene retains its coarse material-voxel environment and the nine-definition/25-instance VC6
+proof room. The playable environment still has:
 
 - `voxelSize: 1`, `chunkSize: 16`;
 - 3,931 authored material voxels across addresses `[0,0,0]` through `[30,4,51]`;
@@ -121,12 +120,12 @@ treatments; VC7 #6357 rebuilds the visible level from repeated instances and exp
 
 ### Camera-relative viewmodels
 
-`ts/packages/browser-shell/src/weapon-viewmodel.ts` contains three inline `WEAPON_PRESETS`.
-Each preset is five colored cubes plus a sphere muzzle flash beneath a group root. One equipped
-weapon retains seven viewmodel handles. The shared Engine layer and disposal lifecycle are correct,
-but the geometry is still inline presentation scaffolding. VC5 #6354 now explicitly owns replacing
-all three presets with canonical serialized assets; VC8 #6358 binds them to authoritative weapon
-state and facts.
+`ts/packages/browser-shell/src/weapon-viewmodel.ts` maps each authoritative equipped weapon to one
+canonical serialized mesh and uses the serialized muzzle-flash mesh for attack presentation. The
+shared Engine `viewmodel` root makes both children camera-relative and excludes them from world
+picking. One equipped weapon retains three handles rather than seven inline primitive parts.
+Movement bob, recoil, flash visibility, reset, and disposal remain disposable transforms derived
+from accepted Rust state and facts; they cannot alter aim, ammunition, damage, or cooldown.
 
 ### Intentional non-mesh entities
 

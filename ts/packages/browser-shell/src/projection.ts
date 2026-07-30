@@ -3,13 +3,30 @@ import {
   type Geometry,
   type LightDescriptor,
   type Material,
+  type MaterialInstanceParameters,
   type MeshPayloadDescriptor,
   type RenderDiff,
   type RenderFrameDiff,
   type RenderHandle,
+  type RenderMaterialDescriptor,
   type RenderNode,
+  type StaticMeshAsset,
+  type StaticMeshInstanceDescriptor,
   type Transform,
 } from "@rusty-engine/render-contracts";
+
+export type RuntimeVisualState =
+  | "default"
+  | "open"
+  | "closed"
+  | "active"
+  | "inactive"
+  | "standby"
+  | "available"
+  | "dormant"
+  | "collected"
+  | "cooling"
+  | "completed";
 
 export interface RuntimeProjectionNode {
   readonly id: number;
@@ -17,6 +34,7 @@ export interface RuntimeProjectionNode {
   readonly asset: string;
   readonly translation: readonly [number, number, number] | null;
   readonly visible: boolean;
+  readonly visualState: RuntimeVisualState;
 }
 
 export interface RuntimeEnemyState {
@@ -456,6 +474,8 @@ export interface RuntimeBrowserState {
   readonly interaction: RuntimeInteractionState | null;
   readonly voxelMeshes: readonly RuntimeVoxelMeshChunk[];
   readonly lights: readonly RuntimeAuthoredLight[];
+  readonly renderMaterials: readonly RenderMaterialDescriptor[];
+  readonly staticMeshes: readonly StaticMeshAsset[];
   readonly generatedEnvironment: RuntimeGeneratedEnvironment | null;
   readonly enemies: readonly RuntimeEnemyState[];
   readonly presentation: RuntimePresentationState;
@@ -508,9 +528,12 @@ export class RuntimeProjectionAdapter {
     number,
     {
       readonly node: RuntimeProjectionNode;
-      readonly beaconState: "standby" | "active" | null;
+      readonly kind: "primitive" | "staticMesh";
+      readonly renderedAsset: string | null;
     }
   >();
+  readonly #definedMaterials = new Map<string, string>();
+  readonly #definedStaticMeshes = new Map<string, string>();
   readonly #meshHashes = new Map<string, string>();
   readonly #meshHandles = new Map<string, RenderHandle>();
   readonly #knownLights = new Map<number, LightDescriptor>();
@@ -523,8 +546,27 @@ export class RuntimeProjectionAdapter {
     const nextMeshHashes = new Map(this.#meshHashes);
     const nextMeshHandles = new Map(this.#meshHandles);
     const nextKnownLights = new Map(this.#knownLights);
+    const nextDefinedMaterials = new Map(this.#definedMaterials);
+    const nextDefinedStaticMeshes = new Map(this.#definedStaticMeshes);
     let nextMeshHandle = this.#nextMeshHandle;
     const ops: RenderDiff[] = [];
+    for (const material of state.renderMaterials) {
+      const fingerprint = JSON.stringify(material);
+      if (nextDefinedMaterials.get(material.id) !== fingerprint) {
+        ops.push({ op: "defineMaterial", material });
+        nextDefinedMaterials.set(material.id, fingerprint);
+      }
+    }
+    const staticMeshes = new Map(
+      state.staticMeshes.map((asset) => [asset.asset, asset] as const),
+    );
+    for (const asset of state.staticMeshes) {
+      const fingerprint = JSON.stringify(asset);
+      if (nextDefinedStaticMeshes.get(asset.asset) !== fingerprint) {
+        ops.push({ op: "defineStaticMesh", asset });
+        nextDefinedStaticMeshes.set(asset.asset, fingerprint);
+      }
+    }
     const incomingMeshes = new Set<string>();
     for (const mesh of state.voxelMeshes) {
       const key = mesh.chunk.join(",");
@@ -597,32 +639,53 @@ export class RuntimeProjectionAdapter {
     for (const node of state.projection) {
       incoming.add(node.id);
       const known = nextKnown.get(node.id);
-      const beaconState =
-        state.extractionBeacon?.id === node.id
-          ? state.extractionBeacon.state
-          : null;
+      const staticMesh = staticMeshes.get(node.asset);
+      const kind = staticMesh === undefined ? "primitive" : "staticMesh";
+      if (kind === "primitive" && !PRIMITIVE_FALLBACK_ASSETS.has(node.asset)) {
+        throw new Error(
+          `runtime projection is missing canonical static mesh ${node.asset}`,
+        );
+      }
       if (known === undefined) {
-        ops.push({
-          op: "create",
-          handle: entityHandle(node.id),
-          parent: null,
-          node: projectedNode(node, beaconState),
-        });
+        ops.push(...createProjectedNode(node, staticMesh));
       } else if (
-        !sameProjectionNode(known.node, node) ||
-        known.beaconState !== beaconState
+        known.kind !== kind ||
+        known.renderedAsset !== (staticMesh?.asset ?? null)
       ) {
-        const next = projectedNode(node, beaconState);
+        ops.push({ op: "destroy", handle: entityHandle(node.id) });
+        ops.push(...createProjectedNode(node, staticMesh));
+      } else if (!sameProjectionNode(known.node, node)) {
+        const nextTransform =
+          staticMesh === undefined
+            ? primitiveFallbackNode(node).transform
+            : staticMeshInstance(node).transform;
+        const nextMetadata =
+          staticMesh === undefined
+            ? primitiveFallbackNode(node).metadata
+            : staticMeshInstance(node).metadata;
         ops.push({
           op: "update",
           handle: entityHandle(node.id),
-          transform: next.transform,
-          material: next.material,
-          visible: next.visible,
-          metadata: next.metadata,
+          transform: nextTransform,
+          material:
+            staticMesh === undefined
+              ? primitiveFallbackNode(node).material
+              : null,
+          visible: node.visible && node.asset !== "mesh/player-marker",
+          metadata: nextMetadata,
         });
+        if (
+          staticMesh !== undefined &&
+          known.node.visualState !== node.visualState
+        ) {
+          ops.push(...materialStateOperations(node, staticMesh));
+        }
       }
-      nextKnown.set(node.id, { node, beaconState });
+      nextKnown.set(node.id, {
+        node,
+        kind,
+        renderedAsset: staticMesh?.asset ?? null,
+      });
     }
 
     for (const id of [...nextKnown.keys()]) {
@@ -646,6 +709,8 @@ export class RuntimeProjectionAdapter {
         replaceMap(this.#meshHashes, nextMeshHashes);
         replaceMap(this.#meshHandles, nextMeshHandles);
         replaceMap(this.#knownLights, nextKnownLights);
+        replaceMap(this.#definedMaterials, nextDefinedMaterials);
+        replaceMap(this.#definedStaticMeshes, nextDefinedStaticMeshes);
         this.#nextMeshHandle = nextMeshHandle;
         this.#revision += 1;
         committed = true;
@@ -787,64 +852,36 @@ function sameLight(left: LightDescriptor, right: LightDescriptor): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-function projectedNode(
-  node: RuntimeProjectionNode,
-  beaconState: "standby" | "active" | null,
-): RenderNode {
-  const door = node.asset.includes("door");
-  const beacon = node.asset.includes("extraction-beacon");
-  const probe = node.asset.includes("spatial-probe");
-  const wall = node.asset.includes("voxel-wall");
+const PRIMITIVE_FALLBACK_ASSETS = new Set([
+  "mesh/player-marker",
+  "mesh/bay-rusher",
+  "mesh/arc-warden",
+]);
+
+function primitiveFallbackNode(node: RuntimeProjectionNode): RenderNode {
   const player = node.asset.includes("player-marker");
-  const pickup = node.asset.includes("pickup-");
   const bayRusher = node.asset.includes("bay-rusher");
   const arcWarden = node.asset.includes("arc-warden");
-  const scale: readonly [number, number, number] = door
-    ? [2.4, 3.4, 0.55]
-    : beacon
-      ? [0.8, 2.4, 0.8]
-      : probe
-        ? [0.5, 0.5, 0.5]
-        : wall
-          ? [1, 1, 1]
-          : player
-            ? [0.7, 1.4, 0.7]
-            : pickup
-              ? [0.55, 0.55, 0.55]
-              : bayRusher
-                ? [1.45, 1.25, 1.45]
-                : arcWarden
-                  ? [0.85, 2.35, 0.85]
-                  : [1.1, 1.8, 1.1];
+  const scale: readonly [number, number, number] = player
+    ? [0.7, 1.4, 0.7]
+    : bayRusher
+      ? [1.45, 1.25, 1.45]
+      : [0.85, 2.35, 0.85];
   const authored = node.translation ?? [0, 0, 0];
   const translation: readonly [number, number, number] = [
     authored[0],
-    authored[1] + (probe || wall || pickup ? 0 : scale[1] / 2),
+    authored[1] + scale[1] / 2,
     authored[2],
   ];
-  const color: Material = door
-    ? { color: [0.9, 0.55, 0.16, 1], wireframe: false }
-    : beacon
-      ? beaconState === "active"
-        ? { color: [0.22, 0.95, 0.72, 1], wireframe: false }
-        : { color: [0.85, 0.54, 0.18, 1], wireframe: false }
-      : probe
-        ? { color: [0.26, 0.85, 0.68, 1], wireframe: false }
-        : wall
-          ? { color: [0.22, 0.38, 0.43, 1], wireframe: false }
-          : player
-            ? { color: [0.24, 0.74, 0.91, 1], wireframe: false }
-            : pickup
-              ? pickupMaterial(node.asset)
-              : bayRusher
-                ? { color: [0.95, 0.34, 0.12, 1], wireframe: false }
-                : arcWarden
-                  ? { color: [0.55, 0.25, 0.95, 1], wireframe: false }
-                  : { color: [0.82, 0.18, 0.14, 1], wireframe: false };
+  const color: Material = player
+    ? { color: [0.24, 0.74, 0.91, 1], wireframe: false }
+    : bayRusher
+      ? { color: [0.95, 0.34, 0.12, 1], wireframe: false }
+      : { color: [0.55, 0.25, 0.95, 1], wireframe: false };
   return primitiveNode(
     node.name,
     node.id,
-    probe || player || pickup || arcWarden ? "sphere" : "cube",
+    player || arcWarden ? "sphere" : "cube",
     translation,
     scale,
     color,
@@ -852,20 +889,93 @@ function projectedNode(
   );
 }
 
-function pickupMaterial(asset: string): Material {
-  if (asset.includes("pickup-ammunition")) {
-    return { color: [0.95, 0.76, 0.2, 1], wireframe: false };
+function createProjectedNode(
+  node: RuntimeProjectionNode,
+  staticMesh: StaticMeshAsset | undefined,
+): RenderDiff[] {
+  if (staticMesh === undefined) {
+    return [
+      {
+        op: "create",
+        handle: entityHandle(node.id),
+        parent: null,
+        node: primitiveFallbackNode(node),
+      },
+    ];
   }
-  if (asset.includes("pickup-health")) {
-    return { color: [0.3, 0.95, 0.44, 1], wireframe: false };
+  return [
+    {
+      op: "createStaticMeshInstance",
+      handle: entityHandle(node.id),
+      parent: null,
+      instance: staticMeshInstance(node),
+    },
+    ...materialStateOperations(node, staticMesh),
+  ];
+}
+
+function staticMeshInstance(
+  node: RuntimeProjectionNode,
+): StaticMeshInstanceDescriptor {
+  return {
+    asset: node.asset,
+    transform: identityTransform(node.translation ?? [0, 0, 0], [1, 1, 1]),
+    visible: node.visible,
+    materialOverrides: [],
+    metadata: {
+      sourceEntity: node.id,
+      sourceSceneNode: null,
+      tags: ["loading-bay", "serialized-prop"],
+      label: node.name,
+    },
+  };
+}
+
+function materialStateOperations(
+  node: RuntimeProjectionNode,
+  asset: StaticMeshAsset,
+): RenderDiff[] {
+  const parameters = visualStateParameters(node.visualState);
+  return asset.materialSlots.map(({ slot }) => ({
+    op: "setMaterialInstanceParameters",
+    handle: entityHandle(node.id),
+    slot,
+    parameters,
+  }));
+}
+
+function visualStateParameters(
+  state: RuntimeVisualState,
+): MaterialInstanceParameters | null {
+  switch (state) {
+    case "open":
+    case "active":
+    case "completed":
+      return {
+        textureTint: [0.62, 1, 0.82, 1],
+        emissionColor: [0.12, 0.82, 0.52],
+        emissionIntensity: 0.35,
+      };
+    case "closed":
+    case "inactive":
+    case "standby":
+      return {
+        textureTint: [1, 0.78, 0.48, 1],
+        emissionColor: [0.75, 0.28, 0.05],
+        emissionIntensity: 0.12,
+      };
+    case "cooling":
+    case "dormant":
+      return {
+        textureTint: [0.58, 0.62, 0.68, 1],
+        emissionColor: [0.12, 0.14, 0.18],
+        emissionIntensity: 0.04,
+      };
+    case "available":
+    case "collected":
+    case "default":
+      return null;
   }
-  if (asset.includes("pickup-armor")) {
-    return { color: [0.3, 0.63, 0.98, 1], wireframe: false };
-  }
-  if (asset.includes("pickup-key")) {
-    return { color: [0.92, 0.42, 0.95, 1], wireframe: false };
-  }
-  return { color: [0.92, 0.28, 0.2, 1], wireframe: false };
 }
 
 function primitiveNode(
@@ -907,6 +1017,7 @@ function sameProjectionNode(
     left.name === right.name &&
     left.asset === right.asset &&
     left.visible === right.visible &&
+    left.visualState === right.visualState &&
     JSON.stringify(left.translation) === JSON.stringify(right.translation)
   );
 }

@@ -136,6 +136,8 @@ const resources = {
   voxelProbePathLength: 2,
   voxelMeshes: [],
   lights: [],
+  renderMaterials: [],
+  staticMeshes: [],
   generatedEnvironment: null,
 } as const;
 
@@ -178,6 +180,61 @@ test("full session bootstrap composes dynamic state with immutable resources", (
   assert.equal(applied.state.tick, 1);
   assert.equal(applied.state.voxelAuthorityHash, "abc");
   assert.equal(applied.state.voxelMeshes, resources.voxelMeshes);
+});
+
+test("serialized mesh resources require bounded geometry and closed material references", () => {
+  const admitted = staticResourceFixture();
+  const envelope: ServerUpdateEnvelope = {
+    protocolVersion: 1,
+    sessionId: "loading-bay-1",
+    connectionGeneration: 1,
+    serverTick: 1,
+    snapshotSequence: 1,
+    acknowledgedCommandSequence: 0,
+    staticRevision: admitted.staticRevision,
+    update: { kind: "full", state: dynamic },
+    resources: admitted,
+    facts: [],
+    metrics,
+  };
+  const applied = applyServerUpdate(null, envelope);
+  assert.equal(applied.state.staticMeshes[0]?.asset, "mesh/prop-kit/test-prop");
+
+  const missingMaterial = {
+    ...admitted,
+    renderMaterials: [],
+  };
+  assert.throws(
+    () =>
+      applyServerUpdate(null, {
+        ...envelope,
+        resources: missingMaterial as never,
+      }),
+    (error) =>
+      error instanceof GameSessionError && error.code === "protocolMismatch",
+  );
+
+  const invalidBounds = {
+    ...admitted,
+    staticMeshes: [
+      {
+        ...admitted.staticMeshes[0],
+        payload: {
+          ...admitted.staticMeshes[0]?.payload,
+          bounds: { min: [1, 0, 0], max: [0, 1, 1] },
+        },
+      },
+    ],
+  };
+  assert.throws(
+    () =>
+      applyServerUpdate(null, {
+        ...envelope,
+        resources: invalidBounds as never,
+      }),
+    (error) =>
+      error instanceof GameSessionError && error.code === "protocolMismatch",
+  );
 });
 
 test("legacy projects preserve an absent Rust inventory through browser composition", () => {
@@ -309,6 +366,7 @@ test("dynamic deltas patch only changed keyed collection members", () => {
       asset: "mesh/security-door",
       translation: [3, 4, 5] as const,
       visible: true,
+      visualState: "closed" as const,
     },
     {
       id: 4,
@@ -316,6 +374,7 @@ test("dynamic deltas patch only changed keyed collection members", () => {
       asset: "enemy/cargo-loader",
       translation: [6, 7, 8] as const,
       visible: true,
+      visualState: "default" as const,
     },
   ];
   const initial = applyServerUpdate(null, {
@@ -1531,6 +1590,52 @@ class SaveRejectionSocket extends EventTarget {
       new MessageEvent("message", { data: JSON.stringify(value) }),
     );
   }
+}
+
+function staticResourceFixture() {
+  return {
+    ...resources,
+    renderMaterials: [
+      {
+        schemaVersion: 1,
+        id: "material/prop-kit/test-prop",
+        color: [0.3, 0.4, 0.5, 1],
+        texture: null,
+        roughness: 0.8,
+        textureTint: [1, 1, 1, 1],
+        emissionColor: [0, 0, 0],
+        emissionIntensity: 0,
+        uvStrategy: "flat",
+      },
+    ],
+    staticMeshes: [
+      {
+        asset: "mesh/prop-kit/test-prop",
+        payload: {
+          layout: {
+            vertexCount: 3,
+            indexCount: 3,
+            indexWidth: "u32",
+            attributes: [
+              { name: "position", components: 3, kind: "f32" },
+              { name: "normal", components: 3, kind: "f32" },
+            ],
+          },
+          groups: [{ materialSlot: 0, start: 0, count: 3 }],
+          bounds: { min: [-0.1, -0.1, 0], max: [0.1, 0.1, 0] },
+          source: {
+            kind: "inline",
+            positions: [-0.1, -0.1, 0, 0.1, -0.1, 0, 0, 0.1, 0],
+            normals: [0, 0, 1, 0, 0, 1, 0, 0, 1],
+            indices: [0, 1, 2],
+          },
+          provenance: "generated",
+        },
+        materialSlots: [{ slot: 0, material: "material/prop-kit/test-prop" }],
+        collision: { kind: "visualOnly" },
+      },
+    ],
+  } as const;
 }
 
 function restoreGlobal(

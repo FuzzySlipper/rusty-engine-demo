@@ -59,12 +59,12 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(response["project"]["identity"]["projectId"], "loading-bay");
     assert_eq!(
         response["project"]["inspections"]["catalog"]["entryCount"],
-        42
+        89
     );
-    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 75);
+    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 77);
     assert_eq!(
         response["project"]["inspections"]["entityState"]["entityCount"],
-        75
+        77
     );
     let entity_inspection = response["project"]["inspections"]["entityState"]
         .as_object()
@@ -91,23 +91,18 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .collect::<Vec<_>>(),
         (88..=112).collect::<Vec<_>>()
     );
-    assert_eq!(
-        component_references
-            .iter()
-            .filter(|reference| {
-                reference["componentTypeId"] == "rusty-engine-demo.loading-bay.weapon"
-            })
-            .map(|reference| reference["ownerEntityId"].as_u64().unwrap())
-            .collect::<Vec<_>>(),
-        vec![113, 114, 115]
-    );
+    let weapon_references = component_references
+        .iter()
+        .filter(|reference| reference["componentTypeId"] == "rusty-engine-demo.loading-bay.weapon")
+        .collect::<Vec<_>>();
+    assert_eq!(weapon_references.len(), 3);
     assert_eq!(response["project"]["sceneHierarchy"]["sceneId"], 1);
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"]
             .as_array()
             .unwrap()
             .len(),
-        75
+        77
     );
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"][0]["label"],
@@ -118,26 +113,34 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         1
     );
     assert_eq!(
-        response["project"]["sceneHierarchy"]["nodes"][72]["entityId"],
-        113
-    );
-    assert_eq!(
-        response["project"]["sceneHierarchy"]["nodes"][72]["tags"],
-        json!(["runtime-derived"])
-    );
-    assert_eq!(response["project"]["projection"]["schemaVersion"], 1);
-    assert_eq!(
-        response["project"]["projection"]["ops"]
+        response["project"]["sceneHierarchy"]["nodes"]
             .as_array()
             .unwrap()
-            .len(),
-        124
+            .iter()
+            .filter(|node| node["tags"] == json!(["runtime-derived"]))
+            .count(),
+        3
     );
+    assert_eq!(response["project"]["projection"]["schemaVersion"], 1);
     assert_eq!(
         response["project"]["projection"]["ops"][0]["op"],
         "defineMaterial"
     );
     let projection_ops = response["project"]["projection"]["ops"].as_array().unwrap();
+    assert_eq!(
+        projection_ops
+            .iter()
+            .filter(|operation| operation["op"] == "defineMaterial")
+            .count(),
+        53
+    );
+    assert_eq!(
+        projection_ops
+            .iter()
+            .filter(|operation| operation["op"] == "defineStaticMesh")
+            .count(),
+        40
+    );
     assert_eq!(
         projection_ops
             .iter()
@@ -1004,6 +1007,13 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
     let project_hash = opened["project"]["identity"]["projectHash"]
         .as_str()
         .unwrap();
+    let weapon_owner = opened["project"]["entityComponents"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|reference| reference["componentTypeId"] == "rusty-engine-demo.loading-bay.weapon")
+        .and_then(|reference| reference["ownerEntityId"].as_u64())
+        .expect("provider-derived weapon owner");
     let read = send(
         &mut service,
         json!({
@@ -1011,7 +1021,7 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
             "contractVersion": 1,
             "requestId": "read-weapon",
             "expectedProjectHash": project_hash,
-            "ownerEntityId": 113,
+            "ownerEntityId": weapon_owner,
         }),
     );
     assert_eq!(read["type"], "loadingBayWeaponRead", "{read:#}");
@@ -1027,7 +1037,7 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
             "contractVersion": 1,
             "requestId": "replace-weapon",
             "expectedProjectHash": project_hash,
-            "ownerEntityId": 113,
+            "ownerEntityId": weapon_owner,
             "expectedComponentRevision": read["weapon"]["componentRevision"],
             "candidate": candidate,
         }),
@@ -1077,7 +1087,7 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
             "contractVersion": 1,
             "requestId": "reconstructed",
             "expectedProjectHash": reopened_hash,
-            "ownerEntityId": 113,
+            "ownerEntityId": weapon_owner,
         }),
     );
     assert_eq!(reconstructed["type"], "loadingBayWeaponRead");
@@ -1090,7 +1100,7 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
             "contractVersion": 1,
             "requestId": "malformed",
             "expectedProjectHash": reopened_hash,
-            "ownerEntityId": 113,
+            "ownerEntityId": weapon_owner,
             "operation": "genericGet",
         }),
     );
