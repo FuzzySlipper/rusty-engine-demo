@@ -277,6 +277,30 @@ the latest complete sample, while `certify:performance` reports status/scope plu
 ranges and fails if the exact Three counters disappear or change scope. Frame cadence remains
 inter-submission timing and synchronous backend submission remains distinct from GPU completion.
 
+## 2026-07-30 serialized-prop pressure follow-up
+
+Task #6354 measures the real serialized prop/viewmodel product at exact Engine revision
+`9813bf6f759a8967a5de1681d4726f7b17254ca5`. The headless Chromium run is correctness and resource
+lifecycle evidence, not hardware GPU timing:
+
+| Measurement                         | Result      |
+| ----------------------------------- | ----------- |
+| Session bootstrap                   | 1,768,068 B |
+| Largest steady update               | 11,933 B    |
+| Outbound / input / edge queue peaks | 1 / 1 / 1   |
+| Dropped facts                       | 0           |
+| Maximum authoritative command RTT   | 1,270.7 ms  |
+| Renderer cadence                    | 16.8 ms     |
+| Rich draw-call delta                | +32         |
+| Rich live-handle delta              | +33         |
+| Rich submitted-triangle delta       | +64         |
+
+Cleanup returns draw calls, live handles, and submitted triangles to the 50 / 53 / 15,357
+baseline. Geometry and material counts remain at 47 / 96 rather than the 43 / 92 pre-stress
+baseline because Engine #6416 deliberately retains four reusable static-mesh definitions after
+their last live instances are destroyed. Reuse is bounded, and renderer disposal remains the
+terminal release boundary.
+
 ## Camera policy
 
 The original hardware-backed LAN baseline measured command acknowledgement p95 at 54.3 ms. The

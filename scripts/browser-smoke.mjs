@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import {
+  cpSync,
   existsSync,
   mkdtempSync,
   readdirSync,
@@ -14,7 +15,9 @@ import { fileURLToPath } from "node:url";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const chromium = process.env.CHROMIUM_BIN ?? "/usr/bin/chromium";
 const FULL_CAMPAIGN_TIMEOUT_MILLISECONDS = 300_000;
+const CONVERTED_CAMPAIGN_TIMEOUT_MILLISECONDS = 90_000;
 const CHROMIUM_STARTUP_TIMEOUT_MILLISECONDS = 45_000;
+const convertedOnly = process.env.RUSTY_BROWSER_SMOKE_PHASE === "converted";
 if (!existsSync(chromium)) {
   throw new Error(
     `Chromium is required for the product smoke (${chromium} not found)`,
@@ -60,20 +63,22 @@ try {
     "converted-wall.project.json",
   );
   const migratedProject = resolve(proofDirectory, "migrated-v6.project.json");
-  const currentReceipt = await persistProject(
-    resolve(repoRoot, "content/projects/loading-bay.project.json"),
-    persistedProject,
-  );
-  if (
-    !currentReceipt.includes("sourceSchema=21") ||
-    !currentReceipt.includes("currentSchema=21")
-  ) {
-    throw new Error(
-      `current project persistence receipt was incomplete\n${currentReceipt}`,
+  if (!convertedOnly) {
+    const currentReceipt = await persistProject(
+      resolve(repoRoot, "content/projects/loading-bay.project.json"),
+      persistedProject,
     );
+    if (
+      !currentReceipt.includes("sourceSchema=21") ||
+      !currentReceipt.includes("currentSchema=21")
+    ) {
+      throw new Error(
+        `current project persistence receipt was incomplete\n${currentReceipt}`,
+      );
+    }
+    await runFullBrowserProduct(persistedProject);
+    await runPersistedVoxelEditProduct(persistedProject);
   }
-  await runFullBrowserProduct(persistedProject);
-  await runPersistedVoxelEditProduct(persistedProject);
 
   const convertedReceipt = await persistProject(
     resolve(repoRoot, "content/projects/converted-wall.project.json"),
@@ -87,23 +92,43 @@ try {
       `converted project persistence receipt was incomplete\n${convertedReceipt}`,
     );
   }
+  const convertedAssetRoot = resolve(proofDirectory, "content/assets/prop-kit");
+  cpSync(resolve(repoRoot, "content/assets/prop-kit"), convertedAssetRoot, {
+    recursive: true,
+  });
+  const convertedAuthoring = await run("node", [
+    "scripts/author-prop-kit.mjs",
+    convertedProject,
+    resolve(proofDirectory, "converted-wall-prop-authoring.json"),
+    "converted-wall",
+    proofDirectory,
+  ]);
+  if (convertedAuthoring.code !== 0) {
+    throw new Error(
+      `converted prop authoring exited ${String(convertedAuthoring.code)}\n${convertedAuthoring.stderr}`,
+    );
+  }
   await runConvertedBrowserProduct(convertedProject);
   await runPersistedConvertedVoxelEditProduct(convertedProject);
 
-  const migrationReceipt = await persistProject(
-    resolve(repoRoot, "content/generated/encounter-gate.project.json"),
-    migratedProject,
-  );
-  if (
-    !migrationReceipt.includes("sourceSchema=6") ||
-    !migrationReceipt.includes("currentSchema=21")
-  ) {
-    throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
+  if (!convertedOnly) {
+    const migrationReceipt = await persistProject(
+      resolve(repoRoot, "content/generated/encounter-gate.project.json"),
+      migratedProject,
+    );
+    if (
+      !migrationReceipt.includes("sourceSchema=6") ||
+      !migrationReceipt.includes("currentSchema=21")
+    ) {
+      throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
+    }
+    await runMigratedBrowserProduct(migratedProject);
   }
-  await runMigratedBrowserProduct(migratedProject);
 
   console.log(
-    "browser smoke passed: persisted projects + converted asset + v6 migration -> accepted gameplay -> shared Rusty Engine retained renderer + shared disposable hosts -> fresh-page posture rebuild",
+    convertedOnly
+      ? "browser smoke passed: schema-11 converted asset -> Studio-authored serialized appearances -> retained WebGL, collision, navigation, and live edits"
+      : "browser smoke passed: persisted projects + converted asset + v6 migration -> accepted gameplay -> shared Rusty Engine retained renderer + shared disposable hosts -> fresh-page posture rebuild",
   );
 } finally {
   rmSync(proofDirectory, { recursive: true, force: true });
@@ -165,6 +190,10 @@ function assertRendererStatisticsProof(proof) {
     animatedInstanceCount: ["liveResident", 0],
     triangleCount: ["perSubmission", 64],
   };
+  const retainedAfterCleanup = new Set([
+    "geometryResourceCount",
+    "materialResourceCount",
+  ]);
   for (const [counter, [scope, delta]] of Object.entries(deltas)) {
     const placeholder = proof.placeholder?.statistics?.[counter];
     const contentRich = proof.contentRich?.statistics?.[counter];
@@ -177,7 +206,10 @@ function assertRendererStatisticsProof(proof) {
       contentRich.scope !== scope ||
       restored.scope !== scope ||
       contentRich.value - placeholder.value !== delta ||
-      restored.value !== placeholder.value
+      restored.value !==
+        (retainedAfterCleanup.has(counter)
+          ? contentRich.value
+          : placeholder.value)
     ) {
       throw new Error(
         `renderer statistics proof failed for ${counter}\n${JSON.stringify({ placeholder, contentRich, restored, delta })}`,
@@ -1719,6 +1751,7 @@ async function runMigratedBrowserProduct(project) {
 }
 
 async function runConvertedBrowserProduct(project) {
+  const expectedAssetCount = storedProjectAssetCount(project);
   const running = await launchHost(project);
   try {
     await waitForHealth(
@@ -1729,11 +1762,14 @@ async function runConvertedBrowserProduct(project) {
     const result = await runChromiumSmoke(
       `http://${running.address}/?converted-smoke=1#/game`,
       "document.body?.dataset.smokeStatus === 'pass' || document.body?.dataset.smokeStatus === 'fail'",
-      30_000,
+      CONVERTED_CAMPAIGN_TIMEOUT_MILLISECONDS,
     );
     if (result.code !== 0) {
+      const convertedPhase =
+        result.stdout.match(/data-converted-phase="([^"]+)"/u)?.[1] ??
+        "unpublished";
       throw new Error(
-        `converted Chromium exited ${String(result.code)}\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-8_000)}`,
+        `converted Chromium exited ${String(result.code)} during ${convertedPhase}\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-8_000)}`,
       );
     }
     const required = [
@@ -1762,7 +1798,7 @@ async function runConvertedBrowserProduct(project) {
       "sourceSchema=21",
       "currentSchema=21",
       "entryScene=scene/converted-wall",
-      "assets=10",
+      `assets=${String(expectedAssetCount)}`,
       "scenes=1",
       "entities=7",
     ]) {

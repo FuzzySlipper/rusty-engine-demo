@@ -63,7 +63,11 @@ export function captureLoadingBayRendererStatisticsProof(
     surface.applyFrame(cleanupFrame());
     contentRichApplied = false;
     const restored = submitAndObserve(surface, now());
-    assertStatisticsEqual(placeholder.statistics, restored.statistics);
+    assertCleanupStatistics(
+      placeholder.statistics,
+      contentRich.statistics,
+      restored.statistics,
+    );
 
     return Object.freeze({
       kind: "loading_bay_renderer_statistics_proof.v1",
@@ -195,14 +199,19 @@ function assertDelta(
   }
 }
 
-function assertStatisticsEqual(
+function assertCleanupStatistics(
   placeholder: RendererSurfaceStatisticsSample,
+  contentRich: RendererSurfaceStatisticsSample,
   restored: RendererSurfaceStatisticsSample,
 ): void {
   for (const key of STATISTIC_KEYS) {
-    if (JSON.stringify(restored[key]) !== JSON.stringify(placeholder[key])) {
+    const expected =
+      key === "geometryResourceCount" || key === "materialResourceCount"
+        ? contentRich[key]
+        : placeholder[key];
+    if (JSON.stringify(restored[key]) !== JSON.stringify(expected)) {
       throw new Error(
-        `${key} did not return to the placeholder renderer statistic`,
+        `${key} did not reach the expected post-cleanup renderer statistic`,
       );
     }
   }

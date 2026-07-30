@@ -34,10 +34,10 @@ test("content-rich probe uses shared assets under one disposable viewmodel tree"
   ]);
 });
 
-test("probe samples one surface explicitly and restores every renderer statistic", () => {
+test("probe samples one surface explicitly and retains reusable definitions after cleanup", () => {
   const placeholder = submission(1, statistics(17, 40, 9, 8, 2, 1, 600));
   const contentRich = submission(2, statistics(49, 73, 13, 12, 2, 1, 664));
-  const restored = submission(3, placeholder.statistics);
+  const restored = submission(3, statistics(17, 40, 13, 12, 2, 1, 600));
   const submissions = [placeholder, contentRich, restored];
   const renderReturns = [
     submission(101, statistics(0, 0, 0, 0, 0, 0, 0)),
@@ -76,7 +76,10 @@ test("probe samples one surface explicitly and restores every renderer statistic
 test("probe reads stored submissions, rejects a bad richer count, and cleans up", () => {
   const placeholder = submission(1, statistics(17, 40, 9, 8, 2, 1, 600));
   const badContentRich = submission(2, statistics(48, 73, 13, 12, 2, 1, 664));
-  const cleanupSubmission = submission(3, placeholder.statistics);
+  const cleanupSubmission = submission(
+    3,
+    statistics(17, 40, 13, 12, 2, 1, 600),
+  );
   const submissions = [placeholder, badContentRich, cleanupSubmission];
   const renderReturns = [
     submission(101, statistics(17, 40, 9, 8, 2, 1, 600)),

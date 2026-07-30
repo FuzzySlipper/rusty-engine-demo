@@ -243,6 +243,12 @@ authority. The two new crane/tank landmarks intentionally have none of those com
 bounds/material topology, Studio import provenance, exact mappings, viewmodel resources, and
 visual/gameplay proxy separation.
 
+The converted-wall browser fixture does not embed a second generated scene or presentation
+fallback. After its schema-11 source is migrated by the Rust project store, the same
+`scripts/author-prop-kit.mjs` Studio protocol path imports the security-door, control-panel, and
+status-runner sources and publishes the five fixture appearances before launch. Those temporary
+proof-project mutations reuse the manifest hashes and copied CC0 notices above.
+
 ## Proper FPS campaign design
 
 The product architecture, protocol targets, content vocabulary, and original level route in
@@ -364,6 +370,9 @@ Rusty Engine task #6213 produced the renderer-owned timing seam at public SHA
 integration evidence adopted by #6219. Rusty Engine task #6263 then produced the bounded
 camera-relative `viewmodel` layer and explicit world/depth-clear/viewmodel composition at public SHA
 `e622c941671bc0f167206b049ab94ea63495a86d`, initially adopted by #6224 and retained in the current
-reviewed Engine descendant `a6857d03141e162511231c276ee751a3413c90e5`.
+reviewed Engine descendant `9813bf6f759a8967a5de1681d4726f7b17254ca5`. Engine task #6416 owns
+that descendant's correction which keeps a serialized static-mesh definition reusable after its
+last live instance is destroyed; #6354 consumes it for world-pickup to camera-relative viewmodel
+transitions without a downstream resource cache or redefinition loop.
 The downstream call site reads `surface.timing()` from the shared auto-started surface; no demo
 frame scheduler, backend clock, renderer object access, or private renderer was introduced.

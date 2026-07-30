@@ -13,11 +13,16 @@ const EVIDENCE =
   process.argv[3] === undefined
     ? resolve(ROOT, "docs/evidence/prop-kit-authoring.json")
     : resolve(process.argv[3]);
+const PROFILE = process.argv[4] ?? "loading-bay";
+const PROJECT_ROOT =
+  process.argv[5] === undefined
+    ? dirname(dirname(dirname(PROJECT)))
+    : resolve(process.argv[5]);
 const MANIFEST = JSON.parse(
   await readFile(resolve(ROOT, "content/assets/prop-kit/source-manifest.json")),
 );
 
-const appearances = new Map([
+const loadingBayAppearances = [
   [3, "security-door"],
   [6, "control-panel"],
   [7, "extraction-beacon"],
@@ -44,11 +49,12 @@ const appearances = new Map([
   [63, "energy-cell"],
   [64, "med-patch"],
   [65, "energy-cell"],
-]);
+];
 
-const landmarks = [
+const loadingBayLandmarks = [
   {
-    entityId: 1_000,
+    entityId: 8,
+    legacyEntityId: 1_000,
     name: "loading-bay-overhead-crane",
     asset: "mesh/prop-kit/landmark-crane",
     translation: [16.5, 5.75, 39],
@@ -56,7 +62,8 @@ const landmarks = [
     scale: [1, 1, 1],
   },
   {
-    entityId: 1_001,
+    entityId: 9,
+    legacyEntityId: 1_001,
     name: "generator-coolant-tank",
     asset: "mesh/prop-kit/landmark-tank",
     translation: [28, 3.5, 27],
@@ -64,6 +71,31 @@ const landmarks = [
     scale: [1, 1, 1],
   },
 ];
+
+const profiles = {
+  "loading-bay": {
+    appearances: loadingBayAppearances,
+    landmarks: loadingBayLandmarks,
+    assetNames: null,
+  },
+  "converted-wall": {
+    appearances: [
+      [3, "security-door"],
+      [4, "status-runner"],
+      [5, "status-runner"],
+      [6, "control-panel"],
+      [10, "status-runner"],
+    ],
+    landmarks: [],
+    assetNames: new Set(["security-door", "control-panel", "status-runner"]),
+  },
+};
+const profile = profiles[PROFILE];
+if (profile === undefined) {
+  throw new Error(`unknown prop-kit authoring profile ${PROFILE}`);
+}
+const appearances = new Map(profile.appearances);
+const landmarks = profile.landmarks;
 
 class Adapter {
   #child;
@@ -165,7 +197,7 @@ function importedAsset(response, assetId) {
 }
 
 const adapter = new Adapter();
-const root = dirname(dirname(dirname(PROJECT)));
+const root = PROJECT_ROOT;
 let current = (
   await adapter.send({
     type: "openProject",
@@ -178,7 +210,11 @@ let current = (
 const startingHash = projectHash(current);
 const imports = [];
 
-for (const asset of MANIFEST.assets) {
+for (const asset of MANIFEST.assets.filter(
+  (candidate) =>
+    profile.assetNames === null ||
+    profile.assetNames.has(candidate.assetId.split("/").at(-1)),
+)) {
   const assetId = asset.assetId;
   const existing = importedAsset(current, assetId);
   const requestId = assetId.replaceAll("/", "-");
@@ -276,6 +312,29 @@ for (const [entityId, assetName] of appearances) {
 }
 
 for (const landmark of landmarks) {
+  const legacy = entryScene(current).entities.find(
+    (entity) => entity.id === landmark.legacyEntityId,
+  );
+  if (legacy !== undefined) {
+    if (
+      legacy.name !== landmark.name ||
+      legacy.renderable?.asset !== landmark.asset
+    ) {
+      throw new Error(
+        `legacy landmark entity ${String(landmark.legacyEntityId)} has unexpected authored content`,
+      );
+    }
+    current = (
+      await adapter.send({
+        type: "deleteSceneObject",
+        protocolVersion: 11,
+        requestId: `prop-landmark-retire-${String(landmark.legacyEntityId)}`,
+        expectedProjectHash: projectHash(current),
+        expectedSceneRevision: sceneRevision(current),
+        entityId: landmark.legacyEntityId,
+      })
+    ).response;
+  }
   const existing = entryScene(current).entities.find(
     (entity) => entity.id === landmark.entityId,
   );

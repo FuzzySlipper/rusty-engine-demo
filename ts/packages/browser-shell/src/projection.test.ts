@@ -209,6 +209,60 @@ test("a non-actor appearance cannot fall back when its serialized mesh is absent
   );
 });
 
+test("a changed serialized definition destroys live instances before redefine and recreate", () => {
+  const adapter = new RuntimeProjectionAdapter();
+  const node = {
+    id: 20,
+    name: "arrival-energy-cache",
+    asset: "mesh/prop-kit/energy-cell",
+    translation: [4.5, 1.5, 9.5] as const,
+    visible: true,
+    visualState: "available" as const,
+  };
+  const initial = adapter.apply(serializedState([node]));
+  initial.commit();
+
+  const nextState = serializedState([node]);
+  const originalAsset = nextState.staticMeshes[0];
+  assert.ok(originalAsset);
+  const changed = {
+    ...nextState,
+    staticMeshes: [
+      {
+        ...originalAsset,
+        payload: {
+          ...originalAsset.payload,
+          bounds: {
+            min: [-0.2, -0.1, 0] as const,
+            max: [0.2, 0.1, 0] as const,
+          },
+        },
+      },
+    ],
+  };
+  const replacement = adapter.apply(changed);
+
+  assert.deepEqual(
+    replacement.ops.map((operation) => operation.op),
+    [
+      "destroy",
+      "defineStaticMesh",
+      "createStaticMeshInstance",
+      "setMaterialInstanceParameters",
+    ],
+  );
+  assert.equal(
+    replacement.ops[0]?.op === "destroy" ? replacement.ops[0].handle : null,
+    entityHandle(node.id),
+  );
+  assert.equal(
+    replacement.ops[2]?.op === "createStaticMeshInstance"
+      ? replacement.ops[2].handle
+      : null,
+    entityHandle(node.id),
+  );
+});
+
 test("enemy archetype assets project distinct silhouettes and materials", () => {
   const plan = new RuntimeProjectionAdapter().apply(
     state([

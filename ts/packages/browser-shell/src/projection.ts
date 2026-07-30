@@ -550,6 +550,27 @@ export class RuntimeProjectionAdapter {
     const nextDefinedStaticMeshes = new Map(this.#definedStaticMeshes);
     let nextMeshHandle = this.#nextMeshHandle;
     const ops: RenderDiff[] = [];
+    const staticMeshes = new Map(
+      state.staticMeshes.map((asset) => [asset.asset, asset] as const),
+    );
+    const changedStaticMeshes = new Set(
+      state.staticMeshes
+        .filter(
+          (asset) =>
+            nextDefinedStaticMeshes.get(asset.asset) !== JSON.stringify(asset),
+        )
+        .map((asset) => asset.asset),
+    );
+    for (const [id, known] of nextKnown) {
+      if (
+        known.kind === "staticMesh" &&
+        known.renderedAsset !== null &&
+        changedStaticMeshes.has(known.renderedAsset)
+      ) {
+        ops.push({ op: "destroy", handle: entityHandle(id) });
+        nextKnown.delete(id);
+      }
+    }
     for (const material of state.renderMaterials) {
       const fingerprint = JSON.stringify(material);
       if (nextDefinedMaterials.get(material.id) !== fingerprint) {
@@ -557,9 +578,6 @@ export class RuntimeProjectionAdapter {
         nextDefinedMaterials.set(material.id, fingerprint);
       }
     }
-    const staticMeshes = new Map(
-      state.staticMeshes.map((asset) => [asset.asset, asset] as const),
-    );
     for (const asset of state.staticMeshes) {
       const fingerprint = JSON.stringify(asset);
       if (nextDefinedStaticMeshes.get(asset.asset) !== fingerprint) {

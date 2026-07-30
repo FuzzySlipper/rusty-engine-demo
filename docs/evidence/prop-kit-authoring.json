@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "project": {
-    "path": "content/projects/loading-bay.project.json",
+    "path": "../../../tmp/rusty-engine-demo-prop-reauthor-W8cjWA/content/projects/loading-bay.project.json",
     "startingHash": "dde061a1b27fdb8665bc0d7099a5ec364310272e618f23f6c6177a7bb8a6393a",
-    "finalHash": "82982a06ed92eca705a71461200eb5b3f3e7c9cee6b7e142168ee5e3114db938",
+    "finalHash": "81dd321e11f7aeb458e4a7aa5760ca2d37adc65f0265a956bd8919bddd54e770",
     "schemaVersion": 21,
     "assetCount": 89,
     "entityCount": 74
@@ -19,9 +19,9 @@
         "mesh/prop-kit/security-door"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1168.172,
-      "applyMs": 6681.018,
-      "applyResponseBytes": 12907675
+      "prepareMs": 1089.151,
+      "applyMs": 6822.601,
+      "applyResponseBytes": 12907693
     },
     {
       "assetId": "mesh/prop-kit/control-panel",
@@ -32,9 +32,9 @@
         "mesh/prop-kit/control-panel"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1159.087,
-      "applyMs": 6403.078,
-      "applyResponseBytes": 13019354
+      "prepareMs": 1079.407,
+      "applyMs": 6739.167,
+      "applyResponseBytes": 13019372
     },
     {
       "assetId": "mesh/prop-kit/hazard-marker",
@@ -45,9 +45,9 @@
         "mesh/prop-kit/hazard-marker"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1113.076,
-      "applyMs": 8638.113,
-      "applyResponseBytes": 13091069
+      "prepareMs": 1324.337,
+      "applyMs": 8940.101,
+      "applyResponseBytes": 13091087
     },
     {
       "assetId": "mesh/prop-kit/extraction-beacon",
@@ -58,9 +58,9 @@
         "mesh/prop-kit/extraction-beacon"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1439.886,
-      "applyMs": 6476.407,
-      "applyResponseBytes": 13251276
+      "prepareMs": 1561.982,
+      "applyMs": 6716.34,
+      "applyResponseBytes": 13251294
     },
     {
       "assetId": "mesh/prop-kit/level-exit",
@@ -71,9 +71,9 @@
         "mesh/prop-kit/level-exit"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1126.648,
-      "applyMs": 8830.613,
-      "applyResponseBytes": 13268732
+      "prepareMs": 1095.102,
+      "applyMs": 6419.167,
+      "applyResponseBytes": 13268750
     },
     {
       "assetId": "mesh/prop-kit/status-runner",
@@ -84,9 +84,9 @@
         "mesh/prop-kit/status-runner"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1168.272,
-      "applyMs": 9076.419,
-      "applyResponseBytes": 13421612
+      "prepareMs": 1136.476,
+      "applyMs": 6592.255,
+      "applyResponseBytes": 13421630
     },
     {
       "assetId": "mesh/prop-kit/landmark-crane",
@@ -97,9 +97,9 @@
         "mesh/prop-kit/landmark-crane"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1220.583,
-      "applyMs": 6748.667,
-      "applyResponseBytes": 13785912
+      "prepareMs": 1158.303,
+      "applyMs": 6525.622,
+      "applyResponseBytes": 13785930
     },
     {
       "assetId": "mesh/prop-kit/landmark-tank",
@@ -110,9 +110,9 @@
         "mesh/prop-kit/landmark-tank"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1191.295,
-      "applyMs": 7924.248,
-      "applyResponseBytes": 13943614
+      "prepareMs": 1165.404,
+      "applyMs": 6746.074,
+      "applyResponseBytes": 13943632
     },
     {
       "assetId": "mesh/prop-kit/energy-cell",
@@ -124,9 +124,9 @@
         "mesh/prop-kit/energy-cell"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1202.595,
-      "applyMs": 6825.339,
-      "applyResponseBytes": 14040743
+      "prepareMs": 1206.546,
+      "applyMs": 7194.991,
+      "applyResponseBytes": 14040761
     },
     {
       "assetId": "mesh/prop-kit/scatter-shells",
@@ -139,9 +139,9 @@
         "mesh/prop-kit/scatter-shells"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1237.742,
-      "applyMs": 8553.745,
-      "applyResponseBytes": 14352148
+      "prepareMs": 1235.606,
+      "applyMs": 6893.974,
+      "applyResponseBytes": 14352166
     },
     {
       "assetId": "mesh/prop-kit/med-patch",
@@ -153,9 +153,9 @@
         "mesh/prop-kit/med-patch"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1271.962,
-      "applyMs": 6946.839,
-      "applyResponseBytes": 14384727
+      "prepareMs": 1367,
+      "applyMs": 6800.185,
+      "applyResponseBytes": 14384745
     },
     {
       "assetId": "mesh/prop-kit/impact-vest",
@@ -167,9 +167,9 @@
         "mesh/prop-kit/impact-vest"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1249.551,
-      "applyMs": 6976.632,
-      "applyResponseBytes": 14430307
+      "prepareMs": 1199.377,
+      "applyMs": 6785.547,
+      "applyResponseBytes": 14430325
     },
     {
       "assetId": "mesh/prop-kit/maintenance-pass",
@@ -182,9 +182,9 @@
         "mesh/prop-kit/maintenance-pass"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1245.697,
-      "applyMs": 7074.888,
-      "applyResponseBytes": 14489080
+      "prepareMs": 1206.745,
+      "applyMs": 6849.166,
+      "applyResponseBytes": 14489098
     },
     {
       "assetId": "mesh/prop-kit/arc-pistol",
@@ -197,9 +197,9 @@
         "mesh/prop-kit/arc-pistol"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1233.869,
-      "applyMs": 7015.921,
-      "applyResponseBytes": 14567199
+      "prepareMs": 1215.879,
+      "applyMs": 6796.83,
+      "applyResponseBytes": 14567217
     },
     {
       "assetId": "mesh/prop-kit/breach-scattergun",
@@ -212,9 +212,9 @@
         "mesh/prop-kit/breach-scattergun"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1257.571,
-      "applyMs": 7107.565,
-      "applyResponseBytes": 14652725
+      "prepareMs": 1187.884,
+      "applyMs": 6664.885,
+      "applyResponseBytes": 14652743
     },
     {
       "assetId": "mesh/prop-kit/rivet-carbine",
@@ -227,9 +227,9 @@
         "mesh/prop-kit/rivet-carbine"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1261.486,
-      "applyMs": 7039.724,
-      "applyResponseBytes": 14720240
+      "prepareMs": 1180.268,
+      "applyMs": 6622.076,
+      "applyResponseBytes": 14720258
     },
     {
       "assetId": "mesh/prop-kit/muzzle-flash",
@@ -240,9 +240,9 @@
         "mesh/prop-kit/muzzle-flash"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1261.96,
-      "applyMs": 7065.705,
-      "applyResponseBytes": 14739437
+      "prepareMs": 1200.356,
+      "applyMs": 6613.053,
+      "applyResponseBytes": 14739455
     }
   ],
   "appearanceMappings": [
@@ -353,46 +353,22 @@
   ],
   "landmarks": [
     {
-      "entityId": 1000,
+      "entityId": 8,
+      "legacyEntityId": 1000,
       "name": "loading-bay-overhead-crane",
       "asset": "mesh/prop-kit/landmark-crane",
-      "translation": [
-        16.5,
-        5.75,
-        39
-      ],
-      "rotation": [
-        0,
-        0,
-        0,
-        1
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
+      "translation": [16.5, 5.75, 39],
+      "rotation": [0, 0, 0, 1],
+      "scale": [1, 1, 1]
     },
     {
-      "entityId": 1001,
+      "entityId": 9,
+      "legacyEntityId": 1001,
       "name": "generator-coolant-tank",
       "asset": "mesh/prop-kit/landmark-tank",
-      "translation": [
-        28,
-        3.5,
-        27
-      ],
-      "rotation": [
-        0,
-        0,
-        0,
-        1
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
+      "translation": [28, 3.5, 27],
+      "rotation": [0, 0, 0, 1],
+      "scale": [1, 1, 1]
     }
   ],
   "reimport": {
@@ -401,8 +377,8 @@
     "sourceHash": "104d0745cd8f26619aee9128fed8ae41475e90acf7b56c71c00c13fabce30e47"
   },
   "reload": {
-    "canonicalHash": "82982a06ed92eca705a71461200eb5b3f3e7c9cee6b7e142168ee5e3114db938",
-    "freshProcessHash": "82982a06ed92eca705a71461200eb5b3f3e7c9cee6b7e142168ee5e3114db938",
+    "canonicalHash": "81dd321e11f7aeb458e4a7aa5760ca2d37adc65f0265a956bd8919bddd54e770",
+    "freshProcessHash": "81dd321e11f7aeb458e4a7aa5760ca2d37adc65f0265a956bd8919bddd54e770",
     "passed": true
   }
 }

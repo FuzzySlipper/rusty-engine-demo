@@ -172130,6 +172130,34 @@
           }
         },
         {
+          "id": 8,
+          "name": "loading-bay-overhead-crane",
+          "childOrder": 8,
+          "translation": [
+            16.5,
+            5.75,
+            39.0
+          ],
+          "renderable": {
+            "asset": "mesh/prop-kit/landmark-crane",
+            "visible": true
+          }
+        },
+        {
+          "id": 9,
+          "name": "generator-coolant-tank",
+          "childOrder": 9,
+          "translation": [
+            28.0,
+            3.5,
+            27.0
+          ],
+          "renderable": {
+            "asset": "mesh/prop-kit/landmark-tank",
+            "visible": true
+          }
+        },
+        {
           "id": 10,
           "name": "gantry-status-runner",
           "translation": [
@@ -173914,34 +173942,6 @@
             1.032258,
             1.0
           ]
-        },
-        {
-          "id": 1000,
-          "name": "loading-bay-overhead-crane",
-          "childOrder": 1000,
-          "translation": [
-            16.5,
-            5.75,
-            39.0
-          ],
-          "renderable": {
-            "asset": "mesh/prop-kit/landmark-crane",
-            "visible": true
-          }
-        },
-        {
-          "id": 1001,
-          "name": "generator-coolant-tank",
-          "childOrder": 1001,
-          "translation": [
-            28.0,
-            3.5,
-            27.0
-          ],
-          "renderable": {
-            "asset": "mesh/prop-kit/landmark-tank",
-            "visible": true
-          }
         }
       ]
     }

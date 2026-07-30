@@ -308,7 +308,10 @@ test("the extraction beacon is game-owned data on its responsible entity", () =>
     id: ENCOUNTER_IDS.extractionBeacon,
     name: "extraction-beacon",
     translation: [18.5, 1.5, 46.5],
-    renderable: { asset: "mesh/extraction-beacon", visible: true },
+    renderable: {
+      asset: "mesh/prop-kit/extraction-beacon",
+      visible: true,
+    },
     extractionBeacon: { activationRadius: 3 },
   });
 });

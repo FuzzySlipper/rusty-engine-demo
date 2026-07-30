@@ -571,76 +571,89 @@ export async function mountLoadingBayGame(
       ? "PASS · Page reload rebuilt posture without transient feedback"
       : "FAIL · Page reload retained or rebuilt transient feedback";
   } else if (convertedSmokeMode) {
-    const before = voxelFingerprint(current);
-    const convertedAssetLoaded =
-      before.revision === 0 &&
-      before.solidCount === 94 &&
-      before.probePathLength === 9 &&
-      current.generatedEnvironment === null &&
-      current.voxelMeshes.length === 1;
-    const convertedAssetVisible =
-      convertedAssetLoaded &&
-      surface.snapshot().includes("generated-room-chunk");
-    const blockedByConvertedWall = !(await walkPlayerPath([
-      [1.5, 5.5],
-      [4.5, 5.5],
-      [4.5, 8.5],
-    ]));
-    await performRestart();
+    try {
+      const before = voxelFingerprint(current);
+      const convertedAssetLoaded =
+        before.revision === 0 &&
+        before.solidCount === 94 &&
+        before.probePathLength === 9 &&
+        current.generatedEnvironment === null &&
+        current.voxelMeshes.length === 1;
+      const convertedAssetVisible =
+        convertedAssetLoaded &&
+        surface.snapshot().includes("generated-room-chunk");
+      document.body.dataset.convertedPhase = "blocked-wall-traversal";
+      const blockedByConvertedWall = !(await walkPlayerPath([
+        [1.5, 5.5],
+        [4.5, 5.5],
+        [4.5, 8.5],
+      ]));
+      document.body.dataset.convertedPhase = "restart";
+      await performRestart();
 
-    await performVoxelEdits([
-      { kind: "clear", address: [4, 1, 6] },
-      { kind: "clear", address: [5, 1, 6] },
-      { kind: "clear", address: [4, 1, 7] },
-      { kind: "clear", address: [5, 1, 7] },
-    ]);
-    const receipt = current.voxelEditReceipt;
-    const convertedEditApplied =
-      receipt?.acceptedRevision === 1 &&
-      receipt.changedVoxels === 4 &&
-      receipt.persistedToProject === false &&
-      current.voxelRevision === 1 &&
-      current.voxelSolidCount === before.solidCount - 4 &&
-      current.voxelAuthorityHash !== before.authorityHash &&
-      meshFingerprint(current) !== before.meshHash &&
-      current.generatedEnvironment === null &&
-      surface.snapshot().includes("generated-room-chunk");
-    const convertedNavigationUpdated =
-      current.voxelNavigationHash !== before.navigationHash &&
-      current.voxelProbePathLength < before.probePathLength;
-    const clearedWallTraversed = await walkPlayerPath([
-      [1.5, 5.5],
-      [4.5, 5.5],
-      [4.5, 8.5],
-    ]);
-    const convertedCollisionPassed =
-      blockedByConvertedWall && clearedWallTraversed;
-    const passed =
-      convertedAssetLoaded &&
-      convertedAssetVisible &&
-      convertedCollisionPassed &&
-      convertedNavigationUpdated &&
-      convertedEditApplied;
-    document.body.dataset.convertedAsset = convertedAssetLoaded
-      ? "pass"
-      : "fail";
-    document.body.dataset.convertedVisible = convertedAssetVisible
-      ? "pass"
-      : "fail";
-    document.body.dataset.convertedCollision = convertedCollisionPassed
-      ? "pass"
-      : "fail";
-    document.body.dataset.convertedNavigation = convertedNavigationUpdated
-      ? "pass"
-      : "fail";
-    document.body.dataset.convertedEdit = convertedEditApplied
-      ? "pass"
-      : "fail";
-    document.body.dataset.smokeStatus = passed ? "pass" : "fail";
-    smokeResult.dataset.status = passed ? "pass" : "fail";
-    smokeResult.textContent = passed
-      ? "PASS · Converted voxel asset reached retained WebGL, collision, navigation, and live edits"
-      : "FAIL · Converted voxel product proof did not converge";
+      document.body.dataset.convertedPhase = "voxel-edit";
+      await performVoxelEdits([
+        { kind: "clear", address: [4, 1, 6] },
+        { kind: "clear", address: [5, 1, 6] },
+        { kind: "clear", address: [4, 1, 7] },
+        { kind: "clear", address: [5, 1, 7] },
+      ]);
+      const receipt = current.voxelEditReceipt;
+      const convertedEditApplied =
+        receipt?.acceptedRevision === 1 &&
+        receipt.changedVoxels === 4 &&
+        receipt.persistedToProject === false &&
+        current.voxelRevision === 1 &&
+        current.voxelSolidCount === before.solidCount - 4 &&
+        current.voxelAuthorityHash !== before.authorityHash &&
+        meshFingerprint(current) !== before.meshHash &&
+        current.generatedEnvironment === null &&
+        surface.snapshot().includes("generated-room-chunk");
+      const convertedNavigationUpdated =
+        current.voxelNavigationHash !== before.navigationHash &&
+        current.voxelProbePathLength < before.probePathLength;
+      document.body.dataset.convertedPhase = "cleared-wall-traversal";
+      const clearedWallTraversed = await walkPlayerPath([
+        [1.5, 5.5],
+        [4.5, 5.5],
+        [4.5, 8.5],
+      ]);
+      const convertedCollisionPassed =
+        blockedByConvertedWall && clearedWallTraversed;
+      const passed =
+        convertedAssetLoaded &&
+        convertedAssetVisible &&
+        convertedCollisionPassed &&
+        convertedNavigationUpdated &&
+        convertedEditApplied;
+      document.body.dataset.convertedPhase = "complete";
+      document.body.dataset.convertedAsset = convertedAssetLoaded
+        ? "pass"
+        : "fail";
+      document.body.dataset.convertedVisible = convertedAssetVisible
+        ? "pass"
+        : "fail";
+      document.body.dataset.convertedCollision = convertedCollisionPassed
+        ? "pass"
+        : "fail";
+      document.body.dataset.convertedNavigation = convertedNavigationUpdated
+        ? "pass"
+        : "fail";
+      document.body.dataset.convertedEdit = convertedEditApplied
+        ? "pass"
+        : "fail";
+      document.body.dataset.smokeStatus = passed ? "pass" : "fail";
+      smokeResult.dataset.status = passed ? "pass" : "fail";
+      smokeResult.textContent = passed
+        ? "PASS · Converted voxel asset reached retained WebGL, collision, navigation, and live edits"
+        : "FAIL · Converted voxel product proof did not converge";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      document.body.dataset.convertedError = message;
+      document.body.dataset.smokeStatus = "fail";
+      smokeResult.dataset.status = "fail";
+      smokeResult.textContent = `FAIL · ${message}`;
+    }
   } else if (smokeMode) {
     let campaignPassed = false;
     try {

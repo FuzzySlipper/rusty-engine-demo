@@ -84,7 +84,7 @@ mappings, added two decorative landmarks, reread the canonical project, and reco
 bytes through a fresh adapter process.
 
 The current canonical project hash is
-`82982a06ed92eca705a71461200eb5b3f3e7c9cee6b7e142168ee5e3114db938`. The prop kit contains
+`81dd321e11f7aeb458e4a7aa5760ca2d37adc65f0265a956bd8919bddd54e770`. The prop kit contains
 8,127 vertices and 2,709 triangles. Its exact sources, derivative hashes, bounds, material slots,
 license hashes, and collision intent are recorded in
 `content/assets/prop-kit/source-manifest.json`; the Studio receipt is
@@ -126,6 +126,30 @@ shared Engine `viewmodel` root makes both children camera-relative and excludes 
 picking. One equipped weapon retains three handles rather than seven inline primitive parts.
 Movement bob, recoil, flash visibility, reset, and disposal remain disposable transforms derived
 from accepted Rust state and facts; they cannot alter aim, ammunition, damage, or cooldown.
+
+### Public Studio and game proof
+
+The public Studio shell reconstructed the exact project at Engine revision
+`9813bf6f759a8967a5de1681d4726f7b17254ca5` with 89 assets, 74 entities, one shared canvas, and no
+renderer error. Selecting the overhead crane and coolant tank through the public hierarchy raised
+the submitted frame from 12 draw calls / 340 triangles to 66 draw calls / 312,646 triangles and 62
+draw calls / 312,688 triangles respectively. Geometry/material resources remained bounded at
+49/63. Resize at 1280×720 and 1600×900, route disposal to zero canvases, remount, reload, and
+post-reload selection all passed. The immutable shell-output sample and screenshots are in
+`docs/evidence/prop-kit-studio-browser.json` and the adjacent `prop-kit-studio-*.png` files.
+
+The real browser campaign selected all three Rust-owned weapons after their ordinary world
+pickups. Its presentation evidence contains `weapon/arc-pistol`, `weapon/breach-scattergun`, and
+`weapon/rivet-carbine`; no undefined-asset error or downstream definition cache is accepted. The
+shared-surface stress sample moved from 50 draw calls / 53 live handles / 15,357 triangles to
+82 / 86 / 15,421, then returned to 50 / 53 / 15,357 after cleanup. Four reusable geometry and
+material definitions intentionally remained resident at 47/96 after their live instances were
+removed, exercising the exact Engine #6416 lifetime contract.
+
+The schema-11 converted-wall browser fixture first migrates through the Rust project store, then
+imports its three serialized prop sources and publishes five fixture appearances through Studio
+protocol 11. This keeps the old-schema proof real without restoring primitive non-actor fallbacks
+or introducing a second asset path.
 
 ### Intentional non-mesh entities
 
