@@ -501,6 +501,16 @@ downstream report cannot prove that the accelerated path actually admitted more 
 stream. #6436 retains ownership of both the missing bounded-ring evidence and the continuous-camera
 cadence defect; the Demo does not add its own frame scheduler or weaken the VC9 budgets.
 
+The capacity-observable provider checkpoint,
+`24339f37ad5734ea92392602ffc024ca2c7e2f13`, is measured at exact Demo revision
+`1ea37cbe0200615cf5aa012f2fe59a706d99c4f3`. It selects an eight-slot timer-query ring and an
+active eight-slot completion-fence ring. Across 51 product samples, however, pending timer
+measurements and pending fences both remain exactly one at p50, p95, p99, and maximum. Accepted
+cadence remains p50 50.0 ms and p95/p99 83.3 ms even though timer/effective p95 is 6.724 ms and
+synchronous backend p95 is 2.5 ms. This moves the remaining defect ahead of backend capacity into
+the renderer-host demand/RAF admission path. The exact report now distinguishes selected capacity
+from observed occupancy so a nominal ring is not mistaken for exercised concurrency.
+
 Studio evidence remains within its explicit bounds: all 342 route placements publish in bounded
 32-entry batches; the structural readout is below 2 MiB; the 12-instance animated preview adds
 exactly two geometry, two material, two texture, and twelve animated resources; close reaches zero
