@@ -534,6 +534,8 @@ export class RuntimeProjectionAdapter {
   >();
   readonly #definedMaterials = new Map<string, string>();
   readonly #definedStaticMeshes = new Map<string, string>();
+  #acceptedRenderMaterials: readonly RenderMaterialDescriptor[] | null = null;
+  #acceptedStaticMeshes: readonly StaticMeshAsset[] | null = null;
   readonly #meshHashes = new Map<string, string>();
   readonly #meshHandles = new Map<string, RenderHandle>();
   readonly #knownLights = new Map<number, LightDescriptor>();
@@ -548,19 +550,25 @@ export class RuntimeProjectionAdapter {
     const nextKnownLights = new Map(this.#knownLights);
     const nextDefinedMaterials = new Map(this.#definedMaterials);
     const nextDefinedStaticMeshes = new Map(this.#definedStaticMeshes);
+    let nextAcceptedRenderMaterials = this.#acceptedRenderMaterials;
+    let nextAcceptedStaticMeshes = this.#acceptedStaticMeshes;
     let nextMeshHandle = this.#nextMeshHandle;
     const ops: RenderDiff[] = [];
     const staticMeshes = new Map(
       state.staticMeshes.map((asset) => [asset.asset, asset] as const),
     );
-    const changedStaticMeshes = new Set(
-      state.staticMeshes
-        .filter(
-          (asset) =>
-            nextDefinedStaticMeshes.get(asset.asset) !== JSON.stringify(asset),
-        )
-        .map((asset) => asset.asset),
-    );
+    const changedStaticMeshes =
+      state.staticMeshes === this.#acceptedStaticMeshes
+        ? new Set<string>()
+        : new Set(
+            state.staticMeshes
+              .filter(
+                (asset) =>
+                  nextDefinedStaticMeshes.get(asset.asset) !==
+                  JSON.stringify(asset),
+              )
+              .map((asset) => asset.asset),
+          );
     for (const [id, known] of nextKnown) {
       if (
         known.kind === "staticMesh" &&
@@ -571,19 +579,25 @@ export class RuntimeProjectionAdapter {
         nextKnown.delete(id);
       }
     }
-    for (const material of state.renderMaterials) {
-      const fingerprint = JSON.stringify(material);
-      if (nextDefinedMaterials.get(material.id) !== fingerprint) {
-        ops.push({ op: "defineMaterial", material });
-        nextDefinedMaterials.set(material.id, fingerprint);
+    if (state.renderMaterials !== this.#acceptedRenderMaterials) {
+      for (const material of state.renderMaterials) {
+        const fingerprint = JSON.stringify(material);
+        if (nextDefinedMaterials.get(material.id) !== fingerprint) {
+          ops.push({ op: "defineMaterial", material });
+          nextDefinedMaterials.set(material.id, fingerprint);
+        }
       }
+      nextAcceptedRenderMaterials = state.renderMaterials;
     }
-    for (const asset of state.staticMeshes) {
-      const fingerprint = JSON.stringify(asset);
-      if (nextDefinedStaticMeshes.get(asset.asset) !== fingerprint) {
-        ops.push({ op: "defineStaticMesh", asset });
-        nextDefinedStaticMeshes.set(asset.asset, fingerprint);
+    if (state.staticMeshes !== this.#acceptedStaticMeshes) {
+      for (const asset of state.staticMeshes) {
+        const fingerprint = JSON.stringify(asset);
+        if (nextDefinedStaticMeshes.get(asset.asset) !== fingerprint) {
+          ops.push({ op: "defineStaticMesh", asset });
+          nextDefinedStaticMeshes.set(asset.asset, fingerprint);
+        }
       }
+      nextAcceptedStaticMeshes = state.staticMeshes;
     }
     const incomingMeshes = new Set<string>();
     for (const mesh of state.voxelMeshes) {
@@ -729,6 +743,8 @@ export class RuntimeProjectionAdapter {
         replaceMap(this.#knownLights, nextKnownLights);
         replaceMap(this.#definedMaterials, nextDefinedMaterials);
         replaceMap(this.#definedStaticMeshes, nextDefinedStaticMeshes);
+        this.#acceptedRenderMaterials = nextAcceptedRenderMaterials;
+        this.#acceptedStaticMeshes = nextAcceptedStaticMeshes;
         this.#nextMeshHandle = nextMeshHandle;
         this.#revision += 1;
         committed = true;

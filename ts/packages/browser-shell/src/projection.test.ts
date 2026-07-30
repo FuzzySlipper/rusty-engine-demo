@@ -263,6 +263,40 @@ test("a changed serialized definition destroys live instances before redefine an
   );
 });
 
+test("accepted immutable mesh resources are not re-fingerprinted on dynamic frames", () => {
+  const node = {
+    id: 20,
+    name: "arrival-energy-cache",
+    asset: "mesh/prop-kit/energy-cell",
+    translation: [4.5, 1.5, 9.5] as const,
+    visible: true,
+    visualState: "available" as const,
+  };
+  const source = serializedState([node]);
+  let traversals = 0;
+  const observedAsset = new Proxy(source.staticMeshes[0]!, {
+    ownKeys(target) {
+      traversals += 1;
+      return Reflect.ownKeys(target);
+    },
+  });
+  const staticMeshes = [observedAsset];
+  const adapter = new RuntimeProjectionAdapter();
+  const initial = adapter.apply({ ...source, staticMeshes });
+  initial.commit();
+  assert.ok(traversals > 0, "initial admission fingerprints the resource");
+  const initialTraversals = traversals;
+
+  const dynamic = adapter.apply({ ...source, tick: 2, staticMeshes });
+  dynamic.commit();
+  assert.equal(
+    traversals,
+    initialTraversals,
+    "dynamic-only projection must not traverse immutable geometry",
+  );
+  assert.deepEqual(dynamic.ops, []);
+});
+
 test("enemy archetype assets project distinct silhouettes and materials", () => {
   const plan = new RuntimeProjectionAdapter().apply(
     state([
