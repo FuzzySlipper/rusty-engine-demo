@@ -490,6 +490,17 @@ prompt accepted submission on the real continuous-camera path. #6436 therefore r
 bounded poll but continues at the provider demand/RAF ownership boundary; no downstream scheduler
 or degraded scene is introduced.
 
+The accelerated eight-slot fence/query provider checkpoint,
+`5dd9ff6dc6b387739ee5134eea1382983c05c247`, is measured at exact Demo revision
+`425371360250ffb4aaf9396686f77aadb64b047b`. It also remains red: accepted cadence is p50
+50.0 ms and p95/p99 83.4 ms while timer and effective-duration p95 remain only 6.901 ms.
+Synchronous backend submission p95 is 2.5 ms, and completion observation remains p50 50.2 ms.
+The latest sample observes admission about 48.24 ms after its computed deadline. The public pacing
+sample does not expose the configured ring capacity or pending fence/query occupancy, so the
+downstream report cannot prove that the accelerated path actually admitted more than one command
+stream. #6436 retains ownership of both the missing bounded-ring evidence and the continuous-camera
+cadence defect; the Demo does not add its own frame scheduler or weaken the VC9 budgets.
+
 Studio evidence remains within its explicit bounds: all 342 route placements publish in bounded
 32-entry batches; the structural readout is below 2 MiB; the 12-instance animated preview adds
 exactly two geometry, two material, two texture, and twelve animated resources; close reaches zero
