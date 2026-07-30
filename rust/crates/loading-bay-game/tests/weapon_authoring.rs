@@ -15,7 +15,7 @@ use serde_json::json;
 
 const CURRENT_PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const PROJECT_FILE: &str = "content/projects/loading-bay.project.json";
-const ARC_PISTOL_ENTITY: u64 = 88;
+const ARC_PISTOL_ENTITY: u64 = 113;
 const READ_FIXTURE: &str =
     include_str!("../../../../contracts/loading-bay-weapon-authoring-v1/read-request.json");
 const REPLACE_FIXTURE: &str =

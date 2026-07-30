@@ -53,6 +53,13 @@ Den task #6378 advances that complete package family to Engine
 `RendererSurface.submission()` sample for renderer statistics. The downstream proof adds no Three
 import, WebGL inspection, private renderer object, resource cache, or second render loop.
 
+Engine task #6406 extends the same public observation through
+`StudioViewportComponent.frameSubmitted` and `StudioShellComponent.frameSubmitted`; task #6356
+consumes the reviewed multi-pass correction at exact revision
+`70808ba1b74b908c47edfbf3b1282fb2eb5f192d`. The Loading Bay recorder retains only immutable
+bounded evidence and never acquires a surface, Three scene, WebGL context, resource cache, or frame
+scheduler.
+
 The CC0 conversion source is copied byte-for-byte into `fixtures/voxel-conversion` so the demo can
 inspect the source named by its persisted converted-wall provenance:
 

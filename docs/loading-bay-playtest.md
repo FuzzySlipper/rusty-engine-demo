@@ -12,12 +12,13 @@ The checked-in files under `content/projects` are the canonical Studio-owned sou
 
 | Artifact                                    | SHA-256                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------ |
-| `content/projects/loading-bay.project.json` | `58bda0ca3d14ed6156c5a8d880f6e4b5e4563169904592668c0bceb5250b660c` |
+| `content/projects/loading-bay.project.json` | `dde061a1b27fdb8665bc0d7099a5ec364310272e618f23f6c6177a7bb8a6393a` |
 | `content/projects/relay-annex.project.json` | `05d02fcd540024487b159125f0c6823e4e464c3e717cae9cac83529b10c7e38a` |
 
-The Loading Bay artifact contains one scene, 3,931 material voxels, 47 entities, 15 retained asset
+The Loading Bay artifact contains one scene, 3,931 material voxels, 72 entities, 42 retained asset
 identities, nine item definitions, eight enemies, three encounters, eight authored pickup caches,
-eight dormant defeat drops, five doors, eight lights, one secret, and one level exit. Stable
+eight dormant defeat drops, five doors, eight lights, one secret, one level exit, and 25
+non-gameplay brush instances that reuse nine canonical voxel-object definitions. Stable
 pretty-printing plus Rust decode, canonical admission, save, and exact-byte round-trip make content
 drift fail the normal verification gate. Fixture generation cannot write either canonical file.
 

@@ -329,6 +329,16 @@ fn project_and_snapshot_admission_fail_closed_for_future_hazard_state() {
     let rejection = decode_project_document(&legacy_project.to_string()).unwrap_err();
     assert_eq!(rejection.diagnostic().code, diagnostic_code::MIGRATION);
 
+    legacy_project["assets"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|asset| asset.get("voxelObject").is_none());
+    for scene in legacy_project["scenes"].as_array_mut().unwrap() {
+        scene
+            .as_object_mut()
+            .unwrap()
+            .remove("voxelObjectInstances");
+    }
     legacy_project["scenes"][0]["entities"]
         .as_array_mut()
         .unwrap()

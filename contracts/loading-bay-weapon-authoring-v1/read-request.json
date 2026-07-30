@@ -3,5 +3,5 @@
   "contractVersion": 1,
   "requestId": "fixture-read-arc-pistol",
   "expectedProjectHash": "0000000000000000000000000000000000000000000000000000000000000000",
-  "ownerEntityId": 88
+  "ownerEntityId": 113
 }

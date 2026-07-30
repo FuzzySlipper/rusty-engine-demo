@@ -84,6 +84,41 @@ async function waitFor(expression, description) {
   throw new Error(`timed out waiting for ${description}`);
 }
 
+async function frameEvidence() {
+  return evaluate(`(() => {
+    const value = document.querySelector('loading-bay-studio-root')
+      ?.getAttribute('data-frame-submission-evidence');
+    return value === null || value === undefined ? null : JSON.parse(value);
+  })()`);
+}
+
+async function waitForSubmission(minimumCount, updateKind, description) {
+  await waitFor(
+    `(() => {
+      const value = document.querySelector('loading-bay-studio-root')
+        ?.getAttribute('data-frame-submission-evidence');
+      if (value === null || value === undefined) return false;
+      const evidence = JSON.parse(value);
+      return evidence.count >= ${minimumCount} &&
+        evidence.latest?.updateKind === ${JSON.stringify(updateKind)};
+    })()`,
+    description,
+  );
+  return frameEvidence();
+}
+
+async function clickButton(selector, label) {
+  const clicked = await evaluate(`(() => {
+    const button = Array.from(document.querySelectorAll(${JSON.stringify(selector)}))
+      .find((candidate) => candidate.textContent.trim() === ${JSON.stringify(label)});
+    if (button === undefined) return false;
+    button.click();
+    return true;
+  })()`);
+  if (!clicked)
+    throw new Error(`could not find ${label} button in ${selector}`);
+}
+
 async function focus(label) {
   await evaluate(`(() => {
     const input = document.querySelector('input[aria-label="Filter hierarchy"]');
@@ -118,7 +153,6 @@ async function focus(label) {
     `document.querySelector('[data-selected-entity]')?.getAttribute('data-selected-entity') !== null`,
     `${label} selection`,
   );
-  await delay(1500);
 }
 
 async function screenshot(name) {
@@ -163,12 +197,111 @@ try {
     `document.querySelector('[data-project-hash="${PROJECT_HASH}"]') !== null`,
     "canonical brush project",
   );
+  const initialSubmission = await waitForSubmission(
+    1,
+    "complete",
+    "initial complete Studio submission",
+  );
   await mkdir(OUTPUT, { recursive: true });
   await screenshot("voxel-brush-kit-studio-overview.png");
   await focus("brush-proof-wall-north-east");
+  const denseSubmission = await waitForSubmission(
+    initialSubmission.count + 1,
+    "presentation",
+    "dense-wall selection presentation",
+  );
   await screenshot("voxel-brush-kit-dense-wall.png");
   await focus("brush-proof-wall-north-west");
+  const conservativeSubmission = await waitForSubmission(
+    denseSubmission.count + 1,
+    "presentation",
+    "conservative-wall selection presentation",
+  );
   await screenshot("voxel-brush-kit-conservative-wall.png");
+
+  const resizeProof = [];
+  for (const [width, height] of [
+    [1280, 720],
+    [1600, 900],
+  ]) {
+    await command("Emulation.setDeviceMetricsOverride", {
+      width,
+      height,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await delay(350);
+    resizeProof.push(
+      await evaluate(`({
+        viewport: [${width}, ${height}],
+        canvasCount: document.querySelectorAll('canvas').length,
+        rendererStatus: document.querySelector('rusty-studio-viewport')
+          ?.getAttribute('data-renderer-status'),
+        rendererError: document.querySelector('rusty-studio-viewport')
+          ?.getAttribute('data-renderer-error')
+      })`),
+    );
+  }
+
+  await clickButton("header.titlebar button", "File");
+  await clickButton("section.file-menu button", "Close Project");
+  await waitFor(
+    `document.querySelector('[data-project-hash]') === null`,
+    "Studio project close",
+  );
+  await delay(500);
+  const disposed = await evaluate(`({
+    projectHash: document.querySelector('[data-project-hash]')
+      ?.getAttribute('data-project-hash'),
+    canvasCount: document.querySelectorAll('canvas').length,
+    submissionCount: JSON.parse(
+      document.querySelector('loading-bay-studio-root')
+        .getAttribute('data-frame-submission-evidence')
+    ).count
+  })`);
+
+  await clickButton(
+    '[data-visual-id="studio-project-open-controls"] button',
+    "Open",
+  );
+  await waitFor(
+    `document.querySelector('[data-project-hash="${PROJECT_HASH}"]') !== null &&
+      document.querySelectorAll('canvas').length === 1`,
+    "Studio project remount",
+  );
+  const remountedSubmission = await waitForSubmission(
+    conservativeSubmission.count + 1,
+    "complete",
+    "remounted complete Studio submission",
+  );
+  const remounted = await evaluate(`({
+    projectHash: document.querySelector('[data-project-hash]')
+      ?.getAttribute('data-project-hash'),
+    canvasCount: document.querySelectorAll('canvas').length,
+    rendererStatus: document.querySelector('rusty-studio-viewport')
+      ?.getAttribute('data-renderer-status'),
+    rendererError: document.querySelector('rusty-studio-viewport')
+      ?.getAttribute('data-renderer-error')
+  })`);
+
+  await command("Page.reload", { ignoreCache: true });
+  await waitFor(
+    `document.querySelector('[data-project-hash="${PROJECT_HASH}"]') !== null &&
+      document.querySelectorAll('canvas').length === 1`,
+    "fresh page reconstruction",
+  );
+  const reloadedSubmission = await waitForSubmission(
+    1,
+    "complete",
+    "reloaded complete Studio submission",
+  );
+  await focus("brush-proof-wall-north-east");
+  const reloadedPresentation = await waitForSubmission(
+    reloadedSubmission.count + 1,
+    "presentation",
+    "reloaded selection presentation",
+  );
+
   const proof = await evaluate(`({
     projectHash: document.querySelector('[data-project-hash]')?.getAttribute('data-project-hash'),
     selectedEntity: document.querySelector('rusty-studio-viewport')?.getAttribute('data-selected-entity'),
@@ -188,6 +321,25 @@ try {
     })(),
     viewportText: document.querySelector('[data-visual-id="studio-viewport-column"]')?.innerText
   })`);
+  proof.submissions = {
+    initial: initialSubmission,
+    denseSelection: denseSubmission,
+    conservativeSelection: conservativeSubmission,
+    remounted: remountedSubmission,
+    reloaded: reloadedSubmission,
+    reloadedSelection: reloadedPresentation,
+  };
+  proof.lifecycle = {
+    resize: resizeProof,
+    disposed,
+    remounted,
+    reloaded: {
+      projectHash: proof.projectHash,
+      canvasCount: proof.canvasCount,
+      rendererStatus: proof.viewport.status,
+      rendererError: proof.viewport.rendererError,
+    },
+  };
   const performanceMetrics = await command("Performance.getMetrics");
   proof.performance = Object.fromEntries(
     performanceMetrics.metrics
@@ -215,8 +367,13 @@ try {
       "docs/evidence/voxel-brush-kit-dense-wall.png",
       "docs/evidence/voxel-brush-kit-conservative-wall.png",
     ],
-    rendererSubmission:
-      "pending Rusty Engine #6406; no private WebGL or Three instrumentation used",
+    rendererSubmission: {
+      engineRevision: "70808ba1b74b908c47edfbf3b1282fb2eb5f192d",
+      event: "rusty_studio_viewport_frame_submitted.v1",
+      outlet: "StudioShellComponent.frameSubmitted",
+      collection:
+        "public shell output only; no WebGL, Three, private component, or second-loop access",
+    },
   };
   await writeFile(
     resolve(OUTPUT, "voxel-brush-kit-studio-browser.json"),
@@ -227,5 +384,10 @@ try {
   socket?.close();
   browser.kill("SIGTERM");
   await new Promise((resolveExit) => browser.once("exit", resolveExit));
-  await rm(profile, { recursive: true });
+  await rm(profile, {
+    recursive: true,
+    force: true,
+    maxRetries: 8,
+    retryDelay: 125,
+  });
 }

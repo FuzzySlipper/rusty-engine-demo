@@ -3,7 +3,7 @@
   "contractVersion": 1,
   "requestId": "fixture-replace-arc-pistol",
   "receipt": {
-    "ownerEntityId": 88,
+    "ownerEntityId": 113,
     "itemDefinitionId": "weapon/arc-pistol",
     "projectHashBefore": "0000000000000000000000000000000000000000000000000000000000000000",
     "projectHashAfter": "1111111111111111111111111111111111111111111111111111111111111111",
@@ -14,7 +14,7 @@
     "componentTypeId": "rusty-engine-demo.loading-bay.weapon",
     "contractId": "rusty-engine-demo.loading-bay.weapon-authoring",
     "contractVersion": 1,
-    "ownerEntityId": 88,
+    "ownerEntityId": 113,
     "componentRevision": "1111111111111111111111111111111111111111111111111111111111111111",
     "itemDefinitionId": "weapon/arc-pistol",
     "binding": {

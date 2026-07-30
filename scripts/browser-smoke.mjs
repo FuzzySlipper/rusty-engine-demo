@@ -220,6 +220,7 @@ async function persistProject(input, output) {
 }
 
 async function runFullBrowserProduct(project) {
+  const expectedAssetCount = storedProjectAssetCount(project);
   const expectedEntityCount = storedProjectEntityCount(project);
   const running = await launchHost(project);
   try {
@@ -541,7 +542,7 @@ async function runFullBrowserProduct(project) {
       "sourceSchema=21",
       "currentSchema=21",
       "entryScene=scene/loading-bay",
-      "assets=15",
+      `assets=${String(expectedAssetCount)}`,
       "scenes=1",
       `entities=${String(expectedEntityCount)}`,
     ]) {
@@ -1640,6 +1641,14 @@ function storedProjectEntityCount(project) {
     }
     return total + scene.entities.length;
   }, 0);
+}
+
+function storedProjectAssetCount(project) {
+  const value = JSON.parse(readFileSync(project, "utf8"));
+  if (!Array.isArray(value.assets)) {
+    throw new Error(`stored project ${project} has no asset catalog`);
+  }
+  return value.assets.length;
 }
 
 async function runMigratedBrowserProduct(project) {

@@ -18,6 +18,7 @@ const FIXTURE_ROOT = new URL(
   "../../../contracts/loading-bay-weapon-authoring-v1/",
   import.meta.url,
 );
+const ARC_PISTOL_OWNER_ENTITY_ID = 113;
 
 test("request encoders emit the exact frozen downstream union", () => {
   const readFixture = fixture("read-request.json");
@@ -192,7 +193,7 @@ test("typed client correlates read replace and rejection responses", async () =>
   const read = await client.read(
     {
       expectedProjectHash: "0".repeat(64),
-      ownerEntityId: 88,
+      ownerEntityId: ARC_PISTOL_OWNER_ENTITY_ID,
     },
     signal,
   );
@@ -200,7 +201,7 @@ test("typed client correlates read replace and rejection responses", async () =>
   const replaced = await client.replace(
     {
       expectedProjectHash: "0".repeat(64),
-      ownerEntityId: 88,
+      ownerEntityId: ARC_PISTOL_OWNER_ENTITY_ID,
       expectedComponentRevision: "0".repeat(64),
       candidate: read.definition,
     },
@@ -211,7 +212,7 @@ test("typed client correlates read replace and rejection responses", async () =>
     client.replace(
       {
         expectedProjectHash: "0".repeat(64),
-        ownerEntityId: 88,
+        ownerEntityId: ARC_PISTOL_OWNER_ENTITY_ID,
         expectedComponentRevision: "0".repeat(64),
         candidate: read.definition,
       },
@@ -242,7 +243,7 @@ test("typed client rejects stale correlation before exposing a response", async 
     client.read(
       {
         expectedProjectHash: "0".repeat(64),
-        ownerEntityId: 88,
+        ownerEntityId: ARC_PISTOL_OWNER_ENTITY_ID,
       },
       new AbortController().signal,
     ),
@@ -254,7 +255,7 @@ test("typed client rejects a well-formed response for a different owner or recei
   const readResponse = fixture("read-response.json");
   readResponse.weapon = {
     ...(readResponse.weapon as Record<string, unknown>),
-    ownerEntityId: 89,
+    ownerEntityId: ARC_PISTOL_OWNER_ENTITY_ID + 1,
   };
   await assert.rejects(
     new LoadingBayWeaponAuthoringClient(
@@ -265,11 +266,11 @@ test("typed client rejects a well-formed response for a different owner or recei
     ).read(
       {
         expectedProjectHash: "0".repeat(64),
-        ownerEntityId: 88,
+        ownerEntityId: ARC_PISTOL_OWNER_ENTITY_ID,
       },
       new AbortController().signal,
     ),
-    /expected owner 88/u,
+    /expected owner 113/u,
   );
 
   const replaceResponse = fixture("replace-response.json");
@@ -286,7 +287,7 @@ test("typed client rejects a well-formed response for a different owner or recei
     ).replace(
       {
         expectedProjectHash: "0".repeat(64),
-        ownerEntityId: 88,
+        ownerEntityId: ARC_PISTOL_OWNER_ENTITY_ID,
         expectedComponentRevision: "0".repeat(64),
         candidate: fixture("replace-request.json")
           .candidate as unknown as LoadingBayWeaponCandidate,

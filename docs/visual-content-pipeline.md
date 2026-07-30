@@ -74,16 +74,18 @@ The former full `loadingBayStoredProject()`/`relayAnnexStoredProject()` composit
 generator equality test have been removed. Stable gameplay identities remain exported only as
 small test/fixture constants; the serialized project is the sole complete scene.
 
-## Placeholder inventory
+## Placeholder inventory baseline
 
-The project catalog contains 15 asset identities. One is a real file-backed animated GLB used by
-Studio tests but referenced by no Loading Bay entity. The other 14 `mesh/*` identities have no
-catalog payload. `RuntimeProjectionAdapter.projectedNode()` interprets their names and creates
-colored cubes or spheres. That asset-name branching is presentation scaffolding, not a scalable
-asset pipeline.
+Before the VC6 brush publication, the project catalog contained 15 asset identities. One was a
+real file-backed animated GLB used by Studio tests but referenced by no Loading Bay entity. The
+other 14 `mesh/*` identities had no catalog payload. `RuntimeProjectionAdapter.projectedNode()`
+interprets their names and creates colored cubes or spheres. That asset-name branching is
+presentation scaffolding, not a scalable asset pipeline.
 
-The stored scene has 47 entities, 35 renderables, 27 authored-visible renderables, and eight hidden
-enemy-drop renderables. The first-person player marker is also suppressed by the projection adapter.
+That baseline scene had 47 entities, 35 renderables, 27 authored-visible renderables, and eight
+hidden enemy-drop renderables. The first-person player marker was also suppressed by the projection
+adapter. VC6 adds 25 decorative brush owners and 27 source/definition/render asset identities; its
+current totals and resource observations are recorded below.
 
 | Current identity                               | References / authored visible | Current presentation                                                | Classification                        | Replacement owner                                                           |
 | ---------------------------------------------- | ----------------------------: | ------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------- |
@@ -276,11 +278,38 @@ Screenshots:
 - [1/32 dense relief](evidence/voxel-brush-kit-dense-wall.png);
 - [1/16 conservative relief](evidence/voxel-brush-kit-conservative-wall.png).
 
-Renderer-owned draw/resource/backend-submission observations are deliberately not inferred from
-the retained operations or project mesh counts. The exact-pinned surface already owns those
-statistics under #6361, while upstream Engine #6406 exposes the associated immutable submission
-sample through the shared Studio viewport. #6356 remains dependent on that outlet for its final
-renderer comparison; no downstream WebGL instrumentation or private Three access is used.
+Renderer-owned observations come from the public
+`StudioShellComponent.frameSubmitted` event at exact Engine revision
+`70808ba1b74b908c47edfbf3b1282fb2eb5f192d`. The event is emitted only after the accepted Studio
+frame is explicitly submitted and `RendererSurface.submission()` is read. The downstream app
+retains at most 32 immutable events for evidence; it does not access WebGL, Three, the child
+viewport, or a second render loop. A focused public-package consumer test covers complete,
+incremental, and presentation updates. The real browser route emitted complete and presentation
+updates through the shell:
+
+| Shared-surface submission                        | Draws | Triangles | Handles | Geometries | Materials | Textures | Animated | Backend submit |
+| ------------------------------------------------ | ----: | --------: | ------: | ---------: | --------: | -------: | -------: | -------------: |
+| Initial complete, default camera                 |     9 |        96 |      62 |         32 |        33 |        0 |        0 |        23.0 ms |
+| Dense wall selected/focused, presentation        |    28 |   310,852 |      62 |         32 |        33 |        0 |        0 |        12.8 ms |
+| Conservative wall selected/focused, presentation |    28 |   310,852 |      62 |         32 |        33 |        0 |        0 |        10.8 ms |
+| Project closed then remounted, complete          |     9 |        96 |      62 |         32 |        33 |        0 |        0 |         8.6 ms |
+| Fresh page reload then dense focus, presentation |    28 |   310,852 |      62 |         32 |        33 |        0 |        0 |        13.2 ms |
+
+Draws and triangles are per submission. Handles and resources are live-resident counts. Selecting
+either repeated wall keeps the same 32 geometry resources: 25 placements reuse the nine admitted
+brush definitions rather than uploading one geometry per placement. The content-rich focus raises
+the submitted triangles because the proof room enters the camera frustum; it does not change
+resident resources.
+
+The lifecycle run preserved exactly one canvas and a ready/no-error renderer at 1280×720 and
+1600×900, reached zero canvases after **Close Project**, returned to one after **Open**, and again
+reconstructed one after a cache-bypassing page reload. The bounded recorder retained three events
+across child disposal, then received a new complete event from the remounted child. After the final
+reload/focus, Chromium reported 689,616,760 bytes of JavaScript heap. That value follows several
+full 2.45 MiB project reconstructions in one evidence run and is not a native runtime footprint.
+The synchronous backend durations are CPU-side submission evidence under headless SwiftShader,
+not GPU completion time. Event-to-event intervals are dominated by deliberate camera focus,
+reconstruction, and browser automation and are not presented as frame cadence.
 
 ## Placeholder performance baseline
 

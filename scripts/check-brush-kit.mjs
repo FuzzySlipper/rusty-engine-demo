@@ -229,6 +229,118 @@ invariant(
   browser.viewport.selectedRenderHandle !== null,
   "Studio picking must resolve a retained brush render handle",
 );
+invariant(
+  browser.capture.rendererSubmission.engineRevision ===
+    "70808ba1b74b908c47edfbf3b1282fb2eb5f192d",
+  "browser proof must use the exact reviewed Studio submission provider",
+);
+invariant(
+  browser.capture.rendererSubmission.event ===
+    "rusty_studio_viewport_frame_submitted.v1" &&
+    browser.capture.rendererSubmission.outlet ===
+      "StudioShellComponent.frameSubmitted",
+  "browser proof must consume the public shell-level submission event",
+);
+
+const completeSubmission = browser.submissions.initial.latest;
+const richSubmission = browser.submissions.denseSelection.latest;
+invariant(
+  completeSubmission.kind === "rusty_studio_viewport_frame_submitted.v1" &&
+    completeSubmission.updateKind === "complete",
+  "initial browser reconstruction must emit one complete submission",
+);
+invariant(
+  richSubmission.kind === "rusty_studio_viewport_frame_submitted.v1" &&
+    richSubmission.updateKind === "presentation",
+  "real brush selection must emit one presentation submission",
+);
+for (const { label, event } of [
+  { label: "complete", event: completeSubmission },
+  { label: "rich presentation", event: richSubmission },
+]) {
+  const { submission } = event;
+  invariant(
+    submission.source === "explicit" &&
+      submission.backendSubmissionDurationStatus === "available" &&
+      submission.backendSubmissionDurationMs > 0,
+    `${label} must be the explicit shared-surface submission with backend timing`,
+  );
+  for (const [name, counter] of Object.entries(submission.statistics).filter(
+    ([name]) => name !== "schemaVersion",
+  )) {
+    invariant(
+      counter.status === "available",
+      `${label} ${name} must be renderer-owned and available`,
+    );
+  }
+}
+
+const completeStatistics = completeSubmission.submission.statistics;
+const richStatistics = richSubmission.submission.statistics;
+invariant(
+  completeStatistics.drawCallCount.scope === "perSubmission" &&
+    completeStatistics.drawCallCount.value === 9 &&
+    completeStatistics.triangleCount.scope === "perSubmission" &&
+    completeStatistics.triangleCount.value === 96,
+  "initial default-camera complete submission must retain its exact draw and triangle counts",
+);
+invariant(
+  richStatistics.drawCallCount.scope === "perSubmission" &&
+    richStatistics.drawCallCount.value === 28 &&
+    richStatistics.triangleCount.scope === "perSubmission" &&
+    richStatistics.triangleCount.value === 310_852,
+  "focused content-rich submission must retain its exact draw and triangle counts",
+);
+for (const [name, expected] of [
+  ["renderHandleCount", 62],
+  ["geometryResourceCount", 32],
+  ["materialResourceCount", 33],
+  ["textureResourceCount", 0],
+  ["animatedInstanceCount", 0],
+]) {
+  const counter = richStatistics[name];
+  invariant(
+    counter.scope === "liveResident" && counter.value === expected,
+    `rich presentation ${name} must match the exact live-resident sample`,
+  );
+}
+invariant(
+  browser.submissions.conservativeSelection.latest.submission.statistics
+    .geometryResourceCount.value === 32,
+  "selecting a second repeated brush must not allocate another geometry resource",
+);
+
+for (const resize of browser.lifecycle.resize) {
+  invariant(
+    resize.canvasCount === 1 &&
+      resize.rendererStatus === "ready" &&
+      resize.rendererError === "",
+    `${resize.viewport.join("x")} resize must preserve one healthy shared canvas`,
+  );
+}
+invariant(
+  browser.lifecycle.disposed.canvasCount === 0 &&
+    browser.lifecycle.remounted.canvasCount === 1 &&
+    browser.lifecycle.reloaded.canvasCount === 1,
+  "close, remount, and reload must prove shared-canvas disposal and reconstruction",
+);
+for (const lifecycle of [
+  browser.lifecycle.remounted,
+  browser.lifecycle.reloaded,
+]) {
+  invariant(
+    lifecycle.projectHash === evidence.finalHash &&
+      lifecycle.rendererStatus === "ready" &&
+      lifecycle.rendererError === "",
+    "remount and reload must reconstruct the exact project on a healthy renderer",
+  );
+}
+invariant(
+  browser.submissions.remounted.latest.updateKind === "complete" &&
+    browser.submissions.reloaded.latest.updateKind === "complete" &&
+    browser.submissions.reloadedSelection.latest.updateKind === "presentation",
+  "remount and fresh reload must re-emit complete then presentation samples",
+);
 for (const screenshot of browser.capture.screenshots) {
   await access(resolve(ROOT, screenshot));
 }

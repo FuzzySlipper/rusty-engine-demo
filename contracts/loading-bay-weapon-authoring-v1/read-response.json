@@ -6,7 +6,7 @@
     "componentTypeId": "rusty-engine-demo.loading-bay.weapon",
     "contractId": "rusty-engine-demo.loading-bay.weapon-authoring",
     "contractVersion": 1,
-    "ownerEntityId": 88,
+    "ownerEntityId": 113,
     "componentRevision": "0000000000000000000000000000000000000000000000000000000000000000",
     "itemDefinitionId": "weapon/arc-pistol",
     "binding": {
