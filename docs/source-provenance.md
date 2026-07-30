@@ -266,7 +266,7 @@ normalizing its indentation, trailing whitespace, and line endings to repository
 `License.txt` hash remains recorded separately in the manifest.
 
 Rusty Engine task #6433 supplies the bounded binary animated-mesh import and shared retained
-renderer at exact public revision `af8d34c7fef57965fa27f9b14b08e2a45c357439`. The Rust-owned
+renderer at exact public revision `b48f0df8746176e2775a884f1f418e6d8e26481e`. The Rust-owned
 Studio path publishes the two assets into schema-22 project hash
 `ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750`,
 preserving each source path, SHA-256, byte count, converter/settings hash, license path, bounds, and

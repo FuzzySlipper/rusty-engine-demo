@@ -206,7 +206,7 @@ death root actions. The completed GLBs are 339,812 and 334,232 bytes and retain 
 one material, and one embedded texture each.
 
 Protocol 12 consumes Rusty Engine #6433 at exact revision
-`af8d34c7fef57965fa27f9b14b08e2a45c357439`. The Rust-owned Studio adapter imports both binary
+`b48f0df8746176e2775a884f1f418e6d8e26481e`. The Rust-owned Studio adapter imports both binary
 GLBs as durable `mesh-animation/*` assets, validates their embedded buffers, textures, bounds, and
 six clips, and atomically publishes canonical project hash
 `ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750`.
