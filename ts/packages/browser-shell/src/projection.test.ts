@@ -430,6 +430,38 @@ test("canonical voxel-object structure is installed once and cannot drift in pla
   assert.deepEqual(dynamic.ops, []);
   dynamic.commit();
 
+  const reorderedMaterial = {
+    uvStrategy: "flat" as const,
+    textureTint: [1, 1, 1, 1] as const,
+    texture: null,
+    schemaVersion: 1 as const,
+    roughness: 0.8,
+    id: "material/voxel-object-test",
+    emissionIntensity: 0,
+    emissionColor: [0, 0, 0] as const,
+    color: [0.3, 0.4, 0.5, 1] as const,
+  };
+  const reorderedFrame = {
+    ops: [
+      {
+        material: reorderedMaterial,
+        op: "defineMaterial" as const,
+      },
+    ],
+    schemaVersion: 1 as const,
+  };
+  assert.notEqual(
+    JSON.stringify(reorderedFrame),
+    JSON.stringify(structuralState.voxelObjectFrame),
+  );
+  const semanticallyUnchanged = adapter.apply({
+    ...structuralState,
+    tick: 2,
+    voxelObjectFrame: reorderedFrame,
+  });
+  assert.deepEqual(semanticallyUnchanged.ops, []);
+  semanticallyUnchanged.commit();
+
   assert.throws(
     () =>
       adapter.apply({

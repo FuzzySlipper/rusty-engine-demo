@@ -606,7 +606,7 @@ export class RuntimeProjectionAdapter {
       nextAcceptedStaticMeshes = state.staticMeshes;
     }
     if (state.voxelObjectFrame !== this.#acceptedVoxelObjectFrame) {
-      const fingerprint = JSON.stringify(state.voxelObjectFrame);
+      const fingerprint = stableJsonFingerprint(state.voxelObjectFrame);
       if (
         this.#voxelObjectFrameFingerprint !== null &&
         fingerprint !== this.#voxelObjectFrameFingerprint
@@ -768,8 +768,7 @@ export class RuntimeProjectionAdapter {
         this.#acceptedRenderMaterials = nextAcceptedRenderMaterials;
         this.#acceptedStaticMeshes = nextAcceptedStaticMeshes;
         this.#acceptedVoxelObjectFrame = nextAcceptedVoxelObjectFrame;
-        this.#voxelObjectFrameFingerprint =
-          nextVoxelObjectFrameFingerprint;
+        this.#voxelObjectFrameFingerprint = nextVoxelObjectFrameFingerprint;
         this.#nextMeshHandle = nextMeshHandle;
         this.#revision += 1;
         committed = true;
@@ -795,6 +794,23 @@ function replaceMap<K, V>(target: Map<K, V>, source: ReadonlyMap<K, V>): void {
   for (const [key, value] of source) {
     target.set(key, value);
   }
+}
+
+function stableJsonFingerprint(value: unknown): string {
+  return JSON.stringify(value, (_key, nested: unknown) => {
+    if (
+      typeof nested !== "object" ||
+      nested === null ||
+      Array.isArray(nested)
+    ) {
+      return nested;
+    }
+    return Object.fromEntries(
+      Object.entries(nested).sort(([left], [right]) =>
+        left < right ? -1 : left > right ? 1 : 0,
+      ),
+    );
+  });
 }
 
 function meshPayload(mesh: RuntimeVoxelMeshChunk): MeshPayloadDescriptor {

@@ -277,29 +277,33 @@ the latest complete sample, while `certify:performance` reports status/scope plu
 ranges and fails if the exact Three counters disappear or change scope. Frame cadence remains
 inter-submission timing and synchronous backend submission remains distinct from GPU completion.
 
-## 2026-07-30 serialized-prop pressure follow-up
+## 2026-07-30 content-rich static-instancing follow-up
 
-Task #6354 measures the real serialized prop/viewmodel product at exact Engine revision
-`9813bf6f759a8967a5de1681d4726f7b17254ca5`. The headless Chromium run is correctness and resource
+Task #6354 now measures the unchanged serialized prop/viewmodel and 342-placement voxel-brush
+product at exact Engine revision `c903c1c86761386087acd7d7d814a3da5cde116b`. The shared
+renderer internally batches compatible opaque world static handles while retaining every logical
+handle, transform, metadata record, and picking identity. No content, downstream cache, render
+loop, or gameplay authority was removed. The headless Chromium run is correctness and resource
 lifecycle evidence, not hardware GPU timing:
 
 | Measurement                         | Result      |
 | ----------------------------------- | ----------- |
-| Session bootstrap                   | 1,768,068 B |
-| Largest steady update               | 11,933 B    |
+| Session bootstrap                   | 1,159,687 B |
+| Largest steady update               | 11,934 B    |
 | Outbound / input / edge queue peaks | 1 / 1 / 1   |
 | Dropped facts                       | 0           |
-| Maximum authoritative command RTT   | 1,270.7 ms  |
-| Renderer cadence                    | 16.8 ms     |
+| Maximum authoritative command RTT   | 1,353.7 ms  |
+| Renderer cadence                    | 16.7 ms     |
 | Rich draw-call delta                | +32         |
 | Rich live-handle delta              | +33         |
 | Rich submitted-triangle delta       | +64         |
 
-Cleanup returns draw calls, live handles, and submitted triangles to the 50 / 53 / 15,357
-baseline. Geometry and material counts remain at 47 / 96 rather than the 43 / 92 pre-stress
-baseline because Engine #6416 deliberately retains four reusable static-mesh definitions after
-their last live instances are destroyed. Reuse is bounded, and renderer disposal remains the
-terminal release boundary.
+The ordinary product submission is 40 draws for 412 live handles and 100,081 submitted triangles.
+The 32-instance stress probe reaches 72 draws, 445 handles, and 100,145 triangles, then cleanup
+returns to 40 / 412 / 100,081. Geometry and material counts remain at 48 / 86 rather than the
+44 / 82 pre-stress baseline because Engine #6416 deliberately retains four reusable static-mesh
+definitions after their last live instances are destroyed. Reuse is bounded, and renderer disposal
+remains the terminal release boundary.
 
 ## Camera policy
 
