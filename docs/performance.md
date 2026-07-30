@@ -469,6 +469,17 @@ render/reset, picking, statistics, and lifecycle remain required. VC9 will consu
 public Engine descendant and rerun this exact profile plus the unchanged full browser campaign
 before the red rows can close.
 
+The first public provider checkpoint,
+`43866fa2172e940a5845a5d4be78db071c048cd8`, is measured at exact Demo revision
+`5ae36dd5e41c0b64c848cacbcd4bc985f1640db1`. It correctly makes the valid accelerated timer query
+authoritative: timer and effective-duration p95 are both 6.814 ms instead of including query
+observation delay. The retained cadence is still red at p50 50.1 ms, p95 83.4 ms, and p99
+166.9 ms. Completion observation remains p50 51.7 ms, and the latest sample observes admission
+40.86 ms after its deadline. Input-to-next-frame p95 is 3.6 ms and synchronous submission p95 is
+2.6 ms. This isolates a second Engine-owned issue: the host does not poll and admit ready
+accelerated work promptly enough to use the corrected duration. The machine-readable report now
+records this checkpoint; #6436 remains open for the readiness-scheduling descendant.
+
 Studio evidence remains within its explicit bounds: all 342 route placements publish in bounded
 32-entry batches; the structural readout is below 2 MiB; the 12-instance animated preview adds
 exactly two geometry, two material, two texture, and twelve animated resources; close reaches zero
