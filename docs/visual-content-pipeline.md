@@ -441,15 +441,27 @@ maximum RTT. Exact Demo revision `9ad855f343661c0bbeee5ec4c4c380cc3da72b1d` then
 same complete product tail in GitHub run `30560832289`, but its 2,354.2 ms maximum RTT exceeded
 the retained 2-second transport budget, so that provider was not accepted.
 
-The current correction is exact Engine revision
+The next correction was exact Engine revision
 `7119f6d78725ee2363fac7424d150e5f1735ccf1`. It lowers only the positively identified
 software-renderer backing-buffer ceiling from 0.5 to 0.375, reducing that buffer's pixel count by
 43.75% while preserving the CSS viewport, camera projection, normalized picking, and requested
-ratio for accelerated and unknown renderers. The unchanged two-core product campaign again
-completed every route and all save/reopen, converted-project, picking, statistics, and lifecycle
-tails, this time with 1,549.6 ms maximum RTT, 66.6 ms automatic submission cadence, bounded 1/1/1
-queues, zero dropped facts, and zero pending input. The Demo still owns no private renderer,
-reduced-content path, cache, or weakened acceptance budget.
+ratio for accelerated and unknown renderers. Its unchanged two-core product campaign passed
+locally, but exact Demo revision `54a4192e33239c24633440718f309035bed9b9d4` failed GitHub run
+`30564003751`: maximum RTT was 2,156.4 ms and snapshot cadence was 520.8 ms after the complete
+route, checkpoint, completed save, and renderer-statistics proof. Queues were still 1/1/1 with
+zero drops and zero pending input, but the aggregate stopped before the fresh-host,
+converted-project, and lifecycle tails. That provider was not accepted.
+
+The current correction is exact Engine revision
+`8fae5fb770a73baa3bec259a6b71cf12ed3de5e6`. It lowers only the positively identified
+software-renderer backing-buffer ceiling from 0.375 to 0.25, a further 55.6% raster-area
+reduction. The unchanged two-core product campaign completed every route and all checkpoint,
+completed slot-3 save, fresh-host reopen, converted-project and v6 migration, picking, statistics,
+resize/reset/remount, disposal, and fresh-page posture tails with 1,139.3 ms maximum RTT,
+166.7 ms automatic submission cadence, bounded 1/1/1 queues, zero dropped facts, and zero pending
+input. The canonical 9 definitions, 42,266 authored cells, and 342 placements remain unchanged.
+The Demo still owns no private renderer, reduced-content path, cache, timeout, weakened budget, or
+alternate acceptance path.
 
 Close reached zero canvases; open, resize at 1280×720 and 1600×900, cache-bypassing reload, and
 selection after reload each returned one ready/no-error canvas. Exact evidence is in

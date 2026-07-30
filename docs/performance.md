@@ -369,13 +369,24 @@ software-raster workload failure rather than transport loss.
 Exact Engine revision `7119f6d78725ee2363fac7424d150e5f1735ccf1` lowers only positively
 identified software-renderer backing buffers from a 0.5 to a 0.375 pixel-ratio ceiling. That is
 43.75% fewer backing pixels while preserving CSS dimensions, camera projection, normalized
-picking, lower requested ratios, and every accelerated or unknown renderer's requested ratio. The
-unchanged two-core campaign passed the full route, checkpoint, completed save, fresh-host reopen,
-converted-project, renderer statistics, picking, resize/reset/remount, and disposal tails with
-1,549.6 ms maximum RTT, 66.6 ms automatic submission cadence, queues bounded at 1/1/1, zero drops,
-and zero pending input. The scene remains 9 definitions, 42,266 authored cells, and 342 placements;
-no downstream renderer scheduler, cache, content reduction, or alternate acceptance path was
-added.
+picking, lower requested ratios, and every accelerated or unknown renderer's requested ratio. Its
+unchanged two-core campaign passed locally, but exact Demo revision
+`54a4192e33239c24633440718f309035bed9b9d4` failed the retained transport assertion in GitHub run
+`30564003751`: the complete route, checkpoint, completed save, and renderer statistics passed, but
+maximum RTT was 2,156.4 ms and snapshot cadence was 520.8 ms. Queues remained 1/1/1 with zero
+dropped facts and zero pending input. The aggregate therefore stopped before the remaining
+fresh-host, converted-project, and lifecycle tails, so that revision was not accepted.
+
+The current correction is exact Engine revision
+`8fae5fb770a73baa3bec259a6b71cf12ed3de5e6`. It lowers only the positively identified
+software-renderer backing-buffer ceiling from 0.375 to 0.25, reducing raster area by a further
+55.6% while preserving the same CSS, camera, picking, lower-ratio, and accelerated/unknown
+renderer boundaries. The unchanged two-core campaign completed the full route, checkpoint,
+completed slot-3 save, fresh-host reopen, converted-project and v6 migration, renderer statistics,
+picking, resize/reset/remount, disposal, and fresh-page posture tails with 1,139.3 ms maximum RTT,
+166.7 ms automatic submission cadence, queues bounded at 1/1/1, zero drops, and zero pending input.
+The scene remains 9 definitions, 42,266 authored cells, and 342 placements; no downstream renderer
+scheduler, cache, content reduction, timeout, budget, or alternate acceptance path was added.
 
 ## Camera policy
 
