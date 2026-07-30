@@ -348,6 +348,26 @@ synchronous backend duration remain submission diagnostics rather than GPU-durat
 completion fence is used only to bound automatic demand. The demo adds no private scheduler,
 coalescer, or test-only degraded scene.
 
+That local result did not close the supported exact CI profile. Demo revision
+`8f1c451c6df9fe5dded5b433d82a2918500e7b11` pinned the completion-fenced provider, but GitHub run
+`30548042802` again exhausted the unchanged 300-second watchdog after Arrival, Storage, and the
+locked door. Terminal command RTT reached 6,638.1 ms, one input remained pending, queues remained
+bounded, no facts were dropped, and Generator plus all later campaign/persistence/lifecycle
+evidence was absent. The completion fence is retained as valid bounded renderer behavior, but its
+local improvement is not represented as product acceptance. Engine #6434 continues to own the
+remaining generic workload correction.
+
+Engine revision `3077798ae70bc7cb6c54fab5fb50f43766dd3b56` closes that constrained profile
+without reducing the retained scene or weakening the transport budget. The renderer keeps the
+bounded completion pacing and, only for positively identified software renderers, caps the WebGL
+backing buffer at one-half device pixel ratio in each dimension while preserving the CSS viewport,
+camera projection, normalized picking, and accelerated-renderer ratio. The unchanged two-core
+browser campaign completed the full route, checkpoint, completed-save, reload, converted-project,
+and lifecycle tails with 1,488.5 ms maximum command RTT, queues bounded at 1/1/1, zero dropped
+facts, zero pending input, 166.7 ms automatic submission cadence, and the same 9 live draws, 403
+handles, and 1,923 triangles after proof restoration. No downstream renderer scheduler, cache,
+content reduction, or alternate acceptance path was added.
+
 ## Camera policy
 
 The original hardware-backed LAN baseline measured command acknowledgement p95 at 54.3 ms. The

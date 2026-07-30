@@ -426,6 +426,22 @@ completed-save/fresh-page restore, converted asset, picking, and lifecycle tails
 maximum RTT. VC5/VC7 retain the complete scene and use no downstream scheduler, content reduction,
 or weakened budget.
 
+Exact Demo revision `8f1c451c6df9fe5dded5b433d82a2918500e7b11` then disproved that the
+completion fence alone closes the supported CI profile. GitHub run `30548042802` exhausted the
+unchanged 300-second watchdog after Arrival, Storage, and the locked door with 6,638.1 ms maximum
+RTT, one pending input, bounded queues, zero dropped facts, and no Generator or later
+campaign/persistence/lifecycle evidence. The serialized scene and every acceptance bound remain
+unchanged while #6434 continues the renderer-owned correction.
+
+The accepted correction is exact Engine revision
+`3077798ae70bc7cb6c54fab5fb50f43766dd3b56`. It preserves all 9 definitions, 42,266 authored
+cells, and 342 placements while halving each WebGL backing-buffer dimension only for a positively
+identified software renderer. The unchanged two-core product campaign then completed every route,
+save/reopen, converted-project, picking, statistics, and lifecycle assertion with 1,488.5 ms
+maximum RTT, bounded 1/1/1 queues, zero dropped facts, and zero pending input. Accelerated and
+unknown renderers retain their requested pixel ratio, and the Demo still owns no private renderer
+or reduced-content path.
+
 Close reached zero canvases; open, resize at 1280×720 and 1600×900, cache-bypassing reload, and
 selection after reload each returned one ready/no-error canvas. Exact evidence is in
 [`voxel-level-brush-authoring.json`](evidence/voxel-level-brush-authoring.json) and
