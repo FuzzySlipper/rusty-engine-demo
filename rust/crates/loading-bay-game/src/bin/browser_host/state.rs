@@ -7,15 +7,19 @@ use loading_bay_game::{
     ExtractionBeaconState, GameRuntime, ItemKind, LevelExitState, NavigationState,
     PickupCollectionCause, PickupState, PlayerInputSessionView, RequiredKeyPolicy,
     SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretRegionState, StoredLight,
-    VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
+    StoredVisualBinding, VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
 };
 use render_model::{
-    MaterialUvStrategy, RenderFrameDiff, RenderMaterialDescriptor, StaticMeshAsset,
+    AnimatedMeshAsset, MaterialUvStrategy, RenderFrameDiff, RenderMaterialDescriptor,
+    StaticMeshAsset,
 };
 use serde::Serialize;
 
 use super::presentation::{project_presentation, BrowserFeedbackProjection, BrowserPresentation};
-use super::{BrowserRuntime, ACTOR, BEACON, ENCOUNTER, EXIT, FIRST_ENEMY, MOTION_PROBE};
+use super::{
+    browser_animated_mesh_assets, BrowserRuntime, ACTOR, BEACON, ENCOUNTER, EXIT, FIRST_ENEMY,
+    MOTION_PROBE,
+};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -24,6 +28,8 @@ struct BrowserProjectionNode {
     name: String,
     asset: String,
     translation: Option<[f32; 3]>,
+    rotation: [f32; 4],
+    scale: [f32; 3],
     visible: bool,
     visual_state: &'static str,
 }
@@ -229,6 +235,21 @@ struct BrowserAuthoredLight {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct BrowserAnimatedMeshResource {
+    #[serde(flatten)]
+    asset: AnimatedMeshAsset,
+    resource_url: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserVisualBindingResource {
+    entity: u64,
+    binding: StoredVisualBinding,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(super) struct BrowserState {
     #[serde(flatten)]
     pub(super) dynamic: BrowserDynamicState,
@@ -284,6 +305,8 @@ pub(super) struct BrowserStaticResources {
     generated_environment: Option<BrowserGeneratedEnvironment>,
     render_materials: Vec<RenderMaterialDescriptor>,
     static_meshes: Vec<StaticMeshAsset>,
+    animated_meshes: Vec<BrowserAnimatedMeshResource>,
+    visual_bindings: Vec<BrowserVisualBindingResource>,
 }
 
 pub(super) fn browser_state(
@@ -307,13 +330,29 @@ pub(super) fn browser_dynamic_state(
     let projection = readout
         .projection
         .into_iter()
-        .map(|node| BrowserProjectionNode {
-            visual_state: projection_visual_state(runtime, node.entity),
-            id: node.entity.raw(),
-            name: node.name,
-            asset: node.asset,
-            translation: node.translation.map(|value| value.to_array()),
-            visible: node.visible,
+        .map(|node| {
+            let transform = runtime
+                .session()
+                .entity(node.entity)
+                .expect("projected entity remains admitted")
+                .transform;
+            BrowserProjectionNode {
+                visual_state: projection_visual_state(runtime, node.entity),
+                id: node.entity.raw(),
+                name: node.name,
+                asset: node.asset,
+                translation: node.translation.map(|value| value.to_array()),
+                rotation: transform.map_or([0.0, 0.0, 0.0, 1.0], |value| {
+                    [
+                        value.rotation.x,
+                        value.rotation.y,
+                        value.rotation.z,
+                        value.rotation.w,
+                    ]
+                }),
+                scale: transform.map_or([1.0; 3], |value| value.scale.to_array()),
+                visible: node.visible,
+            }
         })
         .collect();
     let enemy_ids = runtime
@@ -886,6 +925,25 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
         .iter()
         .filter_map(|asset| asset.static_mesh.clone())
         .collect();
+    let animated_meshes = browser_animated_mesh_assets(document)
+        .into_iter()
+        .filter_map(|asset| asset.animated_mesh.clone())
+        .enumerate()
+        .map(|(index, asset)| BrowserAnimatedMeshResource {
+            asset,
+            resource_url: format!("/api/animated-mesh/{index}"),
+        })
+        .collect();
+    let visual_bindings = authored_scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            Some(BrowserVisualBindingResource {
+                entity: entity.id,
+                binding: entity.renderable.as_ref()?.visual_binding.clone()?,
+            })
+        })
+        .collect();
     BrowserStaticResources {
         host_session_id: host.host_session_id.clone(),
         static_revision: browser_static_revision(host),
@@ -909,6 +967,8 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
         generated_environment,
         render_materials,
         static_meshes,
+        animated_meshes,
+        visual_bindings,
     }
 }
 

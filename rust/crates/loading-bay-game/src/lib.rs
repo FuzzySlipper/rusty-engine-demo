@@ -165,11 +165,13 @@ pub use stored_project::{
     StoredMaterialVoxelEnvironment, StoredNavigation, StoredPickup, StoredPlayerController,
     StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable,
     StoredRequiredKeyPolicy, StoredScene, StoredSecretRegion, StoredSolidVoxelEnvironment,
-    StoredSwitch, StoredVoxelEnvironment, StoredVoxelInstance, StoredVoxelObjectFrameSelection,
-    StoredVoxelObjectInstance, StoredVoxelObjectMaterialOverride, StoredWeapon,
-    StoredWeaponAttackMode, MAX_PROJECT_VOXEL_OBJECTS, MAX_PROJECT_VOXEL_OBJECT_FRAMES,
-    MAX_PROJECT_VOXEL_OBJECT_INSTANCES, MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK,
-    MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS, STORED_PROJECT_SCHEMA_VERSION,
+    StoredSwitch, StoredVisualAnimationLoopMode, StoredVisualBinding, StoredVisualBindingState,
+    StoredVisualPresentation, StoredVisualState, StoredVoxelEnvironment, StoredVoxelInstance,
+    StoredVoxelObjectFrameSelection, StoredVoxelObjectInstance, StoredVoxelObjectMaterialOverride,
+    StoredWeapon, StoredWeaponAttackMode, MAX_PROJECT_VOXEL_OBJECTS,
+    MAX_PROJECT_VOXEL_OBJECT_FRAMES, MAX_PROJECT_VOXEL_OBJECT_INSTANCES,
+    MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK, MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS,
+    MAX_STORED_VISUAL_BINDING_STATES, STORED_PROJECT_SCHEMA_VERSION, STORED_VISUAL_BINDING_VERSION,
 };
 pub use studio_adapter::{
     AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,

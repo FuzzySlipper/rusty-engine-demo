@@ -24,6 +24,10 @@ const ACTOR_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/actor-kit-authoring.json",
 );
+const VISUAL_BINDING_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/visual-bindings.json",
+);
 
 const expectedModules = new Set([
   "wall-conservative",
@@ -64,6 +68,9 @@ const browser = JSON.parse(await readFile(BROWSER_EVIDENCE_PATH, "utf8"));
 const propEvidence = JSON.parse(await readFile(PROP_EVIDENCE_PATH, "utf8"));
 const levelEvidence = JSON.parse(await readFile(LEVEL_EVIDENCE_PATH, "utf8"));
 const actorEvidence = JSON.parse(await readFile(ACTOR_EVIDENCE_PATH, "utf8"));
+const visualBindingEvidence = JSON.parse(
+  await readFile(VISUAL_BINDING_EVIDENCE_PATH, "utf8"),
+);
 const scene = project.scenes.find(
   ({ id }) => id === evidence.proofRoom.sceneId,
 );
@@ -76,7 +83,10 @@ invariant(
       propEvidence.project.finalHash === currentProjectHash) ||
     currentProjectHash === levelEvidence.projectHashAfter ||
     (actorEvidence.project.startingHash === levelEvidence.projectHashAfter &&
-      actorEvidence.project.finalHash === currentProjectHash),
+      actorEvidence.project.finalHash === currentProjectHash) ||
+    (visualBindingEvidence.project.startingHash ===
+      actorEvidence.project.finalHash &&
+      visualBindingEvidence.project.finalHash === currentProjectHash),
   "current project must retain the exact brush proof in a recorded descendant",
 );
 invariant(

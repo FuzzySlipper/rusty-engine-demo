@@ -624,6 +624,8 @@ function feedbackState(): RuntimeBrowserState {
     lights: [],
     renderMaterials: [],
     staticMeshes: [],
+    animatedMeshes: [],
+    visualBindings: [],
     generatedEnvironment: null,
     enemies: [
       {

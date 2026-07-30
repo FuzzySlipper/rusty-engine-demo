@@ -155,7 +155,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 23, 99] {
+    for schema_version in [0, 5, 24, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -165,6 +165,47 @@ fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
     let error = decode_project_document("{}").unwrap_err();
     assert_eq!(error.diagnostic().code, diagnostic_code::DECODE);
     assert_eq!(error.diagnostic().path, "schemaVersion");
+}
+
+#[test]
+fn schema_twenty_two_migrates_without_visual_bindings_and_rejects_the_future_field() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["schemaVersion"] = 22.into();
+    for scene in previous["scenes"].as_array_mut().unwrap() {
+        for entity in scene["entities"].as_array_mut().unwrap() {
+            if let Some(renderable) = entity
+                .get_mut("renderable")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                renderable.remove("visualBinding");
+            }
+        }
+    }
+
+    let decoded = decode_project_document(&previous.to_string()).unwrap();
+    assert_eq!(decoded.source_schema_version, 22);
+    assert_eq!(
+        decoded.project.schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
+    assert!(decoded.was_migrated());
+    assert!(decoded
+        .project
+        .scenes
+        .iter()
+        .all(|scene| scene.entities.iter().all(|entity| entity
+            .renderable
+            .as_ref()
+            .is_none_or(|renderable| renderable.visual_binding.is_none()))));
+
+    previous["scenes"][0]["entities"][2]["renderable"]["visualBinding"] =
+        serde_json::json!({"version": 1, "states": []});
+    let error = decode_project_document(&previous.to_string()).unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::MIGRATION);
+    assert_eq!(
+        error.diagnostic().path,
+        "scenes[].entities[].renderable.visualBinding"
+    );
 }
 
 #[test]

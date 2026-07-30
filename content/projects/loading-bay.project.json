@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 22,
+  "schemaVersion": 23,
   "projectId": "loading-bay",
   "name": "Loading Bay",
   "entryScene": "scene/loading-bay",
@@ -1795,12 +1795,6 @@
           ]
         }
       }
-    },
-    {
-      "id": "mesh/arc-warden"
-    },
-    {
-      "id": "mesh/bay-rusher"
     },
     {
       "id": "mesh/ceiling-strip",
@@ -180625,7 +180619,44 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/security-door",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "closed",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.78,
+                    0.48,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.28,
+                    0.05
+                  ],
+                  "emissionIntensity": 0.12
+                },
+                {
+                  "state": "open",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                }
+              ]
+            }
           },
           "door": {
             "openTranslation": [
@@ -180666,8 +180697,62 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/bay-rusher",
-            "visible": true
+            "asset": "mesh-animation/bay-rusher",
+            "visible": true,
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -180737,8 +180822,62 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/arc-warden",
-            "visible": true
+            "asset": "mesh-animation/arc-warden",
+            "visible": true,
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -180800,7 +180939,44 @@
           ],
           "renderable": {
             "asset": "mesh/prop-kit/control-panel",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "inactive",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.78,
+                    0.48,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.28,
+                    0.05
+                  ],
+                  "emissionIntensity": 0.12
+                },
+                {
+                  "state": "active",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                }
+              ]
+            }
           },
           "switch": {
             "controls": [
@@ -180822,7 +180998,44 @@
           ],
           "renderable": {
             "asset": "mesh/prop-kit/extraction-beacon",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "standby",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.78,
+                    0.48,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.28,
+                    0.05
+                  ],
+                  "emissionIntensity": 0.12
+                },
+                {
+                  "state": "active",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                }
+              ]
+            }
           },
           "extractionBeacon": {
             "activationRadius": 3.0
@@ -180907,7 +181120,44 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/security-door",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "closed",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.78,
+                    0.48,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.28,
+                    0.05
+                  ],
+                  "emissionIntensity": 0.12
+                },
+                {
+                  "state": "open",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                }
+              ]
+            }
           },
           "door": {
             "openTranslation": [
@@ -180956,7 +181206,44 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/security-door",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "closed",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.78,
+                    0.48,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.28,
+                    0.05
+                  ],
+                  "emissionIntensity": 0.12
+                },
+                {
+                  "state": "open",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                }
+              ]
+            }
           },
           "door": {
             "openTranslation": [
@@ -181005,7 +181292,44 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/security-door",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "closed",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.78,
+                    0.48,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.28,
+                    0.05
+                  ],
+                  "emissionIntensity": 0.12
+                },
+                {
+                  "state": "open",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                }
+              ]
+            }
           },
           "door": {
             "openTranslation": [
@@ -181050,7 +181374,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/energy-cell",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "ammo/energy-cell",
@@ -181079,7 +181456,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/med-patch",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "supply/med-patch",
@@ -181108,7 +181538,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/scatter-shells",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "ammo/scatter-shell",
@@ -181137,7 +181620,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/breach-scattergun",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "weapon/breach-scattergun",
@@ -181170,7 +181706,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/med-patch",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "supply/med-patch",
@@ -181199,7 +181788,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/impact-vest",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "armor/impact-vest",
@@ -181228,7 +181870,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/maintenance-pass",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "key/maintenance-pass",
@@ -181257,7 +181952,44 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/hazard-marker",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "active",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.78,
+                    0.48,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.28,
+                    0.05
+                  ],
+                  "emissionIntensity": 0.12
+                },
+                {
+                  "state": "cooling",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                }
+              ]
+            }
           },
           "hazard": {
             "damage": 12,
@@ -181286,7 +182018,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/rivet-carbine",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "weapon/rivet-carbine",
@@ -181319,7 +182104,44 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/security-door",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "closed",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.78,
+                    0.48,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.28,
+                    0.05
+                  ],
+                  "emissionIntensity": 0.12
+                },
+                {
+                  "state": "open",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                }
+              ]
+            }
           },
           "door": {
             "openTranslation": [
@@ -181382,7 +182204,44 @@
           ],
           "renderable": {
             "asset": "mesh/prop-kit/level-exit",
-            "visible": true
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.78,
+                    0.48,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.28,
+                    0.05
+                  ],
+                  "emissionIntensity": 0.12
+                },
+                {
+                  "state": "completed",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                }
+              ]
+            }
           },
           "levelExit": {
             "activationRadius": 2.0,
@@ -181411,7 +182270,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/med-patch",
-            "visible": false
+            "visible": false,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "supply/med-patch",
@@ -181440,7 +182352,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/energy-cell",
-            "visible": false
+            "visible": false,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "ammo/energy-cell",
@@ -181483,8 +182448,62 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/bay-rusher",
-            "visible": true
+            "asset": "mesh-animation/bay-rusher",
+            "visible": true,
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -181554,8 +182573,62 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/arc-warden",
-            "visible": true
+            "asset": "mesh-animation/arc-warden",
+            "visible": true,
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -181644,8 +182717,62 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/bay-rusher",
-            "visible": true
+            "asset": "mesh-animation/bay-rusher",
+            "visible": true,
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -181715,8 +182842,62 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/arc-warden",
-            "visible": true
+            "asset": "mesh-animation/arc-warden",
+            "visible": true,
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -181786,8 +182967,62 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/bay-rusher",
-            "visible": true
+            "asset": "mesh-animation/bay-rusher",
+            "visible": true,
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -181857,8 +183092,62 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/arc-warden",
-            "visible": true
+            "asset": "mesh-animation/arc-warden",
+            "visible": true,
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -181932,7 +183221,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/med-patch",
-            "visible": false
+            "visible": false,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "supply/med-patch",
@@ -181961,7 +183303,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/energy-cell",
-            "visible": false
+            "visible": false,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "ammo/energy-cell",
@@ -181990,7 +183385,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/med-patch",
-            "visible": false
+            "visible": false,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "supply/med-patch",
@@ -182019,7 +183467,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/energy-cell",
-            "visible": false
+            "visible": false,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "ammo/energy-cell",
@@ -182048,7 +183549,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/med-patch",
-            "visible": false
+            "visible": false,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "supply/med-patch",
@@ -182077,7 +183631,60 @@
           },
           "renderable": {
             "asset": "mesh/prop-kit/energy-cell",
-            "visible": false
+            "visible": false,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
           },
           "pickup": {
             "item": "ammo/energy-cell",

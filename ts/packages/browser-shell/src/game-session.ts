@@ -86,6 +86,8 @@ type StaticStateKey =
   | "lights"
   | "renderMaterials"
   | "staticMeshes"
+  | "animatedMeshes"
+  | "visualBindings"
   | "generatedEnvironment";
 
 type RuntimeDynamicState = Omit<RuntimeBrowserState, StaticStateKey>;
@@ -1248,6 +1250,10 @@ function isRuntimeStaticResources(
     !value.renderMaterials.every(isRuntimeRenderMaterial) ||
     !Array.isArray(value.staticMeshes) ||
     !value.staticMeshes.every(isRuntimeStaticMesh) ||
+    !Array.isArray(value.animatedMeshes) ||
+    !value.animatedMeshes.every(isRuntimeAnimatedMesh) ||
+    !Array.isArray(value.visualBindings) ||
+    !value.visualBindings.every(isRuntimeVisualBinding) ||
     (value.generatedEnvironment !== null &&
       !isRecord(value.generatedEnvironment))
   ) {
@@ -1257,12 +1263,112 @@ function isRuntimeStaticResources(
     value.renderMaterials.map((material) => material.id),
   );
   const meshIds = new Set(value.staticMeshes.map((mesh) => mesh.asset));
+  const animatedMeshIds = new Set(
+    value.animatedMeshes.map((mesh) => mesh.asset),
+  );
+  const bindingEntityIds = new Set(
+    value.visualBindings.map((binding) => binding.entity),
+  );
   return (
     materialIds.size === value.renderMaterials.length &&
     meshIds.size === value.staticMeshes.length &&
+    animatedMeshIds.size === value.animatedMeshes.length &&
+    bindingEntityIds.size === value.visualBindings.length &&
     value.staticMeshes.every((mesh) =>
       mesh.materialSlots.every(({ material }) => materialIds.has(material)),
     )
+  );
+}
+
+function isRuntimeAnimatedMesh(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.asset === "string" &&
+    value.runtimeFormat === "glb" &&
+    typeof value.contentHash === "string" &&
+    value.contentHash.length > 0 &&
+    typeof value.resourceUrl === "string" &&
+    value.resourceUrl.startsWith("/api/animated-mesh/") &&
+    Array.isArray(value.clips) &&
+    value.clips.length > 0 &&
+    value.clips.every(
+      (clip) =>
+        isRecord(clip) &&
+        typeof clip.id === "string" &&
+        (clip.name === null || typeof clip.name === "string") &&
+        (clip.durationSeconds === null ||
+          isFiniteNumber(clip.durationSeconds)),
+    ) &&
+    (value.defaultClip === null || typeof value.defaultClip === "string") &&
+    Array.isArray(value.materialSlots) &&
+    isRecord(value.bounds) &&
+    isFiniteVector3(value.bounds.min) &&
+    isFiniteVector3(value.bounds.max)
+  );
+}
+
+function isRuntimeVisualBinding(value: unknown): boolean {
+  if (
+    !isRecord(value) ||
+    !isFiniteNumber(value.entity) ||
+    !isRecord(value.binding) ||
+    value.binding.version !== 1 ||
+    !Array.isArray(value.binding.states) ||
+    value.binding.states.length === 0
+  ) {
+    return false;
+  }
+  const states = value.binding.states;
+  const stateIds = new Set<string>();
+  for (const state of states) {
+    if (
+      !isRecord(state) ||
+      !isRuntimeBoundVisualState(state.state) ||
+      stateIds.has(state.state)
+    ) {
+      return false;
+    }
+    stateIds.add(state.state);
+    if (state.kind === "material") {
+      if (
+        !isFiniteVector4(state.textureTint) ||
+        !isFiniteVector3(state.emissionColor) ||
+        !isFiniteNumber(state.emissionIntensity)
+      ) {
+        return false;
+      }
+    } else if (
+      state.kind !== "animation" ||
+      typeof state.clip !== "string" ||
+      (state.loopMode !== "once" && state.loopMode !== "repeat") ||
+      !isFiniteNumber(state.speed) ||
+      (state.fadeSeconds !== null && !isFiniteNumber(state.fadeSeconds))
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isRuntimeBoundVisualState(value: unknown): value is string {
+  return (
+    value === "default" ||
+    value === "open" ||
+    value === "closed" ||
+    value === "active" ||
+    value === "inactive" ||
+    value === "standby" ||
+    value === "available" ||
+    value === "dormant" ||
+    value === "collected" ||
+    value === "cooling" ||
+    value === "completed" ||
+    value === "idle" ||
+    value === "moving" ||
+    value === "alert" ||
+    value === "attacking" ||
+    value === "hit" ||
+    value === "defeated"
   );
 }
 
@@ -1526,6 +1632,7 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     isFiniteNumber(value.tick) &&
     isFiniteNumber(value.entityRevision) &&
     Array.isArray(value.projection) &&
+    value.projection.every(isRuntimeProjectionNode) &&
     typeof value.doorState === "string" &&
     typeof value.encounterState === "string" &&
     typeof value.motionState === "string" &&
@@ -1559,6 +1666,20 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     isRecord(value.presentation) &&
     Array.isArray(value.lastEvents) &&
     value.lastEvents.every((event) => typeof event === "string")
+  );
+}
+
+function isRuntimeProjectionNode(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.id) &&
+    typeof value.name === "string" &&
+    typeof value.asset === "string" &&
+    (value.translation === null || isFiniteVector3(value.translation)) &&
+    isFiniteVector4(value.rotation) &&
+    isFiniteVector3(value.scale) &&
+    typeof value.visible === "boolean" &&
+    isRuntimeBoundVisualState(value.visualState)
   );
 }
 
@@ -1637,6 +1758,8 @@ function runtimeStateResources(
     lights: resources.lights,
     renderMaterials: resources.renderMaterials,
     staticMeshes: resources.staticMeshes,
+    animatedMeshes: resources.animatedMeshes,
+    visualBindings: resources.visualBindings,
     generatedEnvironment: resources.generatedEnvironment,
   };
 }

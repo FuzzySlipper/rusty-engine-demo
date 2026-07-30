@@ -1,5 +1,8 @@
 import {
   renderHandle,
+  type AnimatedMeshAsset,
+  type AnimatedMeshInstanceDescriptor,
+  type AnimatedMeshPlaybackCommand,
   type Geometry,
   type LightDescriptor,
   type Material,
@@ -33,9 +36,49 @@ export interface RuntimeProjectionNode {
   readonly name: string;
   readonly asset: string;
   readonly translation: readonly [number, number, number] | null;
+  readonly rotation?: readonly [number, number, number, number];
+  readonly scale?: readonly [number, number, number];
   readonly visible: boolean;
   readonly visualState: RuntimeVisualState;
 }
+
+export type RuntimeBoundVisualState =
+  | RuntimeVisualState
+  | "idle"
+  | "moving"
+  | "alert"
+  | "attacking"
+  | "hit"
+  | "defeated";
+
+export interface RuntimeAnimatedMeshResource extends AnimatedMeshAsset {
+  readonly resourceUrl: string;
+}
+
+export interface RuntimeVisualBindingResource {
+  readonly entity: number;
+  readonly binding: {
+    readonly version: 1;
+    readonly states: readonly RuntimeVisualBindingState[];
+  };
+}
+
+export type RuntimeVisualBindingState =
+  | {
+      readonly state: RuntimeBoundVisualState;
+      readonly kind: "material";
+      readonly textureTint: readonly [number, number, number, number];
+      readonly emissionColor: readonly [number, number, number];
+      readonly emissionIntensity: number;
+    }
+  | {
+      readonly state: RuntimeBoundVisualState;
+      readonly kind: "animation";
+      readonly clip: string;
+      readonly loopMode: "once" | "repeat";
+      readonly speed: number;
+      readonly fadeSeconds: number | null;
+    };
 
 export interface RuntimeEnemyState {
   readonly id: number;
@@ -478,6 +521,8 @@ export interface RuntimeBrowserState {
   readonly lights: readonly RuntimeAuthoredLight[];
   readonly renderMaterials: readonly RenderMaterialDescriptor[];
   readonly staticMeshes: readonly StaticMeshAsset[];
+  readonly animatedMeshes: readonly RuntimeAnimatedMeshResource[];
+  readonly visualBindings: readonly RuntimeVisualBindingResource[];
   readonly generatedEnvironment: RuntimeGeneratedEnvironment | null;
   readonly enemies: readonly RuntimeEnemyState[];
   readonly presentation: RuntimePresentationState;
@@ -530,14 +575,17 @@ export class RuntimeProjectionAdapter {
     number,
     {
       readonly node: RuntimeProjectionNode;
-      readonly kind: "primitive" | "staticMesh";
+      readonly kind: "primitive" | "staticMesh" | "animatedMesh";
       readonly renderedAsset: string | null;
+      readonly boundState: RuntimeBoundVisualState | null;
     }
   >();
   readonly #definedMaterials = new Map<string, string>();
   readonly #definedStaticMeshes = new Map<string, string>();
+  readonly #definedAnimatedMeshes = new Map<string, string>();
   #acceptedRenderMaterials: readonly RenderMaterialDescriptor[] | null = null;
   #acceptedStaticMeshes: readonly StaticMeshAsset[] | null = null;
+  #acceptedAnimatedMeshes: readonly RuntimeAnimatedMeshResource[] | null = null;
   #acceptedVoxelObjectFrame: RenderFrameDiff | null = null;
   #voxelObjectFrameFingerprint: string | null = null;
   readonly #meshHashes = new Map<string, string>();
@@ -554,14 +602,36 @@ export class RuntimeProjectionAdapter {
     const nextKnownLights = new Map(this.#knownLights);
     const nextDefinedMaterials = new Map(this.#definedMaterials);
     const nextDefinedStaticMeshes = new Map(this.#definedStaticMeshes);
+    const nextDefinedAnimatedMeshes = new Map(this.#definedAnimatedMeshes);
     let nextAcceptedRenderMaterials = this.#acceptedRenderMaterials;
     let nextAcceptedStaticMeshes = this.#acceptedStaticMeshes;
+    let nextAcceptedAnimatedMeshes = this.#acceptedAnimatedMeshes;
     let nextAcceptedVoxelObjectFrame = this.#acceptedVoxelObjectFrame;
     let nextVoxelObjectFrameFingerprint = this.#voxelObjectFrameFingerprint;
     let nextMeshHandle = this.#nextMeshHandle;
     const ops: RenderDiff[] = [];
     const staticMeshes = new Map(
       state.staticMeshes.map((asset) => [asset.asset, asset] as const),
+    );
+    const animatedMeshes = new Map(
+      state.animatedMeshes.map((asset) => [asset.asset, asset] as const),
+    );
+    const visualBindings = new Map(
+      state.visualBindings.map(({ entity, binding }) => [entity, binding] as const),
+    );
+    const postures = new Map(
+      state.presentation.animationStates.map(({ entity, posture }) => [
+        entity,
+        posture,
+      ] as const),
+    );
+    const damaged = new Set(
+      state.presentation.cues
+        .filter(
+          (cue): cue is Extract<RuntimeFeedbackCue, { readonly kind: "damage" }> =>
+            cue.kind === "damage",
+        )
+        .map((cue) => cue.target),
     );
     const changedStaticMeshes =
       state.staticMeshes === this.#acceptedStaticMeshes
@@ -575,11 +645,26 @@ export class RuntimeProjectionAdapter {
               )
               .map((asset) => asset.asset),
           );
+    const changedAnimatedMeshes =
+      state.animatedMeshes === this.#acceptedAnimatedMeshes
+        ? new Set<string>()
+        : new Set(
+            state.animatedMeshes
+              .filter(
+                (asset) =>
+                  nextDefinedAnimatedMeshes.get(asset.asset) !==
+                  animatedMeshFingerprint(asset),
+              )
+              .map((asset) => asset.asset),
+          );
     for (const [id, known] of nextKnown) {
       if (
-        known.kind === "staticMesh" &&
-        known.renderedAsset !== null &&
-        changedStaticMeshes.has(known.renderedAsset)
+        (known.kind === "staticMesh" &&
+          known.renderedAsset !== null &&
+          changedStaticMeshes.has(known.renderedAsset)) ||
+        (known.kind === "animatedMesh" &&
+          known.renderedAsset !== null &&
+          changedAnimatedMeshes.has(known.renderedAsset))
       ) {
         ops.push({ op: "destroy", handle: entityHandle(id) });
         nextKnown.delete(id);
@@ -604,6 +689,17 @@ export class RuntimeProjectionAdapter {
         }
       }
       nextAcceptedStaticMeshes = state.staticMeshes;
+    }
+    if (state.animatedMeshes !== this.#acceptedAnimatedMeshes) {
+      for (const resource of state.animatedMeshes) {
+        const fingerprint = animatedMeshFingerprint(resource);
+        if (nextDefinedAnimatedMeshes.get(resource.asset) !== fingerprint) {
+          const { resourceUrl: _resourceUrl, ...asset } = resource;
+          ops.push({ op: "defineAnimatedMesh", asset });
+          nextDefinedAnimatedMeshes.set(resource.asset, fingerprint);
+        }
+      }
+      nextAcceptedAnimatedMeshes = state.animatedMeshes;
     }
     if (state.voxelObjectFrame !== this.#acceptedVoxelObjectFrame) {
       const fingerprint = stableJsonFingerprint(state.voxelObjectFrame);
@@ -694,35 +790,68 @@ export class RuntimeProjectionAdapter {
       incoming.add(node.id);
       const known = nextKnown.get(node.id);
       const staticMesh = staticMeshes.get(node.asset);
-      const kind = staticMesh === undefined ? "primitive" : "staticMesh";
+      const animatedMesh = animatedMeshes.get(node.asset);
+      const binding = visualBindings.get(node.id);
+      const kind =
+        staticMesh !== undefined
+          ? "staticMesh"
+          : animatedMesh !== undefined
+            ? "animatedMesh"
+            : "primitive";
+      const boundState = resolveBoundVisualState(
+        node,
+        binding,
+        postures.get(node.id),
+        damaged.has(node.id),
+      );
       if (kind === "primitive" && !PRIMITIVE_FALLBACK_ASSETS.has(node.asset)) {
         throw new Error(
           `runtime projection is missing canonical static mesh ${node.asset}`,
         );
       }
       if (known === undefined) {
-        ops.push(...createProjectedNode(node, staticMesh));
+        ops.push(
+          ...createProjectedNode(
+            node,
+            staticMesh,
+            animatedMesh,
+            binding,
+            boundState,
+          ),
+        );
       } else if (
         known.kind !== kind ||
-        known.renderedAsset !== (staticMesh?.asset ?? null)
+        known.renderedAsset !==
+          (staticMesh?.asset ?? animatedMesh?.asset ?? null)
       ) {
         ops.push({ op: "destroy", handle: entityHandle(node.id) });
-        ops.push(...createProjectedNode(node, staticMesh));
-      } else if (!sameProjectionNode(known.node, node)) {
+        ops.push(
+          ...createProjectedNode(
+            node,
+            staticMesh,
+            animatedMesh,
+            binding,
+            boundState,
+          ),
+        );
+      } else if (
+        !sameProjectionNode(known.node, node) ||
+        known.boundState !== boundState
+      ) {
         const nextTransform =
-          staticMesh === undefined
+          kind === "primitive"
             ? primitiveFallbackNode(node).transform
-            : staticMeshInstance(node).transform;
+            : projectedTransform(node);
         const nextMetadata =
-          staticMesh === undefined
+          kind === "primitive"
             ? primitiveFallbackNode(node).metadata
-            : staticMeshInstance(node).metadata;
+            : projectedMetadata(node);
         ops.push({
           op: "update",
           handle: entityHandle(node.id),
           transform: nextTransform,
           material:
-            staticMesh === undefined
+            kind === "primitive"
               ? primitiveFallbackNode(node).material
               : null,
           visible: node.visible && node.asset !== "mesh/player-marker",
@@ -730,15 +859,33 @@ export class RuntimeProjectionAdapter {
         });
         if (
           staticMesh !== undefined &&
-          known.node.visualState !== node.visualState
+          known.boundState !== boundState
         ) {
-          ops.push(...materialStateOperations(node, staticMesh));
+          ops.push(
+            ...materialStateOperations(
+              node,
+              staticMesh,
+              binding,
+              boundState,
+            ),
+          );
+        }
+        if (
+          animatedMesh !== undefined &&
+          known.boundState !== boundState
+        ) {
+          ops.push({
+            op: "setAnimatedMeshPlayback",
+            handle: entityHandle(node.id),
+            playback: animatedPlayback(binding, boundState, true),
+          });
         }
       }
       nextKnown.set(node.id, {
         node,
         kind,
-        renderedAsset: staticMesh?.asset ?? null,
+        renderedAsset: staticMesh?.asset ?? animatedMesh?.asset ?? null,
+        boundState,
       });
     }
 
@@ -765,8 +912,10 @@ export class RuntimeProjectionAdapter {
         replaceMap(this.#knownLights, nextKnownLights);
         replaceMap(this.#definedMaterials, nextDefinedMaterials);
         replaceMap(this.#definedStaticMeshes, nextDefinedStaticMeshes);
+        replaceMap(this.#definedAnimatedMeshes, nextDefinedAnimatedMeshes);
         this.#acceptedRenderMaterials = nextAcceptedRenderMaterials;
         this.#acceptedStaticMeshes = nextAcceptedStaticMeshes;
+        this.#acceptedAnimatedMeshes = nextAcceptedAnimatedMeshes;
         this.#acceptedVoxelObjectFrame = nextAcceptedVoxelObjectFrame;
         this.#voxelObjectFrameFingerprint = nextVoxelObjectFrameFingerprint;
         this.#nextMeshHandle = nextMeshHandle;
@@ -927,65 +1076,66 @@ function sameLight(left: LightDescriptor, right: LightDescriptor): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-const PRIMITIVE_FALLBACK_ASSETS = new Set([
-  "mesh/player-marker",
-  "mesh/bay-rusher",
-  "mesh/arc-warden",
-]);
+const PRIMITIVE_FALLBACK_ASSETS = new Set(["mesh/player-marker"]);
 
 function primitiveFallbackNode(node: RuntimeProjectionNode): RenderNode {
-  const player = node.asset.includes("player-marker");
-  const bayRusher = node.asset.includes("bay-rusher");
-  const arcWarden = node.asset.includes("arc-warden");
-  const scale: readonly [number, number, number] = player
-    ? [0.7, 1.4, 0.7]
-    : bayRusher
-      ? [1.45, 1.25, 1.45]
-      : [0.85, 2.35, 0.85];
+  const scale: readonly [number, number, number] = [0.7, 1.4, 0.7];
   const authored = node.translation ?? [0, 0, 0];
   const translation: readonly [number, number, number] = [
     authored[0],
     authored[1] + scale[1] / 2,
     authored[2],
   ];
-  const color: Material = player
-    ? { color: [0.24, 0.74, 0.91, 1], wireframe: false }
-    : bayRusher
-      ? { color: [0.95, 0.34, 0.12, 1], wireframe: false }
-      : { color: [0.55, 0.25, 0.95, 1], wireframe: false };
+  const color: Material = {
+    color: [0.24, 0.74, 0.91, 1],
+    wireframe: false,
+  };
   return primitiveNode(
     node.name,
     node.id,
-    player || arcWarden ? "sphere" : "cube",
+    "sphere",
     translation,
     scale,
     color,
-    node.visible && !player,
+    false,
   );
 }
 
 function createProjectedNode(
   node: RuntimeProjectionNode,
   staticMesh: StaticMeshAsset | undefined,
+  animatedMesh: RuntimeAnimatedMeshResource | undefined,
+  binding: RuntimeVisualBindingResource["binding"] | undefined,
+  boundState: RuntimeBoundVisualState | null,
 ): RenderDiff[] {
-  if (staticMesh === undefined) {
+  if (staticMesh !== undefined) {
     return [
       {
-        op: "create",
+        op: "createStaticMeshInstance",
         handle: entityHandle(node.id),
         parent: null,
-        node: primitiveFallbackNode(node),
+        instance: staticMeshInstance(node),
+      },
+      ...materialStateOperations(node, staticMesh, binding, boundState),
+    ];
+  }
+  if (animatedMesh !== undefined) {
+    return [
+      {
+        op: "createAnimatedMeshInstance",
+        handle: entityHandle(node.id),
+        parent: null,
+        instance: animatedMeshInstance(node, binding, boundState),
       },
     ];
   }
   return [
     {
-      op: "createStaticMeshInstance",
+      op: "create",
       handle: entityHandle(node.id),
       parent: null,
-      instance: staticMeshInstance(node),
+      node: primitiveFallbackNode(node),
     },
-    ...materialStateOperations(node, staticMesh),
   ];
 }
 
@@ -994,23 +1144,46 @@ function staticMeshInstance(
 ): StaticMeshInstanceDescriptor {
   return {
     asset: node.asset,
-    transform: identityTransform(node.translation ?? [0, 0, 0], [1, 1, 1]),
+    transform: projectedTransform(node),
     visible: node.visible,
     materialOverrides: [],
-    metadata: {
-      sourceEntity: node.id,
-      sourceSceneNode: null,
-      tags: ["loading-bay", "serialized-prop"],
-      label: node.name,
-    },
+    metadata: projectedMetadata(node),
+  };
+}
+
+function animatedMeshInstance(
+  node: RuntimeProjectionNode,
+  binding: RuntimeVisualBindingResource["binding"] | undefined,
+  boundState: RuntimeBoundVisualState | null,
+): AnimatedMeshInstanceDescriptor {
+  return {
+    asset: node.asset,
+    transform: projectedTransform(node),
+    visible: node.visible,
+    materialOverrides: [],
+    playback: animatedPlayback(binding, boundState, true),
+    metadata: projectedMetadata(node),
   };
 }
 
 function materialStateOperations(
   node: RuntimeProjectionNode,
   asset: StaticMeshAsset,
+  binding: RuntimeVisualBindingResource["binding"] | undefined,
+  boundState: RuntimeBoundVisualState | null,
 ): RenderDiff[] {
-  const parameters = visualStateParameters(node.visualState);
+  const state = binding?.states.find(
+    (candidate) =>
+      candidate.state === boundState && candidate.kind === "material",
+  );
+  const parameters: MaterialInstanceParameters | null =
+    state?.kind === "material"
+      ? {
+          textureTint: state.textureTint,
+          emissionColor: state.emissionColor,
+          emissionIntensity: state.emissionIntensity,
+        }
+      : null;
   return asset.materialSlots.map(({ slot }) => ({
     op: "setMaterialInstanceParameters",
     handle: entityHandle(node.id),
@@ -1019,38 +1192,75 @@ function materialStateOperations(
   }));
 }
 
-function visualStateParameters(
-  state: RuntimeVisualState,
-): MaterialInstanceParameters | null {
-  switch (state) {
-    case "open":
-    case "active":
-    case "completed":
-      return {
-        textureTint: [0.62, 1, 0.82, 1],
-        emissionColor: [0.12, 0.82, 0.52],
-        emissionIntensity: 0.35,
-      };
-    case "closed":
-    case "inactive":
-    case "standby":
-      return {
-        textureTint: [1, 0.78, 0.48, 1],
-        emissionColor: [0.75, 0.28, 0.05],
-        emissionIntensity: 0.12,
-      };
-    case "cooling":
-    case "dormant":
-      return {
-        textureTint: [0.58, 0.62, 0.68, 1],
-        emissionColor: [0.12, 0.14, 0.18],
-        emissionIntensity: 0.04,
-      };
-    case "available":
-    case "collected":
-    case "default":
-      return null;
+function animatedPlayback(
+  binding: RuntimeVisualBindingResource["binding"] | undefined,
+  boundState: RuntimeBoundVisualState | null,
+  restart: boolean,
+): AnimatedMeshPlaybackCommand {
+  const state = binding?.states.find(
+    (candidate) =>
+      candidate.state === boundState && candidate.kind === "animation",
+  );
+  if (state?.kind !== "animation") {
+    throw new Error(
+      `runtime animated projection has no serialized clip binding for ${String(boundState)}`,
+    );
   }
+  return {
+    kind: "play",
+    clip: state.clip,
+    loop: state.loopMode,
+    speed: state.speed,
+    weight: 1,
+    restart,
+    fadeSeconds: state.fadeSeconds,
+  };
+}
+
+function resolveBoundVisualState(
+  node: RuntimeProjectionNode,
+  binding: RuntimeVisualBindingResource["binding"] | undefined,
+  posture: RuntimeAnimationState["posture"] | undefined,
+  damaged: boolean,
+): RuntimeBoundVisualState | null {
+  if (binding === undefined) {
+    return null;
+  }
+  if (
+    damaged &&
+    binding.states.some((candidate) => candidate.state === "hit")
+  ) {
+    return "hit";
+  }
+  const requested = posture ?? node.visualState;
+  if (!binding.states.some((candidate) => candidate.state === requested)) {
+    throw new Error(
+      `runtime visual binding for entity ${String(node.id)} has no state ${requested}`,
+    );
+  }
+  return requested;
+}
+
+function animatedMeshFingerprint(resource: RuntimeAnimatedMeshResource): string {
+  const { resourceUrl: _resourceUrl, ...asset } = resource;
+  return JSON.stringify(asset);
+}
+
+function projectedTransform(node: RuntimeProjectionNode): Transform {
+  return {
+    translation: node.translation ?? [0, 0, 0],
+    rotation: node.rotation ?? [0, 0, 0, 1],
+    scale: node.scale ?? [1, 1, 1],
+  };
+}
+
+function projectedMetadata(node: RuntimeProjectionNode) {
+  return {
+    sourceEntity: node.id,
+    sourceSceneNode: null,
+    tags: ["loading-bay", "serialized-visual"],
+    label: node.name,
+  } as const;
 }
 
 function primitiveNode(
@@ -1093,6 +1303,8 @@ function sameProjectionNode(
     left.asset === right.asset &&
     left.visible === right.visible &&
     left.visualState === right.visualState &&
-    JSON.stringify(left.translation) === JSON.stringify(right.translation)
+    JSON.stringify(left.translation) === JSON.stringify(right.translation) &&
+    JSON.stringify(left.rotation) === JSON.stringify(right.rotation) &&
+    JSON.stringify(left.scale) === JSON.stringify(right.scale)
   );
 }

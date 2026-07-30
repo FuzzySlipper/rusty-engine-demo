@@ -11,7 +11,7 @@ fn studio_authored_project_is_static_typed_multi_family_content() {
     let project = decode_stored_project(PROJECT).expect("stored project");
     assert_eq!(project.project_id, "loading-bay");
     assert_eq!(project.entry_scene, "scene/loading-bay");
-    assert_eq!(project.assets.len(), 91);
+    assert_eq!(project.assets.len(), 89);
     assert_eq!(
         project
             .assets
@@ -204,6 +204,39 @@ fn renderables_require_declared_mesh_assets() {
     let missing = admission_diagnostic(&missing);
     assert_eq!(missing.code, diagnostic_code::MISSING_ASSET);
     assert_eq!(missing.path, "scenes[0].entities[0].renderable.asset");
+}
+
+#[test]
+fn serialized_visual_bindings_reject_unknown_clips_and_wrong_presentation_kinds() {
+    let unknown_clip = mutate(|project| {
+        project["scenes"][0]["entities"][3]["renderable"]["visualBinding"]["states"][0]["clip"] =
+            "not-authored".into();
+    });
+    let unknown_clip = admission_diagnostic(&unknown_clip);
+    assert_eq!(unknown_clip.code, diagnostic_code::INVALID_COMPONENT);
+    assert_eq!(
+        unknown_clip.path,
+        "scenes[0].entities[3].renderable.visualBinding.states[0].clip"
+    );
+
+    let animated_static_mesh = mutate(|project| {
+        project["scenes"][0]["entities"][2]["renderable"]["visualBinding"]["states"][0] = serde_json::json!({
+            "state": "closed",
+            "kind": "animation",
+            "clip": "idle",
+            "loopMode": "repeat",
+            "speed": 1.0
+        });
+    });
+    let animated_static_mesh = admission_diagnostic(&animated_static_mesh);
+    assert_eq!(
+        animated_static_mesh.code,
+        diagnostic_code::INVALID_COMPONENT
+    );
+    assert_eq!(
+        animated_static_mesh.path,
+        "scenes[0].entities[2].renderable.visualBinding.states[0]"
+    );
 }
 
 #[test]

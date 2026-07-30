@@ -179,7 +179,7 @@ test("the Loading Bay project is read directly from its canonical artifact", () 
 
   assert.equal(project.projectId, "loading-bay");
   assert.equal(project.entryScene, "scene/loading-bay");
-  assert.equal(project.schemaVersion, 22);
+  assert.equal(project.schemaVersion, 23);
 });
 
 test("stored item definitions and starting inventory remain immutable authored data", () => {
@@ -311,6 +311,25 @@ test("the extraction beacon is game-owned data on its responsible entity", () =>
     renderable: {
       asset: "mesh/prop-kit/extraction-beacon",
       visible: true,
+      visualBinding: {
+        version: 1,
+        states: [
+          {
+            state: "standby",
+            kind: "material",
+            textureTint: [1, 0.78, 0.48, 1],
+            emissionColor: [0.75, 0.28, 0.05],
+            emissionIntensity: 0.12,
+          },
+          {
+            state: "active",
+            kind: "material",
+            textureTint: [0.62, 1, 0.82, 1],
+            emissionColor: [0.12, 0.82, 0.52],
+            emissionIntensity: 0.35,
+          },
+        ],
+      },
     },
     extractionBeacon: { activationRadius: 3 },
   });
@@ -514,5 +533,5 @@ test("the Relay Annex project is read directly from its canonical artifact", () 
 
   assert.equal(project.projectId, "relay-annex");
   assert.equal(project.entryScene, "scene/relay-annex");
-  assert.equal(project.schemaVersion, 22);
+  assert.equal(project.schemaVersion, 23);
 });

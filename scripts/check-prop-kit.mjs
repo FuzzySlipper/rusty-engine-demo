@@ -17,6 +17,10 @@ const ACTOR_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/actor-kit-authoring.json",
 );
+const VISUAL_BINDING_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/visual-bindings.json",
+);
 
 function invariant(condition, message) {
   if (!condition) throw new Error(`prop-kit invariant failed: ${message}`);
@@ -32,6 +36,9 @@ const manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf8"));
 const evidence = JSON.parse(await readFile(EVIDENCE_PATH, "utf8"));
 const levelEvidence = JSON.parse(await readFile(LEVEL_EVIDENCE_PATH, "utf8"));
 const actorEvidence = JSON.parse(await readFile(ACTOR_EVIDENCE_PATH, "utf8"));
+const visualBindingEvidence = JSON.parse(
+  await readFile(VISUAL_BINDING_EVIDENCE_PATH, "utf8"),
+);
 const scene = project.scenes.find(({ id }) => id === project.entryScene);
 
 invariant(scene !== undefined, "entry scene must exist");
@@ -54,7 +61,10 @@ invariant(
   currentProjectHash === evidence.project.finalHash ||
     currentProjectHash === levelEvidence.projectHashAfter ||
     (actorEvidence.project.startingHash === levelEvidence.projectHashAfter &&
-      actorEvidence.project.finalHash === currentProjectHash),
+      actorEvidence.project.finalHash === currentProjectHash) ||
+    (visualBindingEvidence.project.startingHash ===
+      actorEvidence.project.finalHash &&
+      visualBindingEvidence.project.finalHash === currentProjectHash),
   "canonical project must be the prop publication or a recorded descendant",
 );
 invariant(

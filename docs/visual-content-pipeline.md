@@ -218,7 +218,8 @@ Against a 406-handle baseline, the shared renderer reaches 418 handles while add
 geometries, two materials, two textures, and 12 independently animated instances. Those exact
 resident counts survive project close/open, resize at 1280×720 and 1600×900, and a cache-bypassing
 page reload; close reaches zero canvases and remount/reload each return to one. The temporary
-instances are evidence only: Rust gameplay posture binding remains owned by VC8 #6358.
+Studio instances are import evidence only. VC8 #6358 subsequently binds the two asset identities
+to the eight canonical gameplay enemies through the serialized project contract described below.
 
 Reproduce and inspect the evidence with:
 
@@ -237,6 +238,31 @@ Screenshots:
 
 - [Arc Warden attack clip](evidence/actor-kit-studio-arc-warden-attack.png);
 - [Bay Rusher death clip](evidence/actor-kit-studio-bay-rusher-death.png).
+
+### VC8 serialized gameplay visual bindings
+
+Schema 23 adds a versioned `visualBinding` beside each admitted renderable. The canonical Loading
+Bay project contains eight actor bindings and 25 prop bindings:
+
+- Rust enemy posture selects serialized `idle`, `moving`, `alert`, `attacking`, `hit`, and
+  `defeated` presentation states. The project maps those states to the exact six admitted GLB clip
+  identities and loop/fade settings.
+- Rust door, switch, pickup, hazard, extraction-beacon, and level-exit state selects serialized
+  material tint/emission parameters. TypeScript has no asset-name switch or gameplay state machine.
+- Rust admission rejects wrong asset kinds, missing clips, duplicate states, unsupported binding
+  versions, and out-of-range renderer parameters before runtime construction.
+- The browser host exposes only animated assets referenced by the admitted entry scene and serves
+  their exact project-relative GLBs through bounded Rust endpoints. Projects with no animated
+  resources continue through the ordinary shared `RendererSurface`.
+- The browser projection translates accepted Rust state and response-local damage cues into
+  retained renderer operations. It owns neither combat posture nor prop state, and creates no
+  second animation loop.
+
+The current canonical project hash and exact state inventory are recorded in
+[`docs/evidence/visual-bindings.json`](evidence/visual-bindings.json). The full Chromium product
+proof exercises all eight animated instances, the complete normal-control campaign, save/reopen,
+converted and migrated projects, picking, reset/remount, and disposal under the existing transport
+and renderer budgets.
 
 ### Prop and landmark inputs
 

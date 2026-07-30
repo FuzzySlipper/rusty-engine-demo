@@ -461,6 +461,8 @@ function state(
     lights: [],
     renderMaterials: [],
     staticMeshes: [],
+    animatedMeshes: [],
+    visualBindings: [],
     generatedEnvironment: null,
     enemies: [],
     presentation: { animationStates: [], cues: [] },

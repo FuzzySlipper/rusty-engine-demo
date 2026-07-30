@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "authority": "Rust owns gameplay posture and prop state; serialized project bindings select renderer-only material and clip presentation",
+  "project": {
+    "path": "content/projects/loading-bay.project.json",
+    "startingHash": "ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750",
+    "finalHash": "95f87931503ddc7f54ab85f54ca08f94399db59e2534d2bf882592594975da89",
+    "schemaVersion": 23
+  },
+  "actors": {
+    "count": 8,
+    "assetIdentities": [
+      "mesh-animation/arc-warden",
+      "mesh-animation/bay-rusher"
+    ],
+    "states": [
+      "idle",
+      "moving",
+      "alert",
+      "attacking",
+      "hit",
+      "defeated"
+    ],
+    "clips": [
+      "idle",
+      "run",
+      "idle",
+      "attack",
+      "hit",
+      "death"
+    ]
+  },
+  "props": {
+    "count": 25,
+    "capabilities": [
+      "door",
+      "switch",
+      "pickup",
+      "hazard",
+      "extractionBeacon",
+      "levelExit"
+    ]
+  },
+  "publication": "rust-project-store-admitted-replacement"
+}

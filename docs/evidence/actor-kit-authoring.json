@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "authority": "Studio imports serialized actors; Rust admission owns durable project state; gameplay posture binding is deferred to VC8",
+  "authority": "Studio imports serialized actors and Rust admission owns durable project state; gameplay posture binding is completed separately by VC8 evidence",
   "project": {
     "path": "content/projects/loading-bay.project.json",
     "startingHash": "3a1518c45e7201865c5dc4c04b5e8d2a77be5ad760d3449fef3d56d327feb1ae",

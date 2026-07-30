@@ -1,4 +1,7 @@
-import { mountRendererSurface } from "@rusty-engine/renderer-host";
+import {
+  mountRendererAnimatedMeshSurface,
+  mountRendererSurface,
+} from "@rusty-engine/renderer-host";
 
 import { SerializedActionQueue } from "./action-queue.js";
 import { CoalescedLookInput } from "./coalesced-look.js";
@@ -244,7 +247,10 @@ export async function mountLoadingBayGame(
   });
   const initialFrame = projection.apply(current);
   const initialCamera = derivePlayerCameraPose(current.player);
-  const surface = mountRendererSurface(canvas, {
+  const animatedMeshResources = new Map(
+    current.animatedMeshes.map((resource) => [resource.asset, resource] as const),
+  );
+  const surfaceOptions = {
     autoStart: true,
     controls: {
       initialPosition: initialCamera.position,
@@ -255,7 +261,46 @@ export async function mountLoadingBayGame(
     frame: initialFrame,
     pixelRatio: Math.min(globalThis.devicePixelRatio ?? 1, 2),
     projection: { fovYDegrees: 50, near: 0.1, far: 100 },
-  });
+  };
+  const surface =
+    current.animatedMeshes.length === 0
+      ? mountRendererSurface(canvas, surfaceOptions)
+      : await mountRendererAnimatedMeshSurface(canvas, {
+          ...surfaceOptions,
+          animatedMeshManifest: {
+            kind: "rusty_renderer_animated_mesh_resources.v1",
+            resources: current.animatedMeshes.map((resource) => {
+              if (resource.contentHash === null) {
+                throw new Error(
+                  `animated mesh resource ${resource.asset} has no durable content hash`,
+                );
+              }
+              return {
+                asset: resource.asset,
+                contentHash: resource.contentHash,
+                clipIds: resource.clips.map((clip) => clip.id),
+              };
+            }),
+          },
+          resolveAnimatedMeshResource: async (descriptor) => {
+            const resource = animatedMeshResources.get(descriptor.asset);
+            if (
+              resource === undefined ||
+              resource.contentHash !== descriptor.contentHash
+            ) {
+              throw new Error(
+                `animated mesh resource ${descriptor.asset} is unavailable`,
+              );
+            }
+            const response = await fetch(resource.resourceUrl);
+            if (!response.ok) {
+              throw new Error(
+                `animated mesh resource ${descriptor.asset} returned ${String(response.status)}`,
+              );
+            }
+            return response.arrayBuffer();
+          },
+        });
   initialFrame.commit();
   if (rendererStatisticsProofMode) {
     publishRendererStatisticsProof(

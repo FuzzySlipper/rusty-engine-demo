@@ -103,6 +103,8 @@ function state(
     lights: [],
     renderMaterials: [],
     staticMeshes: [],
+    animatedMeshes: [],
+    visualBindings: [],
     generatedEnvironment: null,
     enemies: [],
     presentation: { animationStates: [], cues: [] },
@@ -156,12 +158,27 @@ function serializedState(
   };
 }
 
+function selectedPlaybackClip(
+  operations: ReturnType<RuntimeProjectionAdapter["apply"]>["ops"],
+  entity: number,
+): string | null {
+  const operation = operations.find(
+    (candidate) =>
+      candidate.op === "setAnimatedMeshPlayback" &&
+      candidate.handle === entityHandle(entity),
+  );
+  return operation?.op === "setAnimatedMeshPlayback" &&
+    operation.playback.kind === "play"
+    ? operation.playback.clip
+    : null;
+}
+
 test("whole Rust readouts become create update and destroy diffs", () => {
   const adapter = new RuntimeProjectionAdapter();
   const original = {
     id: 3,
     name: "exit",
-    asset: "mesh/bay-rusher",
+    asset: "mesh/player-marker",
     translation: [0, 0, 8] as const,
     visible: true,
     visualState: "default" as const,
@@ -299,37 +316,184 @@ test("accepted immutable mesh resources are not re-fingerprinted on dynamic fram
   assert.deepEqual(dynamic.ops, []);
 });
 
-test("enemy archetype assets project distinct silhouettes and materials", () => {
-  const plan = new RuntimeProjectionAdapter().apply(
-    state([
+test("serialized enemy bindings create animated assets and select authoritative postures", () => {
+  const clips = ["idle", "run", "attack", "hit", "death"].map((id) => ({
+    id,
+    name: id,
+    durationSeconds: 0.5,
+  }));
+  const binding = {
+    version: 1 as const,
+    states: [
       {
-        id: 4,
-        name: "sentry-alpha",
-        asset: "mesh/bay-rusher",
-        translation: [1.5, 1.5, 6.5],
-        visible: true,
-        visualState: "default",
+        state: "idle" as const,
+        kind: "animation" as const,
+        clip: "idle",
+        loopMode: "repeat" as const,
+        speed: 1,
+        fadeSeconds: 0.1,
       },
       {
-        id: 5,
-        name: "sentry-beta",
-        asset: "mesh/arc-warden",
-        translation: [6.5, 1.5, 2.5],
-        visible: true,
-        visualState: "default",
+        state: "moving" as const,
+        kind: "animation" as const,
+        clip: "run",
+        loopMode: "repeat" as const,
+        speed: 1,
+        fadeSeconds: 0.08,
       },
-    ]),
-  );
-  const nodes = plan.ops.flatMap((operation) =>
-    operation.op === "create" ? [operation.node] : [],
+      {
+        state: "attacking" as const,
+        kind: "animation" as const,
+        clip: "attack",
+        loopMode: "repeat" as const,
+        speed: 1,
+        fadeSeconds: 0.05,
+      },
+      {
+        state: "hit" as const,
+        kind: "animation" as const,
+        clip: "hit",
+        loopMode: "once" as const,
+        speed: 1,
+        fadeSeconds: 0.04,
+      },
+      {
+        state: "defeated" as const,
+        kind: "animation" as const,
+        clip: "death",
+        loopMode: "once" as const,
+        speed: 1,
+        fadeSeconds: 0.08,
+      },
+    ],
+  };
+  const initialState: RuntimeBrowserState = {
+      ...state([
+        {
+          id: 4,
+          name: "sentry-alpha",
+          asset: "mesh-animation/bay-rusher",
+          translation: [1.5, 1.5, 6.5],
+          visible: true,
+          visualState: "default",
+        },
+        {
+          id: 5,
+          name: "sentry-beta",
+          asset: "mesh-animation/arc-warden",
+          translation: [6.5, 1.5, 2.5],
+          visible: true,
+          visualState: "default",
+        },
+      ]),
+      animatedMeshes: [
+        {
+          asset: "mesh-animation/bay-rusher",
+          runtimeFormat: "glb",
+          contentHash: "sha256:bay-rusher",
+          clips,
+          defaultClip: "idle",
+          materialSlots: [],
+          bounds: { min: [-1, 0, -1], max: [1, 2, 1] },
+          resourceUrl: "/api/animated-mesh/0",
+        },
+        {
+          asset: "mesh-animation/arc-warden",
+          runtimeFormat: "glb",
+          contentHash: "sha256:arc-warden",
+          clips,
+          defaultClip: "idle",
+          materialSlots: [],
+          bounds: { min: [-1, 0, -1], max: [1, 2, 1] },
+          resourceUrl: "/api/animated-mesh/1",
+        },
+      ],
+      visualBindings: [
+        { entity: 4, binding },
+        { entity: 5, binding },
+      ],
+      presentation: {
+        animationStates: [
+          { entity: 4, posture: "idle" },
+          { entity: 5, posture: "attacking" },
+        ],
+        cues: [],
+      },
+  };
+  const adapter = new RuntimeProjectionAdapter();
+  const plan = adapter.apply(initialState);
+  const instances = plan.ops.flatMap((operation) =>
+    operation.op === "createAnimatedMeshInstance"
+      ? [operation.instance]
+      : [],
   );
 
-  assert.equal(nodes[0]?.geometry.kind, "cube");
-  assert.deepEqual(nodes[0]?.transform.scale, [1.45, 1.25, 1.45]);
-  assert.deepEqual(nodes[0]?.material.color, [0.95, 0.34, 0.12, 1]);
-  assert.equal(nodes[1]?.geometry.kind, "sphere");
-  assert.deepEqual(nodes[1]?.transform.scale, [0.85, 2.35, 0.85]);
-  assert.deepEqual(nodes[1]?.material.color, [0.55, 0.25, 0.95, 1]);
+  assert.deepEqual(
+    plan.ops.map((operation) => operation.op),
+    [
+      "defineAnimatedMesh",
+      "defineAnimatedMesh",
+      "createAnimatedMeshInstance",
+      "createAnimatedMeshInstance",
+    ],
+  );
+  assert.deepEqual(
+    instances.map((instance) => [
+      instance.asset,
+      instance.playback?.kind === "play" ? instance.playback.clip : null,
+    ]),
+    [
+      ["mesh-animation/bay-rusher", "idle"],
+      ["mesh-animation/arc-warden", "attack"],
+    ],
+  );
+  plan.commit();
+
+  const moving = adapter.apply({
+    ...initialState,
+    presentation: {
+      animationStates: [
+        { entity: 4, posture: "moving" as const },
+        { entity: 5, posture: "attacking" as const },
+      ],
+      cues: [],
+    },
+  });
+  assert.equal(selectedPlaybackClip(moving.ops, 4), "run");
+  moving.commit();
+
+  const hit = adapter.apply({
+    ...initialState,
+    presentation: {
+      animationStates: [
+        { entity: 4, posture: "moving" as const },
+        { entity: 5, posture: "attacking" as const },
+      ],
+      cues: [
+        {
+          kind: "damage" as const,
+          attacker: 1,
+          target: 4,
+          amount: 20,
+          remaining: 80,
+        },
+      ],
+    },
+  });
+  assert.equal(selectedPlaybackClip(hit.ops, 4), "hit");
+  hit.commit();
+
+  const defeated = adapter.apply({
+    ...initialState,
+    presentation: {
+      animationStates: [
+        { entity: 4, posture: "defeated" as const },
+        { entity: 5, posture: "attacking" as const },
+      ],
+      cues: [],
+    },
+  });
+  assert.equal(selectedPlaybackClip(defeated.ops, 4), "death");
 });
 
 test("collecting a pickup destroys only its retained entity handle", () => {
@@ -337,7 +501,7 @@ test("collecting a pickup destroys only its retained entity handle", () => {
   const door = {
     id: 3,
     name: "exit",
-    asset: "mesh/bay-rusher",
+    asset: "mesh/prop-kit/security-door",
     translation: [0, 0, 8] as const,
     visible: true,
     visualState: "default" as const,
@@ -345,15 +509,15 @@ test("collecting a pickup destroys only its retained entity handle", () => {
   const pickup = {
     id: 22,
     name: "scatter-shell-cache",
-    asset: "mesh/arc-warden",
+    asset: "mesh/prop-kit/scatter-shells",
     translation: [4.5, 1.5, 2.5] as const,
     visible: true,
     visualState: "default" as const,
   };
-  const created = adapter.apply(state([door, pickup]));
+  const created = adapter.apply(serializedState([door, pickup]));
   created.commit();
 
-  const collected = adapter.apply(state([door]));
+  const collected = adapter.apply(serializedState([door]));
   assert.deepEqual(
     collected.ops.map((operation) => [
       operation.op,
@@ -585,6 +749,30 @@ test("demo-owned beacon state changes retained Three material without a generic 
   };
   const standby = {
     ...serializedState([beacon]),
+    visualBindings: [
+      {
+        entity: 7,
+        binding: {
+          version: 1 as const,
+          states: [
+            {
+              state: "standby" as const,
+              kind: "material" as const,
+              textureTint: [1, 0.78, 0.48, 1] as const,
+              emissionColor: [0.75, 0.28, 0.05] as const,
+              emissionIntensity: 0.12,
+            },
+            {
+              state: "active" as const,
+              kind: "material" as const,
+              textureTint: [0.62, 1, 0.82, 1] as const,
+              emissionColor: [0.12, 0.82, 0.52] as const,
+              emissionIntensity: 0.35,
+            },
+          ],
+        },
+      },
+    ],
     extractionBeacon: {
       id: 7,
       state: "standby" as const,
@@ -633,7 +821,7 @@ test("rejected create update destroy and mesh plans remain retryable until commi
   const original = {
     id: 3,
     name: "exit",
-    asset: "mesh/bay-rusher",
+    asset: "mesh/player-marker",
     translation: [0, 0, 8] as const,
     visible: true,
     visualState: "default" as const,

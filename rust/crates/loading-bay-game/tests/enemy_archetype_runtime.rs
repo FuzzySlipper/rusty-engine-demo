@@ -59,7 +59,7 @@ fn authored_archetypes_stay_dormant_until_the_bounded_encounter_activates() {
             .unwrap()
             .asset
             .as_str(),
-        "mesh/bay-rusher"
+        "mesh-animation/bay-rusher"
     );
     assert_eq!(
         runtime
@@ -71,7 +71,7 @@ fn authored_archetypes_stay_dormant_until_the_bounded_encounter_activates() {
             .unwrap()
             .asset
             .as_str(),
-        "mesh/arc-warden"
+        "mesh-animation/arc-warden"
     );
     assert_eq!(
         runtime.session().enemy_drop(MELEE).unwrap().state,

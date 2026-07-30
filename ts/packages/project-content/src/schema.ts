@@ -15,7 +15,50 @@ export interface BoundsDefinition {
 export interface RenderableDefinition {
   readonly asset: string;
   readonly visible: boolean;
+  readonly initialClip?: string;
+  readonly visualBinding?: VisualBindingDefinition;
 }
+
+export type VisualStateDefinition =
+  | "default"
+  | "open"
+  | "closed"
+  | "active"
+  | "inactive"
+  | "standby"
+  | "available"
+  | "dormant"
+  | "collected"
+  | "cooling"
+  | "completed"
+  | "idle"
+  | "moving"
+  | "alert"
+  | "attacking"
+  | "hit"
+  | "defeated";
+
+export interface VisualBindingDefinition {
+  readonly version: 1;
+  readonly states: readonly VisualBindingStateDefinition[];
+}
+
+export type VisualBindingStateDefinition =
+  | {
+      readonly state: VisualStateDefinition;
+      readonly kind: "material";
+      readonly textureTint: readonly [number, number, number, number];
+      readonly emissionColor: Vec3;
+      readonly emissionIntensity: number;
+    }
+  | {
+      readonly state: VisualStateDefinition;
+      readonly kind: "animation";
+      readonly clip: string;
+      readonly loopMode: "once" | "repeat";
+      readonly speed: number;
+      readonly fadeSeconds: number | null;
+    };
 
 export interface DoorDefinition {
   readonly openTranslation: Vec3;
@@ -420,7 +463,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 22;
+  readonly schemaVersion: 23;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

@@ -14,8 +14,8 @@ use loading_bay_game::{
     project_stored_voxel_objects, AdmittedStoredProject, CombatFact, CombatMissReason, GameEvent,
     GameLoopFact, GameRuntime, LoadingBayGameLoop, NavigationFact, PlayerControlFact,
     ProjectSaveMode, ProjectStore, SaveGameError, SaveGameStore, SaveProjectIdentity, SaveSlotId,
-    SaveSlotSummary, SaveWriteRequest, VoxelEdit, VoxelEditTransaction, VoxelSourceRevision,
-    MAX_PENDING_GAME_LOOP_FACTS,
+    SaveSlotSummary, SaveWriteRequest, StoredAsset, StoredImportSource, StoredProject, VoxelEdit,
+    VoxelEditTransaction, VoxelSourceRevision, MAX_PENDING_GAME_LOOP_FACTS,
 };
 use render_model::RenderFrameDiff;
 use serde::{Deserialize, Serialize};
@@ -787,6 +787,16 @@ fn route(
             let runtime = runtime.lock().expect("runtime lock");
             json_response(200, browser_menu_state(&runtime))
         }
+        ("GET", path) if path.starts_with("/api/animated-mesh/") => {
+            let Some(index) = path
+                .strip_prefix("/api/animated-mesh/")
+                .and_then(|value| value.parse::<usize>().ok())
+            else {
+                return error_json(404, "animated mesh resource not found");
+            };
+            let runtime = runtime.lock().expect("runtime lock");
+            serve_animated_mesh_resource(&runtime, index)
+        }
         ("POST", "/api/voxel-edit") => {
             let request: BrowserVoxelEditRequest = match serde_json::from_slice(body) {
                 Ok(request) => request,
@@ -858,6 +868,78 @@ fn route(
         ("GET", _) | ("HEAD", _) => serve_static(method, path, dist),
         _ => error_json(405, "method not allowed"),
     }
+}
+
+fn serve_animated_mesh_resource(
+    runtime: &BrowserRuntime,
+    index: usize,
+) -> (u16, &'static str, Vec<u8>) {
+    let Some(asset) = browser_animated_mesh_assets(runtime.authored.document())
+        .get(index)
+        .copied()
+    else {
+        return error_json(404, "animated mesh resource not found");
+    };
+    let Some(import) = asset.import.as_ref() else {
+        return error_json(404, "animated mesh has no durable import source");
+    };
+    let StoredImportSource::Project { path } = &import.source else {
+        return error_json(
+            403,
+            "host-local animated mesh sources are not browser-readable",
+        );
+    };
+    let Some(source) = resolve_project_asset_source(&runtime.project_path, Path::new(path)) else {
+        return error_json(404, "animated mesh project source is unavailable");
+    };
+    match fs::read(source) {
+        Ok(bytes) => (200, "model/gltf-binary", bytes),
+        Err(_) => error_json(500, "animated mesh project source could not be read"),
+    }
+}
+
+fn browser_animated_mesh_assets(document: &StoredProject) -> Vec<&StoredAsset> {
+    let referenced_assets = document
+        .scenes
+        .iter()
+        .find(|scene| scene.id == document.entry_scene)
+        .into_iter()
+        .flat_map(|scene| &scene.entities)
+        .filter_map(|entity| entity.renderable.as_ref())
+        .map(|renderable| renderable.asset.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+    document
+        .assets
+        .iter()
+        .filter(|asset| {
+            asset.animated_mesh.is_some() && referenced_assets.contains(asset.id.as_str())
+        })
+        .collect()
+}
+
+fn resolve_project_asset_source(project_file: &Path, source: &Path) -> Option<PathBuf> {
+    if source.is_absolute()
+        || source.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
+    {
+        return None;
+    }
+    for ancestor in project_file.parent()?.ancestors() {
+        let root = ancestor.canonicalize().ok()?;
+        let candidate = root.join(source);
+        if !candidate.is_file() {
+            continue;
+        }
+        let canonical = candidate.canonicalize().ok()?;
+        if canonical.starts_with(&root) {
+            return Some(canonical);
+        }
+    }
+    None
 }
 
 fn drain_game_loop_feedback(
@@ -1248,6 +1330,62 @@ mod tests {
         assert_eq!(
             serde_json::from_slice::<serde_json::Value>(&response.2).unwrap(),
             serde_json::json!({ "project": DEN_PROJECT, "status": "ok" })
+        );
+    }
+
+    #[test]
+    fn state_exposes_only_bounded_serialized_animated_resources_and_visual_bindings() {
+        let runtime = shared_browser_runtime();
+        let value = response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")));
+
+        let animated_meshes = value["animatedMeshes"].as_array().unwrap();
+        assert_eq!(animated_meshes.len(), 2);
+        assert_eq!(
+            animated_meshes
+                .iter()
+                .filter_map(|resource| resource["asset"].as_str())
+                .filter(|asset| matches!(
+                    *asset,
+                    "mesh-animation/arc-warden" | "mesh-animation/bay-rusher"
+                ))
+                .count(),
+            2
+        );
+        assert_eq!(value["visualBindings"].as_array().unwrap().len(), 33);
+        assert!(animated_meshes.iter().all(|resource| {
+            resource["runtimeFormat"] == "glb"
+                && resource["contentHash"]
+                    .as_str()
+                    .is_some_and(|hash| hash.starts_with("sha256:"))
+                && resource["resourceUrl"]
+                    .as_str()
+                    .is_some_and(|url| url.starts_with("/api/animated-mesh/"))
+        }));
+    }
+
+    #[test]
+    fn animated_mesh_route_serves_the_durable_project_source_and_rejects_unknown_indices() {
+        let runtime = shared_browser_runtime();
+        let response = route("GET", "/api/animated-mesh/0", &[], &runtime, Path::new("."));
+        assert_eq!(response.0, 200);
+        assert_eq!(response.1, "model/gltf-binary");
+        assert_eq!(&response.2[..4], b"glTF");
+        assert!(response.2.len() > 300_000);
+
+        let unreferenced = route("GET", "/api/animated-mesh/2", &[], &runtime, Path::new("."));
+        assert_eq!(unreferenced.0, 404);
+
+        let missing = route(
+            "GET",
+            "/api/animated-mesh/99",
+            &[],
+            &runtime,
+            Path::new("."),
+        );
+        assert_eq!(missing.0, 404);
+        assert!(
+            resolve_project_asset_source(&default_project_path(), Path::new("../outside.glb"))
+                .is_none()
         );
     }
 

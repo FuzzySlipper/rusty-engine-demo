@@ -19,7 +19,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 21;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 22;
+const LEGACY_V21_STORED_PROJECT_SCHEMA_VERSION: u32 = 21;
 const LEGACY_V20_STORED_PROJECT_SCHEMA_VERSION: u32 = 20;
 const LEGACY_V19_STORED_PROJECT_SCHEMA_VERSION: u32 = 19;
 const LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION: u32 = 18;
@@ -66,6 +67,10 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => {
+            reject_schema_twenty_two_visual_binding_field(input)?;
+            migrate_v22(decode_legacy_project(input)?)?
+        }
+        LEGACY_V21_STORED_PROJECT_SCHEMA_VERSION => {
             reject_schema_twenty_one_gameplay_proxy_field(input)?;
             migrate_v21(decode_legacy_project(input)?)?
         }
@@ -92,24 +97,8 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
-                    PROJECT_CONTENT_SCHEMA_VERSION,
-                    LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V9_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V10_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V11_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V12_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V13_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V14_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V15_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V16_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V19_STORED_PROJECT_SCHEMA_VERSION,
-                    LEGACY_V20_STORED_PROJECT_SCHEMA_VERSION,
-                    PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
-                    STORED_PROJECT_SCHEMA_VERSION
+                    "supported project schemas are {} through {}; found {actual}",
+                    PROJECT_CONTENT_SCHEMA_VERSION, STORED_PROJECT_SCHEMA_VERSION
                 ),
             ));
         }
@@ -240,10 +229,51 @@ fn migrate_v20(mut legacy: StoredProject) -> Result<StoredProject, StoredProject
 fn migrate_v21(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
+        LEGACY_V21_STORED_PROJECT_SCHEMA_VERSION
+    );
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn migrate_v22(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
     );
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
+}
+
+fn reject_schema_twenty_two_visual_binding_field(input: &str) -> Result<(), StoredProjectError> {
+    let value: serde_json::Value = serde_json::from_str(input).map_err(|error| {
+        StoredProjectError::new(diagnostic_code::DECODE, "$", error.to_string())
+    })?;
+    if value
+        .get("scenes")
+        .and_then(serde_json::Value::as_array)
+        .is_some_and(|scenes| {
+            scenes.iter().any(|scene| {
+                scene
+                    .get("entities")
+                    .and_then(serde_json::Value::as_array)
+                    .is_some_and(|entities| {
+                        entities.iter().any(|entity| {
+                            entity
+                                .get("renderable")
+                                .and_then(serde_json::Value::as_object)
+                                .is_some_and(|renderable| renderable.contains_key("visualBinding"))
+                        })
+                    })
+            })
+        })
+    {
+        return Err(StoredProjectError::new(
+            diagnostic_code::MIGRATION,
+            "scenes[].entities[].renderable.visualBinding",
+            "schema 22 cannot declare visualBinding",
+        ));
+    }
+    Ok(())
 }
 
 fn reject_schema_twenty_one_gameplay_proxy_field(input: &str) -> Result<(), StoredProjectError> {

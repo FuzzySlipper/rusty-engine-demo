@@ -64,7 +64,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     assert_eq!(response["project"]["identity"]["projectId"], "loading-bay");
     assert_eq!(
         response["project"]["inspections"]["catalog"]["entryCount"],
-        91
+        89
     );
     assert_eq!(
         response["project"]["inspections"]["scene"]["nodeCount"],
@@ -158,14 +158,21 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .iter()
             .filter(|operation| operation["op"] == "defineMaterial")
             .count(),
-        53
+        51
     );
     assert_eq!(
         projection_ops
             .iter()
             .filter(|operation| operation["op"] == "defineStaticMesh")
             .count(),
-        40
+        38
+    );
+    assert_eq!(
+        projection_ops
+            .iter()
+            .filter(|operation| operation["op"] == "defineAnimatedMesh")
+            .count(),
+        3
     );
     assert_eq!(
         projection_ops
@@ -923,6 +930,27 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
 #[test]
 fn animated_glb_import_reimport_and_failures_are_atomic() {
     let mut project: Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    for entity in project["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .filter(|entity| {
+            matches!(
+                entity["renderable"]["asset"].as_str(),
+                Some("mesh-animation/arc-warden" | "mesh-animation/bay-rusher")
+            )
+        })
+    {
+        entity["renderable"]["asset"] = "mesh/player-marker".into();
+        entity["renderable"]
+            .as_object_mut()
+            .unwrap()
+            .remove("initialClip");
+        entity["renderable"]
+            .as_object_mut()
+            .unwrap()
+            .remove("visualBinding");
+    }
     project["assets"].as_array_mut().unwrap().retain(|asset| {
         !matches!(
             asset["id"].as_str(),

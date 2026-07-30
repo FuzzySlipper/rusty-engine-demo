@@ -8,7 +8,7 @@
     "build:shell": "nx build loading-bay",
     "build:studio": "nx build loading-bay-studio",
     "certify:performance": "node scripts/certify-headed-performance.mjs",
-    "check:content": "pnpm --filter @rusty-engine-demo/project-content check && node scripts/check-canonical-projects.mjs && node scripts/check-brush-kit.mjs && node scripts/check-brush-level.mjs && node scripts/check-prop-kit.mjs && node scripts/check-actor-kit.mjs",
+    "check:content": "pnpm --filter @rusty-engine-demo/project-content check && node scripts/check-canonical-projects.mjs && node scripts/check-brush-kit.mjs && node scripts/check-brush-level.mjs && node scripts/check-prop-kit.mjs && node scripts/check-actor-kit.mjs && node scripts/check-visual-bindings.mjs",
     "check:actor-kit": "node scripts/check-actor-kit.mjs",
     "check:brush-kit": "node scripts/check-brush-kit.mjs",
     "check:brush-level": "node scripts/check-brush-level.mjs",

@@ -127,6 +127,10 @@ The production actor kit is likewise reproducible from Kenney's CC0 Animated Cha
 pack. Its Blender 5.1.2 recipe, exact six-clip GLB hashes, embedded skins, copied notice, Rust-owned
 Studio import, and shared-renderer lifecycle proof are recorded in
 [docs/source-provenance.md](docs/source-provenance.md#vc4-production-animated-actor-source-kit).
+The canonical schema-23 project binds those actors and the industrial prop kit to Rust-owned
+gameplay posture/state through versioned renderer-only visual bindings; the ownership and
+full-product proof are documented in
+[docs/visual-content-pipeline.md](docs/visual-content-pipeline.md#vc8-serialized-gameplay-visual-bindings).
 
 The repository's one active Rusty Engine revision is declared in
 [`engine-source.json`](engine-source.json). Check it with `./scripts/engine-revision check`, preview

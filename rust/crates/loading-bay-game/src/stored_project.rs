@@ -22,7 +22,9 @@ use crate::combat::{
 };
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 22;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 23;
+pub const STORED_VISUAL_BINDING_VERSION: u32 = 1;
+pub const MAX_STORED_VISUAL_BINDING_STATES: usize = 16;
 pub const MAX_PROJECT_VOXEL_OBJECTS: u64 = 256;
 pub const MAX_PROJECT_VOXEL_OBJECT_FRAMES: u64 = 8_193;
 pub const MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS: u64 = 65_536;
@@ -455,13 +457,80 @@ pub struct StoredCollision {
     pub static_collider: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredRenderable {
     pub asset: String,
     pub visible: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub initial_clip: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub visual_binding: Option<StoredVisualBinding>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredVisualBinding {
+    pub version: u32,
+    pub states: Vec<StoredVisualBindingState>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StoredVisualBindingState {
+    pub state: StoredVisualState,
+    #[serde(flatten)]
+    pub presentation: StoredVisualPresentation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StoredVisualState {
+    Default,
+    Open,
+    Closed,
+    Active,
+    Inactive,
+    Standby,
+    Available,
+    Dormant,
+    Collected,
+    Cooling,
+    Completed,
+    Idle,
+    Moving,
+    Alert,
+    Attacking,
+    Hit,
+    Defeated,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum StoredVisualPresentation {
+    Material {
+        texture_tint: [f32; 4],
+        emission_color: [f32; 3],
+        emission_intensity: f32,
+    },
+    Animation {
+        clip: String,
+        loop_mode: StoredVisualAnimationLoopMode,
+        speed: f32,
+        fade_seconds: Option<f32>,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StoredVisualAnimationLoopMode {
+    Once,
+    Repeat,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1359,6 +1428,119 @@ fn validate_stored_import(
     Ok(())
 }
 
+fn validate_visual_binding(
+    binding: &StoredVisualBinding,
+    asset: &StoredAsset,
+    path: &str,
+) -> Result<(), StoredProjectError> {
+    if binding.version != STORED_VISUAL_BINDING_VERSION {
+        return Err(failure(
+            diagnostic_code::INVALID_COMPONENT,
+            format!("{path}.version"),
+            format!(
+                "visual binding version must be {}, found {}",
+                STORED_VISUAL_BINDING_VERSION, binding.version
+            ),
+        ));
+    }
+    if binding.states.is_empty() || binding.states.len() > MAX_STORED_VISUAL_BINDING_STATES {
+        return Err(failure(
+            diagnostic_code::INVALID_COMPONENT,
+            format!("{path}.states"),
+            format!("visual binding must declare 1..={MAX_STORED_VISUAL_BINDING_STATES} states"),
+        ));
+    }
+    let mut states = BTreeSet::new();
+    for (index, state) in binding.states.iter().enumerate() {
+        let state_path = format!("{path}.states[{index}]");
+        if !states.insert(state.state) {
+            return Err(failure(
+                diagnostic_code::INVALID_COMPONENT,
+                format!("{state_path}.state"),
+                "visual binding states must be unique",
+            ));
+        }
+        match (
+            &state.presentation,
+            &asset.animated_mesh,
+            &asset.static_mesh,
+        ) {
+            (
+                StoredVisualPresentation::Animation {
+                    clip,
+                    speed,
+                    fade_seconds,
+                    ..
+                },
+                Some(animated),
+                None,
+            ) => {
+                if !animated.clips.iter().any(|candidate| candidate.id == *clip) {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{state_path}.clip"),
+                        format!("animated mesh has no clip `{clip}`"),
+                    ));
+                }
+                if !speed.is_finite() || *speed <= 0.0 {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{state_path}.speed"),
+                        "animation speed must be finite and greater than zero",
+                    ));
+                }
+                if fade_seconds
+                    .is_some_and(|fade| !fade.is_finite() || !(0.0..=5.0).contains(&fade))
+                {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        format!("{state_path}.fadeSeconds"),
+                        "animation fade must be finite and within 0..=5 seconds",
+                    ));
+                }
+            }
+            (
+                StoredVisualPresentation::Material {
+                    texture_tint,
+                    emission_color,
+                    emission_intensity,
+                },
+                None,
+                Some(_),
+            ) => {
+                if !texture_tint
+                    .iter()
+                    .chain(emission_color)
+                    .all(|value| value.is_finite() && (0.0..=1.0).contains(value))
+                    || !emission_intensity.is_finite()
+                    || !(0.0..=16.0).contains(emission_intensity)
+                {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        state_path,
+                        "material visual parameters must be finite and within renderer bounds",
+                    ));
+                }
+            }
+            (StoredVisualPresentation::Animation { .. }, _, _) => {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    state_path,
+                    "animation visual states require an animated mesh",
+                ));
+            }
+            (StoredVisualPresentation::Material { .. }, _, _) => {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    state_path,
+                    "material visual states require a static mesh",
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn validate_scene_entities(
     scene: &StoredScene,
     scene_index: usize,
@@ -1461,6 +1643,13 @@ fn validate_scene_entities(
                     format!("{root}.renderable.asset"),
                     "renderable must reference a static or animated mesh asset",
                 ));
+            }
+            if let Some(binding) = &renderable.visual_binding {
+                validate_visual_binding(
+                    binding,
+                    asset,
+                    &format!("{root}.renderable.visualBinding"),
+                )?;
             }
         }
         if let Some(light) = entity.light {

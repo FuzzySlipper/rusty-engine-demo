@@ -140,6 +140,8 @@ const resources = {
   lights: [],
   renderMaterials: [],
   staticMeshes: [],
+  animatedMeshes: [],
+  visualBindings: [],
   generatedEnvironment: null,
 } as const;
 
@@ -395,6 +397,8 @@ test("dynamic deltas patch only changed keyed collection members", () => {
       name: "bulkhead",
       asset: "mesh/security-door",
       translation: [3, 4, 5] as const,
+      rotation: [0, 0, 0, 1] as const,
+      scale: [1, 1, 1] as const,
       visible: true,
       visualState: "closed" as const,
     },
@@ -403,6 +407,8 @@ test("dynamic deltas patch only changed keyed collection members", () => {
       name: "cargo-loader",
       asset: "enemy/cargo-loader",
       translation: [6, 7, 8] as const,
+      rotation: [0, 0, 0, 1] as const,
+      scale: [1, 1, 1] as const,
       visible: true,
       visualState: "default" as const,
     },
