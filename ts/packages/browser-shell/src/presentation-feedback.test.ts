@@ -418,6 +418,20 @@ test("flash intensity scales disposable particles without suppressing readable b
 
 test("renderer telemetry uses the complete shared submission without a downstream clock", () => {
   const state = feedbackState();
+  const pacing = {
+    schemaVersion: 1 as const,
+    mode: "timerQuery" as const,
+    state: "waiting" as const,
+    rendererClass: "accelerated" as const,
+    timerDurationMs: 3.25,
+    completionAgeMs: 3.5,
+    completionAllowanceMs: 17,
+    effectiveDurationMs: 3.5,
+    targetDutyFraction: 0.5,
+    admittedAtMs: 920,
+    admissionObservedAtMs: 920.25,
+    observedAtMs: 903,
+  };
   const submission = {
     schemaVersion: 1 as const,
     renderSequence: 42,
@@ -468,12 +482,16 @@ test("renderer telemetry uses the complete shared submission without a downstrea
   };
 
   const sample = captureRendererTelemetry(
-    { submission: () => submission },
+    {
+      automaticSubmissionPacing: () => pacing,
+      submission: () => submission,
+    },
     state,
     3,
   );
 
   assert.equal(sample.timing, submission);
+  assert.equal(sample.pacing, pacing);
   assert.equal(sample.sourceTick, state.tick);
   assert.deepEqual(sample.counters, {
     entityCount: state.projection.length,

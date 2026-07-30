@@ -1,5 +1,11 @@
 import { spawn, execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -205,6 +211,7 @@ try {
   });
 
   const rendererSamples = [];
+  const automaticPacingSamples = [];
   let lastRendererSampleSequence = -1;
   let mouseStep = 0;
   const inputStartedAt = Date.now();
@@ -225,6 +232,9 @@ try {
           frameIntervalMs: Number(data.rendererFrameIntervalMilliseconds),
           rendererSampleSequence: Number(data.rendererSampleSequence),
           timingSource: data.rendererTimingSource ?? "",
+          automaticPacing: data.rendererAutomaticPacingSample
+            ? JSON.parse(data.rendererAutomaticPacingSample)
+            : null,
           rendererStatistics: data.rendererStatisticsSample
             ? JSON.parse(data.rendererStatisticsSample)
             : null,
@@ -240,6 +250,9 @@ try {
       ].every(Number.isFinite)
     ) {
       rendererSamples.push(sample);
+      if (sample.automaticPacing !== null) {
+        automaticPacingSamples.push(sample.automaticPacing);
+      }
       lastRendererSampleSequence = sample.rendererSampleSequence;
     }
     await delay(16);
@@ -318,6 +331,9 @@ try {
         ...new Set(rendererSamples.map((sample) => sample.timingSource)),
       ],
       rendererStatistics: rendererSamples.at(-1)?.rendererStatistics ?? null,
+      automaticSubmissionPacing: summarizeAutomaticPacing(
+        automaticPacingSamples,
+      ),
     },
     build: existsSync(buildStatsPath)
       ? analyzeBuildStats(JSON.parse(readFileSync(buildStatsPath, "utf8")))
@@ -346,7 +362,12 @@ try {
       failure !== null &&
       !failure.startsWith("native desktop packaging is not present"),
   );
-  console.log(JSON.stringify(report, null, 2));
+  const reportJson = JSON.stringify(report, null, 2);
+  console.log(reportJson);
+  const outputPath = process.env.RUSTY_ENGINE_DEMO_PROFILE_OUTPUT;
+  if (outputPath !== undefined && outputPath.length > 0) {
+    writeFileSync(outputPath, `${reportJson}\n`, "utf8");
+  }
   if (failures.length > 0) {
     throw new Error(
       `desktop-representative profile failed: ${failures.join("; ")}`,
@@ -607,6 +628,27 @@ function distribution(values) {
     p95: percentile(sorted, 0.95),
     p99: percentile(sorted, 0.99),
     max: round(sorted.at(-1)),
+  };
+}
+
+function summarizeAutomaticPacing(samples) {
+  const available = (key) =>
+    samples
+      .map((sample) => sample[key])
+      .filter((value) => Number.isFinite(value));
+  return {
+    sampleCount: samples.length,
+    rendererClasses: [
+      ...new Set(samples.map((sample) => sample.rendererClass)),
+    ],
+    modes: [...new Set(samples.map((sample) => sample.mode))],
+    states: [...new Set(samples.map((sample) => sample.state))],
+    timerDurationMs: distribution(available("timerDurationMs")),
+    completionAgeMs: distribution(available("completionAgeMs")),
+    completionAllowanceMs: distribution(available("completionAllowanceMs")),
+    effectiveDurationMs: distribution(available("effectiveDurationMs")),
+    targetDutyFraction: distribution(available("targetDutyFraction")),
+    latest: samples.at(-1) ?? null,
   };
 }
 

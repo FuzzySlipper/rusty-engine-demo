@@ -14,6 +14,7 @@ import {
   RendererParticleHost,
   RendererPresentationHostSet,
   RendererTelemetryOverlayHost,
+  type RendererSurfaceAutomaticSubmissionPacingSample,
   type RendererSurface,
   type RendererSurfaceSubmissionSample,
   type RendererSurfaceTelemetrySample,
@@ -85,14 +86,16 @@ export function shouldInspectViewmodelProjection(
 }
 
 export function captureRendererTelemetry(
-  surface: Pick<RendererSurface, "submission">,
+  surface: Pick<RendererSurface, "automaticSubmissionPacing" | "submission">,
   state: RuntimeBrowserState,
   renderDiffCount: number,
 ): RendererSurfaceTelemetrySample & {
+  readonly pacing: RendererSurfaceAutomaticSubmissionPacingSample;
   readonly timing: RendererSurfaceSubmissionSample;
 } {
   return {
     sourceTick: state.tick,
+    pacing: surface.automaticSubmissionPacing(),
     timing: surface.submission(),
     counters: {
       entityCount: state.projection.length,
@@ -406,7 +409,7 @@ export class BrowserPresentationFeedback {
       telemetry,
       telemetry.timing.sourceTimeMs,
     );
-    this.#recordTelemetryEvidence(telemetry.timing, snapshot);
+    this.#recordTelemetryEvidence(telemetry.timing, telemetry.pacing, snapshot);
     this.#updateActiveEffects();
     this.#layer.dataset.lastCueCount = String(projected.cueCount);
     this.#layer.dataset.sharedPresentationApplied = String(receipt.applied);
@@ -651,6 +654,7 @@ export class BrowserPresentationFeedback {
 
   #recordTelemetryEvidence(
     timing: RendererSurfaceSubmissionSample,
+    pacing: RendererSurfaceAutomaticSubmissionPacingSample,
     snapshot: ReturnType<RendererLiveTelemetryCollector["readSnapshot"]>,
   ): void {
     this.#telemetryLayer.dataset.rendererSampleSequence = String(
@@ -673,6 +677,8 @@ export class BrowserPresentationFeedback {
     this.#telemetryLayer.dataset.rendererStatisticsSample = JSON.stringify(
       timing.statistics,
     );
+    this.#telemetryLayer.dataset.rendererAutomaticPacingSample =
+      JSON.stringify(pacing);
     this.#telemetryLayer.dataset.rendererEntityCount = snapshotMetric(
       snapshot,
       "entityCount",
@@ -698,6 +704,7 @@ export class BrowserPresentationFeedback {
       "rendererBackendSubmissionMilliseconds",
       "rendererFrameHistoryMilliseconds",
       "rendererStatisticsSample",
+      "rendererAutomaticPacingSample",
       "rendererEntityCount",
       "rendererResidentChunkCount",
       "rendererRenderDiffCount",
