@@ -24,32 +24,32 @@ importers:
         specifier: ~21.2.0
         version: 21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(@angular/platform-browser@21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@rusty-engine/render-contracts':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:render/packages/render-contracts
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:render/packages/render-contracts
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts
       '@rusty-engine/render-projection':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:render/packages/render-projection
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:render/packages/render-projection
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)
       '@rusty-engine/renderer-host':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:render/packages/renderer-host
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-host(846f1b51ae936d3e69cd498156c18a7e)
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:render/packages/renderer-host
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-host(f38069ce94e52e52711ad9882d89b013)
       '@rusty-engine/renderer-three':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:render/packages/renderer-three
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-three(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)(@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts))
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:render/packages/renderer-three
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-three(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)(@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts))
       '@rusty-engine/studio-adapter-client':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:studio/libs/adapter-client
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:studio/libs/adapter-client
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)
       '@rusty-engine/studio-editor-shell':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:studio/libs/editor-shell
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/editor-shell(485e91d902b16c3ab4565139d2912e05)
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:studio/libs/editor-shell
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/editor-shell(65526b922c439d3103bb224271e04b29)
       '@rusty-engine/studio-user-settings':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:studio/libs/user-settings
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/user-settings
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:studio/libs/user-settings
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/user-settings
       '@rusty-engine/studio-viewport':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:studio/libs/viewport
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/viewport(a574bd6299de51d1811a4a5bb0549a6f)
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:studio/libs/viewport
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/viewport(84e0d13b778d06ba357cf1fed517c5d1)
       '@rusty-engine/studio-voxel-editor':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:studio/libs/voxel-editor
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/voxel-editor(@angular/compiler@21.2.18)(@angular/platform-browser@21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)))(@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts))(rxjs@7.8.2)
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:studio/libs/voxel-editor
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/voxel-editor(@angular/compiler@21.2.18)(@angular/platform-browser@21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)))(@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts))(rxjs@7.8.2)
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -115,17 +115,17 @@ importers:
   ts/packages/browser-shell:
     dependencies:
       '@rusty-engine/render-contracts':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:render/packages/render-contracts
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:render/packages/render-contracts
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts
       '@rusty-engine/render-projection':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:render/packages/render-projection
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:render/packages/render-projection
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)
       '@rusty-engine/renderer-host':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:render/packages/renderer-host
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-host(846f1b51ae936d3e69cd498156c18a7e)
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:render/packages/renderer-host
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-host(f38069ce94e52e52711ad9882d89b013)
       '@rusty-engine/renderer-three':
-        specifier: github:FuzzySlipper/rusty-engine#c903c1c86761386087acd7d7d814a3da5cde116b&path:render/packages/renderer-three
-        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-three(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)(@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts))
+        specifier: github:FuzzySlipper/rusty-engine#e97944c8309018f595222edb7bd90a620c32cedf&path:render/packages/renderer-three
+        version: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-three(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)(@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts))
 
   ts/packages/project-content: {}
 
@@ -2294,39 +2294,39 @@ packages:
   '@rspack/lite-tapable@1.1.2':
     resolution: {integrity: sha512-1OnyWChLGE46YzWyjlmYJssOu/Y0STAnnr2ueKPqDCYTf63GJMs0mxNnCul4dNiVqHYPKv3/fxrTY3IpqoVwZQ==}
 
-  '@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts':
-    resolution: {gitHosted: true, integrity: sha512-hI2l+ZjU0NavVP2nt9h8IEl+8ij6nvzcM1QqbKHSvLCjY94mce5xhb5vP3QIqSO7/8iVr2bZQi4uoRZHq4Qzlg==, path: render/packages/render-contracts, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b}
+  '@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts':
+    resolution: {gitHosted: true, integrity: sha512-g+1EU1JAJHCbzUbB0aB0FCE7EiGCpMs6FFhUnm5JX5LFTSO2jOkHebz0RMPVuTmT3yzn6i2WeSG74aZT/bJ90w==, path: render/packages/render-contracts, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf}
     version: 0.1.0
 
-  '@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection':
-    resolution: {gitHosted: true, integrity: sha512-hI2l+ZjU0NavVP2nt9h8IEl+8ij6nvzcM1QqbKHSvLCjY94mce5xhb5vP3QIqSO7/8iVr2bZQi4uoRZHq4Qzlg==, path: render/packages/render-projection, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b}
+  '@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection':
+    resolution: {gitHosted: true, integrity: sha512-g+1EU1JAJHCbzUbB0aB0FCE7EiGCpMs6FFhUnm5JX5LFTSO2jOkHebz0RMPVuTmT3yzn6i2WeSG74aZT/bJ90w==, path: render/packages/render-projection, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf}
     version: 0.1.0
     peerDependencies:
       '@rusty-engine/render-contracts': 0.1.0
 
-  '@rusty-engine/renderer-host@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-host':
-    resolution: {gitHosted: true, integrity: sha512-hI2l+ZjU0NavVP2nt9h8IEl+8ij6nvzcM1QqbKHSvLCjY94mce5xhb5vP3QIqSO7/8iVr2bZQi4uoRZHq4Qzlg==, path: render/packages/renderer-host, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b}
+  '@rusty-engine/renderer-host@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-host':
+    resolution: {gitHosted: true, integrity: sha512-g+1EU1JAJHCbzUbB0aB0FCE7EiGCpMs6FFhUnm5JX5LFTSO2jOkHebz0RMPVuTmT3yzn6i2WeSG74aZT/bJ90w==, path: render/packages/renderer-host, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf}
     version: 0.1.0
     peerDependencies:
       '@rusty-engine/render-contracts': 0.1.0
       '@rusty-engine/render-projection': 0.1.0
       '@rusty-engine/renderer-three': 0.1.0
 
-  '@rusty-engine/renderer-three@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-three':
-    resolution: {gitHosted: true, integrity: sha512-hI2l+ZjU0NavVP2nt9h8IEl+8ij6nvzcM1QqbKHSvLCjY94mce5xhb5vP3QIqSO7/8iVr2bZQi4uoRZHq4Qzlg==, path: render/packages/renderer-three, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b}
+  '@rusty-engine/renderer-three@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-three':
+    resolution: {gitHosted: true, integrity: sha512-g+1EU1JAJHCbzUbB0aB0FCE7EiGCpMs6FFhUnm5JX5LFTSO2jOkHebz0RMPVuTmT3yzn6i2WeSG74aZT/bJ90w==, path: render/packages/renderer-three, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf}
     version: 0.1.0
     peerDependencies:
       '@rusty-engine/render-contracts': 0.1.0
       '@rusty-engine/render-projection': 0.1.0
 
-  '@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/adapter-client':
-    resolution: {gitHosted: true, integrity: sha512-hI2l+ZjU0NavVP2nt9h8IEl+8ij6nvzcM1QqbKHSvLCjY94mce5xhb5vP3QIqSO7/8iVr2bZQi4uoRZHq4Qzlg==, path: studio/libs/adapter-client, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b}
+  '@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/adapter-client':
+    resolution: {gitHosted: true, integrity: sha512-g+1EU1JAJHCbzUbB0aB0FCE7EiGCpMs6FFhUnm5JX5LFTSO2jOkHebz0RMPVuTmT3yzn6i2WeSG74aZT/bJ90w==, path: studio/libs/adapter-client, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf}
     version: 0.1.0
     peerDependencies:
       '@rusty-engine/render-contracts': 0.1.0
 
-  '@rusty-engine/studio-editor-shell@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/editor-shell':
-    resolution: {gitHosted: true, integrity: sha512-hI2l+ZjU0NavVP2nt9h8IEl+8ij6nvzcM1QqbKHSvLCjY94mce5xhb5vP3QIqSO7/8iVr2bZQi4uoRZHq4Qzlg==, path: studio/libs/editor-shell, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b}
+  '@rusty-engine/studio-editor-shell@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/editor-shell':
+    resolution: {gitHosted: true, integrity: sha512-g+1EU1JAJHCbzUbB0aB0FCE7EiGCpMs6FFhUnm5JX5LFTSO2jOkHebz0RMPVuTmT3yzn6i2WeSG74aZT/bJ90w==, path: studio/libs/editor-shell, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf}
     version: 0.1.0
     peerDependencies:
       '@rusty-engine/render-contracts': 0.1.0
@@ -2335,12 +2335,12 @@ packages:
       '@rusty-engine/studio-viewport': 0.1.0
       '@rusty-engine/studio-voxel-editor': 0.1.0
 
-  '@rusty-engine/studio-user-settings@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/user-settings':
-    resolution: {gitHosted: true, integrity: sha512-hI2l+ZjU0NavVP2nt9h8IEl+8ij6nvzcM1QqbKHSvLCjY94mce5xhb5vP3QIqSO7/8iVr2bZQi4uoRZHq4Qzlg==, path: studio/libs/user-settings, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b}
+  '@rusty-engine/studio-user-settings@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/user-settings':
+    resolution: {gitHosted: true, integrity: sha512-g+1EU1JAJHCbzUbB0aB0FCE7EiGCpMs6FFhUnm5JX5LFTSO2jOkHebz0RMPVuTmT3yzn6i2WeSG74aZT/bJ90w==, path: studio/libs/user-settings, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf}
     version: 0.1.0
 
-  '@rusty-engine/studio-viewport@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/viewport':
-    resolution: {gitHosted: true, integrity: sha512-hI2l+ZjU0NavVP2nt9h8IEl+8ij6nvzcM1QqbKHSvLCjY94mce5xhb5vP3QIqSO7/8iVr2bZQi4uoRZHq4Qzlg==, path: studio/libs/viewport, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b}
+  '@rusty-engine/studio-viewport@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/viewport':
+    resolution: {gitHosted: true, integrity: sha512-g+1EU1JAJHCbzUbB0aB0FCE7EiGCpMs6FFhUnm5JX5LFTSO2jOkHebz0RMPVuTmT3yzn6i2WeSG74aZT/bJ90w==, path: studio/libs/viewport, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf}
     version: 0.1.0
     peerDependencies:
       '@rusty-engine/render-contracts': 0.1.0
@@ -2348,8 +2348,8 @@ packages:
       '@rusty-engine/renderer-host': 0.1.0
       '@rusty-engine/renderer-three': 0.1.0
 
-  '@rusty-engine/studio-voxel-editor@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/voxel-editor':
-    resolution: {gitHosted: true, integrity: sha512-hI2l+ZjU0NavVP2nt9h8IEl+8ij6nvzcM1QqbKHSvLCjY94mce5xhb5vP3QIqSO7/8iVr2bZQi4uoRZHq4Qzlg==, path: studio/libs/voxel-editor, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b}
+  '@rusty-engine/studio-voxel-editor@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/voxel-editor':
+    resolution: {gitHosted: true, integrity: sha512-g+1EU1JAJHCbzUbB0aB0FCE7EiGCpMs6FFhUnm5JX5LFTSO2jOkHebz0RMPVuTmT3yzn6i2WeSG74aZT/bJ90w==, path: studio/libs/voxel-editor, tarball: https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf}
     version: 0.1.0
     peerDependencies:
       '@rusty-engine/studio-adapter-client': 0.1.0
@@ -8117,65 +8117,65 @@ snapshots:
 
   '@rspack/lite-tapable@1.1.2': {}
 
-  '@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts': {}
+  '@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts': {}
 
-  '@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)':
+  '@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)':
     dependencies:
-      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts
+      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts
 
-  '@rusty-engine/renderer-host@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-host(846f1b51ae936d3e69cd498156c18a7e)':
+  '@rusty-engine/renderer-host@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-host(f38069ce94e52e52711ad9882d89b013)':
     dependencies:
-      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts
-      '@rusty-engine/render-projection': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)
-      '@rusty-engine/renderer-three': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-three(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)(@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts))
+      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts
+      '@rusty-engine/render-projection': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)
+      '@rusty-engine/renderer-three': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-three(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)(@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts))
 
-  '@rusty-engine/renderer-three@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-three(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)(@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts))':
+  '@rusty-engine/renderer-three@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-three(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)(@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts))':
     dependencies:
-      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts
-      '@rusty-engine/render-projection': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)
+      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts
+      '@rusty-engine/render-projection': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)
       '@types/three': 0.184.1
       three: 0.184.0
 
-  '@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)':
+  '@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)':
     dependencies:
-      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts
+      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts
 
-  '@rusty-engine/studio-editor-shell@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/editor-shell(485e91d902b16c3ab4565139d2912e05)':
+  '@rusty-engine/studio-editor-shell@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/editor-shell(65526b922c439d3103bb224271e04b29)':
     dependencies:
       '@angular/common': 21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2)
       '@angular/core': 21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)
       '@angular/forms': 21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(@angular/platform-browser@21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)))(rxjs@7.8.2)
-      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts
-      '@rusty-engine/studio-adapter-client': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)
-      '@rusty-engine/studio-user-settings': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/user-settings
-      '@rusty-engine/studio-viewport': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/viewport(a574bd6299de51d1811a4a5bb0549a6f)
-      '@rusty-engine/studio-voxel-editor': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/voxel-editor(@angular/compiler@21.2.18)(@angular/platform-browser@21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)))(@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts))(rxjs@7.8.2)
+      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts
+      '@rusty-engine/studio-adapter-client': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)
+      '@rusty-engine/studio-user-settings': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/user-settings
+      '@rusty-engine/studio-viewport': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/viewport(84e0d13b778d06ba357cf1fed517c5d1)
+      '@rusty-engine/studio-voxel-editor': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/voxel-editor(@angular/compiler@21.2.18)(@angular/platform-browser@21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)))(@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts))(rxjs@7.8.2)
     transitivePeerDependencies:
       - '@angular/compiler'
       - '@angular/platform-browser'
       - rxjs
       - zone.js
 
-  '@rusty-engine/studio-user-settings@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/user-settings': {}
+  '@rusty-engine/studio-user-settings@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/user-settings': {}
 
-  '@rusty-engine/studio-viewport@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/viewport(a574bd6299de51d1811a4a5bb0549a6f)':
+  '@rusty-engine/studio-viewport@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/viewport(84e0d13b778d06ba357cf1fed517c5d1)':
     dependencies:
       '@angular/core': 21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)
-      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts
-      '@rusty-engine/render-projection': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)
-      '@rusty-engine/renderer-host': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-host(846f1b51ae936d3e69cd498156c18a7e)
-      '@rusty-engine/renderer-three': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/renderer-three(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)(@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts))
+      '@rusty-engine/render-contracts': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts
+      '@rusty-engine/render-projection': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)
+      '@rusty-engine/renderer-host': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-host(f38069ce94e52e52711ad9882d89b013)
+      '@rusty-engine/renderer-three': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/renderer-three(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)(@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-projection(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts))
     transitivePeerDependencies:
       - '@angular/compiler'
       - rxjs
       - zone.js
 
-  '@rusty-engine/studio-voxel-editor@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/voxel-editor(@angular/compiler@21.2.18)(@angular/platform-browser@21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)))(@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts))(rxjs@7.8.2)':
+  '@rusty-engine/studio-voxel-editor@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/voxel-editor(@angular/compiler@21.2.18)(@angular/platform-browser@21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)))(@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts))(rxjs@7.8.2)':
     dependencies:
       '@angular/common': 21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2)
       '@angular/core': 21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)
       '@angular/forms': 21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(@angular/platform-browser@21.2.18(@angular/common@21.2.18(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.18(@angular/compiler@21.2.18)(rxjs@7.8.2)))(rxjs@7.8.2)
-      '@rusty-engine/studio-adapter-client': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/c903c1c86761386087acd7d7d814a3da5cde116b#path:render/packages/render-contracts)
+      '@rusty-engine/studio-adapter-client': https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:studio/libs/adapter-client(@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/e97944c8309018f595222edb7bd90a620c32cedf#path:render/packages/render-contracts)
     transitivePeerDependencies:
       - '@angular/compiler'
       - '@angular/platform-browser'

@@ -1018,7 +1018,7 @@ async function runHostReplacementContinueProof(project) {
     }
   } finally {
     await stopHost(running.host);
-    rmSync(profileDirectory, { recursive: true, force: true });
+    removeChromiumProfile(profileDirectory);
   }
 }
 
@@ -2481,7 +2481,7 @@ async function runChromiumSmoke(
     client?.close();
     await terminateProcess(browser);
     if (ownsProfile) {
-      rmSync(profileDirectory, { recursive: true, force: true });
+      removeChromiumProfile(profileDirectory);
     }
   }
 }
@@ -2607,6 +2607,17 @@ async function terminateProcess(process) {
     process.kill("SIGKILL");
     await onceExit(process);
   }
+}
+
+function removeChromiumProfile(profileDirectory) {
+  // Chromium descendants can briefly finish writing profile state after the
+  // root browser process exits. Let recursive removal retry that bounded race.
+  rmSync(profileDirectory, {
+    recursive: true,
+    force: true,
+    maxRetries: 12,
+    retryDelay: 50,
+  });
 }
 
 function delay(milliseconds) {

@@ -392,11 +392,15 @@ shared `RendererSurface`. Its initial complete submission reported 123 draws, 34
 412 handles, 49 geometries, and 63 materials. Selecting two distinct conservative-wall owners
 kept the same geometry/material counts, proving individual picking over shared resources.
 
-The exact descendant `c903c1c86761386087acd7d7d814a3da5cde116b` adds renderer-owned compatible
-static instancing without changing the retained model or this authored scene. In the unchanged
-normal-control product campaign, the shared surface submitted 40 draws for 412 live handles at
-16.7 ms cadence; maximum authoritative command RTT was 1,353.7 ms with 1/1/1 queue peaks and zero
-dropped facts. This replaces neither the nine definitions nor any of the 342 playable placements.
+The exact descendant `e97944c8309018f595222edb7bd90a620c32cedf` adds renderer-owned compatible
+static instancing without changing the retained model or this authored scene. Unlike the rejected
+scene-wide `c903c1c86761386087acd7d7d814a3da5cde116b` intermediate, it partitions batches into
+deterministic 32-unit world cells and restores conservative frustum culling. In the corrected local
+headless-SwiftShader normal-control campaign, the shared surface submitted 40 draws for 412 live
+handles at 16.7 ms cadence; maximum authoritative command RTT was 1,271.4 ms with 1/1/1 queue
+peaks and zero dropped facts. Exact CI acceptance remains recorded by the task gate rather than
+inferred from this workstation run. This replaces neither the nine definitions nor any of the 342
+playable placements.
 
 Close reached zero canvases; open, resize at 1280×720 and 1600×900, cache-bypassing reload, and
 selection after reload each returned one ready/no-error canvas. Exact evidence is in

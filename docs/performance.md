@@ -280,19 +280,26 @@ inter-submission timing and synchronous backend submission remains distinct from
 ## 2026-07-30 content-rich static-instancing follow-up
 
 Task #6354 now measures the unchanged serialized prop/viewmodel and 342-placement voxel-brush
-product at exact Engine revision `c903c1c86761386087acd7d7d814a3da5cde116b`. The shared
-renderer internally batches compatible opaque world static handles while retaining every logical
+product at exact Engine revision `e97944c8309018f595222edb7bd90a620c32cedf`. The shared
+renderer internally batches compatible opaque world static handles into deterministic 32-unit
+world cells with conservative aggregate bounds and frustum culling while retaining every logical
 handle, transform, metadata record, and picking identity. No content, downstream cache, render
-loop, or gameplay authority was removed. The headless Chromium run is correctness and resource
-lifecycle evidence, not hardware GPU timing:
+loop, or gameplay authority was removed.
+
+The predecessor `c903c1c86761386087acd7d7d814a3da5cde116b` reduced draw calls but formed
+scene-wide batches with culling disabled. Exact CI run `30532095039` consequently expired after
+Generator with a 7,506.8 ms maximum command RTT. That result is retained as the rejected
+intermediate rather than being represented by the faster workstation sample. The table below is
+the corrected local headless-SwiftShader correctness/resource run; exact-SHA CI remains the task
+review gate rather than a value inferred from this table:
 
 | Measurement                         | Result      |
 | ----------------------------------- | ----------- |
 | Session bootstrap                   | 1,159,687 B |
-| Largest steady update               | 11,934 B    |
+| Largest steady update               | 12,100 B    |
 | Outbound / input / edge queue peaks | 1 / 1 / 1   |
 | Dropped facts                       | 0           |
-| Maximum authoritative command RTT   | 1,353.7 ms  |
+| Maximum authoritative command RTT   | 1,271.4 ms  |
 | Renderer cadence                    | 16.7 ms     |
 | Rich draw-call delta                | +32         |
 | Rich live-handle delta              | +33         |
