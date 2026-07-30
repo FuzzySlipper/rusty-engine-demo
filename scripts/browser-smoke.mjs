@@ -2365,6 +2365,12 @@ async function runChromiumSmoke(
       "--headless=new",
       "--no-sandbox",
       "--disable-dev-shm-usage",
+      // The product is a foreground desktop surface. Headless Chromium may
+      // otherwise classify its only target as background/occluded and throttle
+      // both requestAnimationFrame and the normal held-input scheduler.
+      "--disable-background-timer-throttling",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-renderer-backgrounding",
       "--use-gl=angle",
       "--use-angle=swiftshader",
       "--enable-unsafe-swiftshader",
