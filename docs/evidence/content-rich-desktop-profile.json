@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "5ae36dd5e41c0b64c848cacbcd4bc985f1640db1",
-  "targetUrl": "http://127.0.0.1:35719/",
+  "revision": "78359ea974bc79030cf446a1d044e676b5bb6216",
+  "targetUrl": "http://127.0.0.1:34627/",
   "desktopPackaging": {
     "available": false,
     "measuredSurface": "visible Chromium/Wayland against the installed production host"
@@ -21,15 +21,15 @@
   "startup": {
     "coldMenu": {
       "label": "cold-menu",
-      "wallMilliseconds": 218.277,
+      "wallMilliseconds": 185.14,
       "navigation": {
-        "domContentLoadedMs": 135.39999961853027,
-        "loadMs": 163.30000019073486,
+        "domContentLoadedMs": 105.39999961853027,
+        "loadMs": 106.10000038146973,
         "transferBytes": 1886,
         "encodedBodyBytes": 1586
       },
-      "firstPaintMs": 192,
-      "firstContentfulPaintMs": 192,
+      "firstPaintMs": 156,
+      "firstContentfulPaintMs": 156,
       "session": null,
       "resources": {
         "count": 7,
@@ -46,22 +46,22 @@
             "durationMs": 4.2
           },
           {
-            "name": "/main-GV2ADMFY.js",
+            "name": "/main-4IIY3HPT.js",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 3.7
+            "durationMs": 3.4
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.2
+            "durationMs": 3
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 3.5
+            "durationMs": 3
           }
         ],
         "largestResources": [
@@ -77,35 +77,35 @@
             "initiatorType": "link",
             "transferBytes": 16066,
             "encodedBodyBytes": 15766,
-            "durationMs": 2.1
+            "durationMs": 1.9
           },
           {
-            "name": "/main-GV2ADMFY.js",
+            "name": "/main-4IIY3HPT.js",
             "initiatorType": "script",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 3.7
+            "durationMs": 3.4
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "initiatorType": "other",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.2
+            "durationMs": 3
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "initiatorType": "other",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 3.5
+            "durationMs": 3
           },
           {
             "name": "/api/menu-state",
             "initiatorType": "fetch",
             "transferBytes": 816,
             "encodedBodyBytes": 516,
-            "durationMs": 7
+            "durationMs": 1.4
           },
           {
             "name": "/favicon.ico",
@@ -122,24 +122,24 @@
         "maxDurationMs": 0
       },
       "memory": {
-        "rendererJavaScriptHeapBytes": 2449604,
-        "rendererJavaScriptHeapTotalBytes": 3407872,
-        "chromiumProcessTreeRssBytes": 807903232,
+        "rendererJavaScriptHeapBytes": 2449592,
+        "rendererJavaScriptHeapTotalBytes": 3670016,
+        "chromiumProcessTreeRssBytes": 812957696,
         "nodes": 74,
         "eventListeners": 9
       }
     },
     "warmMenu": {
       "label": "warm-menu",
-      "wallMilliseconds": 72.138,
+      "wallMilliseconds": 69.407,
       "navigation": {
-        "domContentLoadedMs": 24.600000381469727,
-        "loadMs": 26.5,
+        "domContentLoadedMs": 25.5,
+        "loadMs": 27.699999809265137,
         "transferBytes": 1886,
         "encodedBodyBytes": 1586
       },
-      "firstPaintMs": 52,
-      "firstContentfulPaintMs": 52,
+      "firstPaintMs": 48,
+      "firstContentfulPaintMs": 48,
       "session": null,
       "resources": {
         "count": 6,
@@ -153,25 +153,25 @@
             "name": "/chunk-73X6SYPX.js",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.8
+            "durationMs": 2.6
           },
           {
-            "name": "/main-GV2ADMFY.js",
+            "name": "/main-4IIY3HPT.js",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.5
+            "durationMs": 2.4
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.9
+            "durationMs": 2.3
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.2
+            "durationMs": 2.1
           }
         ],
         "largestResources": [
@@ -180,42 +180,42 @@
             "initiatorType": "other",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.8
+            "durationMs": 2.6
           },
           {
             "name": "/styles-7ECWJBMY.css",
             "initiatorType": "link",
             "transferBytes": 16066,
             "encodedBodyBytes": 15766,
-            "durationMs": 1.1
+            "durationMs": 1.3
           },
           {
-            "name": "/main-GV2ADMFY.js",
+            "name": "/main-4IIY3HPT.js",
             "initiatorType": "script",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.5
+            "durationMs": 2.4
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "initiatorType": "other",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.9
+            "durationMs": 2.3
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "initiatorType": "other",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.2
+            "durationMs": 2.1
           },
           {
             "name": "/api/menu-state",
             "initiatorType": "fetch",
             "transferBytes": 816,
             "encodedBodyBytes": 516,
-            "durationMs": 7.1
+            "durationMs": 1.3
           }
         ]
       },
@@ -225,171 +225,171 @@
         "maxDurationMs": 0
       },
       "memory": {
-        "rendererJavaScriptHeapBytes": 3497184,
-        "rendererJavaScriptHeapTotalBytes": 6815744,
-        "chromiumProcessTreeRssBytes": 916635648,
+        "rendererJavaScriptHeapBytes": 3504848,
+        "rendererJavaScriptHeapTotalBytes": 6291456,
+        "chromiumProcessTreeRssBytes": 918466560,
         "nodes": 141,
         "eventListeners": 23
       }
     },
-    "firstAuthoritativeProjectionAndFrameMs": 3426.8,
+    "firstAuthoritativeProjectionAndFrameMs": 3439.3,
     "gameplay": {
       "label": "gameplay",
-      "wallMilliseconds": 3426.8,
+      "wallMilliseconds": 3439.3,
       "navigation": {
-        "domContentLoadedMs": 24.600000381469727,
-        "loadMs": 26.5,
+        "domContentLoadedMs": 25.5,
+        "loadMs": 27.699999809265137,
         "transferBytes": 1886,
         "encodedBodyBytes": 1586
       },
-      "firstPaintMs": 52,
-      "firstContentfulPaintMs": 52,
+      "firstPaintMs": 48,
+      "firstContentfulPaintMs": 48,
       "session": {
         "bootstrapBytes": 1183676,
         "equivalentWholeStateBytes": 828076,
-        "maximumUpdateBuildMicroseconds": 93231,
+        "maximumUpdateBuildMicroseconds": 94306,
         "staticResourceUpdateCount": 0
       },
       "resources": {
         "count": 11,
-        "transferBytes": 1852078,
-        "encodedBodyBytes": 1848778,
+        "transferBytes": 1852945,
+        "encodedBodyBytes": 1849645,
         "scriptCount": 7,
-        "scriptTransferBytes": 1160552,
-        "scriptEncodedBodyBytes": 1158452,
+        "scriptTransferBytes": 1161419,
+        "scriptEncodedBodyBytes": 1159319,
         "scripts": [
           {
-            "name": "/chunk-5VDAA64Z.js",
-            "transferBytes": 753086,
-            "encodedBodyBytes": 752786,
-            "durationMs": 2.1
+            "name": "/chunk-7EVP224X.js",
+            "transferBytes": 753115,
+            "encodedBodyBytes": 752815,
+            "durationMs": 2.4
           },
           {
             "name": "/chunk-73X6SYPX.js",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.8
+            "durationMs": 2.6
           },
           {
-            "name": "/chunk-BIUMRTC7.js",
-            "transferBytes": 171302,
-            "encodedBodyBytes": 171002,
-            "durationMs": 1.8
+            "name": "/chunk-FPTTMAI6.js",
+            "transferBytes": 172140,
+            "encodedBodyBytes": 171840,
+            "durationMs": 2
           },
           {
             "name": "/chunk-2A2C4SYQ.js",
             "transferBytes": 11257,
             "encodedBodyBytes": 10957,
-            "durationMs": 1.2
+            "durationMs": 1.8
           },
           {
-            "name": "/main-GV2ADMFY.js",
+            "name": "/main-4IIY3HPT.js",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.5
+            "durationMs": 2.4
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.9
+            "durationMs": 2.3
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.2
+            "durationMs": 2.1
           }
         ],
         "largestResources": [
           {
-            "name": "/chunk-5VDAA64Z.js",
+            "name": "/chunk-7EVP224X.js",
             "initiatorType": "script",
-            "transferBytes": 753086,
-            "encodedBodyBytes": 752786,
-            "durationMs": 2.1
+            "transferBytes": 753115,
+            "encodedBodyBytes": 752815,
+            "durationMs": 2.4
           },
           {
             "name": "/api/animated-mesh/0",
             "initiatorType": "fetch",
             "transferBytes": 340112,
             "encodedBodyBytes": 339812,
-            "durationMs": 8.9
+            "durationMs": 9.4
           },
           {
             "name": "/api/animated-mesh/1",
             "initiatorType": "fetch",
             "transferBytes": 334532,
             "encodedBodyBytes": 334232,
-            "durationMs": 8.8
+            "durationMs": 9.4
           },
           {
             "name": "/chunk-73X6SYPX.js",
             "initiatorType": "other",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.8
+            "durationMs": 2.6
           },
           {
-            "name": "/chunk-BIUMRTC7.js",
+            "name": "/chunk-FPTTMAI6.js",
             "initiatorType": "script",
-            "transferBytes": 171302,
-            "encodedBodyBytes": 171002,
-            "durationMs": 1.8
+            "transferBytes": 172140,
+            "encodedBodyBytes": 171840,
+            "durationMs": 2
           },
           {
             "name": "/styles-7ECWJBMY.css",
             "initiatorType": "link",
             "transferBytes": 16066,
             "encodedBodyBytes": 15766,
-            "durationMs": 1.1
+            "durationMs": 1.3
           },
           {
             "name": "/chunk-2A2C4SYQ.js",
             "initiatorType": "script",
             "transferBytes": 11257,
             "encodedBodyBytes": 10957,
-            "durationMs": 1.2
+            "durationMs": 1.8
           },
           {
-            "name": "/main-GV2ADMFY.js",
+            "name": "/main-4IIY3HPT.js",
             "initiatorType": "script",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.5
+            "durationMs": 2.4
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "initiatorType": "other",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.9
+            "durationMs": 2.3
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "initiatorType": "other",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.2
+            "durationMs": 2.1
           },
           {
             "name": "/api/menu-state",
             "initiatorType": "fetch",
             "transferBytes": 816,
             "encodedBodyBytes": 516,
-            "durationMs": 7.1
+            "durationMs": 1.3
           }
         ]
       },
       "longTasks": {
         "count": 1,
-        "totalDurationMs": 575,
-        "maxDurationMs": 575
+        "totalDurationMs": 592,
+        "maxDurationMs": 592
       },
       "memory": {
-        "rendererJavaScriptHeapBytes": 71479324,
+        "rendererJavaScriptHeapBytes": 83766540,
         "rendererJavaScriptHeapTotalBytes": 135237632,
-        "chromiumProcessTreeRssBytes": 1098027008,
+        "chromiumProcessTreeRssBytes": 1099366400,
         "nodes": 347,
         "eventListeners": 45
       }
@@ -397,7 +397,7 @@
   },
   "idle": {
     "coldMenu": {
-      "taskDurationMs": 2.656,
+      "taskDurationMs": 2.22,
       "scriptDurationMs": 0,
       "layoutCount": 0,
       "styleRecalculationCount": 0,
@@ -408,8 +408,8 @@
       "eventListenerDelta": 0
     },
     "warmMenu": {
-      "taskDurationMs": 2.752,
-      "scriptDurationMs": 0.113,
+      "taskDurationMs": 2.591,
+      "scriptDurationMs": 0.114,
       "layoutCount": 0,
       "styleRecalculationCount": 0,
       "layoutDurationMs": 0,
@@ -419,52 +419,52 @@
       "eventListenerDelta": 1
     },
     "gameplay": {
-      "taskDurationMs": 435.414,
-      "scriptDurationMs": 382.879,
+      "taskDurationMs": 493.487,
+      "scriptDurationMs": 437.679,
       "layoutCount": 20,
       "styleRecalculationCount": 20,
-      "layoutDurationMs": 4.649,
-      "styleRecalculationDurationMs": 1.023,
-      "heapGrowthBytes": -5817956,
-      "nodeDelta": 103,
+      "layoutDurationMs": 4.454,
+      "styleRecalculationDurationMs": 0.762,
+      "heapGrowthBytes": 10125288,
+      "nodeDelta": 101,
       "eventListenerDelta": 0
     }
   },
   "input": {
     "eventToNextFrameMs": {
-      "p50": 2.1,
-      "p95": 3.6,
-      "p99": 3.7,
-      "max": 3.7
+      "p50": 2,
+      "p95": 3.4,
+      "p99": 4.2,
+      "max": 4.2
     },
-    "eventToNextFrameSampleCount": 70,
+    "eventToNextFrameSampleCount": 60,
     "authoritativeCommandRttMs": {
-      "p50": 28.542,
-      "p95": 66.372,
-      "p99": 101.557,
-      "max": 101.557
+      "p50": 28.564,
+      "p95": 62.343,
+      "p99": 72.414,
+      "max": 72.414
     },
-    "authoritativeCommandRttSampleCount": 83,
+    "authoritativeCommandRttSampleCount": 79,
     "rendererCadenceMs": {
       "p50": 50.1,
       "p95": 83.4,
-      "p99": 166.9,
-      "max": 166.9
+      "p99": 83.5,
+      "max": 83.5
     },
     "backendSubmissionDurationMs": {
       "p50": 1.4,
-      "p95": 2.6,
-      "p99": 2.9,
-      "max": 2.9
+      "p95": 2.4,
+      "p99": 3.3,
+      "max": 3.3
     },
-    "rendererSampleCount": 53,
+    "rendererSampleCount": 50,
     "timingSources": ["animationFrame"],
     "rendererStatistics": {
       "schemaVersion": 1,
       "drawCallCount": {
         "scope": "perSubmission",
         "status": "available",
-        "value": 50
+        "value": 49
       },
       "renderHandleCount": {
         "scope": "liveResident",
@@ -494,25 +494,25 @@
       "triangleCount": {
         "scope": "perSubmission",
         "status": "available",
-        "value": 76597
+        "value": 74631
       }
     },
     "automaticSubmissionPacing": {
-      "sampleCount": 53,
+      "sampleCount": 50,
       "rendererClasses": ["accelerated"],
       "modes": ["timerQuery"],
-      "states": ["measuring", "waiting"],
+      "states": ["measuring", "waiting", "ready"],
       "timerDurationMs": {
-        "p50": 4.684,
-        "p95": 6.814,
-        "p99": 6.915,
-        "max": 6.915
+        "p50": 4.637,
+        "p95": 6.858,
+        "p99": 6.964,
+        "max": 6.964
       },
       "completionAgeMs": {
-        "p50": 51.7,
-        "p95": 64.5,
-        "p99": 114.6,
-        "max": 114.6
+        "p50": 53.1,
+        "p95": 63.4,
+        "p99": 105.8,
+        "max": 105.8
       },
       "completionAllowanceMs": {
         "p50": 17,
@@ -521,10 +521,10 @@
         "max": 17
       },
       "effectiveDurationMs": {
-        "p50": 4.684,
-        "p95": 6.814,
-        "p99": 6.915,
-        "max": 6.915
+        "p50": 4.637,
+        "p95": 6.858,
+        "p99": 6.964,
+        "max": 6.964
       },
       "targetDutyFraction": {
         "p50": 0.5,
@@ -537,14 +537,14 @@
         "mode": "timerQuery",
         "state": "measuring",
         "rendererClass": "accelerated",
-        "timerDurationMs": 4.871856,
-        "completionAgeMs": 50.59999942779541,
+        "timerDurationMs": 4.617893,
+        "completionAgeMs": 56.19999980926514,
         "completionAllowanceMs": 17,
-        "effectiveDurationMs": 4.871856,
+        "effectiveDurationMs": 4.617893,
         "targetDutyFraction": 0.5,
-        "admittedAtMs": 12473.34371238147,
-        "admissionObservedAtMs": 12514.199999809265,
-        "observedAtMs": 12514.199999809265
+        "admittedAtMs": 12467.935785809266,
+        "admissionObservedAtMs": 12514.89999961853,
+        "observedAtMs": 12514.89999961853
       }
     }
   },
@@ -555,7 +555,7 @@
         "chunk-73X6SYPX.js",
         "chunk-7CGTOI24.js",
         "chunk-7ETO2MJG.js",
-        "main-GV2ADMFY.js"
+        "main-4IIY3HPT.js"
       ],
       "rawBytes": 223707,
       "attribution": {
@@ -616,7 +616,7 @@
           {
             "bytes": 3705,
             "input": "apps/loading-bay/src/main-menu.component.ts",
-            "output": "main-GV2ADMFY.js"
+            "output": "main-4IIY3HPT.js"
           },
           {
             "bytes": 3213,
@@ -644,86 +644,86 @@
     "lazyRoutes": [
       {
         "entryPoint": "apps/loading-bay/src/game-screen.component.ts",
-        "output": "chunk-BIUMRTC7.js",
-        "rawBytes": 934745,
+        "output": "chunk-FPTTMAI6.js",
+        "rawBytes": 935612,
         "attribution": {
           "categories": [
             {
               "category": "three",
-              "bytes": 609838
+              "bytes": 609857
             },
             {
               "category": "rusty-engine-renderer",
-              "bytes": 184484
+              "bytes": 185321
             },
             {
               "category": "browser-game-runtime",
-              "bytes": 96897
+              "bytes": 96892
             },
             {
               "category": "loading-bay",
-              "bytes": 28309
+              "bytes": 28322
             },
             {
               "category": "demo-libraries",
-              "bytes": 14147
+              "bytes": 14149
             }
           ],
           "largestModules": [
             {
-              "bytes": 346013,
+              "bytes": 346040,
               "input": "node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.module.js",
-              "output": "chunk-5VDAA64Z.js"
+              "output": "chunk-7EVP224X.js"
             },
             {
-              "bytes": 219815,
+              "bytes": 219807,
               "input": "node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js",
-              "output": "chunk-5VDAA64Z.js"
+              "output": "chunk-7EVP224X.js"
             },
             {
               "bytes": 42581,
               "input": "node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/loaders/GLTFLoader.js",
-              "output": "chunk-5VDAA64Z.js"
+              "output": "chunk-7EVP224X.js"
             },
             {
               "bytes": 34787,
-              "input": "node_modules/.pnpm/@rusty-engine+renderer-three@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar._02e933fce91f92dcdbe81117f5a1754a/node_modules/@rusty-engine/renderer-three/dist/three-renderer.js",
-              "output": "chunk-5VDAA64Z.js"
+              "input": "node_modules/.pnpm/@rusty-engine+renderer-three@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar._600216656c79a35848307b1e3688abff/node_modules/@rusty-engine/renderer-three/dist/three-renderer.js",
+              "output": "chunk-7EVP224X.js"
             },
             {
-              "bytes": 33226,
+              "bytes": 33225,
               "input": "ts/packages/browser-shell/src/game-runtime.ts",
-              "output": "chunk-BIUMRTC7.js"
+              "output": "chunk-FPTTMAI6.js"
             },
             {
               "bytes": 28356,
-              "input": "node_modules/.pnpm/@rusty-engine+render-contracts@https+++codeload.github.com+FuzzySlipper+rusty-engine+ta_e00fa525528af64d9473d04e0ebdfb42/node_modules/@rusty-engine/render-contracts/dist/validation.js",
-              "output": "chunk-5VDAA64Z.js"
+              "input": "node_modules/.pnpm/@rusty-engine+render-contracts@https+++codeload.github.com+FuzzySlipper+rusty-engine+ta_4636e28887c7d0237243bf083cec6596/node_modules/@rusty-engine/render-contracts/dist/validation.js",
+              "output": "chunk-7EVP224X.js"
             },
             {
-              "bytes": 28309,
+              "bytes": 28322,
               "input": "apps/loading-bay/src/game-screen.component.ts",
-              "output": "chunk-BIUMRTC7.js"
+              "output": "chunk-FPTTMAI6.js"
             },
             {
               "bytes": 26161,
-              "input": "node_modules/.pnpm/@rusty-engine+render-projection@https+++codeload.github.com+FuzzySlipper+rusty-engine+t_3feb4b83df95093a593710db79c8a07b/node_modules/@rusty-engine/render-projection/dist/retained-projection.js",
-              "output": "chunk-5VDAA64Z.js"
+              "input": "node_modules/.pnpm/@rusty-engine+render-projection@https+++codeload.github.com+FuzzySlipper+rusty-engine+t_1fa6268ba07c6545b7b30e493596f7e9/node_modules/@rusty-engine/render-projection/dist/retained-projection.js",
+              "output": "chunk-7EVP224X.js"
             },
             {
               "bytes": 21916,
               "input": "ts/packages/browser-shell/src/game-session.ts",
-              "output": "chunk-BIUMRTC7.js"
+              "output": "chunk-FPTTMAI6.js"
             },
             {
               "bytes": 20336,
               "input": "ts/packages/browser-shell/src/presentation-feedback.ts",
-              "output": "chunk-BIUMRTC7.js"
+              "output": "chunk-FPTTMAI6.js"
             },
             {
               "bytes": 12636,
-              "input": "node_modules/.pnpm/@rusty-engine+renderer-host@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar.g_541c5230a3f58d595769e6e285afcae6/node_modules/@rusty-engine/renderer-host/dist/editor-viewport.js",
-              "output": "chunk-5VDAA64Z.js"
+              "input": "node_modules/.pnpm/@rusty-engine+renderer-host@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar.g_3a2b650102640b9108b16195d78a5c2f/node_modules/@rusty-engine/renderer-host/dist/editor-viewport.js",
+              "output": "chunk-7EVP224X.js"
             },
             {
               "bytes": 10733,
@@ -783,6 +783,6 @@
         }
       }
     ],
-    "allJavaScriptRawBytes": 1161743
+    "allJavaScriptRawBytes": 1162610
   }
 }

@@ -480,6 +480,16 @@ observation delay. The retained cadence is still red at p50 50.1 ms, p95 83.4 ms
 accelerated work promptly enough to use the corrected duration. The machine-readable report now
 records this checkpoint; #6436 remains open for the readiness-scheduling descendant.
 
+The next provider checkpoint,
+`4dfbaf771511058a29da3d85134353e7b0e84a1d`, adds a bounded accelerated-readiness poll and is
+measured at exact Demo revision `78359ea974bc79030cf446a1d044e676b5bb6216`. It is also red:
+accepted cadence remains p50 50.1 ms, p95 83.4 ms, and p99 83.5 ms despite timer/effective p95
+6.858 ms. Completion observation is p50 53.1 ms, and the latest deadline is observed 46.96 ms
+late. The samples include the new `ready` state, proving that readiness can be reached without a
+prompt accepted submission on the real continuous-camera path. #6436 therefore retains the
+bounded poll but continues at the provider demand/RAF ownership boundary; no downstream scheduler
+or degraded scene is introduced.
+
 Studio evidence remains within its explicit bounds: all 342 route placements publish in bounded
 32-entry batches; the structural readout is below 2 MiB; the 12-instance animated preview adds
 exactly two geometry, two material, two texture, and twelve animated resources; close reaches zero
