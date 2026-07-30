@@ -280,8 +280,8 @@ inter-submission timing and synchronous backend submission remains distinct from
 ## 2026-07-30 content-rich static-instancing follow-up
 
 Task #6354 now measures the unchanged serialized prop/viewmodel and 342-placement voxel-brush
-product at exact Engine revision `e97944c8309018f595222edb7bd90a620c32cedf`. The shared
-renderer internally batches compatible opaque world static handles into deterministic 32-unit
+product at exact Engine revision `6fe4713df76ce0a03a6c461dfa95d4a90b24c824`. The shared
+renderer internally batches compatible opaque world static handles into deterministic 8-unit
 world cells with conservative aggregate bounds and frustum culling while retaining every logical
 handle, transform, metadata record, and picking identity. No content, downstream cache, render
 loop, or gameplay authority was removed.
@@ -289,25 +289,29 @@ loop, or gameplay authority was removed.
 The predecessor `c903c1c86761386087acd7d7d814a3da5cde116b` reduced draw calls but formed
 scene-wide batches with culling disabled. Exact CI run `30532095039` consequently expired after
 Generator with a 7,506.8 ms maximum command RTT. That result is retained as the rejected
-intermediate rather than being represented by the faster workstation sample. The table below is
-the corrected local headless-SwiftShader correctness/resource run; exact-SHA CI remains the task
-review gate rather than a value inferred from this table:
+intermediate rather than being represented by the faster workstation sample. The first culling
+revision, `e97944c8309018f595222edb7bd90a620c32cedf`, used 32-unit cells; this real project placed
+367 instances into only three cells (222 / 126 / 19), and exact CI run `30535751200` still expired
+after Generator at 9,152.7 ms maximum RTT. The reviewed 8-unit correction produces 29 cells with at
+most 29 project instances per cell. The table below is its local headless-SwiftShader
+correctness/resource run; exact-SHA CI remains the task review gate rather than a value inferred
+from this table:
 
 | Measurement                         | Result      |
 | ----------------------------------- | ----------- |
-| Session bootstrap                   | 1,159,687 B |
-| Largest steady update               | 12,100 B    |
+| Session bootstrap                   | 1,159,686 B |
+| Largest steady update               | 11,937 B    |
 | Outbound / input / edge queue peaks | 1 / 1 / 1   |
 | Dropped facts                       | 0           |
-| Maximum authoritative command RTT   | 1,271.4 ms  |
-| Renderer cadence                    | 16.7 ms     |
+| Maximum authoritative command RTT   | 1,422.0 ms  |
+| Renderer cadence                    | 16.6 ms     |
 | Rich draw-call delta                | +32         |
 | Rich live-handle delta              | +33         |
 | Rich submitted-triangle delta       | +64         |
 
-The ordinary product submission is 40 draws for 412 live handles and 100,081 submitted triangles.
-The 32-instance stress probe reaches 72 draws, 445 handles, and 100,145 triangles, then cleanup
-returns to 40 / 412 / 100,081. Geometry and material counts remain at 48 / 86 rather than the
+The ordinary product submission is 49 draws for 412 live handles and 94,193 submitted triangles.
+The 32-instance stress probe reaches 81 draws, 445 handles, and 94,257 triangles, then cleanup
+returns to 49 / 412 / 94,193. Geometry and material counts remain at 48 / 86 rather than the
 44 / 82 pre-stress baseline because Engine #6416 deliberately retains four reusable static-mesh
 definitions after their last live instances are destroyed. Reuse is bounded, and renderer disposal
 remains the terminal release boundary.
