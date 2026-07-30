@@ -357,16 +357,25 @@ evidence was absent. The completion fence is retained as valid bounded renderer 
 local improvement is not represented as product acceptance. Engine #6434 continues to own the
 remaining generic workload correction.
 
-Engine revision `3077798ae70bc7cb6c54fab5fb50f43766dd3b56` closes that constrained profile
-without reducing the retained scene or weakening the transport budget. The renderer keeps the
-bounded completion pacing and, only for positively identified software renderers, caps the WebGL
-backing buffer at one-half device pixel ratio in each dimension while preserving the CSS viewport,
-camera projection, normalized picking, and accelerated-renderer ratio. The unchanged two-core
-browser campaign completed the full route, checkpoint, completed-save, reload, converted-project,
-and lifecycle tails with 1,488.5 ms maximum command RTT, queues bounded at 1/1/1, zero dropped
-facts, zero pending input, 166.7 ms automatic submission cadence, and the same 9 live draws, 403
-handles, and 1,923 triangles after proof restoration. No downstream renderer scheduler, cache,
-content reduction, or alternate acceptance path was added.
+Engine revision `3077798ae70bc7cb6c54fab5fb50f43766dd3b56` first closed that constrained
+profile locally without reducing the retained scene or weakening the transport budget. The
+unchanged two-core browser campaign completed the full route, checkpoint, completed-save, reload,
+converted-project, and lifecycle tails with 1,488.5 ms maximum command RTT. Exact Demo revision
+`9ad855f343661c0bbeee5ec4c4c380cc3da72b1d` then completed the same route and persistence tail in
+GitHub run `30560832289`, but its 2,354.2 ms maximum RTT exceeded the retained 2-second bound.
+Queues remained 1/1/1 with zero dropped facts and zero pending input, so this was a residual
+software-raster workload failure rather than transport loss.
+
+Exact Engine revision `7119f6d78725ee2363fac7424d150e5f1735ccf1` lowers only positively
+identified software-renderer backing buffers from a 0.5 to a 0.375 pixel-ratio ceiling. That is
+43.75% fewer backing pixels while preserving CSS dimensions, camera projection, normalized
+picking, lower requested ratios, and every accelerated or unknown renderer's requested ratio. The
+unchanged two-core campaign passed the full route, checkpoint, completed save, fresh-host reopen,
+converted-project, renderer statistics, picking, resize/reset/remount, and disposal tails with
+1,549.6 ms maximum RTT, 66.6 ms automatic submission cadence, queues bounded at 1/1/1, zero drops,
+and zero pending input. The scene remains 9 definitions, 42,266 authored cells, and 342 placements;
+no downstream renderer scheduler, cache, content reduction, or alternate acceptance path was
+added.
 
 ## Camera policy
 

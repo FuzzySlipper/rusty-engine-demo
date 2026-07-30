@@ -433,14 +433,23 @@ RTT, one pending input, bounded queues, zero dropped facts, and no Generator or 
 campaign/persistence/lifecycle evidence. The serialized scene and every acceptance bound remain
 unchanged while #6434 continues the renderer-owned correction.
 
-The accepted correction is exact Engine revision
-`3077798ae70bc7cb6c54fab5fb50f43766dd3b56`. It preserves all 9 definitions, 42,266 authored
-cells, and 342 placements while halving each WebGL backing-buffer dimension only for a positively
-identified software renderer. The unchanged two-core product campaign then completed every route,
+Exact Engine revision `3077798ae70bc7cb6c54fab5fb50f43766dd3b56` first proved the
+software-renderer backing-buffer correction locally without changing the 9 definitions, 42,266
+authored cells, or 342 placements. Its unchanged two-core product campaign completed every route,
 save/reopen, converted-project, picking, statistics, and lifecycle assertion with 1,488.5 ms
-maximum RTT, bounded 1/1/1 queues, zero dropped facts, and zero pending input. Accelerated and
-unknown renderers retain their requested pixel ratio, and the Demo still owns no private renderer
-or reduced-content path.
+maximum RTT. Exact Demo revision `9ad855f343661c0bbeee5ec4c4c380cc3da72b1d` then reached the
+same complete product tail in GitHub run `30560832289`, but its 2,354.2 ms maximum RTT exceeded
+the retained 2-second transport budget, so that provider was not accepted.
+
+The current correction is exact Engine revision
+`7119f6d78725ee2363fac7424d150e5f1735ccf1`. It lowers only the positively identified
+software-renderer backing-buffer ceiling from 0.5 to 0.375, reducing that buffer's pixel count by
+43.75% while preserving the CSS viewport, camera projection, normalized picking, and requested
+ratio for accelerated and unknown renderers. The unchanged two-core product campaign again
+completed every route and all save/reopen, converted-project, picking, statistics, and lifecycle
+tails, this time with 1,549.6 ms maximum RTT, 66.6 ms automatic submission cadence, bounded 1/1/1
+queues, zero dropped facts, and zero pending input. The Demo still owns no private renderer,
+reduced-content path, cache, or weakened acceptance budget.
 
 Close reached zero canvases; open, resize at 1280×720 and 1600×900, cache-bypassing reload, and
 selection after reload each returned one ready/no-error canvas. Exact evidence is in
