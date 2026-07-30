@@ -643,6 +643,31 @@ function summarizeAutomaticPacing(samples) {
     ],
     modes: [...new Set(samples.map((sample) => sample.mode))],
     states: [...new Set(samples.map((sample) => sample.state))],
+    completionFenceModes: [
+      ...new Set(
+        samples
+          .map((sample) => sample.completionFenceMode)
+          .filter((value) => typeof value === "string"),
+      ),
+    ],
+    automaticSubmissionCapacity: distribution(
+      available("automaticSubmissionCapacity"),
+    ),
+    automaticSubmissionLimit: distribution(
+      available("automaticSubmissionLimit"),
+    ),
+    maximumPendingMeasurements: distribution(
+      available("maximumPendingMeasurements"),
+    ),
+    pendingMeasurementCount: distribution(
+      available("pendingMeasurementCount"),
+    ),
+    maximumPendingSubmissions: distribution(
+      available("maximumPendingSubmissions"),
+    ),
+    pendingSubmissionCount: distribution(
+      available("pendingSubmissionCount"),
+    ),
     timerDurationMs: distribution(available("timerDurationMs")),
     completionAgeMs: distribution(available("completionAgeMs")),
     completionAllowanceMs: distribution(available("completionAllowanceMs")),
