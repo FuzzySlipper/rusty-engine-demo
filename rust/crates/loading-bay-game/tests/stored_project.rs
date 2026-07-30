@@ -240,6 +240,58 @@ fn serialized_visual_bindings_reject_unknown_clips_and_wrong_presentation_kinds(
 }
 
 #[test]
+fn serialized_visual_bindings_require_every_gameplay_reachable_state() {
+    let cases = [
+        (3_u64, "open"),
+        (6, "active"),
+        (20, "collected"),
+        (27, "cooling"),
+        (7, "active"),
+        (32, "completed"),
+        (4, "idle"),
+        (4, "moving"),
+        (4, "alert"),
+        (4, "attacking"),
+        (4, "hit"),
+        (4, "defeated"),
+    ];
+
+    for (entity_id, missing_state) in cases {
+        let invalid = mutate(|project| {
+            let entity = project["scenes"][0]["entities"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|entity| entity["id"] == entity_id)
+                .expect("bound gameplay entity");
+            entity["renderable"]["visualBinding"]["states"]
+                .as_array_mut()
+                .unwrap()
+                .retain(|state| state["state"] != missing_state);
+        });
+        let diagnostic = admission_diagnostic(&invalid);
+
+        assert_eq!(
+            diagnostic.code,
+            diagnostic_code::INVALID_COMPONENT,
+            "entity {entity_id} admitted without {missing_state}"
+        );
+        assert!(
+            diagnostic.path.ends_with("renderable.visualBinding.states"),
+            "unexpected path for entity {entity_id}: {}",
+            diagnostic.path
+        );
+        assert!(
+            diagnostic.message.contains(missing_state),
+            "missing state was not actionable for entity {entity_id}: {}",
+            diagnostic.message
+        );
+    }
+
+    decode_stored_project(PROJECT).expect("complete canonical visual bindings remain admitted");
+}
+
+#[test]
 fn non_entry_scenes_receive_the_same_semantic_admission() {
     let invalid = mutate(|project| {
         let mut second_scene = project["scenes"][0].clone();

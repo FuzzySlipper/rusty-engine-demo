@@ -1431,6 +1431,7 @@ fn validate_stored_import(
 fn validate_visual_binding(
     binding: &StoredVisualBinding,
     asset: &StoredAsset,
+    entity: &StoredEntityDefinition,
     path: &str,
 ) -> Result<(), StoredProjectError> {
     if binding.version != STORED_VISUAL_BINDING_VERSION {
@@ -1538,7 +1539,80 @@ fn validate_visual_binding(
             }
         }
     }
+    let missing = required_visual_states(entity)
+        .iter()
+        .copied()
+        .filter(|state| !states.contains(state))
+        .collect::<Vec<_>>();
+    if !missing.is_empty() {
+        return Err(failure(
+            diagnostic_code::INVALID_COMPONENT,
+            format!("{path}.states"),
+            format!(
+                "visual binding is missing gameplay-reachable states: {}",
+                missing
+                    .iter()
+                    .map(|state| visual_state_name(*state))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        ));
+    }
     Ok(())
+}
+
+fn required_visual_states(entity: &StoredEntityDefinition) -> &'static [StoredVisualState] {
+    use StoredVisualState::{
+        Active, Alert, Attacking, Available, Closed, Collected, Completed, Cooling, Defeated,
+        Dormant, Hit, Idle, Inactive, Moving, Open, Standby,
+    };
+
+    if entity.door.is_some() {
+        &[Closed, Open]
+    } else if entity.switch.is_some() {
+        &[Inactive, Active]
+    } else if entity.pickup.is_some() {
+        &[Dormant, Available, Collected]
+    } else if entity.hazard.is_some() {
+        &[Active, Cooling]
+    } else if entity.extraction_beacon.is_some() {
+        &[Standby, Active]
+    } else if entity.level_exit.is_some() {
+        &[Available, Completed]
+    } else if entity.enemy {
+        &[Idle, Moving, Alert, Attacking, Hit, Defeated]
+    } else if entity.player_controller.is_some() {
+        &[Idle, Defeated]
+    } else {
+        &[]
+    }
+}
+
+fn visual_state_name(state: StoredVisualState) -> &'static str {
+    use StoredVisualState::{
+        Active, Alert, Attacking, Available, Closed, Collected, Completed, Cooling, Default,
+        Defeated, Dormant, Hit, Idle, Inactive, Moving, Open, Standby,
+    };
+
+    match state {
+        Default => "default",
+        Open => "open",
+        Closed => "closed",
+        Active => "active",
+        Inactive => "inactive",
+        Standby => "standby",
+        Available => "available",
+        Dormant => "dormant",
+        Collected => "collected",
+        Cooling => "cooling",
+        Completed => "completed",
+        Idle => "idle",
+        Moving => "moving",
+        Alert => "alert",
+        Attacking => "attacking",
+        Hit => "hit",
+        Defeated => "defeated",
+    }
 }
 
 fn validate_scene_entities(
@@ -1648,6 +1722,7 @@ fn validate_scene_entities(
                 validate_visual_binding(
                     binding,
                     asset,
+                    entity,
                     &format!("{root}.renderable.visualBinding"),
                 )?;
             }
