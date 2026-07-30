@@ -280,11 +280,12 @@ inter-submission timing and synchronous backend submission remains distinct from
 ## 2026-07-30 content-rich moving-camera compaction follow-up
 
 Task #6354 now measures the unchanged serialized prop/viewmodel and 342-placement voxel-brush
-product at exact Engine revision `e0e97de882c7fdb8b6b35e4c282713a31fc133b2`. The shared
-renderer retains bounded definition-compatible static candidates, then compacts each submission to
-the current camera frustum. Every logical handle, transform, metadata record, refcount, and picking
+product at exact Engine revision `51281becc482fd71c0f3b2be16d9abee6a37b5be`. The shared
+renderer retains bounded definition-compatible static candidates, compacts each submission to the
+current camera frustum, and admits at most one latest automatic demand while the preceding WebGL2
+GPU stream is incomplete. Every logical handle, transform, metadata record, refcount, and picking
 identity remains authoritative and available. No content, downstream cache, render loop, gameplay
-authority, campaign assertion, or performance budget was removed.
+authority, campaign assertion, fixed-rate cap, or performance budget was removed.
 
 The predecessor `c903c1c86761386087acd7d7d814a3da5cde116b` reduced draw calls but formed
 scene-wide batches with culling disabled. Exact CI run `30532095039` consequently expired after
@@ -299,21 +300,21 @@ cell-and-definition groups, matching the broad 131-draw diagnostic submission. E
 results are retained as rejected intermediates rather than being represented by faster workstation
 samples.
 
-The current provider removes fixed-cell grouping. Its representative nine-definition,
-367-instance regression produces nine definition-compatible draw groups and filters their members
-for the current camera immediately before submission. The table below is the unchanged full local
-campaign and lifecycle run; exact-SHA CI remains the task review gate rather than a value inferred
-from this table:
+The current provider retains the definition-compatible moving-camera compaction and bounds
+automatic submission by actual WebGL2 GPU completion. Unsupported, lost, or failed sync falls open
+with bounded cleanup, while explicit `renderOnce` and reset remain unconditional. The table below
+is the unchanged full four-core local campaign and lifecycle run; exact-SHA CI remains the task
+review gate rather than a value inferred from this table:
 
 | Measurement                         | Result      |
 | ----------------------------------- | ----------- |
 | Session bootstrap                   | 1,159,686 B |
-| Largest steady update               | 12,097 B    |
+| Largest steady update               | 11,912 B    |
 | Outbound / input / edge queue peaks | 1 / 1 / 1   |
 | Dropped facts                       | 0           |
-| Maximum update build                | 284,812 µs  |
-| Maximum authoritative command RTT   | 1,192.5 ms  |
-| Renderer cadence                    | 16.7 ms     |
+| Maximum update build                | 266,889 µs  |
+| Maximum authoritative command RTT   | 339.9 ms    |
+| Renderer cadence                    | 16.6 ms     |
 | Rich draw-call delta                | +32         |
 | Rich live-handle delta              | +33         |
 | Rich submitted-triangle delta       | +64         |
@@ -324,6 +325,28 @@ cleanup returns to 40 / 412 / 63,227. Geometry and material counts remain at 48 
 the 44 / 82 pre-stress baseline because Engine #6416 deliberately retains four reusable
 static-mesh definitions after their last live instances are destroyed. Reuse is bounded, and
 renderer disposal remains the terminal release boundary.
+
+Exact Demo revision `53de81f29813e13ceb710929c42fb7a3072a7f48` disproved that draw-group
+compaction alone closes the supported CI profile. GitHub run `30542408476` reached Arrival,
+Storage, and the locked door, then expired at the unchanged 300-second campaign deadline with an
+11,146.5 ms maximum command RTT. Queues remained bounded at 1 / 1 / 1 and no facts were dropped,
+but one input remained pending and the later campaign, save, fresh-host, and lifecycle evidence was
+never reached.
+
+A matching four-core local run (`taskset -c 0-3 pnpm run test:browser`) on the compaction-only
+provider completed gameplay, progression, checkpoint, and save but failed the unchanged transport
+budget at 2,755.9 ms maximum RTT. During that run the SwiftShader GPU process consumed approximately
+304% CPU, the Chromium renderer 51%, and the Rust host 38%, saturating the four assigned cores. A
+later mutation-demand provider reduced the failure to 2,479.3 ms but still could not observe when
+the GPU command stream was complete.
+
+The exact current provider closes that ownership gap with renderer-owned WebGL2 completion
+backpressure. On the same four-core command, the unchanged campaign, completed save, fresh-page
+restore, converted asset, picking, resize/reset/remount, and disposal evidence all completed with
+339.9 ms maximum RTT. Queues remained 1 / 1 / 1 with zero drops. The displayed 16.6 ms cadence and
+synchronous backend duration remain submission diagnostics rather than GPU-duration claims; the
+completion fence is used only to bound automatic demand. The demo adds no private scheduler,
+coalescer, or test-only degraded scene.
 
 ## Camera policy
 

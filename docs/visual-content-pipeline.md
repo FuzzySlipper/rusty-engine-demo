@@ -392,8 +392,9 @@ shared `RendererSurface`. Its initial complete submission reported 123 draws, 34
 412 handles, 49 geometries, and 63 materials. Selecting two distinct conservative-wall owners
 kept the same geometry/material counts, proving individual picking over shared resources.
 
-Exact Engine descendant `e0e97de882c7fdb8b6b35e4c282713a31fc133b2` adds renderer-owned
-moving-camera visibility compaction without changing the retained model or this authored scene.
+Exact Engine descendant `51281becc482fd71c0f3b2be16d9abee6a37b5be` combines renderer-owned
+moving-camera visibility compaction with completion-based automatic-submission backpressure,
+without changing the retained model or this authored scene.
 The scene-wide `c903c1c86761386087acd7d7d814a3da5cde116b` intermediate disabled culling; the
 later `e97944c8309018f595222edb7bd90a620c32cedf` revision restored it but placed all 367
 project instances into only three 32-unit cells. The 8-unit
@@ -401,16 +402,29 @@ project instances into only three 32-unit cells. The 8-unit
 cell-and-definition groups, matching its broad 131-draw diagnostic submission. Exact CI rejected
 all three intermediates.
 
-The current provider instead retains bounded definition-compatible candidates and filters their
-members for the current camera immediately before BrowserSurface and Studio submission. Its
-representative nine-definition/367-instance provider regression yields nine draw groups while all
-367 logical identities remain retained and pickable. In the unchanged local
-headless-SwiftShader normal-control campaign, cadence was 16.7 ms, maximum authoritative command
-RTT was 1,192.5 ms, queue peaks were 1/1/1, and no facts were dropped. The rebuilt explicit
-submission measured 40 draws for 412 retained handles, down from the rejected 131-draw
-fixed-cell result. Exact CI acceptance remains
-recorded by the task gate rather than inferred from this workstation run. This replaces neither the
-nine definitions nor any of the 342 playable placements.
+The current provider retains bounded definition-compatible candidates and filters their members
+for the current camera immediately before BrowserSurface and Studio submission. Its representative
+nine-definition/367-instance provider regression yields nine draw groups while all 367 logical
+identities remain retained and pickable. The single host RAF admits at most one latest automatic
+demand while the preceding WebGL2 GPU stream is incomplete; this is completion-based rather than a
+fixed-rate cap, and explicit submission/reset remain unconditional. In the unchanged four-core
+headless-SwiftShader normal-control campaign, cadence was 16.6 ms, maximum authoritative command
+RTT was 339.9 ms, queue peaks were 1/1/1, and no facts were dropped. The rebuilt explicit
+submission measured 40 draws for 412 retained handles, down from the rejected 131-draw fixed-cell
+result. Exact CI acceptance remains recorded by the task gate rather than inferred from this local
+run. This replaces neither the nine definitions nor any of the 342 playable placements.
+
+Exact Demo revision `53de81f29813e13ceb710929c42fb7a3072a7f48` then failed that gate:
+GitHub run `30542408476` expired after the locked-door milestone with 11,146.5 ms maximum command
+RTT despite bounded queues and zero dropped facts. A four-core local reproduction completed the
+route and save but exceeded the same transport budget at 2,755.9 ms while SwiftShader and Chromium
+consumed essentially all assigned CPU. Its settled camera was already at 9 draws / 1,923 triangles
+for 403 handles. A later mutation-demand provider still reached 2,479.3 ms because JavaScript
+submission completion did not bound the asynchronous GPU command stream. The current Engine
+completion fence closes that upstream gap: the same four-core proof completed the route,
+completed-save/fresh-page restore, converted asset, picking, and lifecycle tails at 339.9 ms
+maximum RTT. VC5/VC7 retain the complete scene and use no downstream scheduler, content reduction,
+or weakened budget.
 
 Close reached zero canvases; open, resize at 1280×720 and 1600×900, cache-bypassing reload, and
 selection after reload each returned one ready/no-error canvas. Exact evidence is in
