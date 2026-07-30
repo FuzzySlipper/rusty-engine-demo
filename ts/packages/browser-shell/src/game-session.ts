@@ -1,6 +1,8 @@
-import type {
-  RenderMaterialDescriptor,
-  StaticMeshAsset,
+import {
+  decodeRenderFrameDiff,
+  type RenderFrameDiff,
+  type RenderMaterialDescriptor,
+  type StaticMeshAsset,
 } from "@rusty-engine/render-contracts";
 
 import type { RuntimeBrowserState } from "./projection.js";
@@ -78,7 +80,9 @@ type StaticStateKey =
   | "voxelSolidCount"
   | "voxelNavigationHash"
   | "voxelProbePathLength"
+  | "voxelEnvironmentRole"
   | "voxelMeshes"
+  | "voxelObjectFrame"
   | "lights"
   | "renderMaterials"
   | "staticMeshes"
@@ -1234,7 +1238,11 @@ function isRuntimeStaticResources(
     !isFiniteNumber(value.voxelSolidCount) ||
     typeof value.voxelNavigationHash !== "string" ||
     !isFiniteNumber(value.voxelProbePathLength) ||
+    (value.voxelEnvironmentRole !== "visible" &&
+      value.voxelEnvironmentRole !== "gameplayProxy" &&
+      value.voxelEnvironmentRole !== "none") ||
     !Array.isArray(value.voxelMeshes) ||
+    !isRenderFrameDiff(value.voxelObjectFrame) ||
     !Array.isArray(value.lights) ||
     !Array.isArray(value.renderMaterials) ||
     !value.renderMaterials.every(isRuntimeRenderMaterial) ||
@@ -1256,6 +1264,15 @@ function isRuntimeStaticResources(
       mesh.materialSlots.every(({ material }) => materialIds.has(material)),
     )
   );
+}
+
+function isRenderFrameDiff(value: unknown): value is RenderFrameDiff {
+  try {
+    decodeRenderFrameDiff(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function isRuntimeRenderMaterial(
@@ -1614,7 +1631,9 @@ function runtimeStateResources(
     voxelSolidCount: resources.voxelSolidCount,
     voxelNavigationHash: resources.voxelNavigationHash,
     voxelProbePathLength: resources.voxelProbePathLength,
+    voxelEnvironmentRole: resources.voxelEnvironmentRole,
     voxelMeshes: resources.voxelMeshes,
+    voxelObjectFrame: resources.voxelObjectFrame,
     lights: resources.lights,
     renderMaterials: resources.renderMaterials,
     staticMeshes: resources.staticMeshes,

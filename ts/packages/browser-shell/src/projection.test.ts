@@ -97,7 +97,9 @@ function state(
     levelExits: [],
     levelComplete: false,
     interaction: null,
+    voxelEnvironmentRole: "visible",
     voxelMeshes: [],
+    voxelObjectFrame: { schemaVersion: 1, ops: [] },
     lights: [],
     renderMaterials: [],
     staticMeshes: [],
@@ -396,6 +398,54 @@ test("generated chunk mesh is retained by content hash and uses the typed mesh p
   );
   updated.commit();
   assert.equal(adapter.trackedMeshCount, 1);
+});
+
+test("canonical voxel-object structure is installed once and cannot drift in place", () => {
+  const adapter = new RuntimeProjectionAdapter();
+  const material = {
+    schemaVersion: 1 as const,
+    id: "material/voxel-object-test",
+    color: [0.3, 0.4, 0.5, 1] as const,
+    texture: null,
+    roughness: 0.8,
+    textureTint: [1, 1, 1, 1] as const,
+    emissionColor: [0, 0, 0] as const,
+    emissionIntensity: 0,
+    uvStrategy: "flat" as const,
+  };
+  const structuralState = {
+    ...state([]),
+    voxelEnvironmentRole: "gameplayProxy" as const,
+    voxelObjectFrame: {
+      schemaVersion: 1 as const,
+      ops: [{ op: "defineMaterial" as const, material }],
+    },
+  };
+
+  const initial = adapter.apply(structuralState);
+  assert.deepEqual(initial.ops, structuralState.voxelObjectFrame.ops);
+  initial.commit();
+
+  const dynamic = adapter.apply({ ...structuralState, tick: 1 });
+  assert.deepEqual(dynamic.ops, []);
+  dynamic.commit();
+
+  assert.throws(
+    () =>
+      adapter.apply({
+        ...structuralState,
+        voxelObjectFrame: {
+          schemaVersion: 1,
+          ops: [
+            {
+              op: "defineMaterial",
+              material: { ...material, roughness: 0.2 },
+            },
+          ],
+        },
+      }),
+    /changed without a renderer session replacement/,
+  );
 });
 
 test("authored lights use retained shared-renderer light operations", () => {

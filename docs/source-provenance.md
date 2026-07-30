@@ -205,6 +205,69 @@ canonical conversion provenance. `scripts/check-brush-kit.mjs` verifies those va
 the canonical sparse-run counts, 25 shared-definition instances, decorative proxy separation,
 fresh-process Studio proof, and screenshots.
 
+## Original VC7 Loading Bay brush composition
+
+Den task #6357 adds no external source asset. It reuses the nine original VC6 definitions through
+342 new entity-owned instances authored by
+`scripts/author-loading-bay-brush-level.mjs`. The placement recipe reads only the canonical
+Loading Bay project: floor, ceiling, and wall coverage comes from the explicit hidden gameplay
+proxy; door surrounds come from the five Rust-owned door entities; columns, corners, and two relay
+landmarks use original Loading Bay positions.
+
+The recipe publishes 11 bounded protocol-12 batches through the real Studio adapter. Floor and
+ceiling coverage uses deterministic rectangles no larger than 8 by 8 world cells, retaining
+independent serialized owners and picking while avoiding hundreds of redundant draw objects. Exact
+ordered receipts, 342 owner identities, per-definition repeat counts, canonical reread,
+fresh-adapter reconstruction, and the 739,471-byte structural projection are recorded in
+`docs/evidence/voxel-level-brush-authoring.json`. `scripts/check-brush-level.mjs` ties those facts to
+the serialized project and verifies that every new owner is decorative. No Doom map, texture,
+mesh, palette, layout data, or other third-party content was copied or traced; Doom E1M1 remains
+only the previously documented high-level compact-FPS readability reference.
+
+## VC4 production animated actor source kit
+
+Den task #6355 replaces the historical three-clip appearance proof with two production-style actor
+sources built reproducibly from Kenney's CC0 1.0 `Animated Characters Retro` pack. The authoritative
+recipe is `scripts/blender/build-loading-bay-actor-library.py`; it was run with Blender 5.1.2
+(`ec6e62d40fa9`) using:
+
+```sh
+PYTHONPATH=/usr/lib/python3.14/site-packages blender --background --factory-startup \
+  --python scripts/blender/build-loading-bay-actor-library.py -- \
+  --source-root /home/stash/mesh-resources/kenney_animated-characters-retro \
+  --output-dir content/assets/actor-kit
+```
+
+The recipe imports the medium rig once per variant, normalizes the actor to 1.78 world units with
+its source origin preserved, merges Kenney's named idle/run/jump actions, installs one embedded
+nearest-filtered skin, and exports one mesh, one armature, one material, and six named NLA-track
+animations. The small attack, hit, and death root-motion actions are original Loading Bay
+derivatives authored explicitly in the recipe; they do not rename or misrepresent stock clips and
+carry no gameplay authority.
+
+| Product source                            | Skin                |   Bytes | SHA-256                                                            |
+| ----------------------------------------- | ------------------- | ------: | ------------------------------------------------------------------ |
+| `content/assets/actor-kit/arc-warden.glb` | `zombieMaleA.png`   | 339,812 | `b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d` |
+| `content/assets/actor-kit/bay-rusher.glb` | `zombieFemaleA.png` | 334,232 | `2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3` |
+
+Both outputs contain exact `idle`, `run`, `jump`, `attack`, `hit`, and `death` clips. Their complete
+source file hashes, clip ranges/durations/origins, Blender version, target scale, final bytes, and
+asset identities are closed by `content/assets/actor-kit/source-manifest.json`.
+`scripts/check-actor-kit.mjs` independently parses the shipped GLB JSON chunk and rejects hash,
+size, clip, mesh, skin, material, embedded-image, or external-buffer drift. The generator also
+factory-resets Blender and reimports each finished GLB before recording its manifest, so a claimed
+clip cannot exist only in the `.blend` session. A second factory-startup invocation produced
+byte-identical GLBs at both recorded hashes.
+
+`content/assets/actor-kit/KENNEY-CC0-LICENSE.txt` preserves the source notice wording while
+normalizing its indentation, trailing whitespace, and line endings to repository text conventions
+(597 bytes, SHA-256
+`613d822181cefc9e55dfb8b59e9468e96feecb5bf4ca364b8ff579361eb859f0`). The original source
+`License.txt` hash remains recorded separately in the manifest. Final Studio binary
+animated-mesh import, Rust admission, project persistence, and shared-renderer preview are owned by
+Rusty Engine task #6433 and must be consumed through an exact public provider pin. The checked GLBs
+are source assets, not a downstream hand-written render model or private Three.js loading path.
+
 ## VC5 serialized industrial prop kit
 
 Den task #6354 replaces the former non-actor primitive presentation with canonical Studio-imported

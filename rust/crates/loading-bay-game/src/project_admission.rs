@@ -205,6 +205,14 @@ pub fn materialize_stored_project_voxels(
         .iter()
         .position(|candidate| candidate.id == document.entry_scene)
         .expect("admitted project retains its entry scene");
+    let gameplay_proxy = document.scenes[scene_index]
+        .voxel_environment
+        .as_ref()
+        .is_some_and(|environment| match environment {
+            StoredVoxelEnvironment::Solid(environment) => environment.gameplay_proxy,
+            StoredVoxelEnvironment::Material(environment) => environment.gameplay_proxy,
+            StoredVoxelEnvironment::GeneratedRoom(environment) => environment.gameplay_proxy,
+        });
     document.scenes[scene_index].voxel_environment = Some(StoredVoxelEnvironment::Material(
         StoredMaterialVoxelEnvironment {
             voxel_size: scene.voxel_size(),
@@ -218,6 +226,7 @@ pub fn materialize_stored_project_voxels(
                 })
                 .collect(),
             voxel_assets: Vec::new(),
+            gameplay_proxy,
         },
     ));
     admit_stored_project_with_document(document).map(|(stored, _)| stored)

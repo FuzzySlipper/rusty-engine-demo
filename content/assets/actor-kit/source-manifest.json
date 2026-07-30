@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "generator": "scripts/blender/build-loading-bay-actor-library.py",
+  "blenderVersion": "5.1.2",
+  "source": {
+    "pack": "Kenney Animated Characters Retro",
+    "author": "Kenney",
+    "url": "https://kenney.nl/assets/animated-characters",
+    "license": "CC0 1.0",
+    "files": [
+      {
+        "path": "Model/characterMedium.fbx",
+        "sha256": "18835fef534eede635b081ee7fe647d01a885550a591d2e6bf071010906167d8"
+      },
+      {
+        "path": "License.txt",
+        "sha256": "eaa916e20df30c26f18a752290f93ab0e5d95c3dd1057e6887d11aa4acc0e74b"
+      },
+      {
+        "path": "Animations/idle.fbx",
+        "sha256": "c8a24e0294376ee5a195c56752a13310e1c0b5f8588a4db50e094120e3e4cc74"
+      },
+      {
+        "path": "Animations/run.fbx",
+        "sha256": "e635461fc8dace85ec67a7f7941e949a7c3f108b51ae4d2da1557e6e01749df8"
+      },
+      {
+        "path": "Animations/jump.fbx",
+        "sha256": "b88429077a7a1af5d3f55f43cfd8ce0f7441b4f6f7bb15a8070d7ed15d275f74"
+      },
+      {
+        "path": "Skins/zombieMaleA.png",
+        "sha256": "e0dab7c762bfc63e0fa29e4cad769bead9d990fb0c15a5d7aea2ba0b08d82c92"
+      },
+      {
+        "path": "Skins/zombieFemaleA.png",
+        "sha256": "0a13d975c1d97eda94823f7b1d57b08452153b028f8b2abbb6e31ebd7c94df73"
+      }
+    ]
+  },
+  "licenseNotice": {
+    "path": "KENNEY-CC0-LICENSE.txt",
+    "normalization": "UTF-8 LF with source indentation and trailing whitespace removed",
+    "sha256": "613d822181cefc9e55dfb8b59e9468e96feecb5bf4ca364b8ff579361eb859f0",
+    "bytes": 597
+  },
+  "variants": [
+    {
+      "file": "arc-warden.glb",
+      "sha256": "b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+      "bytes": 339812,
+      "skin": "zombieMaleA.png",
+      "clips": [
+        {
+          "id": "idle",
+          "frameStart": 1,
+          "frameEnd": 33,
+          "durationSeconds": 1.066667,
+          "origin": "Kenney source"
+        },
+        {
+          "id": "run",
+          "frameStart": 1,
+          "frameEnd": 17,
+          "durationSeconds": 0.533333,
+          "origin": "Kenney source"
+        },
+        {
+          "id": "jump",
+          "frameStart": 1,
+          "frameEnd": 13,
+          "durationSeconds": 0.4,
+          "origin": "Kenney source"
+        },
+        {
+          "id": "attack",
+          "frameStart": 0,
+          "frameEnd": 10,
+          "durationSeconds": 0.333333,
+          "origin": "Loading Bay derivative"
+        },
+        {
+          "id": "hit",
+          "frameStart": 0,
+          "frameEnd": 8,
+          "durationSeconds": 0.266667,
+          "origin": "Loading Bay derivative"
+        },
+        {
+          "id": "death",
+          "frameStart": 0,
+          "frameEnd": 22,
+          "durationSeconds": 0.733333,
+          "origin": "Loading Bay derivative"
+        }
+      ],
+      "targetHeight": 1.78,
+      "fps": 30,
+      "assetId": "mesh-animation/actor-kit/arc-warden",
+      "label": "Arc Warden"
+    },
+    {
+      "file": "bay-rusher.glb",
+      "sha256": "2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+      "bytes": 334232,
+      "skin": "zombieFemaleA.png",
+      "clips": [
+        {
+          "id": "idle",
+          "frameStart": 1,
+          "frameEnd": 33,
+          "durationSeconds": 1.066667,
+          "origin": "Kenney source"
+        },
+        {
+          "id": "run",
+          "frameStart": 1,
+          "frameEnd": 17,
+          "durationSeconds": 0.533333,
+          "origin": "Kenney source"
+        },
+        {
+          "id": "jump",
+          "frameStart": 1,
+          "frameEnd": 13,
+          "durationSeconds": 0.4,
+          "origin": "Kenney source"
+        },
+        {
+          "id": "attack",
+          "frameStart": 0,
+          "frameEnd": 10,
+          "durationSeconds": 0.333333,
+          "origin": "Loading Bay derivative"
+        },
+        {
+          "id": "hit",
+          "frameStart": 0,
+          "frameEnd": 8,
+          "durationSeconds": 0.266667,
+          "origin": "Loading Bay derivative"
+        },
+        {
+          "id": "death",
+          "frameStart": 0,
+          "frameEnd": 22,
+          "durationSeconds": 0.733333,
+          "origin": "Loading Bay derivative"
+        }
+      ],
+      "targetHeight": 1.78,
+      "fps": 30,
+      "assetId": "mesh-animation/actor-kit/bay-rusher",
+      "label": "Bay Rusher"
+    }
+  ]
+}

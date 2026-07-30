@@ -184,6 +184,7 @@ export interface VoxelCollisionDefinition {
   readonly voxelSize: number;
   readonly chunkSize: number;
   readonly solidVoxels: readonly VoxelAddress[];
+  readonly gameplayProxy?: boolean;
 }
 
 export interface GeneratedVoxelEnvironmentDefinition {
@@ -193,6 +194,7 @@ export interface GeneratedVoxelEnvironmentDefinition {
   readonly width: number;
   readonly height: number;
   readonly length: number;
+  readonly gameplayProxy?: boolean;
 }
 
 export interface MaterialVoxelDefinition {
@@ -204,6 +206,8 @@ export interface MaterialVoxelEnvironmentDefinition {
   readonly voxelSize: number;
   readonly chunkSize: number;
   readonly materialVoxels: readonly MaterialVoxelDefinition[];
+  readonly voxelAssets?: readonly string[];
+  readonly gameplayProxy?: boolean;
 }
 
 export interface EntityDefinition {
@@ -416,7 +420,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 21;
+  readonly schemaVersion: 22;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

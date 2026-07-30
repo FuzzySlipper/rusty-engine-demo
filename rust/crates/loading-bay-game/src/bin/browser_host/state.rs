@@ -9,7 +9,9 @@ use loading_bay_game::{
     SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretRegionState, StoredLight,
     VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
 };
-use render_model::{MaterialUvStrategy, RenderMaterialDescriptor, StaticMeshAsset};
+use render_model::{
+    MaterialUvStrategy, RenderFrameDiff, RenderMaterialDescriptor, StaticMeshAsset,
+};
 use serde::Serialize;
 
 use super::presentation::{project_presentation, BrowserFeedbackProjection, BrowserPresentation};
@@ -275,7 +277,9 @@ pub(super) struct BrowserStaticResources {
     voxel_solid_count: usize,
     voxel_navigation_hash: String,
     voxel_probe_path_length: usize,
+    voxel_environment_role: &'static str,
     voxel_meshes: Vec<BrowserVoxelMeshChunk>,
+    voxel_object_frame: RenderFrameDiff,
     lights: Vec<BrowserAuthoredLight>,
     generated_environment: Option<BrowserGeneratedEnvironment>,
     render_materials: Vec<RenderMaterialDescriptor>,
@@ -793,29 +797,33 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
     let scene = runtime
         .collision_scene()
         .expect("browser project collision scene");
-    let voxel_meshes = scene
-        .mesh_chunks()
-        .iter()
-        .map(|mesh| BrowserVoxelMeshChunk {
-            chunk: mesh.chunk,
-            content_hash: format!("{:016x}", mesh.content_hash),
-            translation: mesh.translation,
-            positions: mesh.positions.clone(),
-            normals: mesh.normals.clone(),
-            indices: mesh.indices.clone(),
-            groups: mesh
-                .groups
-                .iter()
-                .map(|group| BrowserVoxelMeshGroup {
-                    material_slot: group.material_slot,
-                    start: group.start,
-                    count: group.count,
-                })
-                .collect(),
-            bounds_min: mesh.bounds_min,
-            bounds_max: mesh.bounds_max,
-        })
-        .collect();
+    let voxel_meshes = if host.voxel_environment_role == "gameplayProxy" {
+        Vec::new()
+    } else {
+        scene
+            .mesh_chunks()
+            .iter()
+            .map(|mesh| BrowserVoxelMeshChunk {
+                chunk: mesh.chunk,
+                content_hash: format!("{:016x}", mesh.content_hash),
+                translation: mesh.translation,
+                positions: mesh.positions.clone(),
+                normals: mesh.normals.clone(),
+                indices: mesh.indices.clone(),
+                groups: mesh
+                    .groups
+                    .iter()
+                    .map(|group| BrowserVoxelMeshGroup {
+                        material_slot: group.material_slot,
+                        start: group.start,
+                        count: group.count,
+                    })
+                    .collect(),
+                bounds_min: mesh.bounds_min,
+                bounds_max: mesh.bounds_max,
+            })
+            .collect()
+    };
     let generated_environment = scene.generated_room().map(|(config, record)| {
         let mesh_vertices = scene.mesh_chunks().iter().map(|mesh| mesh.vertices).sum();
         let mesh_quads = scene.mesh_chunks().iter().map(|mesh| mesh.quads).sum();
@@ -894,7 +902,9 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
                 512,
             )
             .map_or(0, |step| step.path_len),
+        voxel_environment_role: host.voxel_environment_role,
         voxel_meshes,
+        voxel_object_frame: host.voxel_object_frame.clone(),
         lights,
         generated_environment,
         render_materials,

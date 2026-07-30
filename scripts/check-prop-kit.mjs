@@ -9,6 +9,10 @@ const MANIFEST_PATH = resolve(
   "content/assets/prop-kit/source-manifest.json",
 );
 const EVIDENCE_PATH = resolve(ROOT, "docs/evidence/prop-kit-authoring.json");
+const LEVEL_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/voxel-level-brush-authoring.json",
+);
 
 function invariant(condition, message) {
   if (!condition) throw new Error(`prop-kit invariant failed: ${message}`);
@@ -22,6 +26,7 @@ const projectBytes = await readFile(PROJECT_PATH);
 const project = JSON.parse(projectBytes);
 const manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf8"));
 const evidence = JSON.parse(await readFile(EVIDENCE_PATH, "utf8"));
+const levelEvidence = JSON.parse(await readFile(LEVEL_EVIDENCE_PATH, "utf8"));
 const scene = project.scenes.find(({ id }) => id === project.entryScene);
 
 invariant(scene !== undefined, "entry scene must exist");
@@ -39,9 +44,11 @@ invariant(
   evidence.landmarks.length === 2,
   "Studio evidence must cover two decorative landmarks",
 );
+const currentProjectHash = sha256(projectBytes);
 invariant(
-  sha256(projectBytes) === evidence.project.finalHash,
-  "evidence must name exact canonical project bytes",
+  currentProjectHash === evidence.project.finalHash ||
+    currentProjectHash === levelEvidence.projectHashAfter,
+  "canonical project must be the prop publication or its recorded brush-level descendant",
 );
 invariant(
   evidence.reload.passed &&
@@ -166,7 +173,8 @@ for (const entity of gameplayProps) {
 
 console.log(
   JSON.stringify({
-    projectHash: evidence.project.finalHash,
+    projectHash: currentProjectHash,
+    propPublicationHash: evidence.project.finalHash,
     assets: manifest.assets.length,
     mappedGameplayProps: evidence.appearanceMappings.length,
     landmarks: evidence.landmarks.length,

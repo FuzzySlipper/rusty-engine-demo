@@ -10,6 +10,8 @@ use serde_json::{json, Value};
 
 const CURRENT_PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const PROJECT_FILE: &str = "content/projects/loading-bay.project.json";
+const TEST_SCENE_ROOT_ID: u64 = 20_000;
+const TEST_SCENE_LIGHT_ID: u64 = 20_001;
 
 #[test]
 fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts() {
@@ -19,12 +21,12 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         &mut service,
         json!({
             "type": "describe",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "describe",
         }),
     );
     assert_eq!(described["type"], "described");
-    assert_eq!(described["adapter"]["adapterVersion"], 11);
+    assert_eq!(described["adapter"]["adapterVersion"], 12);
     assert!(described["adapter"]["operations"]
         .as_array()
         .is_some_and(|operations| operations
@@ -48,7 +50,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -61,10 +63,16 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         response["project"]["inspections"]["catalog"]["entryCount"],
         89
     );
-    assert_eq!(response["project"]["inspections"]["scene"]["nodeCount"], 77);
+    assert_eq!(
+        response["project"]["inspections"]["scene"]["nodeCount"],
+        response["project"]["sceneHierarchy"]["nodes"]
+            .as_array()
+            .unwrap()
+            .len()
+    );
     assert_eq!(
         response["project"]["inspections"]["entityState"]["entityCount"],
-        77
+        response["project"]["inspections"]["scene"]["nodeCount"]
     );
     let entity_inspection = response["project"]["inspections"]["entityState"]
         .as_object()
@@ -82,15 +90,30 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
     let component_references = response["project"]["entityComponents"]
         .as_array()
         .expect("entity component references are an array");
-    assert_eq!(component_references.len(), 28);
     assert_eq!(
-        component_references
-            .iter()
-            .filter(|reference| reference["componentTypeId"] == "rusty.voxel-object.instance")
-            .map(|reference| reference["ownerEntityId"].as_u64().unwrap())
-            .collect::<Vec<_>>(),
-        (88..=112).collect::<Vec<_>>()
+        component_references.len(),
+        response["project"]["voxelObjectAuthoring"]["instances"]
+            .as_array()
+            .unwrap()
+            .len()
+            + 3
     );
+    let voxel_references = component_references
+        .iter()
+        .filter(|reference| reference["componentTypeId"] == "rusty.voxel-object.instance")
+        .collect::<Vec<_>>();
+    assert_eq!(
+        voxel_references.len(),
+        response["project"]["voxelObjectAuthoring"]["instances"]
+            .as_array()
+            .unwrap()
+            .len()
+    );
+    for proof_owner in 88..=112 {
+        assert!(voxel_references
+            .iter()
+            .any(|reference| reference["ownerEntityId"] == proof_owner));
+    }
     let weapon_references = component_references
         .iter()
         .filter(|reference| reference["componentTypeId"] == "rusty-engine-demo.loading-bay.weapon")
@@ -102,7 +125,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len(),
-        77
+        response["project"]["inspections"]["scene"]["nodeCount"]
     );
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"][0]["label"],
@@ -153,7 +176,10 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .iter()
             .filter(|operation| operation["op"] == "createVoxelObjectInstance")
             .count(),
-        25
+        response["project"]["voxelObjectAuthoring"]["instances"]
+            .as_array()
+            .unwrap()
+            .len()
     );
     assert_eq!(
         response["project"]["projectionReadout"]["frameKind"],
@@ -199,7 +225,7 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "move-player",
             "expectedProjectHash": project_hash,
             "expectedSceneRevision": scene_revision,
@@ -240,7 +266,7 @@ fn typed_transform_is_owner_admitted_hash_guarded_persisted_and_reread() {
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "stale-move",
             "expectedProjectHash": project_hash,
             "expectedSceneRevision": scene_revision,
@@ -285,11 +311,11 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "missing",
             "expectedProjectHash": identity["projectHash"],
             "expectedSceneRevision": identity["sceneRevision"],
-            "entityId": 999,
+            "entityId": 99_999,
             "translation": [1.0, 2.0, 3.0],
         }),
     );
@@ -301,7 +327,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut service,
         json!({
             "type": "setEntityTranslation",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "invalid",
             "expectedProjectHash": identity["projectHash"],
             "expectedSceneRevision": identity["sceneRevision"],
@@ -329,7 +355,7 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         &mut StudioAdapterService::new(),
         json!({
             "type": "openProject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "bad-domain",
             "root": root.path(),
             "projectFile": PROJECT_FILE,
@@ -348,7 +374,7 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
         &mut service,
         json!({
             "type": "createProject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "create-project",
             "root": root.path(),
             "projectFile": "content/projects/new-project.project.json",
@@ -380,7 +406,7 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
         &mut service,
         json!({
             "type": "createProject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "duplicate-project",
             "root": root.path(),
             "projectFile": "content/projects/new-project.project.json",
@@ -397,7 +423,7 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
         &mut service,
         json!({
             "type": "saveProjectAs",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "save-as",
             "expectedProjectHash": created["project"]["identity"]["projectHash"],
             "root": root.path(),
@@ -435,15 +461,15 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "createSceneObject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "create-object",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
             "object": {
-                "entityId": 200,
+                "entityId": TEST_SCENE_ROOT_ID,
                 "name": "authoring-root",
                 "parentEntityId": null,
-                "childOrder": 200,
+                "childOrder": TEST_SCENE_ROOT_ID,
                 "transform": {
                     "translation": [1.0, 2.0, 3.0],
                     "rotation": [0.0, 0.0, 0.0, 1.0],
@@ -462,14 +488,14 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "createSceneObject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "create-light",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
             "object": {
-                "entityId": 201,
+                "entityId": TEST_SCENE_LIGHT_ID,
                 "name": "work-light",
-                "parentEntityId": 200,
+                "parentEntityId": TEST_SCENE_ROOT_ID,
                 "childOrder": 0,
                 "transform": {
                     "translation": [0.0, 4.0, 0.0],
@@ -506,11 +532,11 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setSceneObjectTransform",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "full-transform",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 200,
+            "entityId": TEST_SCENE_ROOT_ID,
             "transform": {
                 "translation": [3.0, 2.0, 1.0],
                 "rotation": [0.0, 0.70710677, 0.0, 0.70710677],
@@ -525,11 +551,11 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setSceneObjectAppearance",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "appearance",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 200,
+            "entityId": TEST_SCENE_ROOT_ID,
             "appearance": {
                 "kind": "staticMesh",
                 "asset": "mesh/player-marker",
@@ -544,7 +570,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         .iter()
         .find(|operation| {
             operation["op"] == "createStaticMeshInstance"
-                && operation["instance"]["metadata"]["sourceEntity"] == 200
+                && operation["instance"]["metadata"]["sourceEntity"] == TEST_SCENE_ROOT_ID
         })
         .unwrap();
     assert_eq!(
@@ -561,11 +587,11 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setSceneObjectAppearance",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "animated-appearance",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 200,
+            "entityId": TEST_SCENE_ROOT_ID,
             "appearance": {
                 "kind": "animatedMesh",
                 "asset": "mesh-animation/kenney-retro-character-medium",
@@ -590,7 +616,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         .iter()
         .find(|operation| {
             operation["op"] == "createAnimatedMeshInstance"
-                && operation["instance"]["metadata"]["sourceEntity"] == 200
+                && operation["instance"]["metadata"]["sourceEntity"] == TEST_SCENE_ROOT_ID
         })
         .unwrap();
     assert_eq!(animated_instance["instance"]["playback"]["clip"], "run");
@@ -601,11 +627,11 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setSceneObjectAppearance",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "invalid-animation-clip",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 200,
+            "entityId": TEST_SCENE_ROOT_ID,
             "appearance": {
                 "kind": "animatedMesh",
                 "asset": "mesh-animation/kenney-retro-character-medium",
@@ -621,10 +647,10 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setEntityCollision",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "collision",
             "expectedProjectHash": hash,
-            "entityId": 200,
+            "entityId": TEST_SCENE_ROOT_ID,
             "collision": { "enabled": true, "staticCollider": false }
         }),
     );
@@ -635,10 +661,10 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "setEntityKinematic",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "kinematic",
             "expectedProjectHash": hash,
-            "entityId": 200,
+            "entityId": TEST_SCENE_ROOT_ID,
             "kinematic": {
                 "halfExtents": [0.5, 0.75, 0.25],
                 "velocity": [0.0, 0.0, 0.0]
@@ -652,11 +678,11 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "renameSceneObject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "rename",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 200,
+            "entityId": TEST_SCENE_ROOT_ID,
             "name": "authored-display"
         }),
     );
@@ -668,12 +694,12 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "reparentSceneObject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "cycle",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 200,
-            "parentEntityId": 201,
+            "entityId": TEST_SCENE_ROOT_ID,
+            "parentEntityId": TEST_SCENE_LIGHT_ID,
             "childOrder": 0
         }),
     );
@@ -685,11 +711,11 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
         &mut service,
         json!({
             "type": "deleteSceneObject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "delete-subtree",
             "expectedProjectHash": hash,
             "expectedSceneRevision": revision,
-            "entityId": 200
+            "entityId": TEST_SCENE_ROOT_ID
         }),
     );
     assert_eq!(deleted["type"], "projectMutationApplied", "{deleted:#}");
@@ -702,7 +728,7 @@ fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admi
     assert!(persisted.scenes[0]
         .entities
         .iter()
-        .all(|entity| !matches!(entity.id, 200 | 201)));
+        .all(|entity| !matches!(entity.id, TEST_SCENE_ROOT_ID | TEST_SCENE_LIGHT_ID)));
 }
 
 #[test]
@@ -723,7 +749,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "prepareAssetImport",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "prepare-import",
             "expectedProjectHash": project_hash,
             "source": { "scope": "project", "path": source_path },
@@ -747,7 +773,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "applyAssetImport",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "apply-import",
             "expectedProjectHash": project_hash,
             "planId": prepared["plan"]["planId"],
@@ -801,7 +827,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "readProject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "read-drift"
         }),
     );
@@ -817,7 +843,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "prepareAssetReimport",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "prepare-reimport",
             "expectedProjectHash": project_hash,
             "assetId": "mesh/studio-triangle"
@@ -829,7 +855,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "applyAssetImport",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "apply-reimport",
             "expectedProjectHash": project_hash,
             "planId": reimport["plan"]["planId"],
@@ -857,7 +883,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "prepareAssetImport",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "prepare-invalid",
             "expectedProjectHash": project_hash,
             "source": { "scope": "project", "path": rejected_source },
@@ -877,7 +903,7 @@ fn asset_import_reimport_catalog_lock_and_render_payload_are_rust_owned() {
         &mut service,
         json!({
             "type": "applyAssetImport",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "apply-invalid",
             "expectedProjectHash": project_hash,
             "planId": failed_plan["plan"]["planId"],
@@ -943,7 +969,7 @@ fn malformed_unbounded_and_unsafe_paths_fail_closed() {
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "traversal",
             "root": root.path(),
             "projectFile": "../outside.project.json",
@@ -955,7 +981,7 @@ fn malformed_unbounded_and_unsafe_paths_fail_closed() {
         &mut service,
         json!({
             "type": "openProject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "relative-root",
             "root": "relative",
             "projectFile": PROJECT_FILE,
@@ -976,7 +1002,7 @@ fn symlinked_project_paths_are_rejected_even_when_the_target_stays_inside_root()
         &mut StudioAdapterService::new(),
         json!({
             "type": "openProject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "symlink",
             "root": root.path(),
             "projectFile": "content/projects/linked.project.json",
@@ -1049,7 +1075,7 @@ fn closed_weapon_outlet_replaces_then_core_rereads_across_fresh_process() {
         &mut service,
         json!({
             "type": "readProject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "canonical-reread",
         }),
     );
@@ -1113,7 +1139,7 @@ fn open(service: &mut StudioAdapterService, root: &TestProjectRoot) -> Value {
         service,
         json!({
             "type": "openProject",
-            "protocolVersion": 11,
+            "protocolVersion": 12,
             "requestId": "open",
             "root": root.path(),
             "projectFile": PROJECT_FILE,

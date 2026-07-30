@@ -39,8 +39,9 @@ use super::voxel::{
 };
 use super::voxel_object::{
     apply_prepared_voxel_object_conversion, attach_voxel_object_instance,
-    inspect_voxel_object_source, prepare_voxel_object_conversion, prepare_voxel_object_placement,
-    preview_prepared_voxel_object_conversion, PreparedProjectVoxelObjectConversion,
+    attach_voxel_object_instances, inspect_voxel_object_source, prepare_voxel_object_conversion,
+    prepare_voxel_object_placement, preview_prepared_voxel_object_conversion,
+    PreparedProjectVoxelObjectConversion,
 };
 
 struct OpenProject {
@@ -143,7 +144,7 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 11,
+                    adapter_version: 12,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -206,6 +207,7 @@ impl StudioAdapterService {
                         "discardVoxelObjectConversion",
                         "prepareVoxelObjectPlacement",
                         "attachVoxelObjectInstance",
+                        "attachVoxelObjectInstances",
                         "previewVoxelObjectInstance",
                         "closeProject",
                     ],
@@ -1326,6 +1328,21 @@ impl StudioAdapterService {
             } => self.mutate(request_id, |location| {
                 attach_voxel_object_instance(location, &expected_project_hash, scene_id, instance)
             }),
+            StudioAdapterRequest::AttachVoxelObjectInstances {
+                expected_project_hash,
+                placements,
+                ..
+            } => {
+                let operation_request_id = request_id.clone();
+                self.mutate(request_id, |location| {
+                    attach_voxel_object_instances(
+                        location,
+                        &operation_request_id,
+                        &expected_project_hash,
+                        placements,
+                    )
+                })
+            }
             StudioAdapterRequest::PreviewVoxelObjectInstance {
                 expected_project_hash,
                 scene_id,

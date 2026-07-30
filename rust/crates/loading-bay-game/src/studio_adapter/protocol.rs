@@ -27,10 +27,11 @@ use crate::{
     StoredVoxelObjectFrameSelection, StoredVoxelObjectMaterialOverride,
 };
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 11;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 12;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
+pub const MAX_VOXEL_OBJECT_INSTANCE_BATCH: usize = 32;
 pub const MAX_STUDIO_ENTITY_INSPECTOR_CONTRACTS: usize = 64;
 pub const MAX_STUDIO_ENTITY_COMPONENT_REFERENCES: usize = 4_096;
 pub const MAX_STUDIO_ENTITY_COMPONENTS_PER_OWNER: usize = 32;
@@ -511,6 +512,12 @@ pub enum StudioAdapterRequest {
         scene_id: String,
         instance: StudioVoxelObjectInstance,
     },
+    AttachVoxelObjectInstances {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        placements: Vec<StudioVoxelObjectPlacement>,
+    },
     PreviewVoxelObjectInstance {
         protocol_version: u32,
         request_id: String,
@@ -537,6 +544,13 @@ pub struct StudioVoxelObjectInstance {
     pub scale: [f32; 3],
     #[serde(default)]
     pub material_overrides: Vec<StoredVoxelObjectMaterialOverride>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StudioVoxelObjectPlacement {
+    pub scene_id: String,
+    pub instance: StudioVoxelObjectInstance,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -768,6 +782,9 @@ impl StudioAdapterRequest {
             | Self::AttachVoxelObjectInstance {
                 protocol_version, ..
             }
+            | Self::AttachVoxelObjectInstances {
+                protocol_version, ..
+            }
             | Self::PreviewVoxelObjectInstance {
                 protocol_version, ..
             }
@@ -837,6 +854,7 @@ impl StudioAdapterRequest {
             | Self::DiscardVoxelObjectConversion { request_id, .. }
             | Self::PrepareVoxelObjectPlacement { request_id, .. }
             | Self::AttachVoxelObjectInstance { request_id, .. }
+            | Self::AttachVoxelObjectInstances { request_id, .. }
             | Self::PreviewVoxelObjectInstance { request_id, .. }
             | Self::CloseProject { request_id, .. } => request_id,
         }
@@ -1693,6 +1711,19 @@ pub enum ProjectMutationReceipt {
         asset_id: String,
         frame_kind: &'static str,
     },
+    VoxelObjectInstancesAttached {
+        placements: Vec<VoxelObjectInstanceAttachmentReceipt>,
+    },
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoxelObjectInstanceAttachmentReceipt {
+    pub scene_id: String,
+    pub instance_id: String,
+    pub asset_id: String,
+    pub frame_kind: &'static str,
+    pub owner_entity_id: u64,
 }
 
 #[derive(Debug, Serialize)]

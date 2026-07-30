@@ -35,6 +35,7 @@ mod snapshot;
 mod stored_project;
 mod studio_adapter;
 mod vitality;
+mod voxel_object_projection;
 mod weapon_authoring;
 
 pub use combat::{
@@ -187,6 +188,8 @@ pub use vitality::{
     VitalityFact, VitalityReceipt, VitalityRejection, VitalityState, MAX_ARMOR,
     MAX_COMBAT_HITBOX_HALF_EXTENT, MAX_DAMAGE, MAX_HEALTH,
 };
+pub(crate) use voxel_object_projection::project_stored_voxel_objects_with;
+pub use voxel_object_projection::{project_stored_voxel_objects, StoredVoxelObjectProjectionError};
 pub use weapon_authoring::{
     decode_loading_bay_weapon_authoring_request, encode_loading_bay_weapon_authoring_response,
     LoadingBayWeaponAuthoringAttackMode, LoadingBayWeaponAuthoringBinding,

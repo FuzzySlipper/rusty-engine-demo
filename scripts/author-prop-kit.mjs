@@ -201,7 +201,7 @@ const root = PROJECT_ROOT;
 let current = (
   await adapter.send({
     type: "openProject",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: "prop-open",
     root,
     projectFile: relative(root, PROJECT),
@@ -238,7 +238,7 @@ for (const asset of MANIFEST.assets.filter(
     existing?.import === undefined
       ? await adapter.send({
           type: "prepareAssetImport",
-          protocolVersion: 11,
+          protocolVersion: 12,
           requestId: `prop-import-prepare-${requestId}`,
           expectedProjectHash: projectHash(current),
           source: { scope: "project", path: asset.importSourcePath },
@@ -250,7 +250,7 @@ for (const asset of MANIFEST.assets.filter(
         })
       : await adapter.send({
           type: "prepareAssetReimport",
-          protocolVersion: 11,
+          protocolVersion: 12,
           requestId: `prop-reimport-prepare-${requestId}`,
           expectedProjectHash: projectHash(current),
           assetId,
@@ -262,7 +262,7 @@ for (const asset of MANIFEST.assets.filter(
   }
   const applied = await adapter.send({
     type: "applyAssetImport",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: `prop-import-apply-${requestId}`,
     expectedProjectHash: projectHash(current),
     planId: prepared.response.plan.planId,
@@ -297,7 +297,7 @@ for (const [entityId, assetName] of appearances) {
   current = (
     await adapter.send({
       type: "setSceneObjectAppearance",
-      protocolVersion: 11,
+      protocolVersion: 12,
       requestId: `prop-appearance-${String(entityId)}`,
       expectedProjectHash: projectHash(current),
       expectedSceneRevision: sceneRevision(current),
@@ -327,7 +327,7 @@ for (const landmark of landmarks) {
     current = (
       await adapter.send({
         type: "deleteSceneObject",
-        protocolVersion: 11,
+        protocolVersion: 12,
         requestId: `prop-landmark-retire-${String(landmark.legacyEntityId)}`,
         expectedProjectHash: projectHash(current),
         expectedSceneRevision: sceneRevision(current),
@@ -353,7 +353,7 @@ for (const landmark of landmarks) {
   current = (
     await adapter.send({
       type: "createSceneObject",
-      protocolVersion: 11,
+      protocolVersion: 12,
       requestId: `prop-landmark-${String(landmark.entityId)}`,
       expectedProjectHash: projectHash(current),
       expectedSceneRevision: sceneRevision(current),
@@ -381,7 +381,7 @@ for (const landmark of landmarks) {
 
 const securityDoorReimport = await adapter.send({
   type: "prepareAssetReimport",
-  protocolVersion: 11,
+  protocolVersion: 12,
   requestId: "prop-security-door-reimport",
   expectedProjectHash: projectHash(current),
   assetId: "mesh/prop-kit/security-door",
@@ -390,7 +390,7 @@ if (securityDoorReimport.response.plan.reimportKind !== "noop") {
   current = (
     await adapter.send({
       type: "applyAssetImport",
-      protocolVersion: 11,
+      protocolVersion: 12,
       requestId: "prop-security-door-reimport-apply",
       expectedProjectHash: projectHash(current),
       planId: securityDoorReimport.response.plan.planId,
@@ -403,7 +403,7 @@ const finalHash = projectHash(current);
 const canonical = (
   await adapter.send({
     type: "readProject",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: "prop-canonical-read",
   })
 ).response;
@@ -413,7 +413,7 @@ const freshAdapter = new Adapter();
 const fresh = (
   await freshAdapter.send({
     type: "openProject",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: "prop-fresh-open",
     root,
     projectFile: relative(root, PROJECT),

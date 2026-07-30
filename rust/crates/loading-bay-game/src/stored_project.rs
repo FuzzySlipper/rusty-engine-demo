@@ -22,7 +22,7 @@ use crate::combat::{
 };
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 21;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 22;
 pub const MAX_PROJECT_VOXEL_OBJECTS: u64 = 256;
 pub const MAX_PROJECT_VOXEL_OBJECT_FRAMES: u64 = 8_193;
 pub const MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS: u64 = 65_536;
@@ -261,12 +261,24 @@ pub enum StoredVoxelEnvironment {
     GeneratedRoom(StoredGeneratedVoxelEnvironment),
 }
 
+impl StoredVoxelEnvironment {
+    pub fn gameplay_proxy(&self) -> bool {
+        match self {
+            Self::Solid(environment) => environment.gameplay_proxy,
+            Self::Material(environment) => environment.gameplay_proxy,
+            Self::GeneratedRoom(environment) => environment.gameplay_proxy,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredSolidVoxelEnvironment {
     pub voxel_size: f64,
     pub chunk_size: u32,
     pub solid_voxels: Vec<[i64; 3]>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub gameplay_proxy: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -277,6 +289,8 @@ pub struct StoredMaterialVoxelEnvironment {
     pub material_voxels: Vec<StoredMaterialVoxel>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub voxel_assets: Vec<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub gameplay_proxy: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -295,6 +309,8 @@ pub struct StoredGeneratedVoxelEnvironment {
     pub width: u32,
     pub height: u32,
     pub length: u32,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub gameplay_proxy: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

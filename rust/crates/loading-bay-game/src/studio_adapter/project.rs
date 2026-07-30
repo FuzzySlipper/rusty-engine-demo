@@ -40,18 +40,17 @@ use render_projection::{
 };
 use voxel_asset::{VoxelFrame, VoxelObjectAsset};
 use voxel_convert::VoxelObjectFrameSelection;
-use voxel_object_runtime::{admit_voxel_object, AdmittedVoxelObject, VoxelObjectRuntimeLimits};
+use voxel_object_runtime::{admit_voxel_object, VoxelObjectRuntimeLimits};
 
 use crate::stored_project::validate_voxel_object_aggregate_budget;
 use crate::weapon_authoring::loading_bay_weapon_owner_entity_ids;
 use crate::{
-    admit_stored_project_with_document, encode_project_document, AdmittedProject,
-    AdmittedStoredProject, DecodedProjectDocument, ProjectSaveMode, ProjectStore,
+    admit_stored_project_with_document, encode_project_document, project_stored_voxel_objects_with,
+    AdmittedProject, AdmittedStoredProject, DecodedProjectDocument, ProjectSaveMode, ProjectStore,
     StoredAssetImport, StoredCollision, StoredEntityDefinition, StoredImportSource,
     StoredKinematic, StoredLight, StoredProject, StoredRenderable, StoredScene,
-    StoredVoxelObjectFrameSelection, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID,
-    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION, LOADING_BAY_WEAPON_COMPONENT_TYPE_ID,
-    STORED_PROJECT_SCHEMA_VERSION,
+    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION,
+    LOADING_BAY_WEAPON_COMPONENT_TYPE_ID, STORED_PROJECT_SCHEMA_VERSION,
 };
 
 use super::host_file::read_host_file;
@@ -389,7 +388,6 @@ impl OpenedOwnerProject {
             .retained_entities;
         let projected = project_voxel_objects(
             self.stored.document(),
-            &self.catalog,
             None,
             projector,
             Some((instance_id, runtime_frame)),
@@ -419,7 +417,7 @@ impl OpenedOwnerProject {
         &self,
         projector: &mut VoxelObjectRenderProjector,
     ) -> Result<(), AdapterRejection> {
-        project_voxel_objects(self.stored.document(), &self.catalog, None, projector, None)?;
+        project_voxel_objects(self.stored.document(), None, projector, None)?;
         Ok(())
     }
 
@@ -442,13 +440,8 @@ impl OpenedOwnerProject {
     ) -> Result<(RenderFrameDiff, ProjectionReadout), AdapterRejection> {
         let project = self.stored.document();
         let voxel_projected = project_voxel_authoring(project, &self.catalog)?;
-        let object_projected = project_voxel_objects(
-            project,
-            &self.catalog,
-            candidate,
-            voxel_object_projector,
-            frame_override,
-        )?;
+        let object_projected =
+            project_voxel_objects(project, candidate, voxel_object_projector, frame_override)?;
         let light_projection = project_scene_lights(&self.scene)?;
         let retained_lights = self
             .scene
@@ -1249,6 +1242,15 @@ pub(crate) fn publish_project_mutation<T>(
     expected_project_hash: &str,
     mutate: impl FnOnce(&OpenedOwnerProject, &mut StoredProject) -> Result<T, AdapterRejection>,
 ) -> Result<PublishedProject<T>, AdapterRejection> {
+    publish_project_mutation_with_validation(location, expected_project_hash, mutate, |_, _| Ok(()))
+}
+
+pub(crate) fn publish_project_mutation_with_validation<T>(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    mutate: impl FnOnce(&OpenedOwnerProject, &mut StoredProject) -> Result<T, AdapterRejection>,
+    validate_staged: impl FnOnce(&T, &StudioProjectReadout) -> Result<(), AdapterRejection>,
+) -> Result<PublishedProject<T>, AdapterRejection> {
     let expected_hash = ContentHash::parse(expected_project_hash)
         .map_err(|error| reject("project.invalidHash", error.to_string()))?;
     let current = OpenedOwnerProject::load(location)?;
@@ -1304,6 +1306,7 @@ pub(crate) fn publish_project_mutation<T>(
         STORED_PROJECT_SCHEMA_VERSION,
     )?;
     let staged_readout = staged.readout()?;
+    validate_staged(&value, &staged_readout)?;
 
     let observed_next =
         ContentStoreIdentity::from_manifest(next_content_revision, &staged.manifest)
@@ -1335,166 +1338,13 @@ struct ProjectedVoxelObjects {
 
 fn project_voxel_objects(
     project: &StoredProject,
-    catalog: &AssetCatalog,
     candidate: Option<(&VoxelObjectAsset, &VoxelObjectFrameSelection)>,
     projector: &mut VoxelObjectRenderProjector,
     frame_override: Option<(&str, u32)>,
 ) -> Result<ProjectedVoxelObjects, AdapterRejection> {
-    validate_voxel_object_aggregate_budget(project, candidate.map(|(object, _)| object))
-        .map_err(stored_project_rejection)?;
-    let mut admitted = project
-        .assets
-        .iter()
-        .filter_map(|asset| asset.voxel_object.as_ref())
-        .map(|object| {
-            admit_voxel_object(object, VoxelObjectRuntimeLimits::default())
-                .map(|admitted| (object.asset_id.clone(), admitted))
-                .map_err(|error| {
-                    reject(
-                        "voxelObject.admissionRejected",
-                        format!("{}: {error}", object.asset_id),
-                    )
-                })
-        })
-        .collect::<Result<BTreeMap<String, AdmittedVoxelObject>, _>>()?;
-    if let Some((object, _)) = candidate {
-        let candidate = admit_voxel_object(object, VoxelObjectRuntimeLimits::default())
-            .map_err(|error| reject("voxelObject.admissionRejected", error.to_string()))?;
-        admitted.insert(object.asset_id.clone(), candidate);
-    }
-
-    let mut resolved = Vec::new();
-    for scene in project
-        .scenes
-        .iter()
-        .filter(|scene| scene.id == project.entry_scene)
-    {
-        for instance in &scene.voxel_object_instances {
-            let object = admitted
-                .get(&instance.voxel_object_asset_id)
-                .expect("stored-project admission validates voxel-object references");
-            resolved.push((
-                instance.instance_id.clone(),
-                instance.voxel_object_asset_id.clone(),
-                frame_override
-                    .filter(|(instance_id, _)| *instance_id == instance.instance_id)
-                    .map_or_else(
-                        || stored_object_frame(object, &instance.frame),
-                        |(_, frame)| Ok(frame),
-                    )?,
-                Transform {
-                    translation: instance.translation,
-                    rotation: instance.rotation,
-                    scale: instance.scale,
-                },
-                instance
-                    .material_overrides
-                    .iter()
-                    .map(|binding| MeshMaterialSlot {
-                        slot: binding.material_slot,
-                        material: binding.material_asset_id.clone(),
-                    })
-                    .collect::<Vec<_>>(),
-                RenderMetadata {
-                    source_entity: Some(instance.owner_entity_id),
-                    source_scene_node: Some(instance.owner_entity_id),
-                    tags: vec!["studio".to_string(), "voxel-object".to_string()],
-                    label: Some(instance.instance_id.clone()),
-                },
-            ));
-        }
-    }
-    if let Some((candidate_asset, selection)) = candidate {
-        let object = admitted
-            .get(&candidate_asset.asset_id)
-            .expect("candidate was admitted above");
-        resolved.push((
-            "studio-voxel-object-candidate".to_string(),
-            candidate_asset.asset_id.clone(),
-            selected_object_frame(object, selection)?,
-            Transform::IDENTITY,
-            Vec::new(),
-            RenderMetadata {
-                source_entity: None,
-                source_scene_node: None,
-                tags: vec![
-                    "candidate".to_string(),
-                    "studio".to_string(),
-                    "voxel-object".to_string(),
-                ],
-                label: Some("Voxel object candidate".to_string()),
-            },
-        ));
-    }
-
-    let instances = resolved
-        .iter()
-        .map(
-            |(instance_id, asset_id, frame, transform, overrides, metadata)| {
-                VoxelObjectProjectionInstance {
-                    instance_id: instance_id.clone(),
-                    object: admitted
-                        .get(asset_id)
-                        .expect("resolved object identity remains admitted"),
-                    frame: *frame,
-                    transform: *transform,
-                    visible: true,
-                    material_overrides: overrides.clone(),
-                    metadata: metadata.clone(),
-                }
-            },
-        )
-        .collect::<Vec<_>>();
-    let projected = projector
-        .project(&instances, &project_material_descriptors(catalog))
-        .map_err(|error| reject("projection.voxelObjectRejected", format!("{error:?}")))?;
-    Ok(ProjectedVoxelObjects {
-        frame: projected.frame,
-    })
-}
-
-fn stored_object_frame(
-    object: &AdmittedVoxelObject,
-    selection: &StoredVoxelObjectFrameSelection,
-) -> Result<u32, AdapterRejection> {
-    match selection {
-        StoredVoxelObjectFrameSelection::Default => Ok(0),
-        StoredVoxelObjectFrameSelection::Clip {
-            clip_id,
-            frame_index,
-        } => object
-            .clip(clip_id)
-            .and_then(|clip| clip.frame_indices.get(*frame_index as usize))
-            .copied()
-            .ok_or_else(|| {
-                reject(
-                    "voxelObject.frameRejected",
-                    format!("clip `{clip_id}` has no frame {frame_index}"),
-                )
-            }),
-    }
-}
-
-fn selected_object_frame(
-    object: &AdmittedVoxelObject,
-    selection: &VoxelObjectFrameSelection,
-) -> Result<u32, AdapterRejection> {
-    match selection {
-        VoxelObjectFrameSelection::Default => Ok(0),
-        VoxelObjectFrameSelection::Clip {
-            clip_id,
-            frame_index,
-        } => object
-            .clip(clip_id)
-            .and_then(|clip| clip.frame_indices.get(*frame_index as usize))
-            .copied()
-            .ok_or_else(|| {
-                reject(
-                    "voxelObject.frameRejected",
-                    format!("clip `{clip_id}` has no frame {frame_index}"),
-                )
-            }),
-    }
+    let frame = project_stored_voxel_objects_with(project, candidate, projector, frame_override)
+        .map_err(|error| reject("projection.voxelObjectRejected", error.to_string()))?;
+    Ok(ProjectedVoxelObjects { frame })
 }
 
 fn voxel_object_authoring_readout(project: &StoredProject) -> VoxelObjectAuthoringReadout {

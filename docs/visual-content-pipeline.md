@@ -32,9 +32,9 @@ Raw structured measurements are in
 
 The replacement work deliberately separates appearance from gameplay geometry:
 
-- The current material voxel environment supplies both the visible room mesh and canonical voxel
-  collision. VC7 may retain a coarse hidden voxel/collision representation, but the detailed
-  repeated brush kit is visual content and cannot silently become a second collision truth.
+- The material voxel environment is now an explicit hidden `gameplayProxy` supplying canonical
+  collision, navigation, and occlusion. The detailed repeated brush kit is visible content only
+  and cannot silently become a second gameplay truth.
 - Doors retain their Rust-owned `collision`, `kinematic`, `bounds`, `door`, access, and occlusion
   behavior. A closed/open mesh follows the admitted door state and transform.
 - Enemies retain Rust-owned kinematic bounds, health hitboxes, navigation, perception, attacks,
@@ -83,7 +83,7 @@ Studio protocol 11 imported all 17 source derivatives, published 26 gameplay-ent
 mappings, added two decorative landmarks, reread the canonical project, and reconstructed the same
 bytes through a fresh adapter process.
 
-The current canonical project hash is
+The VC5 publication hash was
 `81dd321e11f7aeb458e4a7aa5760ca2d37adc65f0265a956bd8919bddd54e770`. The prop kit contains
 8,127 vertices and 2,709 triangles. Its exact sources, derivative hashes, bounds, material slots,
 license hashes, and collision intent are recorded in
@@ -105,18 +105,17 @@ Rust component state; asset-name matching no longer owns gameplay presentation s
 
 ### Environment
 
-The scene retains its coarse material-voxel environment and the nine-definition/25-instance VC6
-proof room. The playable environment still has:
+The scene retains the coarse material-voxel environment as a hidden `gameplayProxy` and retains the
+nine-definition/25-instance VC6 proof room off the playable route. The gameplay proxy has:
 
 - `voxelSize: 1`, `chunkSize: 16`;
 - 3,931 authored material voxels across addresses `[0,0,0]` through `[30,4,51]`;
 - material-slot counts 2,243 / 1,612 / 76;
-- eight live renderer chunks;
-- 30,960 live vertices, 46,440 indices, and 20 material groups in the current projection.
+- eight canonical collider/navigation chunks.
 
-This environment is original Loading Bay content, but it is a monolithic one-unit grid rather than
-the planned reusable fine-grid brush workflow. VC6 #6356 authors and compares local brush
-treatments; VC7 #6357 rebuilds the visible level from repeated instances and explicit proxies.
+The proxy is original Loading Bay content, but it is not emitted as the complete visible room.
+VC7 #6357 rebuilds that appearance from repeated fine-grid object-local brush instances while
+preserving the proxy addresses and all gameplay identities.
 
 ### Camera-relative viewmodels
 
@@ -196,6 +195,22 @@ The installed Blender baseline is 5.1.2, build
 pivot, material handling, clip ranges/names, source hashes, and output GLB hashes. If attack, hit, or
 death clips are authored or derived, their changes must be reproducible and described rather than
 hidden behind renamed stock clips.
+
+### VC4 actor source checkpoint
+
+The reproducible actor source stage is now checked in under `content/assets/actor-kit`. Blender
+5.1.2 produces two independently skinned 1.78-unit GLBs from the reviewed medium rig and installs
+the exact six-clip set `idle`, `run`, `jump`, `attack`, `hit`, `death`. Kenney owns the first three
+clips and both source skins under CC0; Loading Bay owns the explicit recipe-defined attack, hit, and
+death root actions. The completed GLBs are 339,812 and 334,232 bytes and retain one skinned mesh,
+one material, and one embedded texture each.
+
+This checkpoint intentionally stops at the supported authoring boundary. Protocol-11
+`prepareAssetImport` currently returns typed `assetImport.sourceNotUtf8` for the binary GLB because
+the public Engine importer admits textual static mesh sources only. Rusty Engine #6433 owns the
+bounded binary animated-mesh import, persistence, replacement, and preview seam. VC4 will pin that
+reviewed provider and publish through Studio; it will not decode GLB, hand-author retained payloads,
+or load Three.js privately downstream.
 
 ### Prop and landmark inputs
 
@@ -333,6 +348,59 @@ full 2.45 MiB project reconstructions in one evidence run and is not a native ru
 The synchronous backend durations are CPU-side submission evidence under headless SwiftShader,
 not GPU completion time. Event-to-event intervals are dominated by deliberate camera focus,
 reconstruction, and browser automation and are not presented as frame cadence.
+
+## VC7 repeated-brush Loading Bay
+
+The playable Loading Bay is now composed from 342 new durable instances of the same nine VC6
+definitions. The off-route 25-instance proof room remains for exact comparison, giving 367
+instances and 419 serialized entities in the scene. No per-placement asset copy or
+downstream mesh cache exists.
+
+`scripts/author-loading-bay-brush-level.mjs` derived placement transforms from the admitted
+gameplay-proxy addresses and the canonical door entities, then published 11 ordered Rust-owned
+Studio protocol-12 batches with at most 32 create-only placements apiece. Each accepted batch
+performed complete candidate admission, deterministic owner allocation, one atomic project
+publication, and one canonical readout. The project changed from
+`477cfd0fc44385710e0049398c2f23de17bb72a2a6905d665e1df1cb0f04557e` to
+`3a1518c45e7201865c5dc4c04b5e8d2a77be5ad760d3449fef3d56d327feb1ae`; same-process reread and a
+fresh adapter both reconstructed that exact hash.
+
+| Shared definition | Playable repeats |
+| ----------------- | ---------------: |
+| Ceiling strip     |               28 |
+| Floor strip       |               28 |
+| Conservative wall |              215 |
+| Dense wall insert |               38 |
+| Vent panel        |               16 |
+| Doorway surround  |                5 |
+| Column            |                6 |
+| Corner            |                4 |
+| Relay landmark    |                2 |
+
+Every new owner is decorative: it has no collision, kinematic, trigger, door, switch, hazard,
+secret, pickup, or enemy component. Each of the five canonical doors has exactly one named
+doorway-surround instance, while door collision/occlusion and open/closed behavior remain on the
+original Rust-owned entity. Floors, ceilings, wall relief, columns, corners, and landmarks likewise
+cannot affect motion or rays.
+
+The exact Engine line combines atomic batch placement, canonical greedy same-material coplanar
+meshing, and copy-on-write retained-projection staging at
+`5a42db2feac72788b25eedf8d5efbc0fb2ec2afd`. Greedy meshing reduced the complete structural frame
+to 739,471 bytes, below the 2 MiB product bound, while source-face quota charging remains
+unchanged. The real Studio route reconstructed nine definitions and 367 instances through one
+shared `RendererSurface`. Its initial complete submission reported 123 draws, 34,514 triangles,
+412 handles, 49 geometries, and 63 materials. Selecting two distinct conservative-wall owners
+kept the same geometry/material counts, proving individual picking over shared resources.
+
+Close reached zero canvases; open, resize at 1280×720 and 1600×900, cache-bypassing reload, and
+selection after reload each returned one ready/no-error canvas. Exact evidence is in
+[`voxel-level-brush-authoring.json`](evidence/voxel-level-brush-authoring.json) and
+[`voxel-level-brush-studio-browser.json`](evidence/voxel-level-brush-studio-browser.json).
+Screenshots:
+
+- [complete playable brush scene](evidence/voxel-level-brush-studio-overview.png);
+- [selected conservative wall owner](evidence/voxel-level-brush-wall-primary.png);
+- [second repeated conservative wall owner](evidence/voxel-level-brush-wall-repeated.png).
 
 ## Placeholder performance baseline
 

@@ -472,7 +472,9 @@ export interface RuntimeBrowserState {
   readonly levelExits: readonly RuntimeLevelExitState[];
   readonly levelComplete: boolean;
   readonly interaction: RuntimeInteractionState | null;
+  readonly voxelEnvironmentRole: "visible" | "gameplayProxy" | "none";
   readonly voxelMeshes: readonly RuntimeVoxelMeshChunk[];
+  readonly voxelObjectFrame: RenderFrameDiff;
   readonly lights: readonly RuntimeAuthoredLight[];
   readonly renderMaterials: readonly RenderMaterialDescriptor[];
   readonly staticMeshes: readonly StaticMeshAsset[];
@@ -536,6 +538,8 @@ export class RuntimeProjectionAdapter {
   readonly #definedStaticMeshes = new Map<string, string>();
   #acceptedRenderMaterials: readonly RenderMaterialDescriptor[] | null = null;
   #acceptedStaticMeshes: readonly StaticMeshAsset[] | null = null;
+  #acceptedVoxelObjectFrame: RenderFrameDiff | null = null;
+  #voxelObjectFrameFingerprint: string | null = null;
   readonly #meshHashes = new Map<string, string>();
   readonly #meshHandles = new Map<string, RenderHandle>();
   readonly #knownLights = new Map<number, LightDescriptor>();
@@ -552,6 +556,8 @@ export class RuntimeProjectionAdapter {
     const nextDefinedStaticMeshes = new Map(this.#definedStaticMeshes);
     let nextAcceptedRenderMaterials = this.#acceptedRenderMaterials;
     let nextAcceptedStaticMeshes = this.#acceptedStaticMeshes;
+    let nextAcceptedVoxelObjectFrame = this.#acceptedVoxelObjectFrame;
+    let nextVoxelObjectFrameFingerprint = this.#voxelObjectFrameFingerprint;
     let nextMeshHandle = this.#nextMeshHandle;
     const ops: RenderDiff[] = [];
     const staticMeshes = new Map(
@@ -598,6 +604,22 @@ export class RuntimeProjectionAdapter {
         }
       }
       nextAcceptedStaticMeshes = state.staticMeshes;
+    }
+    if (state.voxelObjectFrame !== this.#acceptedVoxelObjectFrame) {
+      const fingerprint = JSON.stringify(state.voxelObjectFrame);
+      if (
+        this.#voxelObjectFrameFingerprint !== null &&
+        fingerprint !== this.#voxelObjectFrameFingerprint
+      ) {
+        throw new Error(
+          "runtime voxel-object structure changed without a renderer session replacement",
+        );
+      }
+      if (this.#voxelObjectFrameFingerprint === null) {
+        ops.push(...state.voxelObjectFrame.ops);
+      }
+      nextAcceptedVoxelObjectFrame = state.voxelObjectFrame;
+      nextVoxelObjectFrameFingerprint = fingerprint;
     }
     const incomingMeshes = new Set<string>();
     for (const mesh of state.voxelMeshes) {
@@ -745,6 +767,9 @@ export class RuntimeProjectionAdapter {
         replaceMap(this.#definedStaticMeshes, nextDefinedStaticMeshes);
         this.#acceptedRenderMaterials = nextAcceptedRenderMaterials;
         this.#acceptedStaticMeshes = nextAcceptedStaticMeshes;
+        this.#acceptedVoxelObjectFrame = nextAcceptedVoxelObjectFrame;
+        this.#voxelObjectFrameFingerprint =
+          nextVoxelObjectFrameFingerprint;
         this.#nextMeshHandle = nextMeshHandle;
         this.#revision += 1;
         committed = true;

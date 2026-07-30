@@ -28,7 +28,9 @@ const authoringEvidence = JSON.parse(
   await readFile(resolve(ROOT, AUTHORING_EVIDENCE), "utf8"),
 );
 const PROJECT_HASH =
-  authoringEvidence.finalHash ?? authoringEvidence.project?.finalHash;
+  authoringEvidence.finalHash ??
+  authoringEvidence.projectHashAfter ??
+  authoringEvidence.project?.finalHash;
 if (typeof PROJECT_HASH !== "string") {
   throw new Error("authoring evidence has no final project hash");
 }
@@ -106,7 +108,7 @@ async function evaluate(expression) {
 }
 
 async function waitFor(expression, description) {
-  for (let attempt = 0; attempt < 240; attempt += 1) {
+  for (let attempt = 0; attempt < 480; attempt += 1) {
     if (await evaluate(expression)) return;
     await delay(125);
   }

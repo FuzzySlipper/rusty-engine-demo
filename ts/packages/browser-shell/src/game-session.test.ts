@@ -134,7 +134,9 @@ const resources = {
   voxelSolidCount: 1,
   voxelNavigationHash: "def",
   voxelProbePathLength: 2,
+  voxelEnvironmentRole: "visible",
   voxelMeshes: [],
+  voxelObjectFrame: { schemaVersion: 1, ops: [] },
   lights: [],
   renderMaterials: [],
   staticMeshes: [],
@@ -232,6 +234,34 @@ test("serialized mesh resources require bounded geometry and closed material ref
         ...envelope,
         resources: invalidBounds as never,
       }),
+    (error) =>
+      error instanceof GameSessionError && error.code === "protocolMismatch",
+  );
+});
+
+test("serialized voxel-object frames are validated at the session boundary", () => {
+  const envelope: ServerUpdateEnvelope = {
+    protocolVersion: 1,
+    sessionId: "loading-bay-1",
+    connectionGeneration: 1,
+    serverTick: 1,
+    snapshotSequence: 1,
+    acknowledgedCommandSequence: 0,
+    staticRevision: resources.staticRevision,
+    update: { kind: "full", state: dynamic },
+    resources: {
+      ...resources,
+      voxelObjectFrame: {
+        schemaVersion: 1,
+        ops: [{ op: "inventedRendererMutation" }],
+      },
+    } as never,
+    facts: [],
+    metrics,
+  };
+
+  assert.throws(
+    () => applyServerUpdate(null, envelope),
     (error) =>
       error instanceof GameSessionError && error.code === "protocolMismatch",
   );

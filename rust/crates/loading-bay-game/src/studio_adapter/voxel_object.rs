@@ -17,12 +17,16 @@ use crate::{
 };
 
 use super::path::ProjectLocation;
-use super::project::{publish_project_mutation, OpenedOwnerProject};
+use super::project::{
+    publish_project_mutation, publish_project_mutation_with_validation, OpenedOwnerProject,
+};
 use super::protocol::{
     AdapterRejection, ProjectMutationReceipt, ProjectionReadout, StudioFileSelection,
-    StudioProjectReadout, StudioVoxelObjectInstance, StudioVoxelObjectSourceKind,
-    VoxelObjectAnimationProperty, VoxelObjectSourceClipReadout, VoxelObjectSourceDiagnostic,
-    VoxelObjectSourceInspection,
+    StudioProjectReadout, StudioVoxelObjectInstance, StudioVoxelObjectPlacement,
+    StudioVoxelObjectSourceKind, VoxelObjectAnimationProperty,
+    VoxelObjectInstanceAttachmentReceipt, VoxelObjectSourceClipReadout,
+    VoxelObjectSourceDiagnostic, VoxelObjectSourceInspection, MAX_STUDIO_ADAPTER_RESPONSE_BYTES,
+    MAX_VOXEL_OBJECT_INSTANCE_BATCH, STUDIO_ADAPTER_PROTOCOL_VERSION,
 };
 use super::voxel::{conversion_rejection, load_expected, read_selection};
 
@@ -473,6 +477,173 @@ pub(crate) fn attach_voxel_object_instance(
                 frame_kind,
             })
         })?;
+    Ok((published.value, published.readout))
+}
+
+pub(crate) fn attach_voxel_object_instances(
+    location: &ProjectLocation,
+    request_id: &str,
+    expected_project_hash: &str,
+    placements: Vec<StudioVoxelObjectPlacement>,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    if placements.is_empty() || placements.len() > MAX_VOXEL_OBJECT_INSTANCE_BATCH {
+        return Err(reject(
+            "voxelObject.invalidPlacementBatch",
+            format!(
+                "voxel-object placement batch must contain 1..={} entries",
+                MAX_VOXEL_OBJECT_INSTANCE_BATCH
+            ),
+        ));
+    }
+    let mut request_instance_ids = BTreeSet::new();
+    for (index, placement) in placements.iter().enumerate() {
+        if !request_instance_ids.insert(placement.instance.instance_id.as_str()) {
+            return Err(reject(
+                "voxelObject.duplicatePlacementIdentity",
+                format!(
+                    "placements[{index}] repeats instance identity `{}`",
+                    placement.instance.instance_id
+                ),
+            ));
+        }
+    }
+
+    let request_id = request_id.to_string();
+    let published = publish_project_mutation_with_validation(
+        location,
+        expected_project_hash,
+        move |current, project| {
+            let existing_instance_ids = current
+                .document()
+                .scenes
+                .iter()
+                .flat_map(|scene| scene.voxel_object_instances.iter())
+                .map(|instance| instance.instance_id.as_str())
+                .collect::<BTreeSet<_>>();
+            if let Some((index, placement)) =
+                placements.iter().enumerate().find(|(_, placement)| {
+                    existing_instance_ids.contains(placement.instance.instance_id.as_str())
+                })
+            {
+                return Err(reject(
+                    "voxelObject.instanceIdentityCollision",
+                    format!(
+                        "placements[{index}] collides with existing instance `{}`",
+                        placement.instance.instance_id
+                    ),
+                ));
+            }
+
+            let mut next_owner_entity_id = project
+                .scenes
+                .iter()
+                .flat_map(|scene| scene.entities.iter())
+                .map(|entity| entity.id)
+                .max()
+                .unwrap_or(0);
+            let mut receipt = Vec::with_capacity(placements.len());
+            for (index, placement) in placements.into_iter().enumerate() {
+                next_owner_entity_id = next_owner_entity_id
+                    .checked_add(1)
+                    .filter(|entity_id| *entity_id <= JSON_SAFE_U64_MASK)
+                    .ok_or_else(|| {
+                        reject(
+                            "voxelObject.ownerIdentityExhausted",
+                            format!(
+                                "placements[{index}] cannot allocate another JSON-safe entity owner"
+                            ),
+                        )
+                    })?;
+                let scene = project
+                    .scenes
+                    .iter_mut()
+                    .find(|scene| scene.id == placement.scene_id)
+                    .ok_or_else(|| {
+                        reject(
+                            "project.missingScene",
+                            format!(
+                                "placements[{index}] references missing scene `{}`",
+                                placement.scene_id
+                            ),
+                        )
+                    })?;
+                let child_order = scene
+                    .entities
+                    .iter()
+                    .filter(|entity| entity.parent.is_none())
+                    .map(|entity| entity.child_order)
+                    .max()
+                    .map_or(Some(0), |order| order.checked_add(1))
+                    .ok_or_else(|| {
+                        reject(
+                            "voxelObject.ownerOrderExhausted",
+                            format!(
+                                "placements[{index}] cannot allocate another root hierarchy order"
+                            ),
+                        )
+                    })?;
+                let frame_kind = match &placement.instance.frame {
+                    StoredVoxelObjectFrameSelection::Default => "default",
+                    StoredVoxelObjectFrameSelection::Clip { .. } => "clip",
+                };
+                let instance_id = placement.instance.instance_id.clone();
+                let asset_id = placement.instance.voxel_object_asset_id.clone();
+                scene.entities.push(voxel_object_owner(
+                    next_owner_entity_id,
+                    child_order,
+                    &placement.instance,
+                ));
+                scene
+                    .voxel_object_instances
+                    .push(stored_voxel_object_instance(
+                        next_owner_entity_id,
+                        placement.instance,
+                    ));
+                receipt.push(VoxelObjectInstanceAttachmentReceipt {
+                    scene_id: placement.scene_id,
+                    instance_id,
+                    asset_id,
+                    frame_kind,
+                    owner_entity_id: next_owner_entity_id,
+                });
+            }
+            Ok(ProjectMutationReceipt::VoxelObjectInstancesAttached {
+                placements: receipt,
+            })
+        },
+        |receipt, readout| {
+            #[derive(serde::Serialize)]
+            #[serde(rename_all = "camelCase")]
+            struct MutationResponseProbe<'a> {
+                #[serde(rename = "type")]
+                response_type: &'static str,
+                protocol_version: u32,
+                request_id: &'a str,
+                receipt: &'a ProjectMutationReceipt,
+                project: &'a StudioProjectReadout,
+            }
+
+            let encoded = serde_json::to_vec(&MutationResponseProbe {
+                response_type: "projectMutationApplied",
+                protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
+                request_id: &request_id,
+                receipt,
+                project: readout,
+            })
+            .map_err(|error| reject("protocol.responseEncode", error.to_string()))?;
+            if encoded.len() > MAX_STUDIO_ADAPTER_RESPONSE_BYTES {
+                return Err(reject(
+                    "protocol.responseTooLarge",
+                    format!(
+                        "batch mutation response is {} bytes, exceeding the {}-byte bound",
+                        encoded.len(),
+                        MAX_STUDIO_ADAPTER_RESPONSE_BYTES
+                    ),
+                ));
+            }
+            Ok(())
+        },
+    )?;
     Ok((published.value, published.readout))
 }
 

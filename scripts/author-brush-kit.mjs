@@ -229,7 +229,7 @@ const root = dirname(dirname(dirname(PROJECT)));
 let current = (
   await adapter.send({
     type: "openProject",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: "brush-open",
     root,
     projectFile: relative(root, PROJECT),
@@ -244,7 +244,7 @@ for (const module of modules) {
   const preparedImport = (
     await adapter.send({
       type: "prepareAssetImport",
-      protocolVersion: 11,
+      protocolVersion: 12,
       requestId: `brush-import-prepare-${module.name}`,
       expectedProjectHash: projectHash(current),
       source: { scope: "project", path: sourcePath },
@@ -263,7 +263,7 @@ for (const module of modules) {
   current = (
     await adapter.send({
       type: "applyAssetImport",
-      protocolVersion: 11,
+      protocolVersion: 12,
       requestId: `brush-import-apply-${module.name}`,
       expectedProjectHash: projectHash(current),
       planId: preparedImport.plan.planId,
@@ -273,7 +273,7 @@ for (const module of modules) {
 
   const inspected = await adapter.send({
     type: "inspectVoxelObjectSource",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: `brush-inspect-${module.name}`,
     expectedProjectHash: projectHash(current),
     sourceKind: "static",
@@ -283,7 +283,7 @@ for (const module of modules) {
   });
   const conversion = await adapter.send({
     type: "prepareVoxelObjectConversion",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: `brush-convert-prepare-${module.name}`,
     expectedProjectHash: projectHash(current),
     sourceKind: "static",
@@ -365,7 +365,7 @@ for (const module of modules) {
   current = (
     await adapter.send({
       type: "applyVoxelObjectConversion",
-      protocolVersion: 11,
+      protocolVersion: 12,
       requestId: `brush-convert-apply-${module.name}`,
       expectedProjectHash: projectHash(current),
       planId: conversion.response.plan.planId,
@@ -402,7 +402,7 @@ for (const [name, instanceId, translation, yaw] of placements) {
   const module = authored.find((entry) => entry.name === name);
   await adapter.send({
     type: "prepareVoxelObjectPlacement",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: `brush-place-prepare-${instanceId}`,
     expectedProjectHash: projectHash(current),
     assetId: objectId(name),
@@ -410,7 +410,7 @@ for (const [name, instanceId, translation, yaw] of placements) {
   });
   const attached = await adapter.send({
     type: "attachVoxelObjectInstance",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: `brush-place-attach-${instanceId}`,
     expectedProjectHash: projectHash(current),
     sceneId: "scene/loading-bay",
@@ -444,7 +444,7 @@ const finalHash = projectHash(current);
 const reopened = (
   await adapter.send({
     type: "readProject",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: "brush-read",
   })
 ).response;
@@ -453,7 +453,7 @@ const freshAdapter = new Adapter();
 const fresh = (
   await freshAdapter.send({
     type: "openProject",
-    protocolVersion: 11,
+    protocolVersion: 12,
     requestId: "brush-fresh-open",
     root,
     projectFile: relative(root, PROJECT),

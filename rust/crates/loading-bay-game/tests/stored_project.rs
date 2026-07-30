@@ -43,7 +43,15 @@ fn studio_authored_project_is_static_typed_multi_family_content() {
             ))
         ));
     assert_eq!(project.scenes.len(), 1);
-    assert_eq!(project.scenes[0].voxel_object_instances.len(), 25);
+    assert_eq!(project.scenes[0].voxel_object_instances.len(), 367);
+    assert_eq!(
+        project.scenes[0]
+            .voxel_object_instances
+            .iter()
+            .filter(|instance| instance.instance_id.starts_with("level-"))
+            .count(),
+        342
+    );
 
     let entities = &project.scenes[0].entities;
     assert!(entities

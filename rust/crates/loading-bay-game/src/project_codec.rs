@@ -19,7 +19,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 20;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 21;
+const LEGACY_V20_STORED_PROJECT_SCHEMA_VERSION: u32 = 20;
 const LEGACY_V19_STORED_PROJECT_SCHEMA_VERSION: u32 = 19;
 const LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION: u32 = 18;
 const LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION: u32 = 17;
@@ -65,6 +66,10 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => {
+            reject_schema_twenty_one_gameplay_proxy_field(input)?;
+            migrate_v21(decode_legacy_project(input)?)?
+        }
+        LEGACY_V20_STORED_PROJECT_SCHEMA_VERSION => {
             reject_schema_twenty_instances_without_owners(input)?;
             migrate_v20(decode_legacy_project(input)?)?
         }
@@ -87,7 +92,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                 diagnostic_code::UNSUPPORTED_SCHEMA,
                 "schemaVersion",
                 format!(
-                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
+                    "supported project schemas are {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, and {}; found {actual}",
                     PROJECT_CONTENT_SCHEMA_VERSION,
                     LEGACY_V7_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V8_STORED_PROJECT_SCHEMA_VERSION,
@@ -102,6 +107,7 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
                     LEGACY_V17_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V18_STORED_PROJECT_SCHEMA_VERSION,
                     LEGACY_V19_STORED_PROJECT_SCHEMA_VERSION,
+                    LEGACY_V20_STORED_PROJECT_SCHEMA_VERSION,
                     PREVIOUS_STORED_PROJECT_SCHEMA_VERSION,
                     STORED_PROJECT_SCHEMA_VERSION
                 ),
@@ -225,10 +231,44 @@ fn decode_legacy_project(input: &str) -> Result<StoredProject, StoredProjectErro
 fn migrate_v20(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
+        LEGACY_V20_STORED_PROJECT_SCHEMA_VERSION
+    );
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn migrate_v21(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
     );
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
+}
+
+fn reject_schema_twenty_one_gameplay_proxy_field(input: &str) -> Result<(), StoredProjectError> {
+    let value: serde_json::Value = serde_json::from_str(input).map_err(|error| {
+        StoredProjectError::new(diagnostic_code::DECODE, "$", error.to_string())
+    })?;
+    if value
+        .get("scenes")
+        .and_then(serde_json::Value::as_array)
+        .is_some_and(|scenes| {
+            scenes.iter().any(|scene| {
+                scene
+                    .get("voxelEnvironment")
+                    .and_then(serde_json::Value::as_object)
+                    .is_some_and(|environment| environment.contains_key("gameplayProxy"))
+            })
+        })
+    {
+        return Err(StoredProjectError::new(
+            diagnostic_code::UNSUPPORTED_SCHEMA,
+            "scenes[].voxelEnvironment.gameplayProxy",
+            "schema 21 cannot declare the schema-22 gameplay proxy role",
+        ));
+    }
+    Ok(())
 }
 
 fn reject_schema_twenty_instances_without_owners(input: &str) -> Result<(), StoredProjectError> {

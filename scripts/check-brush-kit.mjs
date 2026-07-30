@@ -16,6 +16,10 @@ const PROP_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/prop-kit-authoring.json",
 );
+const LEVEL_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/voxel-level-brush-authoring.json",
+);
 
 const expectedModules = new Set([
   "wall-conservative",
@@ -54,6 +58,7 @@ const project = JSON.parse(projectBytes);
 const evidence = JSON.parse(await readFile(EVIDENCE_PATH, "utf8"));
 const browser = JSON.parse(await readFile(BROWSER_EVIDENCE_PATH, "utf8"));
 const propEvidence = JSON.parse(await readFile(PROP_EVIDENCE_PATH, "utf8"));
+const levelEvidence = JSON.parse(await readFile(LEVEL_EVIDENCE_PATH, "utf8"));
 const scene = project.scenes.find(
   ({ id }) => id === evidence.proofRoom.sceneId,
 );
@@ -63,8 +68,9 @@ invariant(scene !== undefined, "proof-room scene must exist");
 invariant(
   currentProjectHash === evidence.finalHash ||
     (propEvidence.project.startingHash === evidence.finalHash &&
-      propEvidence.project.finalHash === currentProjectHash),
-  "current project must be the exact brush proof or its recorded prop-kit descendant",
+      propEvidence.project.finalHash === currentProjectHash) ||
+    currentProjectHash === levelEvidence.projectHashAfter,
+  "current project must retain the exact brush proof in a recorded descendant",
 );
 invariant(
   evidence.finalHash === evidence.readbackHash,

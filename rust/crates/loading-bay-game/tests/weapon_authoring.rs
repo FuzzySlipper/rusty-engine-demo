@@ -3,7 +3,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use loading_bay_game::{
-    decode_loading_bay_weapon_authoring_request, encode_loading_bay_weapon_authoring_response,
+    decode_loading_bay_weapon_authoring_request, decode_project_document,
+    encode_loading_bay_weapon_authoring_response, encode_project_document,
     LoadingBayWeaponAuthoringCandidate, LoadingBayWeaponAuthoringRejectionCode,
     LoadingBayWeaponAuthoringRequest, LoadingBayWeaponAuthoringResponse,
     LoadingBayWeaponAuthoringService, ProjectLocation, ProjectStore,
@@ -126,6 +127,59 @@ fn closed_codec_and_readout_freeze_the_real_weapon_identity() {
         MAX_LOADING_BAY_WEAPON_AUTHORING_REQUEST_BYTES + 1
     );
     assert!(decode_loading_bay_weapon_authoring_request(&one_over).is_err());
+}
+
+#[test]
+fn decorative_entity_growth_does_not_renumber_weapon_inspector_owners() {
+    let root = TestProjectRoot::new();
+    let location = root.location();
+    let mut project = decode_project_document(CURRENT_PROJECT).unwrap().project;
+    let mut decoration = project.scenes[0].entities[0].clone();
+    decoration.id = 9_000;
+    decoration.name = "later-studio-decoration".to_string();
+    decoration.parent = None;
+    decoration.child_order = project.scenes[0].entities.len() as u32;
+    decoration.light = None;
+    decoration.bounds = None;
+    decoration.collision = None;
+    decoration.door = None;
+    decoration.switch = None;
+    decoration.enemy = false;
+    decoration.enemy_combat = None;
+    decoration.defeat_drop = None;
+    decoration.health = None;
+    decoration.hazard = None;
+    decoration.encounter = None;
+    decoration.extraction_beacon = None;
+    decoration.kinematic = None;
+    decoration.navigation = None;
+    decoration.player_controller = None;
+    decoration.inventory = None;
+    decoration.pickup = None;
+    decoration.weapon = None;
+    decoration.secret_region = None;
+    decoration.level_exit = None;
+    project.scenes[0].entities.push(decoration);
+    fs::write(
+        location.project_file(),
+        encode_project_document(&project).unwrap(),
+    )
+    .unwrap();
+
+    let response = LoadingBayWeaponAuthoringService::new().handle(
+        &location,
+        LoadingBayWeaponAuthoringRequest::ReadLoadingBayWeapon {
+            contract_version: LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION,
+            request_id: "stable-owner".to_string(),
+            expected_project_hash: project_hash(&location),
+            owner_entity_id: ARC_PISTOL_ENTITY,
+        },
+    );
+    let LoadingBayWeaponAuthoringResponse::LoadingBayWeaponRead { weapon, .. } = &response else {
+        panic!("stable weapon owner should remain readable after decoration growth: {response:?}");
+    };
+    assert_eq!(weapon.owner_entity_id, ARC_PISTOL_ENTITY);
+    assert_eq!(weapon.item_definition_id, "weapon/arc-pistol");
 }
 
 #[test]

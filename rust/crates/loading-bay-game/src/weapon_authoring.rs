@@ -23,6 +23,8 @@ pub const LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION: u32 = 1;
 pub const MAX_LOADING_BAY_WEAPON_AUTHORING_REQUEST_BYTES: usize = 16 * 1024;
 pub const MAX_LOADING_BAY_WEAPON_AUTHORING_RESPONSE_BYTES: usize = 32 * 1024;
 const MAX_REQUEST_ID_BYTES: usize = 256;
+const LOADING_BAY_PROJECT_ID: &str = "loading-bay";
+const FIRST_LOADING_BAY_WEAPON_OWNER_ENTITY_ID: u64 = 113;
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(
@@ -563,6 +565,9 @@ fn resolve_binding(
 pub(crate) fn loading_bay_weapon_owner_entity_ids(
     project: &StoredProject,
 ) -> Result<Vec<u64>, &'static str> {
+    if project.project_id != LOADING_BAY_PROJECT_ID {
+        return Ok(Vec::new());
+    }
     Ok(all_bindings(project)?
         .into_iter()
         .map(|binding| binding.owner_entity_id)
@@ -575,14 +580,6 @@ fn all_bindings(project: &StoredProject) -> Result<Vec<ResolvedBinding<'_>>, &'s
         .iter()
         .find(|scene| scene.id == project.entry_scene)
         .ok_or("entry scene is missing while resolving weapon inspector owners")?;
-    let first = scene
-        .entities
-        .iter()
-        .map(|entity| entity.id)
-        .max()
-        .unwrap_or(0)
-        .checked_add(1)
-        .ok_or("weapon inspector owner identity exceeds the supported range")?;
     let inventories: BTreeMap<_, _> = scene
         .entities
         .iter()
@@ -598,7 +595,7 @@ fn all_bindings(project: &StoredProject) -> Result<Vec<ResolvedBinding<'_>>, &'s
         for (slot_index, item_definition_id) in inventory.weapon_slots.iter().enumerate() {
             let offset = u64::try_from(bindings.len())
                 .map_err(|_| "weapon inspector owner identity exceeds the supported range")?;
-            let owner_entity_id = first
+            let owner_entity_id = FIRST_LOADING_BAY_WEAPON_OWNER_ENTITY_ID
                 .checked_add(offset)
                 .ok_or("weapon inspector owner identity exceeds the supported range")?;
             bindings.push(ResolvedBinding {

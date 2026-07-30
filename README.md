@@ -123,6 +123,10 @@ source and license hashes, voxel-brush experiment, and exact comparison baseline
 The imported industrial prop sources are Kenney CC0 1.0 assets; their copied notices and exact
 source/derivative hashes are recorded in
 [docs/source-provenance.md](docs/source-provenance.md#vc5-serialized-industrial-prop-kit).
+The production actor source kit is likewise reproducible from Kenney's CC0 Animated Characters
+Retro pack. Its Blender 5.1.2 recipe, exact six-clip GLB hashes, embedded skins, and copied notice
+are recorded in
+[docs/source-provenance.md](docs/source-provenance.md#vc4-production-animated-actor-source-kit).
 
 The repository's one active Rusty Engine revision is declared in
 [`engine-source.json`](engine-source.json). Check it with `./scripts/engine-revision check`, preview

@@ -11,12 +11,13 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use core_ids::EntityId;
 use loading_bay_game::{
     admit_stored_project_with_document, encode_project_document, materialize_stored_project_voxels,
-    AdmittedStoredProject, CombatFact, CombatMissReason, GameEvent, GameLoopFact, GameRuntime,
-    LoadingBayGameLoop, NavigationFact, PlayerControlFact, ProjectSaveMode, ProjectStore,
-    SaveGameError, SaveGameStore, SaveProjectIdentity, SaveSlotId, SaveSlotSummary,
-    SaveWriteRequest, VoxelEdit, VoxelEditTransaction, VoxelSourceRevision,
+    project_stored_voxel_objects, AdmittedStoredProject, CombatFact, CombatMissReason, GameEvent,
+    GameLoopFact, GameRuntime, LoadingBayGameLoop, NavigationFact, PlayerControlFact,
+    ProjectSaveMode, ProjectStore, SaveGameError, SaveGameStore, SaveProjectIdentity, SaveSlotId,
+    SaveSlotSummary, SaveWriteRequest, VoxelEdit, VoxelEditTransaction, VoxelSourceRevision,
     MAX_PENDING_GAME_LOOP_FACTS,
 };
+use render_model::RenderFrameDiff;
 use serde::{Deserialize, Serialize};
 use voxel_convert::source_sha256;
 
@@ -57,6 +58,8 @@ struct BrowserRuntime {
     host_session_id: String,
     runtime: LoadingBayGameLoop,
     authored: AdmittedStoredProject,
+    voxel_object_frame: RenderFrameDiff,
+    voxel_environment_role: &'static str,
     project_path: PathBuf,
     project: BrowserProjectSummary,
     pending_restart: Option<PendingRestart>,
@@ -124,6 +127,21 @@ impl BrowserRuntime {
         };
         let (authored, admitted) = admit_stored_project_with_document(decoded.project)
             .map_err(|error| format!("project admission failed: {error}"))?;
+        let voxel_object_frame = project_stored_voxel_objects(authored.document())
+            .map_err(|error| format!("voxel-object projection failed: {error}"))?;
+        let voxel_environment_role = authored
+            .document()
+            .scenes
+            .iter()
+            .find(|scene| scene.id == authored.document().entry_scene)
+            .and_then(|scene| scene.voxel_environment.as_ref())
+            .map_or("none", |environment| {
+                if environment.gameplay_proxy() {
+                    "gameplayProxy"
+                } else {
+                    "visible"
+                }
+            });
         let save_identity = SaveProjectIdentity::from_project(authored.document(), ACTOR)
             .map_err(|error| format!("could not identify authored project for saves: {error}"))?;
         let save_store = SaveGameStore::new(save_root);
@@ -133,6 +151,8 @@ impl BrowserRuntime {
             runtime: LoadingBayGameLoop::new(GameRuntime::from_admitted_project(admitted), ACTOR)
                 .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?,
             authored,
+            voxel_object_frame,
+            voxel_environment_role,
             project_path,
             project,
             pending_restart: None,
@@ -316,6 +336,8 @@ impl BrowserRuntime {
             runtime: LoadingBayGameLoop::new(runtime, ACTOR)
                 .map_err(|error| format!("could not restore Loading Bay game loop: {error}"))?,
             authored: self.authored.clone(),
+            voxel_object_frame: self.voxel_object_frame.clone(),
+            voxel_environment_role: self.voxel_environment_role,
             project_path: self.project_path.clone(),
             project: self.project.clone(),
             pending_restart: None,
@@ -1590,7 +1612,9 @@ mod tests {
             "voxelSolidCount",
             "voxelNavigationHash",
             "voxelProbePathLength",
+            "voxelEnvironmentRole",
             "voxelMeshes",
+            "voxelObjectFrame",
         ] {
             assert_eq!(after_rejection[field], before[field], "changed {field}");
         }
@@ -1622,7 +1646,9 @@ mod tests {
         );
         assert_ne!(edited["voxelAuthorityHash"], before["voxelAuthorityHash"]);
         assert_ne!(edited["voxelNavigationHash"], before["voxelNavigationHash"]);
-        assert_ne!(edited["voxelMeshes"], before["voxelMeshes"]);
+        assert_eq!(edited["voxelEnvironmentRole"], "gameplayProxy");
+        assert_eq!(edited["voxelMeshes"], serde_json::json!([]));
+        assert_eq!(edited["voxelObjectFrame"], before["voxelObjectFrame"]);
     }
 
     #[test]
