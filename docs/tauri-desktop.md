@@ -31,7 +31,10 @@ pnpm run smoke:tauri
 `prepare:tauri` builds Angular, builds `browser-host` for the selected Rust target, and creates a
 canonical manifest containing the exact Git revision, byte length, and SHA-256 digest of every
 web/content resource plus the sidecar. Tauri runs that preparation automatically before a release
-build. Generated binaries and manifests are build outputs, not committed inputs.
+build, and `test:tauri` runs it before checking the generated manifest. Generated binaries and
+manifests are build outputs, not committed inputs. Ordinary non-release Cargo workspace checks
+compile the desktop crate with bundle resources disabled; release builds retain the complete
+configuration and fail if the prepared sidecar or resource tree is absent.
 
 The direct Linux layout is:
 

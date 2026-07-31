@@ -32,7 +32,7 @@
     "test:platform": "node --test libs/platform/src/*.test.ts",
     "test:shell": "pnpm --filter @rusty-engine-demo/browser-shell test",
     "test:studio": "nx run loading-bay-studio:test && nx run studio-weapon-inspector:test",
-    "test:tauri": "cargo test --locked -p loading-bay-desktop && node --test scripts/prepare-tauri.test.mjs",
+    "test:tauri": "pnpm run prepare:tauri && cargo test --locked -p loading-bay-desktop && node --test scripts/prepare-tauri.test.mjs",
     "verify:tauri": "pnpm run test:tauri && pnpm run build:tauri:binary && pnpm run inspect:tauri && pnpm run smoke:tauri",
     "test:browser": "node scripts/browser-smoke.mjs",
     "test:ts": "pnpm --filter @rusty-engine-demo/project-content test",
