@@ -144,6 +144,100 @@ Do not hand-write renderer payloads, import Three loaders, copy an Engine packag
 second TypeScript catalog. Reimport is a guarded canonical project replacement, not an alternate
 asset cache.
 
+## Cold-agent visual-content reproduction
+
+These two recipes reproduce the campaign's production authoring paths without touching the
+canonical project. They deliberately copy the complete `content` tree because import sources and
+license notices are project-scoped. Inspect the resulting JSON diff and evidence before choosing
+whether to repeat a mutation against the canonical artifact.
+
+### Import and reimport one animated actor
+
+The checked Blender recipe reads the Kenney Animated Characters Retro source pack and emits both
+reviewed variants. To reproduce the source binaries from the locally installed pack:
+
+```bash
+PYTHONPATH=/usr/lib/python3.14/site-packages blender \
+  --background --factory-startup \
+  --python scripts/blender/build-loading-bay-actor-library.py -- \
+  --source-root /home/stash/mesh-resources/kenney_animated-characters-retro \
+  --output-dir content/assets/actor-kit
+node scripts/check-actor-kit.mjs
+```
+
+The check requires Blender 5.1.2 output recorded by
+`content/assets/actor-kit/source-manifest.json`: two GLBs, one embedded skin each, and the exact
+`idle`, `run`, `jump`, `attack`, `hit`, and `death` clip set. Re-run the guarded import/reimport
+against an isolated project:
+
+```bash
+actor_worktree="$(mktemp -d)"
+cp -a content "${actor_worktree}/content"
+git show f3eec1114a3835af2b694867f8677c9f4accfb7e:content/projects/loading-bay.project.json \
+  >"${actor_worktree}/content/projects/loading-bay.project.json"
+node scripts/author-actor-kit.mjs \
+  "${actor_worktree}/content/projects/loading-bay.project.json" \
+  "${actor_worktree}/actor-kit-authoring.json" \
+  "${actor_worktree}"
+node scripts/check-actor-kit.mjs
+```
+
+The exact reviewed `f3eec111…` project predates the actor import while the copied current `content`
+tree supplies the reviewed project-scoped GLBs and notice. The receipt must report the same source
+hashes, a typed stale-hash non-mutation, structural import of both assets, a no-op reimport for
+unchanged source, byte-stable save/reopen, and the same hash from a fresh adapter process. Delete
+the temporary directory after inspecting it. For the public viewport proof, start the supported
+Studio host for that copy, set `RUSTY_STUDIO_ACTOR_HOST`, and run
+`node scripts/capture-actor-kit-studio.mjs`; the committed reference evidence places all six clips
+on both identities and proves +2 geometry, +2 material, +2 texture, and +12 independently animated
+instances through resize, close/open, reload, remount, and disposal.
+
+### Author, place, duplicate, save, and reload one voxel brush
+
+The brush source is original Loading Bay geometry. Blender emits bounded GLB and mesh-JSON inputs;
+Studio converts those sources into canonical voxel-object definitions and owns placement:
+
+```bash
+blender --background --factory-startup \
+  --python scripts/blender/build-loading-bay-brush-kit.py
+node scripts/check-brush-kit.mjs
+
+brush_worktree="$(mktemp -d)"
+cp -a content "${brush_worktree}/content"
+pnpm run prepare:brush-reproduction -- \
+  "${brush_worktree}/content/projects/loading-bay.project.json"
+node scripts/author-brush-kit.mjs \
+  "${brush_worktree}/content/projects/loading-bay.project.json" \
+  "${brush_worktree}/voxel-brush-kit-authoring.json"
+```
+
+The preparation command refuses the canonical project and is intended only for a disposable copy.
+It removes the current 367 presentation-only brush owners and their nine
+material/mesh/object-definition triples, rejecting any owner with a gameplay component; every
+gameplay entity, proxy, and binding remains. The authoring receipt must then contain nine
+definitions, 25 request-ordered proof-room instances, exact object content hashes, aggregate
+admission, canonical reread, and fresh-adapter persistence. Start the supported Studio host on that
+isolated project, set `RUSTY_STUDIO_BRUSH_HOST`, and run:
+
+```bash
+RUSTY_STUDIO_AUTHORING_EVIDENCE="${brush_worktree}/voxel-brush-kit-authoring.json" \
+  node scripts/capture-brush-kit-studio.mjs
+```
+
+In the viewport, select a definition, place it through the placement ghost, duplicate the selected
+instance, change only its transform/material override, save, close/open, reload, and start a fresh
+adapter. The accepted result retains one canonical definition per brush identity, stable
+request-order owner identities, exact picking, and one shared renderer canvas. Escape cancellation,
+stale project/object hashes, duplicate owners, invalid transforms, one-over aggregate bounds, and a
+failed final batch entry must leave the prior project bytes unchanged. The committed reference
+receipts and screenshots are `docs/evidence/voxel-brush-kit-authoring.json`,
+`docs/evidence/voxel-level-brush-authoring.json`, and the adjacent
+`voxel-*-studio-*.json`/`.png` files.
+
+Neither recipe defines vertices or voxel grids in Rust gameplay logic. Neither creates a
+downstream GLB decoder, asset cache, level grid, renderer, animation scheduler, or private Studio
+bridge.
+
 ## Recipe: add an enemy content variant
 
 Use this when sight/hearing range, body size, health, movement speed, attack kind/range/damage,

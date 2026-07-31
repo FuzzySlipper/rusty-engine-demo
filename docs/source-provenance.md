@@ -266,8 +266,10 @@ normalizing its indentation, trailing whitespace, and line endings to repository
 `License.txt` hash remains recorded separately in the manifest.
 
 Rusty Engine task #6433 supplies the bounded binary animated-mesh import and shared retained
-renderer at exact public revision `b48f0df8746176e2775a884f1f418e6d8e26481e`. The Rust-owned
-Studio path publishes the two assets into schema-22 project hash
+renderer at independently approved public revision
+`80ac6ed3f0bd1d9911edf44e33bcc90831d8909e`; the completed Demo pins its reviewed descendant
+`0e0c49442d0c3d876a1336a5a829087f6e2314db`. The Rust-owned Studio path publishes the two assets
+into schema-22 project hash
 `ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750`,
 preserving each source path, SHA-256, byte count, converter/settings hash, license path, bounds, and
 six source-clip schedules. No-op reimport preserves that hash; changed source requires explicit
@@ -406,9 +408,11 @@ dress was read, converted, copied, or distributed.
 
 The original authored placeholder identities described above remain historical introduction
 points. Under #6354 every visible non-actor gameplay entity instead references the serialized
-prop-kit assets recorded in the preceding section. The player and enemy archetypes remain the only
-bounded primitive fallbacks pending their separately owned actor task. All checked-in third-party
-visual sources are the separately itemized Kenney CC0 files in this document.
+prop-kit assets recorded in the preceding section. Under #6355 and #6358 all eight visible enemies
+use the serialized Arc Warden or Bay Rusher animated actor with a capability-complete posture
+binding. The first-person player marker and gameplay proxies are intentionally not rendered; no
+shipped visible renderable uses a primitive fallback. All checked-in third-party visual sources are
+the separately itemized Kenney CC0 files in this document.
 Campaign route checkpoints, deterministic artifact hashes, and product proof are recorded in
 `docs/loading-bay-playtest.md`.
 
@@ -447,9 +451,9 @@ Rusty Engine task #6213 produced the renderer-owned timing seam at public SHA
 integration evidence adopted by #6219. Rusty Engine task #6263 then produced the bounded
 camera-relative `viewmodel` layer and explicit world/depth-clear/viewmodel composition at public SHA
 `e622c941671bc0f167206b049ab94ea63495a86d`, initially adopted by #6224 and retained in the current
-reviewed Engine descendant `9813bf6f759a8967a5de1681d4726f7b17254ca5`. Engine task #6416 owns
-that descendant's correction which keeps a serialized static-mesh definition reusable after its
-last live instance is destroyed; #6354 consumes it for world-pickup to camera-relative viewmodel
-transitions without a downstream resource cache or redefinition loop.
+reviewed Engine descendant `0e0c49442d0c3d876a1336a5a829087f6e2314db`. Engine task #6416 owns
+the correction which keeps a serialized static-mesh definition reusable after its last live
+instance is destroyed; #6354 consumes it for world-pickup to camera-relative viewmodel transitions
+without a downstream resource cache or redefinition loop.
 The downstream call site reads `surface.timing()` from the shared auto-started surface; no demo
 frame scheduler, backend clock, renderer object access, or private renderer was introduced.

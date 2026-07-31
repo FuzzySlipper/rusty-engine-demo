@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "productRevision": "67e8d1d609f46d11fe8da0d990fc7a9b6ab33285",
+  "engineRevision": "0e0c49442d0c3d876a1336a5a829087f6e2314db",
+  "project": {
+    "path": "content/projects/loading-bay.project.json",
+    "sha256": "95f87931503ddc7f54ab85f54ca08f94399db59e2534d2bf882592594975da89",
+    "schemaVersion": 23,
+    "assets": 89,
+    "entities": 419,
+    "visibleRenderables": 37,
+    "voxelObjectDefinitions": 9,
+    "routeBrushInstances": 342,
+    "proofRoomBrushInstances": 25,
+    "animatedActorIdentities": 2,
+    "animatedGameplayActors": 8,
+    "gameplayPropBindings": 25
+  },
+  "visualAudit": {
+    "desktop": {
+      "path": "docs/evidence/final-game-desktop.png",
+      "viewport": [1600, 900]
+    },
+    "narrow": {
+      "path": "docs/evidence/final-game-narrow.png",
+      "viewport": [390, 844]
+    },
+    "studio": [
+      "docs/evidence/actor-kit-studio-arc-warden-attack.png",
+      "docs/evidence/actor-kit-studio-bay-rusher-death.png",
+      "docs/evidence/prop-kit-studio-overview.png",
+      "docs/evidence/prop-kit-studio-crane.png",
+      "docs/evidence/prop-kit-studio-tank.png",
+      "docs/evidence/voxel-level-brush-studio-overview.png",
+      "docs/evidence/voxel-level-brush-wall-primary.png",
+      "docs/evidence/voxel-level-brush-wall-repeated.png"
+    ],
+    "intentionalInvisible": [
+      "first-person player marker",
+      "encounter contacts",
+      "secret trigger region",
+      "material-voxel gameplayProxy"
+    ],
+    "primitiveVisibleFallbacks": 0
+  },
+  "authoringEvidence": {
+    "actors": "docs/evidence/actor-kit-authoring.json",
+    "actorStudio": "docs/evidence/actor-kit-studio-browser.json",
+    "props": "docs/evidence/prop-kit-authoring.json",
+    "propStudio": "docs/evidence/prop-kit-studio-browser.json",
+    "brushDefinitions": "docs/evidence/voxel-brush-kit-authoring.json",
+    "brushLevel": "docs/evidence/voxel-level-brush-authoring.json",
+    "brushStudio": "docs/evidence/voxel-level-brush-studio-browser.json",
+    "visualBindings": "docs/evidence/visual-bindings.json",
+    "typedFailureCoverage": [
+      "stale project and asset hashes",
+      "malformed or oversized GLB",
+      "missing texture and invalid clip sets",
+      "duplicate owner or asset identity",
+      "missing gameplay-reachable visual states",
+      "one-over project, owner, cell, instance, and response bounds",
+      "failed final batch entry without publication"
+    ]
+  },
+  "productGate": {
+    "githubRun": 30595962674,
+    "githubJob": 91048265860,
+    "status": "passed",
+    "roundTripMaxMilliseconds": 1536.6,
+    "queueMaxima": {
+      "input": 1,
+      "edge": 1,
+      "outbound": 1
+    },
+    "droppedFacts": 0,
+    "tails": [
+      "normal-control campaign",
+      "combat and resources",
+      "secret and progression",
+      "completed save",
+      "fresh-host Continue",
+      "converted project",
+      "schema migration",
+      "fresh page",
+      "renderer statistics",
+      "picking",
+      "reset",
+      "remount",
+      "disposal"
+    ]
+  },
+  "authority": {
+    "gameplay": "Rust",
+    "projectAndAssets": "canonical Studio project and project-scoped source assets",
+    "browser": "immutable typed projection and disposable presentation",
+    "renderer": "one exact-pinned Rusty Engine RendererSurface",
+    "forbiddenDuplicatesFound": []
+  }
+}

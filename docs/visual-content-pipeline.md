@@ -3,7 +3,8 @@
 This document freezes the pre-replacement visual baseline for Den campaign
 `rusty-engine-demo #6350`. The evidence revision is
 `cd25485445bfb581c4005b221a23caa21408d327`, with Rust, renderer, and Studio packages pinned to
-Rusty Engine `198dccaa3f6b15d776b58d0f60c0f025e4b12171`.
+the then-reviewed Rusty Engine `198dccaa3f6b15d776b58d0f60c0f025e4b12171`. The completed
+campaign revision and current pin are recorded in the final certification below.
 
 Task #6351 imports no assets and changes no runtime authority. Its purpose is to make the current
 placeholder implementation, candidate sources, ownership decisions, and comparison measurements
@@ -97,11 +98,13 @@ license hashes, and collision intent are recorded in
 | Weapon silhouettes     | arc pistol, breach scattergun, rivet carbine, muzzle flash                              | World pickups plus one camera-relative retained viewmodel  |
 | Visual-only landmarks  | overhead crane, coolant tank                                                            | Two serialized scene landmarks with no gameplay components |
 
-The browser receives admitted material and static-mesh resources from Rust. Only the player marker
-and the two enemy archetypes retain the explicitly bounded primitive fallback, pending VC4 #6355.
-An absent non-actor mesh now rejects projection instead of silently becoming a colored cube or
-sphere. Door, switch, pickup, hazard, beacon, and exit appearance variants are selected from typed
-Rust component state; asset-name matching no longer owns gameplay presentation state.
+The browser receives admitted material, static-mesh, and animated-mesh resources from Rust. The
+first-person player marker is intentionally invisible; all eight visible enemies use the two
+serialized animated actor identities. No shipped visible renderable references a `primitive/*`
+asset. An absent gameplay mesh or capability-required visual state rejects admission/projection
+instead of silently becoming a colored cube or sphere. Door, switch, pickup, hazard, beacon, and
+exit appearance variants are selected from typed Rust component state; asset-name matching no
+longer owns gameplay presentation state.
 
 ### Environment
 
@@ -128,7 +131,7 @@ from accepted Rust state and facts; they cannot alter aim, ammunition, damage, o
 
 ### Public Studio and game proof
 
-The public Studio shell reconstructed the exact project at Engine revision
+The VC5 public Studio checkpoint reconstructed the then-current project at Engine revision
 `9813bf6f759a8967a5de1681d4726f7b17254ca5` with 89 assets, 74 entities, one shared canvas, and no
 renderer error. Selecting the overhead crane and coolant tank through the public hierarchy raised
 the submitted frame from 12 draw calls / 340 triangles to 66 draw calls / 312,646 triangles and 62
@@ -190,11 +193,10 @@ is shipped by #6351.
 | `kenney_blocky-characters_20/Models/GLB format/character-a.glb` | `8ee5dae167ec589863f6bba222467eb90ace8be357a4c5abfcab289290181616` | Static/alternate silhouette comparison                                 |
 | `.../character-r.glb`                                           | `b880654e0bcf4cfda119750d1ae0842ccfb73ae22f7844ab95015122b746808a` | Second alternate silhouette comparison                                 |
 
-The installed Blender baseline is 5.1.2, build
-`ec6e62d40fa9`. VC4 must record the exact Blender version, import/export settings, axes, scale,
-pivot, material handling, clip ranges/names, source hashes, and output GLB hashes. If attack, hit, or
-death clips are authored or derived, their changes must be reproducible and described rather than
-hidden behind renamed stock clips.
+The installed Blender baseline is 5.1.2, build `ec6e62d40fa9`. VC4 records the exact Blender
+version, import/export settings, axes, scale, pivot, material handling, clip ranges/names, source
+hashes, and output GLB hashes in the checked recipe and manifest. The Loading Bay-authored attack,
+hit, and death actions are reproducible recipe inputs rather than renamed stock clips.
 
 ### VC4 imported actor result
 
@@ -205,10 +207,11 @@ clips and both source skins under CC0; Loading Bay owns the explicit recipe-defi
 death root actions. The completed GLBs are 339,812 and 334,232 bytes and retain one skinned mesh,
 one material, and one embedded texture each.
 
-Protocol 12 consumes Rusty Engine #6433 at exact revision
-`b48f0df8746176e2775a884f1f418e6d8e26481e`. The Rust-owned Studio adapter imports both binary
-GLBs as durable `mesh-animation/*` assets, validates their embedded buffers, textures, bounds, and
-six clips, and atomically publishes canonical project hash
+Protocol 12 consumes the independently approved Rusty Engine #6433 provider at exact revision
+`80ac6ed3f0bd1d9911edf44e33bcc90831d8909e`; the final product pins its reviewed descendant
+`0e0c49442d0c3d876a1336a5a829087f6e2314db`. The Rust-owned Studio adapter imports both binary GLBs
+as durable `mesh-animation/*` assets, validates their embedded buffers, textures, bounds, and six
+clips, and atomically publishes canonical project hash
 `ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750`.
 The downstream never decodes GLB, hand-authors retained payloads, or loads Three.js privately.
 
@@ -590,7 +593,8 @@ Rusty Engine #6361 and downstream #6378 now close that observability gap at exac
 `a6857d03141e162511231c276ee751a3413c90e5` and Demo implementation revision
 `602e8ed60312aaea308097abb9816b8523a5bd1f`. The shared surface publishes immutable typed
 statistics, and the ordinary desktop/headed tools retain the complete status, scope, and value.
-The exact browser proof records this current placeholder and a deterministic richer stress load:
+The exact browser proof records this historical placeholder checkpoint and a deterministic richer
+stress load:
 
 | Renderer statistic  | Scope          | Placeholder | Rich stress | Delta | Restored |
 | ------------------- | -------------- | ----------: | ----------: | ----: | -------: |
@@ -618,11 +622,12 @@ The existing interactive budgets in `docs/performance.md` remain the pass/fail f
 - at most one in-flight plus one coalesced continuous input frame;
 - at most 32 edge commands, one outbound message, and zero dropped facts.
 
-VC9 must compare the placeholder baseline, brush proof room, and complete content-rich game without
-changing the route or substituting a reduced test scene. The #6361 public counters are now
-available, so VC9 establishes explicit budgets for renderer-owned draw/resource counts, animated
-instances, voxel meshing, memory, cold/warm Studio open, save/reload, reset, and disposal from the
-real authored workloads.
+VC9 compares the placeholder baseline, brush proof room, and complete content-rich game without
+changing the route or substituting a reduced test scene. The checked Radeon profile records 45 draw
+calls, 415 live handles, 68,201 submitted triangles, 38 geometries, 97 materials, two textures, and
+eight animated instances at a 16.8 ms cadence p95. Cold/warm product open, Studio authoring,
+save/reload, reset, disposal, memory, and input budgets are explicit in `docs/performance.md` and
+`docs/evidence/content-rich-desktop-profile.json`.
 
 Content byte growth is reported but is not itself a desktop failure. Startup, parse/decode,
 resource upload, memory, missed refresh intervals, submission duration, and input response decide
@@ -670,20 +675,50 @@ browser proof from an already-running Studio host selected by `RUSTY_STUDIO_BRUS
 The managed URL must identify `rusty-engine-demo` from `/health` before certification. Headless
 SwiftShader browser smoke remains lifecycle proof, not hardware performance evidence.
 
+## Final campaign certification
+
+VC10 certifies the complete pipeline at product revision
+`67e8d1d609f46d11fe8da0d990fc7a9b6ab33285`, exact public Engine revision
+`0e0c49442d0c3d876a1336a5a829087f6e2314db`, and canonical schema-23 project hash
+`95f87931503ddc7f54ab85f54ca08f94399db59e2534d2bf882592594975da89`.
+The final project contains 89 assets and 419 entities. Its visible level uses 342 repeated
+instances of nine voxel-brush definitions; the off-route proof room retains another 25 instances.
+Eight enemies use two serialized animated identities, 25 gameplay entities use capability-complete
+serialized prop bindings, and no shipped visible renderable uses a primitive fallback.
+
+The final visual audit is indexed by
+[`docs/evidence/final-visual-content-certification.json`](evidence/final-visual-content-certification.json):
+
+| Surface      | Evidence                                    | What it certifies                                                                              |
+| ------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Game desktop | `final-game-desktop.png` at 1600×900        | Full retained level, serialized actors/props/brushes, HUD, one shared canvas                   |
+| Game narrow  | `final-game-narrow.png` at 390×844          | Responsive shell and the same accepted runtime projection                                      |
+| Actor Studio | `actor-kit-studio-*.png` and JSON receipts  | Six clips × two assets, independent playback, reimport, stale failure, reload/remount/disposal |
+| Prop Studio  | `prop-kit-studio-*.png` and JSON receipts   | Imported industrial assets, picking, resize, save/reopen, fresh adapter                        |
+| Brush Studio | `voxel-level-brush-*.png` and JSON receipts | Repeated placement, selection, material/transform variation, canonical persistence             |
+
+Exact GitHub verify run `30595962674` / job `91048265860` passed the unchanged normal-control
+campaign with RTT max 1536.6 ms, queues 1/1/1, zero dropped facts, completed save, fresh-host
+Continue, converted project, migration, fresh page, statistics, picking, reset, remount, and
+disposal. The cold-agent reproduction commands are in
+[`docs/extension-recipes.md`](extension-recipes.md#cold-agent-visual-content-reproduction).
+Error, stale, conflict, one-over, and failure-atomic evidence is recorded in the linked authoring
+receipts and focused Rust/Studio suites rather than staged as misleading screenshots.
+
 ## Review checklist
 
-- [ ] No imported or generated binary asset entered #6351.
-- [ ] Every current visual identity, environment, viewmodel, and invisible proxy has a
+- [x] No imported or generated binary asset entered #6351.
+- [x] Every current visual identity, environment, viewmodel, and invisible proxy has a
       classification and follow-on owner.
-- [ ] The canonical project migration removes generator overwrite risk without introducing a
+- [x] The canonical project migration removes generator overwrite risk without introducing a
       second scene authority.
-- [ ] Every shortlisted external source has author, version, license, local path, and hash.
-- [ ] Detailed visual assets remain separate from explicit gameplay proxies.
-- [ ] Object-local fine voxels are reusable mesh-authoring assets, not a unified world grid.
-- [ ] Placeholder and final measurements use the same route, viewport, commands, and metric
+- [x] Every shortlisted external source has author, version, license, local path, and hash.
+- [x] Detailed visual assets remain separate from explicit gameplay proxies.
+- [x] Object-local fine voxels are reusable mesh-authoring assets, not a unified world grid.
+- [x] Placeholder and final measurements use the same route, viewport, commands, and metric
       meanings.
-- [ ] Frame cadence is never described as GPU/render duration.
-- [ ] Renderer-owned counters come from the associated immutable shared-surface submission, never
+- [x] Frame cadence is never described as GPU/render duration.
+- [x] Renderer-owned counters come from the associated immutable shared-surface submission, never
       authored-state inference or WebGL instrumentation.
-- [ ] No Doom map, texture, mesh, sound, name, or other licensed content is copied; only general
+- [x] No Doom map, texture, mesh, sound, name, or other licensed content is copied; only general
       compact-FPS readability and industrial-detail vocabulary informs the original design.

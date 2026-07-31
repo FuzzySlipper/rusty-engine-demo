@@ -12,15 +12,18 @@ The checked-in files under `content/projects` are the canonical Studio-owned sou
 
 | Artifact                                    | SHA-256                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------ |
-| `content/projects/loading-bay.project.json` | `dde061a1b27fdb8665bc0d7099a5ec364310272e618f23f6c6177a7bb8a6393a` |
-| `content/projects/relay-annex.project.json` | `05d02fcd540024487b159125f0c6823e4e464c3e717cae9cac83529b10c7e38a` |
+| `content/projects/loading-bay.project.json` | `95f87931503ddc7f54ab85f54ca08f94399db59e2534d2bf882592594975da89` |
+| `content/projects/relay-annex.project.json` | `96750d2f198e2e785696de712592c003c8dcd4ce9640c187c7e7c63b24352365` |
 
-The Loading Bay artifact contains one scene, 3,931 material voxels, 72 entities, 42 retained asset
-identities, nine item definitions, eight enemies, three encounters, eight authored pickup caches,
-eight dormant defeat drops, five doors, eight lights, one secret, one level exit, and 25
-non-gameplay brush instances that reuse nine canonical voxel-object definitions. Stable
-pretty-printing plus Rust decode, canonical admission, save, and exact-byte round-trip make content
-drift fail the normal verification gate. Fixture generation cannot write either canonical file.
+The schema-23 Loading Bay artifact contains one scene, 3,931 gameplay-proxy material voxels, 419
+entities, 89 retained asset identities, nine item definitions, eight enemies, three encounters,
+eight authored pickup caches, eight dormant defeat drops, five doors, eight lights, one secret, and
+one level exit. Its visible room reuses nine canonical voxel-object definitions across 342 route
+placements; the separate 25-instance proof room remains off-route, for 367 repeated instances in
+all. Eight enemies use two animated identities, 25 gameplay props use serialized state bindings,
+and 37 gameplay/landmark renderables are visible. Stable pretty-printing plus Rust decode,
+capability-complete admission, save, and exact-byte round-trip make content drift fail the normal
+verification gate. Fixture generation cannot write either canonical file.
 
 Relay Annex changes the room arrangement, player start, initial enemy placement and tuning,
 navigation target/speed, and beacon radius through serialized project data. It uses the same Rust
@@ -80,6 +83,22 @@ content; it must not add browser-owned combat or progression state.
 
 ## Complete-product certification
 
+The visual-content campaign was recertified on 2026-07-30 at exact public Demo revision
+`67e8d1d609f46d11fe8da0d990fc7a9b6ab33285`, pinning exact public Engine revision
+`0e0c49442d0c3d876a1336a5a829087f6e2314db`. Exact GitHub verify run
+`30595962674` / job `91048265860` passed with authoritative RTT max 1536.6 ms, bounded queues
+1/1/1, zero dropped facts, and every campaign, completed-save, fresh-host Continue, converted
+project, migration, fresh-page, statistics, picking, reset, remount, and disposal tail. The run
+kept the full 89-asset/419-entity/367-instance scene, normal held controls, damage/resources, and
+the unchanged two-second retained-transport budget.
+
+The final desktop and narrow screenshots are
+`docs/evidence/final-game-desktop.png` and `docs/evidence/final-game-narrow.png`; the associated
+Studio actor, prop, and repeated-brush screenshots and stale/conflict/lifecycle receipts are indexed
+by `docs/evidence/final-visual-content-certification.json`.
+
+### Pre-visual-campaign certification
+
 The campaign was certified on 2026-07-27 from the public runtime revision
 `e31dea511377fe68ab898248c5ee9efa3f9a2cf6`. A fresh managed host built the Angular product, loaded
 the checked-in Loading Bay project, and served the real browser shell at `http://127.0.0.1:8787/`.
@@ -127,4 +146,5 @@ Scope accounting for this certification:
   human pacing playtest (#6294) remains separate tuning work rather than an authoritative campaign
   correctness gap.
 - Source and asset provenance remains exact in `docs/source-provenance.md`; the FPS campaign uses
-  original Loading Bay composition and primitive presentation rather than licensed Doom content.
+  original Loading Bay composition and serialized Kenney CC0/original Loading Bay presentation
+  rather than licensed Doom content.

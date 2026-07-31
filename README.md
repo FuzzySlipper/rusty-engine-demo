@@ -8,7 +8,7 @@ voxel, mesh, asset, and conversion mechanisms.
 
 The Rust game vertical is named `loading-bay-game`. Its Rust and browser Engine dependencies are
 public Git dependencies pinned to reviewed provider revision
-`9813bf6f759a8967a5de1681d4726f7b17254ca5`; a sibling checkout is not required. The demo owns its
+`0e0c49442d0c3d876a1336a5a829087f6e2314db`; a sibling checkout is not required. The demo owns its
 Angular/Nx browser shell, route-scoped input lifecycle, and semantic projection adapter, while Rusty
 Engine owns the shared render contracts, retained projection, Three/WebGL backend, surface host,
 audio, particle, billboard, and telemetry hosts.
@@ -131,6 +131,22 @@ The canonical schema-23 project binds those actors and the industrial prop kit t
 gameplay posture/state through versioned renderer-only visual bindings; the ownership and
 full-product proof are documented in
 [docs/visual-content-pipeline.md](docs/visual-content-pipeline.md#vc8-serialized-gameplay-visual-bindings).
+
+The completed visual-content campaign is certified at Demo revision
+`67e8d1d609f46d11fe8da0d990fc7a9b6ab33285`. It retains 89 serialized assets, 419 authored
+entities, nine reusable voxel-brush definitions, 367 repeated brush instances, two animated actor
+identities, and 33 capability-complete visual bindings without a downstream renderer, asset cache,
+animation loop, or gameplay authority. The exact CI run and final desktop/narrow/Studio audit are
+indexed by
+[docs/evidence/final-visual-content-certification.json](docs/evidence/final-visual-content-certification.json).
+With a healthy product host, reproduce the two game captures with:
+
+```bash
+RUSTY_ENGINE_DEMO_URL=http://127.0.0.1:8787/#/game?mode=new pnpm run capture:final
+```
+
+Cold-agent actor and voxel-brush import/place/save/reload recipes are in
+[docs/extension-recipes.md](docs/extension-recipes.md#cold-agent-visual-content-reproduction).
 
 The repository's one active Rusty Engine revision is declared in
 [`engine-source.json`](engine-source.json). Check it with `./scripts/engine-revision check`, preview
