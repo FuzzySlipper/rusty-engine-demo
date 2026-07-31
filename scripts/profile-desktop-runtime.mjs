@@ -25,6 +25,8 @@ const inputMilliseconds = boundedDuration(
   2_000,
   30_000,
 );
+const captureCpuProfile =
+  process.env.RUSTY_ENGINE_DEMO_PROFILE_CPU === "true";
 const viewport = { height: 900, width: 1600 };
 
 if (!existsSync(chromium)) {
@@ -212,7 +214,56 @@ try {
 
   const rendererSamples = [];
   const automaticPacingSamples = [];
-  let lastRendererSampleSequence = -1;
+  await evaluate(`
+    (() => {
+      const telemetry = document.querySelector("#renderer-telemetry");
+      const samples = [];
+      let lastRendererSampleSequence = -1;
+      const record = () => {
+        const data = telemetry?.dataset ?? {};
+        const rendererSampleSequence = Number(data.rendererSampleSequence);
+        if (
+          rendererSampleSequence <= lastRendererSampleSequence ||
+          !Number.isFinite(rendererSampleSequence)
+        ) {
+          return;
+        }
+        samples.push({
+          backendSubmissionDurationMs: Number(
+            data.rendererBackendSubmissionMilliseconds,
+          ),
+          frameIntervalMs: Number(data.rendererFrameIntervalMilliseconds),
+          rendererSampleSequence,
+          timingSource: data.rendererTimingSource ?? "",
+          automaticPacing: data.rendererAutomaticPacingSample
+            ? JSON.parse(data.rendererAutomaticPacingSample)
+            : null,
+          rendererStatistics: data.rendererStatisticsSample
+            ? JSON.parse(data.rendererStatisticsSample)
+            : null,
+        });
+        lastRendererSampleSequence = rendererSampleSequence;
+      };
+      const observer = new MutationObserver(record);
+      if (telemetry !== null) {
+        observer.observe(telemetry, {
+          attributes: true,
+          attributeFilter: ["data-renderer-sample-sequence"],
+        });
+      }
+      record();
+      globalThis.__rustyDesktopRendererProfile = {
+        observer,
+        samples,
+        telemetry,
+      };
+    })()
+  `);
+  if (captureCpuProfile) {
+    await client.send("Profiler.enable");
+    await client.send("Profiler.setSamplingInterval", { interval: 1_000 });
+    await client.send("Profiler.start");
+  }
   let mouseStep = 0;
   const inputStartedAt = Date.now();
   while (Date.now() - inputStartedAt < inputMilliseconds) {
@@ -224,25 +275,32 @@ try {
       button: "none",
       buttons: 0,
     });
-    const sample = await evaluate(`
-      (() => {
-        const data = document.querySelector("#renderer-telemetry")?.dataset ?? {};
-        return {
-          backendSubmissionDurationMs: Number(data.rendererBackendSubmissionMilliseconds),
-          frameIntervalMs: Number(data.rendererFrameIntervalMilliseconds),
-          rendererSampleSequence: Number(data.rendererSampleSequence),
-          timingSource: data.rendererTimingSource ?? "",
-          automaticPacing: data.rendererAutomaticPacingSample
-            ? JSON.parse(data.rendererAutomaticPacingSample)
-            : null,
-          rendererStatistics: data.rendererStatisticsSample
-            ? JSON.parse(data.rendererStatisticsSample)
-            : null,
-        };
-      })()
-    `);
+    await delay(16);
+  }
+  const recordedRendererEvidence = await evaluate(`
+    (() => {
+      const recorder = globalThis.__rustyDesktopRendererProfile;
+      if (recorder === undefined) {
+        return { samples: [], finalAutomaticPacing: null };
+      }
+      recorder.observer.disconnect();
+      const evidence = {
+        samples: recorder.samples,
+        finalAutomaticPacing:
+          recorder.telemetry?.rendererAutomaticPacingSample ?? null,
+      };
+      delete globalThis.__rustyDesktopRendererProfile;
+      return evidence;
+    })()
+  `);
+  const inputCpuProfile = captureCpuProfile
+    ? (await client.send("Profiler.stop")).profile
+    : null;
+  if (captureCpuProfile) {
+    await client.send("Profiler.disable");
+  }
+  for (const sample of recordedRendererEvidence.samples) {
     if (
-      sample.rendererSampleSequence > lastRendererSampleSequence &&
       [
         sample.backendSubmissionDurationMs,
         sample.frameIntervalMs,
@@ -253,9 +311,12 @@ try {
       if (sample.automaticPacing !== null) {
         automaticPacingSamples.push(sample.automaticPacing);
       }
-      lastRendererSampleSequence = sample.rendererSampleSequence;
     }
-    await delay(16);
+  }
+  const finalAutomaticPacing =
+    recordedRendererEvidence.finalAutomaticPacing;
+  if (finalAutomaticPacing !== null) {
+    automaticPacingSamples.push(finalAutomaticPacing);
   }
   await client.send("Input.dispatchKeyEvent", {
     type: "keyUp",
@@ -331,6 +392,8 @@ try {
         ...new Set(rendererSamples.map((sample) => sample.timingSource)),
       ],
       rendererStatistics: rendererSamples.at(-1)?.rendererStatistics ?? null,
+      cpuProfile:
+        inputCpuProfile === null ? null : summarizeCpuProfile(inputCpuProfile),
       automaticSubmissionPacing: summarizeAutomaticPacing(
         automaticPacingSamples,
       ),
@@ -618,6 +681,72 @@ function processTreeResidentBytes(rootPid) {
   return residentKilobytes * 1_024;
 }
 
+function summarizeCpuProfile(profile) {
+  const nodes = new Map(profile.nodes.map((node) => [node.id, node]));
+  const parentByNode = new Map();
+  for (const node of profile.nodes) {
+    for (const child of node.children ?? []) {
+      parentByNode.set(child, node.id);
+    }
+  }
+  const selfMilliseconds = new Map();
+  const selfMillisecondsByNode = new Map();
+  for (const [index, nodeId] of (profile.samples ?? []).entries()) {
+    const node = nodes.get(nodeId);
+    if (node === undefined) {
+      continue;
+    }
+    const frame = node.callFrame;
+    const key = [
+      frame.functionName || "(anonymous)",
+      frame.url || "(runtime)",
+      String(frame.lineNumber + 1),
+    ].join(":");
+    selfMilliseconds.set(
+      key,
+      (selfMilliseconds.get(key) ?? 0) +
+        (profile.timeDeltas?.[index] ?? 0) / 1_000,
+    );
+    selfMillisecondsByNode.set(
+      nodeId,
+      (selfMillisecondsByNode.get(nodeId) ?? 0) +
+        (profile.timeDeltas?.[index] ?? 0) / 1_000,
+    );
+  }
+  const stackFor = (nodeId) => {
+    const stack = [];
+    let current = nodeId;
+    while (current !== undefined) {
+      const frame = nodes.get(current)?.callFrame;
+      if (frame !== undefined) {
+        stack.push(
+          `${frame.functionName || "(anonymous)"}:${frame.url || "(runtime)"}:${String(frame.lineNumber + 1)}`,
+        );
+      }
+      current = parentByNode.get(current);
+    }
+    return stack;
+  };
+  return {
+    sampleCount: profile.samples?.length ?? 0,
+    sampledMilliseconds: round(sum(profile.timeDeltas ?? []) / 1_000),
+    topSelfTime: [...selfMilliseconds.entries()]
+      .map(([frame, milliseconds]) => ({
+        frame,
+        milliseconds: round(milliseconds),
+      }))
+      .toSorted((left, right) => right.milliseconds - left.milliseconds)
+      .slice(0, 25),
+    topStacks: [...selfMillisecondsByNode.entries()]
+      .map(([nodeId, milliseconds]) => ({
+        milliseconds: round(milliseconds),
+        stack: stackFor(nodeId),
+      }))
+      .toSorted((left, right) => right.milliseconds - left.milliseconds)
+      .slice(0, 12),
+  };
+}
+
 function distribution(values) {
   if (values.length === 0) {
     return null;
@@ -702,6 +831,45 @@ function summarizeHostAdmission(samples) {
         attempt.sourceTimeMs - attempts[index].sourceTimeMs,
     )
     .filter(Number.isFinite);
+  const admittedAttempts = attempts.filter(
+    (attempt) => attempt.outcome === "admitted",
+  );
+  const admittedIntervals = admittedAttempts
+    .slice(1)
+    .map(
+      (attempt, index) =>
+        attempt.sourceTimeMs - admittedAttempts[index].sourceTimeMs,
+    )
+    .filter(Number.isFinite);
+  const callbackPhaseDurations = (startedField, endedField) =>
+    attempts
+      .map((attempt) => {
+        const callback = attempt.callback;
+        if (callback === undefined || callback === null) {
+          return null;
+        }
+        const startedAtMs = callback[startedField];
+        const endedAtMs = callback[endedField];
+        if (!Number.isFinite(startedAtMs) || !Number.isFinite(endedAtMs)) {
+          return null;
+        }
+        const durationMs = endedAtMs - startedAtMs;
+        return durationMs >= 0 ? durationMs : null;
+      })
+      .filter(Number.isFinite);
+  const callbackEntryDelays = attempts
+    .map((attempt) => {
+      const callbackStartedAtMs = attempt.callback?.callbackStartedAtMs;
+      if (
+        !Number.isFinite(attempt.sourceTimeMs) ||
+        !Number.isFinite(callbackStartedAtMs)
+      ) {
+        return null;
+      }
+      const delayMs = callbackStartedAtMs - attempt.sourceTimeMs;
+      return delayMs >= 0 ? delayMs : null;
+    })
+    .filter(Number.isFinite);
   const countBy = (values) =>
     Object.fromEntries(
       [...new Set(values)].map((value) => [
@@ -742,6 +910,55 @@ function summarizeHostAdmission(samples) {
             last: attempts.at(-1).sequence,
           },
     rafIntervalMs: distribution(intervals),
+    admittedSubmissionIntervalMs: distribution(admittedIntervals),
+    callbackPhaseMs: {
+      entryDelay: distribution(callbackEntryDelays),
+      total: distribution(
+        callbackPhaseDurations("callbackStartedAtMs", "callbackEndedAtMs"),
+      ),
+      successorQueue: distribution(
+        callbackPhaseDurations(
+          "callbackStartedAtMs",
+          "successorQueuedAtMs",
+        ),
+      ),
+      demandDecision: distribution(
+        callbackPhaseDurations("successorQueuedAtMs", "demandObservedAtMs"),
+      ),
+      backendReadiness: distribution(
+        callbackPhaseDurations(
+          "demandObservedAtMs",
+          "backendReadinessObservedAtMs",
+        ),
+      ),
+      controls: distribution(
+        callbackPhaseDurations(
+          "backendReadinessObservedAtMs",
+          "controlsUpdatedAtMs",
+        ),
+      ),
+      camera: distribution(
+        callbackPhaseDurations("controlsUpdatedAtMs", "cameraUpdatedAtMs"),
+      ),
+      presentation: distribution(
+        callbackPhaseDurations(
+          "cameraUpdatedAtMs",
+          "presentationAdvancedAtMs",
+        ),
+      ),
+      backendSubmission: distribution(
+        callbackPhaseDurations(
+          "presentationAdvancedAtMs",
+          "backendSubmittedAtMs",
+        ),
+      ),
+      postSubmission: distribution(
+        callbackPhaseDurations(
+          "backendSubmittedAtMs",
+          "callbackEndedAtMs",
+        ),
+      ),
+    },
     outcomes: countBy(attempts.map((attempt) => attempt.outcome)),
     demandReasons: Object.fromEntries(
       demandReasons.map((reason) => [

@@ -28,6 +28,7 @@ import type {
 import type {
   WeaponViewmodelAdapter,
   WeaponViewmodelPlan,
+  WeaponViewmodelReadout,
 } from "./weapon-viewmodel.js";
 
 export type FeedbackParticleKind =
@@ -80,9 +81,29 @@ export interface ProjectedPresentationFeedback {
 
 export function shouldInspectViewmodelProjection(
   evidencePublished: boolean,
-  appliedOperations: number,
+  previousFingerprint: string | null,
+  currentFingerprint: string,
+  forceEvidence = false,
 ): boolean {
-  return !evidencePublished || appliedOperations > 0;
+  return (
+    forceEvidence ||
+    !evidencePublished ||
+    currentFingerprint !== previousFingerprint
+  );
+}
+
+export function viewmodelProjectionEvidenceFingerprint(
+  readout: Pick<
+    WeaponViewmodelReadout,
+    "liveNodeCount" | "mounted" | "visible" | "weapon"
+  >,
+): string {
+  return JSON.stringify({
+    liveNodeCount: readout.liveNodeCount,
+    mounted: readout.mounted,
+    visible: readout.visible,
+    weapon: readout.weapon,
+  });
 }
 
 export function captureRendererTelemetry(
@@ -101,6 +122,18 @@ export function captureRendererTelemetry(
       entityCount: state.projection.length,
       residentChunkCount: state.voxelMeshes.length,
       renderDiffCount,
+    },
+  };
+}
+
+export function compactRendererAutomaticPacingEvidence(
+  pacing: RendererSurfaceAutomaticSubmissionPacingSample,
+): RendererSurfaceAutomaticSubmissionPacingSample {
+  return {
+    ...pacing,
+    hostAdmission: {
+      ...pacing.hostAdmission,
+      recentAttempts: [],
     },
   };
 }
@@ -229,6 +262,12 @@ interface SharedPresentationHosts {
   readonly telemetrySink: RendererDomTelemetryOverlaySink;
 }
 
+interface RendererTelemetryLayer extends HTMLElement {
+  rendererAutomaticPacingSample?:
+    | RendererSurfaceAutomaticSubmissionPacingSample
+    | undefined;
+}
+
 /** Browser composition over the shared renderer-host package. */
 export class BrowserPresentationFeedback {
   readonly #adapter = new PresentationFeedbackAdapter();
@@ -237,7 +276,7 @@ export class BrowserPresentationFeedback {
   readonly #layer: HTMLElement;
   readonly #readState: () => RuntimeBrowserState;
   readonly #surface: RendererSurface;
-  readonly #telemetryLayer: HTMLElement;
+  readonly #telemetryLayer: RendererTelemetryLayer;
   readonly #pulseTargets = new Set<HTMLElement>();
   readonly #timeouts = new Set<ReturnType<typeof globalThis.setTimeout>>();
   #tail: Promise<void> = Promise.resolve();
@@ -249,6 +288,7 @@ export class BrowserPresentationFeedback {
   #flashIntensity = 1;
   #viewmodelImpulseGeneration = 0;
   #viewmodelEvidencePublished = false;
+  #viewmodelEvidenceFingerprint: string | null = null;
   #disposed = false;
 
   constructor(options: BrowserPresentationFeedbackOptions) {
@@ -345,6 +385,7 @@ export class BrowserPresentationFeedback {
     }
     const viewmodel = this.#applyViewmodel(
       this.#viewmodel.project(state, reset, this.#flashIntensity),
+      reset,
     );
     const impulse = state.presentation.cues.some(
       (cue) =>
@@ -429,7 +470,7 @@ export class BrowserPresentationFeedback {
       return;
     }
     this.#viewmodelImpulseGeneration += 1;
-    this.#applyViewmodel(this.#viewmodel.destroy());
+    this.#applyViewmodel(this.#viewmodel.destroy(), true);
     this.#disposed = true;
     this.#surface.setPresentationHosts(null);
     this.#clearTimersAndPulses();
@@ -456,6 +497,8 @@ export class BrowserPresentationFeedback {
     // Start it, retain the cleanup, and do not stall authoritative reset.
     void this.#hosts.audio.dispose().catch(() => undefined);
     this.#adapter.reset();
+    this.#viewmodelEvidencePublished = false;
+    this.#viewmodelEvidenceFingerprint = null;
     this.#clearTelemetryEvidence();
     this.#hosts = this.#createHosts();
     this.#surface.setPresentationHosts(this.#hosts.set);
@@ -478,17 +521,13 @@ export class BrowserPresentationFeedback {
     this.#updateActiveEffects();
   }
 
-  #applyViewmodel(plan: WeaponViewmodelPlan): {
+  #applyViewmodel(plan: WeaponViewmodelPlan, forceEvidence = false): {
     readonly appliedOperations: number;
     readonly failedOperations: number;
   } {
     if (plan.ops.length === 0) {
       plan.commit();
-      if (
-        shouldInspectViewmodelProjection(this.#viewmodelEvidencePublished, 0)
-      ) {
-        this.#publishViewmodelEvidence(0);
-      }
+      this.#publishViewmodelEvidence(0, forceEvidence);
       return { appliedOperations: 0, failedOperations: 0 };
     }
     try {
@@ -505,7 +544,7 @@ export class BrowserPresentationFeedback {
       }
       plan.commit();
       delete this.#layer.dataset.viewmodelDiagnostics;
-      this.#publishViewmodelEvidence(plan.ops.length);
+      this.#publishViewmodelEvidence(plan.ops.length, forceEvidence);
       return { appliedOperations: plan.ops.length, failedOperations: 0 };
     } catch (error) {
       this.#layer.dataset.viewmodelStatus = "unavailable";
@@ -525,37 +564,51 @@ export class BrowserPresentationFeedback {
     }, VIEWMODEL_IMPULSE_LIFETIME_MILLISECONDS);
   }
 
-  #publishViewmodelEvidence(appliedOperations: number): void {
+  #publishViewmodelEvidence(
+    appliedOperations: number,
+    forceEvidence = false,
+  ): void {
     const readout = this.#viewmodel.readout();
-    const retained = this.#surface
-      .projectionSnapshot()
-      .nodes.filter((node) => node.layer === "viewmodel");
-    const coherent =
-      retained.length === readout.liveNodeCount &&
-      (readout.mounted || retained.length === 0);
-    this.#layer.dataset.viewmodelStatus = coherent
-      ? readout.visible
-        ? "active"
-        : readout.mounted
-          ? "hidden"
-          : "unmounted"
-      : "unavailable";
+    const fingerprint = viewmodelProjectionEvidenceFingerprint(readout);
+    if (
+      shouldInspectViewmodelProjection(
+        this.#viewmodelEvidencePublished,
+        this.#viewmodelEvidenceFingerprint,
+        fingerprint,
+        forceEvidence,
+      )
+    ) {
+      const retained = this.#surface
+        .projectionSnapshot()
+        .nodes.filter((node) => node.layer === "viewmodel");
+      const coherent =
+        retained.length === readout.liveNodeCount &&
+        (readout.mounted || retained.length === 0);
+      this.#layer.dataset.viewmodelStatus = coherent
+        ? readout.visible
+          ? "active"
+          : readout.mounted
+            ? "hidden"
+            : "unmounted"
+        : "unavailable";
+      this.#layer.dataset.viewmodelNodes = String(retained.length);
+      document.body.dataset.weaponViewmodel = coherent ? "pass" : "fail";
+      document.body.dataset.weaponViewmodelLayer = retained.every(
+        (node) => node.layer === "viewmodel",
+      )
+        ? "viewmodel"
+        : "invalid";
+      document.body.dataset.weaponViewmodelLifecycle = readout.mounted
+        ? "mounted"
+        : "disposed";
+      this.#viewmodelEvidencePublished = true;
+      this.#viewmodelEvidenceFingerprint = fingerprint;
+    }
     this.#layer.dataset.viewmodelWeapon = readout.weapon ?? "none";
     this.#layer.dataset.viewmodelImpulse = readout.impulse;
-    this.#layer.dataset.viewmodelNodes = String(retained.length);
     this.#layer.dataset.viewmodelLastOperations = String(appliedOperations);
     this.#record("viewmodelWeapons", readout.weapon ?? "none");
     this.#record("viewmodelImpulses", readout.impulse);
-    document.body.dataset.weaponViewmodel = coherent ? "pass" : "fail";
-    document.body.dataset.weaponViewmodelLayer = retained.every(
-      (node) => node.layer === "viewmodel",
-    )
-      ? "viewmodel"
-      : "invalid";
-    document.body.dataset.weaponViewmodelLifecycle = readout.mounted
-      ? "mounted"
-      : "disposed";
-    this.#viewmodelEvidencePublished = true;
   }
 
   #createHosts(): SharedPresentationHosts {
@@ -677,8 +730,9 @@ export class BrowserPresentationFeedback {
     this.#telemetryLayer.dataset.rendererStatisticsSample = JSON.stringify(
       timing.statistics,
     );
+    this.#telemetryLayer.rendererAutomaticPacingSample = pacing;
     this.#telemetryLayer.dataset.rendererAutomaticPacingSample =
-      JSON.stringify(pacing);
+      JSON.stringify(compactRendererAutomaticPacingEvidence(pacing));
     this.#telemetryLayer.dataset.rendererEntityCount = snapshotMetric(
       snapshot,
       "entityCount",
@@ -711,6 +765,7 @@ export class BrowserPresentationFeedback {
     ] as const) {
       delete this.#telemetryLayer.dataset[key];
     }
+    delete this.#telemetryLayer.rendererAutomaticPacingSample;
   }
 
   #setAnimationState(state: RuntimeAnimationState): void {

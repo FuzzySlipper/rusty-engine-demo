@@ -6,7 +6,9 @@ import { decodePresentationFrameDiff } from "@rusty-engine/render-contracts";
 import {
   PresentationFeedbackAdapter,
   captureRendererTelemetry,
+  compactRendererAutomaticPacingEvidence,
   shouldInspectViewmodelProjection,
+  viewmodelProjectionEvidenceFingerprint,
 } from "./presentation-feedback.ts";
 import type { RuntimeBrowserState } from "./projection.ts";
 
@@ -107,9 +109,55 @@ test("typed gameplay cues map to shared audio billboard particle and telemetry d
 });
 
 test("unchanged viewmodels do not clone the complete retained renderer projection", () => {
-  assert.equal(shouldInspectViewmodelProjection(false, 0), true);
-  assert.equal(shouldInspectViewmodelProjection(true, 0), false);
-  assert.equal(shouldInspectViewmodelProjection(true, 1), true);
+  const baseline = {
+    impulse: "none" as const,
+    liveNodeCount: 1,
+    mounted: true,
+    visible: true,
+    weapon: "pulse-carbine",
+  };
+  const baselineFingerprint =
+    viewmodelProjectionEvidenceFingerprint(baseline);
+  const changedImpulse = {
+    ...baseline,
+    impulse: "firing" as const,
+  };
+  assert.equal(
+    shouldInspectViewmodelProjection(
+      false,
+      null,
+      baselineFingerprint,
+    ),
+    true,
+  );
+  assert.equal(
+    shouldInspectViewmodelProjection(
+      true,
+      baselineFingerprint,
+      viewmodelProjectionEvidenceFingerprint(changedImpulse),
+    ),
+    false,
+  );
+  assert.equal(
+    shouldInspectViewmodelProjection(
+      true,
+      baselineFingerprint,
+      viewmodelProjectionEvidenceFingerprint({
+        ...baseline,
+        weapon: "breach-scattergun",
+      }),
+    ),
+    true,
+  );
+  assert.equal(
+    shouldInspectViewmodelProjection(
+      true,
+      baselineFingerprint,
+      baselineFingerprint,
+      true,
+    ),
+    true,
+  );
 });
 
 test("encounter activation and exact enemy drops remain disposable presentation", () => {
@@ -514,6 +562,141 @@ test("renderer telemetry uses the complete shared submission without a downstrea
     renderDiffCount: 3,
   });
   assert.equal("frameTimeMs" in sample, false);
+});
+
+test("renderer pacing DOM evidence omits repeated admission history without mutating the sample", () => {
+  const state = feedbackState();
+  const sample = captureRendererTelemetry(
+    {
+      automaticSubmissionPacing: () => ({
+        schemaVersion: 1,
+        mode: "timerQuery",
+        state: "ready",
+        rendererClass: "accelerated",
+        timerDurationMs: 3,
+        completionAgeMs: 4,
+        completionAllowanceMs: 17,
+        effectiveDurationMs: 3,
+        targetDutyFraction: 0.5,
+        admittedAtMs: 100,
+        admissionObservedAtMs: 101,
+        observedAtMs: 101,
+        automaticSubmissionCapacity: 8,
+        automaticSubmissionLimit: 8,
+        completionFenceMode: "active",
+        maximumPendingSubmissions: 8,
+        pendingSubmissionCount: 1,
+        maximumPendingMeasurements: 8,
+        pendingMeasurementCount: 1,
+        hostAdmission: {
+          schemaVersion: 1,
+          attemptCount: 1,
+          admittedCount: 1,
+          backendBlockedCount: 0,
+          noDemandCount: 0,
+          recentAttempts: [
+            {
+              schemaVersion: 1,
+              sequence: 1,
+              sourceTimeMs: 100,
+              outcome: "admitted",
+              demand: {
+                schemaVersion: 1,
+                requested: true,
+                viewportChanged: false,
+                controls: false,
+                presentation: false,
+                retainedAnimation: true,
+                shouldSubmit: true,
+              },
+              backend: {
+                mode: "timerQuery",
+                state: "ready",
+                rendererClass: "accelerated",
+                timerDurationMs: 3,
+                effectiveDurationMs: 3,
+                admittedAtMs: 100,
+                admissionObservedAtMs: 101,
+                observedAtMs: 101,
+                automaticSubmissionLimit: 8,
+                pendingMeasurementCount: 1,
+                completionFenceMode: "active",
+                maximumPendingSubmissions: 8,
+                pendingSubmissionCount: 1,
+              },
+              callback: {
+                schemaVersion: 1,
+                callbackStartedAtMs: 100,
+                successorQueuedAtMs: 100,
+                demandObservedAtMs: 100,
+                backendReadinessObservedAtMs: 100,
+                controlsUpdatedAtMs: 100,
+                cameraUpdatedAtMs: 100,
+                presentationAdvancedAtMs: 100,
+                backendSubmittedAtMs: 101,
+                callbackEndedAtMs: 101,
+              },
+            },
+          ],
+        },
+      }),
+      submission: () => ({
+        schemaVersion: 1,
+        renderSequence: 1,
+        source: "animationFrame",
+        sourceTimeMs: 100,
+        frameIntervalMs: 16.7,
+        frameIntervalStatus: "available",
+        backendSubmissionDurationMs: 1,
+        backendSubmissionDurationStatus: "available",
+        statistics: {
+          schemaVersion: 1,
+          drawCallCount: {
+            scope: "perSubmission",
+            status: "available",
+            value: 1,
+          },
+          renderHandleCount: {
+            scope: "liveResident",
+            status: "available",
+            value: 1,
+          },
+          geometryResourceCount: {
+            scope: "liveResident",
+            status: "available",
+            value: 1,
+          },
+          materialResourceCount: {
+            scope: "liveResident",
+            status: "available",
+            value: 1,
+          },
+          textureResourceCount: {
+            scope: "liveResident",
+            status: "available",
+            value: 0,
+          },
+          animatedInstanceCount: {
+            scope: "liveResident",
+            status: "available",
+            value: 1,
+          },
+          triangleCount: {
+            scope: "perSubmission",
+            status: "available",
+            value: 1,
+          },
+        },
+      }),
+    },
+    state,
+    1,
+  );
+
+  const compact = compactRendererAutomaticPacingEvidence(sample.pacing);
+  assert.equal(compact.hostAdmission.attemptCount, 1);
+  assert.deepEqual(compact.hostAdmission.recentAttempts, []);
+  assert.equal(sample.pacing.hostAdmission.recentAttempts.length, 1);
 });
 
 function signalIds(
