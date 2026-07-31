@@ -212,6 +212,7 @@ export async function mountLoadingBayGame(
   let replacementTelemetrySamplesBefore = 0;
   let lastTelemetryProjectionTick = Number.NEGATIVE_INFINITY;
   let lastPresentationFingerprint = "";
+  let lastWalkFailureEvidence = "none";
   let lastEnemyReadoutFingerprint = "";
   let lastShellProjectionFingerprint = "";
   let lastShellProjectionTick = Number.NEGATIVE_INFINITY;
@@ -1421,11 +1422,18 @@ export async function mountLoadingBayGame(
   async function walkPlayerPath(
     waypoints: readonly (readonly [number, number])[],
   ): Promise<boolean> {
-    for (const waypoint of waypoints) {
+    for (const [index, waypoint] of waypoints.entries()) {
       if (!(await walkPlayerTo(waypoint))) {
+        lastWalkFailureEvidence = [
+          index,
+          waypoint.join(","),
+          current.player.position.join(","),
+          current.player.vitalityState,
+        ].join(":");
         return false;
       }
     }
+    lastWalkFailureEvidence = "none";
     return true;
   }
 
@@ -1625,6 +1633,14 @@ export async function mountLoadingBayGame(
     document.body.dataset.campaignLockedDoor = lockedDoorDenied
       ? "pass"
       : "fail";
+    document.body.dataset.campaignLockedDoorEvidence = [
+      lockedDoorReached,
+      lastWalkFailureEvidence,
+      current.player.position.join(","),
+      current.doorAccess.find((door) => door.id === 30)?.state ?? "missing",
+      inventoryQuantity("key/maintenance-pass"),
+      feedbackLayer.dataset.animationPulses ?? "",
+    ].join(":");
     if (
       !lockedDoorDenied ||
       !(await walkPlayerPath([
@@ -2010,52 +2026,79 @@ export async function mountLoadingBayGame(
     );
   }
 
+  function playerIsDead(): boolean {
+    return current.player.vitalityState === "dead";
+  }
+
   async function walkPlayerTo(
     target: readonly [number, number],
     maxSteps = 256,
   ): Promise<boolean> {
-    const initialOffsetX = target[0] - current.player.position[0];
-    const initialOffsetZ = target[1] - current.player.position[2];
-    if (Math.hypot(initialOffsetX, initialOffsetZ) <= 0.25) {
-      return true;
-    }
-    await turnPlayerToward(initialOffsetX, initialOffsetZ);
     const moveForward = current.player.bindings.moveForward;
     const action = resolveKeyboardAction(moveForward, current.player.bindings);
-    if (action?.kind !== "move" || !heldMovement.press(moveForward)) {
+    if (action?.kind !== "move") {
       throw new Error(
         "authored move-forward binding did not resolve to movement",
       );
     }
     let observedSteps = 0;
-    let observedPosition = current.player.position;
-    let lastProgressAt = performance.now();
-    try {
-      while (observedSteps < maxSteps) {
-        const offsetX = target[0] - current.player.position[0];
-        const offsetZ = target[1] - current.player.position[2];
-        if (Math.hypot(offsetX, offsetZ) <= 0.25) {
-          return true;
-        }
-        if (current.player.vitalityState === "dead") {
-          return false;
-        }
-        if (
-          vectorChanged(current.player.position, observedPosition, 0.000_001)
-        ) {
-          observedPosition = current.player.position;
-          observedSteps += 1;
-          lastProgressAt = performance.now();
-        } else if (performance.now() - lastProgressAt > 5_000) {
-          return false;
-        }
-        await delay(16);
+    while (observedSteps < maxSteps) {
+      const offsetX = target[0] - current.player.position[0];
+      const offsetZ = target[1] - current.player.position[2];
+      const distance = Math.hypot(offsetX, offsetZ);
+      if (distance <= 0.25) {
+        return true;
       }
-      return false;
-    } finally {
-      heldMovement.release(moveForward);
-      await heldMovement.settled();
+      if (playerIsDead()) {
+        return false;
+      }
+      await turnPlayerToward(offsetX, offsetZ);
+      if (!heldMovement.press(moveForward)) {
+        throw new Error(
+          "authored move-forward binding did not resolve to movement",
+        );
+      }
+      let observedPosition = current.player.position;
+      let bestDistance = distance;
+      let burstSteps = 0;
+      let lastProgressAt = performance.now();
+      try {
+        while (observedSteps < maxSteps && burstSteps < 12) {
+          const currentOffsetX = target[0] - current.player.position[0];
+          const currentOffsetZ = target[1] - current.player.position[2];
+          const currentDistance = Math.hypot(
+            currentOffsetX,
+            currentOffsetZ,
+          );
+          if (currentDistance <= 0.25) {
+            return true;
+          }
+          if (playerIsDead()) {
+            return false;
+          }
+          if (
+            vectorChanged(current.player.position, observedPosition, 0.000_001)
+          ) {
+            observedPosition = current.player.position;
+            observedSteps += 1;
+            burstSteps += 1;
+            lastProgressAt = performance.now();
+            if (currentDistance + 0.01 < bestDistance) {
+              bestDistance = currentDistance;
+            } else if (currentDistance > bestDistance + 0.15) {
+              break;
+            }
+          } else if (performance.now() - lastProgressAt > 5_000) {
+            return false;
+          }
+          await delay(16);
+        }
+      } finally {
+        heldMovement.release(moveForward);
+        await heldMovement.settled();
+      }
     }
+    return false;
   }
 
   async function turnPlayerToward(
