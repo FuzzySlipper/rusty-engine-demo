@@ -395,7 +395,9 @@ the existing submission timing and statistics. Set
 `RUSTY_ENGINE_DEMO_PROFILE_OUTPUT=docs/evidence/content-rich-desktop-profile.json` to retain the
 machine-readable report. The profiler still creates a production build, an isolated fresh Rust
 host and save root, and one visible hardware-backed Chromium/Wayland surface. It neither creates a
-second renderer nor reaches into Three or WebGL.
+second renderer nor reaches into Three or WebGL. Set
+`RUSTY_ENGINE_DEMO_PROFILE_CPU=true` only for a diagnostic V8 sampling profile; CPU sampling is
+disabled for certification runs so the observer cannot perturb the measured input path.
 
 The first retained report is exact Demo revision
 `646cc89db70e8f1499e809152cfcd1cc4c485c14`, pinned to Engine
@@ -411,7 +413,7 @@ duration claim.
 | -------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Placeholder baseline | `cd25485445bfb581c4005b221a23caa21408d327` | 47 authored entities, 35 renderables, coarse hidden-compatible voxel environment, no voxel-object definitions                                           | 494.4 ms first authoritative frame; 1,016,524 B bootstrap; 11,553,112 B gameplay JS heap; 16.8 ms p95 cadence                      |
 | Brush proof room     | `030f45f78bad10cbb85ebbcb50eeaedba727bb56` | 9 definitions, 25 instances, 42,266 stored cells; both 32×32×4 conservative and 64×64×8 dense wall treatments                                           | 2,450,553 B Studio project; 139,584.899 ms for the historical sequence of 25 singular attachments; 5,886.366 ms maximum attachment |
-| Complete product     | `646cc89db70e8f1499e809152cfcd1cc4c485c14` | Same 9 definitions reused by 342 route placements plus the 25-instance proof room, 8 animated gameplay actors, and 25 serialized gameplay prop bindings | 3,402 ms first authoritative frame; 1,183,676 B bootstrap; 58,539,344 B gameplay JS heap; 49 draws, 415 handles, 76,399 triangles  |
+| Complete product     | `db25b6b95a0d1bc3d39ae8aca2aa4fecae898123` | Same 9 definitions reused by 342 route placements plus the 25-instance proof room, 8 animated gameplay actors, and 25 serialized gameplay prop bindings | 3,425 ms first authoritative frame; 1,183,676 B bootstrap; 61,812,420 B gameplay JS heap; 45 draws, 415 handles, 68,201 triangles  |
 
 The proof-room timing is retained as an intentionally expensive predecessor, not the supported
 authoring workflow. Protocol 12 publishes the 342 route placements in 11 atomic batches of at most 32. The batches total 80,050.110 ms, the slowest is 7,956.815 ms, and the complete structural
@@ -438,23 +440,24 @@ maximum <= 100 ms. A red row is retained as a real gap rather than relaxed to fi
 
 | Measurement                              |                Budget |        Exact result |  Status  |
 | ---------------------------------------- | --------------------: | ------------------: | :------: |
-| Cold / warm usable menu                  |       <= 500 / 250 ms | 220.464 / 72.737 ms |   pass   |
-| First authoritative projection and frame |           <= 5,000 ms |            3,402 ms |   pass   |
+| Cold / warm usable menu                  |       <= 500 / 250 ms | 156.346 / 69.011 ms |   pass   |
+| First authoritative projection and frame |           <= 5,000 ms |            3,425 ms |   pass   |
 | Session bootstrap                        |              <= 2 MiB |         1,183,676 B |   pass   |
-| Gameplay JavaScript heap                 |             <= 96 MiB |        58,539,344 B |   pass   |
-| Chromium process-tree RSS                |           <= 1.25 GiB |     1,053,200,384 B |   pass   |
-| Input event to next frame p95 / max      |          <= 8 / 16 ms |        2.7 / 8.0 ms |   pass   |
-| Authoritative command RTT p95 / max      |        <= 50 / 100 ms | 59.016 / 101.528 ms | **fail** |
-| Synchronous backend submission p95       |               <= 8 ms |              6.0 ms |   pass   |
-| Accelerated timer-query GPU work p95     |               <= 8 ms |            6.711 ms |   pass   |
-| Renderer cadence p95 / p99               |       <= 20 / 33.5 ms |    266.9 / 333.7 ms | **fail** |
-| Draws / live handles / triangles         | <= 64 / 512 / 100,000 |   49 / 415 / 76,399 |   pass   |
+| Gameplay JavaScript heap                 |             <= 96 MiB |        61,812,420 B |   pass   |
+| Chromium process-tree RSS                |           <= 1.25 GiB |     1,102,725,120 B |   pass   |
+| Input event to next frame p95 / max      |          <= 8 / 16 ms |        3.5 / 4.2 ms |   pass   |
+| Authoritative command RTT p95 / max      |        <= 50 / 100 ms |  52.958 / 55.598 ms | **fail** |
+| Synchronous backend submission p95       |               <= 8 ms |              2.6 ms |   pass   |
+| Accelerated timer-query GPU work p95     |               <= 8 ms |             6.62 ms |   pass   |
+| Renderer cadence p95 / p99               |       <= 20 / 33.5 ms |      16.8 / 16.8 ms |   pass   |
+| Draws / live handles / triangles         | <= 64 / 512 / 100,000 |   45 / 415 / 68,201 |   pass   |
 | Geometry / material / texture resources  |       <= 64 / 128 / 8 |         38 / 97 / 2 |   pass   |
 | Animated instances                       |                 <= 16 |                   8 |   pass   |
 | Two-second gameplay idle listener growth |                     0 |                   0 |   pass   |
 
-The content itself is not saturating the hardware GPU. Timer-query work is p50 4.661 ms and p95
-6.711 ms, while synchronous submission is p50 1.5 ms and p95 6.0 ms. The current Engine observes
+The initial retained checkpoint showed that the content itself was not saturating the hardware
+GPU. Timer-query work was p50 4.661 ms and p95 6.711 ms, while synchronous submission was p50
+1.5 ms and p95 6.0 ms. That Engine revision observed
 the completed query 52–98.5 ms after submission, subtracts a 17 ms accelerated-renderer allowance,
 and treats the remaining 35–81.5 ms observation delay as GPU pressure. Its selected duty therefore
 falls near 20 percent and accepted presentation stretches to p50 155.9 ms / p95 266.9 ms. Input to
@@ -524,6 +527,23 @@ retained-animation demand while the backend reported `waiting`, query occupancy 
 occupancy 1. Product cadence remains p50 50.1 ms and p95 83.4 ms while timer/effective work is
 p95 6.878 ms. The host therefore reaches the backend with real continuous demand, but backend
 readiness rejects work while only one of eight slots is occupied; #6436 retains that owning fix.
+
+The accepted phase-attribution provider,
+`0e0c49442d0c3d876a1336a5a829087f6e2314db`, is measured at exact Demo revision
+`db25b6b95a0d1bc3d39ae8aca2aa4fecae898123`. It proved that the remaining slowdown was in
+Demo-owned observation rather than Engine admission: every recent attempt is admitted, RAF and
+accepted-submission p95 are both 16.8 ms, callback-entry delay p95 is 1.3 ms, complete callback
+p95 is 3.7 ms, and backend submission p95 is 2.5 ms. The Demo now transfers the immutable
+64-attempt admission ledger once at the end of a profile instead of serializing it into the DOM on
+every frame. Cosmetic viewmodel bob and impulse updates also stop cloning the complete retained
+projection; canonical projection inspection still runs on first publication, reset/disposal, and
+every weapon, visibility, mount, or node-count transition.
+
+The resulting hardware cadence is p50 16.7 ms and p95/p99 16.8 ms, input-to-next-frame p95/max is
+3.5/4.2 ms, and timer-query work remains p95 6.62 ms. The historical command-acknowledgement target
+is still explicitly red at p95 52.958 ms, although its 55.598 ms maximum is within the 100 ms
+ceiling. This row is not reclassified or relaxed; the normal-control retained-transport campaign
+keeps its separate `< 2,000 ms` worst-case gate.
 
 Studio evidence remains within its explicit bounds: all 342 route placements publish in bounded
 32-entry batches; the structural readout is below 2 MiB; the 12-instance animated preview adds

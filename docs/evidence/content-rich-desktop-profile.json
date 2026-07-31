@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "67e020072385ae6749f85205cfeabf5278ada496",
-  "targetUrl": "http://127.0.0.1:43535/",
+  "revision": "db25b6b95a0d1bc3d39ae8aca2aa4fecae898123",
+  "targetUrl": "http://127.0.0.1:46609/",
   "desktopPackaging": {
     "available": false,
     "measuredSurface": "visible Chromium/Wayland against the installed production host"
@@ -24,15 +24,15 @@
   "startup": {
     "coldMenu": {
       "label": "cold-menu",
-      "wallMilliseconds": 150.571,
+      "wallMilliseconds": 156.346,
       "navigation": {
-        "domContentLoadedMs": 70.69999980926514,
-        "loadMs": 71.40000057220459,
+        "domContentLoadedMs": 129.29999923706055,
+        "loadMs": 130.0999994277954,
         "transferBytes": 1886,
         "encodedBodyBytes": 1586
       },
-      "firstPaintMs": 128,
-      "firstContentfulPaintMs": 128,
+      "firstPaintMs": null,
+      "firstContentfulPaintMs": null,
       "session": null,
       "resources": {
         "count": 7,
@@ -46,10 +46,10 @@
             "name": "/chunk-73X6SYPX.js",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 4
+            "durationMs": 3.9
           },
           {
-            "name": "/main-ADEXB6X4.js",
+            "name": "/main-BFJ4KXHH.js",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
             "durationMs": 3.5
@@ -58,13 +58,13 @@
             "name": "/chunk-7ETO2MJG.js",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.5
+            "durationMs": 1.8
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 3.3
+            "durationMs": 3.4
           }
         ],
         "largestResources": [
@@ -73,17 +73,17 @@
             "initiatorType": "other",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 4
+            "durationMs": 3.9
           },
           {
             "name": "/styles-7ECWJBMY.css",
             "initiatorType": "link",
             "transferBytes": 16066,
             "encodedBodyBytes": 15766,
-            "durationMs": 2.3
+            "durationMs": 2
           },
           {
-            "name": "/main-ADEXB6X4.js",
+            "name": "/main-BFJ4KXHH.js",
             "initiatorType": "script",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
@@ -94,28 +94,28 @@
             "initiatorType": "other",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.5
+            "durationMs": 1.8
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "initiatorType": "other",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 3.3
+            "durationMs": 3.4
           },
           {
             "name": "/api/menu-state",
             "initiatorType": "fetch",
             "transferBytes": 816,
             "encodedBodyBytes": 516,
-            "durationMs": 1.4
+            "durationMs": 2.8
           },
           {
             "name": "/favicon.ico",
             "initiatorType": "other",
             "transferBytes": 310,
             "encodedBodyBytes": 10,
-            "durationMs": 1
+            "durationMs": 1.2
           }
         ]
       },
@@ -125,24 +125,24 @@
         "maxDurationMs": 0
       },
       "memory": {
-        "rendererJavaScriptHeapBytes": 2449644,
-        "rendererJavaScriptHeapTotalBytes": 3670016,
-        "chromiumProcessTreeRssBytes": 833236992,
+        "rendererJavaScriptHeapBytes": 2447416,
+        "rendererJavaScriptHeapTotalBytes": 3407872,
+        "chromiumProcessTreeRssBytes": 836427776,
         "nodes": 74,
         "eventListeners": 9
       }
     },
     "warmMenu": {
       "label": "warm-menu",
-      "wallMilliseconds": 69.067,
+      "wallMilliseconds": 69.011,
       "navigation": {
-        "domContentLoadedMs": 27,
-        "loadMs": 29.09999942779541,
+        "domContentLoadedMs": 26.899999618530273,
+        "loadMs": 27.699999809265137,
         "transferBytes": 1886,
         "encodedBodyBytes": 1586
       },
-      "firstPaintMs": 44,
-      "firstContentfulPaintMs": 44,
+      "firstPaintMs": 52,
+      "firstContentfulPaintMs": 52,
       "session": null,
       "resources": {
         "count": 6,
@@ -156,25 +156,25 @@
             "name": "/chunk-73X6SYPX.js",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.6
+            "durationMs": 3.4
           },
           {
-            "name": "/main-ADEXB6X4.js",
+            "name": "/main-BFJ4KXHH.js",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.3
+            "durationMs": 3.3
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.2
+            "durationMs": 2.8
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.1
+            "durationMs": 2.9
           }
         ],
         "largestResources": [
@@ -183,42 +183,42 @@
             "initiatorType": "other",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.6
+            "durationMs": 3.4
           },
           {
             "name": "/styles-7ECWJBMY.css",
             "initiatorType": "link",
             "transferBytes": 16066,
             "encodedBodyBytes": 15766,
-            "durationMs": 2.8
+            "durationMs": 1
           },
           {
-            "name": "/main-ADEXB6X4.js",
+            "name": "/main-BFJ4KXHH.js",
             "initiatorType": "script",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.3
+            "durationMs": 3.3
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "initiatorType": "other",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.2
+            "durationMs": 2.8
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "initiatorType": "other",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.1
+            "durationMs": 2.9
           },
           {
             "name": "/api/menu-state",
             "initiatorType": "fetch",
             "transferBytes": 816,
             "encodedBodyBytes": 516,
-            "durationMs": 6.4
+            "durationMs": 5.7
           }
         ]
       },
@@ -228,171 +228,171 @@
         "maxDurationMs": 0
       },
       "memory": {
-        "rendererJavaScriptHeapBytes": 3511468,
+        "rendererJavaScriptHeapBytes": 3542336,
         "rendererJavaScriptHeapTotalBytes": 6291456,
-        "chromiumProcessTreeRssBytes": 936366080,
+        "chromiumProcessTreeRssBytes": 943419392,
         "nodes": 141,
         "eventListeners": 24
       }
     },
-    "firstAuthoritativeProjectionAndFrameMs": 3437,
+    "firstAuthoritativeProjectionAndFrameMs": 3425,
     "gameplay": {
       "label": "gameplay",
-      "wallMilliseconds": 3437,
+      "wallMilliseconds": 3425,
       "navigation": {
-        "domContentLoadedMs": 27,
-        "loadMs": 29.09999942779541,
+        "domContentLoadedMs": 26.899999618530273,
+        "loadMs": 27.699999809265137,
         "transferBytes": 1886,
         "encodedBodyBytes": 1586
       },
-      "firstPaintMs": 44,
-      "firstContentfulPaintMs": 44,
+      "firstPaintMs": 52,
+      "firstContentfulPaintMs": 52,
       "session": {
         "bootstrapBytes": 1183676,
         "equivalentWholeStateBytes": 828076,
-        "maximumUpdateBuildMicroseconds": 96013,
+        "maximumUpdateBuildMicroseconds": 93727,
         "staticResourceUpdateCount": 0
       },
       "resources": {
         "count": 11,
-        "transferBytes": 1856007,
-        "encodedBodyBytes": 1852707,
+        "transferBytes": 1857378,
+        "encodedBodyBytes": 1854078,
         "scriptCount": 7,
-        "scriptTransferBytes": 1164481,
-        "scriptEncodedBodyBytes": 1162381,
+        "scriptTransferBytes": 1165852,
+        "scriptEncodedBodyBytes": 1163752,
         "scripts": [
           {
-            "name": "/chunk-LM5PKMKK.js",
-            "transferBytes": 754794,
-            "encodedBodyBytes": 754494,
-            "durationMs": 2.5
+            "name": "/chunk-PBT6RFT4.js",
+            "transferBytes": 755228,
+            "encodedBodyBytes": 754928,
+            "durationMs": 2.2
           },
           {
             "name": "/chunk-73X6SYPX.js",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.6
+            "durationMs": 3.4
           },
           {
-            "name": "/chunk-CZ7RZJQL.js",
-            "transferBytes": 173523,
-            "encodedBodyBytes": 173223,
-            "durationMs": 1.8
+            "name": "/chunk-KLQ7FO6P.js",
+            "transferBytes": 174460,
+            "encodedBodyBytes": 174160,
+            "durationMs": 1.4
           },
           {
             "name": "/chunk-2A2C4SYQ.js",
             "transferBytes": 11257,
             "encodedBodyBytes": 10957,
-            "durationMs": 1.7
+            "durationMs": 1.5
           },
           {
-            "name": "/main-ADEXB6X4.js",
+            "name": "/main-BFJ4KXHH.js",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.3
+            "durationMs": 3.3
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.2
+            "durationMs": 2.8
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.1
+            "durationMs": 2.9
           }
         ],
         "largestResources": [
           {
-            "name": "/chunk-LM5PKMKK.js",
+            "name": "/chunk-PBT6RFT4.js",
             "initiatorType": "script",
-            "transferBytes": 754794,
-            "encodedBodyBytes": 754494,
-            "durationMs": 2.5
+            "transferBytes": 755228,
+            "encodedBodyBytes": 754928,
+            "durationMs": 2.2
           },
           {
             "name": "/api/animated-mesh/0",
             "initiatorType": "fetch",
             "transferBytes": 340112,
             "encodedBodyBytes": 339812,
-            "durationMs": 8.4
+            "durationMs": 2.4
           },
           {
             "name": "/api/animated-mesh/1",
             "initiatorType": "fetch",
             "transferBytes": 334532,
             "encodedBodyBytes": 334232,
-            "durationMs": 8.6
+            "durationMs": 2.5
           },
           {
             "name": "/chunk-73X6SYPX.js",
             "initiatorType": "other",
             "transferBytes": 217314,
             "encodedBodyBytes": 217014,
-            "durationMs": 2.6
+            "durationMs": 3.4
           },
           {
-            "name": "/chunk-CZ7RZJQL.js",
+            "name": "/chunk-KLQ7FO6P.js",
             "initiatorType": "script",
-            "transferBytes": 173523,
-            "encodedBodyBytes": 173223,
-            "durationMs": 1.8
+            "transferBytes": 174460,
+            "encodedBodyBytes": 174160,
+            "durationMs": 1.4
           },
           {
             "name": "/styles-7ECWJBMY.css",
             "initiatorType": "link",
             "transferBytes": 16066,
             "encodedBodyBytes": 15766,
-            "durationMs": 2.8
+            "durationMs": 1
           },
           {
             "name": "/chunk-2A2C4SYQ.js",
             "initiatorType": "script",
             "transferBytes": 11257,
             "encodedBodyBytes": 10957,
-            "durationMs": 1.7
+            "durationMs": 1.5
           },
           {
-            "name": "/main-ADEXB6X4.js",
+            "name": "/main-BFJ4KXHH.js",
             "initiatorType": "script",
             "transferBytes": 5061,
             "encodedBodyBytes": 4761,
-            "durationMs": 2.3
+            "durationMs": 3.3
           },
           {
             "name": "/chunk-7ETO2MJG.js",
             "initiatorType": "other",
             "transferBytes": 1614,
             "encodedBodyBytes": 1314,
-            "durationMs": 2.2
+            "durationMs": 2.8
           },
           {
             "name": "/chunk-7CGTOI24.js",
             "initiatorType": "other",
             "transferBytes": 918,
             "encodedBodyBytes": 618,
-            "durationMs": 2.1
+            "durationMs": 2.9
           },
           {
             "name": "/api/menu-state",
             "initiatorType": "fetch",
             "transferBytes": 816,
             "encodedBodyBytes": 516,
-            "durationMs": 6.4
+            "durationMs": 5.7
           }
         ]
       },
       "longTasks": {
-        "count": 1,
-        "totalDurationMs": 584,
-        "maxDurationMs": 584
+        "count": 2,
+        "totalDurationMs": 623,
+        "maxDurationMs": 573
       },
       "memory": {
-        "rendererJavaScriptHeapBytes": 34579480,
-        "rendererJavaScriptHeapTotalBytes": 113741824,
-        "chromiumProcessTreeRssBytes": 1093349376,
+        "rendererJavaScriptHeapBytes": 61812420,
+        "rendererJavaScriptHeapTotalBytes": 113885184,
+        "chromiumProcessTreeRssBytes": 1102725120,
         "nodes": 347,
         "eventListeners": 45
       }
@@ -400,18 +400,18 @@
   },
   "idle": {
     "coldMenu": {
-      "taskDurationMs": 2.949,
+      "taskDurationMs": 3.702,
       "scriptDurationMs": 0,
-      "layoutCount": 0,
+      "layoutCount": 1,
       "styleRecalculationCount": 0,
-      "layoutDurationMs": 0,
+      "layoutDurationMs": 0.393,
       "styleRecalculationDurationMs": 0,
       "heapGrowthBytes": 284,
       "nodeDelta": 0,
       "eventListenerDelta": 0
     },
     "warmMenu": {
-      "taskDurationMs": 2.074,
+      "taskDurationMs": 2.198,
       "scriptDurationMs": 0,
       "layoutCount": 0,
       "styleRecalculationCount": 0,
@@ -422,45 +422,45 @@
       "eventListenerDelta": 0
     },
     "gameplay": {
-      "taskDurationMs": 467.128,
-      "scriptDurationMs": 409.367,
+      "taskDurationMs": 446.168,
+      "scriptDurationMs": 398.638,
       "layoutCount": 20,
       "styleRecalculationCount": 20,
-      "layoutDurationMs": 3.6,
-      "styleRecalculationDurationMs": 0.674,
-      "heapGrowthBytes": 20093028,
-      "nodeDelta": 102,
+      "layoutDurationMs": 4.58,
+      "styleRecalculationDurationMs": 0.784,
+      "heapGrowthBytes": -18242632,
+      "nodeDelta": 101,
       "eventListenerDelta": 0
     }
   },
   "input": {
     "eventToNextFrameMs": {
-      "p50": 2.1,
-      "p95": 3.1,
-      "p99": 4.8,
-      "max": 4.8
+      "p50": 2.3,
+      "p95": 3.5,
+      "p99": 4,
+      "max": 4.2
     },
-    "eventToNextFrameSampleCount": 60,
+    "eventToNextFrameSampleCount": 162,
     "authoritativeCommandRttMs": {
-      "p50": 53.823,
-      "p95": 64.297,
-      "p99": 102.243,
-      "max": 102.243
+      "p50": 15.488,
+      "p95": 52.958,
+      "p99": 55.241,
+      "max": 55.598
     },
-    "authoritativeCommandRttSampleCount": 66,
+    "authoritativeCommandRttSampleCount": 206,
     "rendererCadenceMs": {
-      "p50": 50.1,
-      "p95": 83.4,
-      "p99": 100.1,
-      "max": 100.1
+      "p50": 16.7,
+      "p95": 16.8,
+      "p99": 16.8,
+      "max": 16.8
     },
     "backendSubmissionDurationMs": {
-      "p50": 1.3,
-      "p95": 2.2,
-      "p99": 4,
-      "max": 4
+      "p50": 1.5,
+      "p95": 2.6,
+      "p99": 2.9,
+      "max": 3.5
     },
-    "rendererSampleCount": 49,
+    "rendererSampleCount": 105,
     "timingSources": [
       "animationFrame"
     ],
@@ -469,7 +469,7 @@
       "drawCallCount": {
         "scope": "perSubmission",
         "status": "available",
-        "value": 49
+        "value": 45
       },
       "renderHandleCount": {
         "scope": "liveResident",
@@ -499,11 +499,12 @@
       "triangleCount": {
         "scope": "perSubmission",
         "status": "available",
-        "value": 75075
+        "value": 68201
       }
     },
+    "cpuProfile": null,
     "automaticSubmissionPacing": {
-      "sampleCount": 49,
+      "sampleCount": 106,
       "rendererClasses": [
         "accelerated"
       ],
@@ -511,9 +512,7 @@
         "timerQuery"
       ],
       "states": [
-        "waiting",
-        "measuring",
-        "ready"
+        "measuring"
       ],
       "completionFenceModes": [
         "active"
@@ -539,8 +538,8 @@
       "pendingMeasurementCount": {
         "p50": 1,
         "p95": 1,
-        "p99": 2,
-        "max": 2
+        "p99": 1,
+        "max": 1
       },
       "maximumPendingSubmissions": {
         "p50": 8,
@@ -551,45 +550,111 @@
       "pendingSubmissionCount": {
         "p50": 1,
         "p95": 1,
-        "p99": 2,
-        "max": 2
+        "p99": 1,
+        "max": 1
       },
       "hostAdmission": {
         "lifetime": {
-          "attemptCount": 420,
-          "admittedCount": 380,
-          "backendBlockedCount": 40,
+          "attemptCount": 573,
+          "admittedCount": 572,
+          "backendBlockedCount": 1,
           "noDemandCount": 0
         },
-        "distinctAttemptCount": 208,
+        "distinctAttemptCount": 64,
         "attemptSequence": {
-          "first": 213,
-          "last": 420
+          "first": 510,
+          "last": 573
         },
         "rafIntervalMs": {
           "p50": 16.7,
-          "p95": 66.8,
-          "p99": 83.3,
-          "max": 83.4
+          "p95": 16.8,
+          "p99": 16.8,
+          "max": 16.8
+        },
+        "admittedSubmissionIntervalMs": {
+          "p50": 16.7,
+          "p95": 16.8,
+          "p99": 16.8,
+          "max": 16.8
+        },
+        "callbackPhaseMs": {
+          "entryDelay": {
+            "p50": 0.4,
+            "p95": 1.3,
+            "p99": 3.5,
+            "max": 3.5
+          },
+          "total": {
+            "p50": 2.1,
+            "p95": 3.7,
+            "p99": 4,
+            "max": 4
+          },
+          "successorQueue": {
+            "p50": 0,
+            "p95": 0.1,
+            "p99": 0.1,
+            "max": 0.1
+          },
+          "demandDecision": {
+            "p50": 0,
+            "p95": 0.4,
+            "p99": 0.5,
+            "max": 0.5
+          },
+          "backendReadiness": {
+            "p50": 0,
+            "p95": 0.1,
+            "p99": 0.3,
+            "max": 0.3
+          },
+          "controls": {
+            "p50": 0,
+            "p95": 0.1,
+            "p99": 0.1,
+            "max": 0.1
+          },
+          "camera": {
+            "p50": 0,
+            "p95": 0.1,
+            "p99": 0.1,
+            "max": 0.1
+          },
+          "presentation": {
+            "p50": 0.5,
+            "p95": 0.9,
+            "p99": 1.1,
+            "max": 1.1
+          },
+          "backendSubmission": {
+            "p50": 1.4,
+            "p95": 2.5,
+            "p99": 3.5,
+            "max": 3.5
+          },
+          "postSubmission": {
+            "p50": 0,
+            "p95": 0.1,
+            "p99": 0.1,
+            "max": 0.1
+          }
         },
         "outcomes": {
-          "admitted": 180,
-          "backendBlocked": 28
+          "admitted": 64
         },
         "demandReasons": {
-          "requested": 144,
+          "requested": 57,
           "viewportChanged": 0,
           "controls": 0,
-          "presentation": 137,
-          "retainedAnimation": 208,
-          "shouldSubmit": 208
+          "presentation": 64,
+          "retainedAnimation": 64,
+          "shouldSubmit": 64
         },
         "backendModes": {
-          "timerQuery": 208
+          "timerQuery": 64
         },
         "backendStates": {
-          "ready": 180,
-          "waiting": 28
+          "ready": 64
         },
         "automaticSubmissionLimit": {
           "p50": 8,
@@ -599,56 +664,30 @@
         },
         "pendingMeasurementCount": {
           "p50": 0,
-          "p95": 1,
-          "p99": 1,
-          "max": 1
+          "p95": 0,
+          "p99": 0,
+          "max": 0
         },
         "pendingSubmissionCount": {
           "p50": 0,
-          "p95": 1,
-          "p99": 1,
-          "max": 1
+          "p95": 0,
+          "p99": 0,
+          "max": 0
         },
-        "backendBlockedAttemptCount": 28,
-        "latestBackendBlockedAttempt": {
-          "schemaVersion": 1,
-          "sequence": 419,
-          "sourceTimeMs": 12384.8,
-          "outcome": "backendBlocked",
-          "demand": {
-            "schemaVersion": 1,
-            "requested": true,
-            "viewportChanged": false,
-            "controls": false,
-            "presentation": true,
-            "retainedAnimation": true,
-            "shouldSubmit": true
-          },
-          "backend": {
-            "mode": "timerQuery",
-            "state": "waiting",
-            "rendererClass": "accelerated",
-            "admittedAtMs": 12356.075041427795,
-            "admissionObservedAtMs": 12399.29999923706,
-            "automaticSubmissionLimit": 8,
-            "pendingMeasurementCount": 1,
-            "completionFenceMode": "active",
-            "maximumPendingSubmissions": 8,
-            "pendingSubmissionCount": 1
-          }
-        }
+        "backendBlockedAttemptCount": 0,
+        "latestBackendBlockedAttempt": null
       },
       "timerDurationMs": {
-        "p50": 4.692,
-        "p95": 6.878,
-        "p99": 6.976,
-        "max": 6.976
+        "p50": 4.681,
+        "p95": 6.62,
+        "p99": 6.858,
+        "max": 6.899
       },
       "completionAgeMs": {
-        "p50": 54.5,
-        "p95": 63,
-        "p99": 102.2,
-        "max": 102.2
+        "p50": 14.3,
+        "p95": 17.3,
+        "p99": 20.8,
+        "max": 20.8
       },
       "completionAllowanceMs": {
         "p50": 17,
@@ -657,10 +696,10 @@
         "max": 17
       },
       "effectiveDurationMs": {
-        "p50": 4.692,
-        "p95": 6.878,
-        "p99": 6.976,
-        "max": 6.976
+        "p50": 4.681,
+        "p95": 6.62,
+        "p99": 6.858,
+        "max": 6.899
       },
       "targetDutyFraction": {
         "p50": 0.5,
@@ -673,14 +712,14 @@
         "mode": "timerQuery",
         "state": "measuring",
         "rendererClass": "accelerated",
-        "timerDurationMs": 4.712874,
-        "completionAgeMs": 57.09999942779541,
+        "timerDurationMs": 4.571646,
+        "completionAgeMs": 14.90000057220459,
         "completionAllowanceMs": 17,
-        "effectiveDurationMs": 4.712874,
+        "effectiveDurationMs": 4.571646,
         "targetDutyFraction": 0.5,
-        "admittedAtMs": 12410.175041809265,
-        "admissionObservedAtMs": 12457.79999923706,
-        "observedAtMs": 12457.79999923706,
+        "admittedAtMs": 12451.972848000001,
+        "admissionObservedAtMs": 12459.800000190735,
+        "observedAtMs": 12459.800000190735,
         "maximumPendingMeasurements": 8,
         "pendingMeasurementCount": 1,
         "automaticSubmissionCapacity": 8,
@@ -690,15 +729,15 @@
         "pendingSubmissionCount": 1,
         "hostAdmission": {
           "schemaVersion": 1,
-          "attemptCount": 420,
-          "admittedCount": 380,
-          "backendBlockedCount": 40,
+          "attemptCount": 573,
+          "admittedCount": 572,
+          "backendBlockedCount": 1,
           "noDemandCount": 0,
           "recentAttempts": [
             {
               "schemaVersion": 1,
-              "sequence": 357,
-              "sourceTimeMs": 10483.3,
+              "sequence": 510,
+              "sourceTimeMs": 11408.5,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -709,12 +748,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11409,
+                "successorQueuedAtMs": 11409,
+                "demandObservedAtMs": 11409,
+                "backendReadinessObservedAtMs": 11409.10000038147,
+                "controlsUpdatedAtMs": 11409.10000038147,
+                "cameraUpdatedAtMs": 11409.10000038147,
+                "presentationAdvancedAtMs": 11409.39999961853,
+                "backendSubmittedAtMs": 11411.5,
+                "callbackEndedAtMs": 11411.5
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10478.24378123706,
-                "admissionObservedAtMs": 10483.699999809265,
+                "timerDurationMs": 4.749624,
+                "effectiveDurationMs": 4.749624,
+                "admittedAtMs": 11401.319716,
+                "admissionObservedAtMs": 11409,
+                "observedAtMs": 11409,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -724,8 +778,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 358,
-              "sourceTimeMs": 10499.9,
+              "sequence": 511,
+              "sourceTimeMs": 11425.1,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -736,12 +790,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11425.39999961853,
+                "successorQueuedAtMs": 11425.5,
+                "demandObservedAtMs": 11425.60000038147,
+                "backendReadinessObservedAtMs": 11425.699999809265,
+                "controlsUpdatedAtMs": 11425.699999809265,
+                "cameraUpdatedAtMs": 11425.699999809265,
+                "presentationAdvancedAtMs": 11426.199999809265,
+                "backendSubmittedAtMs": 11427.60000038147,
+                "callbackEndedAtMs": 11427.60000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10494.74378123706,
-                "admissionObservedAtMs": 10544.599999427795,
+                "timerDurationMs": 4.5896,
+                "effectiveDurationMs": 4.5896,
+                "admittedAtMs": 11417.999248,
+                "admissionObservedAtMs": 11425.60000038147,
+                "observedAtMs": 11425.60000038147,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -751,8 +820,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 359,
-              "sourceTimeMs": 10533.4,
+              "sequence": 512,
+              "sourceTimeMs": 11441.8,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -763,12 +832,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11442.199999809265,
+                "successorQueuedAtMs": 11442.199999809265,
+                "demandObservedAtMs": 11442.199999809265,
+                "backendReadinessObservedAtMs": 11442.199999809265,
+                "controlsUpdatedAtMs": 11442.199999809265,
+                "cameraUpdatedAtMs": 11442.199999809265,
+                "presentationAdvancedAtMs": 11442.60000038147,
+                "backendSubmittedAtMs": 11444.10000038147,
+                "callbackEndedAtMs": 11444.10000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10555.511881427796,
-                "admissionObservedAtMs": 10601.099999427795,
+                "timerDurationMs": 4.581585,
+                "effectiveDurationMs": 4.581585,
+                "admittedAtMs": 11434.2792,
+                "admissionObservedAtMs": 11442.199999809265,
+                "observedAtMs": 11442.199999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -778,9 +862,9 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 360,
-              "sourceTimeMs": 10600,
-              "outcome": "backendBlocked",
+              "sequence": 513,
+              "sourceTimeMs": 11458.5,
+              "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
                 "requested": false,
@@ -790,23 +874,38 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11458.699999809265,
+                "successorQueuedAtMs": 11458.800000190735,
+                "demandObservedAtMs": 11458.800000190735,
+                "backendReadinessObservedAtMs": 11458.89999961853,
+                "controlsUpdatedAtMs": 11458.89999961853,
+                "cameraUpdatedAtMs": 11458.89999961853,
+                "presentationAdvancedAtMs": 11459.60000038147,
+                "backendSubmittedAtMs": 11460.89999961853,
+                "callbackEndedAtMs": 11460.89999961853
+              },
               "backend": {
                 "mode": "timerQuery",
-                "state": "waiting",
+                "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10555.511881427796,
-                "admissionObservedAtMs": 10601.099999427795,
+                "timerDurationMs": 4.720609,
+                "effectiveDurationMs": 4.720609,
+                "admittedAtMs": 11451.241218,
+                "admissionObservedAtMs": 11458.800000190735,
+                "observedAtMs": 11458.800000190735,
                 "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 1,
+                "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
                 "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 1
+                "pendingSubmissionCount": 0
               }
             },
             {
               "schemaVersion": 1,
-              "sequence": 361,
-              "sourceTimeMs": 10616.7,
+              "sequence": 514,
+              "sourceTimeMs": 11475.1,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -817,12 +916,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11475.699999809265,
+                "successorQueuedAtMs": 11475.699999809265,
+                "demandObservedAtMs": 11476,
+                "backendReadinessObservedAtMs": 11476.10000038147,
+                "controlsUpdatedAtMs": 11476.10000038147,
+                "cameraUpdatedAtMs": 11476.10000038147,
+                "presentationAdvancedAtMs": 11476.5,
+                "backendSubmittedAtMs": 11477.699999809265,
+                "callbackEndedAtMs": 11477.699999809265
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10611.746368,
-                "admissionObservedAtMs": 10617,
+                "timerDurationMs": 4.680573,
+                "effectiveDurationMs": 4.680573,
+                "admittedAtMs": 11467.941218,
+                "admissionObservedAtMs": 11476,
+                "observedAtMs": 11476,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -832,8 +946,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 362,
-              "sourceTimeMs": 10633.4,
+              "sequence": 515,
+              "sourceTimeMs": 11491.8,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -844,12 +958,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11492.199999809265,
+                "successorQueuedAtMs": 11492.199999809265,
+                "demandObservedAtMs": 11492.199999809265,
+                "backendReadinessObservedAtMs": 11492.300000190735,
+                "controlsUpdatedAtMs": 11492.300000190735,
+                "cameraUpdatedAtMs": 11492.300000190735,
+                "presentationAdvancedAtMs": 11492.60000038147,
+                "backendSubmittedAtMs": 11493.800000190735,
+                "callbackEndedAtMs": 11493.800000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10628.274902,
-                "admissionObservedAtMs": 10633.89999961853,
+                "timerDurationMs": 4.721691,
+                "effectiveDurationMs": 4.721691,
+                "admittedAtMs": 11484.543382,
+                "admissionObservedAtMs": 11492.199999809265,
+                "observedAtMs": 11492.199999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -859,8 +988,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 363,
-              "sourceTimeMs": 10650.1,
+              "sequence": 516,
+              "sourceTimeMs": 11508.5,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -871,12 +1000,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11509.10000038147,
+                "successorQueuedAtMs": 11509.10000038147,
+                "demandObservedAtMs": 11509.10000038147,
+                "backendReadinessObservedAtMs": 11509.10000038147,
+                "controlsUpdatedAtMs": 11509.10000038147,
+                "cameraUpdatedAtMs": 11509.10000038147,
+                "presentationAdvancedAtMs": 11509.5,
+                "backendSubmittedAtMs": 11510.89999961853,
+                "callbackEndedAtMs": 11510.89999961853
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10645.17490161853,
-                "admissionObservedAtMs": 10650.29999923706,
+                "timerDurationMs": 4.679971,
+                "effectiveDurationMs": 4.679971,
+                "admittedAtMs": 11501.243381999999,
+                "admissionObservedAtMs": 11509.10000038147,
+                "observedAtMs": 11509.10000038147,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -886,8 +1030,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 364,
-              "sourceTimeMs": 10666.7,
+              "sequence": 517,
+              "sourceTimeMs": 11525.2,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -898,12 +1042,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11525.800000190735,
+                "successorQueuedAtMs": 11525.800000190735,
+                "demandObservedAtMs": 11525.800000190735,
+                "backendReadinessObservedAtMs": 11525.89999961853,
+                "controlsUpdatedAtMs": 11525.89999961853,
+                "cameraUpdatedAtMs": 11525.89999961853,
+                "presentationAdvancedAtMs": 11526.199999809265,
+                "backendSubmittedAtMs": 11527.60000038147,
+                "callbackEndedAtMs": 11527.699999809265
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10661.76929,
-                "admissionObservedAtMs": 10667.099999427795,
+                "timerDurationMs": 4.712593,
+                "effectiveDurationMs": 4.712593,
+                "admittedAtMs": 11517.925186,
+                "admissionObservedAtMs": 11525.800000190735,
+                "observedAtMs": 11525.800000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -913,8 +1072,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 365,
-              "sourceTimeMs": 10683.4,
+              "sequence": 518,
+              "sourceTimeMs": 11541.8,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -925,12 +1084,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11544.89999961853,
+                "successorQueuedAtMs": 11544.89999961853,
+                "demandObservedAtMs": 11544.89999961853,
+                "backendReadinessObservedAtMs": 11544.89999961853,
+                "controlsUpdatedAtMs": 11544.89999961853,
+                "cameraUpdatedAtMs": 11544.89999961853,
+                "presentationAdvancedAtMs": 11545.199999809265,
+                "backendSubmittedAtMs": 11546.300000190735,
+                "callbackEndedAtMs": 11546.300000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10678.360313427795,
-                "admissionObservedAtMs": 10683.599999427795,
+                "timerDurationMs": 4.703456,
+                "effectiveDurationMs": 4.703456,
+                "admittedAtMs": 11534.625186000001,
+                "admissionObservedAtMs": 11544.89999961853,
+                "observedAtMs": 11544.89999961853,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -940,8 +1114,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 366,
-              "sourceTimeMs": 10700.1,
+              "sequence": 519,
+              "sourceTimeMs": 11558.6,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -952,12 +1126,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11558.89999961853,
+                "successorQueuedAtMs": 11559,
+                "demandObservedAtMs": 11559.300000190735,
+                "backendReadinessObservedAtMs": 11559.39999961853,
+                "controlsUpdatedAtMs": 11559.39999961853,
+                "cameraUpdatedAtMs": 11559.39999961853,
+                "presentationAdvancedAtMs": 11559.89999961853,
+                "backendSubmittedAtMs": 11561.39999961853,
+                "callbackEndedAtMs": 11561.5
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10694.960313809264,
-                "admissionObservedAtMs": 10747.29999923706,
+                "timerDurationMs": 4.590321,
+                "effectiveDurationMs": 4.590321,
+                "admittedAtMs": 11551.206912,
+                "admissionObservedAtMs": 11559.300000190735,
+                "observedAtMs": 11559.300000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -967,8 +1156,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 367,
-              "sourceTimeMs": 10733.5,
+              "sequence": 520,
+              "sourceTimeMs": 11575.2,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -979,12 +1168,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11575.800000190735,
+                "successorQueuedAtMs": 11575.800000190735,
+                "demandObservedAtMs": 11576.199999809265,
+                "backendReadinessObservedAtMs": 11576.199999809265,
+                "controlsUpdatedAtMs": 11576.199999809265,
+                "cameraUpdatedAtMs": 11576.300000190735,
+                "presentationAdvancedAtMs": 11576.39999961853,
+                "backendSubmittedAtMs": 11577.800000190735,
+                "callbackEndedAtMs": 11577.89999961853
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10758.035175809266,
-                "admissionObservedAtMs": 10802.699999809265,
+                "timerDurationMs": 4.62679,
+                "effectiveDurationMs": 4.62679,
+                "admittedAtMs": 11567.85358,
+                "admissionObservedAtMs": 11576.199999809265,
+                "observedAtMs": 11576.199999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -994,9 +1198,345 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 368,
-              "sourceTimeMs": 10800.2,
-              "outcome": "backendBlocked",
+              "sequence": 521,
+              "sourceTimeMs": 11591.9,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11592.300000190735,
+                "successorQueuedAtMs": 11592.300000190735,
+                "demandObservedAtMs": 11592.300000190735,
+                "backendReadinessObservedAtMs": 11592.300000190735,
+                "controlsUpdatedAtMs": 11592.300000190735,
+                "cameraUpdatedAtMs": 11592.300000190735,
+                "presentationAdvancedAtMs": 11593,
+                "backendSubmittedAtMs": 11594.300000190735,
+                "callbackEndedAtMs": 11594.300000190735
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.629716,
+                "effectiveDurationMs": 4.629716,
+                "admittedAtMs": 11584.459432000001,
+                "admissionObservedAtMs": 11592.300000190735,
+                "observedAtMs": 11592.300000190735,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 522,
+              "sourceTimeMs": 11608.6,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11609.199999809265,
+                "successorQueuedAtMs": 11609.199999809265,
+                "demandObservedAtMs": 11609.199999809265,
+                "backendReadinessObservedAtMs": 11609.199999809265,
+                "controlsUpdatedAtMs": 11609.199999809265,
+                "cameraUpdatedAtMs": 11609.199999809265,
+                "presentationAdvancedAtMs": 11609.699999809265,
+                "backendSubmittedAtMs": 11611,
+                "callbackEndedAtMs": 11611
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.655966,
+                "effectiveDurationMs": 4.655966,
+                "admittedAtMs": 11601.211932,
+                "admissionObservedAtMs": 11609.199999809265,
+                "observedAtMs": 11609.199999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 523,
+              "sourceTimeMs": 11625.2,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11625.800000190735,
+                "successorQueuedAtMs": 11625.800000190735,
+                "demandObservedAtMs": 11625.800000190735,
+                "backendReadinessObservedAtMs": 11625.800000190735,
+                "controlsUpdatedAtMs": 11625.800000190735,
+                "cameraUpdatedAtMs": 11625.800000190735,
+                "presentationAdvancedAtMs": 11626.199999809265,
+                "backendSubmittedAtMs": 11628,
+                "callbackEndedAtMs": 11628
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.624266,
+                "effectiveDurationMs": 4.624266,
+                "admittedAtMs": 11617.911932,
+                "admissionObservedAtMs": 11625.800000190735,
+                "observedAtMs": 11625.800000190735,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 524,
+              "sourceTimeMs": 11641.9,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11643.199999809265,
+                "successorQueuedAtMs": 11643.199999809265,
+                "demandObservedAtMs": 11643.199999809265,
+                "backendReadinessObservedAtMs": 11643.199999809265,
+                "controlsUpdatedAtMs": 11643.199999809265,
+                "cameraUpdatedAtMs": 11643.199999809265,
+                "presentationAdvancedAtMs": 11643.39999961853,
+                "backendSubmittedAtMs": 11644.699999809265,
+                "callbackEndedAtMs": 11644.699999809265
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.732591,
+                "effectiveDurationMs": 4.732591,
+                "admittedAtMs": 11634.665182,
+                "admissionObservedAtMs": 11643.199999809265,
+                "observedAtMs": 11643.199999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 525,
+              "sourceTimeMs": 11658.7,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11659,
+                "successorQueuedAtMs": 11659,
+                "demandObservedAtMs": 11659,
+                "backendReadinessObservedAtMs": 11659.199999809265,
+                "controlsUpdatedAtMs": 11659.199999809265,
+                "cameraUpdatedAtMs": 11659.199999809265,
+                "presentationAdvancedAtMs": 11660.199999809265,
+                "backendSubmittedAtMs": 11662.699999809265,
+                "callbackEndedAtMs": 11662.699999809265
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.786334,
+                "effectiveDurationMs": 4.786334,
+                "admittedAtMs": 11651.472668,
+                "admissionObservedAtMs": 11659,
+                "observedAtMs": 11659,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 526,
+              "sourceTimeMs": 11675.3,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11675.89999961853,
+                "successorQueuedAtMs": 11675.89999961853,
+                "demandObservedAtMs": 11676.300000190735,
+                "backendReadinessObservedAtMs": 11676.39999961853,
+                "controlsUpdatedAtMs": 11676.39999961853,
+                "cameraUpdatedAtMs": 11676.39999961853,
+                "presentationAdvancedAtMs": 11676.800000190735,
+                "backendSubmittedAtMs": 11678,
+                "callbackEndedAtMs": 11678
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.791423,
+                "effectiveDurationMs": 4.791423,
+                "admittedAtMs": 11668.282846,
+                "admissionObservedAtMs": 11676.300000190735,
+                "observedAtMs": 11676.300000190735,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 527,
+              "sourceTimeMs": 11692,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11692.300000190735,
+                "successorQueuedAtMs": 11692.300000190735,
+                "demandObservedAtMs": 11692.300000190735,
+                "backendReadinessObservedAtMs": 11692.39999961853,
+                "controlsUpdatedAtMs": 11692.39999961853,
+                "cameraUpdatedAtMs": 11692.39999961853,
+                "presentationAdvancedAtMs": 11692.89999961853,
+                "backendSubmittedAtMs": 11694.300000190735,
+                "callbackEndedAtMs": 11694.300000190735
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.643342,
+                "effectiveDurationMs": 4.643342,
+                "admittedAtMs": 11684.882845999999,
+                "admissionObservedAtMs": 11692.300000190735,
+                "observedAtMs": 11692.300000190735,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 528,
+              "sourceTimeMs": 11708.6,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": true,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11709.199999809265,
+                "successorQueuedAtMs": 11709.199999809265,
+                "demandObservedAtMs": 11709.199999809265,
+                "backendReadinessObservedAtMs": 11709.199999809265,
+                "controlsUpdatedAtMs": 11709.199999809265,
+                "cameraUpdatedAtMs": 11709.199999809265,
+                "presentationAdvancedAtMs": 11709.699999809265,
+                "backendSubmittedAtMs": 11711.800000190735,
+                "callbackEndedAtMs": 11711.800000190735
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.621901,
+                "effectiveDurationMs": 4.621901,
+                "admittedAtMs": 11701.286684,
+                "admissionObservedAtMs": 11709.199999809265,
+                "observedAtMs": 11709.199999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 529,
+              "sourceTimeMs": 11725.3,
+              "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
                 "requested": false,
@@ -1006,23 +1546,38 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11725.699999809265,
+                "successorQueuedAtMs": 11725.699999809265,
+                "demandObservedAtMs": 11725.699999809265,
+                "backendReadinessObservedAtMs": 11725.800000190735,
+                "controlsUpdatedAtMs": 11725.800000190735,
+                "cameraUpdatedAtMs": 11725.800000190735,
+                "presentationAdvancedAtMs": 11726.300000190735,
+                "backendSubmittedAtMs": 11727.800000190735,
+                "callbackEndedAtMs": 11727.800000190735
+              },
               "backend": {
                 "mode": "timerQuery",
-                "state": "waiting",
+                "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10758.035175809266,
-                "admissionObservedAtMs": 10802.699999809265,
+                "timerDurationMs": 4.640496,
+                "effectiveDurationMs": 4.640496,
+                "admittedAtMs": 11717.880992,
+                "admissionObservedAtMs": 11725.699999809265,
+                "observedAtMs": 11725.699999809265,
                 "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 1,
+                "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
                 "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 1
+                "pendingSubmissionCount": 0
               }
             },
             {
               "schemaVersion": 1,
-              "sequence": 369,
-              "sourceTimeMs": 10816.9,
+              "sequence": 530,
+              "sourceTimeMs": 11742.1,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1033,12 +1588,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11742.5,
+                "successorQueuedAtMs": 11742.5,
+                "demandObservedAtMs": 11742.60000038147,
+                "backendReadinessObservedAtMs": 11742.60000038147,
+                "controlsUpdatedAtMs": 11742.60000038147,
+                "cameraUpdatedAtMs": 11742.60000038147,
+                "presentationAdvancedAtMs": 11742.89999961853,
+                "backendSubmittedAtMs": 11744.300000190735,
+                "callbackEndedAtMs": 11744.300000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10815.136217237061,
-                "admissionObservedAtMs": 10869.29999923706,
+                "timerDurationMs": 4.629155,
+                "effectiveDurationMs": 4.629155,
+                "admittedAtMs": 11734.580992,
+                "admissionObservedAtMs": 11742.60000038147,
+                "observedAtMs": 11742.60000038147,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1048,8 +1618,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 370,
-              "sourceTimeMs": 10866.9,
+              "sequence": 531,
+              "sourceTimeMs": 11758.7,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1060,12 +1630,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11759.10000038147,
+                "successorQueuedAtMs": 11759.10000038147,
+                "demandObservedAtMs": 11759.199999809265,
+                "backendReadinessObservedAtMs": 11759.300000190735,
+                "controlsUpdatedAtMs": 11759.39999961853,
+                "cameraUpdatedAtMs": 11759.39999961853,
+                "presentationAdvancedAtMs": 11760.10000038147,
+                "backendSubmittedAtMs": 11762.10000038147,
+                "callbackEndedAtMs": 11762.10000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10880.155643809265,
-                "admissionObservedAtMs": 10925.5,
+                "timerDurationMs": 4.724737,
+                "effectiveDurationMs": 4.724737,
+                "admittedAtMs": 11751.549474,
+                "admissionObservedAtMs": 11759.199999809265,
+                "observedAtMs": 11759.199999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1075,62 +1660,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 371,
-              "sourceTimeMs": 10917,
-              "outcome": "backendBlocked",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "waiting",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 10880.155643809265,
-                "admissionObservedAtMs": 10925.5,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 1,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 1
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 372,
-              "sourceTimeMs": 10933.6,
-              "outcome": "backendBlocked",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "waiting",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 10880.155643809265,
-                "admissionObservedAtMs": 10925.5,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 1,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 1
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 373,
-              "sourceTimeMs": 10950.3,
+              "sequence": 532,
+              "sourceTimeMs": 11775.4,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1141,12 +1672,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11775.89999961853,
+                "successorQueuedAtMs": 11775.89999961853,
+                "demandObservedAtMs": 11776.199999809265,
+                "backendReadinessObservedAtMs": 11776.300000190735,
+                "controlsUpdatedAtMs": 11776.300000190735,
+                "cameraUpdatedAtMs": 11776.300000190735,
+                "presentationAdvancedAtMs": 11776.699999809265,
+                "backendSubmittedAtMs": 11778,
+                "callbackEndedAtMs": 11778
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10936.455644,
-                "admissionObservedAtMs": 10951.099999427795,
+                "timerDurationMs": 4.66843,
+                "effectiveDurationMs": 4.66843,
+                "admittedAtMs": 11768.149474,
+                "admissionObservedAtMs": 11776.199999809265,
+                "observedAtMs": 11776.199999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1156,8 +1702,50 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 374,
-              "sourceTimeMs": 10967,
+              "sequence": 533,
+              "sourceTimeMs": 11792.1,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": false,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11792.5,
+                "successorQueuedAtMs": 11792.5,
+                "demandObservedAtMs": 11792.5,
+                "backendReadinessObservedAtMs": 11792.5,
+                "controlsUpdatedAtMs": 11792.60000038147,
+                "cameraUpdatedAtMs": 11792.60000038147,
+                "presentationAdvancedAtMs": 11793.199999809265,
+                "backendSubmittedAtMs": 11794.39999961853,
+                "callbackEndedAtMs": 11794.39999961853
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.750025,
+                "effectiveDurationMs": 4.750025,
+                "admittedAtMs": 11784.90005,
+                "admissionObservedAtMs": 11792.5,
+                "observedAtMs": 11792.5,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 534,
+              "sourceTimeMs": 11808.7,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1168,12 +1756,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11809.199999809265,
+                "successorQueuedAtMs": 11809.199999809265,
+                "demandObservedAtMs": 11809.300000190735,
+                "backendReadinessObservedAtMs": 11809.300000190735,
+                "controlsUpdatedAtMs": 11809.300000190735,
+                "cameraUpdatedAtMs": 11809.300000190735,
+                "presentationAdvancedAtMs": 11809.60000038147,
+                "backendSubmittedAtMs": 11810.699999809265,
+                "callbackEndedAtMs": 11810.699999809265
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10962.21260123706,
-                "admissionObservedAtMs": 10967.39999961853,
+                "timerDurationMs": 4.803807,
+                "effectiveDurationMs": 4.803807,
+                "admittedAtMs": 11801.707614,
+                "admissionObservedAtMs": 11809.300000190735,
+                "observedAtMs": 11809.300000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1183,8 +1786,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 375,
-              "sourceTimeMs": 10983.7,
+              "sequence": 535,
+              "sourceTimeMs": 11825.5,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1195,12 +1798,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11826.5,
+                "successorQueuedAtMs": 11826.5,
+                "demandObservedAtMs": 11826.5,
+                "backendReadinessObservedAtMs": 11826.60000038147,
+                "controlsUpdatedAtMs": 11826.60000038147,
+                "cameraUpdatedAtMs": 11826.60000038147,
+                "presentationAdvancedAtMs": 11827.199999809265,
+                "backendSubmittedAtMs": 11828.5,
+                "callbackEndedAtMs": 11828.60000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10979.528573237061,
-                "admissionObservedAtMs": 10984.199999809265,
+                "timerDurationMs": 4.744214,
+                "effectiveDurationMs": 4.744214,
+                "admittedAtMs": 11818.307614000001,
+                "admissionObservedAtMs": 11826.5,
+                "observedAtMs": 11826.5,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1210,8 +1828,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 376,
-              "sourceTimeMs": 11000.3,
+              "sequence": 536,
+              "sourceTimeMs": 11842.1,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1222,12 +1840,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11842.5,
+                "successorQueuedAtMs": 11842.5,
+                "demandObservedAtMs": 11842.5,
+                "backendReadinessObservedAtMs": 11842.5,
+                "controlsUpdatedAtMs": 11842.5,
+                "cameraUpdatedAtMs": 11842.5,
+                "presentationAdvancedAtMs": 11842.89999961853,
+                "backendSubmittedAtMs": 11844.699999809265,
+                "callbackEndedAtMs": 11844.699999809265
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 10995.795822,
-                "admissionObservedAtMs": 11045.79999923706,
+                "timerDurationMs": 4.636809,
+                "effectiveDurationMs": 4.636809,
+                "admittedAtMs": 11834.988428,
+                "admissionObservedAtMs": 11842.5,
+                "observedAtMs": 11842.5,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1237,8 +1870,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 377,
-              "sourceTimeMs": 11033.7,
+              "sequence": 537,
+              "sourceTimeMs": 11858.8,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1249,12 +1882,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11859.39999961853,
+                "successorQueuedAtMs": 11859.39999961853,
+                "demandObservedAtMs": 11859.39999961853,
+                "backendReadinessObservedAtMs": 11859.5,
+                "controlsUpdatedAtMs": 11859.5,
+                "cameraUpdatedAtMs": 11859.5,
+                "presentationAdvancedAtMs": 11860.39999961853,
+                "backendSubmittedAtMs": 11861.699999809265,
+                "callbackEndedAtMs": 11861.800000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11056.990319427796,
-                "admissionObservedAtMs": 11105.699999809265,
+                "timerDurationMs": 4.823204,
+                "effectiveDurationMs": 4.823204,
+                "admittedAtMs": 11851.746408,
+                "admissionObservedAtMs": 11859.39999961853,
+                "observedAtMs": 11859.39999961853,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1264,35 +1912,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 378,
-              "sourceTimeMs": 11100.5,
-              "outcome": "backendBlocked",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "waiting",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 11056.990319427796,
-                "admissionObservedAtMs": 11105.699999809265,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 1,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 1
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 379,
-              "sourceTimeMs": 11117.2,
+              "sequence": 538,
+              "sourceTimeMs": 11875.4,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1303,12 +1924,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11875.800000190735,
+                "successorQueuedAtMs": 11875.800000190735,
+                "demandObservedAtMs": 11876.199999809265,
+                "backendReadinessObservedAtMs": 11876.199999809265,
+                "controlsUpdatedAtMs": 11876.199999809265,
+                "cameraUpdatedAtMs": 11876.300000190735,
+                "presentationAdvancedAtMs": 11877,
+                "backendSubmittedAtMs": 11878.300000190735,
+                "callbackEndedAtMs": 11878.300000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11116.976223237061,
-                "admissionObservedAtMs": 11160.39999961853,
+                "timerDurationMs": 4.659252,
+                "effectiveDurationMs": 4.659252,
+                "admittedAtMs": 11868.446408,
+                "admissionObservedAtMs": 11876.199999809265,
+                "observedAtMs": 11876.199999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1318,8 +1954,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 380,
-              "sourceTimeMs": 11150.5,
+              "sequence": 539,
+              "sourceTimeMs": 11892.2,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1330,12 +1966,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11892.699999809265,
+                "successorQueuedAtMs": 11892.699999809265,
+                "demandObservedAtMs": 11892.699999809265,
+                "backendReadinessObservedAtMs": 11892.800000190735,
+                "controlsUpdatedAtMs": 11892.89999961853,
+                "cameraUpdatedAtMs": 11892.89999961853,
+                "presentationAdvancedAtMs": 11893.60000038147,
+                "backendSubmittedAtMs": 11895.199999809265,
+                "callbackEndedAtMs": 11895.300000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11171.676224,
-                "admissionObservedAtMs": 11215.199999809265,
+                "timerDurationMs": 4.670754,
+                "effectiveDurationMs": 4.670754,
+                "admittedAtMs": 11884.741508,
+                "admissionObservedAtMs": 11892.800000190735,
+                "observedAtMs": 11892.800000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1345,8 +1996,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 381,
-              "sourceTimeMs": 11200.5,
+              "sequence": 540,
+              "sourceTimeMs": 11908.8,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1357,12 +2008,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11909.199999809265,
+                "successorQueuedAtMs": 11909.199999809265,
+                "demandObservedAtMs": 11909.300000190735,
+                "backendReadinessObservedAtMs": 11909.60000038147,
+                "controlsUpdatedAtMs": 11909.60000038147,
+                "cameraUpdatedAtMs": 11909.60000038147,
+                "presentationAdvancedAtMs": 11910.300000190735,
+                "backendSubmittedAtMs": 11912.800000190735,
+                "callbackEndedAtMs": 11912.89999961853
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11226.326067618531,
-                "admissionObservedAtMs": 11274.79999923706,
+                "timerDurationMs": 4.812824,
+                "effectiveDurationMs": 4.812824,
+                "admittedAtMs": 11901.825648,
+                "admissionObservedAtMs": 11909.300000190735,
+                "observedAtMs": 11909.300000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1372,8 +2038,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 382,
-              "sourceTimeMs": 11267.3,
+              "sequence": 541,
+              "sourceTimeMs": 11925.5,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1384,12 +2050,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11926,
+                "successorQueuedAtMs": 11926,
+                "demandObservedAtMs": 11926,
+                "backendReadinessObservedAtMs": 11926,
+                "controlsUpdatedAtMs": 11926,
+                "cameraUpdatedAtMs": 11926,
+                "presentationAdvancedAtMs": 11926.5,
+                "backendSubmittedAtMs": 11927.800000190735,
+                "callbackEndedAtMs": 11927.800000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11287.135285809265,
-                "admissionObservedAtMs": 11332.699999809265,
+                "timerDurationMs": 4.648512,
+                "effectiveDurationMs": 4.648512,
+                "admittedAtMs": 11918.425647999999,
+                "admissionObservedAtMs": 11926,
+                "observedAtMs": 11926,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1399,8 +2080,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 383,
-              "sourceTimeMs": 11334,
+              "sequence": 542,
+              "sourceTimeMs": 11942.2,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1411,12 +2092,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11944.199999809265,
+                "successorQueuedAtMs": 11944.199999809265,
+                "demandObservedAtMs": 11944.199999809265,
+                "backendReadinessObservedAtMs": 11944.199999809265,
+                "controlsUpdatedAtMs": 11944.199999809265,
+                "cameraUpdatedAtMs": 11944.300000190735,
+                "presentationAdvancedAtMs": 11944.60000038147,
+                "backendSubmittedAtMs": 11945.60000038147,
+                "callbackEndedAtMs": 11945.60000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11343.73528523706,
-                "admissionObservedAtMs": 11389.79999923706,
+                "timerDurationMs": 4.718485,
+                "effectiveDurationMs": 4.718485,
+                "admittedAtMs": 11934.93697,
+                "admissionObservedAtMs": 11944.199999809265,
+                "observedAtMs": 11944.199999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1426,8 +2122,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 384,
-              "sourceTimeMs": 11384,
+              "sequence": 543,
+              "sourceTimeMs": 11958.8,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1438,12 +2134,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11959.300000190735,
+                "successorQueuedAtMs": 11959.300000190735,
+                "demandObservedAtMs": 11959.300000190735,
+                "backendReadinessObservedAtMs": 11959.300000190735,
+                "controlsUpdatedAtMs": 11959.300000190735,
+                "cameraUpdatedAtMs": 11959.39999961853,
+                "presentationAdvancedAtMs": 11960.199999809265,
+                "backendSubmittedAtMs": 11961.60000038147,
+                "callbackEndedAtMs": 11961.60000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11400.701141237061,
-                "admissionObservedAtMs": 11449,
+                "timerDurationMs": 4.74786,
+                "effectiveDurationMs": 4.74786,
+                "admittedAtMs": 11951.695720000002,
+                "admissionObservedAtMs": 11959.300000190735,
+                "observedAtMs": 11959.300000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1453,35 +2164,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 385,
-              "sourceTimeMs": 11450.7,
-              "outcome": "backendBlocked",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "waiting",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 11459.972335809265,
-                "admissionObservedAtMs": null,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 0,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 0
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 386,
-              "sourceTimeMs": 11467.4,
+              "sequence": 544,
+              "sourceTimeMs": 11975.6,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1492,12 +2176,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11976.10000038147,
+                "successorQueuedAtMs": 11976.10000038147,
+                "demandObservedAtMs": 11976.60000038147,
+                "backendReadinessObservedAtMs": 11976.699999809265,
+                "controlsUpdatedAtMs": 11976.699999809265,
+                "cameraUpdatedAtMs": 11976.699999809265,
+                "presentationAdvancedAtMs": 11977.10000038147,
+                "backendSubmittedAtMs": 11978.5,
+                "callbackEndedAtMs": 11978.5
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11459.972335809265,
-                "admissionObservedAtMs": 11467.699999809265,
+                "timerDurationMs": 4.706742,
+                "effectiveDurationMs": 4.706742,
+                "admittedAtMs": 11968.29572,
+                "admissionObservedAtMs": 11976.60000038147,
+                "observedAtMs": 11976.60000038147,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1507,8 +2206,50 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 387,
-              "sourceTimeMs": 11484.1,
+              "sequence": 545,
+              "sourceTimeMs": 11992.2,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": false,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 11992.60000038147,
+                "successorQueuedAtMs": 11992.699999809265,
+                "demandObservedAtMs": 11992.699999809265,
+                "backendReadinessObservedAtMs": 11992.699999809265,
+                "controlsUpdatedAtMs": 11992.699999809265,
+                "cameraUpdatedAtMs": 11992.800000190735,
+                "presentationAdvancedAtMs": 11993.60000038147,
+                "backendSubmittedAtMs": 11995.800000190735,
+                "callbackEndedAtMs": 11995.800000190735
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.572407,
+                "effectiveDurationMs": 4.572407,
+                "admittedAtMs": 11985.013484000001,
+                "admissionObservedAtMs": 11992.699999809265,
+                "observedAtMs": 11992.699999809265,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 546,
+              "sourceTimeMs": 12008.9,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1519,12 +2260,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12009.300000190735,
+                "successorQueuedAtMs": 12009.300000190735,
+                "demandObservedAtMs": 12009.39999961853,
+                "backendReadinessObservedAtMs": 12009.39999961853,
+                "controlsUpdatedAtMs": 12009.39999961853,
+                "cameraUpdatedAtMs": 12009.39999961853,
+                "presentationAdvancedAtMs": 12009.800000190735,
+                "backendSubmittedAtMs": 12011.699999809265,
+                "callbackEndedAtMs": 12011.699999809265
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11478.972335809265,
-                "admissionObservedAtMs": 11484.39999961853,
+                "timerDurationMs": 4.703095,
+                "effectiveDurationMs": 4.703095,
+                "admittedAtMs": 12001.60619,
+                "admissionObservedAtMs": 12009.39999961853,
+                "observedAtMs": 12009.39999961853,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1534,8 +2290,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 388,
-              "sourceTimeMs": 11500.7,
+              "sequence": 547,
+              "sourceTimeMs": 12025.6,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1546,12 +2302,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12025.89999961853,
+                "successorQueuedAtMs": 12025.89999961853,
+                "demandObservedAtMs": 12026,
+                "backendReadinessObservedAtMs": 12026,
+                "controlsUpdatedAtMs": 12026,
+                "cameraUpdatedAtMs": 12026,
+                "presentationAdvancedAtMs": 12026.39999961853,
+                "backendSubmittedAtMs": 12028.199999809265,
+                "callbackEndedAtMs": 12028.199999809265
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11495.63378361853,
-                "admissionObservedAtMs": 11501.39999961853,
+                "timerDurationMs": 4.603226,
+                "effectiveDurationMs": 4.603226,
+                "admittedAtMs": 12018.30619,
+                "admissionObservedAtMs": 12026,
+                "observedAtMs": 12026,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1561,8 +2332,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 389,
-              "sourceTimeMs": 11517.4,
+              "sequence": 548,
+              "sourceTimeMs": 12042.3,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1573,12 +2344,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12045.800000190735,
+                "successorQueuedAtMs": 12045.800000190735,
+                "demandObservedAtMs": 12046,
+                "backendReadinessObservedAtMs": 12046.10000038147,
+                "controlsUpdatedAtMs": 12046.10000038147,
+                "cameraUpdatedAtMs": 12046.10000038147,
+                "presentationAdvancedAtMs": 12046.300000190735,
+                "backendSubmittedAtMs": 12047.5,
+                "callbackEndedAtMs": 12047.5
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11512.76980161853,
-                "admissionObservedAtMs": 11559.599999427795,
+                "timerDurationMs": 4.580502,
+                "effectiveDurationMs": 4.580502,
+                "admittedAtMs": 12034.806452,
+                "admissionObservedAtMs": 12046,
+                "observedAtMs": 12046,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1588,8 +2374,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 390,
-              "sourceTimeMs": 11550.8,
+              "sequence": 549,
+              "sourceTimeMs": 12058.9,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1600,12 +2386,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12059.199999809265,
+                "successorQueuedAtMs": 12059.199999809265,
+                "demandObservedAtMs": 12059.300000190735,
+                "backendReadinessObservedAtMs": 12059.39999961853,
+                "controlsUpdatedAtMs": 12059.39999961853,
+                "cameraUpdatedAtMs": 12059.39999961853,
+                "presentationAdvancedAtMs": 12060.10000038147,
+                "backendSubmittedAtMs": 12061.60000038147,
+                "callbackEndedAtMs": 12061.60000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11570.596731809264,
-                "admissionObservedAtMs": 11612.39999961853,
+                "timerDurationMs": 4.764532,
+                "effectiveDurationMs": 4.764532,
+                "admittedAtMs": 12051.829064,
+                "admissionObservedAtMs": 12059.300000190735,
+                "observedAtMs": 12059.300000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1615,62 +2416,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 391,
-              "sourceTimeMs": 11600.8,
-              "outcome": "backendBlocked",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "waiting",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 11623.19673123706,
-                "admissionObservedAtMs": null,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 0,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 0
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 392,
-              "sourceTimeMs": 11617.6,
-              "outcome": "backendBlocked",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "waiting",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 11623.19673123706,
-                "admissionObservedAtMs": null,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 0,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 0
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 393,
-              "sourceTimeMs": 11634.2,
+              "sequence": 550,
+              "sourceTimeMs": 12075.7,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1681,12 +2428,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12076.199999809265,
+                "successorQueuedAtMs": 12076.199999809265,
+                "demandObservedAtMs": 12076.60000038147,
+                "backendReadinessObservedAtMs": 12076.699999809265,
+                "controlsUpdatedAtMs": 12076.699999809265,
+                "cameraUpdatedAtMs": 12076.699999809265,
+                "presentationAdvancedAtMs": 12077,
+                "backendSubmittedAtMs": 12078.199999809265,
+                "callbackEndedAtMs": 12078.199999809265
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11623.19673123706,
-                "admissionObservedAtMs": 11634.699999809265,
+                "timerDurationMs": 4.696162,
+                "effectiveDurationMs": 4.696162,
+                "admittedAtMs": 12068.429064,
+                "admissionObservedAtMs": 12076.60000038147,
+                "observedAtMs": 12076.60000038147,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1696,8 +2458,50 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 394,
-              "sourceTimeMs": 11650.9,
+              "sequence": 551,
+              "sourceTimeMs": 12092.3,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": false,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12092.699999809265,
+                "successorQueuedAtMs": 12092.699999809265,
+                "demandObservedAtMs": 12092.800000190735,
+                "backendReadinessObservedAtMs": 12093,
+                "controlsUpdatedAtMs": 12093.10000038147,
+                "cameraUpdatedAtMs": 12093.199999809265,
+                "presentationAdvancedAtMs": 12093.89999961853,
+                "backendSubmittedAtMs": 12095.800000190735,
+                "callbackEndedAtMs": 12095.800000190735
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.771746,
+                "effectiveDurationMs": 4.771746,
+                "admittedAtMs": 12085.243492000001,
+                "admissionObservedAtMs": 12092.800000190735,
+                "observedAtMs": 12092.800000190735,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 552,
+              "sourceTimeMs": 12109,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1708,12 +2512,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12109.60000038147,
+                "successorQueuedAtMs": 12109.60000038147,
+                "demandObservedAtMs": 12109.60000038147,
+                "backendReadinessObservedAtMs": 12109.60000038147,
+                "controlsUpdatedAtMs": 12109.60000038147,
+                "cameraUpdatedAtMs": 12109.699999809265,
+                "presentationAdvancedAtMs": 12110.10000038147,
+                "backendSubmittedAtMs": 12112.300000190735,
+                "callbackEndedAtMs": 12112.300000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11645.951878,
-                "admissionObservedAtMs": 11651.099999427795,
+                "timerDurationMs": 4.72121,
+                "effectiveDurationMs": 4.72121,
+                "admittedAtMs": 12101.843492,
+                "admissionObservedAtMs": 12109.60000038147,
+                "observedAtMs": 12109.60000038147,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1723,8 +2542,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 395,
-              "sourceTimeMs": 11667.5,
+              "sequence": 553,
+              "sourceTimeMs": 12125.6,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1735,12 +2554,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12126.10000038147,
+                "successorQueuedAtMs": 12126.10000038147,
+                "demandObservedAtMs": 12126.10000038147,
+                "backendReadinessObservedAtMs": 12126.199999809265,
+                "controlsUpdatedAtMs": 12126.199999809265,
+                "cameraUpdatedAtMs": 12126.199999809265,
+                "presentationAdvancedAtMs": 12126.699999809265,
+                "backendSubmittedAtMs": 12128.199999809265,
+                "callbackEndedAtMs": 12128.199999809265
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11662.630185427795,
-                "admissionObservedAtMs": 11668.39999961853,
+                "timerDurationMs": 4.774471,
+                "effectiveDurationMs": 4.774471,
+                "admittedAtMs": 12118.548942,
+                "admissionObservedAtMs": 12126.10000038147,
+                "observedAtMs": 12126.10000038147,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1750,8 +2584,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 396,
-              "sourceTimeMs": 11684.3,
+              "sequence": 554,
+              "sourceTimeMs": 12142.3,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1762,12 +2596,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12143.10000038147,
+                "successorQueuedAtMs": 12143.10000038147,
+                "demandObservedAtMs": 12143.60000038147,
+                "backendReadinessObservedAtMs": 12143.699999809265,
+                "controlsUpdatedAtMs": 12143.699999809265,
+                "cameraUpdatedAtMs": 12143.699999809265,
+                "presentationAdvancedAtMs": 12144.199999809265,
+                "backendSubmittedAtMs": 12146.199999809265,
+                "callbackEndedAtMs": 12146.199999809265
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11680.730185809265,
-                "admissionObservedAtMs": 11684.5,
+                "timerDurationMs": 4.760044,
+                "effectiveDurationMs": 4.760044,
+                "admittedAtMs": 12135.148942,
+                "admissionObservedAtMs": 12143.60000038147,
+                "observedAtMs": 12143.60000038147,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1777,8 +2626,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 397,
-              "sourceTimeMs": 11700.9,
+              "sequence": 555,
+              "sourceTimeMs": 12159,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1789,12 +2638,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12159.800000190735,
+                "successorQueuedAtMs": 12159.800000190735,
+                "demandObservedAtMs": 12159.800000190735,
+                "backendReadinessObservedAtMs": 12159.800000190735,
+                "controlsUpdatedAtMs": 12159.89999961853,
+                "cameraUpdatedAtMs": 12159.89999961853,
+                "presentationAdvancedAtMs": 12160.300000190735,
+                "backendSubmittedAtMs": 12161.60000038147,
+                "callbackEndedAtMs": 12161.60000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11695.50861523706,
-                "admissionObservedAtMs": 11746.29999923706,
+                "timerDurationMs": 4.650796,
+                "effectiveDurationMs": 4.650796,
+                "admittedAtMs": 12151.820087999999,
+                "admissionObservedAtMs": 12159.800000190735,
+                "observedAtMs": 12159.800000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1804,8 +2668,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 398,
-              "sourceTimeMs": 11734.3,
+              "sequence": 556,
+              "sourceTimeMs": 12175.8,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1816,12 +2680,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12176,
+                "successorQueuedAtMs": 12176,
+                "demandObservedAtMs": 12176.39999961853,
+                "backendReadinessObservedAtMs": 12176.39999961853,
+                "controlsUpdatedAtMs": 12176.5,
+                "cameraUpdatedAtMs": 12176.5,
+                "presentationAdvancedAtMs": 12177,
+                "backendSubmittedAtMs": 12178.199999809265,
+                "callbackEndedAtMs": 12178.300000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11756.974901809264,
-                "admissionObservedAtMs": 11804.29999923706,
+                "timerDurationMs": 4.627071,
+                "effectiveDurationMs": 4.627071,
+                "admittedAtMs": 12168.301592,
+                "admissionObservedAtMs": 12176.39999961853,
+                "observedAtMs": 12176.39999961853,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1831,35 +2710,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 399,
-              "sourceTimeMs": 11801,
-              "outcome": "backendBlocked",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "waiting",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 11756.974901809264,
-                "admissionObservedAtMs": 11804.29999923706,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 1,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 1
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 400,
-              "sourceTimeMs": 11817.7,
+              "sequence": 557,
+              "sourceTimeMs": 12192.4,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1870,12 +2722,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12192.800000190735,
+                "successorQueuedAtMs": 12192.800000190735,
+                "demandObservedAtMs": 12192.800000190735,
+                "backendReadinessObservedAtMs": 12192.800000190735,
+                "controlsUpdatedAtMs": 12192.800000190735,
+                "cameraUpdatedAtMs": 12192.800000190735,
+                "presentationAdvancedAtMs": 12193.39999961853,
+                "backendSubmittedAtMs": 12194.89999961853,
+                "callbackEndedAtMs": 12195
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11815.074981237061,
-                "admissionObservedAtMs": 11864.5,
+                "timerDurationMs": 4.681815,
+                "effectiveDurationMs": 4.681815,
+                "admittedAtMs": 12185.16363,
+                "admissionObservedAtMs": 12192.800000190735,
+                "observedAtMs": 12192.800000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1885,8 +2752,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 401,
-              "sourceTimeMs": 11851,
+              "sequence": 558,
+              "sourceTimeMs": 12209.1,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1897,12 +2764,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12209.5,
+                "successorQueuedAtMs": 12209.5,
+                "demandObservedAtMs": 12209.60000038147,
+                "backendReadinessObservedAtMs": 12209.60000038147,
+                "controlsUpdatedAtMs": 12209.60000038147,
+                "cameraUpdatedAtMs": 12209.60000038147,
+                "presentationAdvancedAtMs": 12210.199999809265,
+                "backendSubmittedAtMs": 12211.60000038147,
+                "callbackEndedAtMs": 12211.60000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11875.37888761853,
-                "admissionObservedAtMs": 11919.099999427795,
+                "timerDurationMs": 4.6318,
+                "effectiveDurationMs": 4.6318,
+                "admittedAtMs": 12201.76363,
+                "admissionObservedAtMs": 12209.60000038147,
+                "observedAtMs": 12209.60000038147,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1912,35 +2794,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 402,
-              "sourceTimeMs": 11917.8,
-              "outcome": "backendBlocked",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "waiting",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 11875.37888761853,
-                "admissionObservedAtMs": 11919.099999427795,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 1,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 1
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 403,
-              "sourceTimeMs": 11934.4,
+              "sequence": 559,
+              "sourceTimeMs": 12225.7,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1951,12 +2806,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12226.10000038147,
+                "successorQueuedAtMs": 12226.10000038147,
+                "demandObservedAtMs": 12226.199999809265,
+                "backendReadinessObservedAtMs": 12226.199999809265,
+                "controlsUpdatedAtMs": 12226.199999809265,
+                "cameraUpdatedAtMs": 12226.199999809265,
+                "presentationAdvancedAtMs": 12226.800000190735,
+                "backendSubmittedAtMs": 12229.699999809265,
+                "callbackEndedAtMs": 12229.800000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11930.078887427795,
-                "admissionObservedAtMs": 11974.79999923706,
+                "timerDurationMs": 4.70001,
+                "effectiveDurationMs": 4.70001,
+                "admittedAtMs": 12218.50002,
+                "admissionObservedAtMs": 12226.199999809265,
+                "observedAtMs": 12226.199999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1966,8 +2836,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 404,
-              "sourceTimeMs": 11967.8,
+              "sequence": 560,
+              "sourceTimeMs": 12242.4,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -1978,12 +2848,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12243.199999809265,
+                "successorQueuedAtMs": 12243.199999809265,
+                "demandObservedAtMs": 12243.300000190735,
+                "backendReadinessObservedAtMs": 12243.39999961853,
+                "controlsUpdatedAtMs": 12243.39999961853,
+                "cameraUpdatedAtMs": 12243.39999961853,
+                "presentationAdvancedAtMs": 12243.89999961853,
+                "backendSubmittedAtMs": 12245.800000190735,
+                "callbackEndedAtMs": 12245.800000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 11985.85363961853,
-                "admissionObservedAtMs": 12029.699999809265,
+                "timerDurationMs": 4.805169,
+                "effectiveDurationMs": 4.805169,
+                "admittedAtMs": 12235.310338000001,
+                "admissionObservedAtMs": 12243.300000190735,
+                "observedAtMs": 12243.300000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -1993,8 +2878,50 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 405,
-              "sourceTimeMs": 12017.8,
+              "sequence": 561,
+              "sourceTimeMs": 12259.1,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": false,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12259.300000190735,
+                "successorQueuedAtMs": 12259.39999961853,
+                "demandObservedAtMs": 12259.5,
+                "backendReadinessObservedAtMs": 12259.5,
+                "controlsUpdatedAtMs": 12259.5,
+                "cameraUpdatedAtMs": 12259.5,
+                "presentationAdvancedAtMs": 12260.199999809265,
+                "backendSubmittedAtMs": 12261.60000038147,
+                "callbackEndedAtMs": 12261.60000038147
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.84248,
+                "effectiveDurationMs": 4.84248,
+                "admittedAtMs": 12252.08496,
+                "admissionObservedAtMs": 12259.5,
+                "observedAtMs": 12259.5,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 562,
+              "sourceTimeMs": 12275.8,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2005,12 +2932,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12276.300000190735,
+                "successorQueuedAtMs": 12276.300000190735,
+                "demandObservedAtMs": 12276.699999809265,
+                "backendReadinessObservedAtMs": 12276.699999809265,
+                "controlsUpdatedAtMs": 12276.699999809265,
+                "cameraUpdatedAtMs": 12276.699999809265,
+                "presentationAdvancedAtMs": 12277,
+                "backendSubmittedAtMs": 12278.199999809265,
+                "callbackEndedAtMs": 12278.300000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12040.86277761853,
-                "admissionObservedAtMs": 12083.599999427795,
+                "timerDurationMs": 4.771866,
+                "effectiveDurationMs": 4.771866,
+                "admittedAtMs": 12268.78496,
+                "admissionObservedAtMs": 12276.699999809265,
+                "observedAtMs": 12276.699999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2020,8 +2962,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 406,
-              "sourceTimeMs": 12084.6,
+              "sequence": 563,
+              "sourceTimeMs": 12292.5,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2032,12 +2974,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12292.699999809265,
+                "successorQueuedAtMs": 12292.800000190735,
+                "demandObservedAtMs": 12292.800000190735,
+                "backendReadinessObservedAtMs": 12292.800000190735,
+                "controlsUpdatedAtMs": 12292.800000190735,
+                "cameraUpdatedAtMs": 12292.800000190735,
+                "presentationAdvancedAtMs": 12293.39999961853,
+                "backendSubmittedAtMs": 12294.60000038147,
+                "callbackEndedAtMs": 12294.699999809265
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12094.76277723706,
-                "admissionObservedAtMs": 12139.699999809265,
+                "timerDurationMs": 4.646708,
+                "effectiveDurationMs": 4.646708,
+                "admittedAtMs": 12285.343732,
+                "admissionObservedAtMs": 12292.800000190735,
+                "observedAtMs": 12292.800000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2047,35 +3004,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 407,
-              "sourceTimeMs": 12134.6,
-              "outcome": "backendBlocked",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "waiting",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 12150.75404123706,
-                "admissionObservedAtMs": null,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 0,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 0
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 408,
-              "sourceTimeMs": 12151.3,
+              "sequence": 564,
+              "sourceTimeMs": 12309.1,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2086,12 +3016,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12309.699999809265,
+                "successorQueuedAtMs": 12309.699999809265,
+                "demandObservedAtMs": 12309.699999809265,
+                "backendReadinessObservedAtMs": 12309.699999809265,
+                "controlsUpdatedAtMs": 12309.699999809265,
+                "cameraUpdatedAtMs": 12309.699999809265,
+                "presentationAdvancedAtMs": 12310.199999809265,
+                "backendSubmittedAtMs": 12311.60000038147,
+                "callbackEndedAtMs": 12311.60000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12150.75404123706,
-                "admissionObservedAtMs": 12151.5,
+                "timerDurationMs": 4.6425,
+                "effectiveDurationMs": 4.6425,
+                "admittedAtMs": 12301.793416,
+                "admissionObservedAtMs": 12309.699999809265,
+                "observedAtMs": 12309.699999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2101,8 +3046,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 409,
-              "sourceTimeMs": 12168,
+              "sequence": 565,
+              "sourceTimeMs": 12325.9,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2113,12 +3058,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12326.10000038147,
+                "successorQueuedAtMs": 12326.199999809265,
+                "demandObservedAtMs": 12326.199999809265,
+                "backendReadinessObservedAtMs": 12326.199999809265,
+                "controlsUpdatedAtMs": 12326.300000190735,
+                "cameraUpdatedAtMs": 12326.300000190735,
+                "presentationAdvancedAtMs": 12326.699999809265,
+                "backendSubmittedAtMs": 12328.10000038147,
+                "callbackEndedAtMs": 12328.10000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12163.25460123706,
-                "admissionObservedAtMs": 12168.29999923706,
+                "timerDurationMs": 4.653882,
+                "effectiveDurationMs": 4.653882,
+                "admittedAtMs": 12318.407764,
+                "admissionObservedAtMs": 12326.199999809265,
+                "observedAtMs": 12326.199999809265,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2128,8 +3088,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 410,
-              "sourceTimeMs": 12184.6,
+              "sequence": 566,
+              "sourceTimeMs": 12342.5,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2140,12 +3100,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12343,
+                "successorQueuedAtMs": 12343,
+                "demandObservedAtMs": 12343,
+                "backendReadinessObservedAtMs": 12343,
+                "controlsUpdatedAtMs": 12343,
+                "cameraUpdatedAtMs": 12343,
+                "presentationAdvancedAtMs": 12343.199999809265,
+                "backendSubmittedAtMs": 12344.5,
+                "callbackEndedAtMs": 12344.5
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12180.25460123706,
-                "admissionObservedAtMs": 12185,
+                "timerDurationMs": 4.674721,
+                "effectiveDurationMs": 4.674721,
+                "admittedAtMs": 12335.249442,
+                "admissionObservedAtMs": 12343,
+                "observedAtMs": 12343,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2155,8 +3130,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 411,
-              "sourceTimeMs": 12201.4,
+              "sequence": 567,
+              "sourceTimeMs": 12359.2,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2167,12 +3142,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12359.39999961853,
+                "successorQueuedAtMs": 12359.39999961853,
+                "demandObservedAtMs": 12359.800000190735,
+                "backendReadinessObservedAtMs": 12359.800000190735,
+                "controlsUpdatedAtMs": 12359.800000190735,
+                "cameraUpdatedAtMs": 12359.800000190735,
+                "presentationAdvancedAtMs": 12360.39999961853,
+                "backendSubmittedAtMs": 12361.699999809265,
+                "callbackEndedAtMs": 12361.800000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12196.337679809265,
-                "admissionObservedAtMs": 12201.79999923706,
+                "timerDurationMs": 4.677567,
+                "effectiveDurationMs": 4.677567,
+                "admittedAtMs": 12351.855134,
+                "admissionObservedAtMs": 12359.800000190735,
+                "observedAtMs": 12359.800000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2182,8 +3172,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 412,
-              "sourceTimeMs": 12218,
+              "sequence": 568,
+              "sourceTimeMs": 12375.8,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2194,12 +3184,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12376.699999809265,
+                "successorQueuedAtMs": 12376.699999809265,
+                "demandObservedAtMs": 12376.800000190735,
+                "backendReadinessObservedAtMs": 12376.800000190735,
+                "controlsUpdatedAtMs": 12376.800000190735,
+                "cameraUpdatedAtMs": 12376.800000190735,
+                "presentationAdvancedAtMs": 12377.89999961853,
+                "backendSubmittedAtMs": 12379.60000038147,
+                "callbackEndedAtMs": 12379.60000038147
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12213.448451809265,
-                "admissionObservedAtMs": 12218.699999809265,
+                "timerDurationMs": 4.650515,
+                "effectiveDurationMs": 4.650515,
+                "admittedAtMs": 12368.555134,
+                "admissionObservedAtMs": 12376.800000190735,
+                "observedAtMs": 12376.800000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2209,8 +3214,50 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 413,
-              "sourceTimeMs": 12234.7,
+              "sequence": 569,
+              "sourceTimeMs": 12392.5,
+              "outcome": "admitted",
+              "demand": {
+                "schemaVersion": 1,
+                "requested": false,
+                "viewportChanged": false,
+                "controls": false,
+                "presentation": true,
+                "retainedAnimation": true,
+                "shouldSubmit": true
+              },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12392.89999961853,
+                "successorQueuedAtMs": 12392.89999961853,
+                "demandObservedAtMs": 12392.89999961853,
+                "backendReadinessObservedAtMs": 12393,
+                "controlsUpdatedAtMs": 12393,
+                "cameraUpdatedAtMs": 12393.10000038147,
+                "presentationAdvancedAtMs": 12393.300000190735,
+                "backendSubmittedAtMs": 12396,
+                "callbackEndedAtMs": 12396
+              },
+              "backend": {
+                "mode": "timerQuery",
+                "state": "ready",
+                "rendererClass": "accelerated",
+                "timerDurationMs": 4.662258,
+                "effectiveDurationMs": 4.662258,
+                "admittedAtMs": 12385.124516,
+                "admissionObservedAtMs": 12392.89999961853,
+                "observedAtMs": 12392.89999961853,
+                "automaticSubmissionLimit": 8,
+                "pendingMeasurementCount": 0,
+                "completionFenceMode": "active",
+                "maximumPendingSubmissions": 8,
+                "pendingSubmissionCount": 0
+              }
+            },
+            {
+              "schemaVersion": 1,
+              "sequence": 570,
+              "sourceTimeMs": 12409.2,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2221,12 +3268,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12409.699999809265,
+                "successorQueuedAtMs": 12409.699999809265,
+                "demandObservedAtMs": 12409.800000190735,
+                "backendReadinessObservedAtMs": 12409.800000190735,
+                "controlsUpdatedAtMs": 12409.800000190735,
+                "cameraUpdatedAtMs": 12409.800000190735,
+                "presentationAdvancedAtMs": 12410.10000038147,
+                "backendSubmittedAtMs": 12411.39999961853,
+                "callbackEndedAtMs": 12411.39999961853
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12229.848451427795,
-                "admissionObservedAtMs": 12235.39999961853,
+                "timerDurationMs": 4.654603,
+                "effectiveDurationMs": 4.654603,
+                "admittedAtMs": 12401.824516,
+                "admissionObservedAtMs": 12409.800000190735,
+                "observedAtMs": 12409.800000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2236,8 +3298,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 414,
-              "sourceTimeMs": 12251.4,
+              "sequence": 571,
+              "sourceTimeMs": 12425.9,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2248,12 +3310,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12426.300000190735,
+                "successorQueuedAtMs": 12426.300000190735,
+                "demandObservedAtMs": 12426.300000190735,
+                "backendReadinessObservedAtMs": 12426.39999961853,
+                "controlsUpdatedAtMs": 12426.5,
+                "cameraUpdatedAtMs": 12426.5,
+                "presentationAdvancedAtMs": 12426.800000190735,
+                "backendSubmittedAtMs": 12430.300000190735,
+                "callbackEndedAtMs": 12430.300000190735
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12246.747248,
-                "admissionObservedAtMs": 12251.599999427795,
+                "timerDurationMs": 4.712113,
+                "effectiveDurationMs": 4.712113,
+                "admittedAtMs": 12418.624226,
+                "admissionObservedAtMs": 12426.300000190735,
+                "observedAtMs": 12426.300000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2263,8 +3340,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 415,
-              "sourceTimeMs": 12268.1,
+              "sequence": 572,
+              "sourceTimeMs": 12442.6,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2275,12 +3352,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
+              "callback": {
+                "schemaVersion": 1,
+                "callbackStartedAtMs": 12443,
+                "successorQueuedAtMs": 12443,
+                "demandObservedAtMs": 12443.300000190735,
+                "backendReadinessObservedAtMs": 12443.300000190735,
+                "controlsUpdatedAtMs": 12443.300000190735,
+                "cameraUpdatedAtMs": 12443.300000190735,
+                "presentationAdvancedAtMs": 12443.5,
+                "backendSubmittedAtMs": 12444.89999961853,
+                "callbackEndedAtMs": 12445
+              },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12263.320108,
-                "admissionObservedAtMs": 12268.39999961853,
+                "timerDurationMs": 4.686424,
+                "effectiveDurationMs": 4.686424,
+                "admittedAtMs": 12435.324225999999,
+                "admissionObservedAtMs": 12443.300000190735,
+                "observedAtMs": 12443.300000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2290,8 +3382,8 @@
             },
             {
               "schemaVersion": 1,
-              "sequence": 416,
-              "sourceTimeMs": 12284.7,
+              "sequence": 573,
+              "sourceTimeMs": 12459.3,
               "outcome": "admitted",
               "demand": {
                 "schemaVersion": 1,
@@ -2302,120 +3394,27 @@
                 "retainedAnimation": true,
                 "shouldSubmit": true
               },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "ready",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 12279.845436,
-                "admissionObservedAtMs": 12284.89999961853,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 0,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 0
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 417,
-              "sourceTimeMs": 12301.4,
-              "outcome": "admitted",
-              "demand": {
+              "callback": {
                 "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
+                "callbackStartedAtMs": 12459.699999809265,
+                "successorQueuedAtMs": 12459.800000190735,
+                "demandObservedAtMs": 12459.800000190735,
+                "backendReadinessObservedAtMs": 12459.800000190735,
+                "controlsUpdatedAtMs": 12459.800000190735,
+                "cameraUpdatedAtMs": 12459.800000190735,
+                "presentationAdvancedAtMs": 12460.699999809265,
+                "backendSubmittedAtMs": 12462,
+                "callbackEndedAtMs": 12462.10000038147
               },
               "backend": {
                 "mode": "timerQuery",
                 "state": "ready",
                 "rendererClass": "accelerated",
-                "admittedAtMs": 12296.64543523706,
-                "admissionObservedAtMs": 12344.89999961853,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 0,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 0
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 418,
-              "sourceTimeMs": 12334.7,
-              "outcome": "admitted",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "ready",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 12356.075041427795,
-                "admissionObservedAtMs": 12399.29999923706,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 0,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 0
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 419,
-              "sourceTimeMs": 12384.8,
-              "outcome": "backendBlocked",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "waiting",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 12356.075041427795,
-                "admissionObservedAtMs": 12399.29999923706,
-                "automaticSubmissionLimit": 8,
-                "pendingMeasurementCount": 1,
-                "completionFenceMode": "active",
-                "maximumPendingSubmissions": 8,
-                "pendingSubmissionCount": 1
-              }
-            },
-            {
-              "schemaVersion": 1,
-              "sequence": 420,
-              "sourceTimeMs": 12401.5,
-              "outcome": "admitted",
-              "demand": {
-                "schemaVersion": 1,
-                "requested": true,
-                "viewportChanged": false,
-                "controls": false,
-                "presentation": true,
-                "retainedAnimation": true,
-                "shouldSubmit": true
-              },
-              "backend": {
-                "mode": "timerQuery",
-                "state": "ready",
-                "rendererClass": "accelerated",
-                "admittedAtMs": 12410.175041809265,
-                "admissionObservedAtMs": 12457.79999923706,
+                "timerDurationMs": 4.571646,
+                "effectiveDurationMs": 4.571646,
+                "admittedAtMs": 12451.972848000001,
+                "admissionObservedAtMs": 12459.800000190735,
+                "observedAtMs": 12459.800000190735,
                 "automaticSubmissionLimit": 8,
                 "pendingMeasurementCount": 0,
                 "completionFenceMode": "active",
@@ -2435,7 +3434,7 @@
         "chunk-73X6SYPX.js",
         "chunk-7CGTOI24.js",
         "chunk-7ETO2MJG.js",
-        "main-ADEXB6X4.js"
+        "main-BFJ4KXHH.js"
       ],
       "rawBytes": 223707,
       "attribution": {
@@ -2496,7 +3495,7 @@
           {
             "bytes": 3705,
             "input": "apps/loading-bay/src/main-menu.component.ts",
-            "output": "main-ADEXB6X4.js"
+            "output": "main-BFJ4KXHH.js"
           },
           {
             "bytes": 3213,
@@ -2524,8 +3523,8 @@
     "lazyRoutes": [
       {
         "entryPoint": "apps/loading-bay/src/game-screen.component.ts",
-        "output": "chunk-CZ7RZJQL.js",
-        "rawBytes": 938674,
+        "output": "chunk-KLQ7FO6P.js",
+        "rawBytes": 940045,
         "attribution": {
           "categories": [
             {
@@ -2534,11 +3533,11 @@
             },
             {
               "category": "rusty-engine-renderer",
-              "bytes": 188394
+              "bytes": 189373
             },
             {
               "category": "browser-game-runtime",
-              "bytes": 96891
+              "bytes": 97283
             },
             {
               "category": "loading-bay",
@@ -2553,57 +3552,57 @@
             {
               "bytes": 345997,
               "input": "node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.module.js",
-              "output": "chunk-LM5PKMKK.js"
+              "output": "chunk-PBT6RFT4.js"
             },
             {
               "bytes": 219824,
               "input": "node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js",
-              "output": "chunk-LM5PKMKK.js"
+              "output": "chunk-PBT6RFT4.js"
             },
             {
               "bytes": 42581,
               "input": "node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/loaders/GLTFLoader.js",
-              "output": "chunk-LM5PKMKK.js"
+              "output": "chunk-PBT6RFT4.js"
             },
             {
               "bytes": 34787,
-              "input": "node_modules/.pnpm/@rusty-engine+renderer-three@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar._7eeeba966a16041195d33b57c66084aa/node_modules/@rusty-engine/renderer-three/dist/three-renderer.js",
-              "output": "chunk-LM5PKMKK.js"
+              "input": "node_modules/.pnpm/@rusty-engine+renderer-three@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar._dbc09c69631cf533bf556781e454d80a/node_modules/@rusty-engine/renderer-three/dist/three-renderer.js",
+              "output": "chunk-PBT6RFT4.js"
             },
             {
-              "bytes": 33227,
+              "bytes": 33215,
               "input": "ts/packages/browser-shell/src/game-runtime.ts",
-              "output": "chunk-CZ7RZJQL.js"
+              "output": "chunk-KLQ7FO6P.js"
             },
             {
               "bytes": 28356,
-              "input": "node_modules/.pnpm/@rusty-engine+render-contracts@https+++codeload.github.com+FuzzySlipper+rusty-engine+ta_9c5f5fbc31b01852b3e7967c9469898b/node_modules/@rusty-engine/render-contracts/dist/validation.js",
-              "output": "chunk-LM5PKMKK.js"
+              "input": "node_modules/.pnpm/@rusty-engine+render-contracts@https+++codeload.github.com+FuzzySlipper+rusty-engine+ta_5b0b6f6c9bfe0e74f8149ae472bbd150/node_modules/@rusty-engine/render-contracts/dist/validation.js",
+              "output": "chunk-PBT6RFT4.js"
             },
             {
               "bytes": 28335,
               "input": "apps/loading-bay/src/game-screen.component.ts",
-              "output": "chunk-CZ7RZJQL.js"
+              "output": "chunk-KLQ7FO6P.js"
             },
             {
               "bytes": 26161,
-              "input": "node_modules/.pnpm/@rusty-engine+render-projection@https+++codeload.github.com+FuzzySlipper+rusty-engine+t_365cc5d1061ba1ba74cb72a384785190/node_modules/@rusty-engine/render-projection/dist/retained-projection.js",
-              "output": "chunk-LM5PKMKK.js"
+              "input": "node_modules/.pnpm/@rusty-engine+render-projection@https+++codeload.github.com+FuzzySlipper+rusty-engine+t_48bcaa8b7946bdc7fdb68f256660ba21/node_modules/@rusty-engine/render-projection/dist/retained-projection.js",
+              "output": "chunk-PBT6RFT4.js"
             },
             {
               "bytes": 21916,
               "input": "ts/packages/browser-shell/src/game-session.ts",
-              "output": "chunk-CZ7RZJQL.js"
+              "output": "chunk-KLQ7FO6P.js"
             },
             {
-              "bytes": 20336,
+              "bytes": 20743,
               "input": "ts/packages/browser-shell/src/presentation-feedback.ts",
-              "output": "chunk-CZ7RZJQL.js"
+              "output": "chunk-KLQ7FO6P.js"
             },
             {
               "bytes": 12636,
-              "input": "node_modules/.pnpm/@rusty-engine+renderer-host@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar.g_4595c9f5491709ff72edfccfe8f0a901/node_modules/@rusty-engine/renderer-host/dist/editor-viewport.js",
-              "output": "chunk-LM5PKMKK.js"
+              "input": "node_modules/.pnpm/@rusty-engine+renderer-host@https+++codeload.github.com+FuzzySlipper+rusty-engine+tar.g_165463a8141bea36efcf1ee01d8ae0fa/node_modules/@rusty-engine/renderer-host/dist/editor-viewport.js",
+              "output": "chunk-PBT6RFT4.js"
             },
             {
               "bytes": 10733,
@@ -2663,6 +3662,6 @@
         }
       }
     ],
-    "allJavaScriptRawBytes": 1165672
+    "allJavaScriptRawBytes": 1167043
   }
 }
