@@ -93,6 +93,21 @@ jobs:
       - name: Build Linux bundles on the supported baseline
         run: pnpm run build:tauri
 
+      - name: Install the exact user-scope Debian artifact
+        run: |
+          artifact="$(find target/release/bundle/deb -maxdepth 1 -name '*.deb' -print -quit)"
+          artifact_sha="$(sha256sum "$artifact" | cut -d ' ' -f 1)"
+          node scripts/deploy-tauri.mjs install \
+            --artifact "$artifact" \
+            --artifact-sha256 "$artifact_sha" \
+            --evidence target/tauri-package-evidence.json \
+            --source-revision "$GITHUB_SHA"
+
+      - name: Certify installed desktop product
+        env:
+          TAURI_DRIVER_BIN: /home/runner/.cargo/bin/tauri-driver
+        run: dbus-run-session -- pnpm run certify:tauri-deploy
+
       - name: Record package identities
         run: |
           sha256sum \
@@ -115,3 +130,7 @@ jobs:
             target/tauri-package-evidence.json
             target/tauri-smoke-evidence.json
             target/tauri-smoke.png
+            target/tauri-deployment-evidence.json
+            target/tauri-installed-smoke-evidence.json
+            target/tauri-installed-smoke.png
+            target/tauri-installed-smoke-narrow.png

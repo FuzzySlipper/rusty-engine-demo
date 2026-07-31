@@ -46,6 +46,11 @@ tree are intentionally separate build outputs and must stay beside it in the lay
 [docs/tauri-desktop.md](docs/tauri-desktop.md). The installable Linux bundles carry that layout
 themselves.
 
+An exact reviewed Debian artifact can be installed without root using `pnpm run deploy:tauri --
+install ...`; status, atomic rollback, ordinary uninstall with save preservation, explicit data
+purge, desktop entry, and the installed-product certification command are documented in
+[docs/tauri-desktop.md](docs/tauri-desktop.md#local-deployment).
+
 The root route is a full-viewport FPS surface with a disposable HUD projection. Its diagnostics
 drawer exposes only concrete Rust host actions. Renderer-owned frame cadence and synchronous
 backend submission time are shown separately from server tick, snapshot cadence, payload, input,

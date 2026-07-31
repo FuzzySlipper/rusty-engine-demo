@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import {
   cpSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -128,6 +129,19 @@ try {
       throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
     }
     await runMigratedBrowserProduct(migratedProject);
+    const exportSaveRoot = process.env.RUSTY_BROWSER_SMOKE_EXPORT_SAVE_ROOT;
+    if (exportSaveRoot !== undefined) {
+      const sourceSaveRoot = resolve(proofDirectory, "save-slots");
+      const destinationSaveRoot = resolve(exportSaveRoot);
+      mkdirSync(destinationSaveRoot, { recursive: true });
+      for (const entry of readdirSync(sourceSaveRoot)) {
+        cpSync(
+          resolve(sourceSaveRoot, entry),
+          resolve(destinationSaveRoot, entry),
+          { recursive: true, force: true },
+        );
+      }
+    }
   }
 
   console.log(
@@ -2254,16 +2268,17 @@ async function launchHost(
 ) {
   const address =
     requestedAddress ?? `127.0.0.1:${String(await reservePort())}`;
+  const installedHost = process.env.RUSTY_ENGINE_DEMO_HOST_BINARY;
+  const command =
+    installedHost === undefined ? "cargo" : resolve(installedHost);
+  const hostArguments =
+    installedHost === undefined
+      ? ["run", "-q", "-p", "loading-bay-game", "--bin", "browser-host", "--"]
+      : ["--dist", resolve(dirname(command), "../lib/Loading Bay/web")];
   const host = spawn(
-    "cargo",
+    command,
     [
-      "run",
-      "-q",
-      "-p",
-      "loading-bay-game",
-      "--bin",
-      "browser-host",
-      "--",
+      ...hostArguments,
       "--addr",
       address,
       "--project",
@@ -2271,7 +2286,18 @@ async function launchHost(
       "--save-root",
       saveRoot,
     ],
-    { cwd: repoRoot, stdio: ["ignore", "pipe", "pipe"] },
+    {
+      cwd: installedHost === undefined ? repoRoot : proofDirectory,
+      env:
+        installedHost === undefined
+          ? process.env
+          : {
+              HOME: process.env.HOME,
+              LANG: process.env.LANG ?? "C.UTF-8",
+              PATH: "/usr/bin:/bin",
+            },
+      stdio: ["ignore", "pipe", "pipe"],
+    },
   );
   let output = "";
   host.stdout.on("data", (chunk) => {

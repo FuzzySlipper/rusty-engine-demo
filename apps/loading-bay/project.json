@@ -15,6 +15,13 @@
         "outputPath": "dist/apps/loading-bay",
         "browser": "apps/loading-bay/src/main.ts",
         "index": "apps/loading-bay/src/index.html",
+        "assets": [
+          {
+            "glob": "startup-error.html",
+            "input": "apps/loading-bay/src",
+            "output": "/"
+          }
+        ],
         "tsConfig": "apps/loading-bay/tsconfig.app.json",
         "styles": [
           "libs/theme/src/tokens.css",

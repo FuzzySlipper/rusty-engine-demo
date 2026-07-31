@@ -562,3 +562,43 @@ pointer-lock loss, route disposal, and explicit input clearing discard the whole
 
 The offset is presentation-only. Rust still owns aim, fire, facts, persistence, collision, world
 mutation, and the accepted player pose.
+
+## 2026-07-31 installed Tauri baseline
+
+`pnpm run certify:tauri-deploy` is the installed-product counterpart to the #6292 browser profile
+and #6359 Radeon renderer profile. It does not relabel either predecessor. The first local run used
+the independently approved DT1 source `cb080131810d1ed338379c5edd044df7b99a6e18`, Engine
+`0e0c49442d0c3d876a1336a5a829087f6e2314db`, and Debian SHA-256
+`ef75c7081b204251b6d084b144fc4106c719564dcec3e52a9514e2b631b9bae5` as the immutable input while
+developing the DT2 installer and certification path.
+
+| Installed measurement               | Exact result                                  |
+| ----------------------------------- | --------------------------------------------- |
+| Debian / AppImage bytes             | 9,762,212 / 86,526,456                        |
+| Installed release-tree bytes        | 37,866,191                                    |
+| WebKit cold menu                    | 697.646 ms                                    |
+| Separate-process menu relaunch      | 1,507.180 ms                                  |
+| New Game to first retained frame    | 1,625.112 ms                                  |
+| Native process-tree RSS in gameplay | 1,111,855,104 bytes                           |
+| WebView                             | WebKitGTK 60.5 compatibility user agent       |
+| Xvfb WebGL identity                 | WebGL 2.0 / Apple GPU compatibility renderer  |
+| Installed-sidecar campaign RTT max  | 103.5 ms                                      |
+| Installed-sidecar queue/drop maxima | input/edge/outbound 1/1/1; dropped facts zero |
+
+The native process tree includes the Tauri shell, Rust sidecar, WebKit network and Web processes,
+and WebKit's sandbox helpers. It is the directly comparable packaged footprint missing from #6292;
+it is not lower-level engine allocation. The WebDriver run uses Xvfb/WebKit and therefore cannot
+replace #6359's Radeon 780M / Chromium cadence and 45.28 ms interaction measurement. Conversely,
+the #6292 166.090/70.248 ms Chromium cold/warm navigation numbers cannot be called native launch
+times. Keeping those environments separate prevents a synthetic comparison from becoming an
+invented regression or hardware claim.
+
+The native proof additionally records the 960×540 supported minimum without horizontal overflow,
+singleton focus delegation without a second sidecar, renderer disposal/remount, real WebKit and
+WebGL identity, idle CPU/context-switch deltas, normal shutdown, visible startup/host-crash errors,
+shell-crash orphan cleanup, and full/narrow screenshots. The unchanged complete campaign runs
+against the installed sidecar and installed Web assets and covers normal controls,
+route/progression, checkpoint, completed save, reopen/fresh process, converted and migrated
+projects, picking, resize, reset, remount, and disposal. The exact-revision `verify-tauri` artifact
+`tauri-deployment-evidence.json` is the final release evidence; a focused run with
+`--skip-campaign` is explicitly non-certifying.

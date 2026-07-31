@@ -1,9 +1,12 @@
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import {
+  cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readlinkSync,
+  realpathSync,
   readdirSync,
   rmSync,
   statSync,
@@ -32,6 +35,10 @@ const screenshotPath = resolve(
   repoRoot,
   process.env.TAURI_SMOKE_SCREENSHOT ?? "target/tauri-smoke.png",
 );
+const narrowScreenshotPath = resolve(
+  repoRoot,
+  process.env.TAURI_SMOKE_NARROW_SCREENSHOT ?? "target/tauri-smoke-narrow.png",
+);
 const temporaryRoot = mkdtempSync(join(tmpdir(), "loading-bay-tauri-smoke-"));
 const xdg = {
   XDG_DATA_HOME: join(temporaryRoot, "data"),
@@ -41,6 +48,17 @@ const xdg = {
 };
 for (const directory of Object.values(xdg)) {
   mkdirSync(directory, { recursive: true });
+}
+const seedSaveRoot = process.env.TAURI_SMOKE_SEED_SAVE_ROOT;
+if (seedSaveRoot !== undefined) {
+  cpSync(
+    resolve(seedSaveRoot),
+    join(
+      xdg.XDG_DATA_HOME,
+      "dev.fuzzyslipper.rusty-engine-demo.loading-bay/saves",
+    ),
+    { recursive: true, force: true },
+  );
 }
 
 const output = [];
@@ -97,14 +115,14 @@ async function request(path, options = {}) {
   return body?.value;
 }
 
-async function createSession() {
+async function createSession(applicationPath = application) {
   const value = await request("/session", {
     method: "POST",
     body: JSON.stringify({
       capabilities: {
         alwaysMatch: {
           "tauri:options": {
-            application,
+            application: applicationPath,
           },
         },
       },
@@ -143,6 +161,80 @@ async function deleteSession(sessionId) {
   } catch (error) {
     output.push(`delete-session ${error}`);
   }
+}
+
+async function nativeInputProof(sessionId) {
+  const before = await executeAsync(
+    sessionId,
+    `const done = arguments[arguments.length - 1];
+     fetch("/api/state").then((response) => response.json()).then(
+       (state) => done({ position: state.player.position, yaw: state.player.yaw }),
+       (error) => done({ error: String(error) }),
+     );`,
+  );
+  if (before?.error) throw new Error(before.error);
+  const element = await request(`/session/${sessionId}/element`, {
+    method: "POST",
+    body: JSON.stringify({ using: "css selector", value: "#viewport" }),
+  });
+  const elementId = element?.["element-6066-11e4-a52e-4f735466cecf"];
+  if (typeof elementId !== "string") {
+    throw new Error(
+      `WebDriver returned no viewport element: ${JSON.stringify(element)}`,
+    );
+  }
+  await request(`/session/${sessionId}/element/${elementId}/click`, {
+    method: "POST",
+    body: "{}",
+  });
+  await waitFor(
+    () =>
+      execute(
+        sessionId,
+        `return document.pointerLockElement?.id === "viewport";`,
+      ),
+    "native WebKit pointer lock",
+  );
+  await request(`/session/${sessionId}/actions`, {
+    method: "POST",
+    body: JSON.stringify({
+      actions: [
+        {
+          type: "key",
+          id: "keyboard",
+          actions: [
+            { type: "keyDown", value: "w" },
+            { type: "pause", duration: 400 },
+            { type: "keyUp", value: "w" },
+          ],
+        },
+      ],
+    }),
+  });
+  const after = await waitFor(async () => {
+    const value = await executeAsync(
+      sessionId,
+      `const done = arguments[arguments.length - 1];
+       fetch("/api/state").then((response) => response.json()).then(
+         (state) => done({ position: state.player.position, yaw: state.player.yaw }),
+         (error) => done({ error: String(error) }),
+       );`,
+    );
+    return value?.error === undefined &&
+      JSON.stringify(value.position) !== JSON.stringify(before.position)
+      ? value
+      : null;
+  }, "native keyboard movement");
+  await request(`/session/${sessionId}/actions`, {
+    method: "DELETE",
+  });
+  return {
+    pointerLock: true,
+    mouseActivatedPointerLock: true,
+    keyboardMovedPlayer: true,
+    before,
+    after,
+  };
 }
 
 async function closeProductSession(sessionId) {
@@ -210,7 +302,12 @@ function latestReady() {
   };
 }
 
-async function runProductSession({ startGame }) {
+async function runProductSession({
+  startGame,
+  continueGame = false,
+  measureMenuIdle = false,
+}) {
+  const sessionStartedAt = performance.now();
   const sessionId = await createSession();
   const menu = await executeAsync(
     sessionId,
@@ -245,6 +342,8 @@ async function runProductSession({ startGame }) {
          stylesheetMedia:
            document.querySelector('link[rel="stylesheet"][href^="styles-"]')
              ?.media ?? null,
+         userAgent: navigator.userAgent,
+         viewport: { width: innerWidth, height: innerHeight, devicePixelRatio },
        };
      })().then(done, (error) => done({ error: String(error?.stack ?? error) }));`,
   );
@@ -252,24 +351,38 @@ async function runProductSession({ startGame }) {
     await deleteSession(sessionId);
     throw new Error(menu.error);
   }
+  const menuReadyMilliseconds = performance.now() - sessionStartedAt;
+  const ready = await waitFor(() => {
+    try {
+      return latestReady();
+    } catch {
+      return null;
+    }
+  }, "host readiness");
+  const menuIdleMeasurement = measureMenuIdle
+    ? await measureIdle(ready.shellPid)
+    : null;
   let frame = {
     renderSequence: null,
     rendererStatus: null,
     lifecycle: null,
     runtimeError: "",
   };
-  if (startGame) {
+  if (startGame || continueGame) {
+    const gameStartedAt = performance.now();
     const clicked = await execute(
       sessionId,
       `const button = [...document.querySelectorAll("button")].find(
-         (element) => element.textContent?.trim() === "New game",
+         (element) => element.textContent?.trim() === ${JSON.stringify(continueGame ? "Continue" : "New game")},
        );
        if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
        button.click();
        return true;`,
     );
     if (!clicked) {
-      throw new Error("New game action is unavailable");
+      throw new Error(
+        `${continueGame ? "Continue" : "New game"} action is unavailable`,
+      );
     }
     let framePolls = 0;
     frame = await waitFor(
@@ -295,28 +408,318 @@ async function runProductSession({ startGame }) {
         }
         return state.lifecycle === "mounted" &&
           state.renderSequence > 0 &&
-          !state.overlay
+          (continueGame ? state.overlay : !state.overlay)
           ? state
           : null;
       },
       "authoritative rendered game frame",
       240_000,
     );
-  }
-  const ready = await waitFor(() => {
-    try {
-      return latestReady();
-    } catch {
-      return null;
+    frame.firstFrameMilliseconds = performance.now() - gameStartedAt;
+    frame.continuedCompletedCampaign = continueGame
+      ? await execute(
+          sessionId,
+          `return document.querySelector(".game-state-overlay")?.textContent?.includes("LOADING BAY COMPLETE") === true;`,
+        )
+      : false;
+    frame.webGl = await execute(
+      sessionId,
+      `const canvas = document.querySelector("canvas");
+       const gl = canvas?.getContext("webgl2");
+       const extension = gl?.getExtension("WEBGL_debug_renderer_info");
+       return {
+         renderer: extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) : null,
+         vendor: extension ? gl.getParameter(extension.UNMASKED_VENDOR_WEBGL) : null,
+         version: gl?.getParameter(gl.VERSION) ?? null,
+         shadingLanguageVersion: gl?.getParameter(gl.SHADING_LANGUAGE_VERSION) ?? null,
+       };`,
+    );
+    if (!continueGame) {
+      frame.nativeInput = await nativeInputProof(sessionId);
     }
-  }, "host readiness");
+  }
   return {
     sessionId,
     result: {
       ...menu,
       ...frame,
+      menuReadyMilliseconds,
+      menuIdleMeasurement,
     },
     ready,
+  };
+}
+
+function processTree(rootPid) {
+  const processes = new Map();
+  for (const entry of readdirSync("/proc")) {
+    if (!/^\d+$/.test(entry)) continue;
+    try {
+      const status = readFileSync(`/proc/${entry}/status`, "utf8");
+      const parentPid = Number(status.match(/^PPid:\s+(\d+)/m)?.[1]);
+      const residentKiB = Number(
+        status.match(/^VmRSS:\s+(\d+)\s+kB/m)?.[1] ?? 0,
+      );
+      const voluntaryContextSwitches = Number(
+        status.match(/^voluntary_ctxt_switches:\s+(\d+)/m)?.[1] ?? 0,
+      );
+      const involuntaryContextSwitches = Number(
+        status.match(/^nonvoluntary_ctxt_switches:\s+(\d+)/m)?.[1] ?? 0,
+      );
+      const stat = readFileSync(`/proc/${entry}/stat`, "utf8").split(" ");
+      const cpuTicks = Number(stat[13] ?? 0) + Number(stat[14] ?? 0);
+      const name = status.match(/^Name:\s+(.+)$/m)?.[1]?.trim() ?? "unknown";
+      processes.set(Number(entry), {
+        parentPid,
+        residentKiB,
+        voluntaryContextSwitches,
+        involuntaryContextSwitches,
+        cpuTicks,
+        name,
+      });
+    } catch {
+      // A short-lived process may disappear between /proc reads.
+    }
+  }
+  const members = [];
+  const pending = [rootPid];
+  while (pending.length > 0) {
+    const pid = pending.shift();
+    const process = processes.get(pid);
+    if (process !== undefined) members.push({ pid, ...process });
+    for (const [candidatePid, candidate] of processes) {
+      if (
+        candidate.parentPid === pid &&
+        !members.some((item) => item.pid === candidatePid)
+      ) {
+        pending.push(candidatePid);
+      }
+    }
+  }
+  return {
+    residentBytes: members.reduce(
+      (total, item) => total + item.residentKiB * 1024,
+      0,
+    ),
+    processes: members,
+    cpuTicks: members.reduce((total, item) => total + item.cpuTicks, 0),
+    contextSwitches: members.reduce(
+      (total, item) =>
+        total + item.voluntaryContextSwitches + item.involuntaryContextSwitches,
+      0,
+    ),
+  };
+}
+
+async function measureIdle(rootPid) {
+  const clockTicksPerSecond = Number(
+    execFileSync("getconf", ["CLK_TCK"], { encoding: "utf8" }).trim(),
+  );
+  const startedAt = performance.now();
+  const before = processTree(rootPid);
+  await delay(2_000);
+  const after = processTree(rootPid);
+  const elapsedMilliseconds = performance.now() - startedAt;
+  const cpuTicks = after.cpuTicks - before.cpuTicks;
+  return {
+    elapsedMilliseconds,
+    cpuMilliseconds: (cpuTicks / clockTicksPerSecond) * 1_000,
+    cpuPercentOneCore:
+      ((cpuTicks / clockTicksPerSecond) * 100_000) / elapsedMilliseconds,
+    contextSwitches: after.contextSwitches - before.contextSwitches,
+  };
+}
+
+async function exerciseInstalledWindow(first) {
+  await request(`/session/${first.sessionId}/window/rect`, {
+    method: "POST",
+    body: JSON.stringify({ width: 960, height: 540, x: 20, y: 20 }),
+  });
+  const narrowViewport = await execute(
+    first.sessionId,
+    `return {
+      width: innerWidth,
+      height: innerHeight,
+      overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      runtimeError: document.body.dataset.runtimeError ?? "",
+      lifecycle: document.body.dataset.rendererLifecycle ?? null,
+    };`,
+  );
+  const narrowScreenshot = await request(
+    `/session/${first.sessionId}/screenshot`,
+  );
+  mkdirSync(dirname(narrowScreenshotPath), { recursive: true });
+  writeFileSync(narrowScreenshotPath, Buffer.from(narrowScreenshot, "base64"));
+
+  const remount = await executeAsync(
+    first.sessionId,
+    `const done = arguments[arguments.length - 1];
+     (async () => {
+       const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+       const waitFor = async (predicate, label) => {
+         const deadline = Date.now() + 30000;
+         while (Date.now() < deadline) {
+           if (predicate()) return;
+           await delay(50);
+         }
+         throw new Error("timed out waiting for " + label);
+       };
+       location.hash = "#/diagnostics";
+       await waitFor(() => document.body.dataset.rendererLifecycle === "disposed", "renderer disposal");
+       history.back();
+       await waitFor(() => document.body.dataset.rendererLifecycle === "mounted", "renderer remount");
+       return {
+         lifecycle: document.body.dataset.rendererLifecycle,
+         routeDisposal: document.body.dataset.routeDisposal ?? null,
+         renderSequence: Number(document.querySelector("#renderer-telemetry")?.dataset.rendererRenderSequence ?? "0"),
+       };
+     })().then(done, (error) => done({ error: String(error?.stack ?? error) }));`,
+  );
+  if (remount?.error) throw new Error(remount.error);
+  return { narrowViewport, remount, narrowScreenshot: narrowScreenshotPath };
+}
+
+async function proveSingleInstance(first) {
+  const readyDirectory = join(
+    xdg.XDG_CACHE_HOME,
+    "dev.fuzzyslipper.rusty-engine-demo.loading-bay",
+  );
+  const before = readdirSync(readyDirectory).filter((name) =>
+    /^host-ready-\d+\.json$/.test(name),
+  );
+  await request(`/session/${first.sessionId}/window/minimize`, {
+    method: "POST",
+    body: "{}",
+  });
+  await waitFor(
+    () => execute(first.sessionId, "return document.hasFocus() === false;"),
+    "native window focus loss",
+  );
+  const second = spawn(application, [], {
+    cwd: temporaryRoot,
+    env: { ...process.env, ...xdg },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  const exitCode = await Promise.race([
+    new Promise((resolveExit) =>
+      second.once("exit", (code) => resolveExit(code ?? 1)),
+    ),
+    delay(10_000).then(() => null),
+  ]);
+  if (exitCode === null) {
+    second.kill("SIGKILL");
+    throw new Error("second desktop instance did not delegate and exit");
+  }
+  const after = readdirSync(readyDirectory).filter((name) =>
+    /^host-ready-\d+\.json$/.test(name),
+  );
+  if (
+    after.length !== before.length ||
+    !processExists(first.ready.pid, "loading-bay-browser-host")
+  ) {
+    throw new Error(
+      "single-instance activation created another host or disrupted the first",
+    );
+  }
+  await waitFor(
+    () => execute(first.sessionId, "return document.hasFocus() === true;"),
+    "single-instance focus restoration",
+  );
+  return {
+    delegated: true,
+    focusLostBeforeActivation: true,
+    focusedExistingWindow: true,
+    exitCode,
+    readyReceiptCount: after.length,
+  };
+}
+
+function executablePids(executable) {
+  const expected = realpathSync(executable);
+  const pids = [];
+  for (const entry of readdirSync("/proc")) {
+    if (!/^\d+$/.test(entry)) continue;
+    try {
+      if (realpathSync(`/proc/${entry}/exe`) === expected) {
+        pids.push(Number(entry));
+      }
+    } catch {
+      // Processes can exit while /proc is being inspected.
+    }
+  }
+  return pids;
+}
+
+async function proveStartupFailure(sessions) {
+  const brokenRoot = join(temporaryRoot, "startup-failure-release");
+  const applicationDirectory = realpathSync(dirname(application));
+  const installedResourceRoot = resolve(
+    applicationDirectory,
+    "../lib/Loading Bay",
+  );
+  let brokenApplication;
+  if (
+    existsSync(join(installedResourceRoot, "desktop-package-manifest.json"))
+  ) {
+    const releaseRoot = realpathSync(resolve(applicationDirectory, "../.."));
+    cpSync(releaseRoot, brokenRoot, { recursive: true });
+    brokenApplication = join(brokenRoot, "usr/bin/loading-bay-desktop");
+    rmSync(join(brokenRoot, "usr/bin/loading-bay-browser-host"));
+  } else {
+    mkdirSync(brokenRoot, { recursive: true });
+    brokenApplication = join(brokenRoot, "loading-bay-desktop");
+    cpSync(application, brokenApplication);
+    for (const entry of ["desktop-package-manifest.json", "content", "web"]) {
+      cpSync(join(applicationDirectory, entry), join(brokenRoot, entry), {
+        recursive: true,
+      });
+    }
+  }
+  const readyDirectory = join(
+    xdg.XDG_CACHE_HOME,
+    "dev.fuzzyslipper.rusty-engine-demo.loading-bay",
+  );
+  const readyBefore = readdirSync(readyDirectory).filter((name) =>
+    /^host-ready-\d+\.json$/.test(name),
+  ).length;
+  const startedAt = performance.now();
+  const sessionId = await createSession(brokenApplication);
+  const session = { sessionId, ready: null };
+  sessions.push(session);
+  const visible = await waitFor(
+    () =>
+      execute(
+        sessionId,
+        `return document.body.dataset.desktopStartupError === "true"
+          ? { title: document.title, message: document.body.textContent.trim() }
+          : null;`,
+      ),
+    "visible packaged startup error",
+  );
+  const shellPids = executablePids(brokenApplication);
+  if (shellPids.length !== 1) {
+    throw new Error(
+      `startup failure created ${shellPids.length} desktop processes; expected one`,
+    );
+  }
+  const readyAfter = readdirSync(readyDirectory).filter((name) =>
+    /^host-ready-\d+\.json$/.test(name),
+  ).length;
+  if (readyAfter !== readyBefore) {
+    throw new Error("startup failure unexpectedly published host readiness");
+  }
+  await deleteSession(sessionId);
+  await waitFor(
+    () => executablePids(brokenApplication).length === 0,
+    "startup-error shell cleanup",
+  );
+  return {
+    visible: true,
+    title: visible.title,
+    message: visible.message,
+    boundedMilliseconds: performance.now() - startedAt,
+    sidecarStarted: false,
+    orphanProcesses: false,
   };
 }
 
@@ -331,7 +734,10 @@ try {
     }
   }, "tauri-driver");
 
-  const first = await runProductSession({ startGame: true });
+  const first = await runProductSession({
+    startGame: true,
+    measureMenuIdle: true,
+  });
   sessions.push(first);
   if (
     !/^http:\/\/127\.0\.0\.1:\d+$/.test(first.result.origin) ||
@@ -353,6 +759,10 @@ try {
   const screenshot = await request(`/session/${first.sessionId}/screenshot`);
   mkdirSync(dirname(screenshotPath), { recursive: true });
   writeFileSync(screenshotPath, Buffer.from(screenshot, "base64"));
+  const installedWindow = await exerciseInstalledWindow(first);
+  const singleInstance = await proveSingleInstance(first);
+  const gameplayIdleMeasurement = await measureIdle(first.ready.shellPid);
+  const processMeasurement = processTree(first.ready.shellPid);
   await closeProductSession(first.sessionId);
   await waitFor(
     () =>
@@ -361,7 +771,16 @@ try {
     "first shell and host cleanup",
   );
 
-  const restarted = await runProductSession({ startGame: false });
+  const requireContinue = process.env.TAURI_SMOKE_REQUIRE_CONTINUE === "true";
+  const restarted = await runProductSession({
+    startGame: false,
+    continueGame: requireContinue,
+  });
+  if (requireContinue && restarted.result.continuedCompletedCampaign !== true) {
+    throw new Error(
+      "installed Continue did not restore the completed campaign",
+    );
+  }
   sessions.push(restarted);
   await closeProductSession(restarted.sessionId);
   await waitFor(
@@ -374,11 +793,38 @@ try {
   const crash = await runProductSession({ startGame: false });
   sessions.push(crash);
   process.kill(crash.ready.pid, "SIGKILL");
+  const hostCrashError = await waitFor(
+    () =>
+      execute(
+        crash.sessionId,
+        `return document.body.dataset.desktopFatalError === "true"
+          ? {
+              title: document.title,
+              message: document.body.textContent.trim(),
+              diagnostic: document.querySelector("#desktop-fatal-diagnostic")?.textContent ?? null,
+            }
+          : null;`,
+      ),
+    "visible host crash error",
+  );
+  if (!processExists(crash.ready.shellPid, "loading-bay-desktop")) {
+    throw new Error("desktop shell exited before presenting the host crash");
+  }
+  const hostLogPath = join(
+    xdg.XDG_DATA_HOME,
+    "dev.fuzzyslipper.rusty-engine-demo.loading-bay",
+    "logs/browser-host.log",
+  );
+  const hostLog = readFileSync(hostLogPath, "utf8");
+  if (!hostLog.includes("terminated") || !hostLog.includes("signal")) {
+    throw new Error(`host crash was not recorded actionably: ${hostLogPath}`);
+  }
+  const crashLogTail = hostLog.split("\n").slice(-12).join("\n");
+  await closeProductSession(crash.sessionId);
   await waitFor(
     () => !processExists(crash.ready.shellPid, "loading-bay-desktop"),
-    "shell exit after host crash",
+    "host-error shell cleanup",
   );
-  await deleteSession(crash.sessionId);
 
   const shellCrash = await runProductSession({ startGame: false });
   sessions.push(shellCrash);
@@ -388,6 +834,7 @@ try {
     "host cleanup after shell crash",
   );
   await deleteSession(shellCrash.sessionId);
+  const startupFailure = await proveStartupFailure(sessions);
 
   const evidence = {
     schemaVersion: 1,
@@ -397,8 +844,20 @@ try {
     processLifecycle: {
       normalExitRemovedHost: true,
       restartRemovedHost: true,
-      hostCrashExitedShell: true,
+      hostCrashPresentedVisibleError: true,
+      hostCrashError,
+      hostErrorCloseExitedShell: true,
       shellCrashRemovedHost: true,
+      startupFailure,
+      crashLogPath: hostLogPath,
+      crashLogTail,
+    },
+    installedWindow,
+    singleInstance,
+    processMeasurement,
+    idleMeasurement: {
+      gameplay: gameplayIdleMeasurement,
+      menu: first.result.menuIdleMeasurement,
     },
     screenshot: screenshotPath,
   };

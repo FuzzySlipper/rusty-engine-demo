@@ -88,6 +88,55 @@ New Game path, and first retained renderer submission.
 
 ## Local deployment
 
-DT2 owns the user-scope installation and rollback scripts, launcher integration, cold/restart
-campaign, native resource measurements, and final screenshots. It consumes the exact reviewed DT1
-artifact identities rather than rebuilding from mutable source during installation.
+The supported deployment consumes an exact reviewed Debian artifact; it never rebuilds from the
+checkout being used to install it. Supply the artifact SHA-256 and the full source revision from
+the same immutable CI run:
+
+```bash
+pnpm run deploy:tauri -- install \
+  --artifact /absolute/path/to/Loading\ Bay_0.1.0_amd64.deb \
+  --artifact-sha256 <64-hex-deb-digest> \
+  --evidence /absolute/path/to/tauri-package-evidence.json \
+  --source-revision <40-hex-source-revision>
+pnpm run deploy:tauri -- status
+```
+
+The installer verifies the Debian digest before extraction, the embedded manifest identity, every
+packaged resource, and the sidecar. Tauri's Debian bundler may strip the main executable, so the
+receipt deliberately records three distinct identities: the exact Debian artifact, the executable
+actually installed from it, and the direct-build executable reported by CI. Treating those bytes
+as interchangeable would make a valid package impossible to install and would hide which artifact
+was actually deployed.
+
+The installation is entirely user-scoped:
+
+| Surface       | Default location                                                        |
+| ------------- | ----------------------------------------------------------------------- |
+| Releases      | `$XDG_DATA_HOME/rusty-engine-demo/desktop/releases/<source>-<artifact>` |
+| Active/backup | atomic `current` and `previous` symlinks under the desktop install root |
+| Launcher      | `$XDG_BIN_HOME/loading-bay`                                             |
+| Desktop entry | `$XDG_DATA_HOME/applications/loading-bay.desktop`                       |
+| Save data     | `$XDG_DATA_HOME/dev.fuzzyslipper.rusty-engine-demo.loading-bay/saves`   |
+| Cache/logs    | the matching platform application directories returned by Tauri         |
+
+`rollback` atomically exchanges the active and previous release. `uninstall` removes only the
+managed launcher, desktop entry, icons, and immutable release tree; it preserves application data,
+saves, cache, and logs. Data removal requires the explicit `uninstall --purge-data` command. The
+installer refuses to remove an entry point that lacks its ownership marker.
+It likewise refuses to replace an unmanaged launcher or desktop entry during install.
+
+```bash
+pnpm run deploy:tauri -- rollback
+pnpm run deploy:tauri -- uninstall
+pnpm run deploy:tauri -- uninstall --purge-data # explicit destructive reset
+```
+
+`pnpm run certify:tauri-deploy` certifies the active install. It drives the absolute installed
+binary through Tauri 2 WebDriver from a temporary working directory, captures full and 960×540
+screenshots, checks New Game/first frame, renderer disposal/remount, singleton delegation,
+focus loss/restoration, WebKit/WebGL identity, native process-tree RSS and idle activity,
+normal/crash cleanup, a visible fail-closed startup screen, and then runs the unchanged complete
+campaign against the installed sidecar and its installed Web bundle.
+Set `--skip-campaign` only for focused iteration; that result is explicitly recorded as skipped and
+is not release certification. The `verify-tauri` GitHub job performs the exact install and complete
+certification after building the Debian package, and uploads the receipts and screenshots.

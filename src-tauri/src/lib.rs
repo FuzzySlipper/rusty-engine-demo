@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{App, AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, Wry};
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
 use url::Url;
@@ -84,96 +84,13 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init());
     let app = builder
         .setup(|app| {
-            let resource_root = app.path().resource_dir()?;
-            let sidecar_path =
-                sidecar_path_from_current_executable().map_err(std::io::Error::other)?;
-            let manifest = load_and_verify_manifest(&resource_root, &sidecar_path)
-                .map_err(std::io::Error::other)?;
-
-            let data_root = app.path().app_data_dir()?;
-            let cache_root = app.path().app_cache_dir()?;
-            let log_root = app.path().app_log_dir()?;
-            for directory in [&data_root, &cache_root, &log_root] {
-                fs::create_dir_all(directory)?;
-            }
-            let save_root = data_root.join("saves");
-            fs::create_dir_all(&save_root)?;
-            let ready_file = cache_root.join(format!("host-ready-{}.json", std::process::id()));
-            let _ = fs::remove_file(&ready_file);
-            let log_file = log_root.join("browser-host.log");
-
-            let project = resource_root.join("content/projects/loading-bay.project.json");
-            let dist = resource_root.join("web");
-            let parent_pid = std::process::id().to_string();
-            let arguments = vec![
-                "--addr".into(),
-                "127.0.0.1:0".into(),
-                "--dist".into(),
-                dist.into_os_string(),
-                "--project".into(),
-                project.into_os_string(),
-                "--save-root".into(),
-                save_root.clone().into_os_string(),
-                "--ready-file".into(),
-                ready_file.clone().into_os_string(),
-                "--parent-pid".into(),
-                parent_pid.into(),
-                "--require-loopback".into(),
-            ];
-            let (mut events, child) = app
-                .shell()
-                .sidecar(SIDECAR_NAME)?
-                .args(arguments)
-                .current_dir(&data_root)
-                .env_clear()
-                .env("RUST_BACKTRACE", "1")
-                .spawn()?;
-            let child_pid = child.pid();
-            let expected_shutdown = Arc::new(Mutex::new(false));
-            let host_state = HostState {
-                child: Mutex::new(Some(child)),
-                expected_shutdown: Arc::clone(&expected_shutdown),
-            };
-            app.manage(host_state);
-
-            let event_app = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                while let Some(event) = events.recv().await {
-                    append_host_event(&log_file, &event);
-                    if matches!(event, CommandEvent::Terminated(_) | CommandEvent::Error(_))
-                        && !*expected_shutdown.lock().expect("shutdown lock")
-                    {
-                        event_app.exit(1);
-                        break;
-                    }
+            if let Err(error) = setup_product(app) {
+                if let Some(state) = app.try_state::<HostState>() {
+                    state.stop();
                 }
-            });
-
-            let ready = wait_for_ready(&ready_file, child_pid, READY_TIMEOUT)
-                .map_err(std::io::Error::other)?;
-            let product_url = product_url(ready.address).map_err(std::io::Error::other)?;
-            wait_for_health(ready.address, READY_TIMEOUT).map_err(std::io::Error::other)?;
-            let expected_origin = product_url.origin().ascii_serialization();
-
-            WebviewWindowBuilder::new(app, "main", WebviewUrl::External(product_url))
-                .title("Rusty Engine — Loading Bay")
-                .inner_size(1280.0, 720.0)
-                .min_inner_size(960.0, 540.0)
-                .resizable(true)
-                .fullscreen(false)
-                .on_navigation(move |url| {
-                    url.origin().ascii_serialization() == expected_origin
-                        || matches!(url.scheme(), "about" | "data")
-                })
-                .build()?;
-
-            println!(
-                "loading-bay-desktop ready sourceRevision={} host={} saves={} projectHash={}",
-                manifest.source_revision,
-                ready.address,
-                save_root.display(),
-                ready.project_content_hash
-            );
+                eprintln!("Loading Bay startup failed: {error}");
+                show_startup_error(app)?;
+            }
             Ok(())
         })
         .build(tauri::generate_context!())
@@ -184,7 +101,7 @@ pub fn run() {
             label,
             event: tauri::WindowEvent::Destroyed,
             ..
-        } if label == "main" => {
+        } if label == "main" || label == "startup-error" => {
             if let Some(state) = handle.try_state::<HostState>() {
                 state.stop();
             }
@@ -197,6 +114,143 @@ pub fn run() {
         }
         _ => {}
     });
+}
+
+fn setup_product(app: &mut App<Wry>) -> Result<(), Box<dyn std::error::Error>> {
+    let resource_root = app.path().resource_dir()?;
+    let sidecar_path = sidecar_path_from_current_executable().map_err(std::io::Error::other)?;
+    let manifest =
+        load_and_verify_manifest(&resource_root, &sidecar_path).map_err(std::io::Error::other)?;
+
+    let data_root = app.path().app_data_dir()?;
+    let cache_root = app.path().app_cache_dir()?;
+    let log_root = app.path().app_log_dir()?;
+    for directory in [&data_root, &cache_root, &log_root] {
+        fs::create_dir_all(directory)?;
+    }
+    let save_root = data_root.join("saves");
+    fs::create_dir_all(&save_root)?;
+    let ready_file = cache_root.join(format!("host-ready-{}.json", std::process::id()));
+    let _ = fs::remove_file(&ready_file);
+    let log_file = log_root.join("browser-host.log");
+
+    let project = resource_root.join("content/projects/loading-bay.project.json");
+    let dist = resource_root.join("web");
+    let parent_pid = std::process::id().to_string();
+    let arguments = vec![
+        "--addr".into(),
+        "127.0.0.1:0".into(),
+        "--dist".into(),
+        dist.into_os_string(),
+        "--project".into(),
+        project.into_os_string(),
+        "--save-root".into(),
+        save_root.clone().into_os_string(),
+        "--ready-file".into(),
+        ready_file.clone().into_os_string(),
+        "--parent-pid".into(),
+        parent_pid.into(),
+        "--require-loopback".into(),
+    ];
+    let (mut events, child) = app
+        .shell()
+        .sidecar(SIDECAR_NAME)?
+        .args(arguments)
+        .current_dir(&data_root)
+        .env_clear()
+        .env("RUST_BACKTRACE", "1")
+        .spawn()?;
+    let child_pid = child.pid();
+    let expected_shutdown = Arc::new(Mutex::new(false));
+    let host_state = HostState {
+        child: Mutex::new(Some(child)),
+        expected_shutdown: Arc::clone(&expected_shutdown),
+    };
+    app.manage(host_state);
+
+    let event_app = app.handle().clone();
+    tauri::async_runtime::spawn(async move {
+        while let Some(event) = events.recv().await {
+            append_host_event(&log_file, &event);
+            if matches!(event, CommandEvent::Terminated(_) | CommandEvent::Error(_))
+                && !*expected_shutdown.lock().expect("shutdown lock")
+            {
+                show_runtime_error(&event_app, &describe_host_event(&event));
+                break;
+            }
+        }
+    });
+
+    let ready =
+        wait_for_ready(&ready_file, child_pid, READY_TIMEOUT).map_err(std::io::Error::other)?;
+    let product_url = product_url(ready.address).map_err(std::io::Error::other)?;
+    wait_for_health(ready.address, READY_TIMEOUT).map_err(std::io::Error::other)?;
+    let expected_origin = product_url.origin().ascii_serialization();
+
+    WebviewWindowBuilder::new(app, "main", WebviewUrl::External(product_url))
+        .title("Rusty Engine — Loading Bay")
+        .inner_size(1280.0, 720.0)
+        .min_inner_size(960.0, 540.0)
+        .resizable(true)
+        .fullscreen(false)
+        .on_navigation(move |url| {
+            url.origin().ascii_serialization() == expected_origin
+                || matches!(url.scheme(), "about" | "data")
+        })
+        .build()?;
+
+    println!(
+        "loading-bay-desktop ready sourceRevision={} host={} saves={} projectHash={}",
+        manifest.source_revision,
+        ready.address,
+        save_root.display(),
+        ready.project_content_hash
+    );
+    Ok(())
+}
+
+fn show_startup_error(app: &mut App<Wry>) -> tauri::Result<()> {
+    WebviewWindowBuilder::new(
+        app,
+        "startup-error",
+        WebviewUrl::App("startup-error.html".into()),
+    )
+    .title("Loading Bay — Startup Error")
+    .inner_size(720.0, 420.0)
+    .min_inner_size(560.0, 360.0)
+    .resizable(true)
+    .build()?;
+    Ok(())
+}
+
+fn show_runtime_error(app: &AppHandle<Wry>, detail: &str) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let detail = serde_json::to_string(detail).expect("host event is serializable");
+    let script = format!(
+        r#"
+        document.body.dataset.desktopFatalError = "true";
+        document.body.replaceChildren();
+        const main = document.createElement("main");
+        main.style.cssText = "min-height:100vh;box-sizing:border-box;padding:clamp(2rem,8vw,6rem);background:#071012;color:#d6e4e5;font:16px/1.6 system-ui,sans-serif";
+        const eyebrow = document.createElement("p");
+        eyebrow.textContent = "LOADING BAY DESKTOP";
+        eyebrow.style.cssText = "letter-spacing:.18em;color:#75d8d3";
+        const heading = document.createElement("h1");
+        heading.textContent = "The gameplay host stopped unexpectedly";
+        const message = document.createElement("p");
+        message.textContent = "Loading Bay stopped the native session to protect your saves. Close this window, then relaunch the installed application. The diagnostic log remains in the application data directory.";
+        const diagnostic = document.createElement("pre");
+        diagnostic.id = "desktop-fatal-diagnostic";
+        diagnostic.textContent = {detail};
+        diagnostic.style.cssText = "white-space:pre-wrap;color:#ffbc66";
+        main.append(eyebrow, heading, message, diagnostic);
+        document.body.append(main);
+        "#
+    );
+    let _ = window.set_title("Loading Bay — Host Error");
+    let _ = window.eval(&script);
 }
 
 fn product_url(address: SocketAddr) -> Result<Url, String> {
@@ -391,7 +445,14 @@ fn wait_for_health(address: SocketAddr, timeout: Duration) -> Result<(), String>
 }
 
 fn append_host_event(path: &Path, event: &CommandEvent) {
-    let line = match event {
+    let line = describe_host_event(event);
+    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) {
+        let _ = writeln!(file, "{line}");
+    }
+}
+
+fn describe_host_event(event: &CommandEvent) -> String {
+    match event {
         CommandEvent::Stdout(bytes) => format!("stdout {}", String::from_utf8_lossy(bytes)),
         CommandEvent::Stderr(bytes) => format!("stderr {}", String::from_utf8_lossy(bytes)),
         CommandEvent::Error(message) => format!("error {message}"),
@@ -402,9 +463,6 @@ fn append_host_event(path: &Path, event: &CommandEvent) {
             )
         }
         _ => "unknown sidecar event".to_owned(),
-    };
-    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) {
-        let _ = writeln!(file, "{line}");
     }
 }
 
