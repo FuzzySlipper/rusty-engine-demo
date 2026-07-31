@@ -34,6 +34,18 @@ project. `content/projects/relay-annex.project.json` is a second serialized arra
 same settled demo meanings. Both files are canonical Studio-owned project
 artifacts; ordinary fixture generation never rewrites them.
 
+The production native shell uses the same Angular build and Rust host:
+
+```bash
+pnpm run verify:tauri       # native binary, real WebKit smoke, and process lifecycle
+pnpm run build:tauri        # deb + AppImage on the documented Ubuntu baseline
+```
+
+The directly runnable binary is `target/release/loading-bay-desktop`. Its sidecar and resource
+tree are intentionally separate build outputs and must stay beside it in the layout documented in
+[docs/tauri-desktop.md](docs/tauri-desktop.md). The installable Linux bundles carry that layout
+themselves.
+
 The root route is a full-viewport FPS surface with a disposable HUD projection. Its diagnostics
 drawer exposes only concrete Rust host actions. Renderer-owned frame cadence and synchronous
 backend submission time are shown separately from server tick, snapshot cadence, payload, input,
@@ -117,6 +129,8 @@ limitation changes.
 Exact transfer provenance is recorded in [docs/source-provenance.md](docs/source-provenance.md).
 Renderer/session counter semantics, budgets, and the current headed LAN baseline are recorded in
 [docs/performance.md](docs/performance.md).
+Native package layout, security boundaries, build baseline, and deployment commands are recorded
+in [docs/tauri-desktop.md](docs/tauri-desktop.md).
 The Studio-authored visual-content campaign's authority map, serialized prop/weapon kit, CC0
 source and license hashes, voxel-brush experiment, and exact comparison baselines are in
 [docs/visual-content-pipeline.md](docs/visual-content-pipeline.md).

@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, VecDeque};
 use std::fs;
 use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::ops::{Deref, DerefMut};
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -526,12 +526,35 @@ fn browser_menu_state(runtime: &BrowserRuntime) -> BrowserMenuState {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct BrowserHostArguments {
+    address: SocketAddr,
+    dist: PathBuf,
+    project: PathBuf,
+    save_root: PathBuf,
+    ready_file: Option<PathBuf>,
+    parent_pid: Option<u32>,
+    require_loopback: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserHostReady {
+    schema_version: u32,
+    address: SocketAddr,
+    pid: u32,
+    project_content_hash: String,
+}
+
 fn main() {
-    let (address, dist, project_path, save_root) = arguments();
-    let dist = dist.canonicalize().unwrap_or_else(|error| {
+    let arguments = arguments().unwrap_or_else(|error| panic!("{error}"));
+    if let Some(parent_pid) = arguments.parent_pid {
+        configure_parent_death(parent_pid);
+    }
+    let dist = arguments.dist.canonicalize().unwrap_or_else(|error| {
         panic!(
             "browser shell dist {} is unavailable: {error}",
-            dist.display()
+            arguments.dist.display()
         )
     });
     assert!(
@@ -539,7 +562,7 @@ fn main() {
         "browser shell is not built"
     );
 
-    let runtime = BrowserRuntime::load_with_save_root(&project_path, &save_root)
+    let runtime = BrowserRuntime::load_with_save_root(&arguments.project, &arguments.save_root)
         .unwrap_or_else(|error| panic!("could not start browser project: {error}"));
     println!(
         "browser-host project id={} sourceSchema={} currentSchema={} entryScene={} assets={} scenes={} entities={} path={}",
@@ -554,8 +577,38 @@ fn main() {
     );
     let runtime = Arc::new(SharedBrowserRuntime::new(runtime));
     start_game_loop_driver(&runtime);
-    let listener = TcpListener::bind(&address)
-        .unwrap_or_else(|error| panic!("cannot bind browser host at {address}: {error}"));
+    let listener = TcpListener::bind(arguments.address).unwrap_or_else(|error| {
+        panic!("cannot bind browser host at {}: {error}", arguments.address)
+    });
+    let address = listener
+        .local_addr()
+        .expect("bound browser-host listener has a local address");
+    if arguments.require_loopback {
+        assert!(
+            address.ip().is_loopback(),
+            "desktop browser host must bind to loopback, got {address}"
+        );
+    }
+    if let Some(parent_pid) = arguments.parent_pid {
+        start_parent_monitor(parent_pid);
+    }
+    if let Some(ready_file) = arguments.ready_file.as_deref() {
+        publish_ready_file(
+            ready_file,
+            &BrowserHostReady {
+                schema_version: 1,
+                address,
+                pid: std::process::id(),
+                project_content_hash: runtime
+                    .lock()
+                    .expect("runtime lock for ready file")
+                    .project
+                    .content_hash
+                    .clone(),
+            },
+        )
+        .unwrap_or_else(|error| panic!("could not publish desktop readiness: {error}"));
+    }
     println!("browser-host listening at http://{address}");
 
     for stream in listener.incoming() {
@@ -651,28 +704,152 @@ fn start_game_loop_driver(runtime: &Arc<SharedBrowserRuntime>) {
     });
 }
 
-fn arguments() -> (String, PathBuf, PathBuf, PathBuf) {
+fn arguments() -> Result<BrowserHostArguments, String> {
+    parse_arguments(std::env::args().skip(1))
+}
+
+fn parse_arguments(
+    arguments: impl IntoIterator<Item = impl Into<String>>,
+) -> Result<BrowserHostArguments, String> {
     let default_dist =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../dist/apps/loading-bay/browser");
-    let mut address = DEFAULT_ADDRESS.to_owned();
+    let mut address = DEFAULT_ADDRESS
+        .parse::<SocketAddr>()
+        .expect("default browser-host address");
     let mut dist = default_dist;
     let mut project = default_project_path();
     let mut save_root = default_save_root();
-    let mut args = std::env::args().skip(1);
+    let mut ready_file = None;
+    let mut parent_pid = None;
+    let mut require_loopback = false;
+    let mut args = arguments.into_iter().map(Into::into);
     while let Some(argument) = args.next() {
         match argument.as_str() {
-            "--addr" => address = args.next().expect("--addr needs a value"),
-            "--dist" => dist = PathBuf::from(args.next().expect("--dist needs a value")),
+            "--addr" => {
+                address = args
+                    .next()
+                    .ok_or_else(|| "--addr needs a value".to_owned())?
+                    .parse()
+                    .map_err(|error| format!("--addr must be a socket address: {error}"))?;
+            }
+            "--dist" => {
+                dist = PathBuf::from(
+                    args.next()
+                        .ok_or_else(|| "--dist needs a value".to_owned())?,
+                );
+            }
             "--project" => {
-                project = PathBuf::from(args.next().expect("--project needs a value"));
+                project = PathBuf::from(
+                    args.next()
+                        .ok_or_else(|| "--project needs a value".to_owned())?,
+                );
             }
             "--save-root" => {
-                save_root = PathBuf::from(args.next().expect("--save-root needs a value"));
+                save_root = PathBuf::from(
+                    args.next()
+                        .ok_or_else(|| "--save-root needs a value".to_owned())?,
+                );
             }
-            _ => panic!("unknown browser-host argument {argument}"),
+            "--ready-file" => {
+                let path = PathBuf::from(
+                    args.next()
+                        .ok_or_else(|| "--ready-file needs a value".to_owned())?,
+                );
+                if !path.is_absolute() {
+                    return Err("--ready-file must be absolute".to_owned());
+                }
+                ready_file = Some(path);
+            }
+            "--parent-pid" => {
+                let value = args
+                    .next()
+                    .ok_or_else(|| "--parent-pid needs a value".to_owned())?;
+                let pid = value
+                    .parse::<u32>()
+                    .map_err(|error| format!("--parent-pid must be a positive integer: {error}"))?;
+                if pid == 0 {
+                    return Err("--parent-pid must be a positive integer".to_owned());
+                }
+                parent_pid = Some(pid);
+            }
+            "--require-loopback" => require_loopback = true,
+            _ => return Err(format!("unknown browser-host argument {argument}")),
         }
     }
-    (address, dist, project, save_root)
+    if require_loopback && !address.ip().is_loopback() {
+        return Err(format!(
+            "--require-loopback rejects non-loopback address {address}"
+        ));
+    }
+    Ok(BrowserHostArguments {
+        address,
+        dist,
+        project,
+        save_root,
+        ready_file,
+        parent_pid,
+        require_loopback,
+    })
+}
+
+fn publish_ready_file(path: &Path, ready: &BrowserHostReady) -> std::io::Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let temporary = path.with_extension(format!("tmp-{}", std::process::id()));
+    let bytes = serde_json::to_vec(ready).expect("serialize browser-host readiness");
+    fs::write(&temporary, bytes)?;
+    fs::rename(temporary, path)
+}
+
+fn start_parent_monitor(parent_pid: u32) {
+    std::thread::spawn(move || loop {
+        std::thread::sleep(Duration::from_millis(250));
+        #[cfg(target_os = "linux")]
+        if !linux_process_is_alive(parent_pid) || linux_parent_pid() != Some(parent_pid) {
+            eprintln!("browser-host parent {parent_pid} exited; stopping");
+            std::process::exit(0);
+        }
+    });
+}
+
+#[cfg(target_os = "linux")]
+fn configure_parent_death(parent_pid: u32) {
+    rustix::process::set_parent_process_death_signal(Some(rustix::process::Signal::TERM))
+        .expect("configure browser-host parent-death signal");
+    if linux_parent_pid() != Some(parent_pid) || !linux_process_is_alive(parent_pid) {
+        eprintln!("browser-host parent {parent_pid} exited during startup; stopping");
+        std::process::exit(0);
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn configure_parent_death(_parent_pid: u32) {}
+
+#[cfg(target_os = "linux")]
+fn linux_process_is_alive(pid: u32) -> bool {
+    let Ok(stat) = fs::read_to_string(format!("/proc/{pid}/stat")) else {
+        return false;
+    };
+    process_stat_is_alive(&stat)
+}
+
+#[cfg(target_os = "linux")]
+fn process_stat_is_alive(stat: &str) -> bool {
+    process_stat_fields(stat).is_some_and(|(state, _)| !matches!(state, "Z" | "X"))
+}
+
+#[cfg(target_os = "linux")]
+fn linux_parent_pid() -> Option<u32> {
+    let stat = fs::read_to_string("/proc/self/stat").ok()?;
+    process_stat_fields(&stat)?.1.parse().ok()
+}
+
+#[cfg(target_os = "linux")]
+fn process_stat_fields(stat: &str) -> Option<(&str, &str)> {
+    let (_, fields) = stat.rsplit_once(')')?;
+    let mut fields = fields.split_whitespace();
+    Some((fields.next()?, fields.next()?))
 }
 
 fn default_project_path() -> PathBuf {
@@ -1303,7 +1480,7 @@ fn write_response(
     };
     write!(
         stream,
-        "HTTP/1.1 {status} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nX-Den-Project: {DEN_PROJECT}\r\nConnection: close\r\n\r\n",
+        "HTTP/1.1 {status} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nContent-Security-Policy: default-src 'self'; script-src 'self'; script-src-attr 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:*; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; worker-src 'self' blob:\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\nX-Den-Project: {DEN_PROJECT}\r\nConnection: close\r\n\r\n",
         body.len()
     )?;
     stream.write_all(&body)
@@ -1312,6 +1489,89 @@ fn write_response(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn desktop_arguments_require_loopback_and_absolute_readiness() {
+        let parsed = parse_arguments([
+            "--addr",
+            "127.0.0.1:0",
+            "--ready-file",
+            "/tmp/loading-bay-ready.json",
+            "--parent-pid",
+            "42",
+            "--require-loopback",
+        ])
+        .expect("parse managed desktop arguments");
+        assert_eq!(parsed.address, "127.0.0.1:0".parse().unwrap());
+        assert_eq!(
+            parsed.ready_file,
+            Some(PathBuf::from("/tmp/loading-bay-ready.json"))
+        );
+        assert_eq!(parsed.parent_pid, Some(42));
+        assert!(parsed.require_loopback);
+
+        assert!(
+            parse_arguments(["--addr", "0.0.0.0:0", "--require-loopback"])
+                .unwrap_err()
+                .contains("rejects non-loopback")
+        );
+        assert!(parse_arguments(["--ready-file", "relative-ready.json"])
+            .unwrap_err()
+            .contains("must be absolute"));
+        assert!(parse_arguments(["--parent-pid", "0"])
+            .unwrap_err()
+            .contains("positive integer"));
+        assert!(parse_arguments(["--unknown"])
+            .unwrap_err()
+            .contains("unknown browser-host argument"));
+    }
+
+    #[test]
+    fn desktop_readiness_is_published_atomically() {
+        let root = std::env::temp_dir().join(format!(
+            "loading-bay-browser-host-ready-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let path = root.join("ready.json");
+        let ready = BrowserHostReady {
+            schema_version: 1,
+            address: "127.0.0.1:49152".parse().unwrap(),
+            pid: 42,
+            project_content_hash: "abc123".to_owned(),
+        };
+
+        publish_ready_file(&path, &ready).expect("publish ready file");
+
+        let decoded: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).expect("read ready file")).unwrap();
+        assert_eq!(decoded["schemaVersion"], 1);
+        assert_eq!(decoded["address"], "127.0.0.1:49152");
+        assert_eq!(decoded["pid"], 42);
+        assert_eq!(decoded["projectContentHash"], "abc123");
+        assert_eq!(
+            fs::read_dir(&root).unwrap().count(),
+            1,
+            "temporary readiness file must be renamed away"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn desktop_parent_monitor_treats_zombies_as_exited() {
+        assert!(process_stat_is_alive("42 (loading bay shell) S 1 2 3"));
+        assert!(!process_stat_is_alive("42 (loading bay shell) Z 1 2 3"));
+        assert!(!process_stat_is_alive("42 (loading bay shell) X 1 2 3"));
+        assert!(!process_stat_is_alive("malformed"));
+        assert_eq!(
+            process_stat_fields("42 (loading bay shell) S 775 2 3"),
+            Some(("S", "775"))
+        );
+    }
 
     fn stored_browser_runtime() -> BrowserRuntime {
         BrowserRuntime::load(&default_project_path()).expect("admit stored browser project")

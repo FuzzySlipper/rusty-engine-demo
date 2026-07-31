@@ -37,3 +37,73 @@ jobs:
         env:
           CHROMIUM_BIN: /usr/bin/google-chrome
         run: pnpm run verify
+
+  verify-tauri:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out Rusty Engine Demo
+        uses: actions/checkout@v4
+
+      - name: Install Tauri Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            dbus-x11 \
+            patchelf \
+            xvfb \
+            webkit2gtk-driver
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Tauri WebDriver intermediary
+        run: cargo install tauri-driver --locked --version 2.0.6
+
+      - name: Verify native shell and process lifecycle
+        env:
+          TAURI_DRIVER_BIN: /home/runner/.cargo/bin/tauri-driver
+        run: dbus-run-session -- pnpm run verify:tauri
+
+      - name: Build Linux bundles on the supported baseline
+        run: pnpm run build:tauri
+
+      - name: Record package identities
+        run: |
+          sha256sum \
+            target/release/loading-bay-desktop \
+            target/release/loading-bay-browser-host \
+            target/release/bundle/deb/*.deb \
+            target/release/bundle/appimage/*.AppImage
+
+      - name: Upload Linux packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: loading-bay-linux-x86_64
+          if-no-files-found: error
+          path: |
+            target/release/loading-bay-desktop
+            target/release/loading-bay-browser-host
+            target/lib/loading-bay-desktop/
+            target/release/bundle/deb/*.deb
+            target/release/bundle/appimage/*.AppImage
+            target/tauri-package-evidence.json
+            target/tauri-smoke-evidence.json
+            target/tauri-smoke.png

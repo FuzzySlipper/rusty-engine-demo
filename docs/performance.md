@@ -119,10 +119,10 @@ profile records:
   synchronous backend submission time;
 - initial versus lazy JavaScript and module attribution from Angular's build graph.
 
-There is no Tauri or other native desktop package in this repository yet. This is therefore a
-desktop-representative WebView/browser measurement, not a native-shell launch, installer-size, or
-process-memory certification. When a desktop shell exists, the same route and metrics must be run
-inside it rather than treating these Chromium numbers as a substitute.
+This historical measurement predates the Tauri package and remains a Chromium baseline, not a
+native-shell launch, installer-size, or process-memory certification. The current Tauri build and
+WebKit lifecycle are documented in `docs/tauri-desktop.md`; DT2 records the comparable installed
+native measurements instead of retroactively relabeling these Chromium numbers.
 
 The pre-change build at exact revision
 `648a28bb84b245bcca974b1826655af35a52eef9` eagerly included the game screen, browser session,
