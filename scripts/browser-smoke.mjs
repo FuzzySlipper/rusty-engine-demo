@@ -1399,7 +1399,17 @@ function gameShellScenario(viewportLabel) {
         label.textContent?.includes(text),
       )?.querySelector("input");
     try {
-      await waitFor(() => document.querySelector("red-main-menu") !== null, "main menu");
+      await waitFor(() => {
+        const menu = document.querySelector("red-main-menu");
+        const newGame = byText("button", "New game");
+        const continueButton = byText("button", "Continue");
+        const availability = document.querySelector(".availability")?.textContent?.trim() ?? "";
+        return menu !== null &&
+          newGame instanceof HTMLButtonElement &&
+          continueButton instanceof HTMLButtonElement &&
+          availability.length > 0 &&
+          !availability.startsWith("Checking");
+      }, "authoritative main menu session readiness");
       const newGame = byText("button", "New game");
       const continueButton = byText("button", "Continue");
       if (!(newGame instanceof HTMLButtonElement) ||
