@@ -12,14 +12,14 @@ The checked-in files under `content/projects` are the canonical Studio-owned sou
 
 | Artifact                                    | SHA-256                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------ |
-| `content/projects/loading-bay.project.json` | `51005f60581930ae220c81cacaf91b949c8ef9487579ddc79c3cd525465506b4` |
+| `content/projects/loading-bay.project.json` | `048b1b9400fe670d2ac4c1f5faecf189cccf5f8e906ba65b15095f3879f2b6e3` |
 | `content/projects/relay-annex.project.json` | `0f5c5bc55f8643b75a395d83037a03dbc9c1ad938aa1622c070a9a9272a87bf3` |
 
-The schema-24 Loading Bay artifact contains one scene, 3,931 gameplay-proxy material voxels, 419
+The schema-24 Loading Bay artifact contains one scene, 3,945 gameplay-proxy material voxels, 417
 entities, 89 retained asset identities, nine item definitions, eight enemies, three encounters,
 eight authored pickup caches, eight dormant defeat drops, five doors, eight lights, one secret, and
-one level exit. Its visible room reuses nine canonical voxel-object definitions across 342 route
-placements; the separate 25-instance proof room remains off-route, for 367 repeated instances in
+one level exit. Its visible room reuses nine canonical voxel-object definitions across 340 route
+placements; the separate 25-instance proof room remains off-route, for 365 repeated instances in
 all. Eight enemies use two animated identities, 25 gameplay props use serialized state bindings,
 and 37 gameplay/landmark renderables are visible. Stable pretty-printing plus Rust decode,
 capability-complete admission, save, and exact-byte round-trip make content drift fail the normal
@@ -31,18 +31,28 @@ mesh bounds to the contact plane while entity translations, collision shapes, na
 and gameplay remain unchanged. Studio reads and writes the offsets through the guarded schema-24
 project contract.
 
-| Asset class | Loading Bay convention | Reviewed examples |
-| --- | --- | --- |
-| Floor-standing | Align the transformed lower bound to the authored floor or raised-deck plane with `renderable.localTransform`; never move the entity world transform. | all enemies, doors, control, hazard, beacon, tank |
-| Wall-mounted | Preserve the authored wall anchor and report clearance; do not apply lower-bound grounding. | level-exit marker, status runner |
-| Suspended | Preserve the explicit overhead support height and report clearance. | loading-bay crane |
-| Intentionally hovering | Preserve the readable pickup hover height as an explicit exception. | energy, health, armor, key, ammunition, and weapon pickups |
+| Asset class            | Loading Bay convention                                                                                                                                | Reviewed examples                                          |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Floor-standing         | Align the transformed lower bound to the authored floor or raised-deck plane with `renderable.localTransform`; never move the entity world transform. | all enemies, doors, control, hazard, beacon, tank          |
+| Wall-mounted           | Preserve the authored wall anchor and report clearance; do not apply lower-bound grounding.                                                           | level-exit marker, status runner                           |
+| Suspended              | Preserve the explicit overhead support height and report clearance.                                                                                   | loading-bay crane                                          |
+| Intentionally hovering | Preserve the readable pickup hover height as an explicit exception.                                                                                   | energy, health, armor, key, ammunition, and weapon pickups |
 
 The checked [`renderable-grounding.json`](evidence/renderable-grounding.json) records every enemy
 alignment and the Studio lower-bound/clearance readout for a representative door, control, pickup,
 hazard, beacon, exit, crane, and tank. Its desktop and narrow captures use the shared Studio
 viewport's origin, bounds, and contact-plane overlay; the convention is deliberately not a
 universal `minY = 0` rule.
+
+The wall-alignment descendant keeps that same authority split. Supported Rust voxel editing added
+14 missing material voxels beneath six decorative columns, while the repeated-brush recipe removed
+the overlapping wall presentation at those footprints, aligned both southern corner accents to
+the `z=49` boundary, and derived all five doorway-surround bounds from their actual proxy openings.
+The checked [`wall-proxy-alignment.json`](evidence/wall-proxy-alignment.json) compares 267 walls,
+six columns, four corners, five door surrounds, and the one-unit generator passage. Its measured
+maximum horizontal visual-to-proxy gap is zero at six-decimal evidence precision, below the
+smallest authored brush cell of `1/32` world unit. Material voxels remain the only collision,
+navigation, and occlusion authority.
 
 Relay Annex changes the room arrangement, player start, initial enemy placement and tuning,
 navigation target/speed, and beacon radius through serialized project data. It uses the same Rust

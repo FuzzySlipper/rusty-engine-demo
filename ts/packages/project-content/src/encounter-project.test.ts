@@ -352,7 +352,7 @@ test("loading bay material voxels are deterministic and preserve all authored ga
   }
   assert.equal(environment.voxelSize, 1);
   assert.equal(environment.chunkSize, 16);
-  assert.equal(environment.materialVoxels.length, 3_931);
+  assert.equal(environment.materialVoxels.length, 3_945);
   assert.deepEqual(
     [
       ...new Set(environment.materialVoxels.map((voxel) => voxel.materialSlot)),

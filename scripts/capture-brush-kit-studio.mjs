@@ -24,13 +24,23 @@ const PRIMARY_SCREENSHOT =
 const SECONDARY_SCREENSHOT =
   process.env.RUSTY_STUDIO_SECONDARY_SCREENSHOT ??
   "voxel-brush-kit-conservative-wall.png";
+const PRIMARY_VIEWPORT = viewportFromEnvironment(
+  "RUSTY_STUDIO_PRIMARY_VIEWPORT",
+  [1600, 900],
+);
+const SECONDARY_VIEWPORT = viewportFromEnvironment(
+  "RUSTY_STUDIO_SECONDARY_VIEWPORT",
+  [1600, 900],
+);
+const ALIGNMENT_EVIDENCE = process.env.RUSTY_STUDIO_ALIGNMENT_EVIDENCE;
 const authoringEvidence = JSON.parse(
   await readFile(resolve(ROOT, AUTHORING_EVIDENCE), "utf8"),
 );
 const PROJECT_HASH =
   authoringEvidence.finalHash ??
   authoringEvidence.projectHashAfter ??
-  authoringEvidence.project?.finalHash;
+  authoringEvidence.project?.finalHash ??
+  authoringEvidence.project?.hash;
 if (typeof PROJECT_HASH !== "string") {
   throw new Error("authoring evidence has no final project hash");
 }
@@ -68,6 +78,19 @@ const pending = new Map();
 
 function delay(ms) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
+}
+
+function viewportFromEnvironment(name, fallback) {
+  const raw = process.env[name];
+  if (raw === undefined) return fallback;
+  const values = raw.split("x").map(Number);
+  if (
+    values.length !== 2 ||
+    values.some((value) => !Number.isInteger(value) || value <= 0)
+  ) {
+    throw new Error(`${name} must use WIDTHxHEIGHT`);
+  }
+  return values;
 }
 
 async function target() {
@@ -202,6 +225,59 @@ async function screenshot(name) {
   await writeFile(resolve(OUTPUT, name), Buffer.from(captured.data, "base64"));
 }
 
+async function setViewport([width, height]) {
+  await command("Emulation.setDeviceMetricsOverride", {
+    width,
+    height,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await delay(350);
+}
+
+async function installAlignmentPanel(label, instanceId) {
+  if (ALIGNMENT_EVIDENCE === undefined) return;
+  const alignment = JSON.parse(
+    await readFile(resolve(ROOT, ALIGNMENT_EVIDENCE), "utf8"),
+  );
+  const measurement = alignment.measurements.find(
+    (candidate) => candidate.instanceId === instanceId,
+  );
+  if (measurement === undefined) {
+    throw new Error(`missing wall proxy measurement for ${instanceId}`);
+  }
+  await evaluate(`(() => {
+    let panel = document.querySelector('#wall-proxy-alignment-evidence');
+    if (!(panel instanceof HTMLElement)) {
+      panel = document.createElement('aside');
+      panel.id = 'wall-proxy-alignment-evidence';
+      panel.style.cssText = [
+        'position:fixed', 'left:20px', 'bottom:20px', 'z-index:2147483647',
+        'max-width:min(560px,calc(100vw - 40px))', 'padding:12px 16px',
+        'background:rgba(3,8,14,.94)', 'border:1px solid #67d9d0',
+        'border-radius:6px', 'color:#e9ffff',
+        'font:600 14px/1.4 ui-monospace,monospace', 'white-space:pre-wrap',
+        'box-shadow:0 8px 30px rgba(0,0,0,.55)'
+      ].join(';');
+      document.body.append(panel);
+    }
+    panel.textContent = [
+      ${JSON.stringify(label)},
+      'Visible authority: Studio repeated-brush selection / visual bounds',
+      'Collision authority: Rust material-voxel gameplayProxy',
+      'Measured surfaces: ${String(alignment.measurements.length)}',
+      'Maximum gap: ${String(alignment.threshold.measuredMaximumGap)}',
+      'Allowed: ${String(alignment.threshold.maximumAllowedGap)} (finest brush cell)',
+      'Selected: ${measurement.instanceId} (${measurement.kind})',
+      'Visual X/Z: ${measurement.visible.min[0]}..${measurement.visible.max[0]} / ${measurement.visible.min[1]}..${measurement.visible.max[1]}',
+      'Proxy X/Z: ${measurement.gameplayProxy.min[0]}..${measurement.gameplayProxy.max[0]} / ${measurement.gameplayProxy.min[1]}..${measurement.gameplayProxy.max[1]}',
+      'Selected gap: ${measurement.gap}',
+      'Second collision source: no'
+    ].join('\\n');
+    return true;
+  })()`);
+}
+
 try {
   const page = await target();
   socket = new WebSocket(page.webSocketDebuggerUrl);
@@ -221,15 +297,10 @@ try {
   await command("Page.enable");
   await command("Runtime.enable");
   await command("Performance.enable");
-  await command("Emulation.setDeviceMetricsOverride", {
-    width: 1600,
-    height: 900,
-    deviceScaleFactor: 1,
-    mobile: false,
-  });
+  await setViewport(PRIMARY_VIEWPORT);
   await command("Page.navigate", {
     url:
-      `${HOST}/?root=%2Fhome%2Fdev%2Frusty-engine-demo` +
+      `${HOST}/?root=${encodeURIComponent(ROOT)}` +
       "&project=content%2Fprojects%2Floading-bay.project.json",
   });
   await waitFor(
@@ -244,13 +315,22 @@ try {
   await mkdir(OUTPUT, { recursive: true });
   await screenshot(OVERVIEW_SCREENSHOT);
   await focus(PRIMARY_FOCUS);
+  await installAlignmentPanel(
+    "WALL / COLUMN ALIGNMENT · DESKTOP",
+    PRIMARY_FOCUS,
+  );
   const denseSubmission = await waitForSubmission(
     initialSubmission.count + 1,
     "presentation",
     "dense-wall selection presentation",
   );
   await screenshot(PRIMARY_SCREENSHOT);
+  await setViewport(SECONDARY_VIEWPORT);
   await focus(SECONDARY_FOCUS);
+  await installAlignmentPanel(
+    "DOOR SURROUND / NARROW PASSAGE · NARROW",
+    SECONDARY_FOCUS,
+  );
   const conservativeSubmission = await waitForSubmission(
     denseSubmission.count + 1,
     "presentation",
@@ -399,7 +479,8 @@ try {
       .map(({ name, value }) => [name, value]),
   );
   proof.capture = {
-    viewport: [1600, 900],
+    viewport: PRIMARY_VIEWPORT,
+    secondaryViewport: SECONDARY_VIEWPORT,
     host: HOST,
     screenshots: [
       `docs/evidence/${OVERVIEW_SCREENSHOT}`,

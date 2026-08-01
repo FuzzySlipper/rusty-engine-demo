@@ -224,6 +224,13 @@ the serialized project and verifies that every new owner is decorative. No Doom 
 mesh, palette, layout data, or other third-party content was copied or traced; Doom E1M1 remains
 only the previously documented high-level compact-FPS readability reference.
 
+Task #6473 is a source-free canonical descendant of that composition. It adds 14 Rust-authored
+material voxels at six existing column locations, removes two now-redundant wall presentation
+owners, realigns the southern corner and doorway transforms from the same project proxy, and
+retains the nine original definition sources unchanged. Its exact current 340-placement receipt
+and 738,931-byte structural projection remain in `voxel-level-brush-authoring.json`; the complete
+surface comparison is in `wall-proxy-alignment.json`.
+
 ## VC4 production animated actor source kit
 
 Den task #6355 replaces the historical three-clip appearance proof with two production-style actor

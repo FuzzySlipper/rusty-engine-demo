@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "engineRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
+  "engineRevision": "f1baabcd55b7075fff40b93b1bae0a16ef88ab0e",
   "independentSampler": "Three GLTFLoader plus SkeletonUtils clone and AnimationMixer, separate from the Engine loader/registry instance",
   "normalizedTimes": [
     0,

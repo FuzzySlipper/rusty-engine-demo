@@ -1522,7 +1522,7 @@ export async function mountLoadingBayGame(
       .map((pickup) => pickup.id);
     const authoredBaseline =
       current.generatedEnvironment === null &&
-      current.voxelSolidCount === 3_931 &&
+      current.voxelSolidCount === 3_945 &&
       projection.trackedEntityCount >= 20 &&
       projection.trackedLightCount === 8 &&
       JSON.stringify(current.enemies.map((enemy) => enemy.id)) ===

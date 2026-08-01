@@ -88,7 +88,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         response["project"]["inspections"]["persistence"]["artifactCount"],
         1
     );
-    assert_eq!(response["project"]["voxel"]["solidVoxelCount"], 3_931);
+    assert_eq!(response["project"]["voxel"]["solidVoxelCount"], 3_945);
     assert_eq!(
         response["project"]["voxelSurfaceAuthoring"],
         json!({ "textures": [], "atlases": [], "materials": [] })

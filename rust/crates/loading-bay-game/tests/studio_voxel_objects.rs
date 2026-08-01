@@ -639,7 +639,7 @@ fn canonical_brush_level_is_shared_bounded_and_restart_stable() {
     let opened = open(&mut service, &root);
     let authoring = &opened["project"]["voxelObjectAuthoring"];
     assert_eq!(authoring["assets"].as_array().unwrap().len(), 9);
-    assert_eq!(authoring["instances"].as_array().unwrap().len(), 367);
+    assert_eq!(authoring["instances"].as_array().unwrap().len(), 365);
     assert_eq!(
         authoring["instances"]
             .as_array()
@@ -649,7 +649,7 @@ fn canonical_brush_level_is_shared_bounded_and_restart_stable() {
                 .as_str()
                 .is_some_and(|instance_id| instance_id.starts_with("level-")))
             .count(),
-        342
+        340
     );
 
     let operations = opened["project"]["projection"]["ops"].as_array().unwrap();
@@ -665,7 +665,7 @@ fn canonical_brush_level_is_shared_bounded_and_restart_stable() {
             .iter()
             .filter(|operation| operation["op"] == "createVoxelObjectInstance")
             .count(),
-        367
+        365
     );
     let projection_bytes = serde_json::to_vec(&opened["project"]["projection"]).unwrap();
     assert!(projection_bytes.len() < 2 * 1024 * 1024);
@@ -768,7 +768,7 @@ fn canonical_brush_level_transform_delete_and_reopen_are_owner_atomic() {
             .as_array()
             .unwrap()
             .len(),
-        366
+        364
     );
     assert!(!reopened["project"]["voxelObjectAuthoring"]["instances"]
         .as_array()

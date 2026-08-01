@@ -1,9 +1,14 @@
 use core_ids::EntityId;
 use loading_bay_game::{decode_game_snapshot, encode_game_snapshot, GameRuntime, MotionFact};
+use loading_bay_game::{PlayerControlFact, ResolvedPlayerAction};
+use serde_json::{json, Value};
 
 const MOTION_PROJECT: &str = include_str!("../../../../content/generated/motion-lab.project.json");
+const LOADING_BAY_PROJECT: &str =
+    include_str!("../../../../content/projects/loading-bay.project.json");
 const BODY_COUNT: usize = 256;
 const FIRST_BODY: u64 = 1_000;
+const PLAYER: EntityId = EntityId::new(1);
 const PHASES: usize = 180;
 const DELTA_SECONDS: f32 = 1.0 / 60.0;
 
@@ -87,4 +92,148 @@ fn snapshot_rebuilds_collision_projection_and_continues_identically() {
             .expect("original scene")
             .solid_voxels()
     );
+}
+
+#[test]
+fn canonical_wall_faces_stop_the_real_player_head_on_and_at_high_delta() {
+    let mut runtime = loading_bay_motion_runtime([1.26, 1.5, 3.5], 90.0, 2.0, 0.01, false);
+    let player = runtime.session().entity(PLAYER).unwrap();
+    assert_eq!(player.kinematic.unwrap().half_extents.to_array(), [0.25; 3]);
+
+    move_player(&mut runtime, 1.0, 0.0);
+    let receipt = move_player(&mut runtime, 1.0, 0.0);
+    assert!(receipt.facts.iter().any(
+        |fact| matches!(fact, PlayerControlFact::Blocked { entity, .. } if *entity == PLAYER)
+    ));
+    let position = player_position(&runtime);
+    assert!(
+        (position[0] - 1.25).abs() <= 1.0 / 32.0,
+        "west stop must remain within the finest authored brush cell of the contact plane: {position:?}",
+    );
+
+    let mut high_delta = loading_bay_motion_runtime([5.5, 1.5, 3.5], 90.0, 100.0, 0.25, false);
+    let receipt = move_player(&mut high_delta, 1.0, 0.0);
+    assert!(receipt.facts.iter().any(
+        |fact| matches!(fact, PlayerControlFact::Blocked { entity, .. } if *entity == PLAYER)
+    ));
+    assert!(
+        player_position(&high_delta)[0] >= 1.249,
+        "high-delta motion cannot tunnel through the west proxy",
+    );
+}
+
+#[test]
+fn canonical_wall_sliding_is_symmetric_and_corner_motion_cannot_tunnel() {
+    for z_velocity in [-4.0_f32, 4.0] {
+        let start = [1.26, 1.5, 10.5];
+        let mut runtime = loading_bay_motion_runtime(start, 90.0, 6.0, 0.1, false);
+        move_player(&mut runtime, 0.0, if z_velocity < 0.0 { 1.0 } else { -1.0 });
+        let position = player_position(&runtime);
+        assert!((position[0] - 1.25).abs() <= 1.0 / 32.0, "{position:?}");
+        assert!(
+            (position[2] - start[2] as f32).signum() == z_velocity.signum(),
+            "tangential motion must survive either slide direction: {position:?}",
+        );
+    }
+
+    let mut corner = loading_bay_motion_runtime([1.3, 1.5, 1.3], 90.0, 100.0, 0.25, false);
+    move_player(&mut corner, 1.0, 1.0);
+    let position = player_position(&corner);
+    assert!(position[0] >= 1.249 && position[2] >= 1.249, "{position:?}");
+}
+
+#[test]
+fn canonical_door_aperture_passes_only_inside_its_authored_proxy_opening() {
+    let mut through = loading_bay_motion_runtime([21.5, 1.5, 47.5], 180.0, 20.0, 0.2, true);
+    move_player(&mut through, 1.0, 0.0);
+    assert!(player_position(&through)[2] > 50.5);
+
+    let mut wall = loading_bay_motion_runtime([19.5, 1.5, 48.69], 180.0, 6.0, 0.01, true);
+    move_player(&mut wall, 1.0, 0.0);
+    move_player(&mut wall, 1.0, 0.0);
+    let position = player_position(&wall);
+    assert!(
+        (position[2] - 48.75).abs() <= 0.001,
+        "adjacent wall proxy must stop the same high-delta body: {position:?}",
+    );
+}
+
+fn loading_bay_motion_runtime(
+    translation: [f64; 3],
+    yaw_degrees: f64,
+    speed: f64,
+    step_seconds: f64,
+    open_exit: bool,
+) -> GameRuntime {
+    let mut project: Value = serde_json::from_str(LOADING_BAY_PROJECT).unwrap();
+    let scene = project["scenes"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|scene| scene["id"] == "scene/loading-bay")
+        .unwrap();
+    let entities = scene["entities"].as_array_mut().unwrap();
+    let player = entities
+        .iter_mut()
+        .find(|entity| entity["id"] == PLAYER.raw())
+        .unwrap();
+    player["translation"] = json!(translation);
+    player["playerController"]["initialYawDegrees"] = json!(yaw_degrees);
+    player["playerController"]["moveSpeedUnitsPerSecond"] = json!(speed);
+    player["playerController"]["moveStepSeconds"] = json!(step_seconds);
+    if open_exit {
+        let exit = entities
+            .iter_mut()
+            .find(|entity| entity["id"] == 3)
+            .unwrap();
+        exit["collision"]["enabled"] = json!(false);
+    }
+    let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    set_player_yaw(&mut runtime, yaw_degrees as f32);
+    runtime
+}
+
+fn set_player_yaw(runtime: &mut GameRuntime, target: f32) {
+    loop {
+        let current = runtime
+            .session()
+            .player_controller(PLAYER)
+            .unwrap()
+            .state
+            .yaw_degrees;
+        let remaining = (target - current + 180.0).rem_euclid(360.0) - 180.0;
+        if remaining.abs() <= 0.000_1 {
+            break;
+        }
+        runtime
+            .apply_player_action(
+                PLAYER,
+                ResolvedPlayerAction::Look {
+                    yaw_delta: (remaining / 12.0).clamp(-1.0, 1.0),
+                    pitch_delta: 0.0,
+                },
+            )
+            .unwrap();
+    }
+}
+
+fn move_player(
+    runtime: &mut GameRuntime,
+    forward: f32,
+    right: f32,
+) -> loading_bay_game::PlayerControlReceipt {
+    runtime
+        .apply_player_action(PLAYER, ResolvedPlayerAction::Move { forward, right })
+        .expect("real player collision-aware motion")
+}
+
+fn player_position(runtime: &GameRuntime) -> [f32; 3] {
+    runtime
+        .session()
+        .entity(PLAYER)
+        .unwrap()
+        .transform
+        .unwrap()
+        .translation
+        .to_array()
 }

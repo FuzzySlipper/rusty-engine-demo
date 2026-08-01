@@ -154,6 +154,35 @@ try {
       resolve(root, relativePath),
       Buffer.from(screenshot.data, "base64"),
     );
+    if (milestone === "wall") {
+      writeFileSync(
+        resolve(root, "docs/evidence/wall-proxy-gameplay-desktop.png"),
+        Buffer.from(screenshot.data, "base64"),
+      );
+    }
+    if (milestone === "doorway") {
+      await client.send("Emulation.setDeviceMetricsOverride", {
+        width: 390,
+        height: 844,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      await delay(350);
+      const narrow = await client.send("Page.captureScreenshot", {
+        captureBeyondViewport: false,
+        format: "png",
+        fromSurface: true,
+      });
+      writeFileSync(
+        resolve(root, "docs/evidence/wall-proxy-gameplay-narrow.png"),
+        Buffer.from(narrow.data, "base64"),
+      );
+      await client.send("Emulation.setDeviceMetricsOverride", {
+        ...viewport,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+    }
     captures.push({ ...evidence, screenshot: relativePath });
     await client.send("Runtime.evaluate", {
       expression: `document.body.dataset.cameraBoundaryCaptured = ${JSON.stringify(milestone)}`,

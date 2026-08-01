@@ -268,7 +268,7 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert_eq!(definitions, 9);
-        assert_eq!(instances.len(), 367);
+        assert_eq!(instances.len(), 365);
         let definition_sizes = frame
             .ops
             .iter()

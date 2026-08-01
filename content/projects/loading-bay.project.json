@@ -144213,6 +144213,14 @@
             "address": [
               3,
               1,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              1,
               23
             ],
             "materialSlot": 1
@@ -144261,6 +144269,14 @@
             "address": [
               3,
               2,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              2,
               23
             ],
             "materialSlot": 1
@@ -144286,6 +144302,14 @@
               3,
               3,
               0
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              3,
+              3,
+              8
             ],
             "materialSlot": 1
           },
@@ -151757,6 +151781,14 @@
             "address": [
               11,
               3,
+              8
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              11,
+              3,
               35
             ],
             "materialSlot": 1
@@ -157381,6 +157413,14 @@
             "address": [
               17,
               1,
+              38
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              17,
+              1,
               40
             ],
             "materialSlot": 3
@@ -157437,6 +157477,14 @@
             "address": [
               17,
               2,
+              38
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              17,
+              2,
               40
             ],
             "materialSlot": 3
@@ -157486,6 +157534,14 @@
               17,
               3,
               35
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              17,
+              3,
+              38
             ],
             "materialSlot": 1
           },
@@ -158349,6 +158405,14 @@
             "address": [
               18,
               1,
+              22
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              18,
+              1,
               30
             ],
             "materialSlot": 1
@@ -158421,6 +158485,14 @@
             "address": [
               18,
               2,
+              22
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              18,
+              2,
               30
             ],
             "materialSlot": 1
@@ -158470,6 +158542,14 @@
               18,
               3,
               17
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              18,
+              3,
+              22
             ],
             "materialSlot": 1
           },
@@ -166973,6 +167053,14 @@
             "address": [
               27,
               3,
+              46
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              27,
+              3,
               49
             ],
             "materialSlot": 1
@@ -167829,6 +167917,14 @@
             "address": [
               28,
               1,
+              29
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              28,
+              1,
               30
             ],
             "materialSlot": 1
@@ -167885,6 +167981,14 @@
             "address": [
               28,
               2,
+              29
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              28,
+              2,
               30
             ],
             "materialSlot": 1
@@ -167918,6 +168022,14 @@
               28,
               3,
               17
+            ],
+            "materialSlot": 1
+          },
+          {
+            "address": [
+              28,
+              3,
+              29
             ],
             "materialSlot": 1
           },
@@ -172632,7 +172744,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 450,
+          "ownerEntityId": 448,
           "instanceId": "level-column-arrival-a",
           "voxelObjectAssetId": "voxel-object/brush-column",
           "frame": {
@@ -172650,14 +172762,14 @@
             1.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 451,
+          "ownerEntityId": 449,
           "instanceId": "level-column-arrival-b",
           "voxelObjectAssetId": "voxel-object/brush-column",
           "frame": {
@@ -172675,14 +172787,14 @@
             1.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 454,
+          "ownerEntityId": 452,
           "instanceId": "level-column-dock-a",
           "voxelObjectAssetId": "voxel-object/brush-column",
           "frame": {
@@ -172700,14 +172812,14 @@
             1.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 455,
+          "ownerEntityId": 453,
           "instanceId": "level-column-dock-b",
           "voxelObjectAssetId": "voxel-object/brush-column",
           "frame": {
@@ -172725,14 +172837,14 @@
             1.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 452,
+          "ownerEntityId": 450,
           "instanceId": "level-column-generator-a",
           "voxelObjectAssetId": "voxel-object/brush-column",
           "frame": {
@@ -172750,14 +172862,14 @@
             1.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 453,
+          "ownerEntityId": 451,
           "instanceId": "level-column-generator-b",
           "voxelObjectAssetId": "voxel-object/brush-column",
           "frame": {
@@ -172775,14 +172887,14 @@
             1.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 447,
+          "ownerEntityId": 445,
           "instanceId": "level-corner-ne",
           "voxelObjectAssetId": "voxel-object/brush-corner",
           "frame": {
@@ -172807,7 +172919,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 446,
+          "ownerEntityId": 444,
           "instanceId": "level-corner-nw",
           "voxelObjectAssetId": "voxel-object/brush-corner",
           "frame": {
@@ -172832,7 +172944,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 449,
+          "ownerEntityId": 447,
           "instanceId": "level-corner-se",
           "voxelObjectAssetId": "voxel-object/brush-corner",
           "frame": {
@@ -172841,7 +172953,7 @@
           "translation": [
             30.0,
             0.0,
-            51.0
+            49.0
           ],
           "rotation": [
             0.0,
@@ -172857,7 +172969,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 448,
+          "ownerEntityId": 446,
           "instanceId": "level-corner-sw",
           "voxelObjectAssetId": "voxel-object/brush-corner",
           "frame": {
@@ -172866,7 +172978,7 @@
           "translation": [
             0.0,
             0.0,
-            51.0
+            49.0
           ],
           "rotation": [
             0.0,
@@ -172882,16 +172994,16 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 442,
+          "ownerEntityId": 440,
           "instanceId": "level-doorway-owner-11",
           "voxelObjectAssetId": "voxel-object/brush-doorway",
           "frame": {
             "kind": "default"
           },
           "translation": [
-            3.3,
+            3.0,
             0.0,
-            16.875
+            17.0
           ],
           "rotation": [
             0.0,
@@ -172900,23 +173012,23 @@
             1.0
           ],
           "scale": [
-            1.536,
+            1.92,
             3.047619,
-            1.0
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 443,
+          "ownerEntityId": 441,
           "instanceId": "level-doorway-owner-12",
           "voxelObjectAssetId": "voxel-object/brush-doorway",
           "frame": {
             "kind": "default"
           },
           "translation": [
-            19.8,
+            20.0,
             0.0,
-            34.875
+            35.0
           ],
           "rotation": [
             0.0,
@@ -172925,23 +173037,23 @@
             1.0
           ],
           "scale": [
-            2.176,
+            2.56,
             3.047619,
-            1.0
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 444,
+          "ownerEntityId": 442,
           "instanceId": "level-doorway-owner-13",
           "voxelObjectAssetId": "voxel-object/brush-doorway",
           "frame": {
             "kind": "default"
           },
           "translation": [
-            21.8,
+            22.0,
             0.0,
-            29.875
+            30.0
           ],
           "rotation": [
             0.0,
@@ -172950,23 +173062,23 @@
             1.0
           ],
           "scale": [
-            2.176,
+            2.56,
             3.047619,
-            1.0
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 441,
+          "ownerEntityId": 439,
           "instanceId": "level-doorway-owner-3",
           "voxelObjectAssetId": "voxel-object/brush-doorway",
           "frame": {
             "kind": "default"
           },
           "translation": [
-            20.3,
+            20.0,
             0.0,
-            48.875
+            49.0
           ],
           "rotation": [
             0.0,
@@ -172975,23 +173087,23 @@
             1.0
           ],
           "scale": [
-            1.536,
+            1.92,
             3.047619,
-            1.0
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 445,
+          "ownerEntityId": 443,
           "instanceId": "level-doorway-owner-30",
           "voxelObjectAssetId": "voxel-object/brush-doorway",
           "frame": {
             "kind": "default"
           },
           "translation": [
-            8.3,
+            8.0,
             0.0,
-            16.875
+            17.0
           ],
           "rotation": [
             0.0,
@@ -173000,9 +173112,9 @@
             1.0
           ],
           "scale": [
-            4.096,
+            4.48,
             3.047619,
-            1.0
+            4.0
           ],
           "materialOverrides": []
         },
@@ -173707,7 +173819,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 457,
+          "ownerEntityId": 455,
           "instanceId": "level-relay-extraction",
           "voxelObjectAssetId": "voxel-object/brush-landmark-relay",
           "frame": {
@@ -173732,7 +173844,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 456,
+          "ownerEntityId": 454,
           "instanceId": "level-relay-generator",
           "voxelObjectAssetId": "voxel-object/brush-landmark-relay",
           "frame": {
@@ -173982,7 +174094,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 232,
+          "ownerEntityId": 231,
           "instanceId": "level-wall-x00-z09",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174007,9 +174119,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 237,
+          "ownerEntityId": 236,
           "instanceId": "level-wall-x00-z10",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -174025,14 +174137,14 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 239,
+          "ownerEntityId": 238,
           "instanceId": "level-wall-x00-z11",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174057,7 +174169,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 244,
+          "ownerEntityId": 243,
           "instanceId": "level-wall-x00-z12",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174082,7 +174194,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 249,
+          "ownerEntityId": 248,
           "instanceId": "level-wall-x00-z13",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174107,9 +174219,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 251,
+          "ownerEntityId": 250,
           "instanceId": "level-wall-x00-z14",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -174125,14 +174237,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 253,
+          "ownerEntityId": 252,
           "instanceId": "level-wall-x00-z15",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174157,7 +174269,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 255,
+          "ownerEntityId": 254,
           "instanceId": "level-wall-x00-z16",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174182,7 +174294,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 257,
+          "ownerEntityId": 256,
           "instanceId": "level-wall-x00-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174207,7 +174319,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 278,
+          "ownerEntityId": 277,
           "instanceId": "level-wall-x00-z18",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174232,7 +174344,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 282,
+          "ownerEntityId": 281,
           "instanceId": "level-wall-x00-z19",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174257,7 +174369,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 286,
+          "ownerEntityId": 285,
           "instanceId": "level-wall-x00-z20",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174282,7 +174394,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 292,
+          "ownerEntityId": 291,
           "instanceId": "level-wall-x00-z21",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174307,7 +174419,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 298,
+          "ownerEntityId": 297,
           "instanceId": "level-wall-x00-z22",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174332,9 +174444,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 302,
+          "ownerEntityId": 301,
           "instanceId": "level-wall-x00-z23",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -174350,14 +174462,14 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 311,
+          "ownerEntityId": 310,
           "instanceId": "level-wall-x00-z24",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174382,7 +174494,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 317,
+          "ownerEntityId": 316,
           "instanceId": "level-wall-x00-z25",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174407,7 +174519,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 323,
+          "ownerEntityId": 322,
           "instanceId": "level-wall-x00-z26",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174432,7 +174544,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 326,
+          "ownerEntityId": 325,
           "instanceId": "level-wall-x00-z27",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174457,9 +174569,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 328,
+          "ownerEntityId": 327,
           "instanceId": "level-wall-x00-z28",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -174475,14 +174587,14 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 330,
+          "ownerEntityId": 329,
           "instanceId": "level-wall-x00-z29",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174507,7 +174619,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 332,
+          "ownerEntityId": 331,
           "instanceId": "level-wall-x00-z30",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174532,7 +174644,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 344,
+          "ownerEntityId": 343,
           "instanceId": "level-wall-x00-z31",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174557,7 +174669,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 346,
+          "ownerEntityId": 345,
           "instanceId": "level-wall-x00-z32",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174582,7 +174694,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 348,
+          "ownerEntityId": 347,
           "instanceId": "level-wall-x00-z33",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174607,7 +174719,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 350,
+          "ownerEntityId": 349,
           "instanceId": "level-wall-x00-z34",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174632,7 +174744,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 352,
+          "ownerEntityId": 351,
           "instanceId": "level-wall-x00-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174657,7 +174769,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 379,
+          "ownerEntityId": 378,
           "instanceId": "level-wall-x00-z36",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174682,9 +174794,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 381,
+          "ownerEntityId": 380,
           "instanceId": "level-wall-x00-z37",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -174700,14 +174812,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 383,
+          "ownerEntityId": 382,
           "instanceId": "level-wall-x00-z38",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174732,7 +174844,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 385,
+          "ownerEntityId": 384,
           "instanceId": "level-wall-x00-z39",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174757,7 +174869,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 387,
+          "ownerEntityId": 386,
           "instanceId": "level-wall-x00-z40",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174782,7 +174894,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 391,
+          "ownerEntityId": 390,
           "instanceId": "level-wall-x00-z41",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174807,7 +174919,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 395,
+          "ownerEntityId": 394,
           "instanceId": "level-wall-x00-z42",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174832,7 +174944,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 397,
+          "ownerEntityId": 396,
           "instanceId": "level-wall-x00-z43",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174857,7 +174969,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 399,
+          "ownerEntityId": 398,
           "instanceId": "level-wall-x00-z44",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174882,7 +174994,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 401,
+          "ownerEntityId": 400,
           "instanceId": "level-wall-x00-z45",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174907,7 +175019,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 405,
+          "ownerEntityId": 404,
           "instanceId": "level-wall-x00-z46",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174932,7 +175044,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 409,
+          "ownerEntityId": 407,
           "instanceId": "level-wall-x00-z47",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174957,7 +175069,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 411,
+          "ownerEntityId": 409,
           "instanceId": "level-wall-x00-z48",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -174982,7 +175094,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 413,
+          "ownerEntityId": 411,
           "instanceId": "level-wall-x00-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175032,7 +175144,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 258,
+          "ownerEntityId": 257,
           "instanceId": "level-wall-x01-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175057,9 +175169,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 303,
+          "ownerEntityId": 302,
           "instanceId": "level-wall-x01-z23",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -175075,14 +175187,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 353,
+          "ownerEntityId": 352,
           "instanceId": "level-wall-x01-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175107,7 +175219,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 414,
+          "ownerEntityId": 412,
           "instanceId": "level-wall-x01-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175207,7 +175319,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 259,
+          "ownerEntityId": 258,
           "instanceId": "level-wall-x02-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175232,7 +175344,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 304,
+          "ownerEntityId": 303,
           "instanceId": "level-wall-x02-z23",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175257,9 +175369,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 354,
+          "ownerEntityId": 353,
           "instanceId": "level-wall-x02-z35",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -175275,14 +175387,14 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 415,
+          "ownerEntityId": 413,
           "instanceId": "level-wall-x02-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175382,7 +175494,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 305,
+          "ownerEntityId": 304,
           "instanceId": "level-wall-x03-z23",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175407,9 +175519,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 355,
+          "ownerEntityId": 354,
           "instanceId": "level-wall-x03-z35",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -175425,14 +175537,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 416,
+          "ownerEntityId": 414,
           "instanceId": "level-wall-x03-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175482,7 +175594,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 306,
+          "ownerEntityId": 305,
           "instanceId": "level-wall-x04-z23",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175507,7 +175619,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 356,
+          "ownerEntityId": 355,
           "instanceId": "level-wall-x04-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175532,7 +175644,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 417,
+          "ownerEntityId": 415,
           "instanceId": "level-wall-x04-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175582,7 +175694,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 307,
+          "ownerEntityId": 306,
           "instanceId": "level-wall-x05-z23",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175607,7 +175719,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 357,
+          "ownerEntityId": 356,
           "instanceId": "level-wall-x05-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175632,7 +175744,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 418,
+          "ownerEntityId": 416,
           "instanceId": "level-wall-x05-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175682,7 +175794,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 260,
+          "ownerEntityId": 259,
           "instanceId": "level-wall-x06-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175707,7 +175819,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 358,
+          "ownerEntityId": 357,
           "instanceId": "level-wall-x06-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175732,9 +175844,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 419,
+          "ownerEntityId": 417,
           "instanceId": "level-wall-x06-z49",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -175750,9 +175862,9 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
@@ -175782,7 +175894,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 261,
+          "ownerEntityId": 260,
           "instanceId": "level-wall-x07-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175807,7 +175919,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 359,
+          "ownerEntityId": 358,
           "instanceId": "level-wall-x07-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175832,7 +175944,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 420,
+          "ownerEntityId": 418,
           "instanceId": "level-wall-x07-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175882,7 +175994,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 279,
+          "ownerEntityId": 278,
           "instanceId": "level-wall-x08-z18",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175907,7 +176019,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 283,
+          "ownerEntityId": 282,
           "instanceId": "level-wall-x08-z19",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175932,7 +176044,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 287,
+          "ownerEntityId": 286,
           "instanceId": "level-wall-x08-z20",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175957,7 +176069,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 293,
+          "ownerEntityId": 292,
           "instanceId": "level-wall-x08-z21",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -175982,7 +176094,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 299,
+          "ownerEntityId": 298,
           "instanceId": "level-wall-x08-z22",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176007,7 +176119,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 308,
+          "ownerEntityId": 307,
           "instanceId": "level-wall-x08-z23",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176032,7 +176144,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 312,
+          "ownerEntityId": 311,
           "instanceId": "level-wall-x08-z24",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176057,7 +176169,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 318,
+          "ownerEntityId": 317,
           "instanceId": "level-wall-x08-z25",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176082,7 +176194,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 360,
+          "ownerEntityId": 359,
           "instanceId": "level-wall-x08-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176107,9 +176219,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 421,
+          "ownerEntityId": 419,
           "instanceId": "level-wall-x08-z49",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -176125,9 +176237,9 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
@@ -176157,7 +176269,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 361,
+          "ownerEntityId": 360,
           "instanceId": "level-wall-x09-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176182,7 +176294,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 422,
+          "ownerEntityId": 420,
           "instanceId": "level-wall-x09-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176257,7 +176369,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 233,
+          "ownerEntityId": 232,
           "instanceId": "level-wall-x10-z09",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -176282,7 +176394,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 362,
+          "ownerEntityId": 361,
           "instanceId": "level-wall-x10-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176307,7 +176419,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 423,
+          "ownerEntityId": 421,
           "instanceId": "level-wall-x10-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176357,32 +176469,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 229,
-          "instanceId": "level-wall-x11-z08",
-          "voxelObjectAssetId": "voxel-object/brush-wall-dense",
-          "frame": {
-            "kind": "default"
-          },
-          "translation": [
-            11.0,
-            0.0,
-            8.0
-          ],
-          "rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "scale": [
-            0.5614035,
-            2.245614,
-            4.0
-          ],
-          "materialOverrides": []
-        },
-        {
-          "ownerEntityId": 234,
+          "ownerEntityId": 233,
           "instanceId": "level-wall-x11-z09",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -176407,7 +176494,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 363,
+          "ownerEntityId": 362,
           "instanceId": "level-wall-x11-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176432,7 +176519,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 424,
+          "ownerEntityId": 422,
           "instanceId": "level-wall-x11-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176482,7 +176569,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 230,
+          "ownerEntityId": 229,
           "instanceId": "level-wall-x12-z08",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -176507,7 +176594,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 235,
+          "ownerEntityId": 234,
           "instanceId": "level-wall-x12-z09",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -176532,7 +176619,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 364,
+          "ownerEntityId": 363,
           "instanceId": "level-wall-x12-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176557,7 +176644,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 425,
+          "ownerEntityId": 423,
           "instanceId": "level-wall-x12-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176607,7 +176694,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 365,
+          "ownerEntityId": 364,
           "instanceId": "level-wall-x13-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176632,7 +176719,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 426,
+          "ownerEntityId": 424,
           "instanceId": "level-wall-x13-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176682,7 +176769,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 366,
+          "ownerEntityId": 365,
           "instanceId": "level-wall-x14-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176707,7 +176794,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 427,
+          "ownerEntityId": 425,
           "instanceId": "level-wall-x14-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176757,7 +176844,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 262,
+          "ownerEntityId": 261,
           "instanceId": "level-wall-x15-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176782,9 +176869,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 367,
+          "ownerEntityId": 366,
           "instanceId": "level-wall-x15-z35",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -176800,14 +176887,14 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 428,
+          "ownerEntityId": 426,
           "instanceId": "level-wall-x15-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176857,9 +176944,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 263,
+          "ownerEntityId": 262,
           "instanceId": "level-wall-x16-z17",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -176875,14 +176962,14 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 280,
+          "ownerEntityId": 279,
           "instanceId": "level-wall-x16-z18",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176907,7 +176994,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 284,
+          "ownerEntityId": 283,
           "instanceId": "level-wall-x16-z19",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176932,7 +177019,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 288,
+          "ownerEntityId": 287,
           "instanceId": "level-wall-x16-z20",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176957,7 +177044,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 294,
+          "ownerEntityId": 293,
           "instanceId": "level-wall-x16-z21",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -176982,7 +177069,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 300,
+          "ownerEntityId": 299,
           "instanceId": "level-wall-x16-z22",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177007,7 +177094,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 309,
+          "ownerEntityId": 308,
           "instanceId": "level-wall-x16-z23",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177032,7 +177119,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 313,
+          "ownerEntityId": 312,
           "instanceId": "level-wall-x16-z24",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177057,7 +177144,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 319,
+          "ownerEntityId": 318,
           "instanceId": "level-wall-x16-z25",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177082,7 +177169,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 324,
+          "ownerEntityId": 323,
           "instanceId": "level-wall-x16-z26",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177107,7 +177194,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 333,
+          "ownerEntityId": 332,
           "instanceId": "level-wall-x16-z30",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177132,9 +177219,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 368,
+          "ownerEntityId": 367,
           "instanceId": "level-wall-x16-z35",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -177150,14 +177237,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 429,
+          "ownerEntityId": 427,
           "instanceId": "level-wall-x16-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177207,9 +177294,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 264,
+          "ownerEntityId": 263,
           "instanceId": "level-wall-x17-z17",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -177225,14 +177312,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 334,
+          "ownerEntityId": 333,
           "instanceId": "level-wall-x17-z30",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177257,7 +177344,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 369,
+          "ownerEntityId": 368,
           "instanceId": "level-wall-x17-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177282,7 +177369,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 388,
+          "ownerEntityId": 387,
           "instanceId": "level-wall-x17-z40",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177307,7 +177394,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 392,
+          "ownerEntityId": 391,
           "instanceId": "level-wall-x17-z41",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177332,7 +177419,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 430,
+          "ownerEntityId": 428,
           "instanceId": "level-wall-x17-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177382,7 +177469,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 265,
+          "ownerEntityId": 264,
           "instanceId": "level-wall-x18-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177407,7 +177494,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 289,
+          "ownerEntityId": 288,
           "instanceId": "level-wall-x18-z20",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177432,7 +177519,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 295,
+          "ownerEntityId": 294,
           "instanceId": "level-wall-x18-z21",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177457,7 +177544,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 335,
+          "ownerEntityId": 334,
           "instanceId": "level-wall-x18-z30",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177482,7 +177569,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 370,
+          "ownerEntityId": 369,
           "instanceId": "level-wall-x18-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177507,7 +177594,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 389,
+          "ownerEntityId": 388,
           "instanceId": "level-wall-x18-z40",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177532,7 +177619,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 393,
+          "ownerEntityId": 392,
           "instanceId": "level-wall-x18-z41",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177557,7 +177644,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 431,
+          "ownerEntityId": 429,
           "instanceId": "level-wall-x18-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177607,7 +177694,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 266,
+          "ownerEntityId": 265,
           "instanceId": "level-wall-x19-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177632,7 +177719,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 290,
+          "ownerEntityId": 289,
           "instanceId": "level-wall-x19-z20",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177657,7 +177744,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 296,
+          "ownerEntityId": 295,
           "instanceId": "level-wall-x19-z21",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177682,7 +177769,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 336,
+          "ownerEntityId": 335,
           "instanceId": "level-wall-x19-z30",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177707,7 +177794,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 371,
+          "ownerEntityId": 370,
           "instanceId": "level-wall-x19-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177732,9 +177819,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 432,
+          "ownerEntityId": 430,
           "instanceId": "level-wall-x19-z49",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -177750,9 +177837,9 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
@@ -177782,7 +177869,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 240,
+          "ownerEntityId": 239,
           "instanceId": "level-wall-x20-z11",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177807,7 +177894,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 245,
+          "ownerEntityId": 244,
           "instanceId": "level-wall-x20-z12",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177832,7 +177919,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 267,
+          "ownerEntityId": 266,
           "instanceId": "level-wall-x20-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177857,7 +177944,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 337,
+          "ownerEntityId": 336,
           "instanceId": "level-wall-x20-z30",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177907,7 +177994,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 241,
+          "ownerEntityId": 240,
           "instanceId": "level-wall-x21-z11",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177932,7 +178019,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 246,
+          "ownerEntityId": 245,
           "instanceId": "level-wall-x21-z12",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -177957,7 +178044,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 268,
+          "ownerEntityId": 267,
           "instanceId": "level-wall-x21-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -177982,7 +178069,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 338,
+          "ownerEntityId": 337,
           "instanceId": "level-wall-x21-z30",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178032,7 +178119,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 242,
+          "ownerEntityId": 241,
           "instanceId": "level-wall-x22-z11",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -178057,7 +178144,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 247,
+          "ownerEntityId": 246,
           "instanceId": "level-wall-x22-z12",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -178082,7 +178169,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 269,
+          "ownerEntityId": 268,
           "instanceId": "level-wall-x22-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178132,7 +178219,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 270,
+          "ownerEntityId": 269,
           "instanceId": "level-wall-x23-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178157,7 +178244,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 433,
+          "ownerEntityId": 431,
           "instanceId": "level-wall-x23-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178207,7 +178294,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 271,
+          "ownerEntityId": 270,
           "instanceId": "level-wall-x24-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178232,7 +178319,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 372,
+          "ownerEntityId": 371,
           "instanceId": "level-wall-x24-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178257,9 +178344,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 434,
+          "ownerEntityId": 432,
           "instanceId": "level-wall-x24-z49",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -178275,9 +178362,9 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
@@ -178357,7 +178444,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 272,
+          "ownerEntityId": 271,
           "instanceId": "level-wall-x25-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178382,7 +178469,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 373,
+          "ownerEntityId": 372,
           "instanceId": "level-wall-x25-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178407,7 +178494,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 435,
+          "ownerEntityId": 433,
           "instanceId": "level-wall-x25-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178507,7 +178594,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 273,
+          "ownerEntityId": 272,
           "instanceId": "level-wall-x26-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178532,7 +178619,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 339,
+          "ownerEntityId": 338,
           "instanceId": "level-wall-x26-z30",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178557,7 +178644,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 374,
+          "ownerEntityId": 373,
           "instanceId": "level-wall-x26-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178582,7 +178669,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 402,
+          "ownerEntityId": 401,
           "instanceId": "level-wall-x26-z45",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -178607,7 +178694,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 406,
+          "ownerEntityId": 405,
           "instanceId": "level-wall-x26-z46",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -178632,7 +178719,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 436,
+          "ownerEntityId": 434,
           "instanceId": "level-wall-x26-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178732,7 +178819,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 274,
+          "ownerEntityId": 273,
           "instanceId": "level-wall-x27-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178757,7 +178844,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 314,
+          "ownerEntityId": 313,
           "instanceId": "level-wall-x27-z24",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -178782,7 +178869,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 320,
+          "ownerEntityId": 319,
           "instanceId": "level-wall-x27-z25",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -178807,7 +178894,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 340,
+          "ownerEntityId": 339,
           "instanceId": "level-wall-x27-z30",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178832,7 +178919,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 375,
+          "ownerEntityId": 374,
           "instanceId": "level-wall-x27-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178857,7 +178944,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 403,
+          "ownerEntityId": 402,
           "instanceId": "level-wall-x27-z45",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -178882,32 +178969,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 407,
-          "instanceId": "level-wall-x27-z46",
-          "voxelObjectAssetId": "voxel-object/brush-wall-dense",
-          "frame": {
-            "kind": "default"
-          },
-          "translation": [
-            27.0,
-            0.0,
-            46.0
-          ],
-          "rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "scale": [
-            0.5614035,
-            2.245614,
-            4.0
-          ],
-          "materialOverrides": []
-        },
-        {
-          "ownerEntityId": 437,
+          "ownerEntityId": 435,
           "instanceId": "level-wall-x27-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178957,7 +179019,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 275,
+          "ownerEntityId": 274,
           "instanceId": "level-wall-x28-z17",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -178982,7 +179044,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 315,
+          "ownerEntityId": 314,
           "instanceId": "level-wall-x28-z24",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -179007,7 +179069,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 321,
+          "ownerEntityId": 320,
           "instanceId": "level-wall-x28-z25",
           "voxelObjectAssetId": "voxel-object/brush-wall-dense",
           "frame": {
@@ -179032,9 +179094,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 341,
+          "ownerEntityId": 340,
           "instanceId": "level-wall-x28-z30",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -179050,14 +179112,14 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 376,
+          "ownerEntityId": 375,
           "instanceId": "level-wall-x28-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179082,7 +179144,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 438,
+          "ownerEntityId": 436,
           "instanceId": "level-wall-x28-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179132,9 +179194,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 276,
+          "ownerEntityId": 275,
           "instanceId": "level-wall-x29-z17",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -179150,16 +179212,16 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 342,
+          "ownerEntityId": 341,
           "instanceId": "level-wall-x29-z30",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -179175,14 +179237,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 377,
+          "ownerEntityId": 376,
           "instanceId": "level-wall-x29-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179207,7 +179269,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 439,
+          "ownerEntityId": 437,
           "instanceId": "level-wall-x29-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179432,7 +179494,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 231,
+          "ownerEntityId": 230,
           "instanceId": "level-wall-x30-z08",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179457,7 +179519,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 236,
+          "ownerEntityId": 235,
           "instanceId": "level-wall-x30-z09",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179482,9 +179544,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 238,
+          "ownerEntityId": 237,
           "instanceId": "level-wall-x30-z10",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -179500,14 +179562,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 243,
+          "ownerEntityId": 242,
           "instanceId": "level-wall-x30-z11",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179532,7 +179594,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 248,
+          "ownerEntityId": 247,
           "instanceId": "level-wall-x30-z12",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179557,9 +179619,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 250,
+          "ownerEntityId": 249,
           "instanceId": "level-wall-x30-z13",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -179575,14 +179637,14 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 252,
+          "ownerEntityId": 251,
           "instanceId": "level-wall-x30-z14",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179607,7 +179669,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 254,
+          "ownerEntityId": 253,
           "instanceId": "level-wall-x30-z15",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179632,7 +179694,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 256,
+          "ownerEntityId": 255,
           "instanceId": "level-wall-x30-z16",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179657,9 +179719,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 277,
+          "ownerEntityId": 276,
           "instanceId": "level-wall-x30-z17",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -179675,14 +179737,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 281,
+          "ownerEntityId": 280,
           "instanceId": "level-wall-x30-z18",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179707,7 +179769,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 285,
+          "ownerEntityId": 284,
           "instanceId": "level-wall-x30-z19",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179732,7 +179794,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 291,
+          "ownerEntityId": 290,
           "instanceId": "level-wall-x30-z20",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179757,7 +179819,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 297,
+          "ownerEntityId": 296,
           "instanceId": "level-wall-x30-z21",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179782,7 +179844,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 301,
+          "ownerEntityId": 300,
           "instanceId": "level-wall-x30-z22",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179807,7 +179869,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 310,
+          "ownerEntityId": 309,
           "instanceId": "level-wall-x30-z23",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179832,9 +179894,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 316,
+          "ownerEntityId": 315,
           "instanceId": "level-wall-x30-z24",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -179850,14 +179912,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 322,
+          "ownerEntityId": 321,
           "instanceId": "level-wall-x30-z25",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179882,7 +179944,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 325,
+          "ownerEntityId": 324,
           "instanceId": "level-wall-x30-z26",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179907,7 +179969,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 327,
+          "ownerEntityId": 326,
           "instanceId": "level-wall-x30-z27",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179932,9 +179994,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 329,
+          "ownerEntityId": 328,
           "instanceId": "level-wall-x30-z28",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -179950,14 +180012,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 331,
+          "ownerEntityId": 330,
           "instanceId": "level-wall-x30-z29",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -179982,7 +180044,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 343,
+          "ownerEntityId": 342,
           "instanceId": "level-wall-x30-z30",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180007,7 +180069,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 345,
+          "ownerEntityId": 344,
           "instanceId": "level-wall-x30-z31",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180032,7 +180094,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 347,
+          "ownerEntityId": 346,
           "instanceId": "level-wall-x30-z32",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180057,7 +180119,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 349,
+          "ownerEntityId": 348,
           "instanceId": "level-wall-x30-z33",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180082,7 +180144,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 351,
+          "ownerEntityId": 350,
           "instanceId": "level-wall-x30-z34",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180107,7 +180169,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 378,
+          "ownerEntityId": 377,
           "instanceId": "level-wall-x30-z35",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180132,9 +180194,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 380,
+          "ownerEntityId": 379,
           "instanceId": "level-wall-x30-z36",
-          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
@@ -180150,14 +180212,14 @@
             1.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 382,
+          "ownerEntityId": 381,
           "instanceId": "level-wall-x30-z37",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180182,7 +180244,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 384,
+          "ownerEntityId": 383,
           "instanceId": "level-wall-x30-z38",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180207,7 +180269,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 386,
+          "ownerEntityId": 385,
           "instanceId": "level-wall-x30-z39",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180232,7 +180294,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 390,
+          "ownerEntityId": 389,
           "instanceId": "level-wall-x30-z40",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180257,9 +180319,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 394,
+          "ownerEntityId": 393,
           "instanceId": "level-wall-x30-z41",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -180275,14 +180337,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 396,
+          "ownerEntityId": 395,
           "instanceId": "level-wall-x30-z42",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180307,7 +180369,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 398,
+          "ownerEntityId": 397,
           "instanceId": "level-wall-x30-z43",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180332,7 +180394,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 400,
+          "ownerEntityId": 399,
           "instanceId": "level-wall-x30-z44",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180357,7 +180419,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 404,
+          "ownerEntityId": 403,
           "instanceId": "level-wall-x30-z45",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180382,9 +180444,9 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 408,
+          "ownerEntityId": 406,
           "instanceId": "level-wall-x30-z46",
-          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
+          "voxelObjectAssetId": "voxel-object/brush-vent-panel",
           "frame": {
             "kind": "default"
           },
@@ -180400,14 +180462,14 @@
             1.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ],
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 410,
+          "ownerEntityId": 408,
           "instanceId": "level-wall-x30-z47",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180432,7 +180494,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 412,
+          "ownerEntityId": 410,
           "instanceId": "level-wall-x30-z48",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -180457,7 +180519,7 @@
           "materialOverrides": []
         },
         {
-          "ownerEntityId": 440,
+          "ownerEntityId": 438,
           "instanceId": "level-wall-x30-z49",
           "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
@@ -186159,10 +186221,10 @@
         },
         {
           "id": 229,
-          "name": "level-wall-x11-z08",
+          "name": "level-wall-x12-z08",
           "childOrder": 142,
           "translation": [
-            11.0,
+            12.0,
             0.0,
             8.0
           ],
@@ -186174,23 +186236,8 @@
         },
         {
           "id": 230,
-          "name": "level-wall-x12-z08",
-          "childOrder": 143,
-          "translation": [
-            12.0,
-            0.0,
-            8.0
-          ],
-          "scale": [
-            0.5614035,
-            2.245614,
-            4.0
-          ]
-        },
-        {
-          "id": 231,
           "name": "level-wall-x30-z08",
-          "childOrder": 144,
+          "childOrder": 143,
           "translation": [
             30.0,
             0.0,
@@ -186203,9 +186250,9 @@
           ]
         },
         {
-          "id": 232,
+          "id": 231,
           "name": "level-wall-x00-z09",
-          "childOrder": 145,
+          "childOrder": 144,
           "translation": [
             0.0,
             0.0,
@@ -186218,11 +186265,26 @@
           ]
         },
         {
-          "id": 233,
+          "id": 232,
           "name": "level-wall-x10-z09",
-          "childOrder": 146,
+          "childOrder": 145,
           "translation": [
             10.0,
+            0.0,
+            9.0
+          ],
+          "scale": [
+            0.5614035,
+            2.245614,
+            4.0
+          ]
+        },
+        {
+          "id": 233,
+          "name": "level-wall-x11-z09",
+          "childOrder": 146,
+          "translation": [
+            11.0,
             0.0,
             9.0
           ],
@@ -186234,10 +186296,10 @@
         },
         {
           "id": 234,
-          "name": "level-wall-x11-z09",
+          "name": "level-wall-x12-z09",
           "childOrder": 147,
           "translation": [
-            11.0,
+            12.0,
             0.0,
             9.0
           ],
@@ -186249,23 +186311,8 @@
         },
         {
           "id": 235,
-          "name": "level-wall-x12-z09",
-          "childOrder": 148,
-          "translation": [
-            12.0,
-            0.0,
-            9.0
-          ],
-          "scale": [
-            0.5614035,
-            2.245614,
-            4.0
-          ]
-        },
-        {
-          "id": 236,
           "name": "level-wall-x30-z09",
-          "childOrder": 149,
+          "childOrder": 148,
           "translation": [
             30.0,
             0.0,
@@ -186278,11 +186325,26 @@
           ]
         },
         {
-          "id": 237,
+          "id": 236,
           "name": "level-wall-x00-z10",
-          "childOrder": 150,
+          "childOrder": 149,
           "translation": [
             0.0,
+            0.0,
+            10.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
+            4.0
+          ]
+        },
+        {
+          "id": 237,
+          "name": "level-wall-x30-z10",
+          "childOrder": 150,
+          "translation": [
+            30.0,
             0.0,
             10.0
           ],
@@ -186294,23 +186356,8 @@
         },
         {
           "id": 238,
-          "name": "level-wall-x30-z10",
-          "childOrder": 151,
-          "translation": [
-            30.0,
-            0.0,
-            10.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 239,
           "name": "level-wall-x00-z11",
-          "childOrder": 152,
+          "childOrder": 151,
           "translation": [
             0.0,
             0.0,
@@ -186323,11 +186370,26 @@
           ]
         },
         {
-          "id": 240,
+          "id": 239,
           "name": "level-wall-x20-z11",
-          "childOrder": 153,
+          "childOrder": 152,
           "translation": [
             20.0,
+            0.0,
+            11.0
+          ],
+          "scale": [
+            0.5614035,
+            2.245614,
+            4.0
+          ]
+        },
+        {
+          "id": 240,
+          "name": "level-wall-x21-z11",
+          "childOrder": 153,
+          "translation": [
+            21.0,
             0.0,
             11.0
           ],
@@ -186339,10 +186401,10 @@
         },
         {
           "id": 241,
-          "name": "level-wall-x21-z11",
+          "name": "level-wall-x22-z11",
           "childOrder": 154,
           "translation": [
-            21.0,
+            22.0,
             0.0,
             11.0
           ],
@@ -186354,23 +186416,8 @@
         },
         {
           "id": 242,
-          "name": "level-wall-x22-z11",
-          "childOrder": 155,
-          "translation": [
-            22.0,
-            0.0,
-            11.0
-          ],
-          "scale": [
-            0.5614035,
-            2.245614,
-            4.0
-          ]
-        },
-        {
-          "id": 243,
           "name": "level-wall-x30-z11",
-          "childOrder": 156,
+          "childOrder": 155,
           "translation": [
             30.0,
             0.0,
@@ -186383,9 +186430,9 @@
           ]
         },
         {
-          "id": 244,
+          "id": 243,
           "name": "level-wall-x00-z12",
-          "childOrder": 157,
+          "childOrder": 156,
           "translation": [
             0.0,
             0.0,
@@ -186398,11 +186445,26 @@
           ]
         },
         {
-          "id": 245,
+          "id": 244,
           "name": "level-wall-x20-z12",
-          "childOrder": 158,
+          "childOrder": 157,
           "translation": [
             20.0,
+            0.0,
+            12.0
+          ],
+          "scale": [
+            0.5614035,
+            2.245614,
+            4.0
+          ]
+        },
+        {
+          "id": 245,
+          "name": "level-wall-x21-z12",
+          "childOrder": 158,
+          "translation": [
+            21.0,
             0.0,
             12.0
           ],
@@ -186414,10 +186476,10 @@
         },
         {
           "id": 246,
-          "name": "level-wall-x21-z12",
+          "name": "level-wall-x22-z12",
           "childOrder": 159,
           "translation": [
-            21.0,
+            22.0,
             0.0,
             12.0
           ],
@@ -186429,23 +186491,8 @@
         },
         {
           "id": 247,
-          "name": "level-wall-x22-z12",
-          "childOrder": 160,
-          "translation": [
-            22.0,
-            0.0,
-            12.0
-          ],
-          "scale": [
-            0.5614035,
-            2.245614,
-            4.0
-          ]
-        },
-        {
-          "id": 248,
           "name": "level-wall-x30-z12",
-          "childOrder": 161,
+          "childOrder": 160,
           "translation": [
             30.0,
             0.0,
@@ -186458,11 +186505,26 @@
           ]
         },
         {
-          "id": 249,
+          "id": 248,
           "name": "level-wall-x00-z13",
-          "childOrder": 162,
+          "childOrder": 161,
           "translation": [
             0.0,
+            0.0,
+            13.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
+            4.0
+          ]
+        },
+        {
+          "id": 249,
+          "name": "level-wall-x30-z13",
+          "childOrder": 162,
+          "translation": [
+            30.0,
             0.0,
             13.0
           ],
@@ -186474,12 +186536,12 @@
         },
         {
           "id": 250,
-          "name": "level-wall-x30-z13",
+          "name": "level-wall-x00-z14",
           "childOrder": 163,
           "translation": [
-            30.0,
             0.0,
-            13.0
+            0.0,
+            14.0
           ],
           "scale": [
             0.6666667,
@@ -186489,10 +186551,10 @@
         },
         {
           "id": 251,
-          "name": "level-wall-x00-z14",
+          "name": "level-wall-x30-z14",
           "childOrder": 164,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             14.0
           ],
@@ -186504,12 +186566,12 @@
         },
         {
           "id": 252,
-          "name": "level-wall-x30-z14",
+          "name": "level-wall-x00-z15",
           "childOrder": 165,
           "translation": [
-            30.0,
             0.0,
-            14.0
+            0.0,
+            15.0
           ],
           "scale": [
             0.64,
@@ -186519,10 +186581,10 @@
         },
         {
           "id": 253,
-          "name": "level-wall-x00-z15",
+          "name": "level-wall-x30-z15",
           "childOrder": 166,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             15.0
           ],
@@ -186534,12 +186596,12 @@
         },
         {
           "id": 254,
-          "name": "level-wall-x30-z15",
+          "name": "level-wall-x00-z16",
           "childOrder": 167,
           "translation": [
-            30.0,
             0.0,
-            15.0
+            0.0,
+            16.0
           ],
           "scale": [
             0.64,
@@ -186549,10 +186611,10 @@
         },
         {
           "id": 255,
-          "name": "level-wall-x00-z16",
+          "name": "level-wall-x30-z16",
           "childOrder": 168,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             16.0
           ],
@@ -186564,12 +186626,12 @@
         },
         {
           "id": 256,
-          "name": "level-wall-x30-z16",
+          "name": "level-wall-x00-z17",
           "childOrder": 169,
           "translation": [
-            30.0,
             0.0,
-            16.0
+            0.0,
+            17.0
           ],
           "scale": [
             0.64,
@@ -186579,10 +186641,10 @@
         },
         {
           "id": 257,
-          "name": "level-wall-x00-z17",
+          "name": "level-wall-x01-z17",
           "childOrder": 170,
           "translation": [
-            0.0,
+            1.0,
             0.0,
             17.0
           ],
@@ -186594,10 +186656,10 @@
         },
         {
           "id": 258,
-          "name": "level-wall-x01-z17",
+          "name": "level-wall-x02-z17",
           "childOrder": 171,
           "translation": [
-            1.0,
+            2.0,
             0.0,
             17.0
           ],
@@ -186609,10 +186671,10 @@
         },
         {
           "id": 259,
-          "name": "level-wall-x02-z17",
+          "name": "level-wall-x06-z17",
           "childOrder": 172,
           "translation": [
-            2.0,
+            6.0,
             0.0,
             17.0
           ],
@@ -186624,10 +186686,10 @@
         },
         {
           "id": 260,
-          "name": "level-wall-x06-z17",
+          "name": "level-wall-x07-z17",
           "childOrder": 173,
           "translation": [
-            6.0,
+            7.0,
             0.0,
             17.0
           ],
@@ -186639,10 +186701,10 @@
         },
         {
           "id": 261,
-          "name": "level-wall-x07-z17",
+          "name": "level-wall-x15-z17",
           "childOrder": 174,
           "translation": [
-            7.0,
+            15.0,
             0.0,
             17.0
           ],
@@ -186654,10 +186716,10 @@
         },
         {
           "id": 262,
-          "name": "level-wall-x15-z17",
+          "name": "level-wall-x16-z17",
           "childOrder": 175,
           "translation": [
-            15.0,
+            16.0,
             0.0,
             17.0
           ],
@@ -186669,10 +186731,10 @@
         },
         {
           "id": 263,
-          "name": "level-wall-x16-z17",
+          "name": "level-wall-x17-z17",
           "childOrder": 176,
           "translation": [
-            16.0,
+            17.0,
             0.0,
             17.0
           ],
@@ -186684,10 +186746,10 @@
         },
         {
           "id": 264,
-          "name": "level-wall-x17-z17",
+          "name": "level-wall-x18-z17",
           "childOrder": 177,
           "translation": [
-            17.0,
+            18.0,
             0.0,
             17.0
           ],
@@ -186699,10 +186761,10 @@
         },
         {
           "id": 265,
-          "name": "level-wall-x18-z17",
+          "name": "level-wall-x19-z17",
           "childOrder": 178,
           "translation": [
-            18.0,
+            19.0,
             0.0,
             17.0
           ],
@@ -186714,10 +186776,10 @@
         },
         {
           "id": 266,
-          "name": "level-wall-x19-z17",
+          "name": "level-wall-x20-z17",
           "childOrder": 179,
           "translation": [
-            19.0,
+            20.0,
             0.0,
             17.0
           ],
@@ -186729,10 +186791,10 @@
         },
         {
           "id": 267,
-          "name": "level-wall-x20-z17",
+          "name": "level-wall-x21-z17",
           "childOrder": 180,
           "translation": [
-            20.0,
+            21.0,
             0.0,
             17.0
           ],
@@ -186744,23 +186806,8 @@
         },
         {
           "id": 268,
-          "name": "level-wall-x21-z17",
-          "childOrder": 181,
-          "translation": [
-            21.0,
-            0.0,
-            17.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 269,
           "name": "level-wall-x22-z17",
-          "childOrder": 182,
+          "childOrder": 181,
           "translation": [
             22.0,
             0.0,
@@ -186773,9 +186820,9 @@
           ]
         },
         {
-          "id": 270,
+          "id": 269,
           "name": "level-wall-x23-z17",
-          "childOrder": 183,
+          "childOrder": 182,
           "translation": [
             23.0,
             0.0,
@@ -186788,9 +186835,9 @@
           ]
         },
         {
-          "id": 271,
+          "id": 270,
           "name": "level-wall-x24-z17",
-          "childOrder": 184,
+          "childOrder": 183,
           "translation": [
             24.0,
             0.0,
@@ -186803,9 +186850,9 @@
           ]
         },
         {
-          "id": 272,
+          "id": 271,
           "name": "level-wall-x25-z17",
-          "childOrder": 185,
+          "childOrder": 184,
           "translation": [
             25.0,
             0.0,
@@ -186818,9 +186865,9 @@
           ]
         },
         {
-          "id": 273,
+          "id": 272,
           "name": "level-wall-x26-z17",
-          "childOrder": 186,
+          "childOrder": 185,
           "translation": [
             26.0,
             0.0,
@@ -186833,9 +186880,9 @@
           ]
         },
         {
-          "id": 274,
+          "id": 273,
           "name": "level-wall-x27-z17",
-          "childOrder": 187,
+          "childOrder": 186,
           "translation": [
             27.0,
             0.0,
@@ -186848,9 +186895,9 @@
           ]
         },
         {
-          "id": 275,
+          "id": 274,
           "name": "level-wall-x28-z17",
-          "childOrder": 188,
+          "childOrder": 187,
           "translation": [
             28.0,
             0.0,
@@ -186863,11 +186910,26 @@
           ]
         },
         {
-          "id": 276,
+          "id": 275,
           "name": "level-wall-x29-z17",
-          "childOrder": 189,
+          "childOrder": 188,
           "translation": [
             29.0,
+            0.0,
+            17.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
+            4.0
+          ]
+        },
+        {
+          "id": 276,
+          "name": "level-wall-x30-z17",
+          "childOrder": 189,
+          "translation": [
+            30.0,
             0.0,
             17.0
           ],
@@ -186879,12 +186941,12 @@
         },
         {
           "id": 277,
-          "name": "level-wall-x30-z17",
+          "name": "level-wall-x00-z18",
           "childOrder": 190,
           "translation": [
-            30.0,
             0.0,
-            17.0
+            0.0,
+            18.0
           ],
           "scale": [
             0.64,
@@ -186894,10 +186956,10 @@
         },
         {
           "id": 278,
-          "name": "level-wall-x00-z18",
+          "name": "level-wall-x08-z18",
           "childOrder": 191,
           "translation": [
-            0.0,
+            8.0,
             0.0,
             18.0
           ],
@@ -186909,10 +186971,10 @@
         },
         {
           "id": 279,
-          "name": "level-wall-x08-z18",
+          "name": "level-wall-x16-z18",
           "childOrder": 192,
           "translation": [
-            8.0,
+            16.0,
             0.0,
             18.0
           ],
@@ -186924,10 +186986,10 @@
         },
         {
           "id": 280,
-          "name": "level-wall-x16-z18",
+          "name": "level-wall-x30-z18",
           "childOrder": 193,
           "translation": [
-            16.0,
+            30.0,
             0.0,
             18.0
           ],
@@ -186939,12 +187001,12 @@
         },
         {
           "id": 281,
-          "name": "level-wall-x30-z18",
+          "name": "level-wall-x00-z19",
           "childOrder": 194,
           "translation": [
-            30.0,
             0.0,
-            18.0
+            0.0,
+            19.0
           ],
           "scale": [
             0.64,
@@ -186954,10 +187016,10 @@
         },
         {
           "id": 282,
-          "name": "level-wall-x00-z19",
+          "name": "level-wall-x08-z19",
           "childOrder": 195,
           "translation": [
-            0.0,
+            8.0,
             0.0,
             19.0
           ],
@@ -186969,10 +187031,10 @@
         },
         {
           "id": 283,
-          "name": "level-wall-x08-z19",
+          "name": "level-wall-x16-z19",
           "childOrder": 196,
           "translation": [
-            8.0,
+            16.0,
             0.0,
             19.0
           ],
@@ -186984,10 +187046,10 @@
         },
         {
           "id": 284,
-          "name": "level-wall-x16-z19",
+          "name": "level-wall-x30-z19",
           "childOrder": 197,
           "translation": [
-            16.0,
+            30.0,
             0.0,
             19.0
           ],
@@ -186999,12 +187061,12 @@
         },
         {
           "id": 285,
-          "name": "level-wall-x30-z19",
+          "name": "level-wall-x00-z20",
           "childOrder": 198,
           "translation": [
-            30.0,
             0.0,
-            19.0
+            0.0,
+            20.0
           ],
           "scale": [
             0.64,
@@ -187014,10 +187076,10 @@
         },
         {
           "id": 286,
-          "name": "level-wall-x00-z20",
+          "name": "level-wall-x08-z20",
           "childOrder": 199,
           "translation": [
-            0.0,
+            8.0,
             0.0,
             20.0
           ],
@@ -187029,10 +187091,10 @@
         },
         {
           "id": 287,
-          "name": "level-wall-x08-z20",
+          "name": "level-wall-x16-z20",
           "childOrder": 200,
           "translation": [
-            8.0,
+            16.0,
             0.0,
             20.0
           ],
@@ -187044,25 +187106,25 @@
         },
         {
           "id": 288,
-          "name": "level-wall-x16-z20",
+          "name": "level-wall-x18-z20",
           "childOrder": 201,
           "translation": [
-            16.0,
+            18.0,
             0.0,
             20.0
           ],
           "scale": [
-            0.64,
-            2.56,
+            0.5614035,
+            2.245614,
             4.0
           ]
         },
         {
           "id": 289,
-          "name": "level-wall-x18-z20",
+          "name": "level-wall-x19-z20",
           "childOrder": 202,
           "translation": [
-            18.0,
+            19.0,
             0.0,
             20.0
           ],
@@ -187074,23 +187136,8 @@
         },
         {
           "id": 290,
-          "name": "level-wall-x19-z20",
-          "childOrder": 203,
-          "translation": [
-            19.0,
-            0.0,
-            20.0
-          ],
-          "scale": [
-            0.5614035,
-            2.245614,
-            4.0
-          ]
-        },
-        {
-          "id": 291,
           "name": "level-wall-x30-z20",
-          "childOrder": 204,
+          "childOrder": 203,
           "translation": [
             30.0,
             0.0,
@@ -187103,9 +187150,9 @@
           ]
         },
         {
-          "id": 292,
+          "id": 291,
           "name": "level-wall-x00-z21",
-          "childOrder": 205,
+          "childOrder": 204,
           "translation": [
             0.0,
             0.0,
@@ -187118,9 +187165,9 @@
           ]
         },
         {
-          "id": 293,
+          "id": 292,
           "name": "level-wall-x08-z21",
-          "childOrder": 206,
+          "childOrder": 205,
           "translation": [
             8.0,
             0.0,
@@ -187133,9 +187180,9 @@
           ]
         },
         {
-          "id": 294,
+          "id": 293,
           "name": "level-wall-x16-z21",
-          "childOrder": 207,
+          "childOrder": 206,
           "translation": [
             16.0,
             0.0,
@@ -187148,9 +187195,9 @@
           ]
         },
         {
-          "id": 295,
+          "id": 294,
           "name": "level-wall-x18-z21",
-          "childOrder": 208,
+          "childOrder": 207,
           "translation": [
             18.0,
             0.0,
@@ -187163,9 +187210,9 @@
           ]
         },
         {
-          "id": 296,
+          "id": 295,
           "name": "level-wall-x19-z21",
-          "childOrder": 209,
+          "childOrder": 208,
           "translation": [
             19.0,
             0.0,
@@ -187178,9 +187225,9 @@
           ]
         },
         {
-          "id": 297,
+          "id": 296,
           "name": "level-wall-x30-z21",
-          "childOrder": 210,
+          "childOrder": 209,
           "translation": [
             30.0,
             0.0,
@@ -187193,9 +187240,9 @@
           ]
         },
         {
-          "id": 298,
+          "id": 297,
           "name": "level-wall-x00-z22",
-          "childOrder": 211,
+          "childOrder": 210,
           "translation": [
             0.0,
             0.0,
@@ -187208,9 +187255,9 @@
           ]
         },
         {
-          "id": 299,
+          "id": 298,
           "name": "level-wall-x08-z22",
-          "childOrder": 212,
+          "childOrder": 211,
           "translation": [
             8.0,
             0.0,
@@ -187223,9 +187270,9 @@
           ]
         },
         {
-          "id": 300,
+          "id": 299,
           "name": "level-wall-x16-z22",
-          "childOrder": 213,
+          "childOrder": 212,
           "translation": [
             16.0,
             0.0,
@@ -187238,9 +187285,9 @@
           ]
         },
         {
-          "id": 301,
+          "id": 300,
           "name": "level-wall-x30-z22",
-          "childOrder": 214,
+          "childOrder": 213,
           "translation": [
             30.0,
             0.0,
@@ -187253,11 +187300,26 @@
           ]
         },
         {
-          "id": 302,
+          "id": 301,
           "name": "level-wall-x00-z23",
-          "childOrder": 215,
+          "childOrder": 214,
           "translation": [
             0.0,
+            0.0,
+            23.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
+            4.0
+          ]
+        },
+        {
+          "id": 302,
+          "name": "level-wall-x01-z23",
+          "childOrder": 215,
+          "translation": [
+            1.0,
             0.0,
             23.0
           ],
@@ -187269,23 +187331,8 @@
         },
         {
           "id": 303,
-          "name": "level-wall-x01-z23",
-          "childOrder": 216,
-          "translation": [
-            1.0,
-            0.0,
-            23.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 304,
           "name": "level-wall-x02-z23",
-          "childOrder": 217,
+          "childOrder": 216,
           "translation": [
             2.0,
             0.0,
@@ -187298,9 +187345,9 @@
           ]
         },
         {
-          "id": 305,
+          "id": 304,
           "name": "level-wall-x03-z23",
-          "childOrder": 218,
+          "childOrder": 217,
           "translation": [
             3.0,
             0.0,
@@ -187313,9 +187360,9 @@
           ]
         },
         {
-          "id": 306,
+          "id": 305,
           "name": "level-wall-x04-z23",
-          "childOrder": 219,
+          "childOrder": 218,
           "translation": [
             4.0,
             0.0,
@@ -187328,9 +187375,9 @@
           ]
         },
         {
-          "id": 307,
+          "id": 306,
           "name": "level-wall-x05-z23",
-          "childOrder": 220,
+          "childOrder": 219,
           "translation": [
             5.0,
             0.0,
@@ -187343,11 +187390,26 @@
           ]
         },
         {
-          "id": 308,
+          "id": 307,
           "name": "level-wall-x08-z23",
-          "childOrder": 221,
+          "childOrder": 220,
           "translation": [
             8.0,
+            0.0,
+            23.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
+            4.0
+          ]
+        },
+        {
+          "id": 308,
+          "name": "level-wall-x16-z23",
+          "childOrder": 221,
+          "translation": [
+            16.0,
             0.0,
             23.0
           ],
@@ -187359,10 +187421,10 @@
         },
         {
           "id": 309,
-          "name": "level-wall-x16-z23",
+          "name": "level-wall-x30-z23",
           "childOrder": 222,
           "translation": [
-            16.0,
+            30.0,
             0.0,
             23.0
           ],
@@ -187374,12 +187436,12 @@
         },
         {
           "id": 310,
-          "name": "level-wall-x30-z23",
+          "name": "level-wall-x00-z24",
           "childOrder": 223,
           "translation": [
-            30.0,
             0.0,
-            23.0
+            0.0,
+            24.0
           ],
           "scale": [
             0.64,
@@ -187389,10 +187451,10 @@
         },
         {
           "id": 311,
-          "name": "level-wall-x00-z24",
+          "name": "level-wall-x08-z24",
           "childOrder": 224,
           "translation": [
-            0.0,
+            8.0,
             0.0,
             24.0
           ],
@@ -187404,10 +187466,10 @@
         },
         {
           "id": 312,
-          "name": "level-wall-x08-z24",
+          "name": "level-wall-x16-z24",
           "childOrder": 225,
           "translation": [
-            8.0,
+            16.0,
             0.0,
             24.0
           ],
@@ -187419,23 +187481,8 @@
         },
         {
           "id": 313,
-          "name": "level-wall-x16-z24",
-          "childOrder": 226,
-          "translation": [
-            16.0,
-            0.0,
-            24.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 314,
           "name": "level-wall-x27-z24",
-          "childOrder": 227,
+          "childOrder": 226,
           "translation": [
             27.0,
             0.0,
@@ -187448,9 +187495,9 @@
           ]
         },
         {
-          "id": 315,
+          "id": 314,
           "name": "level-wall-x28-z24",
-          "childOrder": 228,
+          "childOrder": 227,
           "translation": [
             28.0,
             0.0,
@@ -187463,24 +187510,24 @@
           ]
         },
         {
-          "id": 316,
+          "id": 315,
           "name": "level-wall-x30-z24",
-          "childOrder": 229,
+          "childOrder": 228,
           "translation": [
             30.0,
             0.0,
             24.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ]
         },
         {
-          "id": 317,
+          "id": 316,
           "name": "level-wall-x00-z25",
-          "childOrder": 230,
+          "childOrder": 229,
           "translation": [
             0.0,
             0.0,
@@ -187493,9 +187540,9 @@
           ]
         },
         {
-          "id": 318,
+          "id": 317,
           "name": "level-wall-x08-z25",
-          "childOrder": 231,
+          "childOrder": 230,
           "translation": [
             8.0,
             0.0,
@@ -187508,9 +187555,9 @@
           ]
         },
         {
-          "id": 319,
+          "id": 318,
           "name": "level-wall-x16-z25",
-          "childOrder": 232,
+          "childOrder": 231,
           "translation": [
             16.0,
             0.0,
@@ -187523,9 +187570,9 @@
           ]
         },
         {
-          "id": 320,
+          "id": 319,
           "name": "level-wall-x27-z25",
-          "childOrder": 233,
+          "childOrder": 232,
           "translation": [
             27.0,
             0.0,
@@ -187538,9 +187585,9 @@
           ]
         },
         {
-          "id": 321,
+          "id": 320,
           "name": "level-wall-x28-z25",
-          "childOrder": 234,
+          "childOrder": 233,
           "translation": [
             28.0,
             0.0,
@@ -187553,9 +187600,9 @@
           ]
         },
         {
-          "id": 322,
+          "id": 321,
           "name": "level-wall-x30-z25",
-          "childOrder": 235,
+          "childOrder": 234,
           "translation": [
             30.0,
             0.0,
@@ -187568,11 +187615,26 @@
           ]
         },
         {
-          "id": 323,
+          "id": 322,
           "name": "level-wall-x00-z26",
-          "childOrder": 236,
+          "childOrder": 235,
           "translation": [
             0.0,
+            0.0,
+            26.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
+            4.0
+          ]
+        },
+        {
+          "id": 323,
+          "name": "level-wall-x16-z26",
+          "childOrder": 236,
+          "translation": [
+            16.0,
             0.0,
             26.0
           ],
@@ -187584,10 +187646,10 @@
         },
         {
           "id": 324,
-          "name": "level-wall-x16-z26",
+          "name": "level-wall-x30-z26",
           "childOrder": 237,
           "translation": [
-            16.0,
+            30.0,
             0.0,
             26.0
           ],
@@ -187599,12 +187661,12 @@
         },
         {
           "id": 325,
-          "name": "level-wall-x30-z26",
+          "name": "level-wall-x00-z27",
           "childOrder": 238,
           "translation": [
-            30.0,
             0.0,
-            26.0
+            0.0,
+            27.0
           ],
           "scale": [
             0.64,
@@ -187614,10 +187676,10 @@
         },
         {
           "id": 326,
-          "name": "level-wall-x00-z27",
+          "name": "level-wall-x30-z27",
           "childOrder": 239,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             27.0
           ],
@@ -187629,12 +187691,12 @@
         },
         {
           "id": 327,
-          "name": "level-wall-x30-z27",
+          "name": "level-wall-x00-z28",
           "childOrder": 240,
           "translation": [
-            30.0,
             0.0,
-            27.0
+            0.0,
+            28.0
           ],
           "scale": [
             0.64,
@@ -187644,10 +187706,10 @@
         },
         {
           "id": 328,
-          "name": "level-wall-x00-z28",
+          "name": "level-wall-x30-z28",
           "childOrder": 241,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             28.0
           ],
@@ -187659,12 +187721,12 @@
         },
         {
           "id": 329,
-          "name": "level-wall-x30-z28",
+          "name": "level-wall-x00-z29",
           "childOrder": 242,
           "translation": [
-            30.0,
             0.0,
-            28.0
+            0.0,
+            29.0
           ],
           "scale": [
             0.64,
@@ -187674,10 +187736,10 @@
         },
         {
           "id": 330,
-          "name": "level-wall-x00-z29",
+          "name": "level-wall-x30-z29",
           "childOrder": 243,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             29.0
           ],
@@ -187689,23 +187751,8 @@
         },
         {
           "id": 331,
-          "name": "level-wall-x30-z29",
-          "childOrder": 244,
-          "translation": [
-            30.0,
-            0.0,
-            29.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 332,
           "name": "level-wall-x00-z30",
-          "childOrder": 245,
+          "childOrder": 244,
           "translation": [
             0.0,
             0.0,
@@ -187718,9 +187765,9 @@
           ]
         },
         {
-          "id": 333,
+          "id": 332,
           "name": "level-wall-x16-z30",
-          "childOrder": 246,
+          "childOrder": 245,
           "translation": [
             16.0,
             0.0,
@@ -187733,9 +187780,9 @@
           ]
         },
         {
-          "id": 334,
+          "id": 333,
           "name": "level-wall-x17-z30",
-          "childOrder": 247,
+          "childOrder": 246,
           "translation": [
             17.0,
             0.0,
@@ -187748,9 +187795,9 @@
           ]
         },
         {
-          "id": 335,
+          "id": 334,
           "name": "level-wall-x18-z30",
-          "childOrder": 248,
+          "childOrder": 247,
           "translation": [
             18.0,
             0.0,
@@ -187763,9 +187810,9 @@
           ]
         },
         {
-          "id": 336,
+          "id": 335,
           "name": "level-wall-x19-z30",
-          "childOrder": 249,
+          "childOrder": 248,
           "translation": [
             19.0,
             0.0,
@@ -187778,9 +187825,9 @@
           ]
         },
         {
-          "id": 337,
+          "id": 336,
           "name": "level-wall-x20-z30",
-          "childOrder": 250,
+          "childOrder": 249,
           "translation": [
             20.0,
             0.0,
@@ -187793,9 +187840,9 @@
           ]
         },
         {
-          "id": 338,
+          "id": 337,
           "name": "level-wall-x21-z30",
-          "childOrder": 251,
+          "childOrder": 250,
           "translation": [
             21.0,
             0.0,
@@ -187808,9 +187855,9 @@
           ]
         },
         {
-          "id": 339,
+          "id": 338,
           "name": "level-wall-x26-z30",
-          "childOrder": 252,
+          "childOrder": 251,
           "translation": [
             26.0,
             0.0,
@@ -187823,9 +187870,9 @@
           ]
         },
         {
-          "id": 340,
+          "id": 339,
           "name": "level-wall-x27-z30",
-          "childOrder": 253,
+          "childOrder": 252,
           "translation": [
             27.0,
             0.0,
@@ -187838,11 +187885,26 @@
           ]
         },
         {
-          "id": 341,
+          "id": 340,
           "name": "level-wall-x28-z30",
-          "childOrder": 254,
+          "childOrder": 253,
           "translation": [
             28.0,
+            0.0,
+            30.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
+            4.0
+          ]
+        },
+        {
+          "id": 341,
+          "name": "level-wall-x29-z30",
+          "childOrder": 254,
+          "translation": [
+            29.0,
             0.0,
             30.0
           ],
@@ -187854,10 +187916,10 @@
         },
         {
           "id": 342,
-          "name": "level-wall-x29-z30",
+          "name": "level-wall-x30-z30",
           "childOrder": 255,
           "translation": [
-            29.0,
+            30.0,
             0.0,
             30.0
           ],
@@ -187869,12 +187931,12 @@
         },
         {
           "id": 343,
-          "name": "level-wall-x30-z30",
+          "name": "level-wall-x00-z31",
           "childOrder": 256,
           "translation": [
-            30.0,
             0.0,
-            30.0
+            0.0,
+            31.0
           ],
           "scale": [
             0.64,
@@ -187884,10 +187946,10 @@
         },
         {
           "id": 344,
-          "name": "level-wall-x00-z31",
+          "name": "level-wall-x30-z31",
           "childOrder": 257,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             31.0
           ],
@@ -187899,12 +187961,12 @@
         },
         {
           "id": 345,
-          "name": "level-wall-x30-z31",
+          "name": "level-wall-x00-z32",
           "childOrder": 258,
           "translation": [
-            30.0,
             0.0,
-            31.0
+            0.0,
+            32.0
           ],
           "scale": [
             0.64,
@@ -187914,10 +187976,10 @@
         },
         {
           "id": 346,
-          "name": "level-wall-x00-z32",
+          "name": "level-wall-x30-z32",
           "childOrder": 259,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             32.0
           ],
@@ -187929,12 +187991,12 @@
         },
         {
           "id": 347,
-          "name": "level-wall-x30-z32",
+          "name": "level-wall-x00-z33",
           "childOrder": 260,
           "translation": [
-            30.0,
             0.0,
-            32.0
+            0.0,
+            33.0
           ],
           "scale": [
             0.64,
@@ -187944,10 +188006,10 @@
         },
         {
           "id": 348,
-          "name": "level-wall-x00-z33",
+          "name": "level-wall-x30-z33",
           "childOrder": 261,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             33.0
           ],
@@ -187959,12 +188021,12 @@
         },
         {
           "id": 349,
-          "name": "level-wall-x30-z33",
+          "name": "level-wall-x00-z34",
           "childOrder": 262,
           "translation": [
-            30.0,
             0.0,
-            33.0
+            0.0,
+            34.0
           ],
           "scale": [
             0.64,
@@ -187974,10 +188036,10 @@
         },
         {
           "id": 350,
-          "name": "level-wall-x00-z34",
+          "name": "level-wall-x30-z34",
           "childOrder": 263,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             34.0
           ],
@@ -187989,23 +188051,8 @@
         },
         {
           "id": 351,
-          "name": "level-wall-x30-z34",
-          "childOrder": 264,
-          "translation": [
-            30.0,
-            0.0,
-            34.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 352,
           "name": "level-wall-x00-z35",
-          "childOrder": 265,
+          "childOrder": 264,
           "translation": [
             0.0,
             0.0,
@@ -188018,9 +188065,9 @@
           ]
         },
         {
-          "id": 353,
+          "id": 352,
           "name": "level-wall-x01-z35",
-          "childOrder": 266,
+          "childOrder": 265,
           "translation": [
             1.0,
             0.0,
@@ -188033,11 +188080,26 @@
           ]
         },
         {
-          "id": 354,
+          "id": 353,
           "name": "level-wall-x02-z35",
-          "childOrder": 267,
+          "childOrder": 266,
           "translation": [
             2.0,
+            0.0,
+            35.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
+            4.0
+          ]
+        },
+        {
+          "id": 354,
+          "name": "level-wall-x03-z35",
+          "childOrder": 267,
+          "translation": [
+            3.0,
             0.0,
             35.0
           ],
@@ -188049,23 +188111,8 @@
         },
         {
           "id": 355,
-          "name": "level-wall-x03-z35",
-          "childOrder": 268,
-          "translation": [
-            3.0,
-            0.0,
-            35.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 356,
           "name": "level-wall-x04-z35",
-          "childOrder": 269,
+          "childOrder": 268,
           "translation": [
             4.0,
             0.0,
@@ -188078,9 +188125,9 @@
           ]
         },
         {
-          "id": 357,
+          "id": 356,
           "name": "level-wall-x05-z35",
-          "childOrder": 270,
+          "childOrder": 269,
           "translation": [
             5.0,
             0.0,
@@ -188093,9 +188140,9 @@
           ]
         },
         {
-          "id": 358,
+          "id": 357,
           "name": "level-wall-x06-z35",
-          "childOrder": 271,
+          "childOrder": 270,
           "translation": [
             6.0,
             0.0,
@@ -188108,9 +188155,9 @@
           ]
         },
         {
-          "id": 359,
+          "id": 358,
           "name": "level-wall-x07-z35",
-          "childOrder": 272,
+          "childOrder": 271,
           "translation": [
             7.0,
             0.0,
@@ -188123,9 +188170,9 @@
           ]
         },
         {
-          "id": 360,
+          "id": 359,
           "name": "level-wall-x08-z35",
-          "childOrder": 273,
+          "childOrder": 272,
           "translation": [
             8.0,
             0.0,
@@ -188138,9 +188185,9 @@
           ]
         },
         {
-          "id": 361,
+          "id": 360,
           "name": "level-wall-x09-z35",
-          "childOrder": 274,
+          "childOrder": 273,
           "translation": [
             9.0,
             0.0,
@@ -188153,9 +188200,9 @@
           ]
         },
         {
-          "id": 362,
+          "id": 361,
           "name": "level-wall-x10-z35",
-          "childOrder": 275,
+          "childOrder": 274,
           "translation": [
             10.0,
             0.0,
@@ -188168,9 +188215,9 @@
           ]
         },
         {
-          "id": 363,
+          "id": 362,
           "name": "level-wall-x11-z35",
-          "childOrder": 276,
+          "childOrder": 275,
           "translation": [
             11.0,
             0.0,
@@ -188183,9 +188230,9 @@
           ]
         },
         {
-          "id": 364,
+          "id": 363,
           "name": "level-wall-x12-z35",
-          "childOrder": 277,
+          "childOrder": 276,
           "translation": [
             12.0,
             0.0,
@@ -188198,9 +188245,9 @@
           ]
         },
         {
-          "id": 365,
+          "id": 364,
           "name": "level-wall-x13-z35",
-          "childOrder": 278,
+          "childOrder": 277,
           "translation": [
             13.0,
             0.0,
@@ -188213,9 +188260,9 @@
           ]
         },
         {
-          "id": 366,
+          "id": 365,
           "name": "level-wall-x14-z35",
-          "childOrder": 279,
+          "childOrder": 278,
           "translation": [
             14.0,
             0.0,
@@ -188228,11 +188275,26 @@
           ]
         },
         {
-          "id": 367,
+          "id": 366,
           "name": "level-wall-x15-z35",
-          "childOrder": 280,
+          "childOrder": 279,
           "translation": [
             15.0,
+            0.0,
+            35.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
+            4.0
+          ]
+        },
+        {
+          "id": 367,
+          "name": "level-wall-x16-z35",
+          "childOrder": 280,
+          "translation": [
+            16.0,
             0.0,
             35.0
           ],
@@ -188244,23 +188306,8 @@
         },
         {
           "id": 368,
-          "name": "level-wall-x16-z35",
-          "childOrder": 281,
-          "translation": [
-            16.0,
-            0.0,
-            35.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 369,
           "name": "level-wall-x17-z35",
-          "childOrder": 282,
+          "childOrder": 281,
           "translation": [
             17.0,
             0.0,
@@ -188273,9 +188320,9 @@
           ]
         },
         {
-          "id": 370,
+          "id": 369,
           "name": "level-wall-x18-z35",
-          "childOrder": 283,
+          "childOrder": 282,
           "translation": [
             18.0,
             0.0,
@@ -188288,9 +188335,9 @@
           ]
         },
         {
-          "id": 371,
+          "id": 370,
           "name": "level-wall-x19-z35",
-          "childOrder": 284,
+          "childOrder": 283,
           "translation": [
             19.0,
             0.0,
@@ -188303,9 +188350,9 @@
           ]
         },
         {
-          "id": 372,
+          "id": 371,
           "name": "level-wall-x24-z35",
-          "childOrder": 285,
+          "childOrder": 284,
           "translation": [
             24.0,
             0.0,
@@ -188318,9 +188365,9 @@
           ]
         },
         {
-          "id": 373,
+          "id": 372,
           "name": "level-wall-x25-z35",
-          "childOrder": 286,
+          "childOrder": 285,
           "translation": [
             25.0,
             0.0,
@@ -188333,9 +188380,9 @@
           ]
         },
         {
-          "id": 374,
+          "id": 373,
           "name": "level-wall-x26-z35",
-          "childOrder": 287,
+          "childOrder": 286,
           "translation": [
             26.0,
             0.0,
@@ -188348,9 +188395,9 @@
           ]
         },
         {
-          "id": 375,
+          "id": 374,
           "name": "level-wall-x27-z35",
-          "childOrder": 288,
+          "childOrder": 287,
           "translation": [
             27.0,
             0.0,
@@ -188363,9 +188410,9 @@
           ]
         },
         {
-          "id": 376,
+          "id": 375,
           "name": "level-wall-x28-z35",
-          "childOrder": 289,
+          "childOrder": 288,
           "translation": [
             28.0,
             0.0,
@@ -188378,9 +188425,9 @@
           ]
         },
         {
-          "id": 377,
+          "id": 376,
           "name": "level-wall-x29-z35",
-          "childOrder": 290,
+          "childOrder": 289,
           "translation": [
             29.0,
             0.0,
@@ -188393,9 +188440,9 @@
           ]
         },
         {
-          "id": 378,
+          "id": 377,
           "name": "level-wall-x30-z35",
-          "childOrder": 291,
+          "childOrder": 290,
           "translation": [
             30.0,
             0.0,
@@ -188408,11 +188455,26 @@
           ]
         },
         {
-          "id": 379,
+          "id": 378,
           "name": "level-wall-x00-z36",
-          "childOrder": 292,
+          "childOrder": 291,
           "translation": [
             0.0,
+            0.0,
+            36.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
+            4.0
+          ]
+        },
+        {
+          "id": 379,
+          "name": "level-wall-x30-z36",
+          "childOrder": 292,
+          "translation": [
+            30.0,
             0.0,
             36.0
           ],
@@ -188424,12 +188486,12 @@
         },
         {
           "id": 380,
-          "name": "level-wall-x30-z36",
+          "name": "level-wall-x00-z37",
           "childOrder": 293,
           "translation": [
-            30.0,
             0.0,
-            36.0
+            0.0,
+            37.0
           ],
           "scale": [
             0.6666667,
@@ -188439,10 +188501,10 @@
         },
         {
           "id": 381,
-          "name": "level-wall-x00-z37",
+          "name": "level-wall-x30-z37",
           "childOrder": 294,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             37.0
           ],
@@ -188454,12 +188516,12 @@
         },
         {
           "id": 382,
-          "name": "level-wall-x30-z37",
+          "name": "level-wall-x00-z38",
           "childOrder": 295,
           "translation": [
-            30.0,
             0.0,
-            37.0
+            0.0,
+            38.0
           ],
           "scale": [
             0.64,
@@ -188469,10 +188531,10 @@
         },
         {
           "id": 383,
-          "name": "level-wall-x00-z38",
+          "name": "level-wall-x30-z38",
           "childOrder": 296,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             38.0
           ],
@@ -188484,12 +188546,12 @@
         },
         {
           "id": 384,
-          "name": "level-wall-x30-z38",
+          "name": "level-wall-x00-z39",
           "childOrder": 297,
           "translation": [
-            30.0,
             0.0,
-            38.0
+            0.0,
+            39.0
           ],
           "scale": [
             0.64,
@@ -188499,10 +188561,10 @@
         },
         {
           "id": 385,
-          "name": "level-wall-x00-z39",
+          "name": "level-wall-x30-z39",
           "childOrder": 298,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             39.0
           ],
@@ -188514,23 +188576,8 @@
         },
         {
           "id": 386,
-          "name": "level-wall-x30-z39",
-          "childOrder": 299,
-          "translation": [
-            30.0,
-            0.0,
-            39.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 387,
           "name": "level-wall-x00-z40",
-          "childOrder": 300,
+          "childOrder": 299,
           "translation": [
             0.0,
             0.0,
@@ -188543,11 +188590,26 @@
           ]
         },
         {
-          "id": 388,
+          "id": 387,
           "name": "level-wall-x17-z40",
-          "childOrder": 301,
+          "childOrder": 300,
           "translation": [
             17.0,
+            0.0,
+            40.0
+          ],
+          "scale": [
+            0.5614035,
+            2.245614,
+            4.0
+          ]
+        },
+        {
+          "id": 388,
+          "name": "level-wall-x18-z40",
+          "childOrder": 301,
+          "translation": [
+            18.0,
             0.0,
             40.0
           ],
@@ -188559,23 +188621,8 @@
         },
         {
           "id": 389,
-          "name": "level-wall-x18-z40",
-          "childOrder": 302,
-          "translation": [
-            18.0,
-            0.0,
-            40.0
-          ],
-          "scale": [
-            0.5614035,
-            2.245614,
-            4.0
-          ]
-        },
-        {
-          "id": 390,
           "name": "level-wall-x30-z40",
-          "childOrder": 303,
+          "childOrder": 302,
           "translation": [
             30.0,
             0.0,
@@ -188588,9 +188635,9 @@
           ]
         },
         {
-          "id": 391,
+          "id": 390,
           "name": "level-wall-x00-z41",
-          "childOrder": 304,
+          "childOrder": 303,
           "translation": [
             0.0,
             0.0,
@@ -188603,9 +188650,9 @@
           ]
         },
         {
-          "id": 392,
+          "id": 391,
           "name": "level-wall-x17-z41",
-          "childOrder": 305,
+          "childOrder": 304,
           "translation": [
             17.0,
             0.0,
@@ -188618,9 +188665,9 @@
           ]
         },
         {
-          "id": 393,
+          "id": 392,
           "name": "level-wall-x18-z41",
-          "childOrder": 306,
+          "childOrder": 305,
           "translation": [
             18.0,
             0.0,
@@ -188633,13 +188680,28 @@
           ]
         },
         {
-          "id": 394,
+          "id": 393,
           "name": "level-wall-x30-z41",
-          "childOrder": 307,
+          "childOrder": 306,
           "translation": [
             30.0,
             0.0,
             41.0
+          ],
+          "scale": [
+            0.6666667,
+            2.6666667,
+            2.6666667
+          ]
+        },
+        {
+          "id": 394,
+          "name": "level-wall-x00-z42",
+          "childOrder": 307,
+          "translation": [
+            0.0,
+            0.0,
+            42.0
           ],
           "scale": [
             0.64,
@@ -188649,10 +188711,10 @@
         },
         {
           "id": 395,
-          "name": "level-wall-x00-z42",
+          "name": "level-wall-x30-z42",
           "childOrder": 308,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             42.0
           ],
@@ -188664,12 +188726,12 @@
         },
         {
           "id": 396,
-          "name": "level-wall-x30-z42",
+          "name": "level-wall-x00-z43",
           "childOrder": 309,
           "translation": [
-            30.0,
             0.0,
-            42.0
+            0.0,
+            43.0
           ],
           "scale": [
             0.64,
@@ -188679,10 +188741,10 @@
         },
         {
           "id": 397,
-          "name": "level-wall-x00-z43",
+          "name": "level-wall-x30-z43",
           "childOrder": 310,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             43.0
           ],
@@ -188694,12 +188756,12 @@
         },
         {
           "id": 398,
-          "name": "level-wall-x30-z43",
+          "name": "level-wall-x00-z44",
           "childOrder": 311,
           "translation": [
-            30.0,
             0.0,
-            43.0
+            0.0,
+            44.0
           ],
           "scale": [
             0.64,
@@ -188709,10 +188771,10 @@
         },
         {
           "id": 399,
-          "name": "level-wall-x00-z44",
+          "name": "level-wall-x30-z44",
           "childOrder": 312,
           "translation": [
-            0.0,
+            30.0,
             0.0,
             44.0
           ],
@@ -188724,23 +188786,8 @@
         },
         {
           "id": 400,
-          "name": "level-wall-x30-z44",
-          "childOrder": 313,
-          "translation": [
-            30.0,
-            0.0,
-            44.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 401,
           "name": "level-wall-x00-z45",
-          "childOrder": 314,
+          "childOrder": 313,
           "translation": [
             0.0,
             0.0,
@@ -188753,11 +188800,26 @@
           ]
         },
         {
-          "id": 402,
+          "id": 401,
           "name": "level-wall-x26-z45",
-          "childOrder": 315,
+          "childOrder": 314,
           "translation": [
             26.0,
+            0.0,
+            45.0
+          ],
+          "scale": [
+            0.5614035,
+            2.245614,
+            4.0
+          ]
+        },
+        {
+          "id": 402,
+          "name": "level-wall-x27-z45",
+          "childOrder": 315,
+          "translation": [
+            27.0,
             0.0,
             45.0
           ],
@@ -188769,23 +188831,8 @@
         },
         {
           "id": 403,
-          "name": "level-wall-x27-z45",
-          "childOrder": 316,
-          "translation": [
-            27.0,
-            0.0,
-            45.0
-          ],
-          "scale": [
-            0.5614035,
-            2.245614,
-            4.0
-          ]
-        },
-        {
-          "id": 404,
           "name": "level-wall-x30-z45",
-          "childOrder": 317,
+          "childOrder": 316,
           "translation": [
             30.0,
             0.0,
@@ -188798,9 +188845,9 @@
           ]
         },
         {
-          "id": 405,
+          "id": 404,
           "name": "level-wall-x00-z46",
-          "childOrder": 318,
+          "childOrder": 317,
           "translation": [
             0.0,
             0.0,
@@ -188813,9 +188860,9 @@
           ]
         },
         {
-          "id": 406,
+          "id": 405,
           "name": "level-wall-x26-z46",
-          "childOrder": 319,
+          "childOrder": 318,
           "translation": [
             26.0,
             0.0,
@@ -188828,28 +188875,43 @@
           ]
         },
         {
-          "id": 407,
-          "name": "level-wall-x27-z46",
-          "childOrder": 320,
+          "id": 406,
+          "name": "level-wall-x30-z46",
+          "childOrder": 319,
           "translation": [
-            27.0,
+            30.0,
             0.0,
             46.0
           ],
           "scale": [
-            0.5614035,
-            2.245614,
+            0.6666667,
+            2.6666667,
+            2.6666667
+          ]
+        },
+        {
+          "id": 407,
+          "name": "level-wall-x00-z47",
+          "childOrder": 320,
+          "translation": [
+            0.0,
+            0.0,
+            47.0
+          ],
+          "scale": [
+            0.64,
+            2.56,
             4.0
           ]
         },
         {
           "id": 408,
-          "name": "level-wall-x30-z46",
+          "name": "level-wall-x30-z47",
           "childOrder": 321,
           "translation": [
             30.0,
             0.0,
-            46.0
+            47.0
           ],
           "scale": [
             0.64,
@@ -188859,12 +188921,12 @@
         },
         {
           "id": 409,
-          "name": "level-wall-x00-z47",
+          "name": "level-wall-x00-z48",
           "childOrder": 322,
           "translation": [
             0.0,
             0.0,
-            47.0
+            48.0
           ],
           "scale": [
             0.64,
@@ -188874,12 +188936,12 @@
         },
         {
           "id": 410,
-          "name": "level-wall-x30-z47",
+          "name": "level-wall-x30-z48",
           "childOrder": 323,
           "translation": [
             30.0,
             0.0,
-            47.0
+            48.0
           ],
           "scale": [
             0.64,
@@ -188889,38 +188951,8 @@
         },
         {
           "id": 411,
-          "name": "level-wall-x00-z48",
-          "childOrder": 324,
-          "translation": [
-            0.0,
-            0.0,
-            48.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 412,
-          "name": "level-wall-x30-z48",
-          "childOrder": 325,
-          "translation": [
-            30.0,
-            0.0,
-            48.0
-          ],
-          "scale": [
-            0.64,
-            2.56,
-            4.0
-          ]
-        },
-        {
-          "id": 413,
           "name": "level-wall-x00-z49",
-          "childOrder": 326,
+          "childOrder": 324,
           "translation": [
             0.0,
             0.0,
@@ -188933,9 +188965,9 @@
           ]
         },
         {
-          "id": 414,
+          "id": 412,
           "name": "level-wall-x01-z49",
-          "childOrder": 327,
+          "childOrder": 325,
           "translation": [
             1.0,
             0.0,
@@ -188948,9 +188980,9 @@
           ]
         },
         {
-          "id": 415,
+          "id": 413,
           "name": "level-wall-x02-z49",
-          "childOrder": 328,
+          "childOrder": 326,
           "translation": [
             2.0,
             0.0,
@@ -188963,9 +188995,9 @@
           ]
         },
         {
-          "id": 416,
+          "id": 414,
           "name": "level-wall-x03-z49",
-          "childOrder": 329,
+          "childOrder": 327,
           "translation": [
             3.0,
             0.0,
@@ -188978,9 +189010,9 @@
           ]
         },
         {
-          "id": 417,
+          "id": 415,
           "name": "level-wall-x04-z49",
-          "childOrder": 330,
+          "childOrder": 328,
           "translation": [
             4.0,
             0.0,
@@ -188993,9 +189025,9 @@
           ]
         },
         {
-          "id": 418,
+          "id": 416,
           "name": "level-wall-x05-z49",
-          "childOrder": 331,
+          "childOrder": 329,
           "translation": [
             5.0,
             0.0,
@@ -189008,24 +189040,24 @@
           ]
         },
         {
-          "id": 419,
+          "id": 417,
           "name": "level-wall-x06-z49",
-          "childOrder": 332,
+          "childOrder": 330,
           "translation": [
             6.0,
             0.0,
             49.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ]
         },
         {
-          "id": 420,
+          "id": 418,
           "name": "level-wall-x07-z49",
-          "childOrder": 333,
+          "childOrder": 331,
           "translation": [
             7.0,
             0.0,
@@ -189038,24 +189070,24 @@
           ]
         },
         {
-          "id": 421,
+          "id": 419,
           "name": "level-wall-x08-z49",
-          "childOrder": 334,
+          "childOrder": 332,
           "translation": [
             8.0,
             0.0,
             49.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ]
         },
         {
-          "id": 422,
+          "id": 420,
           "name": "level-wall-x09-z49",
-          "childOrder": 335,
+          "childOrder": 333,
           "translation": [
             9.0,
             0.0,
@@ -189068,9 +189100,9 @@
           ]
         },
         {
-          "id": 423,
+          "id": 421,
           "name": "level-wall-x10-z49",
-          "childOrder": 336,
+          "childOrder": 334,
           "translation": [
             10.0,
             0.0,
@@ -189083,9 +189115,9 @@
           ]
         },
         {
-          "id": 424,
+          "id": 422,
           "name": "level-wall-x11-z49",
-          "childOrder": 337,
+          "childOrder": 335,
           "translation": [
             11.0,
             0.0,
@@ -189098,9 +189130,9 @@
           ]
         },
         {
-          "id": 425,
+          "id": 423,
           "name": "level-wall-x12-z49",
-          "childOrder": 338,
+          "childOrder": 336,
           "translation": [
             12.0,
             0.0,
@@ -189113,9 +189145,9 @@
           ]
         },
         {
-          "id": 426,
+          "id": 424,
           "name": "level-wall-x13-z49",
-          "childOrder": 339,
+          "childOrder": 337,
           "translation": [
             13.0,
             0.0,
@@ -189128,9 +189160,9 @@
           ]
         },
         {
-          "id": 427,
+          "id": 425,
           "name": "level-wall-x14-z49",
-          "childOrder": 340,
+          "childOrder": 338,
           "translation": [
             14.0,
             0.0,
@@ -189143,9 +189175,9 @@
           ]
         },
         {
-          "id": 428,
+          "id": 426,
           "name": "level-wall-x15-z49",
-          "childOrder": 341,
+          "childOrder": 339,
           "translation": [
             15.0,
             0.0,
@@ -189158,9 +189190,9 @@
           ]
         },
         {
-          "id": 429,
+          "id": 427,
           "name": "level-wall-x16-z49",
-          "childOrder": 342,
+          "childOrder": 340,
           "translation": [
             16.0,
             0.0,
@@ -189173,9 +189205,9 @@
           ]
         },
         {
-          "id": 430,
+          "id": 428,
           "name": "level-wall-x17-z49",
-          "childOrder": 343,
+          "childOrder": 341,
           "translation": [
             17.0,
             0.0,
@@ -189188,9 +189220,9 @@
           ]
         },
         {
-          "id": 431,
+          "id": 429,
           "name": "level-wall-x18-z49",
-          "childOrder": 344,
+          "childOrder": 342,
           "translation": [
             18.0,
             0.0,
@@ -189203,24 +189235,24 @@
           ]
         },
         {
-          "id": 432,
+          "id": 430,
           "name": "level-wall-x19-z49",
-          "childOrder": 345,
+          "childOrder": 343,
           "translation": [
             19.0,
             0.0,
             49.0
           ],
           "scale": [
-            0.6666667,
-            2.6666667,
-            2.6666667
+            0.64,
+            2.56,
+            4.0
           ]
         },
         {
-          "id": 433,
+          "id": 431,
           "name": "level-wall-x23-z49",
-          "childOrder": 346,
+          "childOrder": 344,
           "translation": [
             23.0,
             0.0,
@@ -189233,24 +189265,24 @@
           ]
         },
         {
-          "id": 434,
+          "id": 432,
           "name": "level-wall-x24-z49",
-          "childOrder": 347,
+          "childOrder": 345,
           "translation": [
             24.0,
             0.0,
             49.0
           ],
           "scale": [
-            0.64,
-            2.56,
-            4.0
+            0.6666667,
+            2.6666667,
+            2.6666667
           ]
         },
         {
-          "id": 435,
+          "id": 433,
           "name": "level-wall-x25-z49",
-          "childOrder": 348,
+          "childOrder": 346,
           "translation": [
             25.0,
             0.0,
@@ -189263,9 +189295,9 @@
           ]
         },
         {
-          "id": 436,
+          "id": 434,
           "name": "level-wall-x26-z49",
-          "childOrder": 349,
+          "childOrder": 347,
           "translation": [
             26.0,
             0.0,
@@ -189278,9 +189310,9 @@
           ]
         },
         {
-          "id": 437,
+          "id": 435,
           "name": "level-wall-x27-z49",
-          "childOrder": 350,
+          "childOrder": 348,
           "translation": [
             27.0,
             0.0,
@@ -189293,9 +189325,9 @@
           ]
         },
         {
-          "id": 438,
+          "id": 436,
           "name": "level-wall-x28-z49",
-          "childOrder": 351,
+          "childOrder": 349,
           "translation": [
             28.0,
             0.0,
@@ -189308,9 +189340,9 @@
           ]
         },
         {
-          "id": 439,
+          "id": 437,
           "name": "level-wall-x29-z49",
-          "childOrder": 352,
+          "childOrder": 350,
           "translation": [
             29.0,
             0.0,
@@ -189323,9 +189355,9 @@
           ]
         },
         {
-          "id": 440,
+          "id": 438,
           "name": "level-wall-x30-z49",
-          "childOrder": 353,
+          "childOrder": 351,
           "translation": [
             30.0,
             0.0,
@@ -189338,88 +189370,118 @@
           ]
         },
         {
-          "id": 441,
+          "id": 439,
           "name": "level-doorway-owner-3",
-          "childOrder": 354,
+          "childOrder": 352,
           "translation": [
-            20.3,
+            20.0,
             0.0,
-            48.875
+            49.0
           ],
           "scale": [
-            1.536,
+            1.92,
             3.047619,
-            1.0
+            4.0
+          ]
+        },
+        {
+          "id": 440,
+          "name": "level-doorway-owner-11",
+          "childOrder": 353,
+          "translation": [
+            3.0,
+            0.0,
+            17.0
+          ],
+          "scale": [
+            1.92,
+            3.047619,
+            4.0
+          ]
+        },
+        {
+          "id": 441,
+          "name": "level-doorway-owner-12",
+          "childOrder": 354,
+          "translation": [
+            20.0,
+            0.0,
+            35.0
+          ],
+          "scale": [
+            2.56,
+            3.047619,
+            4.0
           ]
         },
         {
           "id": 442,
-          "name": "level-doorway-owner-11",
+          "name": "level-doorway-owner-13",
           "childOrder": 355,
           "translation": [
-            3.3,
+            22.0,
             0.0,
-            16.875
+            30.0
           ],
           "scale": [
-            1.536,
+            2.56,
             3.047619,
-            1.0
+            4.0
           ]
         },
         {
           "id": 443,
-          "name": "level-doorway-owner-12",
+          "name": "level-doorway-owner-30",
           "childOrder": 356,
           "translation": [
-            19.8,
+            8.0,
             0.0,
-            34.875
+            17.0
           ],
           "scale": [
-            2.176,
+            4.48,
             3.047619,
-            1.0
+            4.0
           ]
         },
         {
           "id": 444,
-          "name": "level-doorway-owner-13",
-          "childOrder": 357,
-          "translation": [
-            21.8,
-            0.0,
-            29.875
-          ],
-          "scale": [
-            2.176,
-            3.047619,
-            1.0
-          ]
-        },
-        {
-          "id": 445,
-          "name": "level-doorway-owner-30",
-          "childOrder": 358,
-          "translation": [
-            8.3,
-            0.0,
-            16.875
-          ],
-          "scale": [
-            4.096,
-            3.047619,
-            1.0
-          ]
-        },
-        {
-          "id": 446,
           "name": "level-corner-nw",
-          "childOrder": 359,
+          "childOrder": 357,
           "translation": [
             0.0,
             0.0,
             0.0
+          ],
+          "scale": [
+            0.5,
+            2.0,
+            0.5
+          ]
+        },
+        {
+          "id": 445,
+          "name": "level-corner-ne",
+          "childOrder": 358,
+          "translation": [
+            30.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            0.5,
+            2.0,
+            0.5
+          ]
+        },
+        {
+          "id": 446,
+          "name": "level-corner-sw",
+          "childOrder": 359,
+          "translation": [
+            0.0,
+            0.0,
+            49.0
           ],
           "scale": [
             0.5,
@@ -189429,12 +189491,12 @@
         },
         {
           "id": 447,
-          "name": "level-corner-ne",
+          "name": "level-corner-se",
           "childOrder": 360,
           "translation": [
             30.0,
             0.0,
-            0.0
+            49.0
           ],
           "scale": [
             0.5,
@@ -189444,128 +189506,98 @@
         },
         {
           "id": 448,
-          "name": "level-corner-sw",
-          "childOrder": 361,
-          "translation": [
-            0.0,
-            0.0,
-            51.0
-          ],
-          "scale": [
-            0.5,
-            2.0,
-            0.5
-          ]
-        },
-        {
-          "id": 449,
-          "name": "level-corner-se",
-          "childOrder": 362,
-          "translation": [
-            30.0,
-            0.0,
-            51.0
-          ],
-          "scale": [
-            0.5,
-            2.0,
-            0.5
-          ]
-        },
-        {
-          "id": 450,
           "name": "level-column-arrival-a",
-          "childOrder": 363,
+          "childOrder": 361,
           "translation": [
             3.0,
             0.0,
             8.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ]
         },
         {
-          "id": 451,
+          "id": 449,
           "name": "level-column-arrival-b",
-          "childOrder": 364,
+          "childOrder": 362,
           "translation": [
             11.0,
             0.0,
             8.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ]
         },
         {
-          "id": 452,
+          "id": 450,
           "name": "level-column-generator-a",
-          "childOrder": 365,
+          "childOrder": 363,
           "translation": [
             18.0,
             0.0,
             22.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ]
         },
         {
-          "id": 453,
+          "id": 451,
           "name": "level-column-generator-b",
-          "childOrder": 366,
+          "childOrder": 364,
           "translation": [
             28.0,
             0.0,
             29.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ]
         },
         {
-          "id": 454,
+          "id": 452,
           "name": "level-column-dock-a",
-          "childOrder": 367,
+          "childOrder": 365,
           "translation": [
             17.0,
             0.0,
             38.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ]
         },
         {
-          "id": 455,
+          "id": 453,
           "name": "level-column-dock-b",
-          "childOrder": 368,
+          "childOrder": 366,
           "translation": [
             27.0,
             0.0,
             46.0
           ],
           "scale": [
-            1.0,
+            1.3333334,
             2.1333334,
-            1.0
+            1.3333334
           ]
         },
         {
-          "id": 456,
+          "id": 454,
           "name": "level-relay-generator",
-          "childOrder": 369,
+          "childOrder": 367,
           "translation": [
             22.0,
             0.0,
@@ -189578,9 +189610,9 @@
           ]
         },
         {
-          "id": 457,
+          "id": 455,
           "name": "level-relay-extraction",
-          "childOrder": 370,
+          "childOrder": 368,
           "translation": [
             20.0,
             0.0,

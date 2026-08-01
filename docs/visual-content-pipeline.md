@@ -406,9 +406,9 @@ reconstruction, and browser automation and are not presented as frame cadence.
 
 ## VC7 repeated-brush Loading Bay
 
-The playable Loading Bay is now composed from 342 new durable instances of the same nine VC6
-definitions. The off-route 25-instance proof room remains for exact comparison, giving 367
-instances and 419 serialized entities in the scene. No per-placement asset copy or
+The playable Loading Bay is now composed from 340 durable instances of the same nine VC6
+definitions. The off-route 25-instance proof room remains for exact comparison, giving 365
+instances and 417 serialized entities in the scene. No per-placement asset copy or
 downstream mesh cache exists.
 
 `scripts/author-loading-bay-brush-level.mjs` derived placement transforms from the admitted
@@ -424,9 +424,9 @@ fresh adapter both reconstructed that exact hash.
 | ----------------- | ---------------: |
 | Ceiling strip     |               28 |
 | Floor strip       |               28 |
-| Conservative wall |              215 |
-| Dense wall insert |               38 |
-| Vent panel        |               16 |
+| Conservative wall |              212 |
+| Dense wall insert |               36 |
+| Vent panel        |               19 |
 | Doorway surround  |                5 |
 | Column            |                6 |
 | Corner            |                4 |
@@ -438,10 +438,20 @@ doorway-surround instance, while door collision/occlusion and open/closed behavi
 original Rust-owned entity. Floors, ceilings, wall relief, columns, corners, and landmarks likewise
 cannot affect motion or rays.
 
+Task #6473 uses the supported Rust voxel-edit path to add the 14 material voxels missing from the
+six column footprints, then republishes the presentation recipe without a second wall instance at
+those coordinates. Doorway frames derive their exact outer X bounds from the neighboring proxy
+cells and use the same one-unit Z slab; southern corners use the canonical `z=49` boundary. The
+resulting 283 checked comparisons have zero gap at six-decimal evidence precision against an
+explicit `1/32` maximum. Deterministic real-player motion tests cover head-on contact tolerance,
+parallel travel in both directions, high-delta no-tunneling, corners, and open/adjacent doorway
+approaches. The measurements and desktop/narrow Studio and gameplay captures are indexed by
+[`wall-proxy-alignment.json`](evidence/wall-proxy-alignment.json).
+
 The exact Engine line combines atomic batch placement, canonical greedy same-material coplanar
 meshing, and copy-on-write retained-projection staging at
 `5a42db2feac72788b25eedf8d5efbc0fb2ec2afd`. Greedy meshing reduced the complete structural frame
-to 739,471 bytes, below the 2 MiB product bound, while source-face quota charging remains
+to 738,931 bytes, below the 2 MiB product bound, while source-face quota charging remains
 unchanged. The real Studio route reconstructed nine definitions and 367 instances through one
 shared `RendererSurface`. Its initial complete submission reported 123 draws, 34,514 triangles,
 412 handles, 49 geometries, and 63 materials. Selecting two distinct conservative-wall owners

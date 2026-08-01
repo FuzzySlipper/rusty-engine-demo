@@ -10,7 +10,7 @@ const EVIDENCE_PATH = resolve(
 );
 const BROWSER_EVIDENCE_PATH = resolve(
   ROOT,
-  "docs/evidence/voxel-level-brush-studio-browser.json",
+  "docs/evidence/wall-proxy-studio-browser.json",
 );
 const ACTOR_EVIDENCE_PATH = resolve(
   ROOT,
@@ -78,18 +78,27 @@ invariant(
   "the visible level must reuse the nine reviewed canonical brush definitions",
 );
 invariant(
-  evidence.structuralProjectionBytes === 739_471 &&
+  evidence.structuralProjectionBytes === 738_931 &&
     evidence.structuralProjectionBytes < 2 * 1024 * 1024,
   "the exact complete structural projection must remain below 2 MiB",
 );
 invariant(
   levelInstances.length === evidence.placementCount &&
-    evidence.placementCount === 342,
-  "the complete visual level must retain all 342 batch-authored placements",
+    evidence.placementCount === 340,
+  "the complete visual level must retain all 340 collision-aligned placements",
 );
 invariant(
-  allInstances.length === 367,
+  allInstances.length === 365,
   "the full scene must retain the 25 review instances plus the visual level",
+);
+invariant(
+  evidence.proxyEdit.requiredColumnCount === 6 &&
+    evidence.proxyEdit.requiredVoxelCount === 18 &&
+    evidence.proxyEdit.preexistingVoxelCount === 4 &&
+    evidence.proxyEdit.addedVoxelCount === 14 &&
+    evidence.proxyEdit.changedThisRun === 0 &&
+    evidence.proxyEdit.persistedThisRun === false,
+  "the canonical proof must retain the supported 14-voxel column-proxy publication",
 );
 
 const levelIds = new Set(levelInstances.map(({ instanceId }) => instanceId));
@@ -248,8 +257,8 @@ if (browser !== undefined) {
   );
   invariant(
     browser.capture.rendererSubmission.engineRevision ===
-      "5a42db2feac72788b25eedf8d5efbc0fb2ec2afd",
-    "browser proof must use the reviewed projection-staging provider",
+      "f1baabcd55b7075fff40b93b1bae0a16ef88ab0e",
+    "browser proof must use the exact reviewed Engine provider",
   );
   const first = browser.submissions.denseSelection.latest.submission.statistics;
   const second =

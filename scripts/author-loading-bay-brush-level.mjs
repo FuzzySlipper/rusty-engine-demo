@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { createInterface } from "node:readline";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +18,19 @@ const PROTOCOL_VERSION = 14;
 const BATCH_LIMIT = 32;
 const SURFACE_TILE_LIMIT = 8;
 const SCENE_ID = "scene/loading-bay";
+const COLLISION_BACKED_COLUMNS = [
+  [3, 8],
+  [11, 8],
+  [17, 38],
+  [18, 22],
+  [27, 46],
+  [28, 29],
+];
+const COLUMN_PROXY_VOXELS_REQUIRED = COLLISION_BACKED_COLUMNS.length * 3;
+const COLUMN_PROXY_VOXELS_PREEXISTING = 4;
+const COLLISION_BACKED_COLUMN_KEYS = new Set(
+  COLLISION_BACKED_COLUMNS.map(([x, z]) => `${String(x)},${String(z)}`),
+);
 
 class Adapter {
   #child;
@@ -123,6 +137,160 @@ function key(x, z) {
   return `${String(x)},${String(z)}`;
 }
 
+async function reservePort() {
+  const server = createServer();
+  await new Promise((resolveListen, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolveListen);
+  });
+  const address = server.address();
+  if (address === null || typeof address === "string") {
+    server.close();
+    throw new Error("could not reserve a loopback authoring port");
+  }
+  await new Promise((resolveClose) => server.close(resolveClose));
+  return address.port;
+}
+
+async function waitForHealth(address, child, output) {
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) {
+      throw new Error(
+        `browser host exited ${String(child.exitCode)} before authoring\n${output()}`,
+      );
+    }
+    try {
+      const response = await fetch(`http://${address}/health`);
+      if (response.ok) return;
+    } catch {
+      // The Rust host is still starting.
+    }
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 100));
+  }
+  throw new Error(`browser host did not become healthy\n${output()}`);
+}
+
+async function stopHost(child) {
+  if (child.exitCode !== null) return;
+  child.kill("SIGTERM");
+  await new Promise((resolveExit) => child.once("exit", resolveExit));
+}
+
+async function ensureColumnGameplayProxies(project) {
+  const scene = project.scenes.find((entry) => entry.id === SCENE_ID);
+  const existing = new Map(
+    scene.voxelEnvironment.materialVoxels.map((voxel) => [
+      voxel.address.join(","),
+      voxel.materialSlot,
+    ]),
+  );
+  const required = COLLISION_BACKED_COLUMNS.flatMap(([x, z]) =>
+    [1, 2, 3].map((y) => ({
+      kind: "set",
+      address: [x, y, z],
+      material_slot: 1,
+    })),
+  );
+  const missing = required.filter(
+    (edit) => existing.get(edit.address.join(",")) === undefined,
+  );
+  if (missing.length === 0) {
+    return { changedVoxels: 0, persistedToProject: false };
+  }
+
+  const port = await reservePort();
+  const address = `127.0.0.1:${String(port)}`;
+  const hostRoot = await mkdtemp(
+    resolve(tmpdir(), "rusty-engine-demo-wall-proxy-host-"),
+  );
+  const hostDist = resolve(hostRoot, "dist");
+  const hostSaves = resolve(hostRoot, "saves");
+  await mkdir(hostDist);
+  await writeFile(
+    resolve(hostDist, "index.html"),
+    "<!doctype html><title>authoring</title>\n",
+  );
+  const child = spawn(
+    "cargo",
+    [
+      "run",
+      "--locked",
+      "--quiet",
+      "-p",
+      "loading-bay-game",
+      "--bin",
+      "browser-host",
+      "--",
+      "--addr",
+      address,
+      "--dist",
+      hostDist,
+      "--project",
+      PROJECT,
+      "--save-root",
+      hostSaves,
+    ],
+    { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] },
+  );
+  let hostOutput = "";
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    hostOutput += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    hostOutput += chunk;
+  });
+  try {
+    await waitForHealth(address, child, () => hostOutput);
+    const beforeResponse = await fetch(`http://${address}/api/state`);
+    const before = await beforeResponse.json();
+    if (!beforeResponse.ok) {
+      throw new Error(
+        `could not read voxel authoring state: ${JSON.stringify(before)}`,
+      );
+    }
+    const response = await fetch(`http://${address}/api/voxel-edit`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedRevision: before.voxelRevision,
+        persistToProject: true,
+        edits: missing,
+      }),
+    });
+    const receipt = await response.json();
+    if (
+      !response.ok ||
+      receipt.voxelEditReceipt?.changedVoxels !== missing.length ||
+      receipt.voxelEditReceipt?.persistedToProject !== true
+    ) {
+      throw new Error(
+        `column proxy authoring failed: ${JSON.stringify(receipt)}`,
+      );
+    }
+    return receipt.voxelEditReceipt;
+  } finally {
+    await stopHost(child);
+    await rm(hostRoot, { recursive: true, force: true });
+  }
+}
+
+function sameInstance(left, right) {
+  return (
+    JSON.stringify({
+      instanceId: left.instanceId,
+      voxelObjectAssetId: left.voxelObjectAssetId,
+      frame: left.frame,
+      translation: left.translation,
+      rotation: left.rotation,
+      scale: left.scale,
+      materialOverrides: left.materialOverrides,
+    }) === JSON.stringify(right)
+  );
+}
+
 function tileLayer(cells, y, prefix, assetId, worldY, project) {
   const remaining = new Set(
     cells
@@ -196,7 +364,13 @@ function buildPlacements(project) {
     project,
   );
   const walls = voxels
-    .filter((voxel) => voxel.address[1] === 1)
+    .filter(
+      (voxel) =>
+        voxel.address[1] === 1 &&
+        !COLLISION_BACKED_COLUMN_KEYS.has(
+          `${String(voxel.address[0])},${String(voxel.address[2])}`,
+        ),
+    )
     .sort(
       (left, right) =>
         left.address[2] - right.address[2] ||
@@ -227,24 +401,26 @@ function buildPlacements(project) {
   const doorways = scene.entities
     .filter((entity) => entity.door !== undefined)
     .map((entity) => {
-      const width = entity.bounds.max[0] - entity.bounds.min[0];
+      const z = Math.round(entity.translation[2]);
+      const solid = new Set(
+        voxels
+          .filter((voxel) => voxel.address[1] === 1 && voxel.address[2] === z)
+          .map((voxel) => voxel.address[0]),
+      );
+      let openingStart = Math.floor(entity.translation[0]);
+      while (!solid.has(openingStart - 1)) openingStart -= 1;
+      let openingEnd = Math.floor(entity.translation[0]) + 1;
+      while (!solid.has(openingEnd)) openingEnd += 1;
+      const width = openingEnd - openingStart;
       return {
         sceneId: SCENE_ID,
         instance: {
           instanceId: `level-doorway-owner-${String(entity.id)}`,
           voxelObjectAssetId: "voxel-object/brush-doorway",
           frame: { kind: "default" },
-          translation: [
-            entity.translation[0] - width / 2,
-            0,
-            entity.translation[2] - 0.125,
-          ],
+          translation: [openingStart, 0, z],
           rotation: [0, 0, 0, 1],
-          scale: scaleFor(project, "voxel-object/brush-doorway", [
-            width,
-            4,
-            0.25,
-          ]),
+          scale: scaleFor(project, "voxel-object/brush-doorway", [width, 4, 1]),
           materialOverrides: [],
         },
       };
@@ -253,44 +429,14 @@ function buildPlacements(project) {
   const accents = [
     ["corner-nw", "voxel-object/brush-corner", [0, 0, 0], [1, 4, 1]],
     ["corner-ne", "voxel-object/brush-corner", [30, 0, 0], [1, 4, 1]],
-    ["corner-sw", "voxel-object/brush-corner", [0, 0, 51], [1, 4, 1]],
-    ["corner-se", "voxel-object/brush-corner", [30, 0, 51], [1, 4, 1]],
-    [
-      "column-arrival-a",
-      "voxel-object/brush-column",
-      [3, 0, 8],
-      [0.75, 4, 0.75],
-    ],
-    [
-      "column-arrival-b",
-      "voxel-object/brush-column",
-      [11, 0, 8],
-      [0.75, 4, 0.75],
-    ],
-    [
-      "column-generator-a",
-      "voxel-object/brush-column",
-      [18, 0, 22],
-      [0.75, 4, 0.75],
-    ],
-    [
-      "column-generator-b",
-      "voxel-object/brush-column",
-      [28, 0, 29],
-      [0.75, 4, 0.75],
-    ],
-    [
-      "column-dock-a",
-      "voxel-object/brush-column",
-      [17, 0, 38],
-      [0.75, 4, 0.75],
-    ],
-    [
-      "column-dock-b",
-      "voxel-object/brush-column",
-      [27, 0, 46],
-      [0.75, 4, 0.75],
-    ],
+    ["corner-sw", "voxel-object/brush-corner", [0, 0, 49], [1, 4, 1]],
+    ["corner-se", "voxel-object/brush-corner", [30, 0, 49], [1, 4, 1]],
+    ["column-arrival-a", "voxel-object/brush-column", [3, 0, 8], [1, 4, 1]],
+    ["column-arrival-b", "voxel-object/brush-column", [11, 0, 8], [1, 4, 1]],
+    ["column-generator-a", "voxel-object/brush-column", [18, 0, 22], [1, 4, 1]],
+    ["column-generator-b", "voxel-object/brush-column", [28, 0, 29], [1, 4, 1]],
+    ["column-dock-a", "voxel-object/brush-column", [17, 0, 38], [1, 4, 1]],
+    ["column-dock-b", "voxel-object/brush-column", [27, 0, 46], [1, 4, 1]],
     [
       "relay-generator",
       "voxel-object/brush-landmark-relay",
@@ -320,7 +466,11 @@ function buildPlacements(project) {
 }
 
 const sourceBytes = await readFile(PROJECT);
-const project = JSON.parse(sourceBytes);
+let project = JSON.parse(sourceBytes);
+const proxyEditReceipt = await ensureColumnGameplayProxies(project);
+if (proxyEditReceipt.changedVoxels > 0) {
+  project = JSON.parse(await readFile(PROJECT));
+}
 const placements = buildPlacements(project);
 const expectedIds = new Set(
   placements.map((placement) => placement.instance.instanceId),
@@ -333,11 +483,17 @@ const existingIds = new Set(
 );
 let resetEvidence = null;
 if (existingIds.size > 0) {
-  const prefix = placements
-    .slice(0, existingIds.size)
-    .map((placement) => placement.instance.instanceId);
   if (existingIds.size === expectedIds.size) {
-    const exact = prefix.every((instanceId) => existingIds.has(instanceId));
+    const currentInstances = new Map(
+      project.scenes
+        .flatMap((scene) => scene.voxelObjectInstances ?? [])
+        .filter((instance) => instance.instanceId.startsWith("level-"))
+        .map((instance) => [instance.instanceId, instance]),
+    );
+    const exact = placements.every(({ instance }) => {
+      const current = currentInstances.get(instance.instanceId);
+      return current !== undefined && sameInstance(current, instance);
+    });
     if (exact) {
       console.log(
         `Loading Bay brush level is already canonical (${String(existingIds.size)} instances).`,
@@ -520,6 +676,15 @@ const evidence = {
   projectHashAfter: projectHash(current),
   projectSha256: sha256(finalBytes),
   gameplayProxy: true,
+  proxyEdit: {
+    requiredColumnCount: COLLISION_BACKED_COLUMNS.length,
+    requiredVoxelCount: COLUMN_PROXY_VOXELS_REQUIRED,
+    preexistingVoxelCount: COLUMN_PROXY_VOXELS_PREEXISTING,
+    addedVoxelCount:
+      COLUMN_PROXY_VOXELS_REQUIRED - COLUMN_PROXY_VOXELS_PREEXISTING,
+    changedThisRun: proxyEditReceipt.changedVoxels,
+    persistedThisRun: proxyEditReceipt.persistedToProject,
+  },
   placementCount: placements.length,
   surfaceTileLimit: SURFACE_TILE_LIMIT,
   batchLimit: BATCH_LIMIT,
