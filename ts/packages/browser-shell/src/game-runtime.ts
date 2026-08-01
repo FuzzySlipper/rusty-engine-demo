@@ -1993,16 +1993,40 @@ export async function mountLoadingBayGame(
       const scheduledAfter = Number(
         feedbackAudioStatus.dataset.scheduled ?? "0",
       );
-      await delay(1_200);
-      checkpointReplacementPassed =
-        scheduledAfter - scheduledBefore === 1 &&
-        includesEvery(feedbackLayer.dataset.animationPulses, [
-          "checkpoint-restored",
-        ]) &&
+      const cleanupDeadline = performance.now() + 5_000;
+      while (
+        (
+          feedbackLayer.dataset.activeEffects !== "0" ||
+          feedbackLayer.dataset.pendingTimers !== "0" ||
+          feedbackAudioStatus.dataset.activeSounds !== "0" ||
+          document.querySelector("[data-animation-pulse]") !== null
+        ) &&
+        performance.now() < cleanupDeadline
+      ) {
+        await delay(16);
+      }
+      const restorePulseObserved = includesEvery(
+        feedbackLayer.dataset.animationPulses,
+        ["checkpoint-restored"],
+      );
+      const transientPresentationCleared =
         feedbackLayer.dataset.activeEffects === "0" &&
         feedbackLayer.dataset.pendingTimers === "0" &&
         feedbackAudioStatus.dataset.activeSounds === "0" &&
         document.querySelector("[data-animation-pulse]") === null;
+      checkpointReplacementPassed =
+        scheduledAfter - scheduledBefore === 1 &&
+        restorePulseObserved &&
+        transientPresentationCleared;
+      document.body.dataset.checkpointReplacementEvidence = [
+        scheduledBefore,
+        scheduledAfter,
+        restorePulseObserved,
+        feedbackLayer.dataset.activeEffects ?? "missing",
+        feedbackLayer.dataset.pendingTimers ?? "missing",
+        feedbackAudioStatus.dataset.activeSounds ?? "missing",
+        transientPresentationCleared,
+      ].join(":");
     }
     document.body.dataset.checkpointReplacement = checkpointReplacementPassed
       ? "pass"
