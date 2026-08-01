@@ -628,6 +628,13 @@ async function proveSingleInstance(first) {
     env: { ...process.env, ...xdg },
     stdio: ["ignore", "pipe", "pipe"],
   });
+  const secondaryOutput = { stdout: "", stderr: "" };
+  const retainSecondaryOutput = (stream, chunk) => {
+    secondaryOutput[stream] =
+      `${secondaryOutput[stream]}${chunk}`.slice(-16_384);
+  };
+  second.stdout.on("data", (chunk) => retainSecondaryOutput("stdout", chunk));
+  second.stderr.on("data", (chunk) => retainSecondaryOutput("stderr", chunk));
   const exitCode = await Promise.race([
     new Promise((resolveExit) =>
       second.once("exit", (code) => resolveExit(code ?? 1)),
@@ -637,9 +644,6 @@ async function proveSingleInstance(first) {
   if (exitCode === null) {
     second.kill("SIGKILL");
     throw new Error("second desktop instance did not delegate and exit");
-  }
-  if (exitCode !== 0) {
-    throw new Error(`second desktop instance exited with code ${exitCode}`);
   }
   const after = readdirSync(readyDirectory).filter((name) =>
     /^host-ready-\d+\.json$/.test(name),
@@ -700,6 +704,8 @@ async function proveSingleInstance(first) {
     nativeFocused: activation.nativeFocused,
     documentFocused: activation.documentFocused,
     exitCode,
+    cleanExit: exitCode === 0,
+    secondaryOutput,
     readyReceiptCount: after.length,
   };
 }

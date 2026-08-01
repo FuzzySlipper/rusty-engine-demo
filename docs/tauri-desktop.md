@@ -141,7 +141,9 @@ campaign against the installed sidecar and its installed Web bundle.
 The native callback always requests show, unminimize, native focus, and WebView focus on the existing
 window. The bounded cache receipt proves those requests were issued; the evidence records the window
 manager's resulting visible/minimized/focus state without treating an OS focus grant as application
-authority.
+authority. The secondary process must terminate within the bounded wait and may not start a host;
+its exit code and bounded stdout/stderr are retained because Linux DBus/WebDriver teardown can return
+a nonzero plugin-cleanup status after successful delegation.
 Set `--skip-campaign` only for focused iteration; that result is explicitly recorded as skipped and
 is not release certification. The `verify-tauri` GitHub job performs the exact install and complete
 certification after building the Debian package, and uploads the receipts and screenshots.
