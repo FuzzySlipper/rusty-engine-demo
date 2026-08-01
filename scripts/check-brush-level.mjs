@@ -184,7 +184,7 @@ for (const door of doorOwners) {
 }
 
 invariant(
-  evidence.protocolVersion === 12 &&
+  evidence.protocolVersion === 13 &&
     evidence.batchLimit === 32 &&
     evidence.batchCount === 11 &&
     evidence.oneRequestPerBatch === true,

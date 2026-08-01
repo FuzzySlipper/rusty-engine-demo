@@ -5,6 +5,7 @@ import { createInterface } from "node:readline";
 import { performance } from "node:perf_hooks";
 
 const ROOT = resolve(import.meta.dirname, "..");
+const PROTOCOL_VERSION = 13;
 const PROJECT =
   process.argv[2] === undefined
     ? resolve(ROOT, "content/projects/loading-bay.project.json")
@@ -121,7 +122,7 @@ const adapter = new Adapter();
 let current = (
   await adapter.send({
     type: "openProject",
-    protocolVersion: 12,
+    protocolVersion: PROTOCOL_VERSION,
     requestId: "actor-kit-open",
     root,
     projectFile: relative(root, PROJECT),
@@ -130,7 +131,7 @@ let current = (
 const startingHash = projectHash(current);
 const stale = await adapter.sendRaw({
   type: "prepareAssetImport",
-  protocolVersion: 12,
+  protocolVersion: PROTOCOL_VERSION,
   requestId: "actor-kit-stale-import",
   expectedProjectHash:
     "0000000000000000000000000000000000000000000000000000000000000000",
@@ -180,7 +181,7 @@ for (const variant of MANIFEST.variants) {
   if (existing?.import === undefined) {
     prepared = await adapter.send({
       type: "prepareAssetImport",
-      protocolVersion: 12,
+      protocolVersion: PROTOCOL_VERSION,
       requestId: `actor-kit-import-${variant.file}`,
       expectedProjectHash: projectHash(current),
       source: { scope: "project", path: sourcePath },
@@ -193,7 +194,7 @@ for (const variant of MANIFEST.variants) {
   } else {
     prepared = await adapter.send({
       type: "prepareAssetReimport",
-      protocolVersion: 12,
+      protocolVersion: PROTOCOL_VERSION,
       requestId: `actor-kit-reimport-${variant.file}`,
       expectedProjectHash: projectHash(current),
       assetId: variant.assetId,
@@ -207,7 +208,7 @@ for (const variant of MANIFEST.variants) {
   }
   const applied = await adapter.send({
     type: "applyAssetImport",
-    protocolVersion: 12,
+    protocolVersion: PROTOCOL_VERSION,
     requestId: `actor-kit-apply-${variant.file}`,
     expectedProjectHash: projectHash(current),
     planId: prepared.response.plan.planId,
@@ -229,7 +230,7 @@ for (const variant of MANIFEST.variants) {
 const firstAssetId = MANIFEST.variants[0].assetId;
 const noop = await adapter.send({
   type: "prepareAssetReimport",
-  protocolVersion: 12,
+  protocolVersion: PROTOCOL_VERSION,
   requestId: "actor-kit-noop-reimport",
   expectedProjectHash: projectHash(current),
   assetId: firstAssetId,
@@ -244,7 +245,7 @@ const finalHash = projectHash(current);
 const canonical = (
   await adapter.send({
     type: "readProject",
-    protocolVersion: 12,
+    protocolVersion: PROTOCOL_VERSION,
     requestId: "actor-kit-read",
   })
 ).response;
@@ -254,7 +255,7 @@ const freshAdapter = new Adapter();
 const fresh = (
   await freshAdapter.send({
     type: "openProject",
-    protocolVersion: 12,
+    protocolVersion: PROTOCOL_VERSION,
     requestId: "actor-kit-fresh-open",
     root,
     projectFile: relative(root, PROJECT),

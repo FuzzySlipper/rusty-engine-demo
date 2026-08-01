@@ -13,7 +13,7 @@ const EVIDENCE = resolve(
   ROOT,
   "docs/evidence/voxel-level-brush-authoring.json",
 );
-const PROTOCOL_VERSION = 12;
+const PROTOCOL_VERSION = 13;
 const BATCH_LIMIT = 32;
 const SURFACE_TILE_LIMIT = 8;
 const SCENE_ID = "scene/loading-bay";
