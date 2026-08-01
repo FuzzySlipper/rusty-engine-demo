@@ -385,7 +385,7 @@ test("serialized enemy bindings create animated assets and select authoritative 
           visible: true,
           visualState: "default",
         },
-      ],
+      ]),
       animatedMeshes: [
         {
           asset: "mesh-animation/bay-rusher",
