@@ -2418,6 +2418,8 @@ export async function mountLoadingBayGame(
     if (!cameraBoundaryEvidenceMode) {
       return;
     }
+    await presentationFeedback.settled();
+    await delay(100);
     document.body.dataset.cameraBoundaryMilestone = milestone;
     document.body.dataset.cameraBoundaryCaptured = "";
     const deadline = performance.now() + 30_000;
