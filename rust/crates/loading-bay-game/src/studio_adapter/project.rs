@@ -2003,6 +2003,12 @@ fn project_catalog(project: &StoredProject) -> Result<AssetCatalog, AdapterRejec
                 },
                 |metadata| metadata.dependencies.clone(),
             );
+            let mut unique_dependencies = Vec::with_capacity(dependencies.len());
+            for dependency in dependencies {
+                if !unique_dependencies.contains(&dependency) {
+                    unique_dependencies.push(dependency);
+                }
+            }
             Ok(StoredCatalogEntry {
                 id: asset.id.clone(),
                 version: metadata.map_or(1, |metadata| metadata.version),
@@ -2011,7 +2017,7 @@ fn project_catalog(project: &StoredProject) -> Result<AssetCatalog, AdapterRejec
                 label: metadata
                     .and_then(|metadata| metadata.label.clone())
                     .or_else(|| Some(asset.id.clone())),
-                dependencies,
+                dependencies: unique_dependencies,
                 material: asset.material.clone(),
                 texture: None,
                 voxel_atlas: None,
