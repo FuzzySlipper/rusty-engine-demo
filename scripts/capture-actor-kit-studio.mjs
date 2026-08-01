@@ -394,6 +394,38 @@ try {
     "actor-library baseline submission",
   );
 
+  await mkdir(OUTPUT, { recursive: true });
+  await focus("cargo-loader-arrival");
+  await zoomTowardSelection();
+  const groundingDesktop = await waitForSubmission(
+    baseline.count + 1,
+    "presentation",
+    "grounded actor selection",
+  );
+  await screenshot("renderable-grounding-desktop.png");
+  await command("Emulation.setDeviceMetricsOverride", {
+    width: 1000,
+    height: 844,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await delay(350);
+  await focus("generator-coolant-leak");
+  await zoomTowardSelection();
+  const groundingNarrow = await waitForSubmission(
+    groundingDesktop.count + 1,
+    "presentation",
+    "grounded hazard selection",
+  );
+  await screenshot("renderable-grounding-narrow.png");
+  await command("Emulation.setDeviceMetricsOverride", {
+    width: 1600,
+    height: 900,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await delay(350);
+
   const adapter = new Adapter();
   let previewProject = await adapter.send({
     type: "openProject",
@@ -516,7 +548,6 @@ try {
     );
   }
 
-  await mkdir(OUTPUT, { recursive: true });
   await focus("actor-proof-arc-warden-attack");
   await zoomTowardSelection();
   const attack = await waitForSubmission(
@@ -609,6 +640,8 @@ try {
     reopenedClips,
     submissions: {
       baseline,
+      groundingDesktop,
+      groundingNarrow,
       preview,
       attackSelection: attack,
       deathSelection: death,
@@ -642,6 +675,8 @@ try {
       host: HOST,
       viewport: [1600, 900],
       screenshots: [
+        "docs/evidence/renderable-grounding-desktop.png",
+        "docs/evidence/renderable-grounding-narrow.png",
         "docs/evidence/actor-kit-studio-arc-warden-attack.png",
         "docs/evidence/actor-kit-studio-bay-rusher-death.png",
       ],

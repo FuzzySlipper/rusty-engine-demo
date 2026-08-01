@@ -241,14 +241,15 @@ PYTHONPATH=/usr/lib/python3.14/site-packages blender --background --factory-star
 The recipe imports the medium rig once per variant, normalizes the actor to 1.78 world units with
 its source origin preserved, merges Kenney's named idle/run/jump actions, installs one embedded
 nearest-filtered skin, and exports one mesh, one armature, one material, and six named NLA-track
-animations. The small attack, hit, and death root-motion actions are original Loading Bay
-derivatives authored explicitly in the recipe; they do not rename or misrepresent stock clips and
-carry no gameplay authority.
+animations. The attack and hit clips are original Loading Bay combat poses keyed on the imported
+armature, while death uses a bounded root fall that returns the actor to its authored contact
+plane. These recipe-defined derivatives do not rename or misrepresent stock clips and carry no
+gameplay authority.
 
 | Product source                            | Skin                |   Bytes | SHA-256                                                            |
 | ----------------------------------------- | ------------------- | ------: | ------------------------------------------------------------------ |
-| `content/assets/actor-kit/arc-warden.glb` | `zombieMaleA.png`   | 339,812 | `b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d` |
-| `content/assets/actor-kit/bay-rusher.glb` | `zombieFemaleA.png` | 334,232 | `2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3` |
+| `content/assets/actor-kit/arc-warden.glb` | `zombieMaleA.png`   | 342,844 | `68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8` |
+| `content/assets/actor-kit/bay-rusher.glb` | `zombieFemaleA.png` | 337,260 | `72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87` |
 
 Both outputs contain exact `idle`, `run`, `jump`, `attack`, `hit`, and `death` clips. Their complete
 source file hashes, clip ranges/durations/origins, Blender version, target scale, final bytes, and
@@ -261,8 +262,8 @@ byte-identical GLBs at both recorded hashes.
 
 `content/assets/actor-kit/KENNEY-CC0-LICENSE.txt` preserves the source notice wording while
 normalizing its indentation, trailing whitespace, and line endings to repository text conventions
-(597 bytes, SHA-256
-`613d822181cefc9e55dfb8b59e9468e96feecb5bf4ca364b8ff579361eb859f0`). The original source
+(642 bytes, SHA-256
+`6d4444c863076faaf18c4a2c279ad1cf45b91cef1f4db3247a312ad6827298cc`). The original source
 `License.txt` hash remains recorded separately in the manifest.
 
 Rusty Engine task #6433 supplies the bounded binary animated-mesh import and shared retained

@@ -41,14 +41,14 @@
   "licenseNotice": {
     "path": "KENNEY-CC0-LICENSE.txt",
     "normalization": "UTF-8 LF with source indentation and trailing whitespace removed",
-    "sha256": "613d822181cefc9e55dfb8b59e9468e96feecb5bf4ca364b8ff579361eb859f0",
-    "bytes": 597
+    "sha256": "6d4444c863076faaf18c4a2c279ad1cf45b91cef1f4db3247a312ad6827298cc",
+    "bytes": 642
   },
   "variants": [
     {
       "file": "arc-warden.glb",
-      "sha256": "b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
-      "bytes": 339812,
+      "sha256": "68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8",
+      "bytes": 342844,
       "skin": "zombieMaleA.png",
       "clips": [
         {
@@ -75,15 +75,15 @@
         {
           "id": "attack",
           "frameStart": 0,
-          "frameEnd": 10,
-          "durationSeconds": 0.333333,
+          "frameEnd": 16,
+          "durationSeconds": 0.533333,
           "origin": "Loading Bay derivative"
         },
         {
           "id": "hit",
           "frameStart": 0,
-          "frameEnd": 8,
-          "durationSeconds": 0.266667,
+          "frameEnd": 12,
+          "durationSeconds": 0.4,
           "origin": "Loading Bay derivative"
         },
         {
@@ -101,8 +101,8 @@
     },
     {
       "file": "bay-rusher.glb",
-      "sha256": "2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
-      "bytes": 334232,
+      "sha256": "72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87",
+      "bytes": 337260,
       "skin": "zombieFemaleA.png",
       "clips": [
         {
@@ -129,15 +129,15 @@
         {
           "id": "attack",
           "frameStart": 0,
-          "frameEnd": 10,
-          "durationSeconds": 0.333333,
+          "frameEnd": 16,
+          "durationSeconds": 0.533333,
           "origin": "Loading Bay derivative"
         },
         {
           "id": "hit",
           "frameStart": 0,
-          "frameEnd": 8,
-          "durationSeconds": 0.266667,
+          "frameEnd": 12,
+          "durationSeconds": 0.4,
           "origin": "Loading Bay derivative"
         },
         {

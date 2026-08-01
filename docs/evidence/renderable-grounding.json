@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "providerRevision": "7bd7dde2b0ea179dad4803d466947426444f59fa",
+  "providerRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
   "protocolVersion": 13,
   "project": {
     "startingHash": "95f87931503ddc7f54ab85f54ca08f94399db59e2534d2bf882592594975da89",
-    "finalHash": "ee5fbd2825ab5bd8acb1c06ac4740d8b2495256f5cb26e5f5af4976a0bb1128b",
-    "finalBytes": 4114507,
+    "finalHash": "0d985cf6aeba7e7b239ad61fa0d3391c6e3c67d1fcf4a9701276831b4ac25492",
+    "finalBytes": 4117636,
     "schemaVersion": 24
   },
   "alignments": [
@@ -13,6 +13,24 @@
       "entityId": 4,
       "asset": "mesh-animation/bay-rusher",
       "worldTranslation": [7.5, 1.5, 12.5],
+      "worldScale": [1.15, 0.85, 1.15],
+      "visualTranslation": [0.0, -1.76503, 0.0],
+      "sourceLowerBound": 0.00032364338,
+      "expectedContactPlaneY": 0.0
+    },
+    {
+      "entityId": 5,
+      "asset": "mesh-animation/arc-warden",
+      "worldTranslation": [20.5, 1.5, 21.5],
+      "worldScale": [0.75, 1.35, 0.75],
+      "visualTranslation": [0.0, -1.11143, 0.0],
+      "sourceLowerBound": 0.00032364338,
+      "expectedContactPlaneY": 0.0
+    },
+    {
+      "entityId": 41,
+      "asset": "mesh-animation/bay-rusher",
+      "worldTranslation": [24.5, 1.5, 23.5],
       "worldScale": [1.15, 0.85, 1.15],
       "visualTranslation": [0.0, -1.76503, 0.0],
       "sourceLowerBound": 0.00032364338,
@@ -28,6 +46,42 @@
       "expectedContactPlaneY": 0.0
     },
     {
+      "entityId": 51,
+      "asset": "mesh-animation/bay-rusher",
+      "worldTranslation": [18.5, 1.5, 39.5],
+      "worldScale": [1.15, 0.85, 1.15],
+      "visualTranslation": [0.0, -1.76503, 0.0],
+      "sourceLowerBound": 0.00032364338,
+      "expectedContactPlaneY": 0.0
+    },
+    {
+      "entityId": 52,
+      "asset": "mesh-animation/arc-warden",
+      "worldTranslation": [24.5, 1.5, 39.5],
+      "worldScale": [0.75, 1.35, 0.75],
+      "visualTranslation": [0.0, -1.11143, 0.0],
+      "sourceLowerBound": 0.00032364338,
+      "expectedContactPlaneY": 0.0
+    },
+    {
+      "entityId": 53,
+      "asset": "mesh-animation/bay-rusher",
+      "worldTranslation": [20.5, 1.5, 43.5],
+      "worldScale": [1.15, 0.85, 1.15],
+      "visualTranslation": [0.0, -1.76503, 0.0],
+      "sourceLowerBound": 0.00032364338,
+      "expectedContactPlaneY": 0.0
+    },
+    {
+      "entityId": 54,
+      "asset": "mesh-animation/arc-warden",
+      "worldTranslation": [26.5, 1.5, 44.5],
+      "worldScale": [0.75, 1.35, 0.75],
+      "visualTranslation": [0.0, -1.11143, 0.0],
+      "sourceLowerBound": 0.00032364338,
+      "expectedContactPlaneY": 0.0
+    },
+    {
       "entityId": 6,
       "asset": "mesh/prop-kit/control-panel",
       "worldTranslation": [11.5, 1.5, 21.5],
@@ -35,6 +89,124 @@
       "visualTranslation": [0.0, -0.775, 0.0],
       "sourceLowerBound": -0.725,
       "expectedContactPlaneY": 0.0
+    },
+    {
+      "entityId": 7,
+      "asset": "mesh/prop-kit/extraction-beacon",
+      "worldTranslation": [18.5, 1.5, 46.5],
+      "worldScale": [1.0, 1.0, 1.0],
+      "visualTranslation": [0.0, -0.125, 0.0],
+      "sourceLowerBound": -1.375,
+      "expectedContactPlaneY": 0.0
+    },
+    {
+      "entityId": 27,
+      "asset": "mesh/prop-kit/hazard-marker",
+      "worldTranslation": [23.5, 1.5, 25.5],
+      "worldScale": [1.0, 1.0, 1.0],
+      "visualTranslation": [0.0, -1.38, 0.0],
+      "sourceLowerBound": -0.12,
+      "expectedContactPlaneY": 0.0
+    }
+  ],
+  "conventions": {
+    "floorStanding": "Align the transformed visual lower bound to the authored floor or raised-deck contact plane with renderable.localTransform only.",
+    "wallMounted": "Preserve the authored wall anchor and report clearance; never apply automatic lower-bound grounding.",
+    "suspended": "Preserve the explicit overhead support height and report clearance; never apply automatic lower-bound grounding.",
+    "intentionallyHovering": "Preserve the authored readable pickup hover height and report clearance as an explicit exception."
+  },
+  "inspections": [
+    {
+      "entityId": 3,
+      "label": "representative door",
+      "asset": "mesh/prop-kit/security-door",
+      "classification": "floorStanding",
+      "sourceLowerBound": -1.5,
+      "worldLowerBound": 0.0,
+      "contactPlaneY": 0.0,
+      "clearance": 0.0
+    },
+    {
+      "entityId": 6,
+      "label": "control",
+      "asset": "mesh/prop-kit/control-panel",
+      "classification": "floorStanding",
+      "sourceLowerBound": -0.725,
+      "worldLowerBound": 0.0,
+      "contactPlaneY": 0.0,
+      "clearance": 0.0
+    },
+    {
+      "entityId": 20,
+      "label": "representative pickup",
+      "asset": "mesh/prop-kit/energy-cell",
+      "classification": "intentionallyHovering",
+      "sourceLowerBound": -0.39,
+      "worldLowerBound": 1.11,
+      "contactPlaneY": 0.0,
+      "clearance": 1.11
+    },
+    {
+      "entityId": 27,
+      "label": "hazard",
+      "asset": "mesh/prop-kit/hazard-marker",
+      "classification": "floorStanding",
+      "sourceLowerBound": -0.12,
+      "worldLowerBound": 0.0,
+      "contactPlaneY": 0.0,
+      "clearance": 0.0
+    },
+    {
+      "entityId": 7,
+      "label": "beacon",
+      "asset": "mesh/prop-kit/extraction-beacon",
+      "classification": "floorStanding",
+      "sourceLowerBound": -1.375,
+      "worldLowerBound": 0.0,
+      "contactPlaneY": 0.0,
+      "clearance": 0.0
+    },
+    {
+      "entityId": 32,
+      "label": "exit",
+      "asset": "mesh/prop-kit/level-exit",
+      "classification": "wallMounted",
+      "sourceLowerBound": 0.0,
+      "worldLowerBound": 1.5,
+      "contactPlaneY": 0.0,
+      "clearance": 1.5
+    },
+    {
+      "entityId": 8,
+      "label": "crane",
+      "asset": "mesh/prop-kit/landmark-crane",
+      "classification": "suspended",
+      "sourceLowerBound": -2.5,
+      "worldLowerBound": 3.25,
+      "contactPlaneY": 0.0,
+      "clearance": 3.25
+    },
+    {
+      "entityId": 9,
+      "label": "tank",
+      "asset": "mesh/prop-kit/landmark-tank",
+      "classification": "floorStanding",
+      "sourceLowerBound": -2.0,
+      "worldLowerBound": 1.5,
+      "contactPlaneY": 1.5,
+      "clearance": 0.0
+    }
+  ],
+  "viewportEvidence": [
+    {
+      "path": "docs/evidence/renderable-grounding-desktop.png",
+      "viewport": [1600, 900],
+      "selectedEntityId": 4
+    },
+    {
+      "path": "docs/evidence/renderable-grounding-narrow.png",
+      "viewport": [1000, 844],
+      "selectedEntityId": 27
     }
   ],
   "ownership": {

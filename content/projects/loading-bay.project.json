@@ -1607,14 +1607,14 @@
       "id": "mesh-animation/arc-warden",
       "catalog": {
         "version": 1,
-        "hash": "b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+        "hash": "68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8",
         "sourcePath": "content/assets/actor-kit/arc-warden.glb",
         "label": "arc-warden"
       },
       "animatedMesh": {
         "asset": "mesh-animation/arc-warden",
         "runtimeFormat": "glb",
-        "contentHash": "sha256:b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+        "contentHash": "sha256:68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8",
         "clips": [
           {
             "id": "idle",
@@ -1634,12 +1634,12 @@
           {
             "id": "attack",
             "name": "attack",
-            "durationSeconds": 0.416667
+            "durationSeconds": 0.666667
           },
           {
             "id": "hit",
             "name": "hit",
-            "durationSeconds": 0.333333
+            "durationSeconds": 0.5
           },
           {
             "id": "death",
@@ -1667,11 +1667,11 @@
           "scope": "project",
           "path": "content/assets/actor-kit/arc-warden.glb"
         },
-        "sourceHash": "b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
-        "sourceByteCount": 339812,
+        "sourceHash": "68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8",
+        "sourceByteCount": 342844,
         "importerVersion": 2,
-        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/actor-kit/arc-warden.glb\",\n  \"sourceHash\": \"b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d\",\n  \"sourceSchemaVersion\": 2,\n  \"importerVersion\": 2,\n  \"meshAssetId\": \"mesh-animation/arc-warden\",\n  \"guid\": \"cc13b116c29a33a651edf381a21b327a\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"arc-warden.animated-mesh.json\",\n      \"contentHash\": \"8c6af9e72c7373f43d5801d20eb06cbc4116a85ad48af7ead2448b3d89ceff29\",\n      \"byteLen\": 926\n    },\n    {\n      \"relativePath\": \"arc-warden.catalog.json\",\n      \"contentHash\": \"3a4a997fb3ef197e767337c7e1310be98b15e26ba6f15f79a87cbbb75a88ea99\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"arc-warden.glb\",\n      \"contentHash\": \"b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d\",\n      \"byteLen\": 339812\n    }\n  ]\n}\n",
-        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"cc13b116c29a33a651edf381a21b327a\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/actor-kit/arc-warden.glb\"\n  },\n  \"sourceHash\": \"b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d\",\n  \"importerVersion\": 2,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": null\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"arc-warden.animated-mesh.json\",\n      \"contentHash\": \"8c6af9e72c7373f43d5801d20eb06cbc4116a85ad48af7ead2448b3d89ceff29\",\n      \"byteLen\": 926\n    },\n    {\n      \"relativePath\": \"arc-warden.catalog.json\",\n      \"contentHash\": \"3a4a997fb3ef197e767337c7e1310be98b15e26ba6f15f79a87cbbb75a88ea99\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"arc-warden.glb\",\n      \"contentHash\": \"b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d\",\n      \"byteLen\": 339812\n    }\n  ]\n}\n",
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/actor-kit/arc-warden.glb\",\n  \"sourceHash\": \"68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8\",\n  \"sourceSchemaVersion\": 2,\n  \"importerVersion\": 2,\n  \"meshAssetId\": \"mesh-animation/arc-warden\",\n  \"guid\": \"cc13b116c29a33a651edf381a21b327a\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"arc-warden.animated-mesh.json\",\n      \"contentHash\": \"5a5c72c7bd3cbaeaf1d0501620859bb3bd076c7d442642f3154b6a6932b88d40\",\n      \"byteLen\": 921\n    },\n    {\n      \"relativePath\": \"arc-warden.catalog.json\",\n      \"contentHash\": \"9977a2a37d6b4be484b909031199173d156cbff9aaa0087e31f5fe2da2204bc5\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"arc-warden.glb\",\n      \"contentHash\": \"68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8\",\n      \"byteLen\": 342844\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"cc13b116c29a33a651edf381a21b327a\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/actor-kit/arc-warden.glb\"\n  },\n  \"sourceHash\": \"68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8\",\n  \"importerVersion\": 2,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": null\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"arc-warden.animated-mesh.json\",\n      \"contentHash\": \"5a5c72c7bd3cbaeaf1d0501620859bb3bd076c7d442642f3154b6a6932b88d40\",\n      \"byteLen\": 921\n    },\n    {\n      \"relativePath\": \"arc-warden.catalog.json\",\n      \"contentHash\": \"9977a2a37d6b4be484b909031199173d156cbff9aaa0087e31f5fe2da2204bc5\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"arc-warden.glb\",\n      \"contentHash\": \"68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8\",\n      \"byteLen\": 342844\n    }\n  ]\n}\n",
         "generatedAssetIds": [
           "mesh-animation/arc-warden"
         ]
@@ -1681,14 +1681,14 @@
       "id": "mesh-animation/bay-rusher",
       "catalog": {
         "version": 1,
-        "hash": "2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+        "hash": "72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87",
         "sourcePath": "content/assets/actor-kit/bay-rusher.glb",
         "label": "bay-rusher"
       },
       "animatedMesh": {
         "asset": "mesh-animation/bay-rusher",
         "runtimeFormat": "glb",
-        "contentHash": "sha256:2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+        "contentHash": "sha256:72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87",
         "clips": [
           {
             "id": "idle",
@@ -1708,12 +1708,12 @@
           {
             "id": "attack",
             "name": "attack",
-            "durationSeconds": 0.416667
+            "durationSeconds": 0.666667
           },
           {
             "id": "hit",
             "name": "hit",
-            "durationSeconds": 0.333333
+            "durationSeconds": 0.5
           },
           {
             "id": "death",
@@ -1741,11 +1741,11 @@
           "scope": "project",
           "path": "content/assets/actor-kit/bay-rusher.glb"
         },
-        "sourceHash": "2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
-        "sourceByteCount": 334232,
+        "sourceHash": "72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87",
+        "sourceByteCount": 337260,
         "importerVersion": 2,
-        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/actor-kit/bay-rusher.glb\",\n  \"sourceHash\": \"2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3\",\n  \"sourceSchemaVersion\": 2,\n  \"importerVersion\": 2,\n  \"meshAssetId\": \"mesh-animation/bay-rusher\",\n  \"guid\": \"ab7282d98709a8906e2eb2411965d59b\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"bay-rusher.animated-mesh.json\",\n      \"contentHash\": \"6b35d09d8465cd6c89cdbf9e426ee19ccaccb2890168ff9670c76555f2ee0abf\",\n      \"byteLen\": 926\n    },\n    {\n      \"relativePath\": \"bay-rusher.catalog.json\",\n      \"contentHash\": \"93ea958325a385d4e860e350628e711925cad085ecbd2845a24514c36a106a31\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"bay-rusher.glb\",\n      \"contentHash\": \"2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3\",\n      \"byteLen\": 334232\n    }\n  ]\n}\n",
-        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"ab7282d98709a8906e2eb2411965d59b\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/actor-kit/bay-rusher.glb\"\n  },\n  \"sourceHash\": \"2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3\",\n  \"importerVersion\": 2,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": null\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"bay-rusher.animated-mesh.json\",\n      \"contentHash\": \"6b35d09d8465cd6c89cdbf9e426ee19ccaccb2890168ff9670c76555f2ee0abf\",\n      \"byteLen\": 926\n    },\n    {\n      \"relativePath\": \"bay-rusher.catalog.json\",\n      \"contentHash\": \"93ea958325a385d4e860e350628e711925cad085ecbd2845a24514c36a106a31\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"bay-rusher.glb\",\n      \"contentHash\": \"2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3\",\n      \"byteLen\": 334232\n    }\n  ]\n}\n",
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/actor-kit/bay-rusher.glb\",\n  \"sourceHash\": \"72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87\",\n  \"sourceSchemaVersion\": 2,\n  \"importerVersion\": 2,\n  \"meshAssetId\": \"mesh-animation/bay-rusher\",\n  \"guid\": \"ab7282d98709a8906e2eb2411965d59b\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"bay-rusher.animated-mesh.json\",\n      \"contentHash\": \"dc3bb23637070bea28851cd716985390ee9b0d196c19f665bd267a63c71c7a8e\",\n      \"byteLen\": 921\n    },\n    {\n      \"relativePath\": \"bay-rusher.catalog.json\",\n      \"contentHash\": \"a5e3711d520861cb2f8e15513ceace7c3476ac8ffa11b62db571ee8d40b48607\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"bay-rusher.glb\",\n      \"contentHash\": \"72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87\",\n      \"byteLen\": 337260\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"ab7282d98709a8906e2eb2411965d59b\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/actor-kit/bay-rusher.glb\"\n  },\n  \"sourceHash\": \"72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87\",\n  \"importerVersion\": 2,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": null\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"bay-rusher.animated-mesh.json\",\n      \"contentHash\": \"dc3bb23637070bea28851cd716985390ee9b0d196c19f665bd267a63c71c7a8e\",\n      \"byteLen\": 921\n    },\n    {\n      \"relativePath\": \"bay-rusher.catalog.json\",\n      \"contentHash\": \"a5e3711d520861cb2f8e15513ceace7c3476ac8ffa11b62db571ee8d40b48607\",\n      \"byteLen\": 294\n    },\n    {\n      \"relativePath\": \"bay-rusher.glb\",\n      \"contentHash\": \"72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87\",\n      \"byteLen\": 337260\n    }\n  ]\n}\n",
         "generatedAssetIds": [
           "mesh-animation/bay-rusher"
         ]
@@ -180842,6 +180842,24 @@
           "renderable": {
             "asset": "mesh-animation/arc-warden",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.11143,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "initialClip": "idle",
             "visualBinding": {
               "version": 1,
@@ -181035,6 +181053,24 @@
           "renderable": {
             "asset": "mesh/prop-kit/extraction-beacon",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -0.125,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "visualBinding": {
               "version": 1,
               "states": [
@@ -181989,6 +182025,24 @@
           "renderable": {
             "asset": "mesh/prop-kit/hazard-marker",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.38,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "visualBinding": {
               "version": 1,
               "states": [
@@ -182486,6 +182540,24 @@
           "renderable": {
             "asset": "mesh-animation/bay-rusher",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.76503,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "initialClip": "idle",
             "visualBinding": {
               "version": 1,
@@ -182773,6 +182845,24 @@
           "renderable": {
             "asset": "mesh-animation/bay-rusher",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.76503,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "initialClip": "idle",
             "visualBinding": {
               "version": 1,
@@ -182898,6 +182988,24 @@
           "renderable": {
             "asset": "mesh-animation/arc-warden",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.11143,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "initialClip": "idle",
             "visualBinding": {
               "version": 1,
@@ -183023,6 +183131,24 @@
           "renderable": {
             "asset": "mesh-animation/bay-rusher",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.76503,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "initialClip": "idle",
             "visualBinding": {
               "version": 1,
@@ -183148,6 +183274,24 @@
           "renderable": {
             "asset": "mesh-animation/arc-warden",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.11143,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "initialClip": "idle",
             "visualBinding": {
               "version": 1,

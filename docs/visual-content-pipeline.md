@@ -203,9 +203,9 @@ hit, and death actions are reproducible recipe inputs rather than renamed stock 
 The reproducible actor sources are checked in under `content/assets/actor-kit`. Blender
 5.1.2 produces two independently skinned 1.78-unit GLBs from the reviewed medium rig and installs
 the exact six-clip set `idle`, `run`, `jump`, `attack`, `hit`, `death`. Kenney owns the first three
-clips and both source skins under CC0; Loading Bay owns the explicit recipe-defined attack, hit, and
-death root actions. The completed GLBs are 339,812 and 334,232 bytes and retain one skinned mesh,
-one material, and one embedded texture each.
+clips and both source skins under CC0; Loading Bay owns the explicit recipe-defined armature attack
+and hit poses plus the contact-plane-bounded death fall. The completed GLBs are 342,844 and 337,260
+bytes and retain one skinned mesh, one material, and one embedded texture each.
 
 Protocol 12 consumes the independently approved Rusty Engine #6433 provider at exact revision
 `80ac6ed3f0bd1d9911edf44e33bcc90831d8909e`; the final product pins its reviewed descendant
@@ -688,7 +688,7 @@ serialized prop bindings, and no shipped visible renderable uses a primitive fal
 
 The later schema-24 descendant adds Engine-owned renderable-local presentation transforms without
 revising this historical campaign evidence. Its exact project hash is
-`ee5fbd2825ab5bd8acb1c06ac4740d8b2495256f5cb26e5f5af4976a0bb1128b`; the bounded lineage and
+`0d985cf6aeba7e7b239ad61fa0d3391c6e3c67d1fcf4a9701276831b4ac25492`; the bounded lineage and
 actor/static-prop grounding inputs are recorded in
 [`docs/evidence/renderable-grounding.json`](evidence/renderable-grounding.json). Entity world,
 collision, navigation, and gameplay authority remain unchanged.

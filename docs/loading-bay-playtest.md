@@ -12,7 +12,7 @@ The checked-in files under `content/projects` are the canonical Studio-owned sou
 
 | Artifact                                    | SHA-256                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------ |
-| `content/projects/loading-bay.project.json` | `ee5fbd2825ab5bd8acb1c06ac4740d8b2495256f5cb26e5f5af4976a0bb1128b` |
+| `content/projects/loading-bay.project.json` | `0d985cf6aeba7e7b239ad61fa0d3391c6e3c67d1fcf4a9701276831b4ac25492` |
 | `content/projects/relay-annex.project.json` | `0f5c5bc55f8643b75a395d83037a03dbc9c1ad938aa1622c070a9a9272a87bf3` |
 
 The schema-24 Loading Bay artifact contains one scene, 3,931 gameplay-proxy material voxels, 419
@@ -25,10 +25,24 @@ and 37 gameplay/landmark renderables are visible. Stable pretty-printing plus Ru
 capability-complete admission, save, and exact-byte round-trip make content drift fail the normal
 verification gate. Fixture generation cannot write either canonical file.
 
-The representative Bay Rusher, Arc Warden, and control-panel prop carry authored renderable-local
-translations. These presentation-only offsets align their differently authored mesh bounds to the
-contact plane while entity translations, collision shapes, navigation goals, and gameplay remain
-unchanged. Studio reads and writes the offsets through the guarded schema-24 project contract.
+All eight enemies plus the control panel, extraction beacon, and coolant hazard carry authored
+renderable-local translations. These presentation-only offsets align their differently authored
+mesh bounds to the contact plane while entity translations, collision shapes, navigation goals,
+and gameplay remain unchanged. Studio reads and writes the offsets through the guarded schema-24
+project contract.
+
+| Asset class | Loading Bay convention | Reviewed examples |
+| --- | --- | --- |
+| Floor-standing | Align the transformed lower bound to the authored floor or raised-deck plane with `renderable.localTransform`; never move the entity world transform. | all enemies, doors, control, hazard, beacon, tank |
+| Wall-mounted | Preserve the authored wall anchor and report clearance; do not apply lower-bound grounding. | level-exit marker, status runner |
+| Suspended | Preserve the explicit overhead support height and report clearance. | loading-bay crane |
+| Intentionally hovering | Preserve the readable pickup hover height as an explicit exception. | energy, health, armor, key, ammunition, and weapon pickups |
+
+The checked [`renderable-grounding.json`](evidence/renderable-grounding.json) records every enemy
+alignment and the Studio lower-bound/clearance readout for a representative door, control, pickup,
+hazard, beacon, exit, crane, and tank. Its desktop and narrow captures use the shared Studio
+viewport's origin, bounds, and contact-plane overlay; the convention is deliberately not a
+universal `minY = 0` rule.
 
 Relay Annex changes the room arrangement, player start, initial enemy placement and tuning,
 navigation target/speed, and beacon radius through serialized project data. It uses the same Rust

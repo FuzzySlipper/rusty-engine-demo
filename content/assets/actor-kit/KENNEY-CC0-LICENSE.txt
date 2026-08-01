@@ -22,3 +22,4 @@ Follow on social media for updates:
 
 • Twitter: twitter.com/KenneyNL
 • Instagram: instagram.com/kenney_nl
+• Mastodon: mastodon.gamedev.place/@kenney

@@ -9,9 +9,10 @@ Run from the repository root:
 
 The Kenney source supplies one rigged model, three animation FBX files, and
 several skins. This recipe produces two independently textured GLBs while
-retaining shared clip names and normalized world scale. Attack, hit, and death
-are small original object-space actions layered on the source rig; gameplay
-never derives authority from those clips.
+retaining shared clip names and normalized world scale. Attack and hit are
+original Loading Bay limb poses layered on the source rig. Death is a bounded
+root fall whose final pose is translated back onto the source contact plane;
+gameplay never derives authority from those clips.
 """
 
 from __future__ import annotations
@@ -183,24 +184,117 @@ def key_object_action(
     return action
 
 
+def key_pose_action(
+    armature: bpy.types.Object,
+    name: str,
+    frames: list[tuple[int, dict[str, tuple[float, float, float]]]],
+) -> bpy.types.Action:
+    """Author a bounded standalone pose action on the deform skeleton.
+
+    The imported rig's rest pose is a T-pose. Every authored frame keys the
+    same reviewed bone set, including an explicit arms-down stance, rather than
+    depending on a base NLA action that would not survive standalone glTF export.
+    """
+
+    armature.animation_data_create()
+    action = bpy.data.actions.new(name=name)
+    action.use_fake_user = True
+    armature.animation_data.action = action
+    bone_names = sorted({bone_name for _, pose in frames for bone_name in pose})
+    missing = [bone_name for bone_name in bone_names if bone_name not in armature.pose.bones]
+    if missing:
+        raise RuntimeError(f"{name} references missing pose bones {missing}")
+    for frame, pose in frames:
+        for bone_name in bone_names:
+            pose_bone = armature.pose.bones[bone_name]
+            pose_bone.rotation_mode = "XYZ"
+            pose_bone.rotation_euler = tuple(
+                math.radians(value)
+                for value in pose.get(bone_name, (0.0, 0.0, 0.0))
+            )
+            pose_bone.keyframe_insert(
+                data_path="rotation_euler", frame=frame, group=bone_name
+            )
+    for bone_name in bone_names:
+        armature.pose.bones[bone_name].rotation_euler = (0.0, 0.0, 0.0)
+    return action
+
+
+def combat_neutral_pose() -> dict[str, tuple[float, float, float]]:
+    """Return the explicit relaxed stance shared by the authored combat clips."""
+
+    return {
+        "UpperChest": (0.0, 0.0, 0.0),
+        "LeftArm": (0.0, 0.0, 72.0),
+        "LeftForeArm": (0.0, 0.0, 8.0),
+        "RightArm": (0.0, 0.0, -72.0),
+        "RightForeArm": (0.0, 0.0, -8.0),
+    }
+
+
+def pose_with(
+    base: dict[str, tuple[float, float, float]],
+    **overrides: tuple[float, float, float],
+) -> dict[str, tuple[float, float, float]]:
+    return {**base, **overrides}
+
+
 def add_original_actions(armature: bpy.types.Object) -> list[bpy.types.Action]:
+    neutral = combat_neutral_pose()
     return [
-        key_object_action(
+        key_pose_action(
             armature,
             "attack",
             [
-                (0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                (4, (0.0, -0.09, 0.0), (math.radians(-7), 0.0, 0.0)),
-                (10, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                (0, neutral),
+                (
+                    5,
+                    pose_with(
+                        neutral,
+                        UpperChest=(0.0, -12.0, -10.0),
+                        RightArm=(-30.0, -22.0, -30.0),
+                        RightForeArm=(-18.0, 0.0, -72.0),
+                        LeftArm=(8.0, 0.0, 58.0),
+                    ),
+                ),
+                (
+                    10,
+                    pose_with(
+                        neutral,
+                        UpperChest=(0.0, 18.0, 12.0),
+                        RightArm=(52.0, 18.0, -42.0),
+                        RightForeArm=(-70.0, 0.0, -38.0),
+                        LeftArm=(-10.0, 0.0, 48.0),
+                    ),
+                ),
+                (16, neutral),
             ],
         ),
-        key_object_action(
+        key_pose_action(
             armature,
             "hit",
             [
-                (0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                (3, (0.08, 0.04, 0.0), (0.0, math.radians(5), math.radians(11))),
-                (8, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                (0, neutral),
+                (
+                    3,
+                    pose_with(
+                        neutral,
+                        UpperChest=(-10.0, 0.0, -24.0),
+                        LeftArm=(18.0, -12.0, 98.0),
+                        LeftForeArm=(30.0, 0.0, 32.0),
+                        RightArm=(-12.0, 8.0, -46.0),
+                    ),
+                ),
+                (
+                    7,
+                    pose_with(
+                        neutral,
+                        UpperChest=(7.0, 0.0, 12.0),
+                        RightArm=(12.0, -8.0, -86.0),
+                        RightForeArm=(-22.0, 0.0, -34.0),
+                    ),
+                ),
+                (12, neutral),
             ],
         ),
         key_object_action(
@@ -208,8 +302,8 @@ def add_original_actions(armature: bpy.types.Object) -> list[bpy.types.Action]:
             "death",
             [
                 (0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                (10, (0.0, 0.02, -0.24), (math.radians(52), 0.0, 0.0)),
-                (22, (0.0, 0.12, -0.68), (math.radians(88), 0.0, 0.0)),
+                (10, (0.0, 0.04, 0.12), (math.radians(45), 0.0, 0.0)),
+                (22, (0.0, 0.18, 0.32), (math.radians(88), 0.0, 0.0)),
             ],
         ),
     ]
