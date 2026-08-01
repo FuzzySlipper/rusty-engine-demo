@@ -50,7 +50,10 @@ import {
           <a routerLink="/settings">Settings</a>
         </nav>
 
-        <p class="availability">
+        <p
+          class="availability"
+          [attr.data-session-readiness]="continueReadiness()"
+        >
           {{ continueMessage() }}
         </p>
       </section>
@@ -67,6 +70,7 @@ export class MainMenuComponent {
   protected readonly continueMessage = signal(
     "Checking the live Rust-owned session…",
   );
+  protected readonly continueReadiness = signal<ContinueReadiness>("checking");
 
   private readonly documentEffects = browserDocumentEffects();
   private readonly repository = browserHostUserSettingsRepository();
@@ -121,6 +125,7 @@ export class MainMenuComponent {
       if (live) {
         this.continueTarget.set({ kind: "live" });
         this.continueAvailable.set(true);
+        this.continueReadiness.set("verified-live");
         this.continueMessage.set(
           "Continue reconnects to the verified live Rust-owned session.",
         );
@@ -134,6 +139,7 @@ export class MainMenuComponent {
           storageRevision: save.storageRevision,
         });
         this.continueAvailable.set(true);
+        this.continueReadiness.set("verified-save");
         this.continueMessage.set(
           `Continue restores ${save.metadata?.displayName ?? saveSlotLabel(save.slot)} at tick ${String(save.metadata?.tick ?? 0)} from Rust-owned storage.`,
         );
@@ -141,18 +147,27 @@ export class MainMenuComponent {
       }
       this.continueTarget.set(null);
       this.continueAvailable.set(false);
+      this.continueReadiness.set("verified-none");
       this.continueMessage.set(
         "No verified live session or compatible save exists. Start a new game.",
       );
     } catch {
       this.continueTarget.set(null);
       this.continueAvailable.set(false);
+      this.continueReadiness.set("unavailable");
       this.continueMessage.set(
         "Continue is unavailable while the Rust host session cannot be verified.",
       );
     }
   }
 }
+
+type ContinueReadiness =
+  | "checking"
+  | "verified-live"
+  | "verified-save"
+  | "verified-none"
+  | "unavailable";
 
 type ContinueTarget =
   | { readonly kind: "live" }

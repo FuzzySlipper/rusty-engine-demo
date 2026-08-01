@@ -1403,12 +1403,11 @@ function gameShellScenario(viewportLabel) {
         const menu = document.querySelector("red-main-menu");
         const newGame = byText("button", "New game");
         const continueButton = byText("button", "Continue");
-        const availability = document.querySelector(".availability")?.textContent?.trim() ?? "";
+        const availability = document.querySelector(".availability");
         return menu !== null &&
           newGame instanceof HTMLButtonElement &&
           continueButton instanceof HTMLButtonElement &&
-          availability.length > 0 &&
-          !availability.startsWith("Checking");
+          availability?.getAttribute("data-session-readiness") === "verified-none";
       }, "authoritative main menu session readiness");
       const newGame = byText("button", "New game");
       const continueButton = byText("button", "Continue");
