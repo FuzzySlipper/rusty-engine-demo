@@ -5,7 +5,6 @@ use asset_catalog::{
     StoredAssetCatalog, StoredAssetReference, StoredAssetVersionRequirement, StoredCatalogEntry,
     UvStrategy,
 };
-use asset_import::{decode_sidecar, reconcile, SourceUri, MAX_SOURCE_BYTES};
 use authored_scene::{
     composed_world_transforms, encode_scene, validate_scene, AvailableSceneAsset,
     FlatSceneDocument, NodeMetadata, SceneAdmissionPlan, SceneEditCommand, SceneEditService,
@@ -47,13 +46,12 @@ use crate::weapon_authoring::loading_bay_weapon_owner_entity_ids;
 use crate::{
     admit_stored_project_with_document, encode_project_document, project_stored_voxel_objects_with,
     AdmittedProject, AdmittedStoredProject, DecodedProjectDocument, ProjectSaveMode, ProjectStore,
-    StoredAssetImport, StoredCollision, StoredEntityDefinition, StoredImportSource,
-    StoredKinematic, StoredLight, StoredProject, StoredRenderable, StoredScene,
-    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION,
-    LOADING_BAY_WEAPON_COMPONENT_TYPE_ID, STORED_PROJECT_SCHEMA_VERSION,
+    StoredAssetImport, StoredCollision, StoredEntityDefinition, StoredKinematic, StoredLight,
+    StoredProject, StoredRenderable, StoredScene, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID,
+    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION, LOADING_BAY_WEAPON_COMPONENT_TYPE_ID,
+    STORED_PROJECT_SCHEMA_VERSION,
 };
 
-use super::host_file::read_host_file;
 use super::path::ProjectLocation;
 use super::protocol::{
     AdapterRejection, AnimatedMeshResourceReadout, AssetBrowserReadout, AssetEntryReadout,
@@ -546,26 +544,7 @@ fn asset_browser_readout(
 }
 
 fn import_status(location: &ProjectLocation, import: &StoredAssetImport) -> &'static str {
-    let bytes = match &import.source {
-        StoredImportSource::Project { path } => {
-            match location.read_relative_file(path, MAX_SOURCE_BYTES as u64) {
-                Ok(bytes) => bytes,
-                Err(_) => return "unavailable",
-            }
-        }
-        StoredImportSource::Host { path } => match read_host_file(path, MAX_SOURCE_BYTES) {
-            Ok(source) => source.bytes,
-            Err(_) => return "unavailable",
-        },
-    };
-    let Ok(sidecar) = decode_sidecar(&import.sidecar_json) else {
-        return "metadataInvalid";
-    };
-    let uri = match &import.source {
-        StoredImportSource::Project { path } => SourceUri::RelativePath(path.clone()),
-        StoredImportSource::Host { path } => SourceUri::AbsolutePath(path.clone()),
-    };
-    reconcile(Some(&sidecar), &uri, &bytes).label()
+    super::asset_import::import_source_status(location, import)
 }
 
 pub fn apply_entity_translation(

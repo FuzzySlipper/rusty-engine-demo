@@ -1186,6 +1186,216 @@ fn animated_glb_import_reimport_and_failures_are_atomic() {
     assert_eq!(fs::read(root.project_file()).unwrap(), before_malformed);
 }
 
+#[test]
+fn project_gltf_closure_packs_for_runtime_reimports_and_reopens() {
+    let root = TestProjectRoot::new(&project_without_imported_actors());
+    let source_path = "content/assets/gltf/arc-warden.gltf";
+    let (document, resources) = external_gltf(
+        ARC_WARDEN_GLB,
+        "buffers/arc-warden.bin",
+        Some("textures/arc-warden.png"),
+    );
+    fs::create_dir_all(root.path().join("content/assets/gltf/buffers")).unwrap();
+    fs::create_dir_all(root.path().join("content/assets/gltf/textures")).unwrap();
+    fs::write(root.path().join(source_path), &document).unwrap();
+    for (uri, bytes) in &resources {
+        fs::write(root.path().join("content/assets/gltf").join(uri), bytes).unwrap();
+    }
+
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+    let (project_hash, _) = owner_version(&opened);
+    let prepared = prepare_asset_import(
+        &mut service,
+        "prepare-gltf-closure",
+        &project_hash,
+        source_path,
+    );
+    assert_eq!(prepared["type"], "assetImportPrepared", "{prepared:#}");
+    assert_eq!(prepared["plan"]["hasErrors"], false, "{prepared:#}");
+    assert_eq!(
+        prepared["plan"]["sourceByteCount"],
+        document.len()
+            + resources
+                .iter()
+                .map(|(_, bytes)| bytes.len())
+                .sum::<usize>()
+    );
+
+    let applied = apply_asset_import(&mut service, "apply-gltf-closure", &project_hash, &prepared);
+    assert_eq!(applied["type"], "projectMutationApplied", "{applied:#}");
+    let runtime_path = applied["project"]["animatedMeshResources"][0]["sourcePath"]
+        .as_str()
+        .unwrap();
+    assert!(runtime_path.starts_with("content/assets/gltf/arc-warden.rusty-import-"));
+    assert!(runtime_path.ends_with(".glb"));
+    let runtime_bytes = fs::read(root.path().join(runtime_path)).unwrap();
+    assert_eq!(&runtime_bytes[..4], b"glTF");
+    let canonical: Value = serde_json::from_str(
+        applied["project"]["canonical"]["projectJson"]
+            .as_str()
+            .unwrap(),
+    )
+    .unwrap();
+    let actor = canonical["assets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|asset| asset["id"] == "mesh-animation/arc-warden")
+        .unwrap();
+    assert_eq!(actor["import"]["source"]["path"], source_path);
+    assert_eq!(actor["catalog"]["sourcePath"], runtime_path);
+
+    drop(service);
+    let mut reopened_service = StudioAdapterService::new();
+    let reopened = open(&mut reopened_service, &root);
+    assert_eq!(
+        reopened["project"]["animatedMeshResources"][0]["sourcePath"],
+        runtime_path
+    );
+    assert_eq!(
+        reopened["project"]["assetBrowser"]["assets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|asset| asset["assetId"] == "mesh-animation/arc-warden")
+            .unwrap()["import"]["status"],
+        "unchanged"
+    );
+
+    let image = root
+        .path()
+        .join("content/assets/gltf/textures/arc-warden.png");
+    let mut changed_image = fs::read(&image).unwrap();
+    let last = changed_image.last_mut().unwrap();
+    *last ^= 1;
+    fs::write(&image, changed_image).unwrap();
+    let drifted = send(
+        &mut reopened_service,
+        json!({
+            "type": "readProject",
+            "protocolVersion": 12,
+            "requestId": "read-gltf-resource-drift"
+        }),
+    );
+    assert_eq!(
+        drifted["project"]["assetBrowser"]["assets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|asset| asset["assetId"] == "mesh-animation/arc-warden")
+            .unwrap()["import"]["status"],
+        "contentChanged"
+    );
+    let drift_hash = owner_version(&drifted).0;
+    let reimport = send(
+        &mut reopened_service,
+        json!({
+            "type": "prepareAssetReimport",
+            "protocolVersion": 12,
+            "requestId": "prepare-gltf-resource-reimport",
+            "expectedProjectHash": drift_hash,
+            "assetId": "mesh-animation/arc-warden"
+        }),
+    );
+    assert_eq!(reimport["type"], "assetImportPrepared", "{reimport:#}");
+    assert_eq!(reimport["plan"]["hasErrors"], false, "{reimport:#}");
+    let reapplied = apply_asset_import(
+        &mut reopened_service,
+        "apply-gltf-resource-reimport",
+        &drift_hash,
+        &reimport,
+    );
+    assert_eq!(reapplied["type"], "projectMutationApplied", "{reapplied:#}");
+    assert_ne!(
+        reapplied["project"]["animatedMeshResources"][0]["sourcePath"],
+        runtime_path
+    );
+
+    let stable_project = fs::read(root.project_file()).unwrap();
+    let packed_files_before = fs::read_dir(root.path().join("content/assets/gltf"))
+        .unwrap()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.path().extension().is_some_and(|value| value == "glb"))
+        .count();
+    fs::remove_file(
+        root.path()
+            .join("content/assets/gltf/buffers/arc-warden.bin"),
+    )
+    .unwrap();
+    let missing = send(
+        &mut reopened_service,
+        json!({
+            "type": "prepareAssetReimport",
+            "protocolVersion": 12,
+            "requestId": "prepare-gltf-missing-resource",
+            "expectedProjectHash": owner_version(&reapplied).0,
+            "assetId": "mesh-animation/arc-warden"
+        }),
+    );
+    assert_eq!(missing["type"], "rejected", "{missing:#}");
+    assert_eq!(missing["error"]["code"], "assetImport.gltfResourceRejected");
+    assert_eq!(fs::read(root.project_file()).unwrap(), stable_project);
+    let packed_files_after = fs::read_dir(root.path().join("content/assets/gltf"))
+        .unwrap()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.path().extension().is_some_and(|value| value == "glb"))
+        .count();
+    assert_eq!(packed_files_after, packed_files_before);
+}
+
+#[test]
+fn project_gltf_data_uris_need_no_browser_or_filesystem_resolution() {
+    let root = TestProjectRoot::new(&project_without_imported_actors());
+    let source_path = "content/assets/gltf/embedded-arc-warden.gltf";
+    let (document, resources) =
+        external_gltf(ARC_WARDEN_GLB, "arc-warden.bin", Some("arc-warden.png"));
+    let mut document: Value = serde_json::from_slice(&document).unwrap();
+    let buffer = resources
+        .iter()
+        .find(|(uri, _)| uri == "arc-warden.bin")
+        .unwrap();
+    let image = resources
+        .iter()
+        .find(|(uri, _)| uri == "arc-warden.png")
+        .unwrap();
+    document["buffers"][0]["uri"] = format!(
+        "data:application/octet-stream;base64,{}",
+        base64_encode(&buffer.1)
+    )
+    .into();
+    document["images"][0]["uri"] =
+        format!("data:image/png;base64,{}", base64_encode(&image.1)).into();
+    fs::create_dir_all(root.path().join("content/assets/gltf")).unwrap();
+    fs::write(
+        root.path().join(source_path),
+        serde_json::to_vec(&document).unwrap(),
+    )
+    .unwrap();
+
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+    let (project_hash, _) = owner_version(&opened);
+    let prepared = prepare_asset_import(
+        &mut service,
+        "prepare-gltf-data-uris",
+        &project_hash,
+        source_path,
+    );
+    assert_eq!(prepared["type"], "assetImportPrepared", "{prepared:#}");
+    assert_eq!(prepared["plan"]["hasErrors"], false, "{prepared:#}");
+    let applied = apply_asset_import(
+        &mut service,
+        "apply-gltf-data-uris",
+        &project_hash,
+        &prepared,
+    );
+    assert_eq!(applied["type"], "projectMutationApplied", "{applied:#}");
+    assert!(applied["project"]["animatedMeshResources"][0]["sourcePath"]
+        .as_str()
+        .is_some_and(|path| path.ends_with(".glb")));
+}
+
 fn prepare_asset_import(
     service: &mut StudioAdapterService,
     request_id: &str,
@@ -1250,6 +1460,88 @@ fn mutate_glb_json(source: &[u8], mutate: impl FnOnce(&mut Value)) -> Vec<u8> {
     let total_length = result.len() as u32;
     result[8..12].copy_from_slice(&total_length.to_le_bytes());
     result
+}
+
+fn project_without_imported_actors() -> String {
+    let mut project: Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    for scene in project["scenes"].as_array_mut().unwrap() {
+        for entity in scene["entities"].as_array_mut().unwrap() {
+            if matches!(
+                entity["renderable"]["asset"].as_str(),
+                Some("mesh-animation/arc-warden" | "mesh-animation/bay-rusher")
+            ) {
+                entity["renderable"]["asset"] = "mesh/player-marker".into();
+                entity["renderable"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("initialClip");
+                entity["renderable"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("visualBinding");
+            }
+        }
+    }
+    project["assets"].as_array_mut().unwrap().retain(|asset| {
+        !matches!(
+            asset["id"].as_str(),
+            Some("mesh-animation/arc-warden" | "mesh-animation/bay-rusher")
+        )
+    });
+    serde_json::to_string(&project).unwrap()
+}
+
+fn external_gltf(
+    glb: &[u8],
+    buffer_uri: &str,
+    image_uri: Option<&str>,
+) -> (Vec<u8>, Vec<(String, Vec<u8>)>) {
+    assert_eq!(&glb[..4], b"glTF");
+    let json_length = u32::from_le_bytes(glb[12..16].try_into().unwrap()) as usize;
+    let json_end = 20 + json_length;
+    let mut root: Value = serde_json::from_slice(&glb[20..json_end]).unwrap();
+    let bin_start = json_end + 8;
+    let declared_buffer_length = root["buffers"][0]["byteLength"].as_u64().unwrap() as usize;
+    let bin = glb[bin_start..bin_start + declared_buffer_length].to_vec();
+    root["buffers"][0]["uri"] = buffer_uri.into();
+    let mut resources = vec![(buffer_uri.to_owned(), bin.clone())];
+    if let Some(image_uri) = image_uri {
+        let view_index = root["images"][0]["bufferView"].as_u64().unwrap() as usize;
+        let view = &root["bufferViews"][view_index];
+        let offset = view["byteOffset"].as_u64().unwrap_or(0) as usize;
+        let length = view["byteLength"].as_u64().unwrap() as usize;
+        let image_bytes = bin[offset..offset + length].to_vec();
+        let image = root["images"][0].as_object_mut().unwrap();
+        image.remove("bufferView");
+        image.insert("uri".to_owned(), image_uri.into());
+        resources.push((image_uri.to_owned(), image_bytes));
+        resources.sort_by(|left, right| left.0.cmp(&right.0));
+    }
+    (serde_json::to_vec(&root).unwrap(), resources)
+}
+
+fn base64_encode(bytes: &[u8]) -> String {
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut encoded = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let first = chunk[0] as u32;
+        let second = chunk.get(1).copied().unwrap_or(0) as u32;
+        let third = chunk.get(2).copied().unwrap_or(0) as u32;
+        let value = (first << 16) | (second << 8) | third;
+        encoded.push(TABLE[((value >> 18) & 63) as usize] as char);
+        encoded.push(TABLE[((value >> 12) & 63) as usize] as char);
+        encoded.push(if chunk.len() > 1 {
+            TABLE[((value >> 6) & 63) as usize] as char
+        } else {
+            '='
+        });
+        encoded.push(if chunk.len() > 2 {
+            TABLE[(value & 63) as usize] as char
+        } else {
+            '='
+        });
+    }
+    encoded
 }
 
 fn imported_triangle(color: [f32; 4]) -> String {

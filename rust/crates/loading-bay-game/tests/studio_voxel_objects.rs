@@ -439,6 +439,8 @@ fn static_object_candidate_is_private_projected_atomic_and_restart_stable() {
         frames: vec![
             VoxelObjectAnimationFrame {
                 duration_seconds: Some(1.0),
+                anchors: Vec::new(),
+                collision: None,
                 frame: oversized_object.default_frame.clone(),
             };
             8_193
@@ -1781,10 +1783,14 @@ fn stored_animated_object(asset_id: &str) -> StoredAsset {
             frames: vec![
                 VoxelObjectAnimationFrame {
                     duration_seconds: Some(0.5),
+                    anchors: Vec::new(),
+                    collision: None,
                     frame: stored_animation_frame(bounds, 0),
                 },
                 VoxelObjectAnimationFrame {
                     duration_seconds: Some(0.5),
+                    anchors: Vec::new(),
+                    collision: None,
                     frame: stored_animation_frame(bounds, 1),
                 },
             ],

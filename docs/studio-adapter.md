@@ -110,11 +110,17 @@ reads. Host-file replacement requires the exact prior SHA-256, stages and syncs 
 candidate, rechecks the target, and atomically promotes it. Invalid, stale, oversized, or ambiguous
 requests preserve project and target bytes.
 
-Imported static meshes retain their canonical `render-model` payload, catalog metadata, manifest,
-sidecar, source fingerprint, and generated asset identities in the project document. Readout reports
-source drift without mutating content. Reimport replaces only the prior generated identity set and
-then runs complete project admission, so unrelated collisions, removed dependencies, stale plans,
-and invalid renderer payloads fail atomically.
+Imported meshes retain their canonical `render-model` payload, catalog metadata, manifest,
+sidecar, source fingerprint, and generated asset identities in the project document. Project-local
+JSON glTF sources are resolved only by the trusted Rust adapter through Engine's bounded closure
+API. Relative buffers and images are read with per-resource and aggregate limits before retention;
+data URIs remain inside the admitted root. The adapter packs the complete closure into a
+content-addressed project-local GLB, and only that self-contained resource is projected to the
+renderer. Browser code never resolves glTF URIs. Authored `.gltf` provenance remains distinct from
+the packed runtime path, so a change to an external buffer or image reports source drift and is
+included in reimport identity. Reimport replaces only the prior generated identity set and then runs
+complete project admission, so missing resources, unrelated collisions, stale plans, and invalid
+renderer payloads fail before project publication.
 
 Voxel objects persist the Engine-owned asset, default frame, clips and per-frame timing, palette,
 source-material mapping, exact conversion provenance, and game-owned scene instances. Every
