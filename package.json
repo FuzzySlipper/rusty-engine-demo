@@ -10,6 +10,7 @@
     "build:tauri": "tauri build --bundles deb,appimage",
     "build:tauri:binary": "tauri build --no-bundle",
     "capture:final": "node scripts/capture-final-product.mjs",
+    "capture:camera-boundaries": "node scripts/capture-camera-boundary-evidence.mjs",
     "capture:actor-animation": "node scripts/capture-actor-animation-contact-sheets.mjs",
     "certify:performance": "node scripts/certify-headed-performance.mjs",
     "certify:tauri-deploy": "node scripts/certify-tauri-deployment.mjs",

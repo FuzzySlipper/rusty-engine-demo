@@ -385,7 +385,7 @@ test("serialized enemy bindings create animated assets and select authoritative 
           visible: true,
           visualState: "default",
         },
-      ]),
+      ],
       animatedMeshes: [
         {
           asset: "mesh-animation/bay-rusher",
@@ -712,16 +712,25 @@ test("authored lights use retained shared-renderer light operations", () => {
   assert.equal(adapter.trackedLightCount, 0);
 });
 
-test("camera pose is rebuilt as a presentation offset from accepted player state", () => {
+test("gameplay camera uses only an eye-height offset from accepted player state", () => {
   const player = state([]).player;
   const camera = derivePlayerCameraPose(player);
 
-  assert.ok(Math.abs(camera.position[0] - 0.5) < 0.000_001);
+  assert.equal(camera.position[0], player.position[0]);
   assert.equal(camera.position[1], 1.7);
-  assert.equal(camera.position[2], -0.5);
+  assert.equal(camera.position[2], player.position[2]);
   assert.equal(camera.yawDegrees, 180);
   assert.equal(camera.pitchDegrees, -10);
   assert.equal("camera" in player, false);
+
+  for (const yawDegrees of [-180, -90, 0, 90, 180]) {
+    const turned = derivePlayerCameraPose({ ...player, yawDegrees });
+    assert.deepEqual(
+      [turned.position[0], turned.position[2]],
+      [player.position[0], player.position[2]],
+      `yaw ${String(yawDegrees)} introduced horizontal camera trailing`,
+    );
+  }
 
   const localPlayer = {
     id: 1,

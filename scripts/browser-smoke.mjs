@@ -179,6 +179,16 @@ function bodyDataValue(html, attribute) {
   return match[1];
 }
 
+function bodyDataVector(html, attribute) {
+  const values = bodyDataValue(html, attribute)
+    .split(",")
+    .map((value) => Number(value));
+  if (values.length !== 3 || values.some((value) => !Number.isFinite(value))) {
+    throw new Error(`browser smoke did not publish a numeric ${attribute}`);
+  }
+  return values;
+}
+
 function bodyJsonScript(html, id) {
   const match = html.match(
     new RegExp(`<script(?=[^>]*id="${id}")[^>]*>([\\s\\S]*?)<\\/script>`),
@@ -317,6 +327,8 @@ async function runFullBrowserProduct(project) {
       'data-session-dropped-facts="0"',
       'data-session-pending-input="0"',
       'data-session-pending-edges="0"',
+      'data-gameplay-camera-horizontal-offset="0.000000"',
+      'data-gameplay-camera-eye-height="1.200000"',
       'data-event-history-bounded="pass"',
       'data-event-kinds-bounded="pass"',
       'data-renderer-telemetry="pass"',
@@ -345,6 +357,24 @@ async function runFullBrowserProduct(project) {
         `browser smoke missing ${missing.join(", ")}\n${result.stdout.match(/<body[^>]*>/)?.[0] ?? "body tag unavailable"}\n${result.stdout.slice(-6_000)}`,
       );
     }
+    const cameraPosition = bodyDataVector(
+      result.stdout,
+      "data-gameplay-camera-position",
+    );
+    const playerPosition = bodyDataVector(
+      result.stdout,
+      "data-gameplay-camera-player-position",
+    );
+    assert.deepEqual(
+      [cameraPosition[0], cameraPosition[2]],
+      [playerPosition[0], playerPosition[2]],
+      "accepted gameplay camera must share the Rust player horizontal pivot",
+    );
+    assert.equal(
+      cameraPosition[1] - playerPosition[1],
+      1.2,
+      "accepted gameplay camera must use the documented eye-height offset",
+    );
     const sessionEvidence = {
       legacyBytes: bodyDataNumber(result.stdout, "data-session-legacy-bytes"),
       bootstrapBytes: bodyDataNumber(

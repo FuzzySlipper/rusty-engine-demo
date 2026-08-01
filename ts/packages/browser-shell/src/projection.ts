@@ -540,20 +540,19 @@ export interface RuntimeVoxelEditReceipt {
   readonly persistedToProject: boolean;
 }
 
-/** Presentation-only follow camera rebuilt from the accepted Rust player pose. */
+/** Gameplay eye height above the accepted Rust player origin. */
+export const GAMEPLAY_CAMERA_EYE_HEIGHT = 1.2;
+
+/** Presentation-only first-person camera rebuilt from the accepted Rust player pose. */
 export function derivePlayerCameraPose(
   player: RuntimePlayerState,
-  height = 1.2,
-  followDistance = 1,
+  eyeHeight = GAMEPLAY_CAMERA_EYE_HEIGHT,
 ): DerivedCameraPose {
-  const yawRadians = (player.yawDegrees * Math.PI) / 180;
-  const forwardX = -Math.sin(yawRadians);
-  const forwardZ = -Math.cos(yawRadians);
   return {
     position: [
-      player.position[0] - forwardX * followDistance,
-      player.position[1] + height,
-      player.position[2] - forwardZ * followDistance,
+      player.position[0],
+      player.position[1] + eyeHeight,
+      player.position[2],
     ],
     yawDegrees: player.yawDegrees,
     pitchDegrees: player.pitchDegrees,

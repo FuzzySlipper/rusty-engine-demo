@@ -209,6 +209,7 @@ export async function mountLoadingBayGame(
   const convertedSmokeMode = query.has("converted-smoke");
   const inputProofMode = query.has("input-proof");
   const rendererStatisticsProofMode = query.has("renderer-statistics-proof");
+  const cameraBoundaryEvidenceMode = query.has("camera-boundary-evidence");
   let lastActionRejection: string | null = null;
   const authoringQueue = new SerializedActionQueue(recordActionRejection);
 
@@ -260,6 +261,7 @@ export async function mountLoadingBayGame(
   });
   const initialFrame = projection.apply(current);
   const initialCamera = derivePlayerCameraPose(current.player);
+  publishCameraEvidence(initialCamera.position, current.player.position);
   const animatedMeshResources = new Map(
     current.animatedMeshes.map((resource) => [resource.asset, resource] as const),
   );
@@ -1344,17 +1346,35 @@ export async function mountLoadingBayGame(
       current.player.pitchDegrees,
       current.player.lookDegreesPerUnit,
     );
-    surface.setCameraPose(
-      derivePlayerCameraPose({
-        ...current.player,
-        yawDegrees: projectedLook.yawDegrees,
-        pitchDegrees: projectedLook.pitchDegrees,
-      }),
-    );
+    const camera = derivePlayerCameraPose({
+      ...current.player,
+      yawDegrees: projectedLook.yawDegrees,
+      pitchDegrees: projectedLook.pitchDegrees,
+    });
+    surface.setCameraPose(camera);
+    publishCameraEvidence(camera.position, current.player.position);
     const [yawUnits, pitchUnits] = localLookOffset.pendingUnits;
     document.body.dataset.localLookPresentation = "bounded-disposable";
     document.body.dataset.localLookYawUnits = yawUnits.toFixed(3);
     document.body.dataset.localLookPitchUnits = pitchUnits.toFixed(3);
+  }
+
+  function publishCameraEvidence(
+    cameraPosition: readonly [number, number, number],
+    playerPosition: readonly [number, number, number],
+  ): void {
+    const horizontalOffset = Math.hypot(
+      cameraPosition[0] - playerPosition[0],
+      cameraPosition[2] - playerPosition[2],
+    );
+    document.body.dataset.gameplayCameraPosition = cameraPosition.join(",");
+    document.body.dataset.gameplayCameraPlayerPosition =
+      playerPosition.join(",");
+    document.body.dataset.gameplayCameraHorizontalOffset =
+      horizontalOffset.toFixed(6);
+    document.body.dataset.gameplayCameraEyeHeight = (
+      cameraPosition[1] - playerPosition[1]
+    ).toFixed(6);
   }
 
   async function aimAtEnemy(enemyId: number): Promise<void> {
@@ -1533,6 +1553,9 @@ export async function mountLoadingBayGame(
       : "fail";
 
     const arrivalReached = await walkPlayerPath([[6.5, 6.5]]);
+    if (arrivalReached) {
+      await pauseForCameraBoundaryEvidence("wall");
+    }
     const earlyEnemyDefeated =
       arrivalReached && (await damageEnemyTo(4, 0, 10));
     const arrivalSupplyReached =
@@ -1558,6 +1581,9 @@ export async function mountLoadingBayGame(
         [6.5, 24.5],
         [3.5, 24.5],
       ]));
+    if (sideStorageReached) {
+      await pauseForCameraBoundaryEvidence("corner");
+    }
     const secretDiscovered =
       sideStorageReached &&
       current.secretRegions.some(
@@ -1651,6 +1677,9 @@ export async function mountLoadingBayGame(
       [11.5, 28.5],
       [11.5, 19.5],
     ]);
+    if (lockedDoorReached) {
+      await pauseForCameraBoundaryEvidence("doorway");
+    }
     if (lockedDoorReached) {
       await enqueueInteraction(30);
     }
@@ -2381,6 +2410,26 @@ export async function mountLoadingBayGame(
     return new Promise((resolve) =>
       globalThis.setTimeout(resolve, milliseconds),
     );
+  }
+
+  async function pauseForCameraBoundaryEvidence(
+    milestone: "wall" | "corner" | "doorway",
+  ): Promise<void> {
+    if (!cameraBoundaryEvidenceMode) {
+      return;
+    }
+    document.body.dataset.cameraBoundaryMilestone = milestone;
+    document.body.dataset.cameraBoundaryCaptured = "";
+    const deadline = performance.now() + 30_000;
+    while (
+      document.body.dataset.cameraBoundaryCaptured !== milestone &&
+      performance.now() < deadline
+    ) {
+      await delay(16);
+    }
+    if (document.body.dataset.cameraBoundaryCaptured !== milestone) {
+      throw new Error(`camera boundary evidence timed out at ${milestone}`);
+    }
   }
 
   function requiredElement<T extends Element>(

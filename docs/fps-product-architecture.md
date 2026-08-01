@@ -109,7 +109,10 @@ No component callback, browser timer, renderer callback, or plugin scheduler can
 3. The game projection submits changed descriptors to the retained shared renderer.
 4. The renderer owns frame submission and reports its latest timing sample.
 5. Presentation consumes facts once for audio, particles, recoil, damage flash, and messages.
-6. Any pending-look camera offset is bounded, disposable, reconciled on acknowledgement, and
+6. Normal gameplay derives a first-person camera at the accepted player X/Z and exactly 1.2 world
+   units above the accepted player Y. It has no horizontal follow/trailing offset, so camera and
+   collision cannot straddle a wall or doorway boundary.
+7. Any pending-look camera offset is bounded, disposable, reconciled on acknowledgement, and
    cleared on rejection, reconnect, pause, death, pointer-lock loss, or route disposal. Rust pose
    remains the only aim and firing authority.
 
