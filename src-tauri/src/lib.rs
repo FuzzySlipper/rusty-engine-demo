@@ -3,10 +3,11 @@ use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::net::{SocketAddr, TcpStream};
 use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{App, AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, Wry};
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
@@ -16,6 +17,8 @@ use url::Url;
 const MANIFEST_FILE: &str = "desktop-package-manifest.json";
 const SIDECAR_NAME: &str = "loading-bay-browser-host";
 const READY_TIMEOUT: Duration = Duration::from_secs(15);
+const ACTIVATION_RECEIPT_FILE: &str = "desktop-activation.json";
+static ACTIVATION_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -58,6 +61,20 @@ struct HostState {
     expected_shutdown: Arc<Mutex<bool>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ActivationReceipt {
+    schema_version: u32,
+    shell_pid: u32,
+    sequence: u64,
+    observed_at_unix_milliseconds: u64,
+    window_found: bool,
+    show_requested: bool,
+    unminimize_requested: bool,
+    native_focus_requested: bool,
+    webview_focus_requested: bool,
+}
+
 impl HostState {
     fn stop(&self) {
         *self.expected_shutdown.lock().expect("shutdown lock") = true;
@@ -76,16 +93,30 @@ impl Drop for HostState {
 pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.unminimize();
-                let _ = window.set_focus();
-                let _ = window.eval(
-                    r#"document.body.dataset.desktopActivationSequence = String(
+            let receipt = if let Some(window) = app.get_webview_window("main") {
+                let show_requested = window.show().is_ok();
+                let unminimize_requested = window.unminimize().is_ok();
+                let native_focus_requested = window.set_focus().is_ok();
+                let webview_focus_requested = window
+                    .eval(
+                        r#"document.body.dataset.desktopActivationSequence = String(
                       Number(document.body.dataset.desktopActivationSequence ?? "0") + 1,
                     );
                     window.focus();"#,
-                );
+                    )
+                    .is_ok();
+                activation_receipt(
+                    true,
+                    show_requested,
+                    unminimize_requested,
+                    native_focus_requested,
+                    webview_focus_requested,
+                )
+            } else {
+                activation_receipt(false, false, false, false, false)
+            };
+            if let Err(error) = write_activation_receipt(app, &receipt) {
+                eprintln!("could not record desktop activation: {error}");
             }
         }))
         .plugin(tauri_plugin_shell::init());
@@ -121,6 +152,69 @@ pub fn run() {
         }
         _ => {}
     });
+}
+
+fn activation_receipt(
+    window_found: bool,
+    show_requested: bool,
+    unminimize_requested: bool,
+    native_focus_requested: bool,
+    webview_focus_requested: bool,
+) -> ActivationReceipt {
+    ActivationReceipt {
+        schema_version: 1,
+        shell_pid: std::process::id(),
+        sequence: ACTIVATION_SEQUENCE.fetch_add(1, Ordering::Relaxed) + 1,
+        observed_at_unix_milliseconds: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis()
+            .try_into()
+            .unwrap_or(u64::MAX),
+        window_found,
+        show_requested,
+        unminimize_requested,
+        native_focus_requested,
+        webview_focus_requested,
+    }
+}
+
+fn write_activation_receipt(
+    app: &AppHandle<Wry>,
+    receipt: &ActivationReceipt,
+) -> Result<(), String> {
+    let cache_root = app
+        .path()
+        .app_cache_dir()
+        .map_err(|error| format!("could not resolve application cache: {error}"))?;
+    write_activation_receipt_at(&cache_root.join(ACTIVATION_RECEIPT_FILE), receipt)
+}
+
+fn write_activation_receipt_at(path: &Path, receipt: &ActivationReceipt) -> Result<(), String> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| format!("activation receipt {} has no parent", path.display()))?;
+    fs::create_dir_all(parent).map_err(|error| {
+        format!(
+            "could not create activation receipt directory {}: {error}",
+            parent.display()
+        )
+    })?;
+    let temporary = parent.join(format!(".{ACTIVATION_RECEIPT_FILE}.tmp"));
+    let bytes = serde_json::to_vec(receipt)
+        .map_err(|error| format!("could not serialize desktop activation: {error}"))?;
+    fs::write(&temporary, bytes).map_err(|error| {
+        format!(
+            "could not write activation receipt {}: {error}",
+            temporary.display()
+        )
+    })?;
+    fs::rename(&temporary, path).map_err(|error| {
+        format!(
+            "could not publish activation receipt {}: {error}",
+            path.display()
+        )
+    })
 }
 
 fn setup_product(app: &mut App<Wry>) -> Result<(), Box<dyn std::error::Error>> {
@@ -587,6 +681,48 @@ mod tests {
         .unwrap();
         let error = wait_for_ready(&path, 42, Duration::from_millis(10)).unwrap_err();
         assert!(error.contains("does not match child"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn activation_receipt_is_bounded_and_replaced() {
+        let root = temporary_directory("activation-receipt");
+        let path = root.join(ACTIVATION_RECEIPT_FILE);
+        let first = ActivationReceipt {
+            schema_version: 1,
+            shell_pid: 42,
+            sequence: 1,
+            observed_at_unix_milliseconds: 100,
+            window_found: true,
+            show_requested: true,
+            unminimize_requested: true,
+            native_focus_requested: true,
+            webview_focus_requested: true,
+        };
+        write_activation_receipt_at(&path, &first).unwrap();
+        assert_eq!(
+            serde_json::from_slice::<ActivationReceipt>(&fs::read(&path).unwrap()).unwrap(),
+            first
+        );
+
+        let second = ActivationReceipt {
+            sequence: 2,
+            observed_at_unix_milliseconds: 200,
+            ..first
+        };
+        write_activation_receipt_at(&path, &second).unwrap();
+        assert_eq!(
+            serde_json::from_slice::<ActivationReceipt>(&fs::read(&path).unwrap()).unwrap(),
+            second
+        );
+        assert_eq!(
+            fs::read_dir(&root)
+                .unwrap()
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap()
+                .len(),
+            1
+        );
         fs::remove_dir_all(root).unwrap();
     }
 }

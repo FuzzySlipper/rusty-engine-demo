@@ -134,9 +134,14 @@ pnpm run deploy:tauri -- uninstall --purge-data # explicit destructive reset
 `pnpm run certify:tauri-deploy` certifies the active install. It drives the absolute installed
 binary through Tauri 2 WebDriver from a temporary working directory, captures full and 960×540
 screenshots, checks New Game/first frame, renderer disposal/remount, singleton delegation,
-focus loss/restoration, WebKit/WebGL identity, native process-tree RSS and idle activity,
+focus loss plus the native show/unminimize/focus activation receipt, WebKit/WebGL identity,
+native process-tree RSS and idle activity,
 normal/crash cleanup, a visible fail-closed startup screen, and then runs the unchanged complete
 campaign against the installed sidecar and its installed Web bundle.
+The native callback always requests show, unminimize, native focus, and WebView focus on the existing
+window. The bounded cache receipt proves those requests were issued; the evidence records the window
+manager's resulting visible/minimized/focus state without treating an OS focus grant as application
+authority.
 Set `--skip-campaign` only for focused iteration; that result is explicitly recorded as skipped and
 is not release certification. The `verify-tauri` GitHub job performs the exact install and complete
 certification after building the Debian package, and uploads the receipts and screenshots.

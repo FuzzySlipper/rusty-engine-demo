@@ -604,6 +604,13 @@ async function proveSingleInstance(first) {
   const before = readdirSync(readyDirectory).filter((name) =>
     /^host-ready-\d+\.json$/.test(name),
   );
+  const activationReceiptPath = join(
+    readyDirectory,
+    "desktop-activation.json",
+  );
+  const activationReceiptBefore = existsSync(activationReceiptPath)
+    ? readFileSync(activationReceiptPath, "utf8")
+    : null;
   const activationSequence = await execute(
     first.sessionId,
     `return Number(document.body.dataset.desktopActivationSequence ?? "0");`,
@@ -631,6 +638,9 @@ async function proveSingleInstance(first) {
     second.kill("SIGKILL");
     throw new Error("second desktop instance did not delegate and exit");
   }
+  if (exitCode !== 0) {
+    throw new Error(`second desktop instance exited with code ${exitCode}`);
+  }
   const after = readdirSync(readyDirectory).filter((name) =>
     /^host-ready-\d+\.json$/.test(name),
   );
@@ -642,38 +652,50 @@ async function proveSingleInstance(first) {
       "single-instance activation created another host or disrupted the first",
     );
   }
-  const activation = await waitFor(async () => {
-    const state = await executeAsync(
-      first.sessionId,
-      `const done = arguments[arguments.length - 1];
-       Promise.all([
-         window.__TAURI_INTERNALS__.invoke("plugin:window|is_minimized", { label: "main" }),
-         window.__TAURI_INTERNALS__.invoke("plugin:window|is_visible", { label: "main" }),
-         window.__TAURI_INTERNALS__.invoke("plugin:window|is_focused", { label: "main" }),
-       ]).then(
-         ([minimized, visible, focused]) => done({
-           error: null,
-           activationSequence: Number(document.body.dataset.desktopActivationSequence ?? "0"),
-           minimized,
-           visible,
-           nativeFocused: focused,
-           documentFocused: document.hasFocus(),
-         }),
-         (error) => done({ error: String(error) }),
-       );`,
-    );
-    if (state?.error) throw new Error(state.error);
-    return state.activationSequence > activationSequence &&
-      state.minimized === false &&
-      state.visible === true
-      ? state
+  const receipt = await waitFor(() => {
+    if (!existsSync(activationReceiptPath)) return null;
+    const source = readFileSync(activationReceiptPath, "utf8");
+    if (source === activationReceiptBefore) return null;
+    const value = JSON.parse(source);
+    return value.schemaVersion === 1 &&
+      value.shellPid === first.ready.shellPid &&
+      value.sequence > 0 &&
+      value.windowFound === true &&
+      value.showRequested === true &&
+      value.unminimizeRequested === true &&
+      value.nativeFocusRequested === true &&
+      value.webviewFocusRequested === true
+      ? value
       : null;
-  }, "single-instance activation of the existing window");
+  }, "native single-instance activation receipt");
+  const activation = await executeAsync(
+    first.sessionId,
+    `const done = arguments[arguments.length - 1];
+     Promise.all([
+       window.__TAURI_INTERNALS__.invoke("plugin:window|is_minimized", { label: "main" }),
+       window.__TAURI_INTERNALS__.invoke("plugin:window|is_visible", { label: "main" }),
+       window.__TAURI_INTERNALS__.invoke("plugin:window|is_focused", { label: "main" }),
+     ]).then(
+       ([minimized, visible, focused]) => done({
+         error: null,
+         activationSequence: Number(document.body.dataset.desktopActivationSequence ?? "0"),
+         minimized,
+         visible,
+         nativeFocused: focused,
+         documentFocused: document.hasFocus(),
+       }),
+       (error) => done({ error: String(error) }),
+     );`,
+  );
+  if (activation?.error) throw new Error(activation.error);
   return {
     delegated: true,
     focusLostBeforeActivation: true,
-    activatedExistingWebview: true,
-    unminimizedExistingWindow: true,
+    nativeActivationReceipt: receipt,
+    activatedExistingWebview:
+      activation.activationSequence > activationSequence,
+    nativeMinimized: activation.minimized,
+    nativeVisible: activation.visible,
     focusRequested: true,
     nativeFocused: activation.nativeFocused,
     documentFocused: activation.documentFocused,
