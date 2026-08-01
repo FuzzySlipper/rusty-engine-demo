@@ -64,6 +64,7 @@ if (seedSaveRoot !== undefined) {
 const output = [];
 const windowManager = process.env.TAURI_WINDOW_MANAGER;
 const displayEvidencePath = join(temporaryRoot, "display");
+const xauthorityEvidencePath = join(temporaryRoot, "xauthority");
 if (windowManager && !existsSync(windowManager)) {
   throw new Error(`Tauri window manager does not exist: ${windowManager}`);
 }
@@ -78,9 +79,10 @@ const driverArguments = [
           "-a",
           "sh",
           "-c",
-          'display_path="$1"; window_manager="$2"; window_manager_log="$3"; shift 3; printf "%s\\n" "$DISPLAY" >"$display_path"; "$window_manager" >"$window_manager_log" 2>&1 & exec "$@"',
+          'display_path="$1"; xauthority_path="$2"; window_manager="$3"; window_manager_log="$4"; shift 4; printf "%s\\n" "$DISPLAY" >"$display_path"; printf "%s\\n" "${XAUTHORITY:-}" >"$xauthority_path"; "$window_manager" >"$window_manager_log" 2>&1 & exec "$@"',
           "tauri-native-session",
           displayEvidencePath,
+          xauthorityEvidencePath,
           windowManager,
           join(temporaryRoot, "window-manager.log"),
           driverBinary,
@@ -89,9 +91,10 @@ const driverArguments = [
           "-a",
           "sh",
           "-c",
-          'display_path="$1"; shift; printf "%s\\n" "$DISPLAY" >"$display_path"; exec "$@"',
+          'display_path="$1"; xauthority_path="$2"; shift 2; printf "%s\\n" "$DISPLAY" >"$display_path"; printf "%s\\n" "${XAUTHORITY:-}" >"$xauthority_path"; exec "$@"',
           "tauri-native-session",
           displayEvidencePath,
+          xauthorityEvidencePath,
           driverBinary,
         ]),
   "--port",
@@ -640,9 +643,18 @@ async function proveSingleInstance(first) {
   if (!display) {
     throw new Error("single-instance proof has no native display");
   }
+  const xauthority = process.env.XAUTHORITY ??
+    (existsSync(xauthorityEvidencePath)
+      ? readFileSync(xauthorityEvidencePath, "utf8").trim()
+      : "");
   const second = spawn(application, [], {
     cwd: temporaryRoot,
-    env: { ...process.env, ...xdg, DISPLAY: display },
+    env: {
+      ...process.env,
+      ...xdg,
+      DISPLAY: display,
+      ...(xauthority ? { XAUTHORITY: xauthority } : {}),
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
   const secondaryOutput = { stdout: "", stderr: "" };
@@ -700,6 +712,7 @@ async function proveSingleInstance(first) {
         exitCode,
         latestReceipt,
         secondaryOutput,
+        xauthorityPresent: Boolean(xauthority),
       })}`,
     );
   }
@@ -738,6 +751,7 @@ async function proveSingleInstance(first) {
     cleanExit: exitCode === 0,
     secondaryOutput,
     display,
+    xauthorityPresent: Boolean(xauthority),
     readyReceiptCount: after.length,
   };
 }
