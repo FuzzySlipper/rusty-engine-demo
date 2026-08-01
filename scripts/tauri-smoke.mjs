@@ -604,6 +604,10 @@ async function proveSingleInstance(first) {
   const before = readdirSync(readyDirectory).filter((name) =>
     /^host-ready-\d+\.json$/.test(name),
   );
+  const activationSequence = await execute(
+    first.sessionId,
+    `return Number(document.body.dataset.desktopActivationSequence ?? "0");`,
+  );
   await request(`/session/${first.sessionId}/window/minimize`, {
     method: "POST",
     body: "{}",
@@ -638,14 +642,41 @@ async function proveSingleInstance(first) {
       "single-instance activation created another host or disrupted the first",
     );
   }
-  await waitFor(
-    () => execute(first.sessionId, "return document.hasFocus() === true;"),
-    "single-instance focus restoration",
-  );
+  const activation = await waitFor(async () => {
+    const state = await executeAsync(
+      first.sessionId,
+      `const done = arguments[arguments.length - 1];
+       Promise.all([
+         window.__TAURI_INTERNALS__.invoke("plugin:window|is_minimized", { label: "main" }),
+         window.__TAURI_INTERNALS__.invoke("plugin:window|is_visible", { label: "main" }),
+         window.__TAURI_INTERNALS__.invoke("plugin:window|is_focused", { label: "main" }),
+       ]).then(
+         ([minimized, visible, focused]) => done({
+           error: null,
+           activationSequence: Number(document.body.dataset.desktopActivationSequence ?? "0"),
+           minimized,
+           visible,
+           nativeFocused: focused,
+           documentFocused: document.hasFocus(),
+         }),
+         (error) => done({ error: String(error) }),
+       );`,
+    );
+    if (state?.error) throw new Error(state.error);
+    return state.activationSequence > activationSequence &&
+      state.minimized === false &&
+      state.visible === true
+      ? state
+      : null;
+  }, "single-instance activation of the existing window");
   return {
     delegated: true,
     focusLostBeforeActivation: true,
-    focusedExistingWindow: true,
+    activatedExistingWebview: true,
+    unminimizedExistingWindow: true,
+    focusRequested: true,
+    nativeFocused: activation.nativeFocused,
+    documentFocused: activation.documentFocused,
     exitCode,
     readyReceiptCount: after.length,
   };

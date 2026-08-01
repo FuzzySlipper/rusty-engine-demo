@@ -80,6 +80,12 @@ pub fn run() {
                 let _ = window.show();
                 let _ = window.unminimize();
                 let _ = window.set_focus();
+                let _ = window.eval(
+                    r#"document.body.dataset.desktopActivationSequence = String(
+                      Number(document.body.dataset.desktopActivationSequence ?? "0") + 1,
+                    );
+                    window.focus();"#,
+                );
             }
         }))
         .plugin(tauri_plugin_shell::init());
