@@ -58,6 +58,7 @@ jobs:
           sudo apt-get install --no-install-recommends -y \
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
+            libgtk-3-bin \
             librsvg2-dev \
             dbus-x11 \
             openbox \
