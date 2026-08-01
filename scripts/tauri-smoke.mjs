@@ -63,6 +63,7 @@ if (seedSaveRoot !== undefined) {
 
 const output = [];
 const windowManager = process.env.TAURI_WINDOW_MANAGER;
+const displayEvidencePath = join(temporaryRoot, "display");
 if (windowManager && !existsSync(windowManager)) {
   throw new Error(`Tauri window manager does not exist: ${windowManager}`);
 }
@@ -77,13 +78,22 @@ const driverArguments = [
           "-a",
           "sh",
           "-c",
-          'window_manager="$1"; window_manager_log="$2"; shift 2; "$window_manager" >"$window_manager_log" 2>&1 & exec "$@"',
+          'display_path="$1"; window_manager="$2"; window_manager_log="$3"; shift 3; printf "%s\\n" "$DISPLAY" >"$display_path"; "$window_manager" >"$window_manager_log" 2>&1 & exec "$@"',
           "tauri-native-session",
+          displayEvidencePath,
           windowManager,
           join(temporaryRoot, "window-manager.log"),
           driverBinary,
         ]
-      : ["-a", driverBinary]),
+      : [
+          "-a",
+          "sh",
+          "-c",
+          'display_path="$1"; shift; printf "%s\\n" "$DISPLAY" >"$display_path"; exec "$@"',
+          "tauri-native-session",
+          displayEvidencePath,
+          driverBinary,
+        ]),
   "--port",
   String(driverPort),
   "--native-port",
@@ -623,9 +633,16 @@ async function proveSingleInstance(first) {
     () => execute(first.sessionId, "return document.hasFocus() === false;"),
     "native window focus loss",
   );
+  const display = process.env.DISPLAY ??
+    (existsSync(displayEvidencePath)
+      ? readFileSync(displayEvidencePath, "utf8").trim()
+      : "");
+  if (!display) {
+    throw new Error("single-instance proof has no native display");
+  }
   const second = spawn(application, [], {
     cwd: temporaryRoot,
-    env: { ...process.env, ...xdg },
+    env: { ...process.env, ...xdg, DISPLAY: display },
     stdio: ["ignore", "pipe", "pipe"],
   });
   const secondaryOutput = { stdout: "", stderr: "" };
@@ -706,6 +723,7 @@ async function proveSingleInstance(first) {
     exitCode,
     cleanExit: exitCode === 0,
     secondaryOutput,
+    display,
     readyReceiptCount: after.length,
   };
 }

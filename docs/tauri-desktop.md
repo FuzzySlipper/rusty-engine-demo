@@ -145,6 +145,9 @@ treating an OS focus grant as application authority. The secondary process must 
 bounded wait and may not start a host;
 its exit code and bounded stdout/stderr are retained because Linux DBus/WebDriver teardown can return
 a nonzero plugin-cleanup status after successful delegation.
+When the smoke owns an Xvfb session, it publishes that exact display for both the driver-owned primary
+and the directly spawned secondary shell; a secondary that cannot initialize the native display is
+therefore not mistaken for successful single-instance delegation.
 Set `--skip-campaign` only for focused iteration; that result is explicitly recorded as skipped and
 is not release certification. The `verify-tauri` GitHub job performs the exact install and complete
 certification after building the Debian package, and uploads the receipts and screenshots.
