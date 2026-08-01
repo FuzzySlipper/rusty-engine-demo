@@ -371,9 +371,8 @@ async function runFullBrowserProduct(project) {
       [playerPosition[0], playerPosition[2]],
       "accepted gameplay camera must share the Rust player horizontal pivot",
     );
-    assert.equal(
-      cameraPosition[1] - playerPosition[1],
-      1.2,
+    assert.ok(
+      Math.abs(cameraPosition[1] - playerPosition[1] - 1.2) <= 1e-9,
       "accepted gameplay camera must use the documented eye-height offset",
     );
     const sessionEvidence = {
