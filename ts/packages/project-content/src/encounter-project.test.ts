@@ -311,6 +311,11 @@ test("the extraction beacon is game-owned data on its responsible entity", () =>
     renderable: {
       asset: "mesh/prop-kit/extraction-beacon",
       visible: true,
+      localTransform: {
+        translation: [0, -0.125, 0],
+        rotation: [0, 0, 0, 1],
+        scale: [1, 1, 1],
+      },
       visualBinding: {
         version: 1,
         states: [
