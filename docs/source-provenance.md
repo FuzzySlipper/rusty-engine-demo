@@ -207,18 +207,18 @@ fresh-process Studio proof, and screenshots.
 
 ## Original VC7 Loading Bay brush composition
 
-Den task #6357 adds no external source asset. It reuses the nine original VC6 definitions through
-342 new entity-owned instances authored by
+Den task #6357 adds no external source asset. Its current canonical descendant retains all nine
+original VC6 definitions and uses eight of them through 340 entity-owned route instances authored by
 `scripts/author-loading-bay-brush-level.mjs`. The placement recipe reads only the canonical
 Loading Bay project: floor, ceiling, and wall coverage comes from the explicit hidden gameplay
-proxy; door surrounds come from the five Rust-owned door entities; columns, corners, and two relay
-landmarks use original Loading Bay positions.
+proxy; doorway jambs and overhead headers derive from the five Rust-owned door entities; columns,
+corners, and two relay landmarks use original Loading Bay positions.
 
 The recipe publishes 11 bounded protocol-12 batches through the real Studio adapter. Floor and
 ceiling coverage uses deterministic rectangles no larger than 8 by 8 world cells, retaining
 independent serialized owners and picking while avoiding hundreds of redundant draw objects. Exact
-ordered receipts, 342 owner identities, per-definition repeat counts, canonical reread,
-fresh-adapter reconstruction, and the 739,471-byte structural projection are recorded in
+ordered receipts, 340 route-owner identities, per-definition repeat counts, canonical reread,
+fresh-adapter reconstruction, and the 772,551-byte structural projection are recorded in
 `docs/evidence/voxel-level-brush-authoring.json`. `scripts/check-brush-level.mjs` ties those facts to
 the serialized project and verifies that every new owner is decorative. No Doom map, texture,
 mesh, palette, layout data, or other third-party content was copied or traced; Doom E1M1 remains
@@ -226,11 +226,12 @@ only the previously documented high-level compact-FPS readability reference.
 
 Task #6473 is a source-free canonical descendant of that composition. It adds 14 Rust-authored
 material voxels at six existing column locations, removes two now-redundant wall presentation
-owners, realigns the southern corner and doorway transforms from the same project proxy, and
-retains the nine original definition sources unchanged. Doorway placement derives the largest
-walk-height opening from each sparse brush definition and puts those occupied inner side surfaces,
-not the decorative outer AABB, on the material-voxel opening edges. Its exact current
-340-placement receipt and 772,580-byte structural projection remain in
+owners, realigns the southern corners, and retains the nine original definition sources unchanged.
+Each doorway uses collision-backed wall instances as jambs and a conservative-wall header whose
+occupied cells remain above walk height. The global audit derives all walk-height occupied
+intervals from sparse runs and requires collision coverage across the whole material-voxel row, so
+one doorway cannot intrude into another opening unnoticed. Its exact current 340-placement receipt
+and 772,551-byte structural projection remain in
 `voxel-level-brush-authoring.json`; the complete occupied-surface comparison is in
 `wall-proxy-alignment.json`.
 

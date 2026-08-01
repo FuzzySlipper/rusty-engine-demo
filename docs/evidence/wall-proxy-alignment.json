@@ -3,8 +3,8 @@
   "project": {
     "path": "content/projects/loading-bay.project.json",
     "schemaVersion": 24,
-    "hash": "a6854677cdaf996a0cdb4b7179fc68cc90281b69a97909192018709980d42062",
-    "bytes": 4118276
+    "hash": "2782a4feb7a9479451c2a523c0e1689f0e5076aeeffe5e44d31ccbe9702af0ec",
+    "bytes": 4118188
   },
   "authority": {
     "collisionNavigationOcclusion": "Rust-owned material-voxel gameplayProxy",
@@ -14,7 +14,7 @@
   "threshold": {
     "finestAuthoredBrushCell": 0.03125,
     "maximumAllowedGap": 0.03125,
-    "measuredMaximumGap": 0.000001,
+    "measuredMaximumGap": 0,
     "result": "pass"
   },
   "supportedAuthoring": {
@@ -3916,24 +3916,38 @@
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-3",
       "visible": {
-        "min": [20.000001, 49],
-        "max": [23.000001, 50]
+        "min": [20, 49],
+        "max": [23, 50]
       },
       "gameplayProxy": {
         "min": [20, 49],
         "max": [23, 50]
       },
-      "gap": 0.000001,
-      "occupiedProfile": {
-        "leftCell": 6,
-        "rightCell": 18,
-        "headerStartCell": 15
+      "gap": 0,
+      "collisionBackedSideInstances": {
+        "left": {
+          "instanceId": "level-wall-x19-z49",
+          "range": [19, 20]
+        },
+        "right": {
+          "instanceId": "level-wall-x23-z49",
+          "range": [23, 24]
+        }
       },
-      "frameOuter": {
-        "min": [18.09091, 49],
-        "max": [24.909092, 50]
+      "overheadFrame": {
+        "min": [20, 49],
+        "max": [23, 50]
       },
-      "note": "walk-height occupied side surfaces terminate at proxy opening edges 20 and 23"
+      "note": "collision-backed wall jambs terminate at proxy opening edges 20 and 23; the decorative header has no walk-height occupancy",
+      "globalCollisionCoverage": {
+        "occupied": [],
+        "collision": [
+          [0, 20],
+          [23, 31]
+        ],
+        "uncovered": [],
+        "result": "pass"
+      }
     },
     {
       "kind": "doorSurround",
@@ -3947,62 +3961,106 @@
         "max": [6, 18]
       },
       "gap": 0,
-      "occupiedProfile": {
-        "leftCell": 6,
-        "rightCell": 18,
-        "headerStartCell": 15
+      "collisionBackedSideInstances": {
+        "left": {
+          "instanceId": "level-wall-x02-z17",
+          "range": [2, 3]
+        },
+        "right": {
+          "instanceId": "level-wall-x06-z17",
+          "range": [6, 7]
+        }
       },
-      "frameOuter": {
-        "min": [1.090909, 17],
-        "max": [7.909091, 18]
+      "overheadFrame": {
+        "min": [3, 17],
+        "max": [6, 18]
       },
-      "note": "walk-height occupied side surfaces terminate at proxy opening edges 3 and 6"
+      "note": "collision-backed wall jambs terminate at proxy opening edges 3 and 6; the decorative header has no walk-height occupancy",
+      "globalCollisionCoverage": {
+        "occupied": [],
+        "collision": [
+          [0, 3],
+          [6, 8],
+          [15, 31]
+        ],
+        "uncovered": [],
+        "result": "pass"
+      }
     },
     {
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-12",
       "visible": {
-        "min": [20.000001, 35],
-        "max": [24.000001, 36]
+        "min": [20, 35],
+        "max": [24, 36]
       },
       "gameplayProxy": {
         "min": [20, 35],
         "max": [24, 36]
       },
-      "gap": 0.000001,
-      "occupiedProfile": {
-        "leftCell": 6,
-        "rightCell": 18,
-        "headerStartCell": 15
+      "gap": 0,
+      "collisionBackedSideInstances": {
+        "left": {
+          "instanceId": "level-wall-x19-z35",
+          "range": [19, 20]
+        },
+        "right": {
+          "instanceId": "level-wall-x24-z35",
+          "range": [24, 25]
+        }
       },
-      "frameOuter": {
-        "min": [17.454546, 35],
-        "max": [26.545455, 36]
+      "overheadFrame": {
+        "min": [20, 35],
+        "max": [24, 36]
       },
-      "note": "walk-height occupied side surfaces terminate at proxy opening edges 20 and 24"
+      "note": "collision-backed wall jambs terminate at proxy opening edges 20 and 24; the decorative header has no walk-height occupancy",
+      "globalCollisionCoverage": {
+        "occupied": [],
+        "collision": [
+          [0, 20],
+          [24, 31]
+        ],
+        "uncovered": [],
+        "result": "pass"
+      }
     },
     {
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-13",
       "visible": {
-        "min": [22.000001, 30],
-        "max": [26.000001, 31]
+        "min": [22, 30],
+        "max": [26, 31]
       },
       "gameplayProxy": {
         "min": [22, 30],
         "max": [26, 31]
       },
-      "gap": 0.000001,
-      "occupiedProfile": {
-        "leftCell": 6,
-        "rightCell": 18,
-        "headerStartCell": 15
+      "gap": 0,
+      "collisionBackedSideInstances": {
+        "left": {
+          "instanceId": "level-wall-x21-z30",
+          "range": [21, 22]
+        },
+        "right": {
+          "instanceId": "level-wall-x26-z30",
+          "range": [26, 27]
+        }
       },
-      "frameOuter": {
-        "min": [19.454546, 30],
-        "max": [28.545455, 31]
+      "overheadFrame": {
+        "min": [22, 30],
+        "max": [26, 31]
       },
-      "note": "walk-height occupied side surfaces terminate at proxy opening edges 22 and 26"
+      "note": "collision-backed wall jambs terminate at proxy opening edges 22 and 26; the decorative header has no walk-height occupancy",
+      "globalCollisionCoverage": {
+        "occupied": [],
+        "collision": [
+          [0, 1],
+          [16, 22],
+          [26, 31]
+        ],
+        "uncovered": [],
+        "result": "pass"
+      }
     },
     {
       "kind": "doorSurround",
@@ -4016,16 +4074,31 @@
         "max": [15, 18]
       },
       "gap": 0,
-      "occupiedProfile": {
-        "leftCell": 6,
-        "rightCell": 18,
-        "headerStartCell": 15
+      "collisionBackedSideInstances": {
+        "left": {
+          "instanceId": "level-wall-x07-z17",
+          "range": [7, 8]
+        },
+        "right": {
+          "instanceId": "level-wall-x15-z17",
+          "range": [15, 16]
+        }
       },
-      "frameOuter": {
-        "min": [3.545455, 17],
-        "max": [19.454545, 18]
+      "overheadFrame": {
+        "min": [8, 17],
+        "max": [15, 18]
       },
-      "note": "walk-height occupied side surfaces terminate at proxy opening edges 8 and 15"
+      "note": "collision-backed wall jambs terminate at proxy opening edges 8 and 15; the decorative header has no walk-height occupancy",
+      "globalCollisionCoverage": {
+        "occupied": [],
+        "collision": [
+          [0, 3],
+          [6, 8],
+          [15, 31]
+        ],
+        "uncovered": [],
+        "result": "pass"
+      }
     },
     {
       "kind": "narrowPassage",
@@ -4045,7 +4118,7 @@
       },
       {
         "path": "docs/evidence/wall-proxy-studio-narrow.png",
-        "viewport": [1000, 844]
+        "viewport": [390, 844]
       }
     ],
     "gameplay": [

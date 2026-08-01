@@ -74,11 +74,11 @@ invariant(
   "the original collision/navigation voxels must be an explicit gameplay proxy",
 );
 invariant(
-  brushAssets.length === 9 && evidence.definitionsReused === 9,
-  "the visible level must reuse the nine reviewed canonical brush definitions",
+  brushAssets.length === 9 && evidence.definitionsReused === 8,
+  "the visible level must retain nine reviewed definitions and reuse the eight needed by the route",
 );
 invariant(
-  evidence.structuralProjectionBytes === 772_580 &&
+  evidence.structuralProjectionBytes === 772_551 &&
     evidence.structuralProjectionBytes < 2 * 1024 * 1024,
   "the exact complete structural projection must remain below 2 MiB",
 );
@@ -147,12 +147,13 @@ for (const instance of levelInstances) {
 const placementsByAsset = Object.fromEntries(
   [...assetIds]
     .sort()
-    .map((assetId) => [
-      assetId,
-      levelInstances.filter(
+    .map((assetId) => {
+      const count = levelInstances.filter(
         ({ voxelObjectAssetId }) => voxelObjectAssetId === assetId,
-      ).length,
-    ]),
+      ).length;
+      return [assetId, count];
+    })
+    .filter(([, count]) => count > 0),
 );
 invariant(
   JSON.stringify(placementsByAsset) ===
@@ -175,20 +176,22 @@ for (const required of [
 }
 
 const doorOwners = scene.entities.filter(({ door }) => door !== undefined);
-const doorwayInstances = levelInstances.filter(
-  ({ voxelObjectAssetId }) =>
-    voxelObjectAssetId === "voxel-object/brush-doorway",
+const doorwayInstances = levelInstances.filter(({ instanceId }) =>
+  instanceId.startsWith("level-doorway-owner-"),
 );
 invariant(
   doorwayInstances.length === doorOwners.length,
-  "every canonical door must have one decorative doorway brush",
+  "every canonical door must have one decorative overhead surround",
 );
 for (const door of doorOwners) {
+  const doorway = doorwayInstances.find(
+    ({ instanceId }) => instanceId === `level-doorway-owner-${door.id}`,
+  );
   invariant(
-    doorwayInstances.some(
-      ({ instanceId }) => instanceId === `level-doorway-owner-${door.id}`,
-    ),
-    `door ${door.id} must retain its aligned decorative doorway`,
+    doorway !== undefined &&
+      doorway.voxelObjectAssetId === "voxel-object/brush-wall-conservative" &&
+      doorway.translation[1] === 3,
+    `door ${door.id} must retain its collision-safe overhead surround`,
   );
 }
 

@@ -2,8 +2,6 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { doorwayInteriorProfile } from "./voxel-doorway-profile.mjs";
-
 const ROOT = resolve(import.meta.dirname, "..");
 const PROJECT = resolve(ROOT, "content/projects/loading-bay.project.json");
 const SCENE_ID = "scene/loading-bay";
@@ -52,6 +50,41 @@ function proxyCellBounds(x, z) {
   return { min: [x, z], max: [x + 1, z + 1] };
 }
 
+function mergeIntervals(intervals) {
+  const merged = [];
+  for (const interval of intervals.toSorted(
+    (left, right) => left[0] - right[0],
+  )) {
+    const previous = merged.at(-1);
+    if (previous === undefined || interval[0] > previous[1] + 0.000_001) {
+      merged.push([...interval]);
+    } else {
+      previous[1] = Math.max(previous[1], interval[1]);
+    }
+  }
+  return merged;
+}
+
+function uncoveredIntervals(occupied, collision) {
+  const uncovered = [];
+  for (const [occupiedMin, occupiedMax] of occupied) {
+    let cursor = occupiedMin;
+    for (const [collisionMin, collisionMax] of collision) {
+      if (collisionMax <= cursor + 0.000_001) continue;
+      if (collisionMin >= occupiedMax - 0.000_001) break;
+      if (collisionMin > cursor + 0.000_001) {
+        uncovered.push([cursor, Math.min(collisionMin, occupiedMax)]);
+      }
+      cursor = Math.max(cursor, collisionMax);
+      if (cursor >= occupiedMax - 0.000_001) break;
+    }
+    if (cursor < occupiedMax - 0.000_001) {
+      uncovered.push([cursor, occupiedMax]);
+    }
+  }
+  return uncovered;
+}
+
 function instanceBounds(instance, assets) {
   invariant(
     JSON.stringify(instance.rotation) === JSON.stringify([0, 0, 0, 1]),
@@ -94,27 +127,27 @@ function measurement(kind, instance, expected, assets, note) {
   };
 }
 
-function doorwayMeasurement(instance, expected, assets, note) {
-  const object = assets.get(instance.voxelObjectAssetId)?.voxelObject;
+function doorwayMeasurement(instance, expected, assets, byId, note) {
+  const openingStart = expected.min[0];
+  const openingEnd = expected.max[0];
+  const z = expected.min[1];
+  const wallId = (x) =>
+    `level-wall-x${String(x).padStart(2, "0")}-z${String(z).padStart(2, "0")}`;
+  const leftId = wallId(openingStart - 1);
+  const rightId = wallId(openingEnd);
+  const left = byId.get(leftId);
+  const right = byId.get(rightId);
+  invariant(left !== undefined, `${instance.instanceId} is missing ${leftId}`);
   invariant(
-    object !== undefined,
-    `${instance.instanceId} definition is missing`,
+    right !== undefined,
+    `${instance.instanceId} is missing ${rightId}`,
   );
-  const profile = doorwayInteriorProfile(object);
+  const leftBounds = horizontal(instanceBounds(left, assets));
+  const rightBounds = horizontal(instanceBounds(right, assets));
   const outer = horizontal(instanceBounds(instance, assets));
   const visible = {
-    min: [
-      rounded(
-        instance.translation[0] + profile.localOpeningMin * instance.scale[0],
-      ),
-      rounded(outer.min[1]),
-    ],
-    max: [
-      rounded(
-        instance.translation[0] + profile.localOpeningMax * instance.scale[0],
-      ),
-      rounded(outer.max[1]),
-    ],
+    min: [rounded(leftBounds.max[0]), rounded(outer.min[1])],
+    max: [rounded(rightBounds.min[0]), rounded(outer.max[1])],
   };
   return {
     kind: "doorSurround",
@@ -122,16 +155,70 @@ function doorwayMeasurement(instance, expected, assets, note) {
     visible,
     gameplayProxy: expected,
     gap: rounded(boundsGap(visible, expected)),
-    occupiedProfile: {
-      leftCell: profile.leftOccupiedCell,
-      rightCell: profile.rightOccupiedCell,
-      headerStartCell: profile.headerStartCell,
+    collisionBackedSideInstances: {
+      left: {
+        instanceId: leftId,
+        range: [rounded(leftBounds.min[0]), rounded(leftBounds.max[0])],
+      },
+      right: {
+        instanceId: rightId,
+        range: [rounded(rightBounds.min[0]), rounded(rightBounds.max[0])],
+      },
     },
-    frameOuter: {
+    overheadFrame: {
       min: outer.min.map(rounded),
       max: outer.max.map(rounded),
     },
     note,
+  };
+}
+
+function doorwayCollisionCoverage(instance, assets, materialVoxels) {
+  const object = assets.get(instance.voxelObjectAssetId)?.voxelObject;
+  invariant(
+    object !== undefined,
+    `${instance.instanceId} definition is missing`,
+  );
+  const z = Math.round(instance.translation[2]);
+  const { cellSize, pivot } = object.grid;
+  const walkMinY = 1.25;
+  const walkMaxY = 1.75;
+  const occupiedCells = new Set();
+  for (const run of object.defaultFrame.representation.sparseRuns) {
+    const worldMinY =
+      instance.translation[1] +
+      (run.start[1] - pivot[1]) * cellSize * instance.scale[1];
+    const worldMaxY =
+      instance.translation[1] +
+      (run.start[1] + 1 - pivot[1]) * cellSize * instance.scale[1];
+    if (worldMaxY <= walkMinY || worldMinY >= walkMaxY) continue;
+    for (let offset = 0; offset < run.length; offset += 1) {
+      occupiedCells.add(run.start[0] + offset);
+    }
+  }
+  const occupied = mergeIntervals(
+    [...occupiedCells].map((cell) => [
+      instance.translation[0] +
+        (cell - pivot[0]) * cellSize * instance.scale[0],
+      instance.translation[0] +
+        (cell + 1 - pivot[0]) * cellSize * instance.scale[0],
+    ]),
+  );
+  const collision = mergeIntervals(
+    materialVoxels
+      .filter(({ address }) => address[1] === 1 && address[2] === z)
+      .map(({ address }) => [address[0], address[0] + 1]),
+  );
+  const uncovered = uncoveredIntervals(occupied, collision);
+  invariant(
+    uncovered.length === 0,
+    `${instance.instanceId} has walk-height occupied intervals without Rust proxy collision: ${JSON.stringify(uncovered.map((interval) => interval.map(rounded)))}`,
+  );
+  return {
+    occupied: occupied.map((interval) => interval.map(rounded)),
+    collision: collision.map((interval) => interval.map(rounded)),
+    uncovered: [],
+    result: "pass",
   };
 }
 
@@ -230,12 +317,19 @@ export async function collectWallProxyAlignment() {
       let openingEnd = Math.floor(door.translation[0]) + 1;
       while (!material.has(`${openingEnd},1,${z}`)) openingEnd += 1;
       const expected = { min: [openingStart, z], max: [openingEnd, z + 1] };
-      return doorwayMeasurement(
+      const measured = doorwayMeasurement(
         instance,
         expected,
         assets,
-        `walk-height occupied side surfaces terminate at proxy opening edges ${String(openingStart)} and ${String(openingEnd)}`,
+        byId,
+        `collision-backed wall jambs terminate at proxy opening edges ${String(openingStart)} and ${String(openingEnd)}; the decorative header has no walk-height occupancy`,
       );
+      measured.globalCollisionCoverage = doorwayCollisionCoverage(
+        instance,
+        assets,
+        scene.voxelEnvironment.materialVoxels,
+      );
+      return measured;
     });
 
   const passageLeft = byId.get("level-wall-x16-z22");
@@ -321,7 +415,7 @@ export async function collectWallProxyAlignment() {
         },
         {
           path: "docs/evidence/wall-proxy-studio-narrow.png",
-          viewport: [1000, 844],
+          viewport: [390, 844],
         },
       ],
       gameplay: [

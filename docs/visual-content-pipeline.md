@@ -424,30 +424,33 @@ fresh adapter both reconstructed that exact hash.
 | ----------------- | ---------------: |
 | Ceiling strip     |               28 |
 | Floor strip       |               28 |
-| Conservative wall |              212 |
+| Conservative wall |              217 |
 | Dense wall insert |               36 |
 | Vent panel        |               19 |
-| Doorway surround  |                5 |
 | Column            |                6 |
 | Corner            |                4 |
 | Relay landmark    |                2 |
 
 Every new owner is decorative: it has no collision, kinematic, trigger, door, switch, hazard,
-secret, pickup, or enemy component. Each of the five canonical doors has exactly one named
-doorway-surround instance, while door collision/occlusion and open/closed behavior remain on the
-original Rust-owned entity. Floors, ceilings, wall relief, columns, corners, and landmarks likewise
-cannot affect motion or rays.
+secret, pickup, or enemy component. Each canonical door uses conservative-wall instances for its
+collision-backed jambs and one named conservative-wall header above walk height; door
+collision/occlusion and open/closed behavior remain on the original Rust-owned entity. Floors,
+ceilings, wall relief, columns, corners, and landmarks likewise cannot affect motion or rays. The
+canonical project retains all nine brush definitions for the proof room, while the route reuses
+eight of them.
 
 Task #6473 uses the supported Rust voxel-edit path to add the 14 material voxels missing from the
 six column footprints, then republishes the presentation recipe without a second wall instance at
-those coordinates. Doorway frames derive the largest walk-height aperture from their sparse voxel
-runs, then align the occupied inner side surfaces to the neighboring proxy opening; decorative
-outer bounds may overlap the already-collided wall. They use the same one-unit Z slab, and southern
-corners use the canonical `z=49` boundary. The resulting 283 checked comparisons have effectively
-zero serialized-float residual against an explicit `1/32` maximum. Deterministic real-player
-motion tests cover head-on contact tolerance, parallel travel in both directions, high-delta
-no-tunneling, corners, and both near-edge open/adjacent doorway approaches with the real player
-half extents. The measurements and desktop/narrow Studio and gameplay captures are indexed by
+those coordinates. Doorway jambs are ordinary collision-backed wall instances that terminate at
+the Rust opening edges; the named header spans the opening only above walk height. The audit
+derives every occupied walk-height X interval from sparse voxel runs and requires it to be covered
+by the global union of material-voxel collision on that Z row, rather than checking only the
+doorway's own opening. They use the same one-unit Z slab, and southern corners use the canonical
+`z=49` boundary. The resulting 283 checked comparisons have effectively zero serialized-float
+residual against an explicit `1/32` maximum. Deterministic real-player motion tests cover head-on
+contact tolerance, parallel travel in both directions, high-delta no-tunneling, corners, both
+near-edge approaches for each adjacent `z=17` opening, and blocked approaches into each jamb with
+the real player half extents. The measurements and desktop/narrow Studio and gameplay captures are indexed by
 [`wall-proxy-alignment.json`](evidence/wall-proxy-alignment.json).
 
 The exact Engine line combines atomic batch placement, canonical greedy same-material coplanar

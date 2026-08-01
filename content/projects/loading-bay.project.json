@@ -172996,13 +172996,13 @@
         {
           "ownerEntityId": 440,
           "instanceId": "level-doorway-owner-11",
-          "voxelObjectAssetId": "voxel-object/brush-doorway",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
           "translation": [
-            1.0909091,
-            0.0,
+            3.0,
+            3.0,
             17.0
           ],
           "rotation": [
@@ -173012,8 +173012,8 @@
             1.0
           ],
           "scale": [
-            4.3636365,
-            3.047619,
+            1.92,
+            0.64,
             4.0
           ],
           "materialOverrides": []
@@ -173021,13 +173021,13 @@
         {
           "ownerEntityId": 441,
           "instanceId": "level-doorway-owner-12",
-          "voxelObjectAssetId": "voxel-object/brush-doorway",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
           "translation": [
-            17.454546,
-            0.0,
+            20.0,
+            3.0,
             35.0
           ],
           "rotation": [
@@ -173037,8 +173037,8 @@
             1.0
           ],
           "scale": [
-            5.818182,
-            3.047619,
+            2.56,
+            0.64,
             4.0
           ],
           "materialOverrides": []
@@ -173046,13 +173046,13 @@
         {
           "ownerEntityId": 442,
           "instanceId": "level-doorway-owner-13",
-          "voxelObjectAssetId": "voxel-object/brush-doorway",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
           "translation": [
-            19.454546,
-            0.0,
+            22.0,
+            3.0,
             30.0
           ],
           "rotation": [
@@ -173062,8 +173062,8 @@
             1.0
           ],
           "scale": [
-            5.818182,
-            3.047619,
+            2.56,
+            0.64,
             4.0
           ],
           "materialOverrides": []
@@ -173071,13 +173071,13 @@
         {
           "ownerEntityId": 439,
           "instanceId": "level-doorway-owner-3",
-          "voxelObjectAssetId": "voxel-object/brush-doorway",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
           "translation": [
-            18.09091,
-            0.0,
+            20.0,
+            3.0,
             49.0
           ],
           "rotation": [
@@ -173087,8 +173087,8 @@
             1.0
           ],
           "scale": [
-            4.3636365,
-            3.047619,
+            1.92,
+            0.64,
             4.0
           ],
           "materialOverrides": []
@@ -173096,13 +173096,13 @@
         {
           "ownerEntityId": 443,
           "instanceId": "level-doorway-owner-30",
-          "voxelObjectAssetId": "voxel-object/brush-doorway",
+          "voxelObjectAssetId": "voxel-object/brush-wall-conservative",
           "frame": {
             "kind": "default"
           },
           "translation": [
-            3.5454545,
-            0.0,
+            8.0,
+            3.0,
             17.0
           ],
           "rotation": [
@@ -173112,8 +173112,8 @@
             1.0
           ],
           "scale": [
-            10.181818,
-            3.047619,
+            4.48,
+            0.64,
             4.0
           ],
           "materialOverrides": []
@@ -189374,13 +189374,13 @@
           "name": "level-doorway-owner-3",
           "childOrder": 352,
           "translation": [
-            18.09091,
-            0.0,
+            20.0,
+            3.0,
             49.0
           ],
           "scale": [
-            4.3636365,
-            3.047619,
+            1.92,
+            0.64,
             4.0
           ]
         },
@@ -189389,13 +189389,13 @@
           "name": "level-doorway-owner-11",
           "childOrder": 353,
           "translation": [
-            1.0909091,
-            0.0,
+            3.0,
+            3.0,
             17.0
           ],
           "scale": [
-            4.3636365,
-            3.047619,
+            1.92,
+            0.64,
             4.0
           ]
         },
@@ -189404,13 +189404,13 @@
           "name": "level-doorway-owner-12",
           "childOrder": 354,
           "translation": [
-            17.454546,
-            0.0,
+            20.0,
+            3.0,
             35.0
           ],
           "scale": [
-            5.818182,
-            3.047619,
+            2.56,
+            0.64,
             4.0
           ]
         },
@@ -189419,13 +189419,13 @@
           "name": "level-doorway-owner-13",
           "childOrder": 355,
           "translation": [
-            19.454546,
-            0.0,
+            22.0,
+            3.0,
             30.0
           ],
           "scale": [
-            5.818182,
-            3.047619,
+            2.56,
+            0.64,
             4.0
           ]
         },
@@ -189434,13 +189434,13 @@
           "name": "level-doorway-owner-30",
           "childOrder": 356,
           "translation": [
-            3.5454545,
-            0.0,
+            8.0,
+            3.0,
             17.0
           ],
           "scale": [
-            10.181818,
-            3.047619,
+            4.48,
+            0.64,
             4.0
           ]
         },

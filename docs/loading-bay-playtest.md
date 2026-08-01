@@ -47,10 +47,12 @@ universal `minY = 0` rule.
 The wall-alignment descendant keeps that same authority split. Supported Rust voxel editing added
 14 missing material voxels beneath six decorative columns, while the repeated-brush recipe removed
 the overlapping wall presentation at those footprints, aligned both southern corner accents to
-the `z=49` boundary, and aligned all five doorway surrounds' occupied inner surfaces to their
-actual proxy openings rather than comparing decorative outer bounds.
+the `z=49` boundary, and composes each doorway from collision-backed wall jambs plus a decorative
+header whose cells remain above walk height. A global interval audit rejects any walk-height
+presentation surface not covered by Rust material-voxel collision, including surfaces belonging to
+a different adjacent opening.
 The checked [`wall-proxy-alignment.json`](evidence/wall-proxy-alignment.json) compares 267 walls,
-six columns, four corners, five door surrounds, and the one-unit generator passage. Its measured
+six columns, four corners, five door headers, and the one-unit generator passage. Its measured
 maximum horizontal visual-to-proxy gap is zero at six-decimal evidence precision, below the
 smallest authored brush cell of `1/32` world unit. Material voxels remain the only collision,
 navigation, and occlusion authority.

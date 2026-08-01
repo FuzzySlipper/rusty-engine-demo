@@ -8,8 +8,6 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { performance } from "node:perf_hooks";
 
-import { doorwayInteriorProfile } from "./voxel-doorway-profile.mjs";
-
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PROJECT = resolve(ROOT, "content/projects/loading-bay.project.json");
 const EVIDENCE = resolve(
@@ -136,18 +134,12 @@ function scaleFor(project, assetId, targetDimensions) {
 }
 
 function doorwayPlacement(project, openingStart, openingEnd, z) {
-  const assetId = "voxel-object/brush-doorway";
-  const object = project.assets.find(
-    (asset) => asset.id === assetId,
-  )?.voxelObject;
-  if (object === undefined) throw new Error(`missing voxel object ${assetId}`);
-  const profile = doorwayInteriorProfile(object);
+  const assetId = "voxel-object/brush-wall-conservative";
   const openingWidth = openingEnd - openingStart;
-  const scale = scaleFor(project, assetId, [openingWidth, 4, 1]);
-  scale[0] = openingWidth / (profile.localOpeningMax - profile.localOpeningMin);
   return {
-    translation: [openingStart - profile.localOpeningMin * scale[0], 0, z],
-    scale,
+    assetId,
+    translation: [openingStart, 3, z],
+    scale: scaleFor(project, assetId, [openingWidth, 1, 1]),
   };
 }
 
@@ -434,7 +426,7 @@ function buildPlacements(project) {
         sceneId: SCENE_ID,
         instance: {
           instanceId: `level-doorway-owner-${String(entity.id)}`,
-          voxelObjectAssetId: "voxel-object/brush-doorway",
+          voxelObjectAssetId: placement.assetId,
           frame: { kind: "default" },
           translation: placement.translation,
           rotation: [0, 0, 0, 1],

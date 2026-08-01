@@ -96,7 +96,7 @@ fn snapshot_rebuilds_collision_projection_and_continues_identically() {
 
 #[test]
 fn canonical_wall_faces_stop_the_real_player_head_on_and_at_high_delta() {
-    let mut runtime = loading_bay_motion_runtime([1.26, 1.5, 3.5], 90.0, 2.0, 0.01, false);
+    let mut runtime = loading_bay_motion_runtime([1.26, 1.5, 3.5], 90.0, 2.0, 0.01, &[]);
     let player = runtime.session().entity(PLAYER).unwrap();
     assert_eq!(player.kinematic.unwrap().half_extents.to_array(), [0.25; 3]);
 
@@ -111,7 +111,7 @@ fn canonical_wall_faces_stop_the_real_player_head_on_and_at_high_delta() {
         "west stop must remain within the finest authored brush cell of the contact plane: {position:?}",
     );
 
-    let mut high_delta = loading_bay_motion_runtime([5.5, 1.5, 3.5], 90.0, 100.0, 0.25, false);
+    let mut high_delta = loading_bay_motion_runtime([5.5, 1.5, 3.5], 90.0, 100.0, 0.25, &[]);
     let receipt = move_player(&mut high_delta, 1.0, 0.0);
     assert!(receipt.facts.iter().any(
         |fact| matches!(fact, PlayerControlFact::Blocked { entity, .. } if *entity == PLAYER)
@@ -126,7 +126,7 @@ fn canonical_wall_faces_stop_the_real_player_head_on_and_at_high_delta() {
 fn canonical_wall_sliding_is_symmetric_and_corner_motion_cannot_tunnel() {
     for z_velocity in [-4.0_f32, 4.0] {
         let start = [1.26, 1.5, 10.5];
-        let mut runtime = loading_bay_motion_runtime(start, 90.0, 6.0, 0.1, false);
+        let mut runtime = loading_bay_motion_runtime(start, 90.0, 6.0, 0.1, &[]);
         move_player(&mut runtime, 0.0, if z_velocity < 0.0 { 1.0 } else { -1.0 });
         let position = player_position(&runtime);
         assert!((position[0] - 1.25).abs() <= 1.0 / 32.0, "{position:?}");
@@ -136,7 +136,7 @@ fn canonical_wall_sliding_is_symmetric_and_corner_motion_cannot_tunnel() {
         );
     }
 
-    let mut corner = loading_bay_motion_runtime([1.3, 1.5, 1.3], 90.0, 100.0, 0.25, false);
+    let mut corner = loading_bay_motion_runtime([1.3, 1.5, 1.3], 90.0, 100.0, 0.25, &[]);
     move_player(&mut corner, 1.0, 1.0);
     let position = player_position(&corner);
     assert!(position[0] >= 1.249 && position[2] >= 1.249, "{position:?}");
@@ -145,7 +145,7 @@ fn canonical_wall_sliding_is_symmetric_and_corner_motion_cannot_tunnel() {
 #[test]
 fn canonical_door_aperture_passes_only_inside_its_authored_proxy_opening() {
     for x in [20.251, 22.749] {
-        let mut through = loading_bay_motion_runtime([x, 1.5, 47.5], 180.0, 20.0, 0.2, true);
+        let mut through = loading_bay_motion_runtime([x, 1.5, 47.5], 180.0, 20.0, 0.2, &[3]);
         assert_eq!(
             through
                 .session()
@@ -165,7 +165,7 @@ fn canonical_door_aperture_passes_only_inside_its_authored_proxy_opening() {
     }
 
     for x in [20.249, 22.751] {
-        let mut wall = loading_bay_motion_runtime([x, 1.5, 48.69], 180.0, 6.0, 0.01, true);
+        let mut wall = loading_bay_motion_runtime([x, 1.5, 48.69], 180.0, 6.0, 0.01, &[3]);
         move_player(&mut wall, 1.0, 0.0);
         move_player(&mut wall, 1.0, 0.0);
         let position = player_position(&wall);
@@ -176,12 +176,39 @@ fn canonical_door_aperture_passes_only_inside_its_authored_proxy_opening() {
     }
 }
 
+#[test]
+fn adjacent_canonical_door_apertures_preserve_both_real_extent_edges() {
+    for x in [3.251, 5.749, 8.251, 14.749] {
+        let mut through = loading_bay_motion_runtime([x, 1.5, 15.5], 180.0, 4.0, 0.2, &[11, 30]);
+        move_player(&mut through, 1.0, 0.0);
+        move_player(&mut through, 1.0, 0.0);
+        let position = player_position(&through);
+        assert!(
+            position[2] > 17.0,
+            "player center {x} plus its real half extents must pass through either z=17 aperture: {position:?}",
+        );
+    }
+
+    for x in [2.749, 6.251, 7.749, 15.251] {
+        let mut wall = loading_bay_motion_runtime([x, 1.5, 16.69], 180.0, 6.0, 0.01, &[11, 30]);
+        move_player(&mut wall, 1.0, 0.0);
+        let receipt = move_player(&mut wall, 1.0, 0.0);
+        let position = player_position(&wall);
+        assert!(
+            position[2] <= 16.75 && receipt.facts.iter().any(
+                |fact| matches!(fact, PlayerControlFact::Blocked { entity, .. } if *entity == PLAYER)
+            ),
+            "center {x} just outside either adjacent real-half-extent edge must meet its collision-backed wall: {position:?}",
+        );
+    }
+}
+
 fn loading_bay_motion_runtime(
     translation: [f64; 3],
     yaw_degrees: f64,
     speed: f64,
     step_seconds: f64,
-    open_exit: bool,
+    open_doors: &[u64],
 ) -> GameRuntime {
     let mut project: Value = serde_json::from_str(LOADING_BAY_PROJECT).unwrap();
     let scene = project["scenes"]
@@ -199,12 +226,12 @@ fn loading_bay_motion_runtime(
     player["playerController"]["initialYawDegrees"] = json!(yaw_degrees);
     player["playerController"]["moveSpeedUnitsPerSecond"] = json!(speed);
     player["playerController"]["moveStepSeconds"] = json!(step_seconds);
-    if open_exit {
-        let exit = entities
+    for door_id in open_doors {
+        let door = entities
             .iter_mut()
-            .find(|entity| entity["id"] == 3)
+            .find(|entity| entity["id"] == *door_id)
             .unwrap();
-        exit["collision"]["enabled"] = json!(false);
+        door["collision"]["enabled"] = json!(false);
     }
     let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     set_player_yaw(&mut runtime, yaw_degrees as f32);

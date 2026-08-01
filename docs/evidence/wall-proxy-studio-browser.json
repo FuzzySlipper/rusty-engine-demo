@@ -1,6 +1,6 @@
 {
-  "projectHash": "a6854677cdaf996a0cdb4b7179fc68cc90281b69a97909192018709980d42062",
-  "selectedEntity": "450",
+  "projectHash": "2782a4feb7a9479451c2a523c0e1689f0e5076aeeffe5e44d31ccbe9702af0ec",
+  "selectedEntity": "260",
   "canvasCount": 1,
   "viewport": {
     "status": "ready",
@@ -8,8 +8,8 @@
     "definitions": 9,
     "instances": 365,
     "placementGhosts": 0,
-    "selectedRenderHandle": "6597069766714",
-    "authoredFrameHash": "fnv1a64:9e1423d2a6c33267",
+    "selectedRenderHandle": "6597069766836",
+    "authoredFrameHash": "fnv1a64:93f24d5102f171d2",
     "rendererError": ""
   },
   "viewportText": "↖\n✥\n⟳\n↗\nworld\nGrid\nSnap 0.5\nWork Light\nShared renderer · orbit / WASD / wheel\nwork light\n506 retained ops\ncamera 2\n37 entities\n8 lights\n0 voxel instances\ncomplete frame\nowner revision 32\nAssets 89\nDiagnostics 0\nOwners\nOutput\nNo owner diagnostics.",
@@ -25,17 +25,17 @@
           "schemaVersion": 1,
           "renderSequence": 2,
           "source": "explicit",
-          "sourceTimeMs": 4866.699999809265,
-          "frameIntervalMs": 4866.699999809265,
+          "sourceTimeMs": 4917.800000190735,
+          "frameIntervalMs": 4917.800000190735,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 56.19999980926514,
+          "backendSubmissionDurationMs": 55,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 20
+              "value": 19
             },
             "renderHandleCount": {
               "scope": "liveResident",
@@ -65,7 +65,7 @@
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 36290
+              "value": 36242
             }
           }
         }
@@ -80,19 +80,19 @@
         "updateKind": "presentation",
         "submission": {
           "schemaVersion": 1,
-          "renderSequence": 17,
+          "renderSequence": 16,
           "source": "explicit",
-          "sourceTimeMs": 7508.60000038147,
-          "frameIntervalMs": 799.7000003814701,
+          "sourceTimeMs": 7557.800000190735,
+          "frameIntervalMs": 780.4000001907352,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 41.79999923706055,
+          "backendSubmissionDurationMs": 42.59999942779541,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 44
+              "value": 27
             },
             "renderHandleCount": {
               "scope": "liveResident",
@@ -122,7 +122,7 @@
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 95878
+              "value": 60130
             }
           }
         }
@@ -137,19 +137,19 @@
         "updateKind": "presentation",
         "submission": {
           "schemaVersion": 1,
-          "renderSequence": 32,
+          "renderSequence": 35,
           "source": "explicit",
-          "sourceTimeMs": 10570,
-          "frameIntervalMs": 794.6000000000004,
+          "sourceTimeMs": 10356.699999809265,
+          "frameIntervalMs": 746.0999998092648,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 40.30000019073486,
+          "backendSubmissionDurationMs": 51.69999980926514,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 45
+              "value": 27
             },
             "renderHandleCount": {
               "scope": "liveResident",
@@ -179,7 +179,7 @@
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 90941
+              "value": 45018
             }
           }
         }
@@ -196,17 +196,17 @@
           "schemaVersion": 1,
           "renderSequence": 2,
           "source": "explicit",
-          "sourceTimeMs": 18714.60000038147,
-          "frameIntervalMs": 18714.60000038147,
+          "sourceTimeMs": 18229.199999809265,
+          "frameIntervalMs": 18229.199999809265,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 45.60000038146973,
+          "backendSubmissionDurationMs": 46.19999980926514,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 20
+              "value": 19
             },
             "renderHandleCount": {
               "scope": "liveResident",
@@ -236,7 +236,7 @@
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 36290
+              "value": 36242
             }
           }
         }
@@ -253,17 +253,17 @@
           "schemaVersion": 1,
           "renderSequence": 2,
           "source": "explicit",
-          "sourceTimeMs": 5010.5,
-          "frameIntervalMs": 5010.5,
+          "sourceTimeMs": 4853.900000572205,
+          "frameIntervalMs": 4853.900000572205,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 48.20000076293945,
+          "backendSubmissionDurationMs": 47.39999961853027,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 20
+              "value": 19
             },
             "renderHandleCount": {
               "scope": "liveResident",
@@ -293,7 +293,7 @@
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 36290
+              "value": 36242
             }
           }
         }
@@ -310,17 +310,17 @@
           "schemaVersion": 1,
           "renderSequence": 9,
           "source": "explicit",
-          "sourceTimeMs": 7335.800000190735,
-          "frameIntervalMs": 779.3000001907349,
+          "sourceTimeMs": 7113.400000572205,
+          "frameIntervalMs": 755.7000005722048,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 41.29999923706055,
+          "backendSubmissionDurationMs": 54.39999961853027,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 44
+              "value": 27
             },
             "renderHandleCount": {
               "scope": "liveResident",
@@ -350,7 +350,7 @@
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 95878
+              "value": 60130
             }
           }
         }
@@ -377,13 +377,13 @@
       "submissionCount": 3
     },
     "remounted": {
-      "projectHash": "a6854677cdaf996a0cdb4b7179fc68cc90281b69a97909192018709980d42062",
+      "projectHash": "2782a4feb7a9479451c2a523c0e1689f0e5076aeeffe5e44d31ccbe9702af0ec",
       "canvasCount": 1,
       "rendererStatus": "ready",
       "rendererError": ""
     },
     "reloaded": {
-      "projectHash": "a6854677cdaf996a0cdb4b7179fc68cc90281b69a97909192018709980d42062",
+      "projectHash": "2782a4feb7a9479451c2a523c0e1689f0e5076aeeffe5e44d31ccbe9702af0ec",
       "canvasCount": 1,
       "rendererStatus": "ready",
       "rendererError": ""
@@ -395,15 +395,15 @@
     "JSEventListeners": 271,
     "Nodes": 710,
     "LayoutCount": 8,
-    "RecalcStyleCount": 11,
-    "ScriptDuration": 2.025551,
-    "TaskDuration": 4.072659,
-    "JSHeapUsedSize": 187613060,
-    "JSHeapTotalSize": 307437568
+    "RecalcStyleCount": 12,
+    "ScriptDuration": 1.904161,
+    "TaskDuration": 3.878623,
+    "JSHeapUsedSize": 243598728,
+    "JSHeapTotalSize": 354476032
   },
   "capture": {
     "viewport": [1600, 900],
-    "secondaryViewport": [1000, 844],
+    "secondaryViewport": [390, 844],
     "host": "http://127.0.0.1:4396",
     "screenshots": [
       "docs/evidence/wall-proxy-studio-overview.png",

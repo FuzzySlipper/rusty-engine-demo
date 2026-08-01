@@ -14,16 +14,16 @@
     },
     {
       "milestone": "corner",
-      "player": [3.500697612762451, 1.5, 24.499975204467773],
-      "camera": [3.500697612762451, 2.7, 24.499975204467773],
+      "player": [3.5034666061401367, 1.5, 24.49974250793457],
+      "camera": [3.5034666061401367, 2.7, 24.49974250793457],
       "horizontalOffset": 0,
       "eyeHeight": 1.2,
       "screenshot": "docs/evidence/gameplay-camera-corner.png"
     },
     {
       "milestone": "doorway",
-      "player": [11.500689506530762, 1.5, 19.541606903076172],
-      "camera": [11.500689506530762, 2.7, 19.541606903076172],
+      "player": [11.50073528289795, 1.5, 19.580280303955078],
+      "camera": [11.50073528289795, 2.7, 19.580280303955078],
       "horizontalOffset": 0,
       "eyeHeight": 1.2,
       "screenshot": "docs/evidence/gameplay-camera-doorway.png"
@@ -32,11 +32,11 @@
   "product": {
     "smokeStatus": "pass",
     "sessionTransport": "pass",
-    "roundTripMaxMilliseconds": 388.4,
+    "roundTripMaxMilliseconds": 345.8,
     "pendingOutboundMax": 1,
     "droppedFacts": 0,
     "pendingInput": 0,
     "rendererTelemetry": "pass",
-    "revision": "REV 7165"
+    "revision": "REV 7061"
   }
 }

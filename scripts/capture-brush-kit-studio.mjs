@@ -33,6 +33,7 @@ const SECONDARY_VIEWPORT = viewportFromEnvironment(
   [1600, 900],
 );
 const ALIGNMENT_EVIDENCE = process.env.RUSTY_STUDIO_ALIGNMENT_EVIDENCE;
+const WAIT_ATTEMPTS = Number(process.env.RUSTY_STUDIO_WAIT_ATTEMPTS ?? "480");
 const authoringEvidence = JSON.parse(
   await readFile(resolve(ROOT, AUTHORING_EVIDENCE), "utf8"),
 );
@@ -131,7 +132,7 @@ async function evaluate(expression) {
 }
 
 async function waitFor(expression, description) {
-  for (let attempt = 0; attempt < 480; attempt += 1) {
+  for (let attempt = 0; attempt < WAIT_ATTEMPTS; attempt += 1) {
     if (await evaluate(expression)) return;
     await delay(125);
   }
@@ -139,7 +140,13 @@ async function waitFor(expression, description) {
     title: document.title,
     projectHash: document.querySelector('[data-project-hash]')
       ?.getAttribute('data-project-hash'),
-    text: document.body?.innerText?.slice(0, 2000)
+    text: document.body?.innerText?.slice(0, 2000),
+    rendererStatus: document.querySelector('rusty-studio-viewport')
+      ?.getAttribute('data-renderer-status'),
+    rendererError: document.querySelector('rusty-studio-viewport')
+      ?.getAttribute('data-renderer-error'),
+    frameSubmissionEvidence: document.querySelector('loading-bay-studio-root')
+      ?.getAttribute('data-frame-submission-evidence')
   })`);
   throw new Error(
     `timed out waiting for ${description}: ${JSON.stringify(diagnostic)}`,
