@@ -138,10 +138,11 @@ focus loss plus the native show/unminimize/focus activation receipt, WebKit/WebG
 native process-tree RSS and idle activity,
 normal/crash cleanup, a visible fail-closed startup screen, and then runs the unchanged complete
 campaign against the installed sidecar and its installed Web bundle.
-The native callback always requests show, unminimize, native focus, and WebView focus on the existing
-window. The bounded cache receipt proves those requests were issued; the evidence records the window
-manager's resulting visible/minimized/focus state without treating an OS focus grant as application
-authority. The secondary process must terminate within the bounded wait and may not start a host;
+The native callback schedules one main-thread transaction that requests show, unminimize, native
+focus, and WebView focus on the existing window. The bounded cache receipt is written after those
+requests; the evidence records the window manager's resulting visible/minimized/focus state without
+treating an OS focus grant as application authority. The secondary process must terminate within the
+bounded wait and may not start a host;
 its exit code and bounded stdout/stderr are retained because Linux DBus/WebDriver teardown can return
 a nonzero plugin-cleanup status after successful delegation.
 Set `--skip-campaign` only for focused iteration; that result is explicitly recorded as skipped and

@@ -93,30 +93,11 @@ impl Drop for HostState {
 pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
-            let receipt = if let Some(window) = app.get_webview_window("main") {
-                let show_requested = window.show().is_ok();
-                let unminimize_requested = window.unminimize().is_ok();
-                let native_focus_requested = window.set_focus().is_ok();
-                let webview_focus_requested = window
-                    .eval(
-                        r#"document.body.dataset.desktopActivationSequence = String(
-                      Number(document.body.dataset.desktopActivationSequence ?? "0") + 1,
-                    );
-                    window.focus();"#,
-                    )
-                    .is_ok();
-                activation_receipt(
-                    true,
-                    show_requested,
-                    unminimize_requested,
-                    native_focus_requested,
-                    webview_focus_requested,
-                )
-            } else {
-                activation_receipt(false, false, false, false, false)
-            };
-            if let Err(error) = write_activation_receipt(app, &receipt) {
-                eprintln!("could not record desktop activation: {error}");
+            let activation_app = app.clone();
+            if let Err(error) = app.run_on_main_thread(move || {
+                activate_existing_window(&activation_app);
+            }) {
+                eprintln!("could not schedule desktop activation: {error}");
             }
         }))
         .plugin(tauri_plugin_shell::init());
@@ -152,6 +133,34 @@ pub fn run() {
         }
         _ => {}
     });
+}
+
+fn activate_existing_window(app: &AppHandle<Wry>) {
+    let receipt = if let Some(window) = app.get_webview_window("main") {
+        let show_requested = window.show().is_ok();
+        let unminimize_requested = window.unminimize().is_ok();
+        let native_focus_requested = window.set_focus().is_ok();
+        let webview_focus_requested = window
+            .eval(
+                r#"document.body.dataset.desktopActivationSequence = String(
+                  Number(document.body.dataset.desktopActivationSequence ?? "0") + 1,
+                );
+                window.focus();"#,
+            )
+            .is_ok();
+        activation_receipt(
+            true,
+            show_requested,
+            unminimize_requested,
+            native_focus_requested,
+            webview_focus_requested,
+        )
+    } else {
+        activation_receipt(false, false, false, false, false)
+    };
+    if let Err(error) = write_activation_receipt(app, &receipt) {
+        eprintln!("could not record desktop activation: {error}");
+    }
 }
 
 fn activation_receipt(
