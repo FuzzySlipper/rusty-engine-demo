@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "authority": "temporary Studio scene objects exercise imported actors; canonical gameplay posture binding is completed separately by VC8 evidence",
-  "engineRevision": "b48f0df8746176e2775a884f1f418e6d8e26481e",
-  "sourceProjectHash": "ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750",
-  "previewProjectHash": "7380d6aa585f4a053fde626bc878a6f05b746b4e86ff8fcc09ae831366afc06d",
+  "authority": "temporary Studio scene objects exercise imported actors; gameplay posture binding remains deferred to VC8",
+  "engineRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
+  "sourceProjectHash": "51005f60581930ae220c81cacaf91b949c8ef9487579ddc79c3cd525465506b4",
+  "previewProjectHash": "949f872942eca39b8d17cbf5ff5a870c4f53418108b4a36045d11295a7154e90",
   "previewInstances": [
     {
       "entityId": 9001,
@@ -219,7 +219,9 @@
   "submissions": {
     "baseline": {
       "count": 1,
-      "updateKinds": ["complete"],
+      "updateKinds": [
+        "complete"
+      ],
       "latest": {
         "kind": "rusty_studio_viewport_frame_submitted.v1",
         "generation": 1,
@@ -228,17 +230,17 @@
           "schemaVersion": 1,
           "renderSequence": 2,
           "source": "explicit",
-          "sourceTimeMs": 4845.300000190735,
-          "frameIntervalMs": 4845.300000190735,
+          "sourceTimeMs": 5112.099999427795,
+          "frameIntervalMs": 5112.099999427795,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 21,
+          "backendSubmissionDurationMs": 58.30000019073486,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 19
+              "value": 20
             },
             "renderHandleCount": {
               "scope": "liveResident",
@@ -258,59 +260,185 @@
             "textureResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 0
+              "value": 2
             },
             "animatedInstanceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 0
+              "value": 8
             },
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 34514
+              "value": 37710
+            }
+          }
+        }
+      }
+    },
+    "groundingDesktop": {
+      "count": 2,
+      "updateKinds": [
+        "complete",
+        "presentation"
+      ],
+      "latest": {
+        "kind": "rusty_studio_viewport_frame_submitted.v1",
+        "generation": 1,
+        "updateKind": "presentation",
+        "submission": {
+          "schemaVersion": 1,
+          "renderSequence": 9,
+          "source": "explicit",
+          "sourceTimeMs": 7195.800000190735,
+          "frameIntervalMs": 699.3000001907349,
+          "frameIntervalStatus": "available",
+          "backendSubmissionDurationMs": 52.5,
+          "backendSubmissionDurationStatus": "available",
+          "statistics": {
+            "schemaVersion": 1,
+            "drawCallCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 45
+            },
+            "renderHandleCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 425
+            },
+            "geometryResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 68
+            },
+            "materialResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 82
+            },
+            "textureResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 2
+            },
+            "animatedInstanceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 8
+            },
+            "triangleCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 56310
+            }
+          }
+        }
+      }
+    },
+    "groundingNarrow": {
+      "count": 3,
+      "updateKinds": [
+        "complete",
+        "presentation",
+        "presentation"
+      ],
+      "latest": {
+        "kind": "rusty_studio_viewport_frame_submitted.v1",
+        "generation": 1,
+        "updateKind": "presentation",
+        "submission": {
+          "schemaVersion": 1,
+          "renderSequence": 35,
+          "source": "explicit",
+          "sourceTimeMs": 10043.800000190735,
+          "frameIntervalMs": 730.8000001907349,
+          "frameIntervalStatus": "available",
+          "backendSubmissionDurationMs": 62.69999980926514,
+          "backendSubmissionDurationStatus": "available",
+          "statistics": {
+            "schemaVersion": 1,
+            "drawCallCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 59
+            },
+            "renderHandleCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 425
+            },
+            "geometryResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 68
+            },
+            "materialResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 82
+            },
+            "textureResourceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 2
+            },
+            "animatedInstanceCount": {
+              "scope": "liveResident",
+              "status": "available",
+              "value": 8
+            },
+            "triangleCount": {
+              "scope": "perSubmission",
+              "status": "available",
+              "value": 80928
             }
           }
         }
       }
     },
     "preview": {
-      "count": 2,
-      "updateKinds": ["complete", "complete"],
+      "count": 4,
+      "updateKinds": [
+        "complete",
+        "presentation",
+        "presentation",
+        "complete"
+      ],
       "latest": {
         "kind": "rusty_studio_viewport_frame_submitted.v1",
         "generation": 2,
         "updateKind": "complete",
         "submission": {
           "schemaVersion": 1,
-          "renderSequence": 3723,
+          "renderSequence": 1937,
           "source": "explicit",
-          "sourceTimeMs": 154355.89999961853,
-          "frameIntervalMs": 506.29999961852445,
+          "sourceTimeMs": 164723.19999980927,
+          "frameIntervalMs": 582.9999998092535,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 22.5,
+          "backendSubmissionDurationMs": 59.89999961853027,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 19
+              "value": 63
             },
             "renderHandleCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 418
+              "value": 437
             },
             "geometryResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 51
+              "value": 68
             },
             "materialResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 65
+              "value": 82
             },
             "textureResourceCount": {
               "scope": "liveResident",
@@ -320,54 +448,60 @@
             "animatedInstanceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 12
+              "value": 20
             },
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 34514
+              "value": 98336
             }
           }
         }
       }
     },
     "attackSelection": {
-      "count": 3,
-      "updateKinds": ["complete", "complete", "presentation"],
+      "count": 5,
+      "updateKinds": [
+        "complete",
+        "presentation",
+        "presentation",
+        "complete",
+        "presentation"
+      ],
       "latest": {
         "kind": "rusty_studio_viewport_frame_submitted.v1",
         "generation": 2,
         "updateKind": "presentation",
         "submission": {
           "schemaVersion": 1,
-          "renderSequence": 3729,
+          "renderSequence": 1943,
           "source": "explicit",
-          "sourceTimeMs": 156178.19999980927,
-          "frameIntervalMs": 745.299999809271,
+          "sourceTimeMs": 166860.30000019073,
+          "frameIntervalMs": 753.5000001907465,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 42.89999961853027,
+          "backendSubmissionDurationMs": 61.69999980926514,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 40
+              "value": 59
             },
             "renderHandleCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 418
+              "value": 437
             },
             "geometryResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 51
+              "value": 68
             },
             "materialResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 65
+              "value": 82
             },
             "textureResourceCount": {
               "scope": "liveResident",
@@ -377,54 +511,61 @@
             "animatedInstanceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 12
+              "value": 20
             },
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 102878
+              "value": 96112
             }
           }
         }
       }
     },
     "deathSelection": {
-      "count": 4,
-      "updateKinds": ["complete", "complete", "presentation", "presentation"],
+      "count": 6,
+      "updateKinds": [
+        "complete",
+        "presentation",
+        "presentation",
+        "complete",
+        "presentation",
+        "presentation"
+      ],
       "latest": {
         "kind": "rusty_studio_viewport_frame_submitted.v1",
         "generation": 2,
         "updateKind": "presentation",
         "submission": {
           "schemaVersion": 1,
-          "renderSequence": 3746,
+          "renderSequence": 1960,
           "source": "explicit",
-          "sourceTimeMs": 158904.80000019073,
-          "frameIntervalMs": 688.700000190729,
+          "sourceTimeMs": 169757.89999961853,
+          "frameIntervalMs": 751.2999996185245,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 40.59999942779541,
+          "backendSubmissionDurationMs": 59.40000057220459,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 40
+              "value": 59
             },
             "renderHandleCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 418
+              "value": 437
             },
             "geometryResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 51
+              "value": 68
             },
             "materialResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 65
+              "value": 82
             },
             "textureResourceCount": {
               "scope": "liveResident",
@@ -434,21 +575,23 @@
             "animatedInstanceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 12
+              "value": 20
             },
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 103718
+              "value": 102248
             }
           }
         }
       }
     },
     "remounted": {
-      "count": 5,
+      "count": 7,
       "updateKinds": [
         "complete",
+        "presentation",
+        "presentation",
         "complete",
         "presentation",
         "presentation",
@@ -462,17 +605,17 @@
           "schemaVersion": 1,
           "renderSequence": 2,
           "source": "explicit",
-          "sourceTimeMs": 166212,
+          "sourceTimeMs": 177507.69999980927,
           "frameIntervalMs": null,
           "frameIntervalStatus": "sourceTimeGapExceeded",
-          "backendSubmissionDurationMs": 19.800000190734863,
+          "backendSubmissionDurationMs": 46.89999961853027,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 19
+              "value": 20
             },
             "renderHandleCount": {
               "scope": "liveResident",
@@ -482,12 +625,12 @@
             "geometryResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 51
+              "value": 49
             },
             "materialResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 65
+              "value": 63
             },
             "textureResourceCount": {
               "scope": "liveResident",
@@ -497,12 +640,12 @@
             "animatedInstanceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 12
+              "value": 20
             },
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 34514
+              "value": 37710
             }
           }
         }
@@ -510,7 +653,9 @@
     },
     "reloaded": {
       "count": 1,
-      "updateKinds": ["complete"],
+      "updateKinds": [
+        "complete"
+      ],
       "latest": {
         "kind": "rusty_studio_viewport_frame_submitted.v1",
         "generation": 1,
@@ -519,17 +664,17 @@
           "schemaVersion": 1,
           "renderSequence": 2,
           "source": "explicit",
-          "sourceTimeMs": 4823.400000572205,
-          "frameIntervalMs": 4823.400000572205,
+          "sourceTimeMs": 4960.699999809265,
+          "frameIntervalMs": 4960.699999809265,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 23.399999618530273,
+          "backendSubmissionDurationMs": 52.59999942779541,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 19
+              "value": 20
             },
             "renderHandleCount": {
               "scope": "liveResident",
@@ -539,12 +684,12 @@
             "geometryResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 51
+              "value": 49
             },
             "materialResourceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 65
+              "value": 63
             },
             "textureResourceCount": {
               "scope": "liveResident",
@@ -554,12 +699,12 @@
             "animatedInstanceCount": {
               "scope": "liveResident",
               "status": "available",
-              "value": 12
+              "value": 20
             },
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 34514
+              "value": 37710
             }
           }
         }
@@ -568,21 +713,27 @@
   },
   "resourceDeltas": {
     "renderHandles": 12,
-    "geometry": 2,
-    "materials": 2,
-    "textures": 2,
+    "geometry": 0,
+    "materials": 0,
+    "textures": 0,
     "animatedInstances": 12
   },
   "lifecycle": {
     "resize": [
       {
-        "viewport": [1280, 720],
+        "viewport": [
+          1280,
+          720
+        ],
         "canvasCount": 1,
         "rendererStatus": "ready",
         "rendererError": ""
       },
       {
-        "viewport": [1600, 900],
+        "viewport": [
+          1600,
+          900
+        ],
         "canvasCount": 1,
         "rendererStatus": "ready",
         "rendererError": ""
@@ -592,14 +743,14 @@
       "canvasCount": 0
     },
     "remounted": {
-      "projectHash": "7380d6aa585f4a053fde626bc878a6f05b746b4e86ff8fcc09ae831366afc06d",
+      "projectHash": "949f872942eca39b8d17cbf5ff5a870c4f53418108b4a36045d11295a7154e90",
       "canvasCount": 1,
       "statistics": {
         "schemaVersion": 1,
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 19
+          "value": 20
         },
         "renderHandleCount": {
           "scope": "liveResident",
@@ -609,12 +760,12 @@
         "geometryResourceCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 51
+          "value": 49
         },
         "materialResourceCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 65
+          "value": 63
         },
         "textureResourceCount": {
           "scope": "liveResident",
@@ -624,24 +775,24 @@
         "animatedInstanceCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 12
+          "value": 20
         },
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 34514
+          "value": 37710
         }
       }
     },
     "reloaded": {
-      "projectHash": "7380d6aa585f4a053fde626bc878a6f05b746b4e86ff8fcc09ae831366afc06d",
+      "projectHash": "949f872942eca39b8d17cbf5ff5a870c4f53418108b4a36045d11295a7154e90",
       "canvasCount": 1,
       "statistics": {
         "schemaVersion": 1,
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 19
+          "value": 20
         },
         "renderHandleCount": {
           "scope": "liveResident",
@@ -651,12 +802,12 @@
         "geometryResourceCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 51
+          "value": 49
         },
         "materialResourceCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 65
+          "value": 63
         },
         "textureResourceCount": {
           "scope": "liveResident",
@@ -666,20 +817,25 @@
         "animatedInstanceCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 12
+          "value": 20
         },
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 34514
+          "value": 37710
         }
       }
     }
   },
   "capture": {
     "host": "http://127.0.0.1:4396",
-    "viewport": [1600, 900],
+    "viewport": [
+      1600,
+      900
+    ],
     "screenshots": [
+      "docs/evidence/renderable-grounding-desktop.png",
+      "docs/evidence/renderable-grounding-narrow.png",
       "docs/evidence/actor-kit-studio-arc-warden-attack.png",
       "docs/evidence/actor-kit-studio-bay-rusher-death.png"
     ],

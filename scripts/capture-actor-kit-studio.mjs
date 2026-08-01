@@ -517,7 +517,12 @@ try {
     );
   }
 
-  const baselineStats = baseline.latest.submission.statistics;
+  // The canonical project already owns both animated asset identities. Use
+  // the post-selection baseline after the asynchronous project resources have
+  // settled; the first complete frame can legitimately precede mesh/prop
+  // resolution and would misattribute those existing resources to the later
+  // temporary actor preview.
+  const baselineStats = groundingNarrow.latest.submission.statistics;
   const previewStats = preview.latest.submission.statistics;
   const animatedDelta =
     previewStats.animatedInstanceCount.value -
@@ -536,13 +541,9 @@ try {
   const textureDelta =
     previewStats.textureResourceCount.value -
     baselineStats.textureResourceCount.value;
-  if (
-    geometryDelta !== MANIFEST.variants.length ||
-    materialDelta !== MANIFEST.variants.length ||
-    textureDelta !== MANIFEST.variants.length
-  ) {
+  if (geometryDelta !== 0 || materialDelta !== 0 || textureDelta !== 0) {
     throw new Error(
-      `shared actor identities were duplicated: geometry +${String(geometryDelta)}, ` +
+      `resident actor identities were duplicated: geometry +${String(geometryDelta)}, ` +
         `materials +${String(materialDelta)}, textures +${String(textureDelta)}, ` +
         `identities ${String(MANIFEST.variants.length)}`,
     );
