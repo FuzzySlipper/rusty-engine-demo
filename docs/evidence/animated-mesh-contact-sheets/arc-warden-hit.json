@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "providerRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
+  "providerRevision": "f1baabcd55b7075fff40b93b1bae0a16ef88ab0e",
   "asset": "mesh-animation/arc-warden",
-  "contentHash": "sha256:4012374e5894fb2df103ade33bb36357390ef6457d54ffc8b3187450682c229b",
+  "contentHash": "sha256:5eae9bc3a257e0a31f3a902a7c0cfcbdd5ff8d67757b24ebd18d1e517ee808aa",
   "clip": "hit",
   "camera": {
     "position": [
@@ -65,7 +65,7 @@
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -90,7 +90,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 45136
+          "value": 43716
         }
       }
     },
@@ -112,14 +112,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          20.066160948674224,
-          1.4652275586489305,
-          21.310670442476635
+          19.911020734953368,
+          1.5004364165541089,
+          21.205010346487633
         ],
         "max": [
-          21.311234291334852,
-          3.8895268994611714,
-          21.682353681568472
+          20.83490848142417,
+          3.8699123707391028,
+          21.773165447435794
         ]
       },
       "sampledVertexCount": 1029,
@@ -135,7 +135,7 @@
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -160,7 +160,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 45136
+          "value": 43716
         }
       }
     },
@@ -182,14 +182,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          19.79850518820192,
-          1.5082867004267253,
-          21.31067044247664
+          20.267453079285804,
+          1.5004364165541089,
+          21.32970916934582
         ],
         "max": [
-          21.077628388970925,
-          3.9285473661168346,
-          21.682353681568472
+          21.204820973452403,
+          3.896296224377763,
+          21.70011664521291
         ]
       },
       "sampledVertexCount": 1029,
@@ -205,7 +205,7 @@
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -230,7 +230,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 45136
+          "value": 43716
         }
       }
     },
@@ -252,14 +252,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          19.790669917054895,
-          1.485070471057847,
-          21.31067044247664
+          20.04541226681108,
+          1.5004364165541089,
+          21.338107699273163
         ],
         "max": [
-          21.068610674909888,
-          3.906496896345409,
-          21.682353681568472
+          21.212164283133934,
+          3.8944878656535162,
+          21.709616642777124
         ]
       },
       "sampledVertexCount": 1029,
@@ -275,7 +275,7 @@
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -300,7 +300,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 45136
+          "value": 43716
         }
       }
     },
@@ -345,7 +345,7 @@
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -370,7 +370,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 45136
+          "value": 43716
         }
       }
     }

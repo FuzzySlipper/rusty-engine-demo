@@ -1226,7 +1226,7 @@ fn animated_glb_import_reimport_and_failures_are_atomic() {
     );
     assert_eq!(
         actor["import"]["sourceHash"],
-        "4012374e5894fb2df103ade33bb36357390ef6457d54ffc8b3187450682c229b"
+        "5eae9bc3a257e0a31f3a902a7c0cfcbdd5ff8d67757b24ebd18d1e517ee808aa"
     );
 
     let (project_hash, _) = owner_version(&applied);

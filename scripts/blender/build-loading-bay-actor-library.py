@@ -9,10 +9,10 @@ Run from the repository root:
 
 The Kenney source supplies one rigged model, three animation FBX files, and
 several skins. This recipe produces two independently textured GLBs while
-retaining shared clip names and normalized world scale. Attack, hit, and death
-are bounded Loading Bay rigid-rig poses around the source ground-contact pivot;
-skeletal motion remains source-authored and gameplay never derives authority
-from those clips.
+retaining shared clip names and normalized world scale. Attack and hit are
+bounded Loading Bay pose-bone animations that rotate the imported rig without
+changing bone lengths; death remains a root fall around the source
+ground-contact pivot. Gameplay never derives authority from those clips.
 """
 
 from __future__ import annotations
@@ -45,6 +45,7 @@ def enable_blender_modules() -> None:
 enable_blender_modules()
 
 import bpy  # noqa: E402
+from mathutils import Euler, Matrix  # noqa: E402
 
 
 TARGET_HEIGHT = 1.78
@@ -59,6 +60,16 @@ VARIANTS = (
     ("bay-rusher", "zombieFemaleA.png", "Bay Rusher"),
 )
 REQUIRED_CLIPS = ("idle", "run", "jump", "attack", "hit", "death")
+AUTHORED_LIMB_BONES = (
+    "UpperChest",
+    "Head",
+    "LeftShoulder",
+    "LeftArm",
+    "LeftForeArm",
+    "RightShoulder",
+    "RightArm",
+    "RightForeArm",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -184,36 +195,107 @@ def key_object_action(
     return action
 
 
-def add_original_actions(armature: bpy.types.Object) -> list[bpy.types.Action]:
-    """Author bounded combat semantics without retargeting source bones.
+def key_pose_action(
+    armature: bpy.types.Object,
+    name: str,
+    frames: list[tuple[int, dict[str, tuple[float, float, float]]]],
+) -> bpy.types.Action:
+    """Key local joint rotations while preserving every imported bone length."""
 
-    The Kenney FBX uses asymmetric bone rolls.  Ad-hoc Euler retargeting made
-    otherwise rigid limbs point into the camera and appear to stretch.  The
-    downstream game needs readable attack/hit/death states, not a second
-    retargeter, so these derivative clips animate the complete reviewed rig as
-    a rigid body around its ground contact pivot.  Source-authored idle/run/jump
-    continue to own skeletal motion.
-    """
+    missing = [name for name in AUTHORED_LIMB_BONES if name not in armature.pose.bones]
+    if missing:
+        raise RuntimeError(f"actor rig is missing authored limb bones: {missing}")
+    armature.animation_data_create()
+    action = bpy.data.actions.new(name=name)
+    action.use_fake_user = True
+    armature.animation_data.action = action
+    for frame, rotations in frames:
+        for bone_name in AUTHORED_LIMB_BONES:
+            pose_bone = armature.pose.bones[bone_name]
+            pose_bone.matrix_basis = Matrix.Identity(4)
+            pose_bone.rotation_mode = "QUATERNION"
+            rotation = rotations.get(bone_name, (0.0, 0.0, 0.0))
+            pose_bone.rotation_quaternion = Euler(
+                tuple(math.radians(value) for value in rotation), "XYZ"
+            ).to_quaternion()
+            pose_bone.keyframe_insert(
+                data_path="rotation_quaternion", frame=frame, group=bone_name
+            )
+    for bone_name in AUTHORED_LIMB_BONES:
+        armature.pose.bones[bone_name].matrix_basis = Matrix.Identity(4)
+    return action
+
+
+def add_original_actions(armature: bpy.types.Object) -> list[bpy.types.Action]:
+    """Author bounded combat poses as local rotations on the imported rig."""
 
     return [
-        key_object_action(
+        key_pose_action(
             armature,
             "attack",
             [
-                (0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                (5, (0.0, 0.0, 0.04), (0.0, math.radians(-12), 0.0)),
-                (10, (0.0, 0.0, 0.08), (0.0, math.radians(16), 0.0)),
-                (16, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                (0, {}),
+                (
+                    5,
+                    {
+                        "UpperChest": (0, -12, -8),
+                        "Head": (0, 8, 4),
+                        "LeftShoulder": (0, 0, -12),
+                        "LeftArm": (-52, 12, -18),
+                        "LeftForeArm": (-58, 0, -8),
+                        "RightShoulder": (0, 0, 8),
+                        "RightArm": (22, -8, 12),
+                        "RightForeArm": (-26, 0, 4),
+                    },
+                ),
+                (
+                    10,
+                    {
+                        "UpperChest": (0, 18, 10),
+                        "Head": (0, -10, -4),
+                        "LeftShoulder": (0, 0, 8),
+                        "LeftArm": (38, -18, 22),
+                        "LeftForeArm": (-18, 0, 8),
+                        "RightShoulder": (0, 0, -14),
+                        "RightArm": (-64, 14, -20),
+                        "RightForeArm": (-72, 0, -10),
+                    },
+                ),
+                (16, {}),
             ],
         ),
-        key_object_action(
+        key_pose_action(
             armature,
             "hit",
             [
-                (0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                (3, (0.0, 0.0, 0.03), (0.0, math.radians(14), 0.0)),
-                (7, (0.0, 0.0, 0.02), (0.0, math.radians(-8), 0.0)),
-                (12, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                (0, {}),
+                (
+                    3,
+                    {
+                        "UpperChest": (-10, 0, 18),
+                        "Head": (12, 4, -14),
+                        "LeftShoulder": (0, 0, -16),
+                        "LeftArm": (-32, 10, -24),
+                        "LeftForeArm": (-42, 0, -12),
+                        "RightShoulder": (0, 0, 14),
+                        "RightArm": (28, -8, 22),
+                        "RightForeArm": (-34, 0, 10),
+                    },
+                ),
+                (
+                    7,
+                    {
+                        "UpperChest": (6, 0, -9),
+                        "Head": (-6, -2, 7),
+                        "LeftShoulder": (0, 0, 7),
+                        "LeftArm": (14, -4, 10),
+                        "LeftForeArm": (-18, 0, 4),
+                        "RightShoulder": (0, 0, -6),
+                        "RightArm": (-12, 4, -9),
+                        "RightForeArm": (-16, 0, -4),
+                    },
+                ),
+                (12, {}),
             ],
         ),
         key_object_action(
@@ -313,6 +395,9 @@ def export_variant(
             "origin": "Kenney source"
             if action in source_actions
             else "Loading Bay derivative",
+            "authoredJointChannels": list(AUTHORED_LIMB_BONES)
+            if action.name in {"attack", "hit"}
+            else [],
         }
         for action in actions
     ]

@@ -248,21 +248,25 @@ PYTHONPATH=/usr/lib/python3.14/site-packages blender --background --factory-star
 The recipe imports the medium rig once per variant, normalizes the actor to 1.78 world units with
 its source origin preserved, merges Kenney's named idle/run/jump actions, installs one embedded
 nearest-filtered skin, and exports one mesh, one armature, one material, and six named NLA-track
-animations. The attack and hit clips are original Loading Bay combat poses keyed on the imported
-armature, while death uses a bounded root fall that returns the actor to its authored contact
-plane. These recipe-defined derivatives do not rename or misrepresent stock clips and carry no
-gameplay authority.
+animations. The attack and hit clips are original Loading Bay combat poses keyed as local
+quaternion rotations on eight existing torso, head, shoulder, arm, and forearm joints. They never
+translate a joint or alter a bone length. Death uses a bounded root fall that returns the actor to
+its authored contact plane. These recipe-defined derivatives do not rename or misrepresent stock
+clips and carry no gameplay authority.
 
 | Product source                            | Skin                |   Bytes | SHA-256                                                            |
 | ----------------------------------------- | ------------------- | ------: | ------------------------------------------------------------------ |
-| `content/assets/actor-kit/arc-warden.glb` | `zombieMaleA.png`   | 339,604 | `4012374e5894fb2df103ade33bb36357390ef6457d54ffc8b3187450682c229b` |
-| `content/assets/actor-kit/bay-rusher.glb` | `zombieFemaleA.png` | 334,024 | `6a5552abed410666023c0f06ee8927a19a3efaa3695846fda9b670c79b50190d` |
+| `content/assets/actor-kit/arc-warden.glb` | `zombieMaleA.png`   | 343,584 | `5eae9bc3a257e0a31f3a902a7c0cfcbdd5ff8d67757b24ebd18d1e517ee808aa` |
+| `content/assets/actor-kit/bay-rusher.glb` | `zombieFemaleA.png` | 338,004 | `a53b783850bb4251788216fc4ea4d425d28efd6876a313498087b50fbf07dd05` |
 
 Both outputs contain exact `idle`, `run`, `jump`, `attack`, `hit`, and `death` clips. Their complete
 source file hashes, clip ranges/durations/origins, Blender version, target scale, final bytes, and
 asset identities are closed by `content/assets/actor-kit/source-manifest.json`.
-`scripts/check-actor-kit.mjs` independently parses the shipped GLB JSON chunk and rejects hash,
-size, clip, mesh, skin, material, embedded-image, or external-buffer drift. The generator also
+`scripts/check-actor-kit.mjs` independently parses the shipped GLB JSON and binary chunks and
+rejects hash, size, clip, mesh, skin, material, embedded-image, or external-buffer drift. For each
+attack and hit clip it also decodes the exported quaternion accessors and requires nontrivial
+rotation deltas on all eight reviewed skin joints, excluding whole-armature motion as sufficient
+animation evidence. The generator also
 factory-resets Blender and reimports each finished GLB before recording its manifest, so a claimed
 clip cannot exist only in the `.blend` session. A second factory-startup invocation produced
 byte-identical GLBs at both recorded hashes.

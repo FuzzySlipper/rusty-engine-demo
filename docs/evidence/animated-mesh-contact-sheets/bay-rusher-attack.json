@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "providerRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
+  "providerRevision": "f1baabcd55b7075fff40b93b1bae0a16ef88ab0e",
   "asset": "mesh-animation/bay-rusher",
-  "contentHash": "sha256:6a5552abed410666023c0f06ee8927a19a3efaa3695846fda9b670c79b50190d",
+  "contentHash": "sha256:a53b783850bb4251788216fc4ea4d425d28efd6876a313498087b50fbf07dd05",
   "clip": "attack",
   "camera": {
     "position": [
@@ -42,14 +42,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          6.516352647159961,
+          6.516352717775168,
           1.5002747807961823,
-          12.209694684482807
+          12.209694699607143
         ],
         "max": [
-          8.48390978228982,
-          3.0132737977504744,
-          12.779608972608129
+          8.483909708928085,
+          3.013273797895474,
+          12.779608990810466
         ]
       },
       "sampledVertexCount": 1029,
@@ -60,12 +60,12 @@
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 14
+          "value": 15
         },
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -90,7 +90,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 23218
+          "value": 22014
         }
       }
     },
@@ -112,14 +112,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          6.310597862429671,
-          1.487488941174942,
-          12.209694684482807
+          6.293158173481796,
+          1.5002747807961823,
+          11.894279253661589
         ],
         "max": [
-          8.243612219864168,
-          3.016864177094038,
-          12.779608972608129
+          7.820493541924833,
+          3.0120580841294884,
+          12.795440684957715
         ]
       },
       "sampledVertexCount": 1029,
@@ -130,12 +130,12 @@
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 14
+          "value": 15
         },
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -160,7 +160,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 23218
+          "value": 22014
         }
       }
     },
@@ -182,14 +182,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          6.649950412522082,
-          1.5401159797011692,
-          12.209694684482805
+          7.2260027102063376,
+          1.5002747807961823,
+          12.235160128694057
         ],
         "max": [
-          8.606206047558318,
-          3.065499247137346,
-          12.779608972608129
+          9.003633393141815,
+          3.684846754114067,
+          12.853125764575719
         ]
       },
       "sampledVertexCount": 1029,
@@ -200,12 +200,12 @@
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 14
+          "value": 15
         },
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -230,7 +230,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 23218
+          "value": 22014
         }
       }
     },
@@ -252,14 +252,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          6.782848664964503,
-          1.5101775805017994,
-          12.209694684482805
+          7.2260027102063376,
+          1.5002747807961823,
+          12.230018741886157
         ],
         "max": [
-          8.7084614037017,
-          3.039099127573043,
-          12.779608972608129
+          9.18620590550663,
+          3.8163725684052943,
+          12.858087995524878
         ]
       },
       "sampledVertexCount": 1029,
@@ -270,12 +270,12 @@
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 14
+          "value": 15
         },
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -300,7 +300,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 23218
+          "value": 22014
         }
       }
     },
@@ -340,12 +340,12 @@
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 14
+          "value": 15
         },
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -370,7 +370,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 23218
+          "value": 22014
         }
       }
     }

@@ -24,11 +24,72 @@ function parseGlb(bytes, label) {
     bytes.readUInt32LE(16) === 0x4e4f534a,
     `${label} must begin with a JSON chunk`,
   );
-  return JSON.parse(
+  const gltf = JSON.parse(
     bytes
       .subarray(20, 20 + jsonLength)
       .toString("utf8")
       .replace(/\0+$/u, ""),
+  );
+  const binaryHeader = 20 + jsonLength;
+  invariant(
+    bytes.readUInt32LE(binaryHeader + 4) === 0x004e4942,
+    `${label} must include a binary chunk`,
+  );
+  const binaryLength = bytes.readUInt32LE(binaryHeader);
+  return {
+    gltf,
+    binary: bytes.subarray(binaryHeader + 8, binaryHeader + 8 + binaryLength),
+  };
+}
+
+function readFloatAccessor(gltf, binary, accessorIndex, label) {
+  const accessor = gltf.accessors[accessorIndex];
+  invariant(accessor.componentType === 5126, `${label} must use float32`);
+  invariant(accessor.type === "VEC4", `${label} must contain quaternions`);
+  invariant(accessor.sparse === undefined, `${label} must not be sparse`);
+  const view = gltf.bufferViews[accessor.bufferView];
+  const stride = view.byteStride ?? 16;
+  const start = (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
+  return Array.from({ length: accessor.count }, (_, index) =>
+    Array.from({ length: 4 }, (__, component) =>
+      binary.readFloatLE(start + index * stride + component * 4),
+    ),
+  );
+}
+
+function assertArticulatedClip(gltf, binary, clip, file) {
+  const jointNodes = new Set(gltf.skins[0].joints);
+  const jointChannels = clip.channels.filter(
+    ({ target }) =>
+      target.path === "rotation" && jointNodes.has(target.node),
+  );
+  const jointNames = new Set(
+    jointChannels.map(({ target }) => gltf.nodes[target.node].name),
+  );
+  invariant(
+    jointNames.size >= 8,
+    `${file} ${clip.name} must animate at least eight skin joints`,
+  );
+  let changedJointCount = 0;
+  for (const channel of jointChannels) {
+    const values = readFloatAccessor(
+      gltf,
+      binary,
+      clip.samplers[channel.sampler].output,
+      `${file} ${clip.name} ${gltf.nodes[channel.target.node].name}`,
+    );
+    const first = values[0];
+    if (
+      values.some((value) =>
+        value.some((component, index) => Math.abs(component - first[index]) > 1e-4),
+      )
+    ) {
+      changedJointCount += 1;
+    }
+  }
+  invariant(
+    changedJointCount >= 8,
+    `${file} ${clip.name} must contain nontrivial rotation deltas on eight joints`,
   );
 }
 
@@ -87,7 +148,7 @@ for (const variant of manifest.variants) {
     sha256(bytes) === variant.sha256,
     `${variant.file} content hash drifted`,
   );
-  const gltf = parseGlb(bytes, variant.file);
+  const { gltf, binary } = parseGlb(bytes, variant.file);
   invariant(
     gltf.animations?.map(({ name }) => name).join("\0") ===
       REQUIRED_CLIPS.join("\0"),
@@ -116,6 +177,19 @@ for (const variant of manifest.variants) {
     ),
     `${variant.file} must retain nonempty animation channels`,
   );
+  for (const clipName of ["attack", "hit"]) {
+    const manifestClip = variant.clips.find(({ id }) => id === clipName);
+    invariant(
+      manifestClip.authoredJointChannels?.length === 8,
+      `${variant.file} ${clipName} authored joint record drifted`,
+    );
+    assertArticulatedClip(
+      gltf,
+      binary,
+      gltf.animations.find(({ name }) => name === clipName),
+      variant.file,
+    );
+  }
 }
 
 console.log(

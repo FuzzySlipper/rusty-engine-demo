@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "providerRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
+  "providerRevision": "f1baabcd55b7075fff40b93b1bae0a16ef88ab0e",
   "asset": "mesh-animation/bay-rusher",
-  "contentHash": "sha256:6a5552abed410666023c0f06ee8927a19a3efaa3695846fda9b670c79b50190d",
+  "contentHash": "sha256:a53b783850bb4251788216fc4ea4d425d28efd6876a313498087b50fbf07dd05",
   "clip": "idle",
   "camera": {
     "position": [
@@ -60,12 +60,12 @@
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 14
+          "value": 15
         },
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -90,7 +90,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 23218
+          "value": 22014
         }
       }
     },
@@ -130,12 +130,12 @@
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 14
+          "value": 15
         },
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -160,7 +160,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 23218
+          "value": 22014
         }
       }
     },
@@ -200,12 +200,12 @@
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 14
+          "value": 15
         },
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -230,7 +230,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 23218
+          "value": 22014
         }
       }
     },
@@ -270,12 +270,12 @@
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 14
+          "value": 15
         },
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -300,7 +300,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 23218
+          "value": 22014
         }
       }
     },
@@ -340,12 +340,12 @@
         "drawCallCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 14
+          "value": 15
         },
         "renderHandleCount": {
           "scope": "liveResident",
           "status": "available",
-          "value": 415
+          "value": 413
         },
         "geometryResourceCount": {
           "scope": "liveResident",
@@ -370,7 +370,7 @@
         "triangleCount": {
           "scope": "perSubmission",
           "status": "available",
-          "value": 23218
+          "value": 22014
         }
       }
     }
