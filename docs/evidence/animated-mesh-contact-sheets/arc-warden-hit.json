@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "providerRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
   "asset": "mesh-animation/arc-warden",
-  "contentHash": "sha256:b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+  "contentHash": "sha256:4012374e5894fb2df103ade33bb36357390ef6457d54ffc8b3187450682c229b",
   "clip": "hit",
   "camera": {
     "position": [
@@ -27,7 +27,7 @@
     {
       "fileName": "mesh-animation-arc-warden-hit-00-000000.png",
       "normalizedTime": 0,
-      "durationSeconds": 0.3333333432674408,
+      "durationSeconds": 0.5,
       "assetBounds": {
         "min": [
           -0.8553455471992493,
@@ -97,7 +97,7 @@
     {
       "fileName": "mesh-animation-arc-warden-hit-01-025000.png",
       "normalizedTime": 0.25,
-      "durationSeconds": 0.3333333432674408,
+      "durationSeconds": 0.5,
       "assetBounds": {
         "min": [
           -0.8553455471992493,
@@ -112,14 +112,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          19.963337931495563,
-          1.480223556211166,
-          21.27650744972702
+          20.066160948674224,
+          1.4652275586489305,
+          21.310670442476635
         ],
         "max": [
-          21.230920520607505,
-          3.8984051758958502,
-          21.66622071273294
+          21.311234291334852,
+          3.8895268994611714,
+          21.682353681568472
         ]
       },
       "sampledVertexCount": 1029,
@@ -167,7 +167,7 @@
     {
       "fileName": "mesh-animation-arc-warden-hit-02-050000.png",
       "normalizedTime": 0.5,
-      "durationSeconds": 0.3333333432674408,
+      "durationSeconds": 0.5,
       "assetBounds": {
         "min": [
           -0.8553455471992493,
@@ -182,14 +182,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          19.986966480017397,
-          1.47599460803379,
-          21.265939390269423
+          19.79850518820192,
+          1.5082867004267253,
+          21.31067044247664
         ],
         "max": [
-          21.24735474643831,
-          3.8960794990119654,
-          21.67334692529046
+          21.077628388970925,
+          3.9285473661168346,
+          21.682353681568472
         ]
       },
       "sampledVertexCount": 1029,
@@ -237,7 +237,7 @@
     {
       "fileName": "mesh-animation-arc-warden-hit-03-075000.png",
       "normalizedTime": 0.75,
-      "durationSeconds": 0.3333333432674408,
+      "durationSeconds": 0.5,
       "assetBounds": {
         "min": [
           -0.8553455471992493,
@@ -252,14 +252,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          19.906575974883282,
-          1.4908263254107064,
-          21.29812514406463
+          19.790669917054895,
+          1.485070471057847,
+          21.31067044247664
         ],
         "max": [
-          21.186232466437957,
-          3.9022962721825762,
-          21.66982490029465
+          21.068610674909888,
+          3.906496896345409,
+          21.682353681568472
         ]
       },
       "sampledVertexCount": 1029,
@@ -307,7 +307,7 @@
     {
       "fileName": "mesh-animation-arc-warden-hit-04-100000.png",
       "normalizedTime": 1,
-      "durationSeconds": 0.3333333432674408,
+      "durationSeconds": 0.5,
       "assetBounds": {
         "min": [
           -0.8553455471992493,

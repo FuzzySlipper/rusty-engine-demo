@@ -688,7 +688,7 @@ serialized prop bindings, and no shipped visible renderable uses a primitive fal
 
 The later schema-24 descendant adds Engine-owned renderable-local presentation transforms without
 revising this historical campaign evidence. Its exact project hash is
-`cdeaa2571128e0ee5ad0a63987bfafaf78ccea33d576d4c727a8d16eca9ebd2c`; the bounded lineage and
+`51005f60581930ae220c81cacaf91b949c8ef9487579ddc79c3cd525465506b4`; the bounded lineage and
 actor/static-prop grounding inputs are recorded in
 [`docs/evidence/renderable-grounding.json`](evidence/renderable-grounding.json). Entity world,
 collision, navigation, and gameplay authority remain unchanged.

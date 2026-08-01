@@ -248,8 +248,8 @@ gameplay authority.
 
 | Product source                            | Skin                |   Bytes | SHA-256                                                            |
 | ----------------------------------------- | ------------------- | ------: | ------------------------------------------------------------------ |
-| `content/assets/actor-kit/arc-warden.glb` | `zombieMaleA.png`   | 342,344 | `c042ca62e09ab7446a56b343511e07719fa0acf6ad4c899fc5c1a23d0fba64a5` |
-| `content/assets/actor-kit/bay-rusher.glb` | `zombieFemaleA.png` | 336,760 | `5ca1a7dda35a0365889218e636d117fbf5ba811b1022b3c51c7bd6362c7d583c` |
+| `content/assets/actor-kit/arc-warden.glb` | `zombieMaleA.png`   | 339,604 | `4012374e5894fb2df103ade33bb36357390ef6457d54ffc8b3187450682c229b` |
+| `content/assets/actor-kit/bay-rusher.glb` | `zombieFemaleA.png` | 334,024 | `6a5552abed410666023c0f06ee8927a19a3efaa3695846fda9b670c79b50190d` |
 
 Both outputs contain exact `idle`, `run`, `jump`, `attack`, `hit`, and `death` clips. Their complete
 source file hashes, clip ranges/durations/origins, Blender version, target scale, final bytes, and

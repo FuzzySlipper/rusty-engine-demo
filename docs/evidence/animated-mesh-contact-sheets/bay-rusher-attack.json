@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "providerRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
   "asset": "mesh-animation/bay-rusher",
-  "contentHash": "sha256:2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+  "contentHash": "sha256:6a5552abed410666023c0f06ee8927a19a3efaa3695846fda9b670c79b50190d",
   "clip": "attack",
   "camera": {
     "position": [
@@ -27,7 +27,7 @@
     {
       "fileName": "mesh-animation-bay-rusher-attack-00-000000.png",
       "normalizedTime": 0,
-      "durationSeconds": 0.4166666567325592,
+      "durationSeconds": 0.6666666865348816,
       "assetBounds": {
         "min": [
           -0.8553455471992493,
@@ -97,7 +97,7 @@
     {
       "fileName": "mesh-animation-bay-rusher-attack-01-025000.png",
       "normalizedTime": 0.25,
-      "durationSeconds": 0.4166666567325592,
+      "durationSeconds": 0.6666666865348816,
       "assetBounds": {
         "min": [
           -0.8553455471992493,
@@ -112,14 +112,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          6.5163526471599615,
-          1.4918867088622263,
-          12.134016789473723
+          6.310597862429671,
+          1.487488941174942,
+          12.209694684482807
         ],
         "max": [
-          8.48390978228982,
-          3.0088542198967962,
-          12.727508928171009
+          8.243612219864168,
+          3.016864177094038,
+          12.779608972608129
         ]
       },
       "sampledVertexCount": 1029,
@@ -167,7 +167,7 @@
     {
       "fileName": "mesh-animation-bay-rusher-attack-02-050000.png",
       "normalizedTime": 0.5,
-      "durationSeconds": 0.4166666567325592,
+      "durationSeconds": 0.6666666865348816,
       "assetBounds": {
         "min": [
           -0.8553455471992493,
@@ -182,14 +182,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          6.5163526471599615,
-          1.4887261659385547,
-          12.106113269884883
+          6.649950412522082,
+          1.5401159797011692,
+          12.209694684482805
         ],
         "max": [
-          8.48390978228982,
-          3.0045318647834227,
-          12.753312211760646
+          8.606206047558318,
+          3.065499247137346,
+          12.779608972608129
         ]
       },
       "sampledVertexCount": 1029,
@@ -237,7 +237,7 @@
     {
       "fileName": "mesh-animation-bay-rusher-attack-03-075000.png",
       "normalizedTime": 0.75,
-      "durationSeconds": 0.4166666567325592,
+      "durationSeconds": 0.6666666865348816,
       "assetBounds": {
         "min": [
           -0.8553455471992493,
@@ -252,14 +252,14 @@
       },
       "sampledWorldBounds": {
         "min": [
-          6.516352647159961,
-          1.4955318952323016,
-          12.166631087467309
+          6.782848664964503,
+          1.5101775805017994,
+          12.209694684482805
         ],
         "max": [
-          8.48390978228982,
-          3.0120285559257702,
-          12.744809633984579
+          8.7084614037017,
+          3.039099127573043,
+          12.779608972608129
         ]
       },
       "sampledVertexCount": 1029,
@@ -307,7 +307,7 @@
     {
       "fileName": "mesh-animation-bay-rusher-attack-04-100000.png",
       "normalizedTime": 1,
-      "durationSeconds": 0.4166666567325592,
+      "durationSeconds": 0.6666666865348816,
       "assetBounds": {
         "min": [
           -0.8553455471992493,
