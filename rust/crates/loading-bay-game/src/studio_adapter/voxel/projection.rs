@@ -216,5 +216,6 @@ fn render_material(slot: u16, material: asset_catalog::RenderMaterial) -> Render
             UvStrategy::Planar => MaterialUvStrategy::Planar,
             UvStrategy::Atlas => MaterialUvStrategy::Atlas,
         },
+        voxel_surface: None,
     }
 }

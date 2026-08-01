@@ -28,7 +28,7 @@ function nearlyEqual(left, right, tolerance = 0.000_01) {
 }
 
 invariant(project.schemaVersion === 24, "canonical project must use schema 24");
-invariant(evidence.protocolVersion === 13, "Studio proof must use protocol 13");
+invariant(evidence.protocolVersion === 14, "Studio proof must use protocol 14");
 invariant(
   projectBytes.byteLength === evidence.project.finalBytes
     && sha256(projectBytes) === evidence.project.finalHash,

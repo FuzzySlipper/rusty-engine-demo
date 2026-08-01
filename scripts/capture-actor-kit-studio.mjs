@@ -7,7 +7,7 @@ import { createInterface } from "node:readline";
 const ROOT = resolve(import.meta.dirname, "..");
 const OUTPUT = resolve(ROOT, "docs/evidence");
 const HOST = process.env.RUSTY_STUDIO_ACTOR_HOST ?? "http://127.0.0.1:4396";
-const PROTOCOL_VERSION = 13;
+const PROTOCOL_VERSION = 14;
 const MANIFEST = JSON.parse(
   await readFile(
     resolve(ROOT, "content/assets/actor-kit/source-manifest.json"),

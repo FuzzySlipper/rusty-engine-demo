@@ -184,11 +184,11 @@ for (const door of doorOwners) {
 }
 
 invariant(
-  evidence.protocolVersion === 13 &&
+  evidence.protocolVersion === 14 &&
     evidence.batchLimit === 32 &&
     evidence.batchCount === 11 &&
     evidence.oneRequestPerBatch === true,
-  "level publication must use one bounded protocol-13 request per batch",
+  "level publication must use one bounded protocol-14 request per batch",
 );
 invariant(
   evidence.batches.reduce((total, batch) => total + batch.placements, 0) ===

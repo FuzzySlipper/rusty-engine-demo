@@ -144,7 +144,7 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 13,
+                    adapter_version: 14,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -169,6 +169,8 @@ impl StudioAdapterService {
                         "setEntityKinematic",
                         "setEntityTranslation",
                         "upsertMaterial",
+                        "upsertVoxelSurfaceMaterial",
+                        "removeVoxelSurfaceMaterial",
                         "prepareAssetImport",
                         "prepareAssetReimport",
                         "applyAssetImport",
@@ -444,6 +446,16 @@ impl StudioAdapterService {
             } => self.mutate(request_id, |location| {
                 upsert_material(location, &expected_project_hash, asset_id, definition)
             }),
+            StudioAdapterRequest::UpsertVoxelSurfaceMaterial { .. }
+            | StudioAdapterRequest::RemoveVoxelSurfaceMaterial { .. } => {
+                StudioAdapterResponse::rejected(
+                    Some(request_id),
+                    AdapterRejection::new(
+                        "adapter.unsupportedOperation",
+                        "Loading Bay does not own runtime voxel surface authoring",
+                    ),
+                )
+            }
             StudioAdapterRequest::PrepareAssetImport {
                 expected_project_hash,
                 source,

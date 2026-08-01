@@ -55,8 +55,9 @@ use crate::{
 use super::path::ProjectLocation;
 use super::protocol::{
     AdapterRejection, AnimatedMeshResourceReadout, AssetBrowserReadout, AssetEntryReadout,
-    AssetImportReadout, AssetLockEntryReadout, CanonicalOwnerContent, EntityTranslationReceipt,
-    OwnerInspections, ProjectMutationReceipt, ProjectionDiagnosticReadout, ProjectionReadout,
+    AssetImportReadout, AssetLockEntryReadout, CanonicalOwnerContent,
+    EmptyVoxelSurfaceAuthoringReadout, EntityTranslationReceipt, OwnerInspections,
+    ProjectMutationReceipt, ProjectionDiagnosticReadout, ProjectionReadout,
     SceneHierarchyNodeReadout, SceneHierarchyReadout, StudioEntityComponentReference,
     StudioEntityInspectorContractIdentity, StudioProjectIdentity, StudioProjectReadout,
     StudioSceneAppearance, StudioSceneObjectDraft, StudioVoxelObjectInstance, TransformReadout,
@@ -253,6 +254,12 @@ impl OpenedOwnerProject {
                 .map(inspect_voxel_state),
             voxel_authoring: voxel_authoring_readout(project)?,
             voxel_object_authoring: voxel_object_authoring_readout(project),
+            voxel_surface_authoring: EmptyVoxelSurfaceAuthoringReadout {
+                textures: [],
+                atlases: [],
+                materials: [],
+            },
+            texture_resources: [],
             animated_mesh_resources: animated_mesh_resources(project)?,
             entity_components,
             projection,
@@ -1576,6 +1583,7 @@ fn project_material_descriptors(
                         UvStrategy::Planar => MaterialUvStrategy::Planar,
                         UvStrategy::Atlas => MaterialUvStrategy::Atlas,
                     },
+                    voxel_surface: None,
                 },
             ))
         })
@@ -1720,6 +1728,7 @@ fn studio_material(id: &str, asset: &str) -> RenderMaterialDescriptor {
         emission_color: [0.0; 3],
         emission_intensity: 0.0,
         uv_strategy: MaterialUvStrategy::Flat,
+        voxel_surface: None,
     }
 }
 
@@ -1802,6 +1811,7 @@ fn cuboid_payload([width, height, depth]: [f32; 3]) -> MeshPayloadDescriptor {
                 -0.577, -0.577, -0.577, 0.577, 0.577, -0.577, 0.577, 0.577, 0.577, 0.577, -0.577,
                 0.577, 0.577,
             ],
+            uvs: None,
             indices: vec![
                 4, 5, 6, 4, 6, 7, 1, 0, 3, 1, 3, 2, 0, 4, 7, 0, 7, 3, 5, 1, 2, 5, 2, 6, 3, 7, 6, 3,
                 6, 2, 0, 1, 5, 0, 5, 4,
@@ -2003,6 +2013,8 @@ fn project_catalog(project: &StoredProject) -> Result<AssetCatalog, AdapterRejec
                     .or_else(|| Some(asset.id.clone())),
                 dependencies,
                 material: asset.material.clone(),
+                texture: None,
+                voxel_atlas: None,
             })
         })
         .collect::<Result<Vec<_>, _>>()?;

@@ -178,6 +178,7 @@ pub(crate) fn stored_project_material_descriptors(
                         "atlas" => MaterialUvStrategy::Atlas,
                         _ => MaterialUvStrategy::Flat,
                     },
+                    voxel_surface: None,
                 },
             ))
         })

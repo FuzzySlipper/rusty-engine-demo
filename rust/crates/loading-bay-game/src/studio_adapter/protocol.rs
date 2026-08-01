@@ -27,7 +27,7 @@ use crate::{
     StoredVoxelObjectFrameSelection, StoredVoxelObjectMaterialOverride,
 };
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 13;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 14;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
@@ -191,6 +191,28 @@ pub enum StudioAdapterRequest {
         expected_project_hash: String,
         asset_id: String,
         definition: StoredMaterialDefinition,
+    },
+    UpsertVoxelSurfaceMaterial {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        texture_asset_id: String,
+        expected_texture_content_hash: Option<String>,
+        texture_source: serde_json::Value,
+        filter: serde_json::Value,
+        material: serde_json::Value,
+        assignment: serde_json::Value,
+    },
+    RemoveVoxelSurfaceMaterial {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        material_asset_id: String,
+        expected_material_content_hash: String,
+        texture_asset_id: String,
+        expected_texture_content_hash: String,
+        atlas_asset_id: Option<String>,
+        expected_atlas_content_hash: Option<String>,
     },
     PrepareAssetImport {
         protocol_version: u32,
@@ -676,6 +698,12 @@ impl StudioAdapterRequest {
             | Self::UpsertMaterial {
                 protocol_version, ..
             }
+            | Self::UpsertVoxelSurfaceMaterial {
+                protocol_version, ..
+            }
+            | Self::RemoveVoxelSurfaceMaterial {
+                protocol_version, ..
+            }
             | Self::PrepareAssetImport {
                 protocol_version, ..
             }
@@ -827,6 +855,8 @@ impl StudioAdapterRequest {
             | Self::SetEntityKinematic { request_id, .. }
             | Self::SetEntityTranslation { request_id, .. }
             | Self::UpsertMaterial { request_id, .. }
+            | Self::UpsertVoxelSurfaceMaterial { request_id, .. }
+            | Self::RemoveVoxelSurfaceMaterial { request_id, .. }
             | Self::PrepareAssetImport { request_id, .. }
             | Self::PrepareAssetReimport { request_id, .. }
             | Self::ApplyAssetImport { request_id, .. }
@@ -1131,10 +1161,20 @@ pub struct StudioProjectReadout {
     pub voxel: Option<VoxelStateInspection>,
     pub voxel_authoring: VoxelAuthoringReadout,
     pub voxel_object_authoring: VoxelObjectAuthoringReadout,
+    pub voxel_surface_authoring: EmptyVoxelSurfaceAuthoringReadout,
+    pub texture_resources: [(); 0],
     pub animated_mesh_resources: Vec<AnimatedMeshResourceReadout>,
     pub entity_components: Vec<StudioEntityComponentReference>,
     pub projection: RenderFrameDiff,
     pub projection_readout: ProjectionReadout,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EmptyVoxelSurfaceAuthoringReadout {
+    pub textures: [(); 0],
+    pub atlases: [(); 0],
+    pub materials: [(); 0],
 }
 
 #[derive(Debug, Clone, Serialize)]

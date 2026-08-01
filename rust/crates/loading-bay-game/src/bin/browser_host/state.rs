@@ -917,6 +917,7 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
                     "atlas" => MaterialUvStrategy::Atlas,
                     other => panic!("admitted material retained unknown UV strategy {other}"),
                 },
+                voxel_surface: None,
             })
         })
         .collect();
