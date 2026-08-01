@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "targetUrl": "http://127.0.0.1:8797/?smoke=1&camera-boundary-evidence=1#/game",
+  "viewport": [
+    1600,
+    900
+  ],
+  "project": "rusty-engine-demo",
+  "captures": [
+    {
+      "milestone": "wall",
+      "player": [
+        6.54355525970459,
+        1.5,
+        6.630651473999023
+      ],
+      "camera": [
+        6.54355525970459,
+        2.7,
+        6.630651473999023
+      ],
+      "horizontalOffset": 0,
+      "eyeHeight": 1.2,
+      "screenshot": "docs/evidence/gameplay-camera-wall.png"
+    },
+    {
+      "milestone": "corner",
+      "player": [
+        3.4999895095825195,
+        1.5,
+        24.499984741210938
+      ],
+      "camera": [
+        3.4999895095825195,
+        2.7,
+        24.499984741210938
+      ],
+      "horizontalOffset": 0,
+      "eyeHeight": 1.2,
+      "screenshot": "docs/evidence/gameplay-camera-corner.png"
+    },
+    {
+      "milestone": "doorway",
+      "player": [
+        11.501128196716309,
+        1.5,
+        19.660808563232422
+      ],
+      "camera": [
+        11.501128196716309,
+        2.7,
+        19.660808563232422
+      ],
+      "horizontalOffset": 0,
+      "eyeHeight": 1.2,
+      "screenshot": "docs/evidence/gameplay-camera-doorway.png"
+    }
+  ],
+  "product": {
+    "smokeStatus": "pass",
+    "sessionTransport": "pass",
+    "roundTripMaxMilliseconds": 358.7,
+    "pendingOutboundMax": 1,
+    "droppedFacts": 0,
+    "pendingInput": 0,
+    "rendererTelemetry": "pass",
+    "revision": "REV 7188"
+  }
+}
