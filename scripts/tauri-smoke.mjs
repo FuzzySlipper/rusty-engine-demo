@@ -673,22 +673,36 @@ async function proveSingleInstance(first) {
       "single-instance activation created another host or disrupted the first",
     );
   }
-  const receipt = await waitFor(() => {
-    if (!existsSync(activationReceiptPath)) return null;
-    const source = readFileSync(activationReceiptPath, "utf8");
-    if (source === activationReceiptBefore) return null;
-    const value = JSON.parse(source);
-    return value.schemaVersion === 1 &&
-      value.shellPid === first.ready.shellPid &&
-      value.sequence > 0 &&
-      value.windowFound === true &&
-      value.showRequested === true &&
-      value.unminimizeRequested === true &&
-      value.nativeFocusRequested === true &&
-      value.webviewFocusRequested === true
-      ? value
-      : null;
-  }, "native single-instance activation receipt");
+  let latestReceipt = null;
+  let receipt;
+  try {
+    receipt = await waitFor(() => {
+      if (!existsSync(activationReceiptPath)) return null;
+      const source = readFileSync(activationReceiptPath, "utf8");
+      if (source === activationReceiptBefore) return null;
+      latestReceipt = JSON.parse(source);
+      return latestReceipt.schemaVersion === 2 &&
+        latestReceipt.shellPid === first.ready.shellPid &&
+        latestReceipt.sequence > 0 &&
+        latestReceipt.phase === "mainThreadCompleted" &&
+        latestReceipt.windowFound === true &&
+        latestReceipt.showRequested === true &&
+        latestReceipt.unminimizeRequested === true &&
+        latestReceipt.nativeFocusRequested === true &&
+        latestReceipt.webviewFocusRequested === true
+        ? latestReceipt
+        : null;
+    }, "native single-instance activation receipt");
+  } catch (error) {
+    throw new Error(
+      `${error.message}; singleton diagnostics=${JSON.stringify({
+        display,
+        exitCode,
+        latestReceipt,
+        secondaryOutput,
+      })}`,
+    );
+  }
   const activation = await executeAsync(
     first.sessionId,
     `const done = arguments[arguments.length - 1];

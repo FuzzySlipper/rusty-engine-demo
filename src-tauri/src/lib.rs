@@ -63,11 +63,19 @@ struct HostState {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+enum ActivationPhase {
+    CallbackReceived,
+    MainThreadCompleted,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ActivationReceipt {
     schema_version: u32,
     shell_pid: u32,
     sequence: u64,
     observed_at_unix_milliseconds: u64,
+    phase: ActivationPhase,
     window_found: bool,
     show_requested: bool,
     unminimize_requested: bool,
@@ -93,6 +101,17 @@ impl Drop for HostState {
 pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            let callback_receipt = activation_receipt(
+                ActivationPhase::CallbackReceived,
+                false,
+                false,
+                false,
+                false,
+                false,
+            );
+            if let Err(error) = write_activation_receipt(app, &callback_receipt) {
+                eprintln!("could not record desktop activation callback: {error}");
+            }
             let activation_app = app.clone();
             if let Err(error) = app.run_on_main_thread(move || {
                 activate_existing_window(&activation_app);
@@ -149,6 +168,7 @@ fn activate_existing_window(app: &AppHandle<Wry>) {
             )
             .is_ok();
         activation_receipt(
+            ActivationPhase::MainThreadCompleted,
             true,
             show_requested,
             unminimize_requested,
@@ -156,7 +176,14 @@ fn activate_existing_window(app: &AppHandle<Wry>) {
             webview_focus_requested,
         )
     } else {
-        activation_receipt(false, false, false, false, false)
+        activation_receipt(
+            ActivationPhase::MainThreadCompleted,
+            false,
+            false,
+            false,
+            false,
+            false,
+        )
     };
     if let Err(error) = write_activation_receipt(app, &receipt) {
         eprintln!("could not record desktop activation: {error}");
@@ -164,6 +191,7 @@ fn activate_existing_window(app: &AppHandle<Wry>) {
 }
 
 fn activation_receipt(
+    phase: ActivationPhase,
     window_found: bool,
     show_requested: bool,
     unminimize_requested: bool,
@@ -171,7 +199,7 @@ fn activation_receipt(
     webview_focus_requested: bool,
 ) -> ActivationReceipt {
     ActivationReceipt {
-        schema_version: 1,
+        schema_version: 2,
         shell_pid: std::process::id(),
         sequence: ACTIVATION_SEQUENCE.fetch_add(1, Ordering::Relaxed) + 1,
         observed_at_unix_milliseconds: SystemTime::now()
@@ -180,6 +208,7 @@ fn activation_receipt(
             .as_millis()
             .try_into()
             .unwrap_or(u64::MAX),
+        phase,
         window_found,
         show_requested,
         unminimize_requested,
@@ -698,10 +727,11 @@ mod tests {
         let root = temporary_directory("activation-receipt");
         let path = root.join(ACTIVATION_RECEIPT_FILE);
         let first = ActivationReceipt {
-            schema_version: 1,
+            schema_version: 2,
             shell_pid: 42,
             sequence: 1,
             observed_at_unix_milliseconds: 100,
+            phase: ActivationPhase::CallbackReceived,
             window_found: true,
             show_requested: true,
             unminimize_requested: true,
@@ -717,6 +747,7 @@ mod tests {
         let second = ActivationReceipt {
             sequence: 2,
             observed_at_unix_milliseconds: 200,
+            phase: ActivationPhase::MainThreadCompleted,
             ..first
         };
         write_activation_receipt_at(&path, &second).unwrap();
