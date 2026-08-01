@@ -2,48 +2,48 @@
   "schemaVersion": 1,
   "authority": "Studio imports serialized actors; Rust admission owns durable project state; gameplay posture binding is deferred to VC8",
   "project": {
-    "path": "content/projects/loading-bay.project.json",
-    "startingHash": "ee5fbd2825ab5bd8acb1c06ac4740d8b2495256f5cb26e5f5af4976a0bb1128b",
-    "finalHash": "0d985cf6aeba7e7b239ad61fa0d3391c6e3c67d1fcf4a9701276831b4ac25492",
+    "path": "../../../tmp/rusty-6460-author-2/content/projects/loading-bay.project.json",
+    "startingHash": "0d985cf6aeba7e7b239ad61fa0d3391c6e3c67d1fcf4a9701276831b4ac25492",
+    "finalHash": "cdeaa2571128e0ee5ad0a63987bfafaf78ccea33d576d4c727a8d16eca9ebd2c",
     "schemaVersion": 24,
     "assetCount": 89
   },
   "staleImport": {
     "code": "project.staleHash",
-    "projectHash": "ee5fbd2825ab5bd8acb1c06ac4740d8b2495256f5cb26e5f5af4976a0bb1128b",
+    "projectHash": "0d985cf6aeba7e7b239ad61fa0d3391c6e3c67d1fcf4a9701276831b4ac25492",
     "nonMutation": true
   },
   "imports": [
     {
       "assetId": "mesh-animation/arc-warden",
-      "sourceHash": "68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8",
-      "sourceBytes": 342844,
+      "sourceHash": "c042ca62e09ab7446a56b343511e07719fa0acf6ad4c899fc5c1a23d0fba64a5",
+      "sourceBytes": 342344,
       "generatedAssetIds": [
         "mesh-animation/arc-warden"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1439.648,
-      "applyMs": 6768.917,
-      "applyResponseBytes": 6336403
+      "prepareMs": 1382.559,
+      "applyMs": 6646.781,
+      "applyResponseBytes": 6346978
     },
     {
       "assetId": "mesh-animation/bay-rusher",
-      "sourceHash": "72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87",
-      "sourceBytes": 337260,
+      "sourceHash": "5ca1a7dda35a0365889218e636d117fbf5ba811b1022b3c51c7bd6362c7d583c",
+      "sourceBytes": 336760,
       "generatedAssetIds": [
         "mesh-animation/bay-rusher"
       ],
       "reimportKind": "structuralReload",
-      "prepareMs": 1402.222,
-      "applyMs": 6621.181,
-      "applyResponseBytes": 6336388
+      "prepareMs": 1420.154,
+      "applyMs": 6693.166,
+      "applyResponseBytes": 6346973
     }
   ],
   "assets": [
     {
       "assetId": "mesh-animation/arc-warden",
-      "sourceHash": "68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8",
-      "sourceBytes": 342844,
+      "sourceHash": "c042ca62e09ab7446a56b343511e07719fa0acf6ad4c899fc5c1a23d0fba64a5",
+      "sourceBytes": 342344,
       "clipIds": [
         "idle",
         "run",
@@ -68,8 +68,8 @@
     },
     {
       "assetId": "mesh-animation/bay-rusher",
-      "sourceHash": "72c248862bd5064abcdcde7852e3e630fc0c710769a567774e5ea7545df6db87",
-      "sourceBytes": 337260,
+      "sourceHash": "5ca1a7dda35a0365889218e636d117fbf5ba811b1022b3c51c7bd6362c7d583c",
+      "sourceBytes": 336760,
       "clipIds": [
         "idle",
         "run",
@@ -96,11 +96,11 @@
   "noopReimport": {
     "assetId": "mesh-animation/arc-warden",
     "kind": "noop",
-    "sourceHash": "68a2cf5a8320facca95c293d67b52643eebe121180d7d108452b8d1dd997dea8"
+    "sourceHash": "c042ca62e09ab7446a56b343511e07719fa0acf6ad4c899fc5c1a23d0fba64a5"
   },
   "reload": {
-    "canonicalHash": "0d985cf6aeba7e7b239ad61fa0d3391c6e3c67d1fcf4a9701276831b4ac25492",
-    "freshProcessHash": "0d985cf6aeba7e7b239ad61fa0d3391c6e3c67d1fcf4a9701276831b4ac25492",
+    "canonicalHash": "cdeaa2571128e0ee5ad0a63987bfafaf78ccea33d576d4c727a8d16eca9ebd2c",
+    "freshProcessHash": "cdeaa2571128e0ee5ad0a63987bfafaf78ccea33d576d4c727a8d16eca9ebd2c",
     "passed": true
   }
 }

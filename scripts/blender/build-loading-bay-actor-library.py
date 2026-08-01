@@ -200,6 +200,13 @@ def key_pose_action(
     action = bpy.data.actions.new(name=name)
     action.use_fake_user = True
     armature.animation_data.action = action
+    # Importing the Kenney actions leaves their last evaluated pose in the
+    # armature even after assigning a new empty action.  In particular, stale
+    # per-bone scale/location values turn otherwise modest combat rotations
+    # into visibly stretched limbs.  Start every authored action from the
+    # actual rest basis and key the complete transform for every bone we own.
+    for pose_bone in armature.pose.bones:
+        pose_bone.matrix_basis.identity()
     bone_names = sorted({bone_name for _, pose in frames for bone_name in pose})
     missing = [bone_name for bone_name in bone_names if bone_name not in armature.pose.bones]
     if missing:
@@ -208,6 +215,8 @@ def key_pose_action(
         for bone_name in bone_names:
             pose_bone = armature.pose.bones[bone_name]
             pose_bone.rotation_mode = "XYZ"
+            pose_bone.location = (0.0, 0.0, 0.0)
+            pose_bone.scale = (1.0, 1.0, 1.0)
             pose_bone.rotation_euler = tuple(
                 math.radians(value)
                 for value in pose.get(bone_name, (0.0, 0.0, 0.0))
@@ -215,6 +224,8 @@ def key_pose_action(
             pose_bone.keyframe_insert(
                 data_path="rotation_euler", frame=frame, group=bone_name
             )
+            pose_bone.keyframe_insert(data_path="location", frame=frame, group=bone_name)
+            pose_bone.keyframe_insert(data_path="scale", frame=frame, group=bone_name)
     for bone_name in bone_names:
         armature.pose.bones[bone_name].rotation_euler = (0.0, 0.0, 0.0)
     return action
@@ -302,8 +313,8 @@ def add_original_actions(armature: bpy.types.Object) -> list[bpy.types.Action]:
             "death",
             [
                 (0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                (10, (0.0, 0.04, 0.12), (math.radians(45), 0.0, 0.0)),
-                (22, (0.0, 0.18, 0.32), (math.radians(88), 0.0, 0.0)),
+                (10, (0.0, 0.0, 0.0), (0.0, math.radians(45), 0.0)),
+                (22, (0.0, 0.0, 0.0), (0.0, math.radians(88), 0.0)),
             ],
         ),
     ]

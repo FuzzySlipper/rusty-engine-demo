@@ -12,7 +12,7 @@ The checked-in files under `content/projects` are the canonical Studio-owned sou
 
 | Artifact                                    | SHA-256                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------ |
-| `content/projects/loading-bay.project.json` | `0d985cf6aeba7e7b239ad61fa0d3391c6e3c67d1fcf4a9701276831b4ac25492` |
+| `content/projects/loading-bay.project.json` | `cdeaa2571128e0ee5ad0a63987bfafaf78ccea33d576d4c727a8d16eca9ebd2c` |
 | `content/projects/relay-annex.project.json` | `0f5c5bc55f8643b75a395d83037a03dbc9c1ad938aa1622c070a9a9272a87bf3` |
 
 The schema-24 Loading Bay artifact contains one scene, 3,931 gameplay-proxy material voxels, 419
