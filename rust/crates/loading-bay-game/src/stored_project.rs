@@ -22,7 +22,7 @@ use crate::combat::{
 };
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 23;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 24;
 pub const STORED_VISUAL_BINDING_VERSION: u32 = 1;
 pub const MAX_STORED_VISUAL_BINDING_STATES: usize = 16;
 pub const MAX_PROJECT_VOXEL_OBJECTS: u64 = 256;
@@ -463,9 +463,19 @@ pub struct StoredRenderable {
     pub asset: String,
     pub visible: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub local_transform: Option<StoredRenderableTransform>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub initial_clip: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visual_binding: Option<StoredVisualBinding>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredRenderableTransform {
+    pub translation: [f32; 3],
+    pub rotation: [f32; 4],
+    pub scale: [f32; 3],
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -686,6 +686,13 @@ instances of nine voxel-brush definitions; the off-route proof room retains anot
 Eight enemies use two serialized animated identities, 25 gameplay entities use capability-complete
 serialized prop bindings, and no shipped visible renderable uses a primitive fallback.
 
+The later schema-24 descendant adds Engine-owned renderable-local presentation transforms without
+revising this historical campaign evidence. Its exact project hash is
+`ee5fbd2825ab5bd8acb1c06ac4740d8b2495256f5cb26e5f5af4976a0bb1128b`; the bounded lineage and
+actor/static-prop grounding inputs are recorded in
+[`docs/evidence/renderable-grounding.json`](evidence/renderable-grounding.json). Entity world,
+collision, navigation, and gameplay authority remain unchanged.
+
 The final visual audit is indexed by
 [`docs/evidence/final-visual-content-certification.json`](evidence/final-visual-content-certification.json):
 

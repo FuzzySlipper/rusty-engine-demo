@@ -12,10 +12,10 @@ The checked-in files under `content/projects` are the canonical Studio-owned sou
 
 | Artifact                                    | SHA-256                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------ |
-| `content/projects/loading-bay.project.json` | `95f87931503ddc7f54ab85f54ca08f94399db59e2534d2bf882592594975da89` |
-| `content/projects/relay-annex.project.json` | `96750d2f198e2e785696de712592c003c8dcd4ce9640c187c7e7c63b24352365` |
+| `content/projects/loading-bay.project.json` | `ee5fbd2825ab5bd8acb1c06ac4740d8b2495256f5cb26e5f5af4976a0bb1128b` |
+| `content/projects/relay-annex.project.json` | `0f5c5bc55f8643b75a395d83037a03dbc9c1ad938aa1622c070a9a9272a87bf3` |
 
-The schema-23 Loading Bay artifact contains one scene, 3,931 gameplay-proxy material voxels, 419
+The schema-24 Loading Bay artifact contains one scene, 3,931 gameplay-proxy material voxels, 419
 entities, 89 retained asset identities, nine item definitions, eight enemies, three encounters,
 eight authored pickup caches, eight dormant defeat drops, five doors, eight lights, one secret, and
 one level exit. Its visible room reuses nine canonical voxel-object definitions across 342 route
@@ -24,6 +24,11 @@ all. Eight enemies use two animated identities, 25 gameplay props use serialized
 and 37 gameplay/landmark renderables are visible. Stable pretty-printing plus Rust decode,
 capability-complete admission, save, and exact-byte round-trip make content drift fail the normal
 verification gate. Fixture generation cannot write either canonical file.
+
+The representative Bay Rusher, Arc Warden, and control-panel prop carry authored renderable-local
+translations. These presentation-only offsets align their differently authored mesh bounds to the
+contact plane while entity translations, collision shapes, navigation goals, and gameplay remain
+unchanged. Studio reads and writes the offsets through the guarded schema-24 project contract.
 
 Relay Annex changes the room arrangement, player start, initial enemy placement and tuning,
 navigation target/speed, and beacon radius through serialized project data. It uses the same Rust

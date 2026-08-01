@@ -47,9 +47,9 @@ use crate::{
     admit_stored_project_with_document, encode_project_document, project_stored_voxel_objects_with,
     AdmittedProject, AdmittedStoredProject, DecodedProjectDocument, ProjectSaveMode, ProjectStore,
     StoredAssetImport, StoredCollision, StoredEntityDefinition, StoredKinematic, StoredLight,
-    StoredProject, StoredRenderable, StoredScene, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID,
-    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION, LOADING_BAY_WEAPON_COMPONENT_TYPE_ID,
-    STORED_PROJECT_SCHEMA_VERSION,
+    StoredProject, StoredRenderable, StoredRenderableTransform, StoredScene,
+    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION,
+    LOADING_BAY_WEAPON_COMPONENT_TYPE_ID, STORED_PROJECT_SCHEMA_VERSION,
 };
 
 use super::path::ProjectLocation;
@@ -836,6 +836,7 @@ pub fn create_scene_object(
                         parent: object.parent_entity_id.map(SceneNodeId::new),
                         child_order: object.child_order,
                         transform: scene_transform(object.transform),
+                        renderable_transform: SceneTransform::IDENTITY,
                         kind,
                         metadata: NodeMetadata {
                             label: Some(object.name.clone()),
@@ -1023,6 +1024,44 @@ pub fn set_scene_object_transform(
     )?)
 }
 
+pub fn set_scene_object_renderable_transform(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    expected_scene_revision: u64,
+    entity_id: u64,
+    transform: TransformReadout,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    mutation_result(publish_project_mutation(
+        location,
+        expected_project_hash,
+        move |current, candidate| {
+            apply_scene_edit(
+                current,
+                expected_scene_revision,
+                SceneEditCommand::SetRenderableTransform {
+                    id: SceneNodeId::new(entity_id),
+                    transform: scene_transform(transform),
+                },
+            )?;
+            let renderable = stored_entity_mut(candidate, entity_id)?
+                .renderable
+                .as_mut()
+                .ok_or_else(|| {
+                    reject(
+                        "scene.renderableTransformRequiresAsset",
+                        format!("entity {entity_id} has no renderable asset"),
+                    )
+                })?;
+            renderable.local_transform = Some(StoredRenderableTransform {
+                translation: transform.translation,
+                rotation: transform.rotation,
+                scale: transform.scale,
+            });
+            Ok(ProjectMutationReceipt::SceneObjectRenderableTransformSet { entity_id })
+        },
+    )?)
+}
+
 pub fn set_scene_object_appearance(
     location: &ProjectLocation,
     expected_project_hash: &str,
@@ -1043,8 +1082,14 @@ pub fn set_scene_object_appearance(
                     kind,
                 },
             )?;
-            let (renderable, light) = stored_appearance(appearance);
+            let (mut renderable, light) = stored_appearance(appearance);
             let entity = stored_entity_mut(candidate, entity_id)?;
+            if let Some(renderable) = renderable.as_mut() {
+                renderable.local_transform = entity
+                    .renderable
+                    .as_ref()
+                    .and_then(|current| current.local_transform);
+            }
             entity.renderable = renderable;
             entity.light = light;
             Ok(ProjectMutationReceipt::SceneObjectAppearanceSet { entity_id })
@@ -1187,6 +1232,7 @@ fn stored_appearance(
             Some(StoredRenderable {
                 asset,
                 visible,
+                local_transform: None,
                 initial_clip: None,
                 visual_binding: None,
             }),
@@ -1200,6 +1246,7 @@ fn stored_appearance(
             Some(StoredRenderable {
                 asset,
                 visible,
+                local_transform: None,
                 initial_clip: Some(clip),
                 visual_binding: None,
             }),
@@ -1812,6 +1859,11 @@ fn scene_hierarchy(scene: &FlatSceneDocument, state: &EntityState) -> SceneHiera
             .transform(entity.id)
             .map_or(EntityTransform::IDENTITY, |transform| transform.transform());
         let world_transform = state.world_transform(entity.id).unwrap_or(transform);
+        let renderable_transform = state
+            .renderable(entity.id)
+            .map_or(EntityTransform::IDENTITY, |renderable| {
+                renderable.local_transform
+            });
         let display_order = nodes.len() as u32;
         root_node_ids.push(entity.id.raw());
         nodes.push(SceneHierarchyNodeReadout {
@@ -1829,6 +1881,7 @@ fn scene_hierarchy(scene: &FlatSceneDocument, state: &EntityState) -> SceneHiera
             entity_id: Some(entity.id.raw()),
             local_transform: transform_readout(transform),
             world_transform: transform_readout(world_transform),
+            renderable_transform: transform_readout(renderable_transform),
         });
         used_root_orders.insert(next_child_order);
     }
@@ -1871,6 +1924,7 @@ fn append_hierarchy_node(
         entity_id: entities.get(&node.id).map(|entity| entity.raw()),
         local_transform: transform_readout(node.transform),
         world_transform: transform_readout(world[&node.id]),
+        renderable_transform: transform_readout(node.renderable_transform),
     });
     for child in &node.children {
         append_hierarchy_node(
@@ -2029,6 +2083,24 @@ fn project_scene(
                 ),
                 scale: Vec3::new(entity.scale[0], entity.scale[1], entity.scale[2]),
             },
+            renderable_transform: entity
+                .renderable
+                .as_ref()
+                .and_then(|renderable| renderable.local_transform)
+                .map_or(SceneTransform::IDENTITY, |transform| SceneTransform {
+                    translation: Vec3::new(
+                        transform.translation[0],
+                        transform.translation[1],
+                        transform.translation[2],
+                    ),
+                    rotation: Quat::new(
+                        transform.rotation[0],
+                        transform.rotation[1],
+                        transform.rotation[2],
+                        transform.rotation[3],
+                    ),
+                    scale: Vec3::new(transform.scale[0], transform.scale[1], transform.scale[2]),
+                }),
             kind,
             metadata: NodeMetadata {
                 label: Some(entity.name.clone()),

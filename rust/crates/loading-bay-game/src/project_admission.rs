@@ -535,6 +535,19 @@ fn authored_definition(
     if let Some(renderable) = &authored.renderable {
         entity_definition =
             entity_definition.with_renderable(renderable.asset.clone(), renderable.visible);
+        if let Some(transform) = renderable.local_transform {
+            entity_definition =
+                entity_definition.with_renderable_local_transform(EntityTransform {
+                    translation: array_vec3(transform.translation),
+                    rotation: Quat::new(
+                        transform.rotation[0],
+                        transform.rotation[1],
+                        transform.rotation[2],
+                        transform.rotation[3],
+                    ),
+                    scale: array_vec3(transform.scale),
+                });
+        }
     }
     if let Some(kinematic) = authored.kinematic {
         entity_definition = entity_definition.with_kinematic(
@@ -798,6 +811,10 @@ fn definition_error(
             entity_state::EntityDefinitionError::InvalidTransform { entity } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "translation"),
+            ),
+            entity_state::EntityDefinitionError::InvalidRenderableTransform { entity } => (
+                diagnostic_code::INVALID_COMPONENT,
+                entity_path(scene_index, indexes, *entity, "renderable.localTransform"),
             ),
             entity_state::EntityDefinitionError::InvalidBounds { entity } => (
                 diagnostic_code::INVALID_COMPONENT,

@@ -179,7 +179,7 @@ test("the Loading Bay project is read directly from its canonical artifact", () 
 
   assert.equal(project.projectId, "loading-bay");
   assert.equal(project.entryScene, "scene/loading-bay");
-  assert.equal(project.schemaVersion, 23);
+  assert.equal(project.schemaVersion, 24);
 });
 
 test("stored item definitions and starting inventory remain immutable authored data", () => {
@@ -533,5 +533,5 @@ test("the Relay Annex project is read directly from its canonical artifact", () 
 
   assert.equal(project.projectId, "relay-annex");
   assert.equal(project.entryScene, "scene/relay-annex");
-  assert.equal(project.schemaVersion, 23);
+  assert.equal(project.schemaVersion, 24);
 });

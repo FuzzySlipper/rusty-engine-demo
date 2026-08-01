@@ -76,7 +76,7 @@ test("canonical project reads decode without rewriting Studio-owned bytes", () =
 
 function canonicalProject() {
   return {
-    schemaVersion: 23,
+    schemaVersion: 24,
     projectId: "loading-bay",
     name: "Loading Bay",
     entryScene: "scene/loading-bay",

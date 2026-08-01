@@ -19,7 +19,7 @@ use super::project::{
     apply_entity_translation, create_project, create_scene, create_scene_object, delete_scene,
     delete_scene_object, rename_scene, rename_scene_object, reparent_scene_object, save_project_as,
     set_entity_collision, set_entity_kinematic, set_entry_scene, set_scene_object_appearance,
-    set_scene_object_transform, OpenedOwnerProject,
+    set_scene_object_renderable_transform, set_scene_object_transform, OpenedOwnerProject,
 };
 use super::protocol::{
     AdapterDescription, AdapterRejection, ProjectMutationReceipt, StudioAdapterRequest,
@@ -144,7 +144,7 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 12,
+                    adapter_version: 13,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -163,6 +163,7 @@ impl StudioAdapterService {
                         "renameSceneObject",
                         "reparentSceneObject",
                         "setSceneObjectTransform",
+                        "setSceneObjectRenderableTransform",
                         "setSceneObjectAppearance",
                         "setEntityCollision",
                         "setEntityKinematic",
@@ -356,6 +357,21 @@ impl StudioAdapterService {
                 ..
             } => self.mutate(request_id, |location| {
                 set_scene_object_transform(
+                    location,
+                    &expected_project_hash,
+                    expected_scene_revision,
+                    entity_id,
+                    transform,
+                )
+            }),
+            StudioAdapterRequest::SetSceneObjectRenderableTransform {
+                expected_project_hash,
+                expected_scene_revision,
+                entity_id,
+                transform,
+                ..
+            } => self.mutate(request_id, |location| {
+                set_scene_object_renderable_transform(
                     location,
                     &expected_project_hash,
                     expected_scene_revision,

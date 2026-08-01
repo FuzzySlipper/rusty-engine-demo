@@ -27,7 +27,7 @@ use crate::{
     StoredVoxelObjectFrameSelection, StoredVoxelObjectMaterialOverride,
 };
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 12;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 13;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
@@ -140,6 +140,14 @@ pub enum StudioAdapterRequest {
         child_order: u32,
     },
     SetSceneObjectTransform {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        expected_scene_revision: u64,
+        entity_id: u64,
+        transform: TransformReadout,
+    },
+    SetSceneObjectRenderableTransform {
         protocol_version: u32,
         request_id: String,
         expected_project_hash: String,
@@ -650,6 +658,9 @@ impl StudioAdapterRequest {
             | Self::SetSceneObjectTransform {
                 protocol_version, ..
             }
+            | Self::SetSceneObjectRenderableTransform {
+                protocol_version, ..
+            }
             | Self::SetSceneObjectAppearance {
                 protocol_version, ..
             }
@@ -810,6 +821,7 @@ impl StudioAdapterRequest {
             | Self::RenameSceneObject { request_id, .. }
             | Self::ReparentSceneObject { request_id, .. }
             | Self::SetSceneObjectTransform { request_id, .. }
+            | Self::SetSceneObjectRenderableTransform { request_id, .. }
             | Self::SetSceneObjectAppearance { request_id, .. }
             | Self::SetEntityCollision { request_id, .. }
             | Self::SetEntityKinematic { request_id, .. }
@@ -1484,6 +1496,7 @@ pub struct SceneHierarchyNodeReadout {
     pub entity_id: Option<u64>,
     pub local_transform: TransformReadout,
     pub world_transform: TransformReadout,
+    pub renderable_transform: TransformReadout,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -1562,6 +1575,9 @@ pub enum ProjectMutationReceipt {
         entity_id: u64,
     },
     SceneObjectTransformSet {
+        entity_id: u64,
+    },
+    SceneObjectRenderableTransformSet {
         entity_id: u64,
     },
     SceneObjectAppearanceSet {

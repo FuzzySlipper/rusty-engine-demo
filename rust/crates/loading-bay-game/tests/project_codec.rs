@@ -155,7 +155,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 24, 99] {
+    for schema_version in [0, 5, 25, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -165,6 +165,49 @@ fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
     let error = decode_project_document("{}").unwrap_err();
     assert_eq!(error.diagnostic().code, diagnostic_code::DECODE);
     assert_eq!(error.diagnostic().path, "schemaVersion");
+}
+
+#[test]
+fn schema_twenty_three_migrates_without_renderable_transforms_and_rejects_the_future_field() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["schemaVersion"] = 23.into();
+    for scene in previous["scenes"].as_array_mut().unwrap() {
+        for entity in scene["entities"].as_array_mut().unwrap() {
+            if let Some(renderable) = entity.get_mut("renderable") {
+                renderable.as_object_mut().unwrap().remove("localTransform");
+            }
+        }
+    }
+    let decoded = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap();
+    assert_eq!(decoded.source_schema_version, 23);
+    assert!(decoded.was_migrated());
+    assert!(decoded
+        .project
+        .scenes
+        .iter()
+        .flat_map(|scene| &scene.entities)
+        .all(|entity| entity
+            .renderable
+            .as_ref()
+            .is_none_or(|renderable| renderable.local_transform.is_none())));
+
+    let first_renderable = previous["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find_map(|entity| entity.get_mut("renderable"))
+        .unwrap();
+    first_renderable["localTransform"] = serde_json::json!({
+        "translation": [0.0, -1.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0, 1.0],
+        "scale": [1.0, 1.0, 1.0]
+    });
+    let error = decode_project_document(&serde_json::to_string(&previous).unwrap()).unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::DECODE);
+    assert_eq!(
+        error.diagnostic().path,
+        "scenes[].entities[].renderable.localTransform"
+    );
 }
 
 #[test]

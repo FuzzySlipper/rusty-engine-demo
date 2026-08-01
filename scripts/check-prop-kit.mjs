@@ -21,6 +21,10 @@ const VISUAL_BINDING_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/visual-bindings.json",
 );
+const GROUNDING_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/renderable-grounding.json",
+);
 
 function invariant(condition, message) {
   if (!condition) throw new Error(`prop-kit invariant failed: ${message}`);
@@ -38,6 +42,9 @@ const levelEvidence = JSON.parse(await readFile(LEVEL_EVIDENCE_PATH, "utf8"));
 const actorEvidence = JSON.parse(await readFile(ACTOR_EVIDENCE_PATH, "utf8"));
 const visualBindingEvidence = JSON.parse(
   await readFile(VISUAL_BINDING_EVIDENCE_PATH, "utf8"),
+);
+const groundingEvidence = JSON.parse(
+  await readFile(GROUNDING_EVIDENCE_PATH, "utf8"),
 );
 const scene = project.scenes.find(({ id }) => id === project.entryScene);
 
@@ -64,7 +71,10 @@ invariant(
       actorEvidence.project.finalHash === currentProjectHash) ||
     (visualBindingEvidence.project.startingHash ===
       actorEvidence.project.finalHash &&
-      visualBindingEvidence.project.finalHash === currentProjectHash),
+      visualBindingEvidence.project.finalHash === currentProjectHash) ||
+    (groundingEvidence.project.startingHash ===
+      visualBindingEvidence.project.finalHash &&
+      groundingEvidence.project.finalHash === currentProjectHash),
   "canonical project must be the prop publication or a recorded descendant",
 );
 invariant(

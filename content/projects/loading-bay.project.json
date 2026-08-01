@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 23,
+  "schemaVersion": 24,
   "projectId": "loading-bay",
   "name": "Loading Bay",
   "entryScene": "scene/loading-bay",
@@ -180699,6 +180699,24 @@
           "renderable": {
             "asset": "mesh-animation/bay-rusher",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.76503,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "initialClip": "idle",
             "visualBinding": {
               "version": 1,
@@ -180940,6 +180958,24 @@
           "renderable": {
             "asset": "mesh/prop-kit/control-panel",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -0.775,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "visualBinding": {
               "version": 1,
               "states": [
@@ -182575,6 +182611,24 @@
           "renderable": {
             "asset": "mesh-animation/arc-warden",
             "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.11143,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
             "initialClip": "idle",
             "visualBinding": {
               "version": 1,

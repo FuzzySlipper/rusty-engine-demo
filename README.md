@@ -146,10 +146,15 @@ The production actor kit is likewise reproducible from Kenney's CC0 Animated Cha
 pack. Its Blender 5.1.2 recipe, exact six-clip GLB hashes, embedded skins, copied notice, Rust-owned
 Studio import, and shared-renderer lifecycle proof are recorded in
 [docs/source-provenance.md](docs/source-provenance.md#vc4-production-animated-actor-source-kit).
-The canonical schema-23 project binds those actors and the industrial prop kit to Rust-owned
+The canonical schema-24 project binds those actors and the industrial prop kit to Rust-owned
 gameplay posture/state through versioned renderer-only visual bindings; the ownership and
 full-product proof are documented in
 [docs/visual-content-pipeline.md](docs/visual-content-pipeline.md#vc8-serialized-gameplay-visual-bindings).
+Renderable `localTransform` is a presentation-only offset composed after each entity's world
+transform. Loading Bay uses it to place the Bay Rusher, Arc Warden, and differently pivoted
+control-panel meshes on the contact plane without changing collision, navigation, combat, or
+other world-space gameplay facts. Studio exposes and persists this offset separately from the
+world transform.
 
 The completed visual-content campaign is certified at Demo revision
 `67e8d1d609f46d11fe8da0d990fc7a9b6ab33285`. It retains 89 serialized assets, 419 authored

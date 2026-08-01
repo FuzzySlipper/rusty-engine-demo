@@ -20,6 +20,10 @@ const VISUAL_BINDING_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/visual-bindings.json",
 );
+const GROUNDING_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/renderable-grounding.json",
+);
 
 function invariant(condition, message) {
   if (!condition) {
@@ -38,6 +42,9 @@ const actorEvidence = JSON.parse(await readFile(ACTOR_EVIDENCE_PATH, "utf8"));
 const visualBindingEvidence = JSON.parse(
   await readFile(VISUAL_BINDING_EVIDENCE_PATH, "utf8"),
 );
+const groundingEvidence = JSON.parse(
+  await readFile(GROUNDING_EVIDENCE_PATH, "utf8"),
+);
 const scene = project.scenes.find(({ id }) => id === "scene/loading-bay");
 const brushAssets = project.assets.filter(({ voxelObject }) =>
   voxelObject?.assetId.startsWith("voxel-object/brush-"),
@@ -55,7 +62,10 @@ invariant(
         actorEvidence.project.finalHash === sha256(projectBytes)) ||
       (visualBindingEvidence.project.startingHash ===
         actorEvidence.project.finalHash &&
-        visualBindingEvidence.project.finalHash === sha256(projectBytes))),
+        visualBindingEvidence.project.finalHash === sha256(projectBytes)) ||
+      (groundingEvidence.project.startingHash ===
+        visualBindingEvidence.project.finalHash &&
+        groundingEvidence.project.finalHash === sha256(projectBytes))),
   "current project bytes must match the batch publication or its recorded actor descendant",
 );
 invariant(

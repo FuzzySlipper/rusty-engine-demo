@@ -19,7 +19,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 22;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 23;
+const LEGACY_V22_STORED_PROJECT_SCHEMA_VERSION: u32 = 22;
 const LEGACY_V21_STORED_PROJECT_SCHEMA_VERSION: u32 = 21;
 const LEGACY_V20_STORED_PROJECT_SCHEMA_VERSION: u32 = 20;
 const LEGACY_V19_STORED_PROJECT_SCHEMA_VERSION: u32 = 19;
@@ -67,6 +68,10 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => {
+            reject_schema_twenty_three_renderable_transform_field(input)?;
+            migrate_v23(decode_legacy_project(input)?)?
+        }
+        LEGACY_V22_STORED_PROJECT_SCHEMA_VERSION => {
             reject_schema_twenty_two_visual_binding_field(input)?;
             migrate_v22(decode_legacy_project(input)?)?
         }
@@ -238,10 +243,52 @@ fn migrate_v21(mut legacy: StoredProject) -> Result<StoredProject, StoredProject
 fn migrate_v22(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
+        LEGACY_V22_STORED_PROJECT_SCHEMA_VERSION
+    );
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn migrate_v23(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
     );
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
+}
+
+fn reject_schema_twenty_three_renderable_transform_field(
+    input: &str,
+) -> Result<(), StoredProjectError> {
+    let value: serde_json::Value = serde_json::from_str(input).map_err(|error| {
+        StoredProjectError::new(diagnostic_code::DECODE, "$", error.to_string())
+    })?;
+    if value
+        .get("scenes")
+        .and_then(serde_json::Value::as_array)
+        .is_some_and(|scenes| {
+            scenes.iter().any(|scene| {
+                scene
+                    .get("entities")
+                    .and_then(serde_json::Value::as_array)
+                    .is_some_and(|entities| {
+                        entities.iter().any(|entity| {
+                            entity.get("renderable").is_some_and(|renderable| {
+                                renderable.get("localTransform").is_some()
+                            })
+                        })
+                    })
+            })
+        })
+    {
+        return Err(StoredProjectError::new(
+            diagnostic_code::DECODE,
+            "scenes[].entities[].renderable.localTransform",
+            "schema 23 cannot declare renderable local transforms",
+        ));
+    }
+    Ok(())
 }
 
 fn reject_schema_twenty_two_visual_binding_field(input: &str) -> Result<(), StoredProjectError> {
