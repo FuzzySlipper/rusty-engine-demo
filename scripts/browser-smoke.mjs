@@ -70,8 +70,8 @@ try {
       persistedProject,
     );
     if (
-      !currentReceipt.includes("sourceSchema=23") ||
-      !currentReceipt.includes("currentSchema=23")
+      !currentReceipt.includes("sourceSchema=24") ||
+      !currentReceipt.includes("currentSchema=24")
     ) {
       throw new Error(
         `current project persistence receipt was incomplete\n${currentReceipt}`,
@@ -92,7 +92,7 @@ try {
   );
   if (
     !convertedReceipt.includes("sourceSchema=11") ||
-    !convertedReceipt.includes("currentSchema=23")
+    !convertedReceipt.includes("currentSchema=24")
   ) {
     throw new Error(
       `converted project persistence receipt was incomplete\n${convertedReceipt}`,
@@ -124,7 +124,7 @@ try {
     );
     if (
       !migrationReceipt.includes("sourceSchema=6") ||
-      !migrationReceipt.includes("currentSchema=23")
+      !migrationReceipt.includes("currentSchema=24")
     ) {
       throw new Error(`migration receipt was incomplete\n${migrationReceipt}`);
     }
@@ -590,8 +590,8 @@ async function runFullBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=loading-bay",
-      "sourceSchema=23",
-      "currentSchema=23",
+      "sourceSchema=24",
+      "currentSchema=24",
       "entryScene=scene/loading-bay",
       `assets=${String(expectedAssetCount)}`,
       "scenes=1",
@@ -1752,7 +1752,7 @@ async function runMigratedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=migrated-v6-project",
-      "currentSchema=23",
+      "currentSchema=24",
       "assets=4",
       "scenes=1",
       "entities=6",
@@ -1814,8 +1814,8 @@ async function runConvertedBrowserProduct(project) {
     const startup = running.output();
     for (const marker of [
       "project id=converted-wall",
-      "sourceSchema=23",
-      "currentSchema=23",
+      "sourceSchema=24",
+      "currentSchema=24",
       "entryScene=scene/converted-wall",
       `assets=${String(expectedAssetCount)}`,
       "scenes=1",
