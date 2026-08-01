@@ -47,7 +47,8 @@ universal `minY = 0` rule.
 The wall-alignment descendant keeps that same authority split. Supported Rust voxel editing added
 14 missing material voxels beneath six decorative columns, while the repeated-brush recipe removed
 the overlapping wall presentation at those footprints, aligned both southern corner accents to
-the `z=49` boundary, and derived all five doorway-surround bounds from their actual proxy openings.
+the `z=49` boundary, and aligned all five doorway surrounds' occupied inner surfaces to their
+actual proxy openings rather than comparing decorative outer bounds.
 The checked [`wall-proxy-alignment.json`](evidence/wall-proxy-alignment.json) compares 267 walls,
 six columns, four corners, five door surrounds, and the one-unit generator passage. Its measured
 maximum horizontal visual-to-proxy gap is zero at six-decimal evidence precision, below the

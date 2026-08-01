@@ -1,5 +1,5 @@
 {
-  "projectHash": "048b1b9400fe670d2ac4c1f5faecf189cccf5f8e906ba65b15095f3879f2b6e3",
+  "projectHash": "a6854677cdaf996a0cdb4b7179fc68cc90281b69a97909192018709980d42062",
   "selectedEntity": "450",
   "canvasCount": 1,
   "viewport": {
@@ -9,7 +9,7 @@
     "instances": 365,
     "placementGhosts": 0,
     "selectedRenderHandle": "6597069766714",
-    "authoredFrameHash": "fnv1a64:fb4fb5b33408dc42",
+    "authoredFrameHash": "fnv1a64:9e1423d2a6c33267",
     "rendererError": ""
   },
   "viewportText": "↖\n✥\n⟳\n↗\nworld\nGrid\nSnap 0.5\nWork Light\nShared renderer · orbit / WASD / wheel\nwork light\n506 retained ops\ncamera 2\n37 entities\n8 lights\n0 voxel instances\ncomplete frame\nowner revision 32\nAssets 89\nDiagnostics 0\nOwners\nOutput\nNo owner diagnostics.",
@@ -25,10 +25,10 @@
           "schemaVersion": 1,
           "renderSequence": 2,
           "source": "explicit",
-          "sourceTimeMs": 8255.5,
-          "frameIntervalMs": 8255.5,
+          "sourceTimeMs": 4866.699999809265,
+          "frameIntervalMs": 4866.699999809265,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 58.80000019073486,
+          "backendSubmissionDurationMs": 56.19999980926514,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
@@ -80,12 +80,12 @@
         "updateKind": "presentation",
         "submission": {
           "schemaVersion": 1,
-          "renderSequence": 16,
+          "renderSequence": 17,
           "source": "explicit",
-          "sourceTimeMs": 10912.699999809265,
-          "frameIntervalMs": 815.9999998092644,
+          "sourceTimeMs": 7508.60000038147,
+          "frameIntervalMs": 799.7000003814701,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 40,
+          "backendSubmissionDurationMs": 41.79999923706055,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
@@ -137,19 +137,19 @@
         "updateKind": "presentation",
         "submission": {
           "schemaVersion": 1,
-          "renderSequence": 31,
+          "renderSequence": 32,
           "source": "explicit",
-          "sourceTimeMs": 13875.10000038147,
-          "frameIntervalMs": 778.6000003814697,
+          "sourceTimeMs": 10570,
+          "frameIntervalMs": 794.6000000000004,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 43.09999942779541,
+          "backendSubmissionDurationMs": 40.30000019073486,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
             "drawCallCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 49
+              "value": 45
             },
             "renderHandleCount": {
               "scope": "liveResident",
@@ -179,7 +179,7 @@
             "triangleCount": {
               "scope": "perSubmission",
               "status": "available",
-              "value": 105057
+              "value": 90941
             }
           }
         }
@@ -196,10 +196,10 @@
           "schemaVersion": 1,
           "renderSequence": 2,
           "source": "explicit",
-          "sourceTimeMs": 22026,
-          "frameIntervalMs": 22026,
+          "sourceTimeMs": 18714.60000038147,
+          "frameIntervalMs": 18714.60000038147,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 44.39999961853027,
+          "backendSubmissionDurationMs": 45.60000038146973,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
@@ -253,10 +253,10 @@
           "schemaVersion": 1,
           "renderSequence": 2,
           "source": "explicit",
-          "sourceTimeMs": 4937.400000572205,
-          "frameIntervalMs": 4937.400000572205,
+          "sourceTimeMs": 5010.5,
+          "frameIntervalMs": 5010.5,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 47.39999961853027,
+          "backendSubmissionDurationMs": 48.20000076293945,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
@@ -308,12 +308,12 @@
         "updateKind": "presentation",
         "submission": {
           "schemaVersion": 1,
-          "renderSequence": 10,
+          "renderSequence": 9,
           "source": "explicit",
-          "sourceTimeMs": 7300.400000572205,
-          "frameIntervalMs": 805.000000572205,
+          "sourceTimeMs": 7335.800000190735,
+          "frameIntervalMs": 779.3000001907349,
           "frameIntervalStatus": "available",
-          "backendSubmissionDurationMs": 38.59999942779541,
+          "backendSubmissionDurationMs": 41.29999923706055,
           "backendSubmissionDurationStatus": "available",
           "statistics": {
             "schemaVersion": 1,
@@ -377,13 +377,13 @@
       "submissionCount": 3
     },
     "remounted": {
-      "projectHash": "048b1b9400fe670d2ac4c1f5faecf189cccf5f8e906ba65b15095f3879f2b6e3",
+      "projectHash": "a6854677cdaf996a0cdb4b7179fc68cc90281b69a97909192018709980d42062",
       "canvasCount": 1,
       "rendererStatus": "ready",
       "rendererError": ""
     },
     "reloaded": {
-      "projectHash": "048b1b9400fe670d2ac4c1f5faecf189cccf5f8e906ba65b15095f3879f2b6e3",
+      "projectHash": "a6854677cdaf996a0cdb4b7179fc68cc90281b69a97909192018709980d42062",
       "canvasCount": 1,
       "rendererStatus": "ready",
       "rendererError": ""
@@ -395,11 +395,11 @@
     "JSEventListeners": 271,
     "Nodes": 710,
     "LayoutCount": 8,
-    "RecalcStyleCount": 12,
-    "ScriptDuration": 2.004402,
-    "TaskDuration": 4.015554,
-    "JSHeapUsedSize": 315518924,
-    "JSHeapTotalSize": 373899264
+    "RecalcStyleCount": 11,
+    "ScriptDuration": 2.025551,
+    "TaskDuration": 4.072659,
+    "JSHeapUsedSize": 187613060,
+    "JSHeapTotalSize": 307437568
   },
   "capture": {
     "viewport": [1600, 900],

@@ -78,7 +78,7 @@ invariant(
   "the visible level must reuse the nine reviewed canonical brush definitions",
 );
 invariant(
-  evidence.structuralProjectionBytes === 738_931 &&
+  evidence.structuralProjectionBytes === 772_580 &&
     evidence.structuralProjectionBytes < 2 * 1024 * 1024,
   "the exact complete structural projection must remain below 2 MiB",
 );

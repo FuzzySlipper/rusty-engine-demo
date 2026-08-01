@@ -144,18 +144,36 @@ fn canonical_wall_sliding_is_symmetric_and_corner_motion_cannot_tunnel() {
 
 #[test]
 fn canonical_door_aperture_passes_only_inside_its_authored_proxy_opening() {
-    let mut through = loading_bay_motion_runtime([21.5, 1.5, 47.5], 180.0, 20.0, 0.2, true);
-    move_player(&mut through, 1.0, 0.0);
-    assert!(player_position(&through)[2] > 50.5);
+    for x in [20.251, 22.749] {
+        let mut through = loading_bay_motion_runtime([x, 1.5, 47.5], 180.0, 20.0, 0.2, true);
+        assert_eq!(
+            through
+                .session()
+                .entity(PLAYER)
+                .unwrap()
+                .kinematic
+                .unwrap()
+                .half_extents
+                .to_array(),
+            [0.25; 3],
+        );
+        move_player(&mut through, 1.0, 0.0);
+        assert!(
+            player_position(&through)[2] > 50.5,
+            "player center {x} plus its real half extents must pass at the visible inner frame edge",
+        );
+    }
 
-    let mut wall = loading_bay_motion_runtime([19.5, 1.5, 48.69], 180.0, 6.0, 0.01, true);
-    move_player(&mut wall, 1.0, 0.0);
-    move_player(&mut wall, 1.0, 0.0);
-    let position = player_position(&wall);
-    assert!(
-        (position[2] - 48.75).abs() <= 0.001,
-        "adjacent wall proxy must stop the same high-delta body: {position:?}",
-    );
+    for x in [20.249, 22.751] {
+        let mut wall = loading_bay_motion_runtime([x, 1.5, 48.69], 180.0, 6.0, 0.01, true);
+        move_player(&mut wall, 1.0, 0.0);
+        move_player(&mut wall, 1.0, 0.0);
+        let position = player_position(&wall);
+        assert!(
+            (position[2] - 48.75).abs() <= 0.001,
+            "center {x} just outside either real-half-extent edge must meet the adjacent wall: {position:?}",
+        );
+    }
 }
 
 fn loading_bay_motion_runtime(

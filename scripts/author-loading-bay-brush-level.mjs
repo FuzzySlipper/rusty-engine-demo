@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { performance } from "node:perf_hooks";
 
+import { doorwayInteriorProfile } from "./voxel-doorway-profile.mjs";
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PROJECT = resolve(ROOT, "content/projects/loading-bay.project.json");
 const EVIDENCE = resolve(
@@ -131,6 +133,22 @@ function objectDimensions(project, assetId) {
 function scaleFor(project, assetId, targetDimensions) {
   const dimensions = objectDimensions(project, assetId);
   return targetDimensions.map((target, axis) => target / dimensions[axis]);
+}
+
+function doorwayPlacement(project, openingStart, openingEnd, z) {
+  const assetId = "voxel-object/brush-doorway";
+  const object = project.assets.find(
+    (asset) => asset.id === assetId,
+  )?.voxelObject;
+  if (object === undefined) throw new Error(`missing voxel object ${assetId}`);
+  const profile = doorwayInteriorProfile(object);
+  const openingWidth = openingEnd - openingStart;
+  const scale = scaleFor(project, assetId, [openingWidth, 4, 1]);
+  scale[0] = openingWidth / (profile.localOpeningMax - profile.localOpeningMin);
+  return {
+    translation: [openingStart - profile.localOpeningMin * scale[0], 0, z],
+    scale,
+  };
 }
 
 function key(x, z) {
@@ -411,16 +429,16 @@ function buildPlacements(project) {
       while (!solid.has(openingStart - 1)) openingStart -= 1;
       let openingEnd = Math.floor(entity.translation[0]) + 1;
       while (!solid.has(openingEnd)) openingEnd += 1;
-      const width = openingEnd - openingStart;
+      const placement = doorwayPlacement(project, openingStart, openingEnd, z);
       return {
         sceneId: SCENE_ID,
         instance: {
           instanceId: `level-doorway-owner-${String(entity.id)}`,
           voxelObjectAssetId: "voxel-object/brush-doorway",
           frame: { kind: "default" },
-          translation: [openingStart, 0, z],
+          translation: placement.translation,
           rotation: [0, 0, 0, 1],
-          scale: scaleFor(project, "voxel-object/brush-doorway", [width, 4, 1]),
+          scale: placement.scale,
           materialOverrides: [],
         },
       };

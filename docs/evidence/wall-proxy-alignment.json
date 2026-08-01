@@ -3,8 +3,8 @@
   "project": {
     "path": "content/projects/loading-bay.project.json",
     "schemaVersion": 24,
-    "hash": "3ddb2672ace5bedf144137b64b7b99b984ac79e7bc16b58627afed453a54a4b7",
-    "bytes": 4118178
+    "hash": "a6854677cdaf996a0cdb4b7179fc68cc90281b69a97909192018709980d42062",
+    "bytes": 4118276
   },
   "authority": {
     "collisionNavigationOcclusion": "Rust-owned material-voxel gameplayProxy",
@@ -14,7 +14,7 @@
   "threshold": {
     "finestAuthoredBrushCell": 0.03125,
     "maximumAllowedGap": 0.03125,
-    "measuredMaximumGap": 0,
+    "measuredMaximumGap": 0.000001,
     "result": "pass"
   },
   "supportedAuthoring": {
@@ -3916,15 +3916,24 @@
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-3",
       "visible": {
-        "min": [20, 49],
-        "max": [23, 50]
+        "min": [20.000001, 49],
+        "max": [23.000001, 50]
       },
       "gameplayProxy": {
         "min": [20, 49],
         "max": [23, 50]
       },
-      "gap": 0,
-      "note": "frame outer bounds terminate at the proxy opening edges 20 and 23"
+      "gap": 0.000001,
+      "occupiedProfile": {
+        "leftCell": 6,
+        "rightCell": 18,
+        "headerStartCell": 15
+      },
+      "frameOuter": {
+        "min": [18.09091, 49],
+        "max": [24.909092, 50]
+      },
+      "note": "walk-height occupied side surfaces terminate at proxy opening edges 20 and 23"
     },
     {
       "kind": "doorSurround",
@@ -3938,35 +3947,62 @@
         "max": [6, 18]
       },
       "gap": 0,
-      "note": "frame outer bounds terminate at the proxy opening edges 3 and 6"
+      "occupiedProfile": {
+        "leftCell": 6,
+        "rightCell": 18,
+        "headerStartCell": 15
+      },
+      "frameOuter": {
+        "min": [1.090909, 17],
+        "max": [7.909091, 18]
+      },
+      "note": "walk-height occupied side surfaces terminate at proxy opening edges 3 and 6"
     },
     {
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-12",
       "visible": {
-        "min": [20, 35],
-        "max": [24, 36]
+        "min": [20.000001, 35],
+        "max": [24.000001, 36]
       },
       "gameplayProxy": {
         "min": [20, 35],
         "max": [24, 36]
       },
-      "gap": 0,
-      "note": "frame outer bounds terminate at the proxy opening edges 20 and 24"
+      "gap": 0.000001,
+      "occupiedProfile": {
+        "leftCell": 6,
+        "rightCell": 18,
+        "headerStartCell": 15
+      },
+      "frameOuter": {
+        "min": [17.454546, 35],
+        "max": [26.545455, 36]
+      },
+      "note": "walk-height occupied side surfaces terminate at proxy opening edges 20 and 24"
     },
     {
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-13",
       "visible": {
-        "min": [22, 30],
-        "max": [26, 31]
+        "min": [22.000001, 30],
+        "max": [26.000001, 31]
       },
       "gameplayProxy": {
         "min": [22, 30],
         "max": [26, 31]
       },
-      "gap": 0,
-      "note": "frame outer bounds terminate at the proxy opening edges 22 and 26"
+      "gap": 0.000001,
+      "occupiedProfile": {
+        "leftCell": 6,
+        "rightCell": 18,
+        "headerStartCell": 15
+      },
+      "frameOuter": {
+        "min": [19.454546, 30],
+        "max": [28.545455, 31]
+      },
+      "note": "walk-height occupied side surfaces terminate at proxy opening edges 22 and 26"
     },
     {
       "kind": "doorSurround",
@@ -3980,7 +4016,16 @@
         "max": [15, 18]
       },
       "gap": 0,
-      "note": "frame outer bounds terminate at the proxy opening edges 8 and 15"
+      "occupiedProfile": {
+        "leftCell": 6,
+        "rightCell": 18,
+        "headerStartCell": 15
+      },
+      "frameOuter": {
+        "min": [3.545455, 17],
+        "max": [19.454545, 18]
+      },
+      "note": "walk-height occupied side surfaces terminate at proxy opening edges 8 and 15"
     },
     {
       "kind": "narrowPassage",

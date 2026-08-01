@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "protocolVersion": 14,
   "project": "content/projects/loading-bay.project.json",
-  "projectHashBefore": "3488aa80d759e0304bbeada8b37546be9fb27f39b895d56266f3e1f8f53935d8",
-  "projectHashAfter": "048b1b9400fe670d2ac4c1f5faecf189cccf5f8e906ba65b15095f3879f2b6e3",
-  "projectSha256": "048b1b9400fe670d2ac4c1f5faecf189cccf5f8e906ba65b15095f3879f2b6e3",
+  "projectHashBefore": "b0b6b2b741b66383b5525d2709b6f3875853abaec2ff34c1b0330fef40263442",
+  "projectHashAfter": "a6854677cdaf996a0cdb4b7179fc68cc90281b69a97909192018709980d42062",
+  "projectSha256": "a6854677cdaf996a0cdb4b7179fc68cc90281b69a97909192018709980d42062",
   "gameplayProxy": true,
   "proxyEdit": {
     "requiredColumnCount": 6,
@@ -20,7 +20,7 @@
   "batchCount": 11,
   "oneRequestPerBatch": true,
   "definitionsReused": 9,
-  "structuralProjectionBytes": 738931,
+  "structuralProjectionBytes": 772580,
   "placementsByAsset": {
     "voxel-object/brush-ceiling-strip": 28,
     "voxel-object/brush-column": 6,
@@ -36,8 +36,8 @@
     {
       "offset": 0,
       "placements": 32,
-      "elapsedMs": 6695.204,
-      "responseBytes": 5247169,
+      "elapsedMs": 6541.328,
+      "responseBytes": 5304881,
       "ownerEntityIds": [
         116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129,
         130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143,
@@ -47,8 +47,8 @@
     {
       "offset": 32,
       "placements": 32,
-      "elapsedMs": 6815.998,
-      "responseBytes": 5361461,
+      "elapsedMs": 6575.727,
+      "responseBytes": 5419173,
       "ownerEntityIds": [
         148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161,
         162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175,
@@ -58,8 +58,8 @@
     {
       "offset": 64,
       "placements": 32,
-      "elapsedMs": 6878.539,
-      "responseBytes": 5475319,
+      "elapsedMs": 6579.865,
+      "responseBytes": 5533027,
       "ownerEntityIds": [
         180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193,
         194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207,
@@ -69,8 +69,8 @@
     {
       "offset": 96,
       "placements": 32,
-      "elapsedMs": 7077.731,
-      "responseBytes": 5589900,
+      "elapsedMs": 6621.168,
+      "responseBytes": 5647616,
       "ownerEntityIds": [
         212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225,
         226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
@@ -80,8 +80,8 @@
     {
       "offset": 128,
       "placements": 32,
-      "elapsedMs": 6801.778,
-      "responseBytes": 5704245,
+      "elapsedMs": 6651.2,
+      "responseBytes": 5761961,
       "ownerEntityIds": [
         244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257,
         258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271,
@@ -91,8 +91,8 @@
     {
       "offset": 160,
       "placements": 32,
-      "elapsedMs": 6644.087,
-      "responseBytes": 5818476,
+      "elapsedMs": 6665.774,
+      "responseBytes": 5876188,
       "ownerEntityIds": [
         276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289,
         290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303,
@@ -102,8 +102,8 @@
     {
       "offset": 192,
       "placements": 32,
-      "elapsedMs": 6655.623,
-      "responseBytes": 5932774,
+      "elapsedMs": 6631.793,
+      "responseBytes": 5990486,
       "ownerEntityIds": [
         308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321,
         322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335,
@@ -113,8 +113,8 @@
     {
       "offset": 224,
       "placements": 32,
-      "elapsedMs": 6852.859,
-      "responseBytes": 6046956,
+      "elapsedMs": 6701.96,
+      "responseBytes": 6104668,
       "ownerEntityIds": [
         340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353,
         354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367,
@@ -124,8 +124,8 @@
     {
       "offset": 256,
       "placements": 32,
-      "elapsedMs": 6722.405,
-      "responseBytes": 6161313,
+      "elapsedMs": 6693.628,
+      "responseBytes": 6219025,
       "ownerEntityIds": [
         372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385,
         386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399,
@@ -135,8 +135,8 @@
     {
       "offset": 288,
       "placements": 32,
-      "elapsedMs": 6727.982,
-      "responseBytes": 6275561,
+      "elapsedMs": 6794.665,
+      "responseBytes": 6333273,
       "ownerEntityIds": [
         404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417,
         418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431,
@@ -146,8 +146,8 @@
     {
       "offset": 320,
       "placements": 20,
-      "elapsedMs": 6845.565,
-      "responseBytes": 6345469,
+      "elapsedMs": 6739.616,
+      "responseBytes": 6403573,
       "ownerEntityIds": [
         436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449,
         450, 451, 452, 453, 454, 455
@@ -157,8 +157,8 @@
   "canonicalRereadMatched": true,
   "freshAdapterMatched": true,
   "reset": {
-    "removedInstances": 346,
-    "removedOwners": 346,
+    "removedInstances": 340,
+    "removedOwners": 340,
     "publication": "rust-project-store-admitted-replacement"
   }
 }

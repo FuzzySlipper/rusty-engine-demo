@@ -227,9 +227,12 @@ only the previously documented high-level compact-FPS readability reference.
 Task #6473 is a source-free canonical descendant of that composition. It adds 14 Rust-authored
 material voxels at six existing column locations, removes two now-redundant wall presentation
 owners, realigns the southern corner and doorway transforms from the same project proxy, and
-retains the nine original definition sources unchanged. Its exact current 340-placement receipt
-and 738,931-byte structural projection remain in `voxel-level-brush-authoring.json`; the complete
-surface comparison is in `wall-proxy-alignment.json`.
+retains the nine original definition sources unchanged. Doorway placement derives the largest
+walk-height opening from each sparse brush definition and puts those occupied inner side surfaces,
+not the decorative outer AABB, on the material-voxel opening edges. Its exact current
+340-placement receipt and 772,580-byte structural projection remain in
+`voxel-level-brush-authoring.json`; the complete occupied-surface comparison is in
+`wall-proxy-alignment.json`.
 
 ## VC4 production animated actor source kit
 

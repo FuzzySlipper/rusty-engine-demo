@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
+import { doorwayInteriorProfile } from "./voxel-doorway-profile.mjs";
+
 const ROOT = resolve(import.meta.dirname, "..");
 const PROJECT = resolve(ROOT, "content/projects/loading-bay.project.json");
 const SCENE_ID = "scene/loading-bay";
@@ -88,6 +90,47 @@ function measurement(kind, instance, expected, assets, note) {
     visible,
     gameplayProxy: expected,
     gap,
+    note,
+  };
+}
+
+function doorwayMeasurement(instance, expected, assets, note) {
+  const object = assets.get(instance.voxelObjectAssetId)?.voxelObject;
+  invariant(
+    object !== undefined,
+    `${instance.instanceId} definition is missing`,
+  );
+  const profile = doorwayInteriorProfile(object);
+  const outer = horizontal(instanceBounds(instance, assets));
+  const visible = {
+    min: [
+      rounded(
+        instance.translation[0] + profile.localOpeningMin * instance.scale[0],
+      ),
+      rounded(outer.min[1]),
+    ],
+    max: [
+      rounded(
+        instance.translation[0] + profile.localOpeningMax * instance.scale[0],
+      ),
+      rounded(outer.max[1]),
+    ],
+  };
+  return {
+    kind: "doorSurround",
+    instanceId: instance.instanceId,
+    visible,
+    gameplayProxy: expected,
+    gap: rounded(boundsGap(visible, expected)),
+    occupiedProfile: {
+      leftCell: profile.leftOccupiedCell,
+      rightCell: profile.rightOccupiedCell,
+      headerStartCell: profile.headerStartCell,
+    },
+    frameOuter: {
+      min: outer.min.map(rounded),
+      max: outer.max.map(rounded),
+    },
     note,
   };
 }
@@ -187,12 +230,11 @@ export async function collectWallProxyAlignment() {
       let openingEnd = Math.floor(door.translation[0]) + 1;
       while (!material.has(`${openingEnd},1,${z}`)) openingEnd += 1;
       const expected = { min: [openingStart, z], max: [openingEnd, z + 1] };
-      return measurement(
-        "doorSurround",
+      return doorwayMeasurement(
         instance,
         expected,
         assets,
-        `frame outer bounds terminate at the proxy opening edges ${String(openingStart)} and ${String(openingEnd)}`,
+        `walk-height occupied side surfaces terminate at proxy opening edges ${String(openingStart)} and ${String(openingEnd)}`,
       );
     });
 

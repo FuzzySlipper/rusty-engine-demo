@@ -440,12 +440,14 @@ cannot affect motion or rays.
 
 Task #6473 uses the supported Rust voxel-edit path to add the 14 material voxels missing from the
 six column footprints, then republishes the presentation recipe without a second wall instance at
-those coordinates. Doorway frames derive their exact outer X bounds from the neighboring proxy
-cells and use the same one-unit Z slab; southern corners use the canonical `z=49` boundary. The
-resulting 283 checked comparisons have zero gap at six-decimal evidence precision against an
-explicit `1/32` maximum. Deterministic real-player motion tests cover head-on contact tolerance,
-parallel travel in both directions, high-delta no-tunneling, corners, and open/adjacent doorway
-approaches. The measurements and desktop/narrow Studio and gameplay captures are indexed by
+those coordinates. Doorway frames derive the largest walk-height aperture from their sparse voxel
+runs, then align the occupied inner side surfaces to the neighboring proxy opening; decorative
+outer bounds may overlap the already-collided wall. They use the same one-unit Z slab, and southern
+corners use the canonical `z=49` boundary. The resulting 283 checked comparisons have effectively
+zero serialized-float residual against an explicit `1/32` maximum. Deterministic real-player
+motion tests cover head-on contact tolerance, parallel travel in both directions, high-delta
+no-tunneling, corners, and both near-edge open/adjacent doorway approaches with the real player
+half extents. The measurements and desktop/narrow Studio and gameplay captures are indexed by
 [`wall-proxy-alignment.json`](evidence/wall-proxy-alignment.json).
 
 The exact Engine line combines atomic batch placement, canonical greedy same-material coplanar
