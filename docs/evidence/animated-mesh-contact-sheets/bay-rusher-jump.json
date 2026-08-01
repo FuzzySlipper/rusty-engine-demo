@@ -1,0 +1,378 @@
+{
+  "schemaVersion": 1,
+  "providerRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
+  "asset": "mesh-animation/bay-rusher",
+  "contentHash": "sha256:2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+  "clip": "jump",
+  "camera": {
+    "position": [
+      7.5,
+      2.2,
+      15
+    ],
+    "pitchDegrees": 0,
+    "yawDegrees": 0
+  },
+  "projection": {
+    "fovYDegrees": 50,
+    "near": 0.1,
+    "far": 100
+  },
+  "viewport": {
+    "width": 156,
+    "height": 153
+  },
+  "overlaysIncluded": true,
+  "samples": [
+    {
+      "fileName": "mesh-animation-bay-rusher-jump-00-000000.png",
+      "normalizedTime": 0,
+      "durationSeconds": 0.5416666865348816,
+      "assetBounds": {
+        "min": [
+          -0.8553455471992493,
+          0.0003236433840356767,
+          -0.2524394392967224
+        ],
+        "max": [
+          0.8555737137794495,
+          1.780322551727295,
+          0.24313823878765106
+        ]
+      },
+      "sampledWorldBounds": {
+        "min": [
+          6.516352639984925,
+          1.5002748514460726,
+          12.209694608316573
+        ],
+        "max": [
+          8.483909702500341,
+          3.0132742204320344,
+          12.779608788736672
+        ]
+      },
+      "sampledVertexCount": 1029,
+      "boneCount": 58,
+      "diagnostics": [],
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 14
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 415
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 38
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 97
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 0
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 8
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 23218
+        }
+      }
+    },
+    {
+      "fileName": "mesh-animation-bay-rusher-jump-01-025000.png",
+      "normalizedTime": 0.25,
+      "durationSeconds": 0.5416666865348816,
+      "assetBounds": {
+        "min": [
+          -0.8553455471992493,
+          0.0003236433840356767,
+          -0.2524394392967224
+        ],
+        "max": [
+          0.8555737137794495,
+          1.780322551727295,
+          0.24313823878765106
+        ]
+      },
+      "sampledWorldBounds": {
+        "min": [
+          6.514897760283909,
+          1.4995901888108312,
+          12.206961472287349
+        ],
+        "max": [
+          8.475923385886682,
+          3.0135777518267393,
+          12.776875924476425
+        ]
+      },
+      "sampledVertexCount": 1029,
+      "boneCount": 58,
+      "diagnostics": [],
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 14
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 415
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 38
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 97
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 0
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 8
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 23218
+        }
+      }
+    },
+    {
+      "fileName": "mesh-animation-bay-rusher-jump-02-050000.png",
+      "normalizedTime": 0.5,
+      "durationSeconds": 0.5416666865348816,
+      "assetBounds": {
+        "min": [
+          -0.8553455471992493,
+          0.0003236433840356767,
+          -0.2524394392967224
+        ],
+        "max": [
+          0.8555737137794495,
+          1.780322551727295,
+          0.24313823878765106
+        ]
+      },
+      "sampledWorldBounds": {
+        "min": [
+          6.511750274663829,
+          1.4981852118041443,
+          12.201031746484901
+        ],
+        "max": [
+          8.458586545474672,
+          3.0141750749089486,
+          12.770946681838865
+        ]
+      },
+      "sampledVertexCount": 1029,
+      "boneCount": 58,
+      "diagnostics": [],
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 14
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 415
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 38
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 97
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 0
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 8
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 23218
+        }
+      }
+    },
+    {
+      "fileName": "mesh-animation-bay-rusher-jump-03-075000.png",
+      "normalizedTime": 0.75,
+      "durationSeconds": 0.5416666865348816,
+      "assetBounds": {
+        "min": [
+          -0.8553455471992493,
+          0.0003236433840356767,
+          -0.2524394392967224
+        ],
+        "max": [
+          0.8555737137794495,
+          1.780322551727295,
+          0.24313823878765106
+        ]
+      },
+      "sampledWorldBounds": {
+        "min": [
+          6.51367049652434,
+          1.4990294931754182,
+          12.204651573610253
+        ],
+        "max": [
+          8.469171671591562,
+          3.013820384964903,
+          12.77456621107937
+        ]
+      },
+      "sampledVertexCount": 1029,
+      "boneCount": 58,
+      "diagnostics": [],
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 14
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 415
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 38
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 97
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 0
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 8
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 23218
+        }
+      }
+    },
+    {
+      "fileName": "mesh-animation-bay-rusher-jump-04-100000.png",
+      "normalizedTime": 1,
+      "durationSeconds": 0.5416666865348816,
+      "assetBounds": {
+        "min": [
+          -0.8553455471992493,
+          0.0003236433840356767,
+          -0.2524394392967224
+        ],
+        "max": [
+          0.8555737137794495,
+          1.780322551727295,
+          0.24313823878765106
+        ]
+      },
+      "sampledWorldBounds": {
+        "min": [
+          6.516352639984925,
+          1.5002748514460726,
+          12.209694608316573
+        ],
+        "max": [
+          8.483909702500341,
+          3.0132742204320344,
+          12.779608788736672
+        ]
+      },
+      "sampledVertexCount": 1029,
+      "boneCount": 58,
+      "diagnostics": [],
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 14
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 415
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 38
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 97
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 0
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 8
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 23218
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,10 @@
 import {
+  captureRendererAnimatedMesh,
   mountRendererAnimatedMeshSurface,
   mountRendererSurface,
+  type RendererAnimatedMeshCaptureRequest,
+  type RendererAnimatedMeshCaptureResult,
+  type RendererSurfaceCameraPose,
 } from "@rusty-engine/renderer-host";
 
 import { SerializedActionQueue } from "./action-queue.js";
@@ -131,6 +135,14 @@ export interface LoadingBayGameOptions {
 }
 
 export interface LoadingBayGameHandle {
+  readonly captureAnimation: (request: {
+    readonly asset: string;
+    readonly camera: RendererSurfaceCameraPose;
+    readonly clip: string;
+    readonly normalizedTimes: readonly number[];
+    readonly overlaysIncluded?: boolean;
+    readonly providerRevision: string;
+  }) => RendererAnimatedMeshCaptureResult;
   readonly dispose: () => Promise<void>;
   readonly interact: (target: number) => Promise<void>;
   readonly loadGame: (
@@ -775,6 +787,26 @@ export async function mountLoadingBayGame(
   }
 
   return {
+    captureAnimation: (request) => {
+      const target = surface
+        .projectionSnapshot()
+        .nodes
+        .find((node) => node.kind === "animatedMesh" && node.asset === request.asset);
+      if (target === undefined) {
+        throw new Error(`no retained animated instance uses ${request.asset}`);
+      }
+      surface.setCameraPose(request.camera);
+      const captureRequest: RendererAnimatedMeshCaptureRequest = {
+        handle: target.handle,
+        clip: request.clip,
+        normalizedTimes: request.normalizedTimes,
+        providerRevision: request.providerRevision,
+        ...(request.overlaysIncluded === undefined
+          ? {}
+          : { overlaysIncluded: request.overlaysIncluded }),
+      };
+      return captureRendererAnimatedMesh(surface, captureRequest);
+    },
     dispose,
     interact: (target) => runUiAction(() => enqueueInteraction(target)),
     loadGame: (slot, expectedStorageRevision) =>

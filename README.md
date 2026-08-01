@@ -146,6 +146,9 @@ The production actor kit is likewise reproducible from Kenney's CC0 Animated Cha
 pack. Its Blender 5.1.2 recipe, exact six-clip GLB hashes, embedded skins, copied notice, Rust-owned
 Studio import, and shared-renderer lifecycle proof are recorded in
 [docs/source-provenance.md](docs/source-provenance.md#vc4-production-animated-actor-source-kit).
+The exact-time contact sheets, independent source-sampler comparison, and retained authored-motion
+limitations are recorded in
+[docs/animated-mesh-capture.md](docs/animated-mesh-capture.md).
 The canonical schema-24 project binds those actors and the industrial prop kit to Rust-owned
 gameplay posture/state through versioned renderer-only visual bindings; the ownership and
 full-product proof are documented in

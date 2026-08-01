@@ -5,15 +5,15 @@ packages:
 
 allowBuilds:
   "@parcel/watcher": true
-  "@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/7bd7dde2b0ea179dad4803d466947426444f59fa#path:render/packages/render-contracts": true
-  "@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/7bd7dde2b0ea179dad4803d466947426444f59fa#path:render/packages/render-projection": true
-  "@rusty-engine/renderer-host@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/7bd7dde2b0ea179dad4803d466947426444f59fa#path:render/packages/renderer-host": true
-  "@rusty-engine/renderer-three@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/7bd7dde2b0ea179dad4803d466947426444f59fa#path:render/packages/renderer-three": true
-  "@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/7bd7dde2b0ea179dad4803d466947426444f59fa#path:studio/libs/adapter-client": true
-  "@rusty-engine/studio-editor-shell@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/7bd7dde2b0ea179dad4803d466947426444f59fa#path:studio/libs/editor-shell": true
-  "@rusty-engine/studio-user-settings@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/7bd7dde2b0ea179dad4803d466947426444f59fa#path:studio/libs/user-settings": true
-  "@rusty-engine/studio-viewport@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/7bd7dde2b0ea179dad4803d466947426444f59fa#path:studio/libs/viewport": true
-  "@rusty-engine/studio-voxel-editor@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/7bd7dde2b0ea179dad4803d466947426444f59fa#path:studio/libs/voxel-editor": true
+  "@rusty-engine/render-contracts@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/d5fac3dd01326590594342104c00c85917bc1e99#path:render/packages/render-contracts": true
+  "@rusty-engine/render-projection@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/d5fac3dd01326590594342104c00c85917bc1e99#path:render/packages/render-projection": true
+  "@rusty-engine/renderer-host@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/d5fac3dd01326590594342104c00c85917bc1e99#path:render/packages/renderer-host": true
+  "@rusty-engine/renderer-three@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/d5fac3dd01326590594342104c00c85917bc1e99#path:render/packages/renderer-three": true
+  "@rusty-engine/studio-adapter-client@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/d5fac3dd01326590594342104c00c85917bc1e99#path:studio/libs/adapter-client": true
+  "@rusty-engine/studio-editor-shell@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/d5fac3dd01326590594342104c00c85917bc1e99#path:studio/libs/editor-shell": true
+  "@rusty-engine/studio-user-settings@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/d5fac3dd01326590594342104c00c85917bc1e99#path:studio/libs/user-settings": true
+  "@rusty-engine/studio-viewport@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/d5fac3dd01326590594342104c00c85917bc1e99#path:studio/libs/viewport": true
+  "@rusty-engine/studio-voxel-editor@https://codeload.github.com/FuzzySlipper/rusty-engine/tar.gz/d5fac3dd01326590594342104c00c85917bc1e99#path:studio/libs/voxel-editor": true
   "esbuild": true
   "less": true
   "lmdb": true

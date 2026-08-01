@@ -1,0 +1,2054 @@
+{
+  "schemaVersion": 1,
+  "engineRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
+  "independentSampler": "Three GLTFLoader plus SkeletonUtils clone and AnimationMixer, separate from the Engine loader/registry instance",
+  "normalizedTimes": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1
+  ],
+  "clips": [
+    "idle",
+    "run",
+    "jump",
+    "attack",
+    "hit",
+    "death"
+  ],
+  "actors": [
+    {
+      "asset": "mesh-animation/bay-rusher",
+      "sourcePath": "content/assets/actor-kit/bay-rusher.glb",
+      "sourceHash": "sha256:2ff1cc34e9f6027dc6cb3736d535f1af6f7d5fe1ab0cac89685a6dbef56fc8d3",
+      "import": {
+        "engineClips": [
+          {
+            "name": "idle",
+            "duration": 1.375
+          },
+          {
+            "name": "run",
+            "duration": 0.7083333134651184
+          },
+          {
+            "name": "jump",
+            "duration": 0.5416666865348816
+          },
+          {
+            "name": "attack",
+            "duration": 0.4166666567325592
+          },
+          {
+            "name": "hit",
+            "duration": 0.3333333432674408
+          },
+          {
+            "name": "death",
+            "duration": 0.9166666865348816
+          }
+        ],
+        "directClips": [
+          {
+            "name": "idle",
+            "duration": 1.375
+          },
+          {
+            "name": "run",
+            "duration": 0.7083333134651184
+          },
+          {
+            "name": "jump",
+            "duration": 0.5416666865348816
+          },
+          {
+            "name": "attack",
+            "duration": 0.4166666567325592
+          },
+          {
+            "name": "hit",
+            "duration": 0.3333333432674408
+          },
+          {
+            "name": "death",
+            "duration": 0.9166666865348816
+          }
+        ],
+        "clipInventoryMatches": true
+      },
+      "cloneBindInterpolation": {
+        "samples": [
+          {
+            "clip": "idle",
+            "normalizedTime": 0,
+            "durationSeconds": 1.375,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.25,
+            "durationSeconds": 1.375,
+            "engineBounds": {
+              "min": [
+                -0.830959,
+                -0.008972,
+                -0.196615
+              ],
+              "max": [
+                0.806056,
+                1.764941,
+                0.30341
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.830959,
+                -0.008972,
+                -0.196615
+              ],
+              "max": [
+                0.806056,
+                1.764941,
+                0.30341
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.5,
+            "durationSeconds": 1.375,
+            "engineBounds": {
+              "min": [
+                -0.791193,
+                -0.020558,
+                -0.128419
+              ],
+              "max": [
+                0.739062,
+                1.744439,
+                0.384364
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.791193,
+                -0.020558,
+                -0.128419
+              ],
+              "max": [
+                0.739062,
+                1.744439,
+                0.384364
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.75,
+            "durationSeconds": 1.375,
+            "engineBounds": {
+              "min": [
+                -0.824445,
+                -0.01111,
+                -0.183191
+              ],
+              "max": [
+                0.794139,
+                1.761273,
+                0.317843
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.824445,
+                -0.01111,
+                -0.183191
+              ],
+              "max": [
+                0.794139,
+                1.761273,
+                0.317843
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 1,
+            "durationSeconds": 1.375,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0,
+            "durationSeconds": 0.7083333134651184,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000324,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000324,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.7083333134651184,
+            "engineBounds": {
+              "min": [
+                -0.840725,
+                0.067995,
+                -0.755101
+              ],
+              "max": [
+                0.959313,
+                1.747744,
+                0.871773
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.840725,
+                0.067995,
+                -0.755101
+              ],
+              "max": [
+                0.959313,
+                1.747744,
+                0.871773
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.7083333134651184,
+            "engineBounds": {
+              "min": [
+                -0.362358,
+                0.607476,
+                -1.357408
+              ],
+              "max": [
+                0.514694,
+                1.779086,
+                1.183422
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.362358,
+                0.607476,
+                -1.357408
+              ],
+              "max": [
+                0.514694,
+                1.779086,
+                1.183422
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.7083333134651184,
+            "engineBounds": {
+              "min": [
+                -0.837459,
+                0.278631,
+                -1.037058
+              ],
+              "max": [
+                0.987706,
+                1.755013,
+                0.812968
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.837459,
+                0.278631,
+                -1.037058
+              ],
+              "max": [
+                0.987706,
+                1.755013,
+                0.812968
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 1,
+            "durationSeconds": 0.7083333134651184,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000324,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000324,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0,
+            "durationSeconds": 0.5416666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.5416666865348816,
+            "engineBounds": {
+              "min": [
+                -0.856611,
+                -0.000482,
+                -0.254816
+              ],
+              "max": [
+                0.848629,
+                1.78068,
+                0.240762
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.856611,
+                -0.000482,
+                -0.254816
+              ],
+              "max": [
+                0.848629,
+                1.78068,
+                0.240762
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.5416666865348816,
+            "engineBounds": {
+              "min": [
+                -0.859348,
+                -0.002135,
+                -0.259972
+              ],
+              "max": [
+                0.833554,
+                1.781382,
+                0.235606
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.859348,
+                -0.002135,
+                -0.259972
+              ],
+              "max": [
+                0.833554,
+                1.781382,
+                0.235606
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.5416666865348816,
+            "engineBounds": {
+              "min": [
+                -0.857678,
+                -0.001142,
+                -0.256825
+              ],
+              "max": [
+                0.842758,
+                1.780965,
+                0.238753
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.857678,
+                -0.001142,
+                -0.256825
+              ],
+              "max": [
+                0.842758,
+                1.780965,
+                0.238753
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 1,
+            "durationSeconds": 0.5416666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0,
+            "durationSeconds": 0.4166666567325592,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.4166666567325592,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.009545,
+                -0.318246
+              ],
+              "max": [
+                0.855574,
+                1.775123,
+                0.197834
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.009545,
+                -0.318246
+              ],
+              "max": [
+                0.855574,
+                1.775123,
+                0.197834
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.4166666567325592,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.013263,
+                -0.34251
+              ],
+              "max": [
+                0.855574,
+                1.770037,
+                0.220271
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.013263,
+                -0.34251
+              ],
+              "max": [
+                0.855574,
+                1.770037,
+                0.220271
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.4166666567325592,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.005257,
+                -0.289886
+              ],
+              "max": [
+                0.855574,
+                1.778857,
+                0.212878
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.005257,
+                -0.289886
+              ],
+              "max": [
+                0.855574,
+                1.778857,
+                0.212878
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 1,
+            "durationSeconds": 0.4166666567325592,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0,
+            "durationSeconds": 0.3333333432674408,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.3333333432674408,
+            "engineBounds": {
+              "min": [
+                -0.715549,
+                -0.014649,
+                -0.29799
+              ],
+              "max": [
+                0.974561,
+                1.776596,
+                0.221628
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.715549,
+                -0.014649,
+                -0.29799
+              ],
+              "max": [
+                0.974561,
+                1.776596,
+                0.221628
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.3333333432674408,
+            "engineBounds": {
+              "min": [
+                -0.684045,
+                -0.017782,
+                -0.312081
+              ],
+              "max": [
+                0.996473,
+                1.774874,
+                0.231129
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.684045,
+                -0.017782,
+                -0.312081
+              ],
+              "max": [
+                0.996473,
+                1.774874,
+                0.231129
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.3333333432674408,
+            "engineBounds": {
+              "min": [
+                -0.791232,
+                -0.006795,
+                -0.269166
+              ],
+              "max": [
+                0.914977,
+                1.779479,
+                0.226433
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.791232,
+                -0.006795,
+                -0.269166
+              ],
+              "max": [
+                0.914977,
+                1.779479,
+                0.226433
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 1,
+            "durationSeconds": 0.3333333432674408,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0,
+            "durationSeconds": 0.9166666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.9166666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.127666,
+                -0.115358
+              ],
+              "max": [
+                0.855574,
+                1.617034,
+                0.815142
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.127666,
+                -0.115358
+              ],
+              "max": [
+                0.855574,
+                1.617034,
+                0.815142
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.9166666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.402904,
+                -0.090504
+              ],
+              "max": [
+                0.855574,
+                0.805212,
+                1.541545
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.402904,
+                -0.090504
+              ],
+              "max": [
+                0.855574,
+                0.805212,
+                1.541545
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.9166666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.683869,
+                -0.103296
+              ],
+              "max": [
+                0.855574,
+                -0.044788,
+                1.67866
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.683869,
+                -0.103296
+              ],
+              "max": [
+                0.855574,
+                -0.044788,
+                1.67866
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 1,
+            "durationSeconds": 0.9166666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.874691,
+                -0.123877
+              ],
+              "max": [
+                0.855574,
+                -0.373605,
+                1.659576
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.874691,
+                -0.123877
+              ],
+              "max": [
+                0.855574,
+                -0.373605,
+                1.659576
+              ]
+            },
+            "sampledVertexCount": 1029
+          }
+        ],
+        "maximumAbsoluteBoundsError": 0,
+        "exactVertexCounts": true
+      },
+      "switching": {
+        "attackHitAttackMaximumBoundsError": 0,
+        "stalePostureObserved": false
+      },
+      "fade": {
+        "fromClip": "idle",
+        "toClip": "attack",
+        "fadeSeconds": 0.1,
+        "sampledAfterSeconds": 0.05,
+        "blendedBounds": {
+          "min": [
+            -0.846644,
+            -0.004784,
+            -0.242374
+          ],
+          "max": [
+            0.836842,
+            1.774703,
+            0.257102
+          ]
+        },
+        "otherInstanceMaximumBoundsError": 0
+      },
+      "multiInstance": {
+        "translation": [
+          10,
+          0,
+          -5
+        ],
+        "translatedInstanceMaximumBoundsError": 0,
+        "independentInstanceMaximumBoundsError": 0
+      },
+      "sourceQuality": {
+        "maximumBoundsDeltaByClip": {
+          "idle": 0.141226,
+          "run": 1.104969,
+          "jump": 0.02202,
+          "attack": 0.090071,
+          "hit": 0.171301,
+          "death": 2.153927
+        },
+        "deathMinimumY": -0.874691,
+        "attackAndHitRemainAuthoredSourceMotion": true,
+        "deathMovesBelowSourceGroundPlane": true,
+        "rendererCompensationApplied": false
+      }
+    },
+    {
+      "asset": "mesh-animation/arc-warden",
+      "sourcePath": "content/assets/actor-kit/arc-warden.glb",
+      "sourceHash": "sha256:b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+      "import": {
+        "engineClips": [
+          {
+            "name": "idle",
+            "duration": 1.375
+          },
+          {
+            "name": "run",
+            "duration": 0.7083333134651184
+          },
+          {
+            "name": "jump",
+            "duration": 0.5416666865348816
+          },
+          {
+            "name": "attack",
+            "duration": 0.4166666567325592
+          },
+          {
+            "name": "hit",
+            "duration": 0.3333333432674408
+          },
+          {
+            "name": "death",
+            "duration": 0.9166666865348816
+          }
+        ],
+        "directClips": [
+          {
+            "name": "idle",
+            "duration": 1.375
+          },
+          {
+            "name": "run",
+            "duration": 0.7083333134651184
+          },
+          {
+            "name": "jump",
+            "duration": 0.5416666865348816
+          },
+          {
+            "name": "attack",
+            "duration": 0.4166666567325592
+          },
+          {
+            "name": "hit",
+            "duration": 0.3333333432674408
+          },
+          {
+            "name": "death",
+            "duration": 0.9166666865348816
+          }
+        ],
+        "clipInventoryMatches": true
+      },
+      "cloneBindInterpolation": {
+        "samples": [
+          {
+            "clip": "idle",
+            "normalizedTime": 0,
+            "durationSeconds": 1.375,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.25,
+            "durationSeconds": 1.375,
+            "engineBounds": {
+              "min": [
+                -0.830959,
+                -0.008972,
+                -0.196615
+              ],
+              "max": [
+                0.806056,
+                1.764941,
+                0.30341
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.830959,
+                -0.008972,
+                -0.196615
+              ],
+              "max": [
+                0.806056,
+                1.764941,
+                0.30341
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.5,
+            "durationSeconds": 1.375,
+            "engineBounds": {
+              "min": [
+                -0.791193,
+                -0.020558,
+                -0.128419
+              ],
+              "max": [
+                0.739062,
+                1.744439,
+                0.384364
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.791193,
+                -0.020558,
+                -0.128419
+              ],
+              "max": [
+                0.739062,
+                1.744439,
+                0.384364
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.75,
+            "durationSeconds": 1.375,
+            "engineBounds": {
+              "min": [
+                -0.824445,
+                -0.01111,
+                -0.183191
+              ],
+              "max": [
+                0.794139,
+                1.761273,
+                0.317843
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.824445,
+                -0.01111,
+                -0.183191
+              ],
+              "max": [
+                0.794139,
+                1.761273,
+                0.317843
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 1,
+            "durationSeconds": 1.375,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0,
+            "durationSeconds": 0.7083333134651184,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000324,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000324,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.7083333134651184,
+            "engineBounds": {
+              "min": [
+                -0.840725,
+                0.067995,
+                -0.755101
+              ],
+              "max": [
+                0.959313,
+                1.747744,
+                0.871773
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.840725,
+                0.067995,
+                -0.755101
+              ],
+              "max": [
+                0.959313,
+                1.747744,
+                0.871773
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.7083333134651184,
+            "engineBounds": {
+              "min": [
+                -0.362358,
+                0.607476,
+                -1.357408
+              ],
+              "max": [
+                0.514694,
+                1.779086,
+                1.183422
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.362358,
+                0.607476,
+                -1.357408
+              ],
+              "max": [
+                0.514694,
+                1.779086,
+                1.183422
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.7083333134651184,
+            "engineBounds": {
+              "min": [
+                -0.837459,
+                0.278631,
+                -1.037058
+              ],
+              "max": [
+                0.987706,
+                1.755013,
+                0.812968
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.837459,
+                0.278631,
+                -1.037058
+              ],
+              "max": [
+                0.987706,
+                1.755013,
+                0.812968
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 1,
+            "durationSeconds": 0.7083333134651184,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000324,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000324,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0,
+            "durationSeconds": 0.5416666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.5416666865348816,
+            "engineBounds": {
+              "min": [
+                -0.856611,
+                -0.000482,
+                -0.254816
+              ],
+              "max": [
+                0.848629,
+                1.78068,
+                0.240762
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.856611,
+                -0.000482,
+                -0.254816
+              ],
+              "max": [
+                0.848629,
+                1.78068,
+                0.240762
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.5416666865348816,
+            "engineBounds": {
+              "min": [
+                -0.859348,
+                -0.002135,
+                -0.259972
+              ],
+              "max": [
+                0.833554,
+                1.781382,
+                0.235606
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.859348,
+                -0.002135,
+                -0.259972
+              ],
+              "max": [
+                0.833554,
+                1.781382,
+                0.235606
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.5416666865348816,
+            "engineBounds": {
+              "min": [
+                -0.857678,
+                -0.001142,
+                -0.256825
+              ],
+              "max": [
+                0.842758,
+                1.780965,
+                0.238753
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.857678,
+                -0.001142,
+                -0.256825
+              ],
+              "max": [
+                0.842758,
+                1.780965,
+                0.238753
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 1,
+            "durationSeconds": 0.5416666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780323,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0,
+            "durationSeconds": 0.4166666567325592,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.4166666567325592,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.009545,
+                -0.318246
+              ],
+              "max": [
+                0.855574,
+                1.775123,
+                0.197834
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.009545,
+                -0.318246
+              ],
+              "max": [
+                0.855574,
+                1.775123,
+                0.197834
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.4166666567325592,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.013263,
+                -0.34251
+              ],
+              "max": [
+                0.855574,
+                1.770037,
+                0.220271
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.013263,
+                -0.34251
+              ],
+              "max": [
+                0.855574,
+                1.770037,
+                0.220271
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.4166666567325592,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.005257,
+                -0.289886
+              ],
+              "max": [
+                0.855574,
+                1.778857,
+                0.212878
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.005257,
+                -0.289886
+              ],
+              "max": [
+                0.855574,
+                1.778857,
+                0.212878
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 1,
+            "durationSeconds": 0.4166666567325592,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0,
+            "durationSeconds": 0.3333333432674408,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.3333333432674408,
+            "engineBounds": {
+              "min": [
+                -0.715549,
+                -0.014649,
+                -0.29799
+              ],
+              "max": [
+                0.974561,
+                1.776596,
+                0.221628
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.715549,
+                -0.014649,
+                -0.29799
+              ],
+              "max": [
+                0.974561,
+                1.776596,
+                0.221628
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.3333333432674408,
+            "engineBounds": {
+              "min": [
+                -0.684045,
+                -0.017782,
+                -0.312081
+              ],
+              "max": [
+                0.996473,
+                1.774874,
+                0.231129
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.684045,
+                -0.017782,
+                -0.312081
+              ],
+              "max": [
+                0.996473,
+                1.774874,
+                0.231129
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.3333333432674408,
+            "engineBounds": {
+              "min": [
+                -0.791232,
+                -0.006795,
+                -0.269166
+              ],
+              "max": [
+                0.914977,
+                1.779479,
+                0.226433
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.791232,
+                -0.006795,
+                -0.269166
+              ],
+              "max": [
+                0.914977,
+                1.779479,
+                0.226433
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 1,
+            "durationSeconds": 0.3333333432674408,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0,
+            "durationSeconds": 0.9166666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                0.000323,
+                -0.252439
+              ],
+              "max": [
+                0.855574,
+                1.780322,
+                0.243138
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.9166666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.127666,
+                -0.115358
+              ],
+              "max": [
+                0.855574,
+                1.617034,
+                0.815142
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.127666,
+                -0.115358
+              ],
+              "max": [
+                0.855574,
+                1.617034,
+                0.815142
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.9166666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.402904,
+                -0.090504
+              ],
+              "max": [
+                0.855574,
+                0.805212,
+                1.541545
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.402904,
+                -0.090504
+              ],
+              "max": [
+                0.855574,
+                0.805212,
+                1.541545
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.9166666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.683869,
+                -0.103296
+              ],
+              "max": [
+                0.855574,
+                -0.044788,
+                1.67866
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.683869,
+                -0.103296
+              ],
+              "max": [
+                0.855574,
+                -0.044788,
+                1.67866
+              ]
+            },
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 1,
+            "durationSeconds": 0.9166666865348816,
+            "engineBounds": {
+              "min": [
+                -0.855346,
+                -0.874691,
+                -0.123877
+              ],
+              "max": [
+                0.855574,
+                -0.373605,
+                1.659576
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855346,
+                -0.874691,
+                -0.123877
+              ],
+              "max": [
+                0.855574,
+                -0.373605,
+                1.659576
+              ]
+            },
+            "sampledVertexCount": 1029
+          }
+        ],
+        "maximumAbsoluteBoundsError": 0,
+        "exactVertexCounts": true
+      },
+      "switching": {
+        "attackHitAttackMaximumBoundsError": 0,
+        "stalePostureObserved": false
+      },
+      "fade": {
+        "fromClip": "idle",
+        "toClip": "attack",
+        "fadeSeconds": 0.1,
+        "sampledAfterSeconds": 0.05,
+        "blendedBounds": {
+          "min": [
+            -0.846644,
+            -0.004784,
+            -0.242374
+          ],
+          "max": [
+            0.836842,
+            1.774703,
+            0.257102
+          ]
+        },
+        "otherInstanceMaximumBoundsError": 0
+      },
+      "multiInstance": {
+        "translation": [
+          10,
+          0,
+          -5
+        ],
+        "translatedInstanceMaximumBoundsError": 0,
+        "independentInstanceMaximumBoundsError": 0
+      },
+      "sourceQuality": {
+        "maximumBoundsDeltaByClip": {
+          "idle": 0.141226,
+          "run": 1.104969,
+          "jump": 0.02202,
+          "attack": 0.090071,
+          "hit": 0.171301,
+          "death": 2.153927
+        },
+        "deathMinimumY": -0.874691,
+        "attackAndHitRemainAuthoredSourceMotion": true,
+        "deathMovesBelowSourceGroundPlane": true,
+        "rendererCompensationApplied": false
+      }
+    }
+  ],
+  "conclusion": {
+    "importDivergenceObserved": false,
+    "cloneBindDivergenceObserved": false,
+    "interpolationDivergenceObserved": false,
+    "switchingOrFadeCrossInstanceDefectObserved": false,
+    "rendererCompensationRequired": false,
+    "remainingVisualDefectsAreAuthoredSourceMotion": true
+  }
+}

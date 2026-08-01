@@ -1,0 +1,378 @@
+{
+  "schemaVersion": 1,
+  "providerRevision": "d5fac3dd01326590594342104c00c85917bc1e99",
+  "asset": "mesh-animation/arc-warden",
+  "contentHash": "sha256:b60d65a65e5077d0153b42e9f4ef02bb189efd7f950ecbd547d3c5f08acdae2d",
+  "clip": "hit",
+  "camera": {
+    "position": [
+      20.5,
+      2.8,
+      24.5
+    ],
+    "pitchDegrees": 0,
+    "yawDegrees": 0
+  },
+  "projection": {
+    "fovYDegrees": 50,
+    "near": 0.1,
+    "far": 100
+  },
+  "viewport": {
+    "width": 156,
+    "height": 153
+  },
+  "overlaysIncluded": true,
+  "samples": [
+    {
+      "fileName": "mesh-animation-arc-warden-hit-00-000000.png",
+      "normalizedTime": 0,
+      "durationSeconds": 0.3333333432674408,
+      "assetBounds": {
+        "min": [
+          -0.8553455471992493,
+          0.0003236433840356767,
+          -0.2524394392967224
+        ],
+        "max": [
+          0.8555737137794495,
+          1.780322551727295,
+          0.24313823878765106
+        ]
+      },
+      "sampledWorldBounds": {
+        "min": [
+          19.858490843543652,
+          1.5004364165541089,
+          21.31067044247664
+        ],
+        "max": [
+          21.14168030610105,
+          3.9034348302824093,
+          21.682353681568472
+        ]
+      },
+      "sampledVertexCount": 1029,
+      "boneCount": 58,
+      "diagnostics": [],
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 12
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 415
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 38
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 97
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 0
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 8
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 45136
+        }
+      }
+    },
+    {
+      "fileName": "mesh-animation-arc-warden-hit-01-025000.png",
+      "normalizedTime": 0.25,
+      "durationSeconds": 0.3333333432674408,
+      "assetBounds": {
+        "min": [
+          -0.8553455471992493,
+          0.0003236433840356767,
+          -0.2524394392967224
+        ],
+        "max": [
+          0.8555737137794495,
+          1.780322551727295,
+          0.24313823878765106
+        ]
+      },
+      "sampledWorldBounds": {
+        "min": [
+          19.963337931495563,
+          1.480223556211166,
+          21.27650744972702
+        ],
+        "max": [
+          21.230920520607505,
+          3.8984051758958502,
+          21.66622071273294
+        ]
+      },
+      "sampledVertexCount": 1029,
+      "boneCount": 58,
+      "diagnostics": [],
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 12
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 415
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 38
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 97
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 0
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 8
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 45136
+        }
+      }
+    },
+    {
+      "fileName": "mesh-animation-arc-warden-hit-02-050000.png",
+      "normalizedTime": 0.5,
+      "durationSeconds": 0.3333333432674408,
+      "assetBounds": {
+        "min": [
+          -0.8553455471992493,
+          0.0003236433840356767,
+          -0.2524394392967224
+        ],
+        "max": [
+          0.8555737137794495,
+          1.780322551727295,
+          0.24313823878765106
+        ]
+      },
+      "sampledWorldBounds": {
+        "min": [
+          19.986966480017397,
+          1.47599460803379,
+          21.265939390269423
+        ],
+        "max": [
+          21.24735474643831,
+          3.8960794990119654,
+          21.67334692529046
+        ]
+      },
+      "sampledVertexCount": 1029,
+      "boneCount": 58,
+      "diagnostics": [],
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 12
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 415
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 38
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 97
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 0
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 8
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 45136
+        }
+      }
+    },
+    {
+      "fileName": "mesh-animation-arc-warden-hit-03-075000.png",
+      "normalizedTime": 0.75,
+      "durationSeconds": 0.3333333432674408,
+      "assetBounds": {
+        "min": [
+          -0.8553455471992493,
+          0.0003236433840356767,
+          -0.2524394392967224
+        ],
+        "max": [
+          0.8555737137794495,
+          1.780322551727295,
+          0.24313823878765106
+        ]
+      },
+      "sampledWorldBounds": {
+        "min": [
+          19.906575974883282,
+          1.4908263254107064,
+          21.29812514406463
+        ],
+        "max": [
+          21.186232466437957,
+          3.9022962721825762,
+          21.66982490029465
+        ]
+      },
+      "sampledVertexCount": 1029,
+      "boneCount": 58,
+      "diagnostics": [],
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 12
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 415
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 38
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 97
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 0
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 8
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 45136
+        }
+      }
+    },
+    {
+      "fileName": "mesh-animation-arc-warden-hit-04-100000.png",
+      "normalizedTime": 1,
+      "durationSeconds": 0.3333333432674408,
+      "assetBounds": {
+        "min": [
+          -0.8553455471992493,
+          0.0003236433840356767,
+          -0.2524394392967224
+        ],
+        "max": [
+          0.8555737137794495,
+          1.780322551727295,
+          0.24313823878765106
+        ]
+      },
+      "sampledWorldBounds": {
+        "min": [
+          19.858490843543652,
+          1.5004364165541089,
+          21.31067044247664
+        ],
+        "max": [
+          21.14168030610105,
+          3.9034348302824093,
+          21.682353681568472
+        ]
+      },
+      "sampledVertexCount": 1029,
+      "boneCount": 58,
+      "diagnostics": [],
+      "statistics": {
+        "schemaVersion": 1,
+        "drawCallCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 12
+        },
+        "renderHandleCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 415
+        },
+        "geometryResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 38
+        },
+        "materialResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 97
+        },
+        "textureResourceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 0
+        },
+        "animatedInstanceCount": {
+          "scope": "liveResident",
+          "status": "available",
+          "value": 8
+        },
+        "triangleCount": {
+          "scope": "perSubmission",
+          "status": "available",
+          "value": 45136
+        }
+      }
+    }
+  ]
+}

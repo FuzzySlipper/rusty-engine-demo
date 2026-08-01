@@ -83,6 +83,12 @@ type ConnectionState =
   | "reconnecting"
   | "unavailable";
 
+declare global {
+  interface Window {
+    __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
+  }
+}
+
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
@@ -715,6 +721,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     this.documentEffects.setRootClass("game-route-active", false);
     const handle = this.handle;
     this.handle = null;
+    delete window.__loadingBayAnimationCapture;
     if (handle !== null) {
       document.body.dataset.rendererLifecycle = "disposed";
       void handle.dispose();
@@ -1038,6 +1045,9 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
         return;
       }
       this.handle = handle;
+      if (this.route.snapshot.queryParamMap.get("visualQa") === "animation") {
+        window.__loadingBayAnimationCapture = handle.captureAnimation;
+      }
       const entryMode = this.route.snapshot.queryParamMap.get("mode");
       if (entryMode === "new") {
         if (this.snapshot().paused) {

@@ -8,6 +8,7 @@ pnpm run test:engine-revision
 pnpm run audit:boundary
 pnpm run typecheck
 pnpm run check:content
+pnpm run check:actor-animation
 pnpm run test:ts
 pnpm run test:platform
 pnpm run test:shell
