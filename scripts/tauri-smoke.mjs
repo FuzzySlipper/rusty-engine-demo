@@ -62,11 +62,28 @@ if (seedSaveRoot !== undefined) {
 }
 
 const output = [];
+const windowManager = process.env.TAURI_WINDOW_MANAGER;
+if (windowManager && !existsSync(windowManager)) {
+  throw new Error(`Tauri window manager does not exist: ${windowManager}`);
+}
 const driverCommand = process.env.DISPLAY
   ? driverBinary
   : (process.env.XVFB_RUN ?? "xvfb-run");
 const driverArguments = [
-  ...(process.env.DISPLAY ? [] : ["-a", driverBinary]),
+  ...(process.env.DISPLAY
+    ? []
+    : windowManager
+      ? [
+          "-a",
+          "sh",
+          "-c",
+          'window_manager="$1"; window_manager_log="$2"; shift 2; "$window_manager" >"$window_manager_log" 2>&1 & exec "$@"',
+          "tauri-native-session",
+          windowManager,
+          join(temporaryRoot, "window-manager.log"),
+          driverBinary,
+        ]
+      : ["-a", driverBinary]),
   "--port",
   String(driverPort),
   "--native-port",

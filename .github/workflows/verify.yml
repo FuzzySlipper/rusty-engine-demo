@@ -60,6 +60,7 @@ jobs:
             libappindicator3-dev \
             librsvg2-dev \
             dbus-x11 \
+            openbox \
             patchelf \
             xvfb \
             webkit2gtk-driver
@@ -88,6 +89,7 @@ jobs:
       - name: Verify native shell and process lifecycle
         env:
           TAURI_DRIVER_BIN: /home/runner/.cargo/bin/tauri-driver
+          TAURI_WINDOW_MANAGER: /usr/bin/openbox
         run: dbus-run-session -- pnpm run verify:tauri
 
       - name: Build Linux bundles on the supported baseline
