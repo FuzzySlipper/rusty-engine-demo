@@ -1553,11 +1553,11 @@ export async function mountLoadingBayGame(
       : "fail";
 
     const arrivalReached = await walkPlayerPath([[6.5, 6.5]]);
-    if (arrivalReached) {
-      await pauseForCameraBoundaryEvidence("wall");
-    }
     const earlyEnemyDefeated =
       arrivalReached && (await damageEnemyTo(4, 0, 10));
+    if (earlyEnemyDefeated) {
+      await pauseForCameraBoundaryEvidence("wall");
+    }
     const arrivalSupplyReached =
       earlyEnemyDefeated &&
       (await walkPlayerPath([

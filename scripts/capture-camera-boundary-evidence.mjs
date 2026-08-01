@@ -101,6 +101,11 @@ try {
         ) {
           throw new Error("camera boundary evidence is incomplete");
         }
+        const activeModal = document.querySelector("[data-active-modal]");
+        if (activeModal instanceof HTMLElement) {
+          activeModal.style.display = "none";
+          activeModal.dataset.evidenceHidden = "camera-boundary-capture";
+        }
         let overlay = document.querySelector("#camera-boundary-evidence");
         if (!(overlay instanceof HTMLElement)) {
           overlay = document.createElement("aside");
@@ -128,16 +133,6 @@ try {
           camera,
           horizontalOffset,
           eyeHeight,
-          campaignEvidence:
-            document.body.dataset[
-              ${JSON.stringify(
-                milestone === "wall"
-                  ? "campaignArrivalEvidence"
-                  : milestone === "corner"
-                    ? "campaignStorageEvidence"
-                    : "campaignLockedDoorEvidence",
-              )}
-            ] ?? null,
         };
       })()`,
     );
@@ -177,11 +172,11 @@ try {
       smokeStatus: document.body.dataset.smokeStatus,
       sessionTransport: document.body.dataset.sessionTransport,
       roundTripMaxMilliseconds:
-        Number(document.body.dataset.sessionRoundTripMaxMilliseconds),
+        Number(document.body.dataset.sessionRttMaxMilliseconds),
       pendingOutboundMax: Number(document.body.dataset.sessionPendingOutboundMax),
       droppedFacts: Number(document.body.dataset.sessionDroppedFacts),
       pendingInput: Number(document.body.dataset.sessionPendingInput),
-      rendererLifecycle: document.body.dataset.rendererLifecycle,
+      rendererTelemetry: document.body.dataset.rendererTelemetry,
       revision: document.querySelector("#revision")?.textContent?.trim() ?? null,
     })`,
   );
