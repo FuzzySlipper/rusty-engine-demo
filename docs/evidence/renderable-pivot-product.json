@@ -22,6 +22,8 @@
     "entryPoint": "Tools > Pivot & Grounding",
     "screenshot": "docs/evidence/renderable-pivot-studio-tools.png",
     "screenshotSha256": "ad42fc8001b1773609a2e6a5ed9609dea1af88c41a2912289307d79d7c2bd9ca",
+    "narrowScreenshot": "docs/evidence/renderable-pivot-studio-tools-narrow.png",
+    "narrowScreenshotSha256": "d7195e5bb66024c9348601000bb82e5e44fc2a9e024370114edef64b3a344aee",
     "selectedEntityId": 4,
     "selectedEntity": "cargo-loader-arrival",
     "asset": "mesh-animation/bay-rusher",
