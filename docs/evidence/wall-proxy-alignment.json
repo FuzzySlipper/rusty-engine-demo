@@ -3,8 +3,8 @@
   "project": {
     "path": "content/projects/loading-bay.project.json",
     "schemaVersion": 24,
-    "hash": "2782a4feb7a9479451c2a523c0e1689f0e5076aeeffe5e44d31ccbe9702af0ec",
-    "bytes": 4118188
+    "hash": "6069198b7bac3792ff86c0e245a4cdcae72ae1c68bf90f42cb08c39bc656c328",
+    "bytes": 4118174
   },
   "authority": {
     "collisionNavigationOcclusion": "Rust-owned material-voxel gameplayProxy",
@@ -38,12 +38,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z00",
       "visible": {
-        "min": [0, 0],
-        "max": [1, 1]
+        "min": [
+          0,
+          0
+        ],
+        "max": [
+          1,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 0],
-        "max": [1, 1]
+        "min": [
+          0,
+          0
+        ],
+        "max": [
+          1,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -52,12 +64,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z01",
       "visible": {
-        "min": [0, 1],
-        "max": [1, 2]
+        "min": [
+          0,
+          1
+        ],
+        "max": [
+          1,
+          2
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 1],
-        "max": [1, 2]
+        "min": [
+          0,
+          1
+        ],
+        "max": [
+          1,
+          2
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -66,12 +90,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z02",
       "visible": {
-        "min": [0, 2],
-        "max": [1, 3]
+        "min": [
+          0,
+          2
+        ],
+        "max": [
+          1,
+          3
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 2],
-        "max": [1, 3]
+        "min": [
+          0,
+          2
+        ],
+        "max": [
+          1,
+          3
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -80,12 +116,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z03",
       "visible": {
-        "min": [0, 3],
-        "max": [1, 4]
+        "min": [
+          0,
+          3
+        ],
+        "max": [
+          1,
+          4
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 3],
-        "max": [1, 4]
+        "min": [
+          0,
+          3
+        ],
+        "max": [
+          1,
+          4
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -94,12 +142,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z04",
       "visible": {
-        "min": [0, 4],
-        "max": [1, 5]
+        "min": [
+          0,
+          4
+        ],
+        "max": [
+          1,
+          5
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 4],
-        "max": [1, 5]
+        "min": [
+          0,
+          4
+        ],
+        "max": [
+          1,
+          5
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -108,12 +168,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z05",
       "visible": {
-        "min": [0, 5],
-        "max": [1, 6]
+        "min": [
+          0,
+          5
+        ],
+        "max": [
+          1,
+          6
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 5],
-        "max": [1, 6]
+        "min": [
+          0,
+          5
+        ],
+        "max": [
+          1,
+          6
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -122,12 +194,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z06",
       "visible": {
-        "min": [0, 6],
-        "max": [1, 7]
+        "min": [
+          0,
+          6
+        ],
+        "max": [
+          1,
+          7
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 6],
-        "max": [1, 7]
+        "min": [
+          0,
+          6
+        ],
+        "max": [
+          1,
+          7
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -136,12 +220,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z07",
       "visible": {
-        "min": [0, 7],
-        "max": [1, 8]
+        "min": [
+          0,
+          7
+        ],
+        "max": [
+          1,
+          8
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 7],
-        "max": [1, 8]
+        "min": [
+          0,
+          7
+        ],
+        "max": [
+          1,
+          8
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -150,12 +246,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z08",
       "visible": {
-        "min": [0, 8],
-        "max": [1, 9]
+        "min": [
+          0,
+          8
+        ],
+        "max": [
+          1,
+          9
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 8],
-        "max": [1, 9]
+        "min": [
+          0,
+          8
+        ],
+        "max": [
+          1,
+          9
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -164,12 +272,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z09",
       "visible": {
-        "min": [0, 9],
-        "max": [1, 10]
+        "min": [
+          0,
+          9
+        ],
+        "max": [
+          1,
+          10
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 9],
-        "max": [1, 10]
+        "min": [
+          0,
+          9
+        ],
+        "max": [
+          1,
+          10
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -178,12 +298,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z10",
       "visible": {
-        "min": [0, 10],
-        "max": [1, 11]
+        "min": [
+          0,
+          10
+        ],
+        "max": [
+          1,
+          11
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 10],
-        "max": [1, 11]
+        "min": [
+          0,
+          10
+        ],
+        "max": [
+          1,
+          11
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -192,12 +324,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z11",
       "visible": {
-        "min": [0, 11],
-        "max": [1, 12]
+        "min": [
+          0,
+          11
+        ],
+        "max": [
+          1,
+          12
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 11],
-        "max": [1, 12]
+        "min": [
+          0,
+          11
+        ],
+        "max": [
+          1,
+          12
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -206,12 +350,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z12",
       "visible": {
-        "min": [0, 12],
-        "max": [1, 13]
+        "min": [
+          0,
+          12
+        ],
+        "max": [
+          1,
+          13
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 12],
-        "max": [1, 13]
+        "min": [
+          0,
+          12
+        ],
+        "max": [
+          1,
+          13
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -220,12 +376,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z13",
       "visible": {
-        "min": [0, 13],
-        "max": [1, 14]
+        "min": [
+          0,
+          13
+        ],
+        "max": [
+          1,
+          14
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 13],
-        "max": [1, 14]
+        "min": [
+          0,
+          13
+        ],
+        "max": [
+          1,
+          14
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -234,12 +402,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z14",
       "visible": {
-        "min": [0, 14],
-        "max": [1, 15]
+        "min": [
+          0,
+          14
+        ],
+        "max": [
+          1,
+          15
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 14],
-        "max": [1, 15]
+        "min": [
+          0,
+          14
+        ],
+        "max": [
+          1,
+          15
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -248,12 +428,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z15",
       "visible": {
-        "min": [0, 15],
-        "max": [1, 16]
+        "min": [
+          0,
+          15
+        ],
+        "max": [
+          1,
+          16
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 15],
-        "max": [1, 16]
+        "min": [
+          0,
+          15
+        ],
+        "max": [
+          1,
+          16
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -262,12 +454,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z16",
       "visible": {
-        "min": [0, 16],
-        "max": [1, 17]
+        "min": [
+          0,
+          16
+        ],
+        "max": [
+          1,
+          17
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 16],
-        "max": [1, 17]
+        "min": [
+          0,
+          16
+        ],
+        "max": [
+          1,
+          17
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -276,12 +480,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z17",
       "visible": {
-        "min": [0, 17],
-        "max": [1, 18]
+        "min": [
+          0,
+          17
+        ],
+        "max": [
+          1,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 17],
-        "max": [1, 18]
+        "min": [
+          0,
+          17
+        ],
+        "max": [
+          1,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -290,12 +506,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z18",
       "visible": {
-        "min": [0, 18],
-        "max": [1, 19]
+        "min": [
+          0,
+          18
+        ],
+        "max": [
+          1,
+          19
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 18],
-        "max": [1, 19]
+        "min": [
+          0,
+          18
+        ],
+        "max": [
+          1,
+          19
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -304,12 +532,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z19",
       "visible": {
-        "min": [0, 19],
-        "max": [1, 20]
+        "min": [
+          0,
+          19
+        ],
+        "max": [
+          1,
+          20
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 19],
-        "max": [1, 20]
+        "min": [
+          0,
+          19
+        ],
+        "max": [
+          1,
+          20
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -318,12 +558,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z20",
       "visible": {
-        "min": [0, 20],
-        "max": [1, 21]
+        "min": [
+          0,
+          20
+        ],
+        "max": [
+          1,
+          21
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 20],
-        "max": [1, 21]
+        "min": [
+          0,
+          20
+        ],
+        "max": [
+          1,
+          21
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -332,12 +584,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z21",
       "visible": {
-        "min": [0, 21],
-        "max": [1, 22]
+        "min": [
+          0,
+          21
+        ],
+        "max": [
+          1,
+          22
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 21],
-        "max": [1, 22]
+        "min": [
+          0,
+          21
+        ],
+        "max": [
+          1,
+          22
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -346,12 +610,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z22",
       "visible": {
-        "min": [0, 22],
-        "max": [1, 23]
+        "min": [
+          0,
+          22
+        ],
+        "max": [
+          1,
+          23
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 22],
-        "max": [1, 23]
+        "min": [
+          0,
+          22
+        ],
+        "max": [
+          1,
+          23
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -360,12 +636,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z23",
       "visible": {
-        "min": [0, 23],
-        "max": [1, 24]
+        "min": [
+          0,
+          23
+        ],
+        "max": [
+          1,
+          24
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 23],
-        "max": [1, 24]
+        "min": [
+          0,
+          23
+        ],
+        "max": [
+          1,
+          24
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -374,12 +662,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z24",
       "visible": {
-        "min": [0, 24],
-        "max": [1, 25]
+        "min": [
+          0,
+          24
+        ],
+        "max": [
+          1,
+          25
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 24],
-        "max": [1, 25]
+        "min": [
+          0,
+          24
+        ],
+        "max": [
+          1,
+          25
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -388,12 +688,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z25",
       "visible": {
-        "min": [0, 25],
-        "max": [1, 26]
+        "min": [
+          0,
+          25
+        ],
+        "max": [
+          1,
+          26
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 25],
-        "max": [1, 26]
+        "min": [
+          0,
+          25
+        ],
+        "max": [
+          1,
+          26
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -402,12 +714,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z26",
       "visible": {
-        "min": [0, 26],
-        "max": [1, 27]
+        "min": [
+          0,
+          26
+        ],
+        "max": [
+          1,
+          27
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 26],
-        "max": [1, 27]
+        "min": [
+          0,
+          26
+        ],
+        "max": [
+          1,
+          27
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -416,12 +740,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z27",
       "visible": {
-        "min": [0, 27],
-        "max": [1, 28]
+        "min": [
+          0,
+          27
+        ],
+        "max": [
+          1,
+          28
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 27],
-        "max": [1, 28]
+        "min": [
+          0,
+          27
+        ],
+        "max": [
+          1,
+          28
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -430,12 +766,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z28",
       "visible": {
-        "min": [0, 28],
-        "max": [1, 29]
+        "min": [
+          0,
+          28
+        ],
+        "max": [
+          1,
+          29
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 28],
-        "max": [1, 29]
+        "min": [
+          0,
+          28
+        ],
+        "max": [
+          1,
+          29
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -444,12 +792,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z29",
       "visible": {
-        "min": [0, 29],
-        "max": [1, 30]
+        "min": [
+          0,
+          29
+        ],
+        "max": [
+          1,
+          30
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 29],
-        "max": [1, 30]
+        "min": [
+          0,
+          29
+        ],
+        "max": [
+          1,
+          30
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -458,12 +818,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z30",
       "visible": {
-        "min": [0, 30],
-        "max": [1, 31]
+        "min": [
+          0,
+          30
+        ],
+        "max": [
+          1,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 30],
-        "max": [1, 31]
+        "min": [
+          0,
+          30
+        ],
+        "max": [
+          1,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -472,12 +844,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z31",
       "visible": {
-        "min": [0, 31],
-        "max": [1, 32]
+        "min": [
+          0,
+          31
+        ],
+        "max": [
+          1,
+          32
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 31],
-        "max": [1, 32]
+        "min": [
+          0,
+          31
+        ],
+        "max": [
+          1,
+          32
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -486,12 +870,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z32",
       "visible": {
-        "min": [0, 32],
-        "max": [1, 33]
+        "min": [
+          0,
+          32
+        ],
+        "max": [
+          1,
+          33
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 32],
-        "max": [1, 33]
+        "min": [
+          0,
+          32
+        ],
+        "max": [
+          1,
+          33
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -500,12 +896,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z33",
       "visible": {
-        "min": [0, 33],
-        "max": [1, 34]
+        "min": [
+          0,
+          33
+        ],
+        "max": [
+          1,
+          34
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 33],
-        "max": [1, 34]
+        "min": [
+          0,
+          33
+        ],
+        "max": [
+          1,
+          34
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -514,12 +922,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z34",
       "visible": {
-        "min": [0, 34],
-        "max": [1, 35]
+        "min": [
+          0,
+          34
+        ],
+        "max": [
+          1,
+          35
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 34],
-        "max": [1, 35]
+        "min": [
+          0,
+          34
+        ],
+        "max": [
+          1,
+          35
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -528,12 +948,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z35",
       "visible": {
-        "min": [0, 35],
-        "max": [1, 36]
+        "min": [
+          0,
+          35
+        ],
+        "max": [
+          1,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 35],
-        "max": [1, 36]
+        "min": [
+          0,
+          35
+        ],
+        "max": [
+          1,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -542,12 +974,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z36",
       "visible": {
-        "min": [0, 36],
-        "max": [1, 37]
+        "min": [
+          0,
+          36
+        ],
+        "max": [
+          1,
+          37
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 36],
-        "max": [1, 37]
+        "min": [
+          0,
+          36
+        ],
+        "max": [
+          1,
+          37
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -556,12 +1000,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z37",
       "visible": {
-        "min": [0, 37],
-        "max": [1, 38]
+        "min": [
+          0,
+          37
+        ],
+        "max": [
+          1,
+          38
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 37],
-        "max": [1, 38]
+        "min": [
+          0,
+          37
+        ],
+        "max": [
+          1,
+          38
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -570,12 +1026,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z38",
       "visible": {
-        "min": [0, 38],
-        "max": [1, 39]
+        "min": [
+          0,
+          38
+        ],
+        "max": [
+          1,
+          39
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 38],
-        "max": [1, 39]
+        "min": [
+          0,
+          38
+        ],
+        "max": [
+          1,
+          39
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -584,12 +1052,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z39",
       "visible": {
-        "min": [0, 39],
-        "max": [1, 40]
+        "min": [
+          0,
+          39
+        ],
+        "max": [
+          1,
+          40
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 39],
-        "max": [1, 40]
+        "min": [
+          0,
+          39
+        ],
+        "max": [
+          1,
+          40
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -598,12 +1078,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z40",
       "visible": {
-        "min": [0, 40],
-        "max": [1, 41]
+        "min": [
+          0,
+          40
+        ],
+        "max": [
+          1,
+          41
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 40],
-        "max": [1, 41]
+        "min": [
+          0,
+          40
+        ],
+        "max": [
+          1,
+          41
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -612,12 +1104,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z41",
       "visible": {
-        "min": [0, 41],
-        "max": [1, 42]
+        "min": [
+          0,
+          41
+        ],
+        "max": [
+          1,
+          42
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 41],
-        "max": [1, 42]
+        "min": [
+          0,
+          41
+        ],
+        "max": [
+          1,
+          42
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -626,12 +1130,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z42",
       "visible": {
-        "min": [0, 42],
-        "max": [1, 43]
+        "min": [
+          0,
+          42
+        ],
+        "max": [
+          1,
+          43
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 42],
-        "max": [1, 43]
+        "min": [
+          0,
+          42
+        ],
+        "max": [
+          1,
+          43
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -640,12 +1156,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z43",
       "visible": {
-        "min": [0, 43],
-        "max": [1, 44]
+        "min": [
+          0,
+          43
+        ],
+        "max": [
+          1,
+          44
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 43],
-        "max": [1, 44]
+        "min": [
+          0,
+          43
+        ],
+        "max": [
+          1,
+          44
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -654,12 +1182,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z44",
       "visible": {
-        "min": [0, 44],
-        "max": [1, 45]
+        "min": [
+          0,
+          44
+        ],
+        "max": [
+          1,
+          45
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 44],
-        "max": [1, 45]
+        "min": [
+          0,
+          44
+        ],
+        "max": [
+          1,
+          45
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -668,12 +1208,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z45",
       "visible": {
-        "min": [0, 45],
-        "max": [1, 46]
+        "min": [
+          0,
+          45
+        ],
+        "max": [
+          1,
+          46
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 45],
-        "max": [1, 46]
+        "min": [
+          0,
+          45
+        ],
+        "max": [
+          1,
+          46
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -682,12 +1234,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z46",
       "visible": {
-        "min": [0, 46],
-        "max": [1, 47]
+        "min": [
+          0,
+          46
+        ],
+        "max": [
+          1,
+          47
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 46],
-        "max": [1, 47]
+        "min": [
+          0,
+          46
+        ],
+        "max": [
+          1,
+          47
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -696,12 +1260,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z47",
       "visible": {
-        "min": [0, 47],
-        "max": [1, 48]
+        "min": [
+          0,
+          47
+        ],
+        "max": [
+          1,
+          48
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 47],
-        "max": [1, 48]
+        "min": [
+          0,
+          47
+        ],
+        "max": [
+          1,
+          48
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -710,12 +1286,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z48",
       "visible": {
-        "min": [0, 48],
-        "max": [1, 49]
+        "min": [
+          0,
+          48
+        ],
+        "max": [
+          1,
+          49
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 48],
-        "max": [1, 49]
+        "min": [
+          0,
+          48
+        ],
+        "max": [
+          1,
+          49
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -724,12 +1312,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x00-z49",
       "visible": {
-        "min": [0, 49],
-        "max": [1, 50]
+        "min": [
+          0,
+          49
+        ],
+        "max": [
+          1,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 49],
-        "max": [1, 50]
+        "min": [
+          0,
+          49
+        ],
+        "max": [
+          1,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -738,12 +1338,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x01-z00",
       "visible": {
-        "min": [1, 0],
-        "max": [2, 1]
+        "min": [
+          1,
+          0
+        ],
+        "max": [
+          2,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [1, 0],
-        "max": [2, 1]
+        "min": [
+          1,
+          0
+        ],
+        "max": [
+          2,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -752,12 +1364,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x01-z17",
       "visible": {
-        "min": [1, 17],
-        "max": [2, 18]
+        "min": [
+          1,
+          17
+        ],
+        "max": [
+          2,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [1, 17],
-        "max": [2, 18]
+        "min": [
+          1,
+          17
+        ],
+        "max": [
+          2,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -766,12 +1390,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x01-z23",
       "visible": {
-        "min": [1, 23],
-        "max": [2, 24]
+        "min": [
+          1,
+          23
+        ],
+        "max": [
+          2,
+          24
+        ]
       },
       "gameplayProxy": {
-        "min": [1, 23],
-        "max": [2, 24]
+        "min": [
+          1,
+          23
+        ],
+        "max": [
+          2,
+          24
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -780,12 +1416,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x01-z35",
       "visible": {
-        "min": [1, 35],
-        "max": [2, 36]
+        "min": [
+          1,
+          35
+        ],
+        "max": [
+          2,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [1, 35],
-        "max": [2, 36]
+        "min": [
+          1,
+          35
+        ],
+        "max": [
+          2,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -794,12 +1442,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x01-z49",
       "visible": {
-        "min": [1, 49],
-        "max": [2, 50]
+        "min": [
+          1,
+          49
+        ],
+        "max": [
+          2,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [1, 49],
-        "max": [2, 50]
+        "min": [
+          1,
+          49
+        ],
+        "max": [
+          2,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -808,12 +1468,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x02-z00",
       "visible": {
-        "min": [2, 0],
-        "max": [3, 1]
+        "min": [
+          2,
+          0
+        ],
+        "max": [
+          3,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [2, 0],
-        "max": [3, 1]
+        "min": [
+          2,
+          0
+        ],
+        "max": [
+          3,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -822,12 +1494,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x02-z06",
       "visible": {
-        "min": [2, 6],
-        "max": [3, 7]
+        "min": [
+          2,
+          6
+        ],
+        "max": [
+          3,
+          7
+        ]
       },
       "gameplayProxy": {
-        "min": [2, 6],
-        "max": [3, 7]
+        "min": [
+          2,
+          6
+        ],
+        "max": [
+          3,
+          7
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -836,12 +1520,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x02-z07",
       "visible": {
-        "min": [2, 7],
-        "max": [3, 8]
+        "min": [
+          2,
+          7
+        ],
+        "max": [
+          3,
+          8
+        ]
       },
       "gameplayProxy": {
-        "min": [2, 7],
-        "max": [3, 8]
+        "min": [
+          2,
+          7
+        ],
+        "max": [
+          3,
+          8
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -850,12 +1546,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x02-z17",
       "visible": {
-        "min": [2, 17],
-        "max": [3, 18]
+        "min": [
+          2,
+          17
+        ],
+        "max": [
+          3,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [2, 17],
-        "max": [3, 18]
+        "min": [
+          2,
+          17
+        ],
+        "max": [
+          3,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -864,12 +1572,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x02-z23",
       "visible": {
-        "min": [2, 23],
-        "max": [3, 24]
+        "min": [
+          2,
+          23
+        ],
+        "max": [
+          3,
+          24
+        ]
       },
       "gameplayProxy": {
-        "min": [2, 23],
-        "max": [3, 24]
+        "min": [
+          2,
+          23
+        ],
+        "max": [
+          3,
+          24
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -878,12 +1598,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x02-z35",
       "visible": {
-        "min": [2, 35],
-        "max": [3, 36]
+        "min": [
+          2,
+          35
+        ],
+        "max": [
+          3,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [2, 35],
-        "max": [3, 36]
+        "min": [
+          2,
+          35
+        ],
+        "max": [
+          3,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -892,12 +1624,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x02-z49",
       "visible": {
-        "min": [2, 49],
-        "max": [3, 50]
+        "min": [
+          2,
+          49
+        ],
+        "max": [
+          3,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [2, 49],
-        "max": [3, 50]
+        "min": [
+          2,
+          49
+        ],
+        "max": [
+          3,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -906,12 +1650,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x03-z00",
       "visible": {
-        "min": [3, 0],
-        "max": [4, 1]
+        "min": [
+          3,
+          0
+        ],
+        "max": [
+          4,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [3, 0],
-        "max": [4, 1]
+        "min": [
+          3,
+          0
+        ],
+        "max": [
+          4,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -920,12 +1676,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x03-z06",
       "visible": {
-        "min": [3, 6],
-        "max": [4, 7]
+        "min": [
+          3,
+          6
+        ],
+        "max": [
+          4,
+          7
+        ]
       },
       "gameplayProxy": {
-        "min": [3, 6],
-        "max": [4, 7]
+        "min": [
+          3,
+          6
+        ],
+        "max": [
+          4,
+          7
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -934,12 +1702,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x03-z07",
       "visible": {
-        "min": [3, 7],
-        "max": [4, 8]
+        "min": [
+          3,
+          7
+        ],
+        "max": [
+          4,
+          8
+        ]
       },
       "gameplayProxy": {
-        "min": [3, 7],
-        "max": [4, 8]
+        "min": [
+          3,
+          7
+        ],
+        "max": [
+          4,
+          8
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -948,12 +1728,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x03-z23",
       "visible": {
-        "min": [3, 23],
-        "max": [4, 24]
+        "min": [
+          3,
+          23
+        ],
+        "max": [
+          4,
+          24
+        ]
       },
       "gameplayProxy": {
-        "min": [3, 23],
-        "max": [4, 24]
+        "min": [
+          3,
+          23
+        ],
+        "max": [
+          4,
+          24
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -962,12 +1754,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x03-z35",
       "visible": {
-        "min": [3, 35],
-        "max": [4, 36]
+        "min": [
+          3,
+          35
+        ],
+        "max": [
+          4,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [3, 35],
-        "max": [4, 36]
+        "min": [
+          3,
+          35
+        ],
+        "max": [
+          4,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -976,12 +1780,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x03-z49",
       "visible": {
-        "min": [3, 49],
-        "max": [4, 50]
+        "min": [
+          3,
+          49
+        ],
+        "max": [
+          4,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [3, 49],
-        "max": [4, 50]
+        "min": [
+          3,
+          49
+        ],
+        "max": [
+          4,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -990,12 +1806,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x04-z00",
       "visible": {
-        "min": [4, 0],
-        "max": [5, 1]
+        "min": [
+          4,
+          0
+        ],
+        "max": [
+          5,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [4, 0],
-        "max": [5, 1]
+        "min": [
+          4,
+          0
+        ],
+        "max": [
+          5,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1004,12 +1832,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x04-z23",
       "visible": {
-        "min": [4, 23],
-        "max": [5, 24]
+        "min": [
+          4,
+          23
+        ],
+        "max": [
+          5,
+          24
+        ]
       },
       "gameplayProxy": {
-        "min": [4, 23],
-        "max": [5, 24]
+        "min": [
+          4,
+          23
+        ],
+        "max": [
+          5,
+          24
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1018,12 +1858,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x04-z35",
       "visible": {
-        "min": [4, 35],
-        "max": [5, 36]
+        "min": [
+          4,
+          35
+        ],
+        "max": [
+          5,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [4, 35],
-        "max": [5, 36]
+        "min": [
+          4,
+          35
+        ],
+        "max": [
+          5,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1032,12 +1884,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x04-z49",
       "visible": {
-        "min": [4, 49],
-        "max": [5, 50]
+        "min": [
+          4,
+          49
+        ],
+        "max": [
+          5,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [4, 49],
-        "max": [5, 50]
+        "min": [
+          4,
+          49
+        ],
+        "max": [
+          5,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1046,12 +1910,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x05-z00",
       "visible": {
-        "min": [5, 0],
-        "max": [6, 1]
+        "min": [
+          5,
+          0
+        ],
+        "max": [
+          6,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [5, 0],
-        "max": [6, 1]
+        "min": [
+          5,
+          0
+        ],
+        "max": [
+          6,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1060,12 +1936,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x05-z23",
       "visible": {
-        "min": [5, 23],
-        "max": [6, 24]
+        "min": [
+          5,
+          23
+        ],
+        "max": [
+          6,
+          24
+        ]
       },
       "gameplayProxy": {
-        "min": [5, 23],
-        "max": [6, 24]
+        "min": [
+          5,
+          23
+        ],
+        "max": [
+          6,
+          24
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1074,12 +1962,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x05-z35",
       "visible": {
-        "min": [5, 35],
-        "max": [6, 36]
+        "min": [
+          5,
+          35
+        ],
+        "max": [
+          6,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [5, 35],
-        "max": [6, 36]
+        "min": [
+          5,
+          35
+        ],
+        "max": [
+          6,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1088,12 +1988,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x05-z49",
       "visible": {
-        "min": [5, 49],
-        "max": [6, 50]
+        "min": [
+          5,
+          49
+        ],
+        "max": [
+          6,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [5, 49],
-        "max": [6, 50]
+        "min": [
+          5,
+          49
+        ],
+        "max": [
+          6,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1102,12 +2014,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x06-z00",
       "visible": {
-        "min": [6, 0],
-        "max": [7, 1]
+        "min": [
+          6,
+          0
+        ],
+        "max": [
+          7,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [6, 0],
-        "max": [7, 1]
+        "min": [
+          6,
+          0
+        ],
+        "max": [
+          7,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1116,12 +2040,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x06-z17",
       "visible": {
-        "min": [6, 17],
-        "max": [7, 18]
+        "min": [
+          6,
+          17
+        ],
+        "max": [
+          7,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [6, 17],
-        "max": [7, 18]
+        "min": [
+          6,
+          17
+        ],
+        "max": [
+          7,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1130,12 +2066,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x06-z35",
       "visible": {
-        "min": [6, 35],
-        "max": [7, 36]
+        "min": [
+          6,
+          35
+        ],
+        "max": [
+          7,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [6, 35],
-        "max": [7, 36]
+        "min": [
+          6,
+          35
+        ],
+        "max": [
+          7,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1144,12 +2092,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x06-z49",
       "visible": {
-        "min": [6, 49],
-        "max": [7, 50]
+        "min": [
+          6,
+          49
+        ],
+        "max": [
+          7,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [6, 49],
-        "max": [7, 50]
+        "min": [
+          6,
+          49
+        ],
+        "max": [
+          7,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1158,12 +2118,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x07-z00",
       "visible": {
-        "min": [7, 0],
-        "max": [8, 1]
+        "min": [
+          7,
+          0
+        ],
+        "max": [
+          8,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [7, 0],
-        "max": [8, 1]
+        "min": [
+          7,
+          0
+        ],
+        "max": [
+          8,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1172,12 +2144,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x07-z17",
       "visible": {
-        "min": [7, 17],
-        "max": [8, 18]
+        "min": [
+          7,
+          17
+        ],
+        "max": [
+          8,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [7, 17],
-        "max": [8, 18]
+        "min": [
+          7,
+          17
+        ],
+        "max": [
+          8,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1186,12 +2170,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x07-z35",
       "visible": {
-        "min": [7, 35],
-        "max": [8, 36]
+        "min": [
+          7,
+          35
+        ],
+        "max": [
+          8,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [7, 35],
-        "max": [8, 36]
+        "min": [
+          7,
+          35
+        ],
+        "max": [
+          8,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1200,12 +2196,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x07-z49",
       "visible": {
-        "min": [7, 49],
-        "max": [8, 50]
+        "min": [
+          7,
+          49
+        ],
+        "max": [
+          8,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [7, 49],
-        "max": [8, 50]
+        "min": [
+          7,
+          49
+        ],
+        "max": [
+          8,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1214,12 +2222,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z00",
       "visible": {
-        "min": [8, 0],
-        "max": [9, 1]
+        "min": [
+          8,
+          0
+        ],
+        "max": [
+          9,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 0],
-        "max": [9, 1]
+        "min": [
+          8,
+          0
+        ],
+        "max": [
+          9,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1228,12 +2248,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z18",
       "visible": {
-        "min": [8, 18],
-        "max": [9, 19]
+        "min": [
+          8,
+          18
+        ],
+        "max": [
+          9,
+          19
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 18],
-        "max": [9, 19]
+        "min": [
+          8,
+          18
+        ],
+        "max": [
+          9,
+          19
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1242,12 +2274,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z19",
       "visible": {
-        "min": [8, 19],
-        "max": [9, 20]
+        "min": [
+          8,
+          19
+        ],
+        "max": [
+          9,
+          20
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 19],
-        "max": [9, 20]
+        "min": [
+          8,
+          19
+        ],
+        "max": [
+          9,
+          20
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1256,12 +2300,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z20",
       "visible": {
-        "min": [8, 20],
-        "max": [9, 21]
+        "min": [
+          8,
+          20
+        ],
+        "max": [
+          9,
+          21
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 20],
-        "max": [9, 21]
+        "min": [
+          8,
+          20
+        ],
+        "max": [
+          9,
+          21
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1270,12 +2326,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z21",
       "visible": {
-        "min": [8, 21],
-        "max": [9, 22]
+        "min": [
+          8,
+          21
+        ],
+        "max": [
+          9,
+          22
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 21],
-        "max": [9, 22]
+        "min": [
+          8,
+          21
+        ],
+        "max": [
+          9,
+          22
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1284,12 +2352,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z22",
       "visible": {
-        "min": [8, 22],
-        "max": [9, 23]
+        "min": [
+          8,
+          22
+        ],
+        "max": [
+          9,
+          23
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 22],
-        "max": [9, 23]
+        "min": [
+          8,
+          22
+        ],
+        "max": [
+          9,
+          23
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1298,12 +2378,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z23",
       "visible": {
-        "min": [8, 23],
-        "max": [9, 24]
+        "min": [
+          8,
+          23
+        ],
+        "max": [
+          9,
+          24
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 23],
-        "max": [9, 24]
+        "min": [
+          8,
+          23
+        ],
+        "max": [
+          9,
+          24
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1312,12 +2404,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z24",
       "visible": {
-        "min": [8, 24],
-        "max": [9, 25]
+        "min": [
+          8,
+          24
+        ],
+        "max": [
+          9,
+          25
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 24],
-        "max": [9, 25]
+        "min": [
+          8,
+          24
+        ],
+        "max": [
+          9,
+          25
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1326,12 +2430,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z25",
       "visible": {
-        "min": [8, 25],
-        "max": [9, 26]
+        "min": [
+          8,
+          25
+        ],
+        "max": [
+          9,
+          26
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 25],
-        "max": [9, 26]
+        "min": [
+          8,
+          25
+        ],
+        "max": [
+          9,
+          26
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1340,12 +2456,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z35",
       "visible": {
-        "min": [8, 35],
-        "max": [9, 36]
+        "min": [
+          8,
+          35
+        ],
+        "max": [
+          9,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 35],
-        "max": [9, 36]
+        "min": [
+          8,
+          35
+        ],
+        "max": [
+          9,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1354,12 +2482,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x08-z49",
       "visible": {
-        "min": [8, 49],
-        "max": [9, 50]
+        "min": [
+          8,
+          49
+        ],
+        "max": [
+          9,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 49],
-        "max": [9, 50]
+        "min": [
+          8,
+          49
+        ],
+        "max": [
+          9,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1368,12 +2508,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x09-z00",
       "visible": {
-        "min": [9, 0],
-        "max": [10, 1]
+        "min": [
+          9,
+          0
+        ],
+        "max": [
+          10,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [9, 0],
-        "max": [10, 1]
+        "min": [
+          9,
+          0
+        ],
+        "max": [
+          10,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1382,12 +2534,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x09-z35",
       "visible": {
-        "min": [9, 35],
-        "max": [10, 36]
+        "min": [
+          9,
+          35
+        ],
+        "max": [
+          10,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [9, 35],
-        "max": [10, 36]
+        "min": [
+          9,
+          35
+        ],
+        "max": [
+          10,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1396,12 +2560,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x09-z49",
       "visible": {
-        "min": [9, 49],
-        "max": [10, 50]
+        "min": [
+          9,
+          49
+        ],
+        "max": [
+          10,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [9, 49],
-        "max": [10, 50]
+        "min": [
+          9,
+          49
+        ],
+        "max": [
+          10,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1410,12 +2586,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x10-z00",
       "visible": {
-        "min": [10, 0],
-        "max": [11, 1]
+        "min": [
+          10,
+          0
+        ],
+        "max": [
+          11,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [10, 0],
-        "max": [11, 1]
+        "min": [
+          10,
+          0
+        ],
+        "max": [
+          11,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1424,12 +2612,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x10-z08",
       "visible": {
-        "min": [10, 8],
-        "max": [11, 9]
+        "min": [
+          10,
+          8
+        ],
+        "max": [
+          11,
+          9
+        ]
       },
       "gameplayProxy": {
-        "min": [10, 8],
-        "max": [11, 9]
+        "min": [
+          10,
+          8
+        ],
+        "max": [
+          11,
+          9
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1438,12 +2638,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x10-z09",
       "visible": {
-        "min": [10, 9],
-        "max": [11, 10]
+        "min": [
+          10,
+          9
+        ],
+        "max": [
+          11,
+          10
+        ]
       },
       "gameplayProxy": {
-        "min": [10, 9],
-        "max": [11, 10]
+        "min": [
+          10,
+          9
+        ],
+        "max": [
+          11,
+          10
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1452,12 +2664,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x10-z35",
       "visible": {
-        "min": [10, 35],
-        "max": [11, 36]
+        "min": [
+          10,
+          35
+        ],
+        "max": [
+          11,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [10, 35],
-        "max": [11, 36]
+        "min": [
+          10,
+          35
+        ],
+        "max": [
+          11,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1466,12 +2690,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x10-z49",
       "visible": {
-        "min": [10, 49],
-        "max": [11, 50]
+        "min": [
+          10,
+          49
+        ],
+        "max": [
+          11,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [10, 49],
-        "max": [11, 50]
+        "min": [
+          10,
+          49
+        ],
+        "max": [
+          11,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1480,12 +2716,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x11-z00",
       "visible": {
-        "min": [11, 0],
-        "max": [12, 1]
+        "min": [
+          11,
+          0
+        ],
+        "max": [
+          12,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [11, 0],
-        "max": [12, 1]
+        "min": [
+          11,
+          0
+        ],
+        "max": [
+          12,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1494,12 +2742,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x11-z09",
       "visible": {
-        "min": [11, 9],
-        "max": [12, 10]
+        "min": [
+          11,
+          9
+        ],
+        "max": [
+          12,
+          10
+        ]
       },
       "gameplayProxy": {
-        "min": [11, 9],
-        "max": [12, 10]
+        "min": [
+          11,
+          9
+        ],
+        "max": [
+          12,
+          10
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1508,12 +2768,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x11-z35",
       "visible": {
-        "min": [11, 35],
-        "max": [12, 36]
+        "min": [
+          11,
+          35
+        ],
+        "max": [
+          12,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [11, 35],
-        "max": [12, 36]
+        "min": [
+          11,
+          35
+        ],
+        "max": [
+          12,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1522,12 +2794,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x11-z49",
       "visible": {
-        "min": [11, 49],
-        "max": [12, 50]
+        "min": [
+          11,
+          49
+        ],
+        "max": [
+          12,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [11, 49],
-        "max": [12, 50]
+        "min": [
+          11,
+          49
+        ],
+        "max": [
+          12,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1536,12 +2820,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x12-z00",
       "visible": {
-        "min": [12, 0],
-        "max": [13, 1]
+        "min": [
+          12,
+          0
+        ],
+        "max": [
+          13,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [12, 0],
-        "max": [13, 1]
+        "min": [
+          12,
+          0
+        ],
+        "max": [
+          13,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1550,12 +2846,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x12-z08",
       "visible": {
-        "min": [12, 8],
-        "max": [13, 9]
+        "min": [
+          12,
+          8
+        ],
+        "max": [
+          13,
+          9
+        ]
       },
       "gameplayProxy": {
-        "min": [12, 8],
-        "max": [13, 9]
+        "min": [
+          12,
+          8
+        ],
+        "max": [
+          13,
+          9
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1564,12 +2872,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x12-z09",
       "visible": {
-        "min": [12, 9],
-        "max": [13, 10]
+        "min": [
+          12,
+          9
+        ],
+        "max": [
+          13,
+          10
+        ]
       },
       "gameplayProxy": {
-        "min": [12, 9],
-        "max": [13, 10]
+        "min": [
+          12,
+          9
+        ],
+        "max": [
+          13,
+          10
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1578,12 +2898,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x12-z35",
       "visible": {
-        "min": [12, 35],
-        "max": [13, 36]
+        "min": [
+          12,
+          35
+        ],
+        "max": [
+          13,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [12, 35],
-        "max": [13, 36]
+        "min": [
+          12,
+          35
+        ],
+        "max": [
+          13,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1592,12 +2924,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x12-z49",
       "visible": {
-        "min": [12, 49],
-        "max": [13, 50]
+        "min": [
+          12,
+          49
+        ],
+        "max": [
+          13,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [12, 49],
-        "max": [13, 50]
+        "min": [
+          12,
+          49
+        ],
+        "max": [
+          13,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1606,12 +2950,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x13-z00",
       "visible": {
-        "min": [13, 0],
-        "max": [14, 1]
+        "min": [
+          13,
+          0
+        ],
+        "max": [
+          14,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [13, 0],
-        "max": [14, 1]
+        "min": [
+          13,
+          0
+        ],
+        "max": [
+          14,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1620,12 +2976,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x13-z35",
       "visible": {
-        "min": [13, 35],
-        "max": [14, 36]
+        "min": [
+          13,
+          35
+        ],
+        "max": [
+          14,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [13, 35],
-        "max": [14, 36]
+        "min": [
+          13,
+          35
+        ],
+        "max": [
+          14,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1634,12 +3002,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x13-z49",
       "visible": {
-        "min": [13, 49],
-        "max": [14, 50]
+        "min": [
+          13,
+          49
+        ],
+        "max": [
+          14,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [13, 49],
-        "max": [14, 50]
+        "min": [
+          13,
+          49
+        ],
+        "max": [
+          14,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1648,12 +3028,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x14-z00",
       "visible": {
-        "min": [14, 0],
-        "max": [15, 1]
+        "min": [
+          14,
+          0
+        ],
+        "max": [
+          15,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [14, 0],
-        "max": [15, 1]
+        "min": [
+          14,
+          0
+        ],
+        "max": [
+          15,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1662,12 +3054,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x14-z35",
       "visible": {
-        "min": [14, 35],
-        "max": [15, 36]
+        "min": [
+          14,
+          35
+        ],
+        "max": [
+          15,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [14, 35],
-        "max": [15, 36]
+        "min": [
+          14,
+          35
+        ],
+        "max": [
+          15,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1676,12 +3080,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x14-z49",
       "visible": {
-        "min": [14, 49],
-        "max": [15, 50]
+        "min": [
+          14,
+          49
+        ],
+        "max": [
+          15,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [14, 49],
-        "max": [15, 50]
+        "min": [
+          14,
+          49
+        ],
+        "max": [
+          15,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1690,12 +3106,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x15-z00",
       "visible": {
-        "min": [15, 0],
-        "max": [16, 1]
+        "min": [
+          15,
+          0
+        ],
+        "max": [
+          16,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [15, 0],
-        "max": [16, 1]
+        "min": [
+          15,
+          0
+        ],
+        "max": [
+          16,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1704,12 +3132,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x15-z17",
       "visible": {
-        "min": [15, 17],
-        "max": [16, 18]
+        "min": [
+          15,
+          17
+        ],
+        "max": [
+          16,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [15, 17],
-        "max": [16, 18]
+        "min": [
+          15,
+          17
+        ],
+        "max": [
+          16,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1718,12 +3158,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x15-z35",
       "visible": {
-        "min": [15, 35],
-        "max": [16, 36]
+        "min": [
+          15,
+          35
+        ],
+        "max": [
+          16,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [15, 35],
-        "max": [16, 36]
+        "min": [
+          15,
+          35
+        ],
+        "max": [
+          16,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1732,12 +3184,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x15-z49",
       "visible": {
-        "min": [15, 49],
-        "max": [16, 50]
+        "min": [
+          15,
+          49
+        ],
+        "max": [
+          16,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [15, 49],
-        "max": [16, 50]
+        "min": [
+          15,
+          49
+        ],
+        "max": [
+          16,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1746,12 +3210,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z00",
       "visible": {
-        "min": [16, 0],
-        "max": [17, 1]
+        "min": [
+          16,
+          0
+        ],
+        "max": [
+          17,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 0],
-        "max": [17, 1]
+        "min": [
+          16,
+          0
+        ],
+        "max": [
+          17,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1760,12 +3236,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z17",
       "visible": {
-        "min": [16, 17],
-        "max": [17, 18]
+        "min": [
+          16,
+          17
+        ],
+        "max": [
+          17,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 17],
-        "max": [17, 18]
+        "min": [
+          16,
+          17
+        ],
+        "max": [
+          17,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1774,12 +3262,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z18",
       "visible": {
-        "min": [16, 18],
-        "max": [17, 19]
+        "min": [
+          16,
+          18
+        ],
+        "max": [
+          17,
+          19
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 18],
-        "max": [17, 19]
+        "min": [
+          16,
+          18
+        ],
+        "max": [
+          17,
+          19
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1788,12 +3288,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z19",
       "visible": {
-        "min": [16, 19],
-        "max": [17, 20]
+        "min": [
+          16,
+          19
+        ],
+        "max": [
+          17,
+          20
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 19],
-        "max": [17, 20]
+        "min": [
+          16,
+          19
+        ],
+        "max": [
+          17,
+          20
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1802,12 +3314,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z20",
       "visible": {
-        "min": [16, 20],
-        "max": [17, 21]
+        "min": [
+          16,
+          20
+        ],
+        "max": [
+          17,
+          21
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 20],
-        "max": [17, 21]
+        "min": [
+          16,
+          20
+        ],
+        "max": [
+          17,
+          21
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1816,12 +3340,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z21",
       "visible": {
-        "min": [16, 21],
-        "max": [17, 22]
+        "min": [
+          16,
+          21
+        ],
+        "max": [
+          17,
+          22
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 21],
-        "max": [17, 22]
+        "min": [
+          16,
+          21
+        ],
+        "max": [
+          17,
+          22
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1830,12 +3366,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z22",
       "visible": {
-        "min": [16, 22],
-        "max": [17, 23]
+        "min": [
+          16,
+          22
+        ],
+        "max": [
+          17,
+          23
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 22],
-        "max": [17, 23]
+        "min": [
+          16,
+          22
+        ],
+        "max": [
+          17,
+          23
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1844,12 +3392,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z23",
       "visible": {
-        "min": [16, 23],
-        "max": [17, 24]
+        "min": [
+          16,
+          23
+        ],
+        "max": [
+          17,
+          24
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 23],
-        "max": [17, 24]
+        "min": [
+          16,
+          23
+        ],
+        "max": [
+          17,
+          24
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1858,12 +3418,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z24",
       "visible": {
-        "min": [16, 24],
-        "max": [17, 25]
+        "min": [
+          16,
+          24
+        ],
+        "max": [
+          17,
+          25
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 24],
-        "max": [17, 25]
+        "min": [
+          16,
+          24
+        ],
+        "max": [
+          17,
+          25
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1872,12 +3444,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z25",
       "visible": {
-        "min": [16, 25],
-        "max": [17, 26]
+        "min": [
+          16,
+          25
+        ],
+        "max": [
+          17,
+          26
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 25],
-        "max": [17, 26]
+        "min": [
+          16,
+          25
+        ],
+        "max": [
+          17,
+          26
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1886,12 +3470,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z26",
       "visible": {
-        "min": [16, 26],
-        "max": [17, 27]
+        "min": [
+          16,
+          26
+        ],
+        "max": [
+          17,
+          27
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 26],
-        "max": [17, 27]
+        "min": [
+          16,
+          26
+        ],
+        "max": [
+          17,
+          27
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1900,12 +3496,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z30",
       "visible": {
-        "min": [16, 30],
-        "max": [17, 31]
+        "min": [
+          16,
+          30
+        ],
+        "max": [
+          17,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 30],
-        "max": [17, 31]
+        "min": [
+          16,
+          30
+        ],
+        "max": [
+          17,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1914,12 +3522,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z35",
       "visible": {
-        "min": [16, 35],
-        "max": [17, 36]
+        "min": [
+          16,
+          35
+        ],
+        "max": [
+          17,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 35],
-        "max": [17, 36]
+        "min": [
+          16,
+          35
+        ],
+        "max": [
+          17,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1928,12 +3548,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x16-z49",
       "visible": {
-        "min": [16, 49],
-        "max": [17, 50]
+        "min": [
+          16,
+          49
+        ],
+        "max": [
+          17,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [16, 49],
-        "max": [17, 50]
+        "min": [
+          16,
+          49
+        ],
+        "max": [
+          17,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1942,12 +3574,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x17-z00",
       "visible": {
-        "min": [17, 0],
-        "max": [18, 1]
+        "min": [
+          17,
+          0
+        ],
+        "max": [
+          18,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [17, 0],
-        "max": [18, 1]
+        "min": [
+          17,
+          0
+        ],
+        "max": [
+          18,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1956,12 +3600,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x17-z17",
       "visible": {
-        "min": [17, 17],
-        "max": [18, 18]
+        "min": [
+          17,
+          17
+        ],
+        "max": [
+          18,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [17, 17],
-        "max": [18, 18]
+        "min": [
+          17,
+          17
+        ],
+        "max": [
+          18,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1970,12 +3626,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x17-z30",
       "visible": {
-        "min": [17, 30],
-        "max": [18, 31]
+        "min": [
+          17,
+          30
+        ],
+        "max": [
+          18,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [17, 30],
-        "max": [18, 31]
+        "min": [
+          17,
+          30
+        ],
+        "max": [
+          18,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1984,12 +3652,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x17-z35",
       "visible": {
-        "min": [17, 35],
-        "max": [18, 36]
+        "min": [
+          17,
+          35
+        ],
+        "max": [
+          18,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [17, 35],
-        "max": [18, 36]
+        "min": [
+          17,
+          35
+        ],
+        "max": [
+          18,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -1998,12 +3678,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x17-z40",
       "visible": {
-        "min": [17, 40],
-        "max": [18, 41]
+        "min": [
+          17,
+          40
+        ],
+        "max": [
+          18,
+          41
+        ]
       },
       "gameplayProxy": {
-        "min": [17, 40],
-        "max": [18, 41]
+        "min": [
+          17,
+          40
+        ],
+        "max": [
+          18,
+          41
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2012,12 +3704,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x17-z41",
       "visible": {
-        "min": [17, 41],
-        "max": [18, 42]
+        "min": [
+          17,
+          41
+        ],
+        "max": [
+          18,
+          42
+        ]
       },
       "gameplayProxy": {
-        "min": [17, 41],
-        "max": [18, 42]
+        "min": [
+          17,
+          41
+        ],
+        "max": [
+          18,
+          42
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2026,12 +3730,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x17-z49",
       "visible": {
-        "min": [17, 49],
-        "max": [18, 50]
+        "min": [
+          17,
+          49
+        ],
+        "max": [
+          18,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [17, 49],
-        "max": [18, 50]
+        "min": [
+          17,
+          49
+        ],
+        "max": [
+          18,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2040,12 +3756,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x18-z00",
       "visible": {
-        "min": [18, 0],
-        "max": [19, 1]
+        "min": [
+          18,
+          0
+        ],
+        "max": [
+          19,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [18, 0],
-        "max": [19, 1]
+        "min": [
+          18,
+          0
+        ],
+        "max": [
+          19,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2054,12 +3782,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x18-z17",
       "visible": {
-        "min": [18, 17],
-        "max": [19, 18]
+        "min": [
+          18,
+          17
+        ],
+        "max": [
+          19,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [18, 17],
-        "max": [19, 18]
+        "min": [
+          18,
+          17
+        ],
+        "max": [
+          19,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2068,12 +3808,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x18-z20",
       "visible": {
-        "min": [18, 20],
-        "max": [19, 21]
+        "min": [
+          18,
+          20
+        ],
+        "max": [
+          19,
+          21
+        ]
       },
       "gameplayProxy": {
-        "min": [18, 20],
-        "max": [19, 21]
+        "min": [
+          18,
+          20
+        ],
+        "max": [
+          19,
+          21
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2082,12 +3834,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x18-z21",
       "visible": {
-        "min": [18, 21],
-        "max": [19, 22]
+        "min": [
+          18,
+          21
+        ],
+        "max": [
+          19,
+          22
+        ]
       },
       "gameplayProxy": {
-        "min": [18, 21],
-        "max": [19, 22]
+        "min": [
+          18,
+          21
+        ],
+        "max": [
+          19,
+          22
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2096,12 +3860,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x18-z30",
       "visible": {
-        "min": [18, 30],
-        "max": [19, 31]
+        "min": [
+          18,
+          30
+        ],
+        "max": [
+          19,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [18, 30],
-        "max": [19, 31]
+        "min": [
+          18,
+          30
+        ],
+        "max": [
+          19,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2110,12 +3886,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x18-z35",
       "visible": {
-        "min": [18, 35],
-        "max": [19, 36]
+        "min": [
+          18,
+          35
+        ],
+        "max": [
+          19,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [18, 35],
-        "max": [19, 36]
+        "min": [
+          18,
+          35
+        ],
+        "max": [
+          19,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2124,12 +3912,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x18-z40",
       "visible": {
-        "min": [18, 40],
-        "max": [19, 41]
+        "min": [
+          18,
+          40
+        ],
+        "max": [
+          19,
+          41
+        ]
       },
       "gameplayProxy": {
-        "min": [18, 40],
-        "max": [19, 41]
+        "min": [
+          18,
+          40
+        ],
+        "max": [
+          19,
+          41
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2138,12 +3938,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x18-z41",
       "visible": {
-        "min": [18, 41],
-        "max": [19, 42]
+        "min": [
+          18,
+          41
+        ],
+        "max": [
+          19,
+          42
+        ]
       },
       "gameplayProxy": {
-        "min": [18, 41],
-        "max": [19, 42]
+        "min": [
+          18,
+          41
+        ],
+        "max": [
+          19,
+          42
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2152,12 +3964,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x18-z49",
       "visible": {
-        "min": [18, 49],
-        "max": [19, 50]
+        "min": [
+          18,
+          49
+        ],
+        "max": [
+          19,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [18, 49],
-        "max": [19, 50]
+        "min": [
+          18,
+          49
+        ],
+        "max": [
+          19,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2166,12 +3990,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x19-z00",
       "visible": {
-        "min": [19, 0],
-        "max": [20, 1]
+        "min": [
+          19,
+          0
+        ],
+        "max": [
+          20,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [19, 0],
-        "max": [20, 1]
+        "min": [
+          19,
+          0
+        ],
+        "max": [
+          20,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2180,12 +4016,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x19-z17",
       "visible": {
-        "min": [19, 17],
-        "max": [20, 18]
+        "min": [
+          19,
+          17
+        ],
+        "max": [
+          20,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [19, 17],
-        "max": [20, 18]
+        "min": [
+          19,
+          17
+        ],
+        "max": [
+          20,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2194,12 +4042,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x19-z20",
       "visible": {
-        "min": [19, 20],
-        "max": [20, 21]
+        "min": [
+          19,
+          20
+        ],
+        "max": [
+          20,
+          21
+        ]
       },
       "gameplayProxy": {
-        "min": [19, 20],
-        "max": [20, 21]
+        "min": [
+          19,
+          20
+        ],
+        "max": [
+          20,
+          21
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2208,12 +4068,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x19-z21",
       "visible": {
-        "min": [19, 21],
-        "max": [20, 22]
+        "min": [
+          19,
+          21
+        ],
+        "max": [
+          20,
+          22
+        ]
       },
       "gameplayProxy": {
-        "min": [19, 21],
-        "max": [20, 22]
+        "min": [
+          19,
+          21
+        ],
+        "max": [
+          20,
+          22
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2222,12 +4094,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x19-z30",
       "visible": {
-        "min": [19, 30],
-        "max": [20, 31]
+        "min": [
+          19,
+          30
+        ],
+        "max": [
+          20,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [19, 30],
-        "max": [20, 31]
+        "min": [
+          19,
+          30
+        ],
+        "max": [
+          20,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2236,12 +4120,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x19-z35",
       "visible": {
-        "min": [19, 35],
-        "max": [20, 36]
+        "min": [
+          19,
+          35
+        ],
+        "max": [
+          20,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [19, 35],
-        "max": [20, 36]
+        "min": [
+          19,
+          35
+        ],
+        "max": [
+          20,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2250,12 +4146,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x19-z49",
       "visible": {
-        "min": [19, 49],
-        "max": [20, 50]
+        "min": [
+          19,
+          49
+        ],
+        "max": [
+          20,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [19, 49],
-        "max": [20, 50]
+        "min": [
+          19,
+          49
+        ],
+        "max": [
+          20,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2264,12 +4172,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x20-z00",
       "visible": {
-        "min": [20, 0],
-        "max": [21, 1]
+        "min": [
+          20,
+          0
+        ],
+        "max": [
+          21,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [20, 0],
-        "max": [21, 1]
+        "min": [
+          20,
+          0
+        ],
+        "max": [
+          21,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2278,12 +4198,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x20-z11",
       "visible": {
-        "min": [20, 11],
-        "max": [21, 12]
+        "min": [
+          20,
+          11
+        ],
+        "max": [
+          21,
+          12
+        ]
       },
       "gameplayProxy": {
-        "min": [20, 11],
-        "max": [21, 12]
+        "min": [
+          20,
+          11
+        ],
+        "max": [
+          21,
+          12
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2292,12 +4224,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x20-z12",
       "visible": {
-        "min": [20, 12],
-        "max": [21, 13]
+        "min": [
+          20,
+          12
+        ],
+        "max": [
+          21,
+          13
+        ]
       },
       "gameplayProxy": {
-        "min": [20, 12],
-        "max": [21, 13]
+        "min": [
+          20,
+          12
+        ],
+        "max": [
+          21,
+          13
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2306,12 +4250,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x20-z17",
       "visible": {
-        "min": [20, 17],
-        "max": [21, 18]
+        "min": [
+          20,
+          17
+        ],
+        "max": [
+          21,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [20, 17],
-        "max": [21, 18]
+        "min": [
+          20,
+          17
+        ],
+        "max": [
+          21,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2320,12 +4276,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x20-z30",
       "visible": {
-        "min": [20, 30],
-        "max": [21, 31]
+        "min": [
+          20,
+          30
+        ],
+        "max": [
+          21,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [20, 30],
-        "max": [21, 31]
+        "min": [
+          20,
+          30
+        ],
+        "max": [
+          21,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2334,12 +4302,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x21-z00",
       "visible": {
-        "min": [21, 0],
-        "max": [22, 1]
+        "min": [
+          21,
+          0
+        ],
+        "max": [
+          22,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [21, 0],
-        "max": [22, 1]
+        "min": [
+          21,
+          0
+        ],
+        "max": [
+          22,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2348,12 +4328,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x21-z11",
       "visible": {
-        "min": [21, 11],
-        "max": [22, 12]
+        "min": [
+          21,
+          11
+        ],
+        "max": [
+          22,
+          12
+        ]
       },
       "gameplayProxy": {
-        "min": [21, 11],
-        "max": [22, 12]
+        "min": [
+          21,
+          11
+        ],
+        "max": [
+          22,
+          12
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2362,12 +4354,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x21-z12",
       "visible": {
-        "min": [21, 12],
-        "max": [22, 13]
+        "min": [
+          21,
+          12
+        ],
+        "max": [
+          22,
+          13
+        ]
       },
       "gameplayProxy": {
-        "min": [21, 12],
-        "max": [22, 13]
+        "min": [
+          21,
+          12
+        ],
+        "max": [
+          22,
+          13
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2376,12 +4380,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x21-z17",
       "visible": {
-        "min": [21, 17],
-        "max": [22, 18]
+        "min": [
+          21,
+          17
+        ],
+        "max": [
+          22,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [21, 17],
-        "max": [22, 18]
+        "min": [
+          21,
+          17
+        ],
+        "max": [
+          22,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2390,12 +4406,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x21-z30",
       "visible": {
-        "min": [21, 30],
-        "max": [22, 31]
+        "min": [
+          21,
+          30
+        ],
+        "max": [
+          22,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [21, 30],
-        "max": [22, 31]
+        "min": [
+          21,
+          30
+        ],
+        "max": [
+          22,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2404,12 +4432,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x22-z00",
       "visible": {
-        "min": [22, 0],
-        "max": [23, 1]
+        "min": [
+          22,
+          0
+        ],
+        "max": [
+          23,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [22, 0],
-        "max": [23, 1]
+        "min": [
+          22,
+          0
+        ],
+        "max": [
+          23,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2418,12 +4458,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x22-z11",
       "visible": {
-        "min": [22, 11],
-        "max": [23, 12]
+        "min": [
+          22,
+          11
+        ],
+        "max": [
+          23,
+          12
+        ]
       },
       "gameplayProxy": {
-        "min": [22, 11],
-        "max": [23, 12]
+        "min": [
+          22,
+          11
+        ],
+        "max": [
+          23,
+          12
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2432,12 +4484,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x22-z12",
       "visible": {
-        "min": [22, 12],
-        "max": [23, 13]
+        "min": [
+          22,
+          12
+        ],
+        "max": [
+          23,
+          13
+        ]
       },
       "gameplayProxy": {
-        "min": [22, 12],
-        "max": [23, 13]
+        "min": [
+          22,
+          12
+        ],
+        "max": [
+          23,
+          13
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2446,12 +4510,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x22-z17",
       "visible": {
-        "min": [22, 17],
-        "max": [23, 18]
+        "min": [
+          22,
+          17
+        ],
+        "max": [
+          23,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [22, 17],
-        "max": [23, 18]
+        "min": [
+          22,
+          17
+        ],
+        "max": [
+          23,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2460,12 +4536,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x23-z00",
       "visible": {
-        "min": [23, 0],
-        "max": [24, 1]
+        "min": [
+          23,
+          0
+        ],
+        "max": [
+          24,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [23, 0],
-        "max": [24, 1]
+        "min": [
+          23,
+          0
+        ],
+        "max": [
+          24,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2474,12 +4562,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x23-z17",
       "visible": {
-        "min": [23, 17],
-        "max": [24, 18]
+        "min": [
+          23,
+          17
+        ],
+        "max": [
+          24,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [23, 17],
-        "max": [24, 18]
+        "min": [
+          23,
+          17
+        ],
+        "max": [
+          24,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2488,12 +4588,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x23-z49",
       "visible": {
-        "min": [23, 49],
-        "max": [24, 50]
+        "min": [
+          23,
+          49
+        ],
+        "max": [
+          24,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [23, 49],
-        "max": [24, 50]
+        "min": [
+          23,
+          49
+        ],
+        "max": [
+          24,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2502,12 +4614,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x24-z00",
       "visible": {
-        "min": [24, 0],
-        "max": [25, 1]
+        "min": [
+          24,
+          0
+        ],
+        "max": [
+          25,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [24, 0],
-        "max": [25, 1]
+        "min": [
+          24,
+          0
+        ],
+        "max": [
+          25,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2516,12 +4640,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x24-z17",
       "visible": {
-        "min": [24, 17],
-        "max": [25, 18]
+        "min": [
+          24,
+          17
+        ],
+        "max": [
+          25,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [24, 17],
-        "max": [25, 18]
+        "min": [
+          24,
+          17
+        ],
+        "max": [
+          25,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2530,12 +4666,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x24-z35",
       "visible": {
-        "min": [24, 35],
-        "max": [25, 36]
+        "min": [
+          24,
+          35
+        ],
+        "max": [
+          25,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [24, 35],
-        "max": [25, 36]
+        "min": [
+          24,
+          35
+        ],
+        "max": [
+          25,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2544,12 +4692,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x24-z49",
       "visible": {
-        "min": [24, 49],
-        "max": [25, 50]
+        "min": [
+          24,
+          49
+        ],
+        "max": [
+          25,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [24, 49],
-        "max": [25, 50]
+        "min": [
+          24,
+          49
+        ],
+        "max": [
+          25,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2558,12 +4718,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x25-z00",
       "visible": {
-        "min": [25, 0],
-        "max": [26, 1]
+        "min": [
+          25,
+          0
+        ],
+        "max": [
+          26,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [25, 0],
-        "max": [26, 1]
+        "min": [
+          25,
+          0
+        ],
+        "max": [
+          26,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2572,12 +4744,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x25-z06",
       "visible": {
-        "min": [25, 6],
-        "max": [26, 7]
+        "min": [
+          25,
+          6
+        ],
+        "max": [
+          26,
+          7
+        ]
       },
       "gameplayProxy": {
-        "min": [25, 6],
-        "max": [26, 7]
+        "min": [
+          25,
+          6
+        ],
+        "max": [
+          26,
+          7
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2586,12 +4770,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x25-z07",
       "visible": {
-        "min": [25, 7],
-        "max": [26, 8]
+        "min": [
+          25,
+          7
+        ],
+        "max": [
+          26,
+          8
+        ]
       },
       "gameplayProxy": {
-        "min": [25, 7],
-        "max": [26, 8]
+        "min": [
+          25,
+          7
+        ],
+        "max": [
+          26,
+          8
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2600,12 +4796,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x25-z17",
       "visible": {
-        "min": [25, 17],
-        "max": [26, 18]
+        "min": [
+          25,
+          17
+        ],
+        "max": [
+          26,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [25, 17],
-        "max": [26, 18]
+        "min": [
+          25,
+          17
+        ],
+        "max": [
+          26,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2614,12 +4822,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x25-z35",
       "visible": {
-        "min": [25, 35],
-        "max": [26, 36]
+        "min": [
+          25,
+          35
+        ],
+        "max": [
+          26,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [25, 35],
-        "max": [26, 36]
+        "min": [
+          25,
+          35
+        ],
+        "max": [
+          26,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2628,12 +4848,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x25-z49",
       "visible": {
-        "min": [25, 49],
-        "max": [26, 50]
+        "min": [
+          25,
+          49
+        ],
+        "max": [
+          26,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [25, 49],
-        "max": [26, 50]
+        "min": [
+          25,
+          49
+        ],
+        "max": [
+          26,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2642,12 +4874,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x26-z00",
       "visible": {
-        "min": [26, 0],
-        "max": [27, 1]
+        "min": [
+          26,
+          0
+        ],
+        "max": [
+          27,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [26, 0],
-        "max": [27, 1]
+        "min": [
+          26,
+          0
+        ],
+        "max": [
+          27,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2656,12 +4900,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x26-z06",
       "visible": {
-        "min": [26, 6],
-        "max": [27, 7]
+        "min": [
+          26,
+          6
+        ],
+        "max": [
+          27,
+          7
+        ]
       },
       "gameplayProxy": {
-        "min": [26, 6],
-        "max": [27, 7]
+        "min": [
+          26,
+          6
+        ],
+        "max": [
+          27,
+          7
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2670,12 +4926,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x26-z07",
       "visible": {
-        "min": [26, 7],
-        "max": [27, 8]
+        "min": [
+          26,
+          7
+        ],
+        "max": [
+          27,
+          8
+        ]
       },
       "gameplayProxy": {
-        "min": [26, 7],
-        "max": [27, 8]
+        "min": [
+          26,
+          7
+        ],
+        "max": [
+          27,
+          8
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2684,12 +4952,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x26-z17",
       "visible": {
-        "min": [26, 17],
-        "max": [27, 18]
+        "min": [
+          26,
+          17
+        ],
+        "max": [
+          27,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [26, 17],
-        "max": [27, 18]
+        "min": [
+          26,
+          17
+        ],
+        "max": [
+          27,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2698,12 +4978,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x26-z30",
       "visible": {
-        "min": [26, 30],
-        "max": [27, 31]
+        "min": [
+          26,
+          30
+        ],
+        "max": [
+          27,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [26, 30],
-        "max": [27, 31]
+        "min": [
+          26,
+          30
+        ],
+        "max": [
+          27,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2712,12 +5004,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x26-z35",
       "visible": {
-        "min": [26, 35],
-        "max": [27, 36]
+        "min": [
+          26,
+          35
+        ],
+        "max": [
+          27,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [26, 35],
-        "max": [27, 36]
+        "min": [
+          26,
+          35
+        ],
+        "max": [
+          27,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2726,12 +5030,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x26-z45",
       "visible": {
-        "min": [26, 45],
-        "max": [27, 46]
+        "min": [
+          26,
+          45
+        ],
+        "max": [
+          27,
+          46
+        ]
       },
       "gameplayProxy": {
-        "min": [26, 45],
-        "max": [27, 46]
+        "min": [
+          26,
+          45
+        ],
+        "max": [
+          27,
+          46
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2740,12 +5056,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x26-z46",
       "visible": {
-        "min": [26, 46],
-        "max": [27, 47]
+        "min": [
+          26,
+          46
+        ],
+        "max": [
+          27,
+          47
+        ]
       },
       "gameplayProxy": {
-        "min": [26, 46],
-        "max": [27, 47]
+        "min": [
+          26,
+          46
+        ],
+        "max": [
+          27,
+          47
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2754,12 +5082,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x26-z49",
       "visible": {
-        "min": [26, 49],
-        "max": [27, 50]
+        "min": [
+          26,
+          49
+        ],
+        "max": [
+          27,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [26, 49],
-        "max": [27, 50]
+        "min": [
+          26,
+          49
+        ],
+        "max": [
+          27,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2768,12 +5108,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x27-z00",
       "visible": {
-        "min": [27, 0],
-        "max": [28, 1]
+        "min": [
+          27,
+          0
+        ],
+        "max": [
+          28,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 0],
-        "max": [28, 1]
+        "min": [
+          27,
+          0
+        ],
+        "max": [
+          28,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2782,12 +5134,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x27-z06",
       "visible": {
-        "min": [27, 6],
-        "max": [28, 7]
+        "min": [
+          27,
+          6
+        ],
+        "max": [
+          28,
+          7
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 6],
-        "max": [28, 7]
+        "min": [
+          27,
+          6
+        ],
+        "max": [
+          28,
+          7
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2796,12 +5160,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x27-z07",
       "visible": {
-        "min": [27, 7],
-        "max": [28, 8]
+        "min": [
+          27,
+          7
+        ],
+        "max": [
+          28,
+          8
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 7],
-        "max": [28, 8]
+        "min": [
+          27,
+          7
+        ],
+        "max": [
+          28,
+          8
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2810,12 +5186,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x27-z17",
       "visible": {
-        "min": [27, 17],
-        "max": [28, 18]
+        "min": [
+          27,
+          17
+        ],
+        "max": [
+          28,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 17],
-        "max": [28, 18]
+        "min": [
+          27,
+          17
+        ],
+        "max": [
+          28,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2824,12 +5212,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x27-z24",
       "visible": {
-        "min": [27, 24],
-        "max": [28, 25]
+        "min": [
+          27,
+          24
+        ],
+        "max": [
+          28,
+          25
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 24],
-        "max": [28, 25]
+        "min": [
+          27,
+          24
+        ],
+        "max": [
+          28,
+          25
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2838,12 +5238,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x27-z25",
       "visible": {
-        "min": [27, 25],
-        "max": [28, 26]
+        "min": [
+          27,
+          25
+        ],
+        "max": [
+          28,
+          26
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 25],
-        "max": [28, 26]
+        "min": [
+          27,
+          25
+        ],
+        "max": [
+          28,
+          26
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2852,12 +5264,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x27-z30",
       "visible": {
-        "min": [27, 30],
-        "max": [28, 31]
+        "min": [
+          27,
+          30
+        ],
+        "max": [
+          28,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 30],
-        "max": [28, 31]
+        "min": [
+          27,
+          30
+        ],
+        "max": [
+          28,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2866,12 +5290,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x27-z35",
       "visible": {
-        "min": [27, 35],
-        "max": [28, 36]
+        "min": [
+          27,
+          35
+        ],
+        "max": [
+          28,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 35],
-        "max": [28, 36]
+        "min": [
+          27,
+          35
+        ],
+        "max": [
+          28,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2880,12 +5316,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x27-z45",
       "visible": {
-        "min": [27, 45],
-        "max": [28, 46]
+        "min": [
+          27,
+          45
+        ],
+        "max": [
+          28,
+          46
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 45],
-        "max": [28, 46]
+        "min": [
+          27,
+          45
+        ],
+        "max": [
+          28,
+          46
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2894,12 +5342,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x27-z49",
       "visible": {
-        "min": [27, 49],
-        "max": [28, 50]
+        "min": [
+          27,
+          49
+        ],
+        "max": [
+          28,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 49],
-        "max": [28, 50]
+        "min": [
+          27,
+          49
+        ],
+        "max": [
+          28,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2908,12 +5368,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x28-z00",
       "visible": {
-        "min": [28, 0],
-        "max": [29, 1]
+        "min": [
+          28,
+          0
+        ],
+        "max": [
+          29,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [28, 0],
-        "max": [29, 1]
+        "min": [
+          28,
+          0
+        ],
+        "max": [
+          29,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2922,12 +5394,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x28-z17",
       "visible": {
-        "min": [28, 17],
-        "max": [29, 18]
+        "min": [
+          28,
+          17
+        ],
+        "max": [
+          29,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [28, 17],
-        "max": [29, 18]
+        "min": [
+          28,
+          17
+        ],
+        "max": [
+          29,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2936,12 +5420,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x28-z24",
       "visible": {
-        "min": [28, 24],
-        "max": [29, 25]
+        "min": [
+          28,
+          24
+        ],
+        "max": [
+          29,
+          25
+        ]
       },
       "gameplayProxy": {
-        "min": [28, 24],
-        "max": [29, 25]
+        "min": [
+          28,
+          24
+        ],
+        "max": [
+          29,
+          25
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2950,12 +5446,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x28-z25",
       "visible": {
-        "min": [28, 25],
-        "max": [29, 26]
+        "min": [
+          28,
+          25
+        ],
+        "max": [
+          29,
+          26
+        ]
       },
       "gameplayProxy": {
-        "min": [28, 25],
-        "max": [29, 26]
+        "min": [
+          28,
+          25
+        ],
+        "max": [
+          29,
+          26
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2964,12 +5472,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x28-z30",
       "visible": {
-        "min": [28, 30],
-        "max": [29, 31]
+        "min": [
+          28,
+          30
+        ],
+        "max": [
+          29,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [28, 30],
-        "max": [29, 31]
+        "min": [
+          28,
+          30
+        ],
+        "max": [
+          29,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2978,12 +5498,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x28-z35",
       "visible": {
-        "min": [28, 35],
-        "max": [29, 36]
+        "min": [
+          28,
+          35
+        ],
+        "max": [
+          29,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [28, 35],
-        "max": [29, 36]
+        "min": [
+          28,
+          35
+        ],
+        "max": [
+          29,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -2992,12 +5524,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x28-z49",
       "visible": {
-        "min": [28, 49],
-        "max": [29, 50]
+        "min": [
+          28,
+          49
+        ],
+        "max": [
+          29,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [28, 49],
-        "max": [29, 50]
+        "min": [
+          28,
+          49
+        ],
+        "max": [
+          29,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3006,12 +5550,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x29-z00",
       "visible": {
-        "min": [29, 0],
-        "max": [30, 1]
+        "min": [
+          29,
+          0
+        ],
+        "max": [
+          30,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [29, 0],
-        "max": [30, 1]
+        "min": [
+          29,
+          0
+        ],
+        "max": [
+          30,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3020,12 +5576,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x29-z17",
       "visible": {
-        "min": [29, 17],
-        "max": [30, 18]
+        "min": [
+          29,
+          17
+        ],
+        "max": [
+          30,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [29, 17],
-        "max": [30, 18]
+        "min": [
+          29,
+          17
+        ],
+        "max": [
+          30,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3034,12 +5602,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x29-z30",
       "visible": {
-        "min": [29, 30],
-        "max": [30, 31]
+        "min": [
+          29,
+          30
+        ],
+        "max": [
+          30,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [29, 30],
-        "max": [30, 31]
+        "min": [
+          29,
+          30
+        ],
+        "max": [
+          30,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3048,12 +5628,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x29-z35",
       "visible": {
-        "min": [29, 35],
-        "max": [30, 36]
+        "min": [
+          29,
+          35
+        ],
+        "max": [
+          30,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [29, 35],
-        "max": [30, 36]
+        "min": [
+          29,
+          35
+        ],
+        "max": [
+          30,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3062,12 +5654,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x29-z49",
       "visible": {
-        "min": [29, 49],
-        "max": [30, 50]
+        "min": [
+          29,
+          49
+        ],
+        "max": [
+          30,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [29, 49],
-        "max": [30, 50]
+        "min": [
+          29,
+          49
+        ],
+        "max": [
+          30,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3076,12 +5680,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z00",
       "visible": {
-        "min": [30, 0],
-        "max": [31, 1]
+        "min": [
+          30,
+          0
+        ],
+        "max": [
+          31,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 0],
-        "max": [31, 1]
+        "min": [
+          30,
+          0
+        ],
+        "max": [
+          31,
+          1
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3090,12 +5706,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z01",
       "visible": {
-        "min": [30, 1],
-        "max": [31, 2]
+        "min": [
+          30,
+          1
+        ],
+        "max": [
+          31,
+          2
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 1],
-        "max": [31, 2]
+        "min": [
+          30,
+          1
+        ],
+        "max": [
+          31,
+          2
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3104,12 +5732,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z02",
       "visible": {
-        "min": [30, 2],
-        "max": [31, 3]
+        "min": [
+          30,
+          2
+        ],
+        "max": [
+          31,
+          3
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 2],
-        "max": [31, 3]
+        "min": [
+          30,
+          2
+        ],
+        "max": [
+          31,
+          3
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3118,12 +5758,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z03",
       "visible": {
-        "min": [30, 3],
-        "max": [31, 4]
+        "min": [
+          30,
+          3
+        ],
+        "max": [
+          31,
+          4
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 3],
-        "max": [31, 4]
+        "min": [
+          30,
+          3
+        ],
+        "max": [
+          31,
+          4
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3132,12 +5784,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z04",
       "visible": {
-        "min": [30, 4],
-        "max": [31, 5]
+        "min": [
+          30,
+          4
+        ],
+        "max": [
+          31,
+          5
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 4],
-        "max": [31, 5]
+        "min": [
+          30,
+          4
+        ],
+        "max": [
+          31,
+          5
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3146,12 +5810,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z05",
       "visible": {
-        "min": [30, 5],
-        "max": [31, 6]
+        "min": [
+          30,
+          5
+        ],
+        "max": [
+          31,
+          6
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 5],
-        "max": [31, 6]
+        "min": [
+          30,
+          5
+        ],
+        "max": [
+          31,
+          6
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3160,12 +5836,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z06",
       "visible": {
-        "min": [30, 6],
-        "max": [31, 7]
+        "min": [
+          30,
+          6
+        ],
+        "max": [
+          31,
+          7
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 6],
-        "max": [31, 7]
+        "min": [
+          30,
+          6
+        ],
+        "max": [
+          31,
+          7
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3174,12 +5862,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z07",
       "visible": {
-        "min": [30, 7],
-        "max": [31, 8]
+        "min": [
+          30,
+          7
+        ],
+        "max": [
+          31,
+          8
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 7],
-        "max": [31, 8]
+        "min": [
+          30,
+          7
+        ],
+        "max": [
+          31,
+          8
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3188,12 +5888,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z08",
       "visible": {
-        "min": [30, 8],
-        "max": [31, 9]
+        "min": [
+          30,
+          8
+        ],
+        "max": [
+          31,
+          9
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 8],
-        "max": [31, 9]
+        "min": [
+          30,
+          8
+        ],
+        "max": [
+          31,
+          9
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3202,12 +5914,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z09",
       "visible": {
-        "min": [30, 9],
-        "max": [31, 10]
+        "min": [
+          30,
+          9
+        ],
+        "max": [
+          31,
+          10
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 9],
-        "max": [31, 10]
+        "min": [
+          30,
+          9
+        ],
+        "max": [
+          31,
+          10
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3216,12 +5940,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z10",
       "visible": {
-        "min": [30, 10],
-        "max": [31, 11]
+        "min": [
+          30,
+          10
+        ],
+        "max": [
+          31,
+          11
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 10],
-        "max": [31, 11]
+        "min": [
+          30,
+          10
+        ],
+        "max": [
+          31,
+          11
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3230,12 +5966,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z11",
       "visible": {
-        "min": [30, 11],
-        "max": [31, 12]
+        "min": [
+          30,
+          11
+        ],
+        "max": [
+          31,
+          12
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 11],
-        "max": [31, 12]
+        "min": [
+          30,
+          11
+        ],
+        "max": [
+          31,
+          12
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3244,12 +5992,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z12",
       "visible": {
-        "min": [30, 12],
-        "max": [31, 13]
+        "min": [
+          30,
+          12
+        ],
+        "max": [
+          31,
+          13
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 12],
-        "max": [31, 13]
+        "min": [
+          30,
+          12
+        ],
+        "max": [
+          31,
+          13
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3258,12 +6018,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z13",
       "visible": {
-        "min": [30, 13],
-        "max": [31, 14]
+        "min": [
+          30,
+          13
+        ],
+        "max": [
+          31,
+          14
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 13],
-        "max": [31, 14]
+        "min": [
+          30,
+          13
+        ],
+        "max": [
+          31,
+          14
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3272,12 +6044,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z14",
       "visible": {
-        "min": [30, 14],
-        "max": [31, 15]
+        "min": [
+          30,
+          14
+        ],
+        "max": [
+          31,
+          15
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 14],
-        "max": [31, 15]
+        "min": [
+          30,
+          14
+        ],
+        "max": [
+          31,
+          15
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3286,12 +6070,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z15",
       "visible": {
-        "min": [30, 15],
-        "max": [31, 16]
+        "min": [
+          30,
+          15
+        ],
+        "max": [
+          31,
+          16
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 15],
-        "max": [31, 16]
+        "min": [
+          30,
+          15
+        ],
+        "max": [
+          31,
+          16
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3300,12 +6096,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z16",
       "visible": {
-        "min": [30, 16],
-        "max": [31, 17]
+        "min": [
+          30,
+          16
+        ],
+        "max": [
+          31,
+          17
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 16],
-        "max": [31, 17]
+        "min": [
+          30,
+          16
+        ],
+        "max": [
+          31,
+          17
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3314,12 +6122,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z17",
       "visible": {
-        "min": [30, 17],
-        "max": [31, 18]
+        "min": [
+          30,
+          17
+        ],
+        "max": [
+          31,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 17],
-        "max": [31, 18]
+        "min": [
+          30,
+          17
+        ],
+        "max": [
+          31,
+          18
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3328,12 +6148,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z18",
       "visible": {
-        "min": [30, 18],
-        "max": [31, 19]
+        "min": [
+          30,
+          18
+        ],
+        "max": [
+          31,
+          19
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 18],
-        "max": [31, 19]
+        "min": [
+          30,
+          18
+        ],
+        "max": [
+          31,
+          19
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3342,12 +6174,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z19",
       "visible": {
-        "min": [30, 19],
-        "max": [31, 20]
+        "min": [
+          30,
+          19
+        ],
+        "max": [
+          31,
+          20
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 19],
-        "max": [31, 20]
+        "min": [
+          30,
+          19
+        ],
+        "max": [
+          31,
+          20
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3356,12 +6200,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z20",
       "visible": {
-        "min": [30, 20],
-        "max": [31, 21]
+        "min": [
+          30,
+          20
+        ],
+        "max": [
+          31,
+          21
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 20],
-        "max": [31, 21]
+        "min": [
+          30,
+          20
+        ],
+        "max": [
+          31,
+          21
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3370,12 +6226,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z21",
       "visible": {
-        "min": [30, 21],
-        "max": [31, 22]
+        "min": [
+          30,
+          21
+        ],
+        "max": [
+          31,
+          22
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 21],
-        "max": [31, 22]
+        "min": [
+          30,
+          21
+        ],
+        "max": [
+          31,
+          22
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3384,12 +6252,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z22",
       "visible": {
-        "min": [30, 22],
-        "max": [31, 23]
+        "min": [
+          30,
+          22
+        ],
+        "max": [
+          31,
+          23
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 22],
-        "max": [31, 23]
+        "min": [
+          30,
+          22
+        ],
+        "max": [
+          31,
+          23
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3398,12 +6278,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z23",
       "visible": {
-        "min": [30, 23],
-        "max": [31, 24]
+        "min": [
+          30,
+          23
+        ],
+        "max": [
+          31,
+          24
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 23],
-        "max": [31, 24]
+        "min": [
+          30,
+          23
+        ],
+        "max": [
+          31,
+          24
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3412,12 +6304,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z24",
       "visible": {
-        "min": [30, 24],
-        "max": [31, 25]
+        "min": [
+          30,
+          24
+        ],
+        "max": [
+          31,
+          25
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 24],
-        "max": [31, 25]
+        "min": [
+          30,
+          24
+        ],
+        "max": [
+          31,
+          25
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3426,12 +6330,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z25",
       "visible": {
-        "min": [30, 25],
-        "max": [31, 26]
+        "min": [
+          30,
+          25
+        ],
+        "max": [
+          31,
+          26
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 25],
-        "max": [31, 26]
+        "min": [
+          30,
+          25
+        ],
+        "max": [
+          31,
+          26
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3440,12 +6356,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z26",
       "visible": {
-        "min": [30, 26],
-        "max": [31, 27]
+        "min": [
+          30,
+          26
+        ],
+        "max": [
+          31,
+          27
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 26],
-        "max": [31, 27]
+        "min": [
+          30,
+          26
+        ],
+        "max": [
+          31,
+          27
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3454,12 +6382,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z27",
       "visible": {
-        "min": [30, 27],
-        "max": [31, 28]
+        "min": [
+          30,
+          27
+        ],
+        "max": [
+          31,
+          28
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 27],
-        "max": [31, 28]
+        "min": [
+          30,
+          27
+        ],
+        "max": [
+          31,
+          28
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3468,12 +6408,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z28",
       "visible": {
-        "min": [30, 28],
-        "max": [31, 29]
+        "min": [
+          30,
+          28
+        ],
+        "max": [
+          31,
+          29
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 28],
-        "max": [31, 29]
+        "min": [
+          30,
+          28
+        ],
+        "max": [
+          31,
+          29
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3482,12 +6434,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z29",
       "visible": {
-        "min": [30, 29],
-        "max": [31, 30]
+        "min": [
+          30,
+          29
+        ],
+        "max": [
+          31,
+          30
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 29],
-        "max": [31, 30]
+        "min": [
+          30,
+          29
+        ],
+        "max": [
+          31,
+          30
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3496,12 +6460,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z30",
       "visible": {
-        "min": [30, 30],
-        "max": [31, 31]
+        "min": [
+          30,
+          30
+        ],
+        "max": [
+          31,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 30],
-        "max": [31, 31]
+        "min": [
+          30,
+          30
+        ],
+        "max": [
+          31,
+          31
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3510,12 +6486,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z31",
       "visible": {
-        "min": [30, 31],
-        "max": [31, 32]
+        "min": [
+          30,
+          31
+        ],
+        "max": [
+          31,
+          32
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 31],
-        "max": [31, 32]
+        "min": [
+          30,
+          31
+        ],
+        "max": [
+          31,
+          32
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3524,12 +6512,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z32",
       "visible": {
-        "min": [30, 32],
-        "max": [31, 33]
+        "min": [
+          30,
+          32
+        ],
+        "max": [
+          31,
+          33
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 32],
-        "max": [31, 33]
+        "min": [
+          30,
+          32
+        ],
+        "max": [
+          31,
+          33
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3538,12 +6538,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z33",
       "visible": {
-        "min": [30, 33],
-        "max": [31, 34]
+        "min": [
+          30,
+          33
+        ],
+        "max": [
+          31,
+          34
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 33],
-        "max": [31, 34]
+        "min": [
+          30,
+          33
+        ],
+        "max": [
+          31,
+          34
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3552,12 +6564,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z34",
       "visible": {
-        "min": [30, 34],
-        "max": [31, 35]
+        "min": [
+          30,
+          34
+        ],
+        "max": [
+          31,
+          35
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 34],
-        "max": [31, 35]
+        "min": [
+          30,
+          34
+        ],
+        "max": [
+          31,
+          35
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3566,12 +6590,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z35",
       "visible": {
-        "min": [30, 35],
-        "max": [31, 36]
+        "min": [
+          30,
+          35
+        ],
+        "max": [
+          31,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 35],
-        "max": [31, 36]
+        "min": [
+          30,
+          35
+        ],
+        "max": [
+          31,
+          36
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3580,12 +6616,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z36",
       "visible": {
-        "min": [30, 36],
-        "max": [31, 37]
+        "min": [
+          30,
+          36
+        ],
+        "max": [
+          31,
+          37
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 36],
-        "max": [31, 37]
+        "min": [
+          30,
+          36
+        ],
+        "max": [
+          31,
+          37
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3594,12 +6642,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z37",
       "visible": {
-        "min": [30, 37],
-        "max": [31, 38]
+        "min": [
+          30,
+          37
+        ],
+        "max": [
+          31,
+          38
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 37],
-        "max": [31, 38]
+        "min": [
+          30,
+          37
+        ],
+        "max": [
+          31,
+          38
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3608,12 +6668,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z38",
       "visible": {
-        "min": [30, 38],
-        "max": [31, 39]
+        "min": [
+          30,
+          38
+        ],
+        "max": [
+          31,
+          39
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 38],
-        "max": [31, 39]
+        "min": [
+          30,
+          38
+        ],
+        "max": [
+          31,
+          39
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3622,12 +6694,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z39",
       "visible": {
-        "min": [30, 39],
-        "max": [31, 40]
+        "min": [
+          30,
+          39
+        ],
+        "max": [
+          31,
+          40
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 39],
-        "max": [31, 40]
+        "min": [
+          30,
+          39
+        ],
+        "max": [
+          31,
+          40
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3636,12 +6720,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z40",
       "visible": {
-        "min": [30, 40],
-        "max": [31, 41]
+        "min": [
+          30,
+          40
+        ],
+        "max": [
+          31,
+          41
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 40],
-        "max": [31, 41]
+        "min": [
+          30,
+          40
+        ],
+        "max": [
+          31,
+          41
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3650,12 +6746,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z41",
       "visible": {
-        "min": [30, 41],
-        "max": [31, 42]
+        "min": [
+          30,
+          41
+        ],
+        "max": [
+          31,
+          42
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 41],
-        "max": [31, 42]
+        "min": [
+          30,
+          41
+        ],
+        "max": [
+          31,
+          42
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3664,12 +6772,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z42",
       "visible": {
-        "min": [30, 42],
-        "max": [31, 43]
+        "min": [
+          30,
+          42
+        ],
+        "max": [
+          31,
+          43
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 42],
-        "max": [31, 43]
+        "min": [
+          30,
+          42
+        ],
+        "max": [
+          31,
+          43
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3678,12 +6798,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z43",
       "visible": {
-        "min": [30, 43],
-        "max": [31, 44]
+        "min": [
+          30,
+          43
+        ],
+        "max": [
+          31,
+          44
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 43],
-        "max": [31, 44]
+        "min": [
+          30,
+          43
+        ],
+        "max": [
+          31,
+          44
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3692,12 +6824,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z44",
       "visible": {
-        "min": [30, 44],
-        "max": [31, 45]
+        "min": [
+          30,
+          44
+        ],
+        "max": [
+          31,
+          45
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 44],
-        "max": [31, 45]
+        "min": [
+          30,
+          44
+        ],
+        "max": [
+          31,
+          45
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3706,12 +6850,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z45",
       "visible": {
-        "min": [30, 45],
-        "max": [31, 46]
+        "min": [
+          30,
+          45
+        ],
+        "max": [
+          31,
+          46
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 45],
-        "max": [31, 46]
+        "min": [
+          30,
+          45
+        ],
+        "max": [
+          31,
+          46
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3720,12 +6876,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z46",
       "visible": {
-        "min": [30, 46],
-        "max": [31, 47]
+        "min": [
+          30,
+          46
+        ],
+        "max": [
+          31,
+          47
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 46],
-        "max": [31, 47]
+        "min": [
+          30,
+          46
+        ],
+        "max": [
+          31,
+          47
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3734,12 +6902,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z47",
       "visible": {
-        "min": [30, 47],
-        "max": [31, 48]
+        "min": [
+          30,
+          47
+        ],
+        "max": [
+          31,
+          48
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 47],
-        "max": [31, 48]
+        "min": [
+          30,
+          47
+        ],
+        "max": [
+          31,
+          48
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3748,12 +6928,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z48",
       "visible": {
-        "min": [30, 48],
-        "max": [31, 49]
+        "min": [
+          30,
+          48
+        ],
+        "max": [
+          31,
+          49
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 48],
-        "max": [31, 49]
+        "min": [
+          30,
+          48
+        ],
+        "max": [
+          31,
+          49
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3762,12 +6954,24 @@
       "kind": "wall",
       "instanceId": "level-wall-x30-z49",
       "visible": {
-        "min": [30, 49],
-        "max": [31, 50]
+        "min": [
+          30,
+          49
+        ],
+        "max": [
+          31,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 49],
-        "max": [31, 50]
+        "min": [
+          30,
+          49
+        ],
+        "max": [
+          31,
+          50
+        ]
       },
       "gap": 0,
       "note": "walk-facing visual slab matches its material-voxel cell"
@@ -3776,12 +6980,24 @@
       "kind": "column",
       "instanceId": "level-column-arrival-a",
       "visible": {
-        "min": [3, 8],
-        "max": [4, 9]
+        "min": [
+          3,
+          8
+        ],
+        "max": [
+          4,
+          9
+        ]
       },
       "gameplayProxy": {
-        "min": [3, 8],
-        "max": [4, 9]
+        "min": [
+          3,
+          8
+        ],
+        "max": [
+          4,
+          9
+        ]
       },
       "gap": 0,
       "note": "column visual owns the same one-cell footprint as its three-cell-high proxy"
@@ -3790,12 +7006,24 @@
       "kind": "column",
       "instanceId": "level-column-arrival-b",
       "visible": {
-        "min": [11, 8],
-        "max": [12, 9]
+        "min": [
+          11,
+          8
+        ],
+        "max": [
+          12,
+          9
+        ]
       },
       "gameplayProxy": {
-        "min": [11, 8],
-        "max": [12, 9]
+        "min": [
+          11,
+          8
+        ],
+        "max": [
+          12,
+          9
+        ]
       },
       "gap": 0,
       "note": "column visual owns the same one-cell footprint as its three-cell-high proxy"
@@ -3804,12 +7032,24 @@
       "kind": "column",
       "instanceId": "level-column-generator-a",
       "visible": {
-        "min": [18, 22],
-        "max": [19, 23]
+        "min": [
+          18,
+          22
+        ],
+        "max": [
+          19,
+          23
+        ]
       },
       "gameplayProxy": {
-        "min": [18, 22],
-        "max": [19, 23]
+        "min": [
+          18,
+          22
+        ],
+        "max": [
+          19,
+          23
+        ]
       },
       "gap": 0,
       "note": "column visual owns the same one-cell footprint as its three-cell-high proxy"
@@ -3818,12 +7058,24 @@
       "kind": "column",
       "instanceId": "level-column-generator-b",
       "visible": {
-        "min": [28, 29],
-        "max": [29, 30]
+        "min": [
+          28,
+          29
+        ],
+        "max": [
+          29,
+          30
+        ]
       },
       "gameplayProxy": {
-        "min": [28, 29],
-        "max": [29, 30]
+        "min": [
+          28,
+          29
+        ],
+        "max": [
+          29,
+          30
+        ]
       },
       "gap": 0,
       "note": "column visual owns the same one-cell footprint as its three-cell-high proxy"
@@ -3832,12 +7084,24 @@
       "kind": "column",
       "instanceId": "level-column-dock-a",
       "visible": {
-        "min": [17, 38],
-        "max": [18, 39]
+        "min": [
+          17,
+          38
+        ],
+        "max": [
+          18,
+          39
+        ]
       },
       "gameplayProxy": {
-        "min": [17, 38],
-        "max": [18, 39]
+        "min": [
+          17,
+          38
+        ],
+        "max": [
+          18,
+          39
+        ]
       },
       "gap": 0,
       "note": "column visual owns the same one-cell footprint as its three-cell-high proxy"
@@ -3846,12 +7110,24 @@
       "kind": "column",
       "instanceId": "level-column-dock-b",
       "visible": {
-        "min": [27, 46],
-        "max": [28, 47]
+        "min": [
+          27,
+          46
+        ],
+        "max": [
+          28,
+          47
+        ]
       },
       "gameplayProxy": {
-        "min": [27, 46],
-        "max": [28, 47]
+        "min": [
+          27,
+          46
+        ],
+        "max": [
+          28,
+          47
+        ]
       },
       "gap": 0,
       "note": "column visual owns the same one-cell footprint as its three-cell-high proxy"
@@ -3860,12 +7136,24 @@
       "kind": "corner",
       "instanceId": "level-corner-nw",
       "visible": {
-        "min": [0, 0],
-        "max": [1, 1]
+        "min": [
+          0,
+          0
+        ],
+        "max": [
+          1,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 0],
-        "max": [1, 1]
+        "min": [
+          0,
+          0
+        ],
+        "max": [
+          1,
+          1
+        ]
       },
       "gap": 0,
       "note": "outer-corner accent uses the exact canonical boundary cell"
@@ -3874,12 +7162,24 @@
       "kind": "corner",
       "instanceId": "level-corner-ne",
       "visible": {
-        "min": [30, 0],
-        "max": [31, 1]
+        "min": [
+          30,
+          0
+        ],
+        "max": [
+          31,
+          1
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 0],
-        "max": [31, 1]
+        "min": [
+          30,
+          0
+        ],
+        "max": [
+          31,
+          1
+        ]
       },
       "gap": 0,
       "note": "outer-corner accent uses the exact canonical boundary cell"
@@ -3888,12 +7188,24 @@
       "kind": "corner",
       "instanceId": "level-corner-sw",
       "visible": {
-        "min": [0, 49],
-        "max": [1, 50]
+        "min": [
+          0,
+          49
+        ],
+        "max": [
+          1,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [0, 49],
-        "max": [1, 50]
+        "min": [
+          0,
+          49
+        ],
+        "max": [
+          1,
+          50
+        ]
       },
       "gap": 0,
       "note": "outer-corner accent uses the exact canonical boundary cell"
@@ -3902,12 +7214,24 @@
       "kind": "corner",
       "instanceId": "level-corner-se",
       "visible": {
-        "min": [30, 49],
-        "max": [31, 50]
+        "min": [
+          30,
+          49
+        ],
+        "max": [
+          31,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [30, 49],
-        "max": [31, 50]
+        "min": [
+          30,
+          49
+        ],
+        "max": [
+          31,
+          50
+        ]
       },
       "gap": 0,
       "note": "outer-corner accent uses the exact canonical boundary cell"
@@ -3916,34 +7240,64 @@
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-3",
       "visible": {
-        "min": [20, 49],
-        "max": [23, 50]
+        "min": [
+          20,
+          49
+        ],
+        "max": [
+          23,
+          50
+        ]
       },
       "gameplayProxy": {
-        "min": [20, 49],
-        "max": [23, 50]
+        "min": [
+          20,
+          49
+        ],
+        "max": [
+          23,
+          50
+        ]
       },
       "gap": 0,
       "collisionBackedSideInstances": {
         "left": {
           "instanceId": "level-wall-x19-z49",
-          "range": [19, 20]
+          "range": [
+            19,
+            20
+          ]
         },
         "right": {
           "instanceId": "level-wall-x23-z49",
-          "range": [23, 24]
+          "range": [
+            23,
+            24
+          ]
         }
       },
       "overheadFrame": {
-        "min": [20, 49],
-        "max": [23, 50]
+        "min": [
+          20,
+          49
+        ],
+        "max": [
+          23,
+          50
+        ]
       },
       "note": "collision-backed wall jambs terminate at proxy opening edges 20 and 23; the decorative header has no walk-height occupancy",
       "globalCollisionCoverage": {
         "occupied": [],
         "collision": [
-          [0, 20],
-          [23, 31]
+          [
+            0,
+            20
+          ],
+          [
+            23,
+            31
+          ]
         ],
         "uncovered": [],
         "result": "pass"
@@ -3953,35 +7307,68 @@
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-11",
       "visible": {
-        "min": [3, 17],
-        "max": [6, 18]
+        "min": [
+          3,
+          17
+        ],
+        "max": [
+          6,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [3, 17],
-        "max": [6, 18]
+        "min": [
+          3,
+          17
+        ],
+        "max": [
+          6,
+          18
+        ]
       },
       "gap": 0,
       "collisionBackedSideInstances": {
         "left": {
           "instanceId": "level-wall-x02-z17",
-          "range": [2, 3]
+          "range": [
+            2,
+            3
+          ]
         },
         "right": {
           "instanceId": "level-wall-x06-z17",
-          "range": [6, 7]
+          "range": [
+            6,
+            7
+          ]
         }
       },
       "overheadFrame": {
-        "min": [3, 17],
-        "max": [6, 18]
+        "min": [
+          3,
+          17
+        ],
+        "max": [
+          6,
+          18
+        ]
       },
       "note": "collision-backed wall jambs terminate at proxy opening edges 3 and 6; the decorative header has no walk-height occupancy",
       "globalCollisionCoverage": {
         "occupied": [],
         "collision": [
-          [0, 3],
-          [6, 8],
-          [15, 31]
+          [
+            0,
+            3
+          ],
+          [
+            6,
+            8
+          ],
+          [
+            15,
+            31
+          ]
         ],
         "uncovered": [],
         "result": "pass"
@@ -3991,34 +7378,64 @@
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-12",
       "visible": {
-        "min": [20, 35],
-        "max": [24, 36]
+        "min": [
+          20,
+          35
+        ],
+        "max": [
+          24,
+          36
+        ]
       },
       "gameplayProxy": {
-        "min": [20, 35],
-        "max": [24, 36]
+        "min": [
+          20,
+          35
+        ],
+        "max": [
+          24,
+          36
+        ]
       },
       "gap": 0,
       "collisionBackedSideInstances": {
         "left": {
           "instanceId": "level-wall-x19-z35",
-          "range": [19, 20]
+          "range": [
+            19,
+            20
+          ]
         },
         "right": {
           "instanceId": "level-wall-x24-z35",
-          "range": [24, 25]
+          "range": [
+            24,
+            25
+          ]
         }
       },
       "overheadFrame": {
-        "min": [20, 35],
-        "max": [24, 36]
+        "min": [
+          20,
+          35
+        ],
+        "max": [
+          24,
+          36
+        ]
       },
       "note": "collision-backed wall jambs terminate at proxy opening edges 20 and 24; the decorative header has no walk-height occupancy",
       "globalCollisionCoverage": {
         "occupied": [],
         "collision": [
-          [0, 20],
-          [24, 31]
+          [
+            0,
+            20
+          ],
+          [
+            24,
+            31
+          ]
         ],
         "uncovered": [],
         "result": "pass"
@@ -4028,35 +7445,68 @@
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-13",
       "visible": {
-        "min": [22, 30],
-        "max": [26, 31]
+        "min": [
+          22,
+          30
+        ],
+        "max": [
+          26,
+          31
+        ]
       },
       "gameplayProxy": {
-        "min": [22, 30],
-        "max": [26, 31]
+        "min": [
+          22,
+          30
+        ],
+        "max": [
+          26,
+          31
+        ]
       },
       "gap": 0,
       "collisionBackedSideInstances": {
         "left": {
           "instanceId": "level-wall-x21-z30",
-          "range": [21, 22]
+          "range": [
+            21,
+            22
+          ]
         },
         "right": {
           "instanceId": "level-wall-x26-z30",
-          "range": [26, 27]
+          "range": [
+            26,
+            27
+          ]
         }
       },
       "overheadFrame": {
-        "min": [22, 30],
-        "max": [26, 31]
+        "min": [
+          22,
+          30
+        ],
+        "max": [
+          26,
+          31
+        ]
       },
       "note": "collision-backed wall jambs terminate at proxy opening edges 22 and 26; the decorative header has no walk-height occupancy",
       "globalCollisionCoverage": {
         "occupied": [],
         "collision": [
-          [0, 1],
-          [16, 22],
-          [26, 31]
+          [
+            0,
+            1
+          ],
+          [
+            16,
+            22
+          ],
+          [
+            26,
+            31
+          ]
         ],
         "uncovered": [],
         "result": "pass"
@@ -4066,35 +7516,68 @@
       "kind": "doorSurround",
       "instanceId": "level-doorway-owner-30",
       "visible": {
-        "min": [8, 17],
-        "max": [15, 18]
+        "min": [
+          8,
+          17
+        ],
+        "max": [
+          15,
+          18
+        ]
       },
       "gameplayProxy": {
-        "min": [8, 17],
-        "max": [15, 18]
+        "min": [
+          8,
+          17
+        ],
+        "max": [
+          15,
+          18
+        ]
       },
       "gap": 0,
       "collisionBackedSideInstances": {
         "left": {
           "instanceId": "level-wall-x07-z17",
-          "range": [7, 8]
+          "range": [
+            7,
+            8
+          ]
         },
         "right": {
           "instanceId": "level-wall-x15-z17",
-          "range": [15, 16]
+          "range": [
+            15,
+            16
+          ]
         }
       },
       "overheadFrame": {
-        "min": [8, 17],
-        "max": [15, 18]
+        "min": [
+          8,
+          17
+        ],
+        "max": [
+          15,
+          18
+        ]
       },
       "note": "collision-backed wall jambs terminate at proxy opening edges 8 and 15; the decorative header has no walk-height occupancy",
       "globalCollisionCoverage": {
         "occupied": [],
         "collision": [
-          [0, 3],
-          [6, 8],
-          [15, 31]
+          [
+            0,
+            3
+          ],
+          [
+            6,
+            8
+          ],
+          [
+            15,
+            31
+          ]
         ],
         "uncovered": [],
         "result": "pass"
@@ -4103,8 +7586,14 @@
     {
       "kind": "narrowPassage",
       "z": 22,
-      "visualOpenRange": [17, 18],
-      "gameplayProxyOpenRange": [17, 18],
+      "visualOpenRange": [
+        17,
+        18
+      ],
+      "gameplayProxyOpenRange": [
+        17,
+        18
+      ],
       "width": 1,
       "gap": 0,
       "note": "the one-unit route gap between the west wall and generator column is identical in both authorities"
@@ -4114,21 +7603,33 @@
     "studio": [
       {
         "path": "docs/evidence/wall-proxy-studio-desktop.png",
-        "viewport": [1600, 900]
+        "viewport": [
+          1600,
+          900
+        ]
       },
       {
         "path": "docs/evidence/wall-proxy-studio-narrow.png",
-        "viewport": [390, 844]
+        "viewport": [
+          390,
+          844
+        ]
       }
     ],
     "gameplay": [
       {
         "path": "docs/evidence/wall-proxy-gameplay-desktop.png",
-        "viewport": [1600, 900]
+        "viewport": [
+          1600,
+          900
+        ]
       },
       {
         "path": "docs/evidence/wall-proxy-gameplay-narrow.png",
-        "viewport": [390, 844]
+        "viewport": [
+          390,
+          844
+        ]
       }
     ]
   }

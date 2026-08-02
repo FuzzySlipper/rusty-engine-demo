@@ -55,7 +55,7 @@
           "id": "idle",
           "frameStart": 1,
           "frameEnd": 33,
-          "durationSeconds": 1.066667,
+          "durationSeconds": 1.1,
           "origin": "Kenney source",
           "authoredJointChannels": []
         },
@@ -63,7 +63,7 @@
           "id": "run",
           "frameStart": 1,
           "frameEnd": 17,
-          "durationSeconds": 0.533333,
+          "durationSeconds": 0.566667,
           "origin": "Kenney source",
           "authoredJointChannels": []
         },
@@ -175,7 +175,7 @@
           "id": "idle",
           "frameStart": 1,
           "frameEnd": 33,
-          "durationSeconds": 1.066667,
+          "durationSeconds": 1.1,
           "origin": "Kenney source",
           "authoredJointChannels": []
         },
@@ -183,7 +183,7 @@
           "id": "run",
           "frameStart": 1,
           "frameEnd": 17,
-          "durationSeconds": 0.533333,
+          "durationSeconds": 0.566667,
           "origin": "Kenney source",
           "authoredJointChannels": []
         },

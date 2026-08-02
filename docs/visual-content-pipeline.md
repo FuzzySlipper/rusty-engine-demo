@@ -202,17 +202,18 @@ hit, and death actions are reproducible recipe inputs rather than renamed stock 
 
 The reproducible actor sources are checked in under `content/assets/actor-kit`. Blender
 5.1.2 produces two independently skinned 1.78-unit GLBs from the reviewed medium rig and installs
-the exact six-clip set `idle`, `run`, `jump`, `attack`, `hit`, `death`. Kenney owns the first three
-clips and both source skins under CC0; Loading Bay owns the explicit recipe-defined armature attack
-and hit poses plus the contact-plane-bounded death fall. The completed GLBs are 342,844 and 337,260
-bytes and retain one skinned mesh, one material, and one embedded texture each.
+the exact six-clip set `idle`, `run`, `jump`, `attack`, `hit`, `death`. Kenney owns the source
+idle/run motion and both source skins under CC0; Loading Bay owns the explicit recipe-defined
+whole-body jump, attack, hit, and contact-plane-bounded death actions. The generator retargets
+animation-only FBX rotations onto the model bind skeleton and excludes their incompatible non-root
+translation channels. The completed Arc Warden and Bay Rusher GLBs are 353,956 and 348,372 bytes
+and retain one skinned mesh, one material, and one embedded texture each.
 
-Protocol 12 consumes the independently approved Rusty Engine #6433 provider at exact revision
-`80ac6ed3f0bd1d9911edf44e33bcc90831d8909e`; the final product pins its reviewed descendant
-`0e0c49442d0c3d876a1336a5a829087f6e2314db`. The Rust-owned Studio adapter imports both binary GLBs
-as durable `mesh-animation/*` assets, validates their embedded buffers, textures, bounds, and six
-clips, and atomically publishes canonical project hash
-`ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750`.
+Protocol 14 consumes the independently reviewed Rusty Engine #6538/#6546 Studio inspection seam at
+exact revision `d52c9b0f3287f21eea81d465871978a117750d0c`. The Rust-owned Studio adapter imports both binary
+GLBs as durable `mesh-animation/*` assets, validates their embedded buffers, textures, bounds, and
+six clips, and atomically publishes canonical project hash
+`6069198b7bac3792ff86c0e245a4cdcae72ae1c68bf90f42cb08c39bc656c328`.
 The downstream never decodes GLB, hand-authors retained payloads, or loads Three.js privately.
 
 The real supported Studio browser proof places 12 temporary scene instances—every clip on both
@@ -224,13 +225,23 @@ page reload; close reaches zero canvases and remount/reload each return to one. 
 Studio instances are import evidence only. VC8 #6358 subsequently binds the two asset identities
 to the eight canonical gameplay enemies through the serialized project contract described below.
 
-Reproduce and inspect the evidence with:
+Humans reach the accepted inspection path from Studio's top menu at **Tools > Animation
+Inspection** after selecting an actor in the hierarchy (double-click also focuses it). The panel
+uses the shared retained viewport to frame the real selected mesh, choose clips, scrub normalized
+time, and capture a labeled five-frame sheet; it visibly reports duration, joint hierarchy,
+rest/inverse-bind facts, weight validity, interpolation, clone identity, shared resources, and
+diagnostics. The automation below clicks that same public workflow rather than a private game or
+renderer hook. Reproduce and inspect the evidence with:
 
 ```sh
 node scripts/check-actor-kit.mjs
-node scripts/author-actor-kit.mjs
+blender --background --factory-startup \
+  --python scripts/blender/capture-actor-animation-baselines.py -- \
+  --source-root /home/stash/mesh-resources/kenney_animated-characters-retro \
+  --output-dir /tmp/loading-bay-actor-blender-baseline
 # With the supported Studio host at 127.0.0.1:4396:
-node scripts/capture-actor-kit-studio.mjs
+node scripts/capture-actor-animation-contact-sheets.mjs
+node scripts/check-actor-animation-source-equivalence.mjs
 ```
 
 The exact import/reimport timings and fresh-process hashes are in
@@ -239,8 +250,12 @@ submission counters and lifecycle evidence are in
 [`docs/evidence/actor-kit-studio-browser.json`](evidence/actor-kit-studio-browser.json).
 Screenshots:
 
-- [Arc Warden attack clip](evidence/actor-kit-studio-arc-warden-attack.png);
-- [Bay Rusher death clip](evidence/actor-kit-studio-bay-rusher-death.png).
+- [exact pre-fix/current Studio comparison](evidence/animated-mesh-contact-sheets/animation-skinning-before-after.png);
+- [Arc Warden six-clip Blender baseline](evidence/animated-mesh-contact-sheets/blender-arc-warden-all-clips.png);
+- [Bay Rusher six-clip Blender baseline](evidence/animated-mesh-contact-sheets/blender-bay-rusher-all-clips.png);
+- [Arc Warden Studio attack sheet](evidence/animated-mesh-contact-sheets/arc-warden-attack-contact-sheet.png);
+- [Bay Rusher Studio run sheet](evidence/animated-mesh-contact-sheets/bay-rusher-run-contact-sheet.png);
+- [narrow Studio Animation Inspection workflow](evidence/animated-mesh-contact-sheets/animation-inspection-narrow.png).
 
 ### VC8 serialized gameplay visual bindings
 

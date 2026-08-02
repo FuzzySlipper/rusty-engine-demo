@@ -53,6 +53,10 @@ SOURCE_CLIPS = {
 ACTORS = ("bay-rusher", "arc-warden")
 
 
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-root", type=Path, required=True)
@@ -310,9 +314,16 @@ def render_samples(
     records: list[dict[str, object]] = []
     for clip, action in sorted(actions.items()):
         armature.animation_data.action = action
-        start, end = (float(value) for value in action.frame_range)
+        _, end = (float(value) for value in action.frame_range)
         for index, normalized_time in enumerate(TIMES):
-            frame = start + ((end - start) * normalized_time)
+            # glTF/FBX animation timestamps are absolute from zero, while
+            # Blender's imported action range can begin at frame one when the
+            # first authored key is at t=0. Sampling between action.frame_range
+            # endpoints would therefore shift every interior source sample by
+            # one frame. The last action frame is the exact exported duration
+            # at this scene's fixed 30 fps, so use the zero-based timeline that
+            # the Engine mixer consumes.
+            frame = end * normalized_time
             whole = math.floor(frame)
             bpy.context.scene.frame_set(whole, subframe=frame - whole)
             bpy.context.view_layer.update()
@@ -366,7 +377,37 @@ def main() -> None:
             {
                 "schemaVersion": 2,
                 "sampler": "Blender evaluated dependency graph; no Rusty Engine or Three.js",
+                "blenderVersion": bpy.app.version_string,
+                "blenderBuildHash": bpy.app.build_hash.decode("ascii"),
                 "normalizedTimes": TIMES,
+                "inputs": {
+                    "committedGlbs": [
+                        {
+                            "path": f"content/assets/actor-kit/{actor}.glb",
+                            "sha256": sha256(
+                                root / "content" / "assets" / "actor-kit" / f"{actor}.glb"
+                            ),
+                        }
+                        for actor in ACTORS
+                    ],
+                    "originalFbx": [
+                        {
+                            "path": f"Model/characterMedium.fbx",
+                            "sha256": sha256(
+                                args.source_root.resolve() / "Model" / "characterMedium.fbx"
+                            ),
+                        },
+                        *[
+                            {
+                                "path": f"Animations/{filename}",
+                                "sha256": sha256(
+                                    args.source_root.resolve() / "Animations" / filename
+                                ),
+                            }
+                            for filename, _ in SOURCE_CLIPS.values()
+                        ],
+                    ],
+                },
                 "samples": records,
             },
             indent=2,

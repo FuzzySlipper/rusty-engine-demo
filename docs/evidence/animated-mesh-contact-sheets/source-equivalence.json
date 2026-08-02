@@ -1,0 +1,2942 @@
+{
+  "schemaVersion": 2,
+  "engineRevision": "d52c9b0f3287f21eea81d465871978a117750d0c",
+  "independentSampler": "Blender evaluated dependency graph; no Rusty Engine or Three.js",
+  "adjacentRendererSampler": "Three GLTFLoader plus SkeletonUtils clone and AnimationMixer, separate from the Engine loader/registry instance",
+  "independentBlenderBaseline": {
+    "file": "blender-source-baseline.json",
+    "committedGlbSamples": 60,
+    "originalFbxSamples": 15,
+    "montages": [
+      {
+        "file": "blender-bay-rusher-all-clips.png",
+        "sha256": "ed4a4d8f6e38ffad0a36680e6012f067433d91ec11a0f95b8a91645955f84547",
+        "baseline": "committed-glb",
+        "actor": "bay-rusher",
+        "clips": [
+          "idle",
+          "run",
+          "jump",
+          "attack",
+          "hit",
+          "death"
+        ],
+        "normalizedTimes": [
+          0,
+          0.25,
+          0.5,
+          0.75,
+          1
+        ]
+      },
+      {
+        "file": "blender-arc-warden-all-clips.png",
+        "sha256": "e9c594cf89c944d8552e973b409d2c54ff3ceb364ba9d1c730c79c5a8268df01",
+        "baseline": "committed-glb",
+        "actor": "arc-warden",
+        "clips": [
+          "idle",
+          "run",
+          "jump",
+          "attack",
+          "hit",
+          "death"
+        ],
+        "normalizedTimes": [
+          0,
+          0.25,
+          0.5,
+          0.75,
+          1
+        ]
+      },
+      {
+        "file": "blender-kenney-source-clips.png",
+        "sha256": "b7903321dd3c44b6714e53b12014018ee125149f3406543ac9b2a78e05e38342",
+        "baseline": "original-fbx",
+        "actor": "kenney-source",
+        "clips": [
+          "idle",
+          "run",
+          "jump"
+        ],
+        "normalizedTimes": [
+          0,
+          0.25,
+          0.5,
+          0.75,
+          1
+        ]
+      }
+    ],
+    "visualComparison": {
+      "file": "animation-skinning-before-after.png",
+      "sha256": "1cbca789c40083e4954470ed86c716a296d25aacad6f9abf8d9bff1f1196d919",
+      "beforeCommit": "5889518bc7e0bf3514d3f1c98470ba785928bdeb",
+      "beforeEvidence": [
+        "bay-rusher-run-contact-sheet.png",
+        "arc-warden-attack-contact-sheet.png"
+      ],
+      "afterEvidence": [
+        "bay-rusher-run-contact-sheet.png",
+        "arc-warden-attack-contact-sheet.png"
+      ],
+      "reviewedOutcome": "Before sheets visibly tear or detach limbs; current Blender and Studio sheets retain connected, articulated poses at all five labeled times."
+    }
+  },
+  "studioInspection": {
+    "file": "certification.json",
+    "workflow": "Tools > Animation Inspection through the shared Studio viewport",
+    "captures": 12,
+    "projectHash": "6069198b7bac3792ff86c0e245a4cdcae72ae1c68bf90f42cb08c39bc656c328",
+    "authoringStateUnchanged": true,
+    "freshPageReopen": true
+  },
+  "normalizedTimes": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1
+  ],
+  "clips": [
+    "idle",
+    "run",
+    "jump",
+    "attack",
+    "hit",
+    "death"
+  ],
+  "actors": [
+    {
+      "asset": "mesh-animation/bay-rusher",
+      "sourcePath": "content/assets/actor-kit/bay-rusher.glb",
+      "sourceHash": "sha256:e7e5c7a3a79abac6b24b0ec511b61fd75f82d900cdc4af9fb526278c5f5033f7",
+      "import": {
+        "engineClips": [
+          {
+            "name": "attack",
+            "duration": 0.5333333611488342
+          },
+          {
+            "name": "death",
+            "duration": 0.7333333492279053
+          },
+          {
+            "name": "hit",
+            "duration": 0.4000000059604645
+          },
+          {
+            "name": "idle",
+            "duration": 1.100000023841858
+          },
+          {
+            "name": "jump",
+            "duration": 0.4000000059604645
+          },
+          {
+            "name": "run",
+            "duration": 0.5666666626930237
+          }
+        ],
+        "directClips": [
+          {
+            "name": "attack",
+            "duration": 0.5333333611488342
+          },
+          {
+            "name": "death",
+            "duration": 0.7333333492279053
+          },
+          {
+            "name": "hit",
+            "duration": 0.4000000059604645
+          },
+          {
+            "name": "idle",
+            "duration": 1.100000023841858
+          },
+          {
+            "name": "jump",
+            "duration": 0.4000000059604645
+          },
+          {
+            "name": "run",
+            "duration": 0.5666666626930237
+          }
+        ],
+        "clipInventoryMatches": true
+      },
+      "cloneBindInterpolation": {
+        "samples": [
+          {
+            "clip": "idle",
+            "normalizedTime": 0,
+            "durationSeconds": 1.100000023841858,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855344,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "821f76576188c08d133ad5187902c60752f08f9026aea17651fd6f702599b83a",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.25,
+            "durationSeconds": 1.100000023841858,
+            "engineBounds": {
+              "min": [
+                -0.853723,
+                -0.000002,
+                -0.248768
+              ],
+              "max": [
+                0.852806,
+                1.778117,
+                0.251256
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.853723,
+                -0.000002,
+                -0.248768
+              ],
+              "max": [
+                0.852806,
+                1.778117,
+                0.251256
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.853723,
+                -0.000002,
+                -0.248768
+              ],
+              "max": [
+                0.852806,
+                1.778117,
+                0.251256
+              ]
+            },
+            "independentBlenderImageSha256": "0fbcb2e2dc9c8384a1ed5be820d2afbadc6becbfc3ea7d11d915b204d859d841",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.5,
+            "durationSeconds": 1.100000023841858,
+            "engineBounds": {
+              "min": [
+                -0.850134,
+                0,
+                -0.243518
+              ],
+              "max": [
+                0.84703,
+                1.773966,
+                0.261893
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.850134,
+                0,
+                -0.243518
+              ],
+              "max": [
+                0.84703,
+                1.773966,
+                0.261893
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.850134,
+                0,
+                -0.243518
+              ],
+              "max": [
+                0.84703,
+                1.773966,
+                0.261893
+              ]
+            },
+            "independentBlenderImageSha256": "47d3829abb5592505b309e56bbb7562936426852e9b53f21f46f02248c5c3818",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.75,
+            "durationSeconds": 1.100000023841858,
+            "engineBounds": {
+              "min": [
+                -0.853202,
+                -0.000002,
+                -0.247859
+              ],
+              "max": [
+                0.85195,
+                1.777511,
+                0.253175
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.853202,
+                -0.000002,
+                -0.247859
+              ],
+              "max": [
+                0.85195,
+                1.777511,
+                0.253175
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.853202,
+                -0.000002,
+                -0.247859
+              ],
+              "max": [
+                0.85195,
+                1.777511,
+                0.253175
+              ]
+            },
+            "independentBlenderImageSha256": "69ea9d417223488b33b02f02736cf4139b62e394664c7d2918cab5a2685db747",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 1,
+            "durationSeconds": 1.100000023841858,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855344,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "41bfe1d6ef44f2d702c87576e22ae218ab337417947d78b8924a63691f39f795",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0,
+            "durationSeconds": 0.5666666626930237,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855344,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "3abfff543c29c92be59008fbc6db001589e102d9d018ecf2451604d13b96f36b",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.5666666626930237,
+            "engineBounds": {
+              "min": [
+                -0.758152,
+                -0.004803,
+                -0.396248
+              ],
+              "max": [
+                0.75572,
+                1.765019,
+                0.470447
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.758152,
+                -0.004803,
+                -0.396248
+              ],
+              "max": [
+                0.75572,
+                1.765019,
+                0.470447
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.75817,
+                -0.004838,
+                -0.396226
+              ],
+              "max": [
+                0.75574,
+                1.765019,
+                0.47043
+              ]
+            },
+            "independentBlenderImageSha256": "f3e15c246b372c89f40b70a203acc9a42561ff4c3f93fab7581a779cb7381452",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.5666666626930237,
+            "engineBounds": {
+              "min": [
+                -0.336684,
+                0.010689,
+                -0.656182
+              ],
+              "max": [
+                0.361031,
+                1.429595,
+                0.602004
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.336684,
+                0.010689,
+                -0.656182
+              ],
+              "max": [
+                0.361031,
+                1.429595,
+                0.602004
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.336684,
+                0.010689,
+                -0.656182
+              ],
+              "max": [
+                0.36103,
+                1.429595,
+                0.602004
+              ]
+            },
+            "independentBlenderImageSha256": "7a3eadc2e01ffb3c804e8bb4ea5e0b75202968a8d888bc2c9b531b250387d72c",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.5666666626930237,
+            "engineBounds": {
+              "min": [
+                -0.609595,
+                -0.014042,
+                -0.486144
+              ],
+              "max": [
+                0.634287,
+                1.69524,
+                0.523235
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.609595,
+                -0.014042,
+                -0.486144
+              ],
+              "max": [
+                0.634287,
+                1.69524,
+                0.523235
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.609616,
+                -0.014052,
+                -0.486137
+              ],
+              "max": [
+                0.634314,
+                1.69524,
+                0.523223
+              ]
+            },
+            "independentBlenderImageSha256": "4647e9918f4a6edd82acbddabceec04877b426dd62d81249ed3c76a62a57459a",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 1,
+            "durationSeconds": 0.5666666626930237,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855344,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "b81752856ae9954588187702532cee1e557f17b00d4284432a4bb25e43df2c11",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.670365,
+                0,
+                -0.420409
+              ],
+              "max": [
+                0.710224,
+                1.771097,
+                0.270985
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.670365,
+                0,
+                -0.420409
+              ],
+              "max": [
+                0.710224,
+                1.771097,
+                0.270985
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.670365,
+                0,
+                -0.420409
+              ],
+              "max": [
+                0.710223,
+                1.771097,
+                0.270985
+              ]
+            },
+            "independentBlenderImageSha256": "f83eb5900408c74365f76dae4bfff1879be66d3b3412ad3c6be99b0e7ba28760",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.543386,
+                0.268701,
+                -0.546886
+              ],
+              "max": [
+                0.575484,
+                2.059543,
+                0.285131
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.543386,
+                0.268701,
+                -0.546886
+              ],
+              "max": [
+                0.575484,
+                2.059543,
+                0.285131
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.543386,
+                0.268701,
+                -0.546886
+              ],
+              "max": [
+                0.575484,
+                2.059542,
+                0.285131
+              ]
+            },
+            "independentBlenderImageSha256": "5cb396d5bfba5b22843ab0824a17909159e55a001ddff02b38fbdc5abe2aa78c",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.403672,
+                0.38,
+                -0.616477
+              ],
+              "max": [
+                0.421738,
+                2.132085,
+                0.326469
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.403672,
+                0.38,
+                -0.616477
+              ],
+              "max": [
+                0.421738,
+                2.132085,
+                0.326469
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.403672,
+                0.38,
+                -0.616478
+              ],
+              "max": [
+                0.421738,
+                2.132085,
+                0.326469
+              ]
+            },
+            "independentBlenderImageSha256": "34c2132b92820616ca5aa3ee7c27aa3e3c4d8ba2d90ca1095db41f076ec144f1",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.564142,
+                0.268701,
+                -0.534187
+              ],
+              "max": [
+                0.591301,
+                2.060459,
+                0.282028
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.564142,
+                0.268701,
+                -0.534187
+              ],
+              "max": [
+                0.591301,
+                2.060459,
+                0.282028
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.564142,
+                0.2687,
+                -0.534187
+              ],
+              "max": [
+                0.591301,
+                2.060458,
+                0.282028
+              ]
+            },
+            "independentBlenderImageSha256": "56afff1551f7dd85e102249b14853d73e4a91507586ed2b4ddcfa8f1bf9e5d40",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 1,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.702249,
+                0,
+                -0.383518
+              ],
+              "max": [
+                0.739507,
+                1.768487,
+                0.257666
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.702249,
+                0,
+                -0.383518
+              ],
+              "max": [
+                0.739507,
+                1.768487,
+                0.257666
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.702249,
+                0,
+                -0.383518
+              ],
+              "max": [
+                0.739507,
+                1.768487,
+                0.257666
+              ]
+            },
+            "independentBlenderImageSha256": "77c3a736a765ed189b6a6ae8a60091df184b2206f06912b942f2b9e505631938",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0,
+            "durationSeconds": 0.5333333611488342,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855574,
+                1.779998,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "e35612f87f4401ef6364b934064e0e552008c16770c495bb843d26bd614329cc",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.5333333611488342,
+            "engineBounds": {
+              "min": [
+                -0.820134,
+                0,
+                -0.492946
+              ],
+              "max": [
+                0.566561,
+                1.777496,
+                0.242023
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.820134,
+                0,
+                -0.492946
+              ],
+              "max": [
+                0.566561,
+                1.777496,
+                0.242023
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.820134,
+                0,
+                -0.492946
+              ],
+              "max": [
+                0.56656,
+                1.777496,
+                0.242023
+              ]
+            },
+            "independentBlenderImageSha256": "a9499b3c363ea33541d67972c5837cd6506508c7c239026c4818c940eb8b3dd9",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.5333333611488342,
+            "engineBounds": {
+              "min": [
+                -0.358034,
+                0,
+                -0.317049
+              ],
+              "max": [
+                0.777058,
+                1.779444,
+                0.330693
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.358034,
+                0,
+                -0.317049
+              ],
+              "max": [
+                0.777058,
+                1.779444,
+                0.330693
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.358034,
+                0,
+                -0.317049
+              ],
+              "max": [
+                0.777057,
+                1.779444,
+                0.330693
+              ]
+            },
+            "independentBlenderImageSha256": "21a782fec3f1ab627f1c2058c9a723dc6e9418cd6677b62b7d52806369dc264a",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.5333333611488342,
+            "engineBounds": {
+              "min": [
+                -0.283545,
+                0,
+                -0.258935
+              ],
+              "max": [
+                0.774632,
+                1.777032,
+                0.341447
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.283545,
+                0,
+                -0.258935
+              ],
+              "max": [
+                0.774632,
+                1.777032,
+                0.341447
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.283545,
+                0,
+                -0.258935
+              ],
+              "max": [
+                0.774632,
+                1.777032,
+                0.341447
+              ]
+            },
+            "independentBlenderImageSha256": "6cb6b6499de51bd600d9a4862750d0dbafb360f375682bcb51a17e398fa901d3",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 1,
+            "durationSeconds": 0.5333333611488342,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855574,
+                1.779998,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "849c4ab34ddc171179cc6fc22303007d118d7e342cda6414833a196099be3224",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855574,
+                1.779998,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "7ffcca945ebd2d0d708af95fdcb1b7e9040bcc3960ede0b9ab781a0e9e69df06",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.818833,
+                0,
+                -0.422262
+              ],
+              "max": [
+                0.638119,
+                1.765791,
+                0.223058
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.818833,
+                0,
+                -0.422262
+              ],
+              "max": [
+                0.638119,
+                1.765791,
+                0.223058
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.818833,
+                0,
+                -0.422262
+              ],
+              "max": [
+                0.638119,
+                1.765791,
+                0.223058
+              ]
+            },
+            "independentBlenderImageSha256": "368473094760f29b99f33e0828acec085030308177af6022fac1c38b272265cd",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.78198,
+                0,
+                -0.23418
+              ],
+              "max": [
+                0.845769,
+                1.777197,
+                0.259696
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.78198,
+                0,
+                -0.23418
+              ],
+              "max": [
+                0.845769,
+                1.777197,
+                0.259696
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.78198,
+                0,
+                -0.23418
+              ],
+              "max": [
+                0.845769,
+                1.777197,
+                0.259696
+              ]
+            },
+            "independentBlenderImageSha256": "5174c396b7659187a991b31b87a8303626c4a945b3c3d1fa96c2a05252d5cf8c",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.825855,
+                0,
+                -0.234904
+              ],
+              "max": [
+                0.866419,
+                1.776577,
+                0.260442
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.825855,
+                0,
+                -0.234904
+              ],
+              "max": [
+                0.866419,
+                1.776577,
+                0.260442
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.825855,
+                0,
+                -0.234904
+              ],
+              "max": [
+                0.866419,
+                1.776577,
+                0.260442
+              ]
+            },
+            "independentBlenderImageSha256": "c6d04be6bb8ebe23dd825550e1a7c3a800597d39589359aa528fcc0164197507",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 1,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855574,
+                1.779998,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "b96a1ffab981ecac2d1ee78c3222e66526916fb5bfb76fea973b8eaba54f0337",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0,
+            "durationSeconds": 0.7333333492279053,
+            "engineBounds": {
+              "min": [
+                -0.768709,
+                0,
+                -0.34433
+              ],
+              "max": [
+                0.760023,
+                1.796711,
+                0.298182
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.768709,
+                0,
+                -0.34433
+              ],
+              "max": [
+                0.760023,
+                1.796711,
+                0.298182
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.768709,
+                0.000001,
+                -0.344331
+              ],
+              "max": [
+                0.760022,
+                1.796711,
+                0.298182
+              ]
+            },
+            "independentBlenderImageSha256": "e3f257401e4d7f2d8ce99de339ec6248eaf836b77b0a8c6043648bc192f6177c",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.7333333492279053,
+            "engineBounds": {
+              "min": [
+                -0.776162,
+                -0.000637,
+                -0.463299
+              ],
+              "max": [
+                0.753498,
+                1.763022,
+                0.291566
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.776162,
+                -0.000637,
+                -0.463299
+              ],
+              "max": [
+                0.753498,
+                1.763022,
+                0.291566
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.776162,
+                -0.000637,
+                -0.463299
+              ],
+              "max": [
+                0.753498,
+                1.763023,
+                0.291566
+              ]
+            },
+            "independentBlenderImageSha256": "00e04bb2e47cf35c0fb52ff71b9ca9e467d5f2ac1ab4b9a4d61b2f9d2b030024",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.7333333492279053,
+            "engineBounds": {
+              "min": [
+                -0.783504,
+                0,
+                -0.829504
+              ],
+              "max": [
+                0.761577,
+                1.478333,
+                0.601452
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.783504,
+                0,
+                -0.829504
+              ],
+              "max": [
+                0.761577,
+                1.478333,
+                0.601452
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.783504,
+                0.000001,
+                -0.829505
+              ],
+              "max": [
+                0.761577,
+                1.478333,
+                0.601452
+              ]
+            },
+            "independentBlenderImageSha256": "564b8e36826efa1acf20f39dd52f873ef683b48c97ea86fac6df165c728ad272",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.7333333492279053,
+            "engineBounds": {
+              "min": [
+                -0.734455,
+                -0.000174,
+                -1.002771
+              ],
+              "max": [
+                0.751088,
+                0.922213,
+                0.760921
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.734455,
+                -0.000174,
+                -1.002771
+              ],
+              "max": [
+                0.751088,
+                0.922213,
+                0.760921
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.734455,
+                -0.000173,
+                -1.002771
+              ],
+              "max": [
+                0.751088,
+                0.922214,
+                0.760921
+              ]
+            },
+            "independentBlenderImageSha256": "1c256b2555fa4639a86177ad7b3a67af8fcc7e04b86fee5ca4d1ea8b18cd3cfb",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 1,
+            "durationSeconds": 0.7333333492279053,
+            "engineBounds": {
+              "min": [
+                -0.689476,
+                0,
+                -1.029276
+              ],
+              "max": [
+                0.728536,
+                0.664428,
+                0.774289
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.689476,
+                0,
+                -1.029276
+              ],
+              "max": [
+                0.728536,
+                0.664428,
+                0.774289
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.689476,
+                0,
+                -1.029276
+              ],
+              "max": [
+                0.728536,
+                0.664428,
+                0.774289
+              ]
+            },
+            "independentBlenderImageSha256": "6c6ddf62a58b8ade6db499062a32ab0c9276051d1f78dd7eaa1e6bd2c496f442",
+            "sampledVertexCount": 1029
+          }
+        ],
+        "maximumAbsoluteBoundsError": 0,
+        "maximumIndependentBlenderBoundsError": 0.000035,
+        "exactVertexCounts": true
+      },
+      "switching": {
+        "attackHitAttackMaximumBoundsError": 0,
+        "stalePostureObserved": false
+      },
+      "fade": {
+        "fromClip": "idle",
+        "toClip": "attack",
+        "fadeSeconds": 0.1,
+        "sampledAfterSeconds": 0.05,
+        "blendedBounds": {
+          "min": [
+            -0.856589,
+            -0.000086,
+            -0.250872
+          ],
+          "max": [
+            0.849326,
+            1.778917,
+            0.247576
+          ]
+        },
+        "otherInstanceMaximumBoundsError": 0
+      },
+      "multiInstance": {
+        "translation": [
+          10,
+          0,
+          -5
+        ],
+        "translatedInstanceMaximumBoundsError": 0,
+        "independentInstanceMaximumBoundsError": 0
+      },
+      "sourceQuality": {
+        "maximumBoundsDeltaByClip": {
+          "idle": 0.018755,
+          "run": 0.518661,
+          "jump": 0.38,
+          "attack": 0.5718,
+          "hit": 0.217456,
+          "death": 1.132283
+        },
+        "deathMinimumY": -0.000637,
+        "deathWithinGroundTolerance": true,
+        "attackAndHitRemainAuthoredSourceMotion": true,
+        "intentionalLimbMotionByClip": {
+          "run": true,
+          "jump": true,
+          "attack": true,
+          "hit": true,
+          "death": true
+        },
+        "rendererCompensationApplied": false
+      }
+    },
+    {
+      "asset": "mesh-animation/arc-warden",
+      "sourcePath": "content/assets/actor-kit/arc-warden.glb",
+      "sourceHash": "sha256:a1069d4bfa950aeade3ae032291279684014c1cf93e12fd98359555a9fc259e1",
+      "import": {
+        "engineClips": [
+          {
+            "name": "attack",
+            "duration": 0.5333333611488342
+          },
+          {
+            "name": "death",
+            "duration": 0.7333333492279053
+          },
+          {
+            "name": "hit",
+            "duration": 0.4000000059604645
+          },
+          {
+            "name": "idle",
+            "duration": 1.100000023841858
+          },
+          {
+            "name": "jump",
+            "duration": 0.4000000059604645
+          },
+          {
+            "name": "run",
+            "duration": 0.5666666626930237
+          }
+        ],
+        "directClips": [
+          {
+            "name": "attack",
+            "duration": 0.5333333611488342
+          },
+          {
+            "name": "death",
+            "duration": 0.7333333492279053
+          },
+          {
+            "name": "hit",
+            "duration": 0.4000000059604645
+          },
+          {
+            "name": "idle",
+            "duration": 1.100000023841858
+          },
+          {
+            "name": "jump",
+            "duration": 0.4000000059604645
+          },
+          {
+            "name": "run",
+            "duration": 0.5666666626930237
+          }
+        ],
+        "clipInventoryMatches": true
+      },
+      "cloneBindInterpolation": {
+        "samples": [
+          {
+            "clip": "idle",
+            "normalizedTime": 0,
+            "durationSeconds": 1.100000023841858,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855344,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "a09315e6f643eea5445e1303f68c443db11d015a9c5c7445aa4232f67e2a87b4",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.25,
+            "durationSeconds": 1.100000023841858,
+            "engineBounds": {
+              "min": [
+                -0.853723,
+                -0.000002,
+                -0.248768
+              ],
+              "max": [
+                0.852806,
+                1.778117,
+                0.251256
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.853723,
+                -0.000002,
+                -0.248768
+              ],
+              "max": [
+                0.852806,
+                1.778117,
+                0.251256
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.853723,
+                -0.000002,
+                -0.248768
+              ],
+              "max": [
+                0.852806,
+                1.778117,
+                0.251256
+              ]
+            },
+            "independentBlenderImageSha256": "2c7425b2c881012cddbc3f9f3c6b10b2b11a71457d04b5444c2b0a81f6d58fb3",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.5,
+            "durationSeconds": 1.100000023841858,
+            "engineBounds": {
+              "min": [
+                -0.850134,
+                0,
+                -0.243518
+              ],
+              "max": [
+                0.84703,
+                1.773966,
+                0.261893
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.850134,
+                0,
+                -0.243518
+              ],
+              "max": [
+                0.84703,
+                1.773966,
+                0.261893
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.850134,
+                0,
+                -0.243518
+              ],
+              "max": [
+                0.84703,
+                1.773966,
+                0.261893
+              ]
+            },
+            "independentBlenderImageSha256": "b90d580ac95db6983c01bad212e6daf4e7b9d5e7bf0e77fbbe693c4af7780602",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 0.75,
+            "durationSeconds": 1.100000023841858,
+            "engineBounds": {
+              "min": [
+                -0.853202,
+                -0.000002,
+                -0.247859
+              ],
+              "max": [
+                0.85195,
+                1.777511,
+                0.253175
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.853202,
+                -0.000002,
+                -0.247859
+              ],
+              "max": [
+                0.85195,
+                1.777511,
+                0.253175
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.853202,
+                -0.000002,
+                -0.247859
+              ],
+              "max": [
+                0.85195,
+                1.777511,
+                0.253175
+              ]
+            },
+            "independentBlenderImageSha256": "cd5baf61c018083d222600e6841295f9852f06618ea06d84b7803802b033c286",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "idle",
+            "normalizedTime": 1,
+            "durationSeconds": 1.100000023841858,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855344,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "b849a37c2e08fc53c70d59ee23059b85db2d0651e3b365600e0dab8550c83872",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0,
+            "durationSeconds": 0.5666666626930237,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855344,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "3ae6cbd49901f78d91810b82f22161c12303f780586eaecba875f8498f48e6be",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.5666666626930237,
+            "engineBounds": {
+              "min": [
+                -0.758152,
+                -0.004803,
+                -0.396248
+              ],
+              "max": [
+                0.75572,
+                1.765019,
+                0.470447
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.758152,
+                -0.004803,
+                -0.396248
+              ],
+              "max": [
+                0.75572,
+                1.765019,
+                0.470447
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.75817,
+                -0.004838,
+                -0.396226
+              ],
+              "max": [
+                0.75574,
+                1.765019,
+                0.47043
+              ]
+            },
+            "independentBlenderImageSha256": "f3e15c246b372c89f40b70a203acc9a42561ff4c3f93fab7581a779cb7381452",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.5666666626930237,
+            "engineBounds": {
+              "min": [
+                -0.336684,
+                0.010689,
+                -0.656182
+              ],
+              "max": [
+                0.361031,
+                1.429595,
+                0.602004
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.336684,
+                0.010689,
+                -0.656182
+              ],
+              "max": [
+                0.361031,
+                1.429595,
+                0.602004
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.336684,
+                0.010689,
+                -0.656182
+              ],
+              "max": [
+                0.36103,
+                1.429595,
+                0.602004
+              ]
+            },
+            "independentBlenderImageSha256": "7a3eadc2e01ffb3c804e8bb4ea5e0b75202968a8d888bc2c9b531b250387d72c",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.5666666626930237,
+            "engineBounds": {
+              "min": [
+                -0.609595,
+                -0.014042,
+                -0.486144
+              ],
+              "max": [
+                0.634287,
+                1.69524,
+                0.523235
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.609595,
+                -0.014042,
+                -0.486144
+              ],
+              "max": [
+                0.634287,
+                1.69524,
+                0.523235
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.609616,
+                -0.014052,
+                -0.486137
+              ],
+              "max": [
+                0.634314,
+                1.69524,
+                0.523223
+              ]
+            },
+            "independentBlenderImageSha256": "a60a13780e675cc8d293748c5a33512d53fbb9dae1c68f8e5aeea47cfaabf63d",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "run",
+            "normalizedTime": 1,
+            "durationSeconds": 0.5666666626930237,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855344,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "b81752856ae9954588187702532cee1e557f17b00d4284432a4bb25e43df2c11",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.670365,
+                0,
+                -0.420409
+              ],
+              "max": [
+                0.710224,
+                1.771097,
+                0.270985
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.670365,
+                0,
+                -0.420409
+              ],
+              "max": [
+                0.710224,
+                1.771097,
+                0.270985
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.670365,
+                0,
+                -0.420409
+              ],
+              "max": [
+                0.710223,
+                1.771097,
+                0.270985
+              ]
+            },
+            "independentBlenderImageSha256": "984387d0b74d912b50bb2ec9274bf16f9fd77311dd7e780b3abae494c40e45a5",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.543386,
+                0.268701,
+                -0.546886
+              ],
+              "max": [
+                0.575484,
+                2.059543,
+                0.285131
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.543386,
+                0.268701,
+                -0.546886
+              ],
+              "max": [
+                0.575484,
+                2.059543,
+                0.285131
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.543386,
+                0.268701,
+                -0.546886
+              ],
+              "max": [
+                0.575484,
+                2.059542,
+                0.285131
+              ]
+            },
+            "independentBlenderImageSha256": "f930371cc86eef5b7125bfcb2984443290a80d7ca92427cb892ba3b16171c8cc",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.403672,
+                0.38,
+                -0.616477
+              ],
+              "max": [
+                0.421738,
+                2.132085,
+                0.326469
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.403672,
+                0.38,
+                -0.616477
+              ],
+              "max": [
+                0.421738,
+                2.132085,
+                0.326469
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.403672,
+                0.38,
+                -0.616478
+              ],
+              "max": [
+                0.421738,
+                2.132085,
+                0.326469
+              ]
+            },
+            "independentBlenderImageSha256": "82224b5c724a75f7cac3c6b910e4634949a5b178fafa9962be64ade45b042e28",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.564142,
+                0.268701,
+                -0.534187
+              ],
+              "max": [
+                0.591301,
+                2.060459,
+                0.282028
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.564142,
+                0.268701,
+                -0.534187
+              ],
+              "max": [
+                0.591301,
+                2.060459,
+                0.282028
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.564142,
+                0.2687,
+                -0.534187
+              ],
+              "max": [
+                0.591301,
+                2.060458,
+                0.282028
+              ]
+            },
+            "independentBlenderImageSha256": "8f0aa6163734a8307343899fa85929bbeab19018c669dedb3b128a81c7124e5f",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "jump",
+            "normalizedTime": 1,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.702249,
+                0,
+                -0.383518
+              ],
+              "max": [
+                0.739507,
+                1.768487,
+                0.257666
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.702249,
+                0,
+                -0.383518
+              ],
+              "max": [
+                0.739507,
+                1.768487,
+                0.257666
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.702249,
+                0,
+                -0.383518
+              ],
+              "max": [
+                0.739507,
+                1.768487,
+                0.257666
+              ]
+            },
+            "independentBlenderImageSha256": "77c3a736a765ed189b6a6ae8a60091df184b2206f06912b942f2b9e505631938",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0,
+            "durationSeconds": 0.5333333611488342,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855574,
+                1.779998,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "f58a8836b3ff79676384e157d521102e4523424bb40f383d3897ccd932856bfd",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.5333333611488342,
+            "engineBounds": {
+              "min": [
+                -0.820134,
+                0,
+                -0.492946
+              ],
+              "max": [
+                0.566561,
+                1.777496,
+                0.242023
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.820134,
+                0,
+                -0.492946
+              ],
+              "max": [
+                0.566561,
+                1.777496,
+                0.242023
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.820134,
+                0,
+                -0.492946
+              ],
+              "max": [
+                0.56656,
+                1.777496,
+                0.242023
+              ]
+            },
+            "independentBlenderImageSha256": "ad74882659b8a09b9c1f124ce8f5ad9554af8bc6a11f7a1f66236837e8e21a02",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.5333333611488342,
+            "engineBounds": {
+              "min": [
+                -0.358034,
+                0,
+                -0.317049
+              ],
+              "max": [
+                0.777058,
+                1.779444,
+                0.330693
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.358034,
+                0,
+                -0.317049
+              ],
+              "max": [
+                0.777058,
+                1.779444,
+                0.330693
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.358034,
+                0,
+                -0.317049
+              ],
+              "max": [
+                0.777057,
+                1.779444,
+                0.330693
+              ]
+            },
+            "independentBlenderImageSha256": "d9cc0f46b102e1288533e778bc42e8a906cfdfe24656576eddfdafe45a3159df",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.5333333611488342,
+            "engineBounds": {
+              "min": [
+                -0.283545,
+                0,
+                -0.258935
+              ],
+              "max": [
+                0.774632,
+                1.777032,
+                0.341447
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.283545,
+                0,
+                -0.258935
+              ],
+              "max": [
+                0.774632,
+                1.777032,
+                0.341447
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.283545,
+                0,
+                -0.258935
+              ],
+              "max": [
+                0.774632,
+                1.777032,
+                0.341447
+              ]
+            },
+            "independentBlenderImageSha256": "0941534eabd83af57d637b50f668a8ebee532fcb9bac9bda2f3d382a4d324449",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "attack",
+            "normalizedTime": 1,
+            "durationSeconds": 0.5333333611488342,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855574,
+                1.779998,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "f66981c5209def835232247108030c577e5d5d2e19d1efdb2da920220b22812c",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855574,
+                1.779998,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "1c075b3e963a8fcab28b87275a36529218cbfe887ca0f5d9ae70fd0703e835d7",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.818833,
+                0,
+                -0.422262
+              ],
+              "max": [
+                0.638119,
+                1.765791,
+                0.223058
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.818833,
+                0,
+                -0.422262
+              ],
+              "max": [
+                0.638119,
+                1.765791,
+                0.223058
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.818833,
+                0,
+                -0.422262
+              ],
+              "max": [
+                0.638119,
+                1.765791,
+                0.223058
+              ]
+            },
+            "independentBlenderImageSha256": "221517a6c00e2d72166ddbd51ed9e59d17e8b7a1ab7f89c701050e03c42a17f0",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.78198,
+                0,
+                -0.23418
+              ],
+              "max": [
+                0.845769,
+                1.777197,
+                0.259696
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.78198,
+                0,
+                -0.23418
+              ],
+              "max": [
+                0.845769,
+                1.777197,
+                0.259696
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.78198,
+                0,
+                -0.23418
+              ],
+              "max": [
+                0.845769,
+                1.777197,
+                0.259696
+              ]
+            },
+            "independentBlenderImageSha256": "3b68e5e93f719055354c8d49f154f8443f034d97feddbbc217846db9778289b5",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.825855,
+                0,
+                -0.234904
+              ],
+              "max": [
+                0.866419,
+                1.776577,
+                0.260442
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.825855,
+                0,
+                -0.234904
+              ],
+              "max": [
+                0.866419,
+                1.776577,
+                0.260442
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.825855,
+                0,
+                -0.234904
+              ],
+              "max": [
+                0.866419,
+                1.776577,
+                0.260442
+              ]
+            },
+            "independentBlenderImageSha256": "fd7976ec463506ad0049949c1893d0f6a5614122b5cb6cd756baa9df0f751c27",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "hit",
+            "normalizedTime": 1,
+            "durationSeconds": 0.4000000059604645,
+            "engineBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.252439
+              ],
+              "max": [
+                0.855575,
+                1.779999,
+                0.243138
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.855345,
+                0,
+                -0.25244
+              ],
+              "max": [
+                0.855574,
+                1.779998,
+                0.243138
+              ]
+            },
+            "independentBlenderImageSha256": "bf886d55e0f564d0e3b1b4ea03e8adce72b5dd7460ac0275c2d54cbbcad73f3e",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0,
+            "durationSeconds": 0.7333333492279053,
+            "engineBounds": {
+              "min": [
+                -0.768709,
+                0,
+                -0.34433
+              ],
+              "max": [
+                0.760023,
+                1.796711,
+                0.298182
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.768709,
+                0,
+                -0.34433
+              ],
+              "max": [
+                0.760023,
+                1.796711,
+                0.298182
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.768709,
+                0.000001,
+                -0.344331
+              ],
+              "max": [
+                0.760022,
+                1.796711,
+                0.298182
+              ]
+            },
+            "independentBlenderImageSha256": "3dc2d711934b7019bce7e14589251dbdaf0f97240968d11705d165a2f6902e5c",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.25,
+            "durationSeconds": 0.7333333492279053,
+            "engineBounds": {
+              "min": [
+                -0.776162,
+                -0.000637,
+                -0.463299
+              ],
+              "max": [
+                0.753498,
+                1.763022,
+                0.291566
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.776162,
+                -0.000637,
+                -0.463299
+              ],
+              "max": [
+                0.753498,
+                1.763022,
+                0.291566
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.776162,
+                -0.000637,
+                -0.463299
+              ],
+              "max": [
+                0.753498,
+                1.763023,
+                0.291566
+              ]
+            },
+            "independentBlenderImageSha256": "c50f465ad3ce6f10bb59b82c1f8d62c80ac704040e7e2e05287598baddc97132",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.5,
+            "durationSeconds": 0.7333333492279053,
+            "engineBounds": {
+              "min": [
+                -0.783504,
+                0,
+                -0.829504
+              ],
+              "max": [
+                0.761577,
+                1.478333,
+                0.601452
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.783504,
+                0,
+                -0.829504
+              ],
+              "max": [
+                0.761577,
+                1.478333,
+                0.601452
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.783504,
+                0.000001,
+                -0.829505
+              ],
+              "max": [
+                0.761577,
+                1.478333,
+                0.601452
+              ]
+            },
+            "independentBlenderImageSha256": "ff2665368d2c4a90cb6ab6f219e23577995bb63d181e69bebf72669028e4e9dd",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 0.75,
+            "durationSeconds": 0.7333333492279053,
+            "engineBounds": {
+              "min": [
+                -0.734455,
+                -0.000174,
+                -1.002771
+              ],
+              "max": [
+                0.751088,
+                0.922213,
+                0.760921
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.734455,
+                -0.000174,
+                -1.002771
+              ],
+              "max": [
+                0.751088,
+                0.922213,
+                0.760921
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.734455,
+                -0.000173,
+                -1.002771
+              ],
+              "max": [
+                0.751088,
+                0.922214,
+                0.760921
+              ]
+            },
+            "independentBlenderImageSha256": "247a22a77ca2a5b4966cae380237e85f5d5340c5ff76c51ff42081568e2c753d",
+            "sampledVertexCount": 1029
+          },
+          {
+            "clip": "death",
+            "normalizedTime": 1,
+            "durationSeconds": 0.7333333492279053,
+            "engineBounds": {
+              "min": [
+                -0.689476,
+                0,
+                -1.029276
+              ],
+              "max": [
+                0.728536,
+                0.664428,
+                0.774289
+              ]
+            },
+            "directSourceBounds": {
+              "min": [
+                -0.689476,
+                0,
+                -1.029276
+              ],
+              "max": [
+                0.728536,
+                0.664428,
+                0.774289
+              ]
+            },
+            "independentBlenderBounds": {
+              "min": [
+                -0.689476,
+                0,
+                -1.029276
+              ],
+              "max": [
+                0.728536,
+                0.664428,
+                0.774289
+              ]
+            },
+            "independentBlenderImageSha256": "9f77d6d58fe1511efad98f1c03aa4ee85482588da82369745bf3d2399da1b0ae",
+            "sampledVertexCount": 1029
+          }
+        ],
+        "maximumAbsoluteBoundsError": 0,
+        "maximumIndependentBlenderBoundsError": 0.000035,
+        "exactVertexCounts": true
+      },
+      "switching": {
+        "attackHitAttackMaximumBoundsError": 0,
+        "stalePostureObserved": false
+      },
+      "fade": {
+        "fromClip": "idle",
+        "toClip": "attack",
+        "fadeSeconds": 0.1,
+        "sampledAfterSeconds": 0.05,
+        "blendedBounds": {
+          "min": [
+            -0.856589,
+            -0.000086,
+            -0.250872
+          ],
+          "max": [
+            0.849326,
+            1.778917,
+            0.247576
+          ]
+        },
+        "otherInstanceMaximumBoundsError": 0
+      },
+      "multiInstance": {
+        "translation": [
+          10,
+          0,
+          -5
+        ],
+        "translatedInstanceMaximumBoundsError": 0,
+        "independentInstanceMaximumBoundsError": 0
+      },
+      "sourceQuality": {
+        "maximumBoundsDeltaByClip": {
+          "idle": 0.018755,
+          "run": 0.518661,
+          "jump": 0.38,
+          "attack": 0.5718,
+          "hit": 0.217456,
+          "death": 1.132283
+        },
+        "deathMinimumY": -0.000637,
+        "deathWithinGroundTolerance": true,
+        "attackAndHitRemainAuthoredSourceMotion": true,
+        "intentionalLimbMotionByClip": {
+          "run": true,
+          "jump": true,
+          "attack": true,
+          "hit": true,
+          "death": true
+        },
+        "rendererCompensationApplied": false
+      }
+    }
+  ],
+  "conclusion": {
+    "importDivergenceObserved": false,
+    "cloneBindDivergenceObserved": false,
+    "interpolationDivergenceObserved": false,
+    "switchingOrFadeCrossInstanceDefectObserved": false,
+    "independentBlenderDivergenceObserved": false,
+    "studioDiagnosticFailureObserved": false,
+    "rendererCompensationRequired": false,
+    "stretchedOrDisconnectedLimbPostureObserved": false
+  }
+}

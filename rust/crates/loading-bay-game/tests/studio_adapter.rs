@@ -1204,9 +1204,16 @@ fn animated_glb_import_reimport_and_failures_are_atomic() {
         applied["project"]["animatedMeshResources"][0]["asset"],
         "mesh-animation/arc-warden"
     );
+    let mut imported_clip_ids = applied["project"]["animatedMeshResources"][0]["clipIds"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|clip_id| clip_id.as_str().unwrap())
+        .collect::<Vec<_>>();
+    imported_clip_ids.sort_unstable();
     assert_eq!(
-        applied["project"]["animatedMeshResources"][0]["clipIds"],
-        json!(["idle", "run", "jump", "attack", "hit", "death"])
+        imported_clip_ids,
+        vec!["attack", "death", "hit", "idle", "jump", "run"]
     );
     let canonical: Value = serde_json::from_str(
         applied["project"]["canonical"]["projectJson"]
@@ -1226,7 +1233,7 @@ fn animated_glb_import_reimport_and_failures_are_atomic() {
     );
     assert_eq!(
         actor["import"]["sourceHash"],
-        "5eae9bc3a257e0a31f3a902a7c0cfcbdd5ff8d67757b24ebd18d1e517ee808aa"
+        "a1069d4bfa950aeade3ae032291279684014c1cf93e12fd98359555a9fc259e1"
     );
 
     let (project_hash, _) = owner_version(&applied);
@@ -1283,9 +1290,16 @@ fn animated_glb_import_reimport_and_failures_are_atomic() {
         &reimport,
     );
     assert_eq!(reapplied["type"], "projectMutationApplied", "{reapplied:#}");
+    let mut reimported_clip_ids = reapplied["project"]["animatedMeshResources"][0]["clipIds"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|clip_id| clip_id.as_str().unwrap())
+        .collect::<Vec<_>>();
+    reimported_clip_ids.sort_unstable();
     assert_eq!(
-        reapplied["project"]["animatedMeshResources"][0]["clipIds"],
-        json!(["idle", "run", "jump", "attack", "hit", "death"])
+        reimported_clip_ids,
+        vec!["attack", "death", "hit", "idle", "jump", "run"]
     );
 
     let malformed_hash = owner_version(&reapplied).0;

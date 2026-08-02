@@ -1,0 +1,1771 @@
+{
+  "schemaVersion": 2,
+  "sampler": "Blender evaluated dependency graph; no Rusty Engine or Three.js",
+  "blenderVersion": "5.1.2",
+  "blenderBuildHash": "ec6e62d40fa9",
+  "normalizedTimes": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "inputs": {
+    "committedGlbs": [
+      {
+        "path": "content/assets/actor-kit/bay-rusher.glb",
+        "sha256": "e7e5c7a3a79abac6b24b0ec511b61fd75f82d900cdc4af9fb526278c5f5033f7"
+      },
+      {
+        "path": "content/assets/actor-kit/arc-warden.glb",
+        "sha256": "a1069d4bfa950aeade3ae032291279684014c1cf93e12fd98359555a9fc259e1"
+      }
+    ],
+    "originalFbx": [
+      {
+        "path": "Model/characterMedium.fbx",
+        "sha256": "18835fef534eede635b081ee7fe647d01a885550a591d2e6bf071010906167d8"
+      },
+      {
+        "path": "Animations/idle.fbx",
+        "sha256": "c8a24e0294376ee5a195c56752a13310e1c0b5f8588a4db50e094120e3e4cc74"
+      },
+      {
+        "path": "Animations/run.fbx",
+        "sha256": "e635461fc8dace85ec67a7f7941e949a7c3f108b51ae4d2da1557e6e01749df8"
+      },
+      {
+        "path": "Animations/jump.fbx",
+        "sha256": "b88429077a7a1af5d3f55f43cfd8ce0f7441b4f6f7bb15a8070d7ed15d275f74"
+      }
+    ]
+  },
+  "samples": [
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "attack",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-bay-rusher-attack-00-0.00.png",
+      "imageSha256": "e35612f87f4401ef6364b934064e0e552008c16770c495bb843d26bd614329cc",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.779998
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "attack",
+      "normalizedTime": 0.25,
+      "sourceFrame": 4.0,
+      "file": "committed-glb-bay-rusher-attack-01-0.25.png",
+      "imageSha256": "a9499b3c363ea33541d67972c5837cd6506508c7c239026c4818c940eb8b3dd9",
+      "evaluatedBounds": {
+        "min": [
+          -0.820134,
+          -0.242023,
+          0.0
+        ],
+        "max": [
+          0.56656,
+          0.492946,
+          1.777496
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "attack",
+      "normalizedTime": 0.5,
+      "sourceFrame": 8.0,
+      "file": "committed-glb-bay-rusher-attack-02-0.50.png",
+      "imageSha256": "21a782fec3f1ab627f1c2058c9a723dc6e9418cd6677b62b7d52806369dc264a",
+      "evaluatedBounds": {
+        "min": [
+          -0.358034,
+          -0.330693,
+          0.0
+        ],
+        "max": [
+          0.777057,
+          0.317049,
+          1.779444
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "attack",
+      "normalizedTime": 0.75,
+      "sourceFrame": 12.0,
+      "file": "committed-glb-bay-rusher-attack-03-0.75.png",
+      "imageSha256": "6cb6b6499de51bd600d9a4862750d0dbafb360f375682bcb51a17e398fa901d3",
+      "evaluatedBounds": {
+        "min": [
+          -0.283545,
+          -0.341447,
+          0.0
+        ],
+        "max": [
+          0.774632,
+          0.258935,
+          1.777032
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "attack",
+      "normalizedTime": 1.0,
+      "sourceFrame": 16.0,
+      "file": "committed-glb-bay-rusher-attack-04-1.00.png",
+      "imageSha256": "849c4ab34ddc171179cc6fc22303007d118d7e342cda6414833a196099be3224",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.779998
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "death",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-bay-rusher-death-00-0.00.png",
+      "imageSha256": "e3f257401e4d7f2d8ce99de339ec6248eaf836b77b0a8c6043648bc192f6177c",
+      "evaluatedBounds": {
+        "min": [
+          -0.768709,
+          -0.298182,
+          0.000001
+        ],
+        "max": [
+          0.760022,
+          0.344331,
+          1.796711
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "death",
+      "normalizedTime": 0.25,
+      "sourceFrame": 5.5,
+      "file": "committed-glb-bay-rusher-death-01-0.25.png",
+      "imageSha256": "00e04bb2e47cf35c0fb52ff71b9ca9e467d5f2ac1ab4b9a4d61b2f9d2b030024",
+      "evaluatedBounds": {
+        "min": [
+          -0.776162,
+          -0.291566,
+          -0.000637
+        ],
+        "max": [
+          0.753498,
+          0.463299,
+          1.763023
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "death",
+      "normalizedTime": 0.5,
+      "sourceFrame": 11.0,
+      "file": "committed-glb-bay-rusher-death-02-0.50.png",
+      "imageSha256": "564b8e36826efa1acf20f39dd52f873ef683b48c97ea86fac6df165c728ad272",
+      "evaluatedBounds": {
+        "min": [
+          -0.783504,
+          -0.601452,
+          0.000001
+        ],
+        "max": [
+          0.761577,
+          0.829505,
+          1.478333
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "death",
+      "normalizedTime": 0.75,
+      "sourceFrame": 16.5,
+      "file": "committed-glb-bay-rusher-death-03-0.75.png",
+      "imageSha256": "1c256b2555fa4639a86177ad7b3a67af8fcc7e04b86fee5ca4d1ea8b18cd3cfb",
+      "evaluatedBounds": {
+        "min": [
+          -0.734455,
+          -0.760921,
+          -0.000173
+        ],
+        "max": [
+          0.751088,
+          1.002771,
+          0.922214
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "death",
+      "normalizedTime": 1.0,
+      "sourceFrame": 22.0,
+      "file": "committed-glb-bay-rusher-death-04-1.00.png",
+      "imageSha256": "6c6ddf62a58b8ade6db499062a32ab0c9276051d1f78dd7eaa1e6bd2c496f442",
+      "evaluatedBounds": {
+        "min": [
+          -0.689476,
+          -0.774289,
+          0.0
+        ],
+        "max": [
+          0.728536,
+          1.029276,
+          0.664428
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "hit",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-bay-rusher-hit-00-0.00.png",
+      "imageSha256": "7ffcca945ebd2d0d708af95fdcb1b7e9040bcc3960ede0b9ab781a0e9e69df06",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.779998
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "hit",
+      "normalizedTime": 0.25,
+      "sourceFrame": 3.0,
+      "file": "committed-glb-bay-rusher-hit-01-0.25.png",
+      "imageSha256": "368473094760f29b99f33e0828acec085030308177af6022fac1c38b272265cd",
+      "evaluatedBounds": {
+        "min": [
+          -0.818833,
+          -0.223058,
+          0.0
+        ],
+        "max": [
+          0.638119,
+          0.422262,
+          1.765791
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "hit",
+      "normalizedTime": 0.5,
+      "sourceFrame": 6.0,
+      "file": "committed-glb-bay-rusher-hit-02-0.50.png",
+      "imageSha256": "5174c396b7659187a991b31b87a8303626c4a945b3c3d1fa96c2a05252d5cf8c",
+      "evaluatedBounds": {
+        "min": [
+          -0.78198,
+          -0.259696,
+          0.0
+        ],
+        "max": [
+          0.845769,
+          0.23418,
+          1.777197
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "hit",
+      "normalizedTime": 0.75,
+      "sourceFrame": 9.0,
+      "file": "committed-glb-bay-rusher-hit-03-0.75.png",
+      "imageSha256": "c6d04be6bb8ebe23dd825550e1a7c3a800597d39589359aa528fcc0164197507",
+      "evaluatedBounds": {
+        "min": [
+          -0.825855,
+          -0.260442,
+          0.0
+        ],
+        "max": [
+          0.866419,
+          0.234904,
+          1.776577
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "hit",
+      "normalizedTime": 1.0,
+      "sourceFrame": 12.0,
+      "file": "committed-glb-bay-rusher-hit-04-1.00.png",
+      "imageSha256": "b96a1ffab981ecac2d1ee78c3222e66526916fb5bfb76fea973b8eaba54f0337",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.779998
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "idle",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-bay-rusher-idle-00-0.00.png",
+      "imageSha256": "821f76576188c08d133ad5187902c60752f08f9026aea17651fd6f702599b83a",
+      "evaluatedBounds": {
+        "min": [
+          -0.855344,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855575,
+          0.252439,
+          1.779999
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "idle",
+      "normalizedTime": 0.25,
+      "sourceFrame": 8.25,
+      "file": "committed-glb-bay-rusher-idle-01-0.25.png",
+      "imageSha256": "0fbcb2e2dc9c8384a1ed5be820d2afbadc6becbfc3ea7d11d915b204d859d841",
+      "evaluatedBounds": {
+        "min": [
+          -0.853723,
+          -0.251256,
+          -0.000002
+        ],
+        "max": [
+          0.852806,
+          0.248768,
+          1.778117
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "idle",
+      "normalizedTime": 0.5,
+      "sourceFrame": 16.5,
+      "file": "committed-glb-bay-rusher-idle-02-0.50.png",
+      "imageSha256": "47d3829abb5592505b309e56bbb7562936426852e9b53f21f46f02248c5c3818",
+      "evaluatedBounds": {
+        "min": [
+          -0.850134,
+          -0.261893,
+          0.0
+        ],
+        "max": [
+          0.84703,
+          0.243518,
+          1.773966
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "idle",
+      "normalizedTime": 0.75,
+      "sourceFrame": 24.75,
+      "file": "committed-glb-bay-rusher-idle-03-0.75.png",
+      "imageSha256": "69ea9d417223488b33b02f02736cf4139b62e394664c7d2918cab5a2685db747",
+      "evaluatedBounds": {
+        "min": [
+          -0.853202,
+          -0.253175,
+          -0.000002
+        ],
+        "max": [
+          0.85195,
+          0.247859,
+          1.777511
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "idle",
+      "normalizedTime": 1.0,
+      "sourceFrame": 33.0,
+      "file": "committed-glb-bay-rusher-idle-04-1.00.png",
+      "imageSha256": "41bfe1d6ef44f2d702c87576e22ae218ab337417947d78b8924a63691f39f795",
+      "evaluatedBounds": {
+        "min": [
+          -0.855344,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855575,
+          0.252439,
+          1.779999
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "jump",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-bay-rusher-jump-00-0.00.png",
+      "imageSha256": "f83eb5900408c74365f76dae4bfff1879be66d3b3412ad3c6be99b0e7ba28760",
+      "evaluatedBounds": {
+        "min": [
+          -0.670365,
+          -0.270985,
+          0.0
+        ],
+        "max": [
+          0.710223,
+          0.420409,
+          1.771097
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "jump",
+      "normalizedTime": 0.25,
+      "sourceFrame": 3.0,
+      "file": "committed-glb-bay-rusher-jump-01-0.25.png",
+      "imageSha256": "5cb396d5bfba5b22843ab0824a17909159e55a001ddff02b38fbdc5abe2aa78c",
+      "evaluatedBounds": {
+        "min": [
+          -0.543386,
+          -0.285131,
+          0.268701
+        ],
+        "max": [
+          0.575484,
+          0.546886,
+          2.059542
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "jump",
+      "normalizedTime": 0.5,
+      "sourceFrame": 6.0,
+      "file": "committed-glb-bay-rusher-jump-02-0.50.png",
+      "imageSha256": "34c2132b92820616ca5aa3ee7c27aa3e3c4d8ba2d90ca1095db41f076ec144f1",
+      "evaluatedBounds": {
+        "min": [
+          -0.403672,
+          -0.326469,
+          0.38
+        ],
+        "max": [
+          0.421738,
+          0.616478,
+          2.132085
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "jump",
+      "normalizedTime": 0.75,
+      "sourceFrame": 9.0,
+      "file": "committed-glb-bay-rusher-jump-03-0.75.png",
+      "imageSha256": "56afff1551f7dd85e102249b14853d73e4a91507586ed2b4ddcfa8f1bf9e5d40",
+      "evaluatedBounds": {
+        "min": [
+          -0.564142,
+          -0.282028,
+          0.2687
+        ],
+        "max": [
+          0.591301,
+          0.534187,
+          2.060458
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "jump",
+      "normalizedTime": 1.0,
+      "sourceFrame": 12.0,
+      "file": "committed-glb-bay-rusher-jump-04-1.00.png",
+      "imageSha256": "77c3a736a765ed189b6a6ae8a60091df184b2206f06912b942f2b9e505631938",
+      "evaluatedBounds": {
+        "min": [
+          -0.702249,
+          -0.257666,
+          0.0
+        ],
+        "max": [
+          0.739507,
+          0.383518,
+          1.768487
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "run",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-bay-rusher-run-00-0.00.png",
+      "imageSha256": "3abfff543c29c92be59008fbc6db001589e102d9d018ecf2451604d13b96f36b",
+      "evaluatedBounds": {
+        "min": [
+          -0.855344,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855575,
+          0.25244,
+          1.779999
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "run",
+      "normalizedTime": 0.25,
+      "sourceFrame": 4.25,
+      "file": "committed-glb-bay-rusher-run-01-0.25.png",
+      "imageSha256": "f3e15c246b372c89f40b70a203acc9a42561ff4c3f93fab7581a779cb7381452",
+      "evaluatedBounds": {
+        "min": [
+          -0.75817,
+          -0.47043,
+          -0.004838
+        ],
+        "max": [
+          0.75574,
+          0.396226,
+          1.765019
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "run",
+      "normalizedTime": 0.5,
+      "sourceFrame": 8.5,
+      "file": "committed-glb-bay-rusher-run-02-0.50.png",
+      "imageSha256": "7a3eadc2e01ffb3c804e8bb4ea5e0b75202968a8d888bc2c9b531b250387d72c",
+      "evaluatedBounds": {
+        "min": [
+          -0.336684,
+          -0.602004,
+          0.010689
+        ],
+        "max": [
+          0.36103,
+          0.656182,
+          1.429595
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "run",
+      "normalizedTime": 0.75,
+      "sourceFrame": 12.75,
+      "file": "committed-glb-bay-rusher-run-03-0.75.png",
+      "imageSha256": "4647e9918f4a6edd82acbddabceec04877b426dd62d81249ed3c76a62a57459a",
+      "evaluatedBounds": {
+        "min": [
+          -0.609616,
+          -0.523223,
+          -0.014052
+        ],
+        "max": [
+          0.634314,
+          0.486137,
+          1.69524
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clip": "run",
+      "normalizedTime": 1.0,
+      "sourceFrame": 17.0,
+      "file": "committed-glb-bay-rusher-run-04-1.00.png",
+      "imageSha256": "b81752856ae9954588187702532cee1e557f17b00d4284432a4bb25e43df2c11",
+      "evaluatedBounds": {
+        "min": [
+          -0.855344,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855575,
+          0.25244,
+          1.779999
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "attack",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-arc-warden-attack-00-0.00.png",
+      "imageSha256": "f58a8836b3ff79676384e157d521102e4523424bb40f383d3897ccd932856bfd",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.779998
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "attack",
+      "normalizedTime": 0.25,
+      "sourceFrame": 4.0,
+      "file": "committed-glb-arc-warden-attack-01-0.25.png",
+      "imageSha256": "ad74882659b8a09b9c1f124ce8f5ad9554af8bc6a11f7a1f66236837e8e21a02",
+      "evaluatedBounds": {
+        "min": [
+          -0.820134,
+          -0.242023,
+          0.0
+        ],
+        "max": [
+          0.56656,
+          0.492946,
+          1.777496
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "attack",
+      "normalizedTime": 0.5,
+      "sourceFrame": 8.0,
+      "file": "committed-glb-arc-warden-attack-02-0.50.png",
+      "imageSha256": "d9cc0f46b102e1288533e778bc42e8a906cfdfe24656576eddfdafe45a3159df",
+      "evaluatedBounds": {
+        "min": [
+          -0.358034,
+          -0.330693,
+          0.0
+        ],
+        "max": [
+          0.777057,
+          0.317049,
+          1.779444
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "attack",
+      "normalizedTime": 0.75,
+      "sourceFrame": 12.0,
+      "file": "committed-glb-arc-warden-attack-03-0.75.png",
+      "imageSha256": "0941534eabd83af57d637b50f668a8ebee532fcb9bac9bda2f3d382a4d324449",
+      "evaluatedBounds": {
+        "min": [
+          -0.283545,
+          -0.341447,
+          0.0
+        ],
+        "max": [
+          0.774632,
+          0.258935,
+          1.777032
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "attack",
+      "normalizedTime": 1.0,
+      "sourceFrame": 16.0,
+      "file": "committed-glb-arc-warden-attack-04-1.00.png",
+      "imageSha256": "f66981c5209def835232247108030c577e5d5d2e19d1efdb2da920220b22812c",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.779998
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "death",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-arc-warden-death-00-0.00.png",
+      "imageSha256": "3dc2d711934b7019bce7e14589251dbdaf0f97240968d11705d165a2f6902e5c",
+      "evaluatedBounds": {
+        "min": [
+          -0.768709,
+          -0.298182,
+          0.000001
+        ],
+        "max": [
+          0.760022,
+          0.344331,
+          1.796711
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "death",
+      "normalizedTime": 0.25,
+      "sourceFrame": 5.5,
+      "file": "committed-glb-arc-warden-death-01-0.25.png",
+      "imageSha256": "c50f465ad3ce6f10bb59b82c1f8d62c80ac704040e7e2e05287598baddc97132",
+      "evaluatedBounds": {
+        "min": [
+          -0.776162,
+          -0.291566,
+          -0.000637
+        ],
+        "max": [
+          0.753498,
+          0.463299,
+          1.763023
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "death",
+      "normalizedTime": 0.5,
+      "sourceFrame": 11.0,
+      "file": "committed-glb-arc-warden-death-02-0.50.png",
+      "imageSha256": "ff2665368d2c4a90cb6ab6f219e23577995bb63d181e69bebf72669028e4e9dd",
+      "evaluatedBounds": {
+        "min": [
+          -0.783504,
+          -0.601452,
+          0.000001
+        ],
+        "max": [
+          0.761577,
+          0.829505,
+          1.478333
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "death",
+      "normalizedTime": 0.75,
+      "sourceFrame": 16.5,
+      "file": "committed-glb-arc-warden-death-03-0.75.png",
+      "imageSha256": "247a22a77ca2a5b4966cae380237e85f5d5340c5ff76c51ff42081568e2c753d",
+      "evaluatedBounds": {
+        "min": [
+          -0.734455,
+          -0.760921,
+          -0.000173
+        ],
+        "max": [
+          0.751088,
+          1.002771,
+          0.922214
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "death",
+      "normalizedTime": 1.0,
+      "sourceFrame": 22.0,
+      "file": "committed-glb-arc-warden-death-04-1.00.png",
+      "imageSha256": "9f77d6d58fe1511efad98f1c03aa4ee85482588da82369745bf3d2399da1b0ae",
+      "evaluatedBounds": {
+        "min": [
+          -0.689476,
+          -0.774289,
+          0.0
+        ],
+        "max": [
+          0.728536,
+          1.029276,
+          0.664428
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "hit",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-arc-warden-hit-00-0.00.png",
+      "imageSha256": "1c075b3e963a8fcab28b87275a36529218cbfe887ca0f5d9ae70fd0703e835d7",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.779998
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "hit",
+      "normalizedTime": 0.25,
+      "sourceFrame": 3.0,
+      "file": "committed-glb-arc-warden-hit-01-0.25.png",
+      "imageSha256": "221517a6c00e2d72166ddbd51ed9e59d17e8b7a1ab7f89c701050e03c42a17f0",
+      "evaluatedBounds": {
+        "min": [
+          -0.818833,
+          -0.223058,
+          0.0
+        ],
+        "max": [
+          0.638119,
+          0.422262,
+          1.765791
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "hit",
+      "normalizedTime": 0.5,
+      "sourceFrame": 6.0,
+      "file": "committed-glb-arc-warden-hit-02-0.50.png",
+      "imageSha256": "3b68e5e93f719055354c8d49f154f8443f034d97feddbbc217846db9778289b5",
+      "evaluatedBounds": {
+        "min": [
+          -0.78198,
+          -0.259696,
+          0.0
+        ],
+        "max": [
+          0.845769,
+          0.23418,
+          1.777197
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "hit",
+      "normalizedTime": 0.75,
+      "sourceFrame": 9.0,
+      "file": "committed-glb-arc-warden-hit-03-0.75.png",
+      "imageSha256": "fd7976ec463506ad0049949c1893d0f6a5614122b5cb6cd756baa9df0f751c27",
+      "evaluatedBounds": {
+        "min": [
+          -0.825855,
+          -0.260442,
+          0.0
+        ],
+        "max": [
+          0.866419,
+          0.234904,
+          1.776577
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "hit",
+      "normalizedTime": 1.0,
+      "sourceFrame": 12.0,
+      "file": "committed-glb-arc-warden-hit-04-1.00.png",
+      "imageSha256": "bf886d55e0f564d0e3b1b4ea03e8adce72b5dd7460ac0275c2d54cbbcad73f3e",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.779998
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "idle",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-arc-warden-idle-00-0.00.png",
+      "imageSha256": "a09315e6f643eea5445e1303f68c443db11d015a9c5c7445aa4232f67e2a87b4",
+      "evaluatedBounds": {
+        "min": [
+          -0.855344,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855575,
+          0.252439,
+          1.779999
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "idle",
+      "normalizedTime": 0.25,
+      "sourceFrame": 8.25,
+      "file": "committed-glb-arc-warden-idle-01-0.25.png",
+      "imageSha256": "2c7425b2c881012cddbc3f9f3c6b10b2b11a71457d04b5444c2b0a81f6d58fb3",
+      "evaluatedBounds": {
+        "min": [
+          -0.853723,
+          -0.251256,
+          -0.000002
+        ],
+        "max": [
+          0.852806,
+          0.248768,
+          1.778117
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "idle",
+      "normalizedTime": 0.5,
+      "sourceFrame": 16.5,
+      "file": "committed-glb-arc-warden-idle-02-0.50.png",
+      "imageSha256": "b90d580ac95db6983c01bad212e6daf4e7b9d5e7bf0e77fbbe693c4af7780602",
+      "evaluatedBounds": {
+        "min": [
+          -0.850134,
+          -0.261893,
+          0.0
+        ],
+        "max": [
+          0.84703,
+          0.243518,
+          1.773966
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "idle",
+      "normalizedTime": 0.75,
+      "sourceFrame": 24.75,
+      "file": "committed-glb-arc-warden-idle-03-0.75.png",
+      "imageSha256": "cd5baf61c018083d222600e6841295f9852f06618ea06d84b7803802b033c286",
+      "evaluatedBounds": {
+        "min": [
+          -0.853202,
+          -0.253175,
+          -0.000002
+        ],
+        "max": [
+          0.85195,
+          0.247859,
+          1.777511
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "idle",
+      "normalizedTime": 1.0,
+      "sourceFrame": 33.0,
+      "file": "committed-glb-arc-warden-idle-04-1.00.png",
+      "imageSha256": "b849a37c2e08fc53c70d59ee23059b85db2d0651e3b365600e0dab8550c83872",
+      "evaluatedBounds": {
+        "min": [
+          -0.855344,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855575,
+          0.252439,
+          1.779999
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "jump",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-arc-warden-jump-00-0.00.png",
+      "imageSha256": "984387d0b74d912b50bb2ec9274bf16f9fd77311dd7e780b3abae494c40e45a5",
+      "evaluatedBounds": {
+        "min": [
+          -0.670365,
+          -0.270985,
+          0.0
+        ],
+        "max": [
+          0.710223,
+          0.420409,
+          1.771097
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "jump",
+      "normalizedTime": 0.25,
+      "sourceFrame": 3.0,
+      "file": "committed-glb-arc-warden-jump-01-0.25.png",
+      "imageSha256": "f930371cc86eef5b7125bfcb2984443290a80d7ca92427cb892ba3b16171c8cc",
+      "evaluatedBounds": {
+        "min": [
+          -0.543386,
+          -0.285131,
+          0.268701
+        ],
+        "max": [
+          0.575484,
+          0.546886,
+          2.059542
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "jump",
+      "normalizedTime": 0.5,
+      "sourceFrame": 6.0,
+      "file": "committed-glb-arc-warden-jump-02-0.50.png",
+      "imageSha256": "82224b5c724a75f7cac3c6b910e4634949a5b178fafa9962be64ade45b042e28",
+      "evaluatedBounds": {
+        "min": [
+          -0.403672,
+          -0.326469,
+          0.38
+        ],
+        "max": [
+          0.421738,
+          0.616478,
+          2.132085
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "jump",
+      "normalizedTime": 0.75,
+      "sourceFrame": 9.0,
+      "file": "committed-glb-arc-warden-jump-03-0.75.png",
+      "imageSha256": "8f0aa6163734a8307343899fa85929bbeab19018c669dedb3b128a81c7124e5f",
+      "evaluatedBounds": {
+        "min": [
+          -0.564142,
+          -0.282028,
+          0.2687
+        ],
+        "max": [
+          0.591301,
+          0.534187,
+          2.060458
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "jump",
+      "normalizedTime": 1.0,
+      "sourceFrame": 12.0,
+      "file": "committed-glb-arc-warden-jump-04-1.00.png",
+      "imageSha256": "77c3a736a765ed189b6a6ae8a60091df184b2206f06912b942f2b9e505631938",
+      "evaluatedBounds": {
+        "min": [
+          -0.702249,
+          -0.257666,
+          0.0
+        ],
+        "max": [
+          0.739507,
+          0.383518,
+          1.768487
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "run",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "committed-glb-arc-warden-run-00-0.00.png",
+      "imageSha256": "3ae6cbd49901f78d91810b82f22161c12303f780586eaecba875f8498f48e6be",
+      "evaluatedBounds": {
+        "min": [
+          -0.855344,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855575,
+          0.25244,
+          1.779999
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "run",
+      "normalizedTime": 0.25,
+      "sourceFrame": 4.25,
+      "file": "committed-glb-arc-warden-run-01-0.25.png",
+      "imageSha256": "f3e15c246b372c89f40b70a203acc9a42561ff4c3f93fab7581a779cb7381452",
+      "evaluatedBounds": {
+        "min": [
+          -0.75817,
+          -0.47043,
+          -0.004838
+        ],
+        "max": [
+          0.75574,
+          0.396226,
+          1.765019
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "run",
+      "normalizedTime": 0.5,
+      "sourceFrame": 8.5,
+      "file": "committed-glb-arc-warden-run-02-0.50.png",
+      "imageSha256": "7a3eadc2e01ffb3c804e8bb4ea5e0b75202968a8d888bc2c9b531b250387d72c",
+      "evaluatedBounds": {
+        "min": [
+          -0.336684,
+          -0.602004,
+          0.010689
+        ],
+        "max": [
+          0.36103,
+          0.656182,
+          1.429595
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "run",
+      "normalizedTime": 0.75,
+      "sourceFrame": 12.75,
+      "file": "committed-glb-arc-warden-run-03-0.75.png",
+      "imageSha256": "a60a13780e675cc8d293748c5a33512d53fbb9dae1c68f8e5aeea47cfaabf63d",
+      "evaluatedBounds": {
+        "min": [
+          -0.609616,
+          -0.523223,
+          -0.014052
+        ],
+        "max": [
+          0.634314,
+          0.486137,
+          1.69524
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clip": "run",
+      "normalizedTime": 1.0,
+      "sourceFrame": 17.0,
+      "file": "committed-glb-arc-warden-run-04-1.00.png",
+      "imageSha256": "b81752856ae9954588187702532cee1e557f17b00d4284432a4bb25e43df2c11",
+      "evaluatedBounds": {
+        "min": [
+          -0.855344,
+          -0.243138,
+          0.0
+        ],
+        "max": [
+          0.855575,
+          0.25244,
+          1.779999
+        ]
+      },
+      "vertexCount": 1029
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "idle",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "original-fbx-kenney-source-idle-00-0.00.png",
+      "imageSha256": "891fb9d2c4011e4174c4cf3d94913544041f91b405416338de62311a6fb5aea8",
+      "evaluatedBounds": {
+        "min": [
+          -0.855346,
+          -0.243138,
+          0.000323
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.780322
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "idle",
+      "normalizedTime": 0.25,
+      "sourceFrame": 8.25,
+      "file": "original-fbx-kenney-source-idle-01-0.25.png",
+      "imageSha256": "dee9b18f590badc8572569294a8af06011dcebc181d4be1fdcb331e8fa680e1d",
+      "evaluatedBounds": {
+        "min": [
+          -0.853709,
+          -0.251251,
+          -0.005289
+        ],
+        "max": [
+          0.852824,
+          0.248771,
+          1.772832
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "idle",
+      "normalizedTime": 0.5,
+      "sourceFrame": 16.5,
+      "file": "original-fbx-kenney-source-idle-02-0.50.png",
+      "imageSha256": "d2fab97764b3dad7446288bd86ea03c1325ecb3fbac710c0dfe5f25cf3c36128",
+      "evaluatedBounds": {
+        "min": [
+          -0.850082,
+          -0.261932,
+          -0.012318
+        ],
+        "max": [
+          0.847039,
+          0.243497,
+          1.761629
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "idle",
+      "normalizedTime": 0.75,
+      "sourceFrame": 24.75,
+      "file": "original-fbx-kenney-source-idle-03-0.75.png",
+      "imageSha256": "5069f6130b4553a5a371764a7e39b1602dffba3d0a020bdb9905d111ca09e996",
+      "evaluatedBounds": {
+        "min": [
+          -0.853182,
+          -0.253179,
+          -0.006585
+        ],
+        "max": [
+          0.851968,
+          0.247858,
+          1.770927
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "idle",
+      "normalizedTime": 1.0,
+      "sourceFrame": 33.0,
+      "file": "original-fbx-kenney-source-idle-04-1.00.png",
+      "imageSha256": "83cfb21dc52b76377a21c7982fb2e29864142d96fe927e0ad5e8b43ebc4ae7ae",
+      "evaluatedBounds": {
+        "min": [
+          -0.855346,
+          -0.243138,
+          0.000323
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.780322
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "jump",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "original-fbx-kenney-source-jump-00-0.00.png",
+      "imageSha256": "6b3eb4389f69a5cffb019b1fe1b8198b81fc4ee4bb8bb12dadbf9ea1a4d6bd19",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.000323
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.780322
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "jump",
+      "normalizedTime": 0.25,
+      "sourceFrame": 3.25,
+      "file": "original-fbx-kenney-source-jump-01-0.25.png",
+      "imageSha256": "730bb688587f8f4075c5ac803c2179813cef9a8f1e5826babd2a23b0d991cc60",
+      "evaluatedBounds": {
+        "min": [
+          -0.855413,
+          -0.242031,
+          0.000022
+        ],
+        "max": [
+          0.855143,
+          0.253547,
+          1.780488
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "jump",
+      "normalizedTime": 0.5,
+      "sourceFrame": 6.5,
+      "file": "original-fbx-kenney-source-jump-02-0.50.png",
+      "imageSha256": "27107542c82ebfaab6702e8eadacaf57a2696301920cc48c404d06d74869d401",
+      "evaluatedBounds": {
+        "min": [
+          -0.855563,
+          -0.239516,
+          -0.000612
+        ],
+        "max": [
+          0.854092,
+          0.256062,
+          1.780831
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "jump",
+      "normalizedTime": 0.75,
+      "sourceFrame": 9.75,
+      "file": "original-fbx-kenney-source-jump-03-0.75.png",
+      "imageSha256": "dc72b02168d9bb1f749cd75a2fc6ce621d79fdb5188882ac1d9a272023fe7fab",
+      "evaluatedBounds": {
+        "min": [
+          -0.855472,
+          -0.24105,
+          -0.000234
+        ],
+        "max": [
+          0.854746,
+          0.254528,
+          1.780628
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "jump",
+      "normalizedTime": 1.0,
+      "sourceFrame": 13.0,
+      "file": "original-fbx-kenney-source-jump-04-1.00.png",
+      "imageSha256": "ed18332d97d15307ee2a55663a289dd333511c11b4b4c44557470cbc0770c64b",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.000323
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.780322
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "run",
+      "normalizedTime": 0.0,
+      "sourceFrame": 0.0,
+      "file": "original-fbx-kenney-source-run-00-0.00.png",
+      "imageSha256": "74d7f2e86e08714dad9ca42d29ea42e2b97fd0bb9a40b3a5c3a40d1b18aebdeb",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.000324
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.780322
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "run",
+      "normalizedTime": 0.25,
+      "sourceFrame": 4.25,
+      "file": "original-fbx-kenney-source-run-01-0.25.png",
+      "imageSha256": "1dac5da57070351a19b2279f1762ab19598300659ce40daf58fef37204abee17",
+      "evaluatedBounds": {
+        "min": [
+          -0.760119,
+          -0.460533,
+          -0.002518
+        ],
+        "max": [
+          0.755678,
+          0.395459,
+          1.764378
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "run",
+      "normalizedTime": 0.5,
+      "sourceFrame": 8.5,
+      "file": "original-fbx-kenney-source-run-02-0.50.png",
+      "imageSha256": "4d5723b1c1719880a00412c1b0853d7437c6c3cb0703587b57780f7deb1d1b77",
+      "evaluatedBounds": {
+        "min": [
+          -0.336375,
+          -0.598568,
+          0.366911
+        ],
+        "max": [
+          0.358783,
+          0.658167,
+          1.779728
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "run",
+      "normalizedTime": 0.75,
+      "sourceFrame": 12.75,
+      "file": "original-fbx-kenney-source-run-03-0.75.png",
+      "imageSha256": "7218f6197fe9a8d1c4a7f20ffc38bf37c270d2beb28625e4f5d8c6ec077eb558",
+      "evaluatedBounds": {
+        "min": [
+          -0.61031,
+          -0.522685,
+          0.073422
+        ],
+        "max": [
+          0.632292,
+          0.486234,
+          1.768086
+        ]
+      },
+      "vertexCount": 804
+    },
+    {
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clip": "run",
+      "normalizedTime": 1.0,
+      "sourceFrame": 17.0,
+      "file": "original-fbx-kenney-source-run-04-1.00.png",
+      "imageSha256": "6465437e5d7cf3ffa03c8619bd3a7badfdc29fa980b2b9b05a38c8ee1cc694a9",
+      "evaluatedBounds": {
+        "min": [
+          -0.855345,
+          -0.243138,
+          0.000324
+        ],
+        "max": [
+          0.855574,
+          0.25244,
+          1.780322
+        ]
+      },
+      "vertexCount": 804
+    }
+  ],
+  "montages": [
+    {
+      "file": "blender-bay-rusher-all-clips.png",
+      "sha256": "ed4a4d8f6e38ffad0a36680e6012f067433d91ec11a0f95b8a91645955f84547",
+      "baseline": "committed-glb",
+      "actor": "bay-rusher",
+      "clips": [
+        "idle",
+        "run",
+        "jump",
+        "attack",
+        "hit",
+        "death"
+      ],
+      "normalizedTimes": [
+        0,
+        0.25,
+        0.5,
+        0.75,
+        1
+      ]
+    },
+    {
+      "file": "blender-arc-warden-all-clips.png",
+      "sha256": "e9c594cf89c944d8552e973b409d2c54ff3ceb364ba9d1c730c79c5a8268df01",
+      "baseline": "committed-glb",
+      "actor": "arc-warden",
+      "clips": [
+        "idle",
+        "run",
+        "jump",
+        "attack",
+        "hit",
+        "death"
+      ],
+      "normalizedTimes": [
+        0,
+        0.25,
+        0.5,
+        0.75,
+        1
+      ]
+    },
+    {
+      "file": "blender-kenney-source-clips.png",
+      "sha256": "b7903321dd3c44b6714e53b12014018ee125149f3406543ac9b2a78e05e38342",
+      "baseline": "original-fbx",
+      "actor": "kenney-source",
+      "clips": [
+        "idle",
+        "run",
+        "jump"
+      ],
+      "normalizedTimes": [
+        0,
+        0.25,
+        0.5,
+        0.75,
+        1
+      ]
+    }
+  ],
+  "visualComparison": {
+    "file": "animation-skinning-before-after.png",
+    "sha256": "1cbca789c40083e4954470ed86c716a296d25aacad6f9abf8d9bff1f1196d919",
+    "beforeCommit": "5889518bc7e0bf3514d3f1c98470ba785928bdeb",
+    "beforeEvidence": [
+      "bay-rusher-run-contact-sheet.png",
+      "arc-warden-attack-contact-sheet.png"
+    ],
+    "afterEvidence": [
+      "bay-rusher-run-contact-sheet.png",
+      "arc-warden-attack-contact-sheet.png"
+    ],
+    "reviewedOutcome": "Before sheets visibly tear or detach limbs; current Blender and Studio sheets retain connected, articulated poses at all five labeled times."
+  }
+}

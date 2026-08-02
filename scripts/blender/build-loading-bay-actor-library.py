@@ -647,9 +647,11 @@ def export_variant(
             "id": action.name,
             "frameStart": int(action.frame_range[0]),
             "frameEnd": int(action.frame_range[1]),
-            "durationSeconds": round(
-                (action.frame_range[1] - action.frame_range[0]) / FPS, 6
-            ),
+            # Exported animation time is absolute from frame zero. Imported
+            # Kenney actions begin their first authored key at frame one, so
+            # subtracting frameStart would under-report the exact glTF mixer
+            # duration by one frame.
+            "durationSeconds": round(action.frame_range[1] / FPS, 6),
             "origin": "Kenney source"
             if action in source_actions
             else "Loading Bay derivative",

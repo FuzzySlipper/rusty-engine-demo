@@ -249,19 +249,22 @@ PYTHONPATH=/usr/lib/python3.14/site-packages blender --background --factory-star
   --output-dir content/assets/actor-kit
 ```
 
-The recipe imports the medium rig once per variant, normalizes the actor to 1.78 world units with
-its source origin preserved, merges Kenney's named idle/run/jump actions, installs one embedded
-nearest-filtered skin, and exports one mesh, one armature, one material, and six named NLA-track
-animations. The attack and hit clips are original Loading Bay combat poses keyed as local
-quaternion rotations on eight existing torso, head, shoulder, arm, and forearm joints. They never
-translate a joint or alter a bone length. Death uses a bounded root fall that returns the actor to
-its authored contact plane. These recipe-defined derivatives do not rename or misrepresent stock
-clips and carry no gameplay authority.
+The recipe imports the medium rig once per variant, normalizes the armature and skinned mesh
+together to 1.78 world units, retargets Kenney's idle/run animation-only FBXs as local rotation
+deltas onto the model FBX bind skeleton, installs one embedded nearest-filtered skin, and exports
+one mesh, one armature, one material, and six named actions. Imported non-root joint translations
+are deliberately discarded: their animation-FBX rest poses differ from the model bind pose and
+were the source of the visible stretched/flopping limbs. Jump, attack, hit, and death are explicit
+Loading Bay whole-body actions keyed as local rotations on fourteen existing torso, head, arm,
+and leg joints. No action changes a bind bone length. Every sampled non-jump pose is normalized to
+the authored contact plane; jump alone retains its intentional 0.38-unit arc. These
+recipe-defined derivatives do not rename or misrepresent stock clips and carry no gameplay
+authority.
 
 | Product source                            | Skin                |   Bytes | SHA-256                                                            |
 | ----------------------------------------- | ------------------- | ------: | ------------------------------------------------------------------ |
-| `content/assets/actor-kit/arc-warden.glb` | `zombieMaleA.png`   | 343,584 | `5eae9bc3a257e0a31f3a902a7c0cfcbdd5ff8d67757b24ebd18d1e517ee808aa` |
-| `content/assets/actor-kit/bay-rusher.glb` | `zombieFemaleA.png` | 338,004 | `a53b783850bb4251788216fc4ea4d425d28efd6876a313498087b50fbf07dd05` |
+| `content/assets/actor-kit/arc-warden.glb` | `zombieMaleA.png`   | 353,956 | `a1069d4bfa950aeade3ae032291279684014c1cf93e12fd98359555a9fc259e1` |
+| `content/assets/actor-kit/bay-rusher.glb` | `zombieFemaleA.png` | 348,372 | `e7e5c7a3a79abac6b24b0ec511b61fd75f82d900cdc4af9fb526278c5f5033f7` |
 
 Both outputs contain exact `idle`, `run`, `jump`, `attack`, `hit`, and `death` clips. Their complete
 source file hashes, clip ranges/durations/origins, Blender version, target scale, final bytes, and
@@ -269,8 +272,9 @@ asset identities are closed by `content/assets/actor-kit/source-manifest.json`.
 `scripts/check-actor-kit.mjs` independently parses the shipped GLB JSON and binary chunks and
 rejects hash, size, clip, mesh, skin, material, embedded-image, or external-buffer drift. For each
 attack and hit clip it also decodes the exported quaternion accessors and requires nontrivial
-rotation deltas on all eight reviewed skin joints, excluding whole-armature motion as sufficient
-animation evidence. The generator also
+rotation deltas on at least eight reviewed skin joints, excluding whole-armature motion as
+sufficient animation evidence. It verifies each manifest duration against the shipped glTF time
+accessors. The generator also
 factory-resets Blender and reimports each finished GLB before recording its manifest, so a claimed
 clip cannot exist only in the `.blend` session. A second factory-startup invocation produced
 byte-identical GLBs at both recorded hashes.
@@ -281,23 +285,35 @@ normalizing its indentation, trailing whitespace, and line endings to repository
 `6d4444c863076faaf18c4a2c279ad1cf45b91cef1f4db3247a312ad6827298cc`). The original source
 `License.txt` hash remains recorded separately in the manifest.
 
-Rusty Engine task #6433 supplies the bounded binary animated-mesh import and shared retained
-renderer at independently approved public revision
-`80ac6ed3f0bd1d9911edf44e33bcc90831d8909e`; the completed Demo pins its reviewed descendant
-`0e0c49442d0c3d876a1336a5a829087f6e2314db`. The Rust-owned Studio path publishes the two assets
-into schema-22 project hash
-`ac7d5fc916117fca8a3fb86ed6eae27db9192f1560a8947e364586d4fa58c750`,
+Rusty Engine tasks #6538/#6546 supply the human-visible Tools > Animation Inspection workflow,
+fail-atomic skinning facts, exact shared-viewport projection, and bounded contact-sheet framing at
+public revision `d52c9b0f3287f21eea81d465871978a117750d0c`. The Rust-owned Studio path publishes the two assets
+into schema-24 project hash
+`6069198b7bac3792ff86c0e245a4cdcae72ae1c68bf90f42cb08c39bc656c328`,
 preserving each source path, SHA-256, byte count, converter/settings hash, license path, bounds, and
 six source-clip schedules. No-op reimport preserves that hash; changed source requires explicit
 reimport; stale hash, duplicate identity, malformed GLB, missing external texture, duplicate clip,
 and oversized input failures are typed and non-mutating.
 
-The supported Studio browser proof uses the public shell submission event, two identities, and 12
+The supported Studio browser proof opens the canonical project through the visible Studio shell,
+selects the two real actor entities, opens Tools > Animation Inspection, and captures all twelve
+actor/clip sheets at labeled 0/25/50/75/100% times. The same workflow exposes the 58-joint
+hierarchy, finite inverse binds, normalized weights with zero invalid rows, interpolation modes,
+independent root/skeleton clone identity, and shared render resources. Independent Blender 5.1.2
+dependency-graph samples of the admitted GLBs at those exact times match Engine sampled bounds to
+at most 0.000035 units and exact vertex counts. The Blender evidence imports no Engine or Three.js;
+its three human-readable montages and full sample manifest are stored beside the Studio sheets.
+The public shell submission proof also uses two identities and 12
 temporary instances spanning every clip. It records exact resident deltas of +2 geometries, +2
 materials, +2 textures, and +12 animated instances, plus owner-ordered fresh-adapter reconstruction,
 resize, project close/open, cache-bypassing page reload, and renderer disposal. The checked GLBs
 remain source assets rather than a downstream hand-written render model or private Three.js loading
-path. Evidence is in `docs/evidence/actor-kit-authoring.json` and
+path. The exact Blender sample ledger and montages are in
+`docs/evidence/animated-mesh-contact-sheets/blender-source-baseline.json`; the public Studio capture
+receipt is `docs/evidence/animated-mesh-contact-sheets/certification.json`; and the checked
+cross-sampler/lifecycle comparison is
+`docs/evidence/animated-mesh-contact-sheets/source-equivalence.json`. Import and retained-resource
+evidence remains in `docs/evidence/actor-kit-authoring.json` and
 `docs/evidence/actor-kit-studio-browser.json`.
 
 ## VC5 serialized industrial prop kit

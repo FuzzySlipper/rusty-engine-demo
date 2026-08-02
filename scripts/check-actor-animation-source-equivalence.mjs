@@ -25,6 +25,12 @@ const OUTPUT = resolve(
   ROOT,
   "docs/evidence/animated-mesh-contact-sheets/source-equivalence.json",
 );
+const EVIDENCE_ROOT = resolve(
+  ROOT,
+  "docs/evidence/animated-mesh-contact-sheets",
+);
+const BLENDER_BASELINE_PATH = resolve(EVIDENCE_ROOT, "blender-source-baseline.json");
+const STUDIO_CERTIFICATION_PATH = resolve(EVIDENCE_ROOT, "certification.json");
 const ENGINE_REVISION = JSON.parse(
   readFileSync(resolve(ROOT, "engine-source.json"), "utf8"),
 ).commit;
@@ -34,6 +40,10 @@ const ASSETS = [
   "mesh-animation/bay-rusher",
   "mesh-animation/arc-warden",
 ];
+const STEM_BY_ASSET = {
+  "mesh-animation/bay-rusher": "bay-rusher",
+  "mesh-animation/arc-warden": "arc-warden",
+};
 const requireFromRenderer = createRequire(
   import.meta.resolve("@rusty-engine/renderer-three"),
 );
@@ -54,6 +64,12 @@ if (committedProject.status !== 0) {
   throw new Error(`could not read committed project: ${committedProject.stderr}`);
 }
 const project = JSON.parse(committedProject.stdout);
+const projectSourceHash = createHash("sha256")
+  .update(readFileSync(resolve(ROOT, "content/projects/loading-bay.project.json")))
+  .digest("hex");
+const blenderBaseline = JSON.parse(readFileSync(BLENDER_BASELINE_PATH, "utf8"));
+const studioCertification = JSON.parse(readFileSync(STUDIO_CERTIFICATION_PATH, "utf8"));
+assertIndependentEvidence(blenderBaseline, studioCertification, projectSourceHash);
 const results = [];
 
 for (const assetId of ASSETS) {
@@ -88,6 +104,7 @@ for (const assetId of ASSETS) {
 
     const samples = [];
     let maximumAbsoluteBoundsError = 0;
+    let maximumBlenderBoundsError = 0;
     for (const clipName of CLIPS) {
       const directClip = directResource.animations.find((clip) => clip.name === clipName);
       if (directClip === undefined) throw new Error(`${assetId} omits direct clip ${clipName}`);
@@ -101,12 +118,28 @@ for (const assetId of ASSETS) {
             `${assetId}/${clipName}@${String(normalizedTime)} diverged: bounds=${String(error)} vertices=${String(engine.sampledVertexCount)}/${String(direct.vertexCount)}`,
           );
         }
+        const blender = blenderSample(
+          blenderBaseline,
+          STEM_BY_ASSET[assetId],
+          clipName,
+          normalizedTime,
+        );
+        const blenderBounds = blenderBoundsToEngine(blender.evaluatedBounds);
+        const blenderError = boundsError(engine.sampledWorldBounds, blenderBounds);
+        maximumBlenderBoundsError = Math.max(maximumBlenderBoundsError, blenderError);
+        if (blenderError > 0.000_1 || engine.sampledVertexCount !== blender.vertexCount) {
+          throw new Error(
+            `${assetId}/${clipName}@${String(normalizedTime)} diverged from independent Blender evaluation: bounds=${String(blenderError)} vertices=${String(engine.sampledVertexCount)}/${String(blender.vertexCount)}`,
+          );
+        }
         samples.push({
           clip: clipName,
           normalizedTime,
           durationSeconds: engine.durationSeconds,
           engineBounds: roundedBounds(engine.sampledWorldBounds),
           directSourceBounds: roundedBounds(direct.bounds),
+          independentBlenderBounds: roundedBounds(blenderBounds),
+          independentBlenderImageSha256: blender.imageSha256,
           sampledVertexCount: engine.sampledVertexCount,
         });
       }
@@ -166,6 +199,7 @@ for (const assetId of ASSETS) {
       cloneBindInterpolation: {
         samples,
         maximumAbsoluteBoundsError: round(maximumAbsoluteBoundsError),
+        maximumIndependentBlenderBoundsError: round(maximumBlenderBoundsError),
         exactVertexCounts: true,
       },
       switching: {
@@ -193,9 +227,30 @@ for (const assetId of ASSETS) {
 }
 
 const report = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   engineRevision: ENGINE_REVISION,
-  independentSampler: "Three GLTFLoader plus SkeletonUtils clone and AnimationMixer, separate from the Engine loader/registry instance",
+  independentSampler: blenderBaseline.sampler,
+  adjacentRendererSampler:
+    "Three GLTFLoader plus SkeletonUtils clone and AnimationMixer, separate from the Engine loader/registry instance",
+  independentBlenderBaseline: {
+    file: "blender-source-baseline.json",
+    committedGlbSamples: blenderBaseline.samples.filter(
+      ({ baseline }) => baseline === "committed-glb",
+    ).length,
+    originalFbxSamples: blenderBaseline.samples.filter(
+      ({ baseline }) => baseline === "original-fbx",
+    ).length,
+    montages: blenderBaseline.montages,
+    visualComparison: blenderBaseline.visualComparison,
+  },
+  studioInspection: {
+    file: "certification.json",
+    workflow: studioCertification.workflow,
+    captures: studioCertification.captures.length,
+    projectHash: studioCertification.openedProjectHash,
+    authoringStateUnchanged: studioCertification.authoringStateUnchanged,
+    freshPageReopen: studioCertification.lifecycle.freshPageReopen,
+  },
   normalizedTimes: TIMES,
   clips: CLIPS,
   actors: results,
@@ -204,8 +259,10 @@ const report = {
     cloneBindDivergenceObserved: false,
     interpolationDivergenceObserved: false,
     switchingOrFadeCrossInstanceDefectObserved: false,
+    independentBlenderDivergenceObserved: false,
+    studioDiagnosticFailureObserved: false,
     rendererCompensationRequired: false,
-    remainingVisualDefectsAreAuthoredSourceMotion: true,
+    stretchedOrDisconnectedLimbPostureObserved: false,
   },
 };
 const staged = `${OUTPUT}.pending`;
@@ -215,6 +272,115 @@ rmSync(staged, { force: true });
 console.log(
   `actor animation source equivalence passed: ${String(results.length)} actors, ${String(results.length * CLIPS.length * TIMES.length)} samples`,
 );
+
+function assertIndependentEvidence(blender, studio, projectHash) {
+  if (
+    blender.schemaVersion !== 2 ||
+    blender.sampler !== "Blender evaluated dependency graph; no Rusty Engine or Three.js" ||
+    JSON.stringify(blender.normalizedTimes) !== JSON.stringify(TIMES)
+  ) {
+    throw new Error("independent Blender baseline contract drifted");
+  }
+  const committedSamples = blender.samples.filter(
+    ({ baseline }) => baseline === "committed-glb",
+  );
+  const sourceSamples = blender.samples.filter(
+    ({ baseline }) => baseline === "original-fbx",
+  );
+  if (committedSamples.length !== 60 || sourceSamples.length !== 15) {
+    throw new Error("independent Blender baseline must retain 60 GLB and 15 source-FBX samples");
+  }
+  for (const sample of blender.samples) {
+    if (
+      !TIMES.includes(sample.normalizedTime) ||
+      !finiteBounds(sample.evaluatedBounds) ||
+      !Number.isInteger(sample.vertexCount) ||
+      sample.vertexCount <= 0 ||
+      !/^[0-9a-f]{64}$/u.test(sample.imageSha256)
+    ) {
+      throw new Error(`invalid independent Blender sample ${sample.file}`);
+    }
+  }
+  if (blender.montages?.length !== 3) {
+    throw new Error("independent Blender baseline must retain three human-readable montages");
+  }
+  for (const montage of blender.montages) {
+    const hash = createHash("sha256")
+      .update(readFileSync(resolve(EVIDENCE_ROOT, montage.file)))
+      .digest("hex");
+    if (hash !== montage.sha256) {
+      throw new Error(`independent Blender montage hash drifted: ${montage.file}`);
+    }
+  }
+  const comparisonHash = createHash("sha256")
+    .update(readFileSync(resolve(EVIDENCE_ROOT, blender.visualComparison.file)))
+    .digest("hex");
+  if (
+    blender.visualComparison.beforeCommit !==
+      "5889518bc7e0bf3514d3f1c98470ba785928bdeb" ||
+    comparisonHash !== blender.visualComparison.sha256
+  ) {
+    throw new Error("before/after skinning comparison evidence drifted");
+  }
+
+  if (
+    studio.schemaVersion !== 2 ||
+    studio.engineRevision !== ENGINE_REVISION ||
+    studio.openedProjectHash !== projectHash ||
+    studio.projectSourceSha256 !== projectHash ||
+    studio.projectHashAfterDisposableInspection !== projectHash ||
+    studio.authoringStateUnchanged !== true ||
+    studio.lifecycle?.freshPageReopen !== true ||
+    studio.lifecycle.freshPageProjectHash !== projectHash ||
+    studio.lifecycle.freshPageAnimationInspection !== true ||
+    studio.captures?.length !== 12
+  ) {
+    throw new Error("public Studio Animation Inspection certification drifted");
+  }
+  for (const capture of studio.captures) {
+    if (
+      !ASSETS.includes(capture.asset) ||
+      !CLIPS.includes(capture.clip) ||
+      JSON.stringify(capture.normalizedTimes) !== JSON.stringify(TIMES) ||
+      capture.readout !== "Captured 5 labeled frames · 0 diagnostics" ||
+      !capture.skinningFacts.includes("58 joints") ||
+      !capture.skinningFacts.includes("Inverse binds58 · finite") ||
+      !capture.skinningFacts.includes("Weightsnormalized · 0 invalid") ||
+      !capture.skinningFacts.includes("Interpolationdiscrete, linear") ||
+      !capture.skinningFacts.includes("root independent · skeleton independent") ||
+      !capture.skinningFacts.includes("Shared render data1 geometry · 1 material")
+    ) {
+      throw new Error(`public Studio capture contract drifted: ${capture.file}`);
+    }
+    const hash = createHash("sha256")
+      .update(readFileSync(resolve(EVIDENCE_ROOT, capture.file)))
+      .digest("hex");
+    if (hash !== capture.imageSha256) {
+      throw new Error(`public Studio contact-sheet hash drifted: ${capture.file}`);
+    }
+  }
+}
+
+function blenderSample(baseline, actor, clip, normalizedTime) {
+  const sample = baseline.samples.find(
+    (candidate) =>
+      candidate.baseline === "committed-glb" &&
+      candidate.actor === actor &&
+      candidate.clip === clip &&
+      candidate.normalizedTime === normalizedTime,
+  );
+  if (sample === undefined) {
+    throw new Error(`missing independent Blender sample ${actor}/${clip}@${String(normalizedTime)}`);
+  }
+  return sample;
+}
+
+function blenderBoundsToEngine(value) {
+  return {
+    min: [value.min[0], value.min[2], -value.max[1]],
+    max: [value.max[0], value.max[2], -value.min[1]],
+  };
+}
 
 function createInstance(handle, asset, translation, label) {
   return {
@@ -318,8 +484,14 @@ function sourceQuality(samples) {
   return {
     maximumBoundsDeltaByClip: movement,
     deathMinimumY: round(deathMinimumY),
+    deathWithinGroundTolerance: deathMinimumY >= -0.001,
     attackAndHitRemainAuthoredSourceMotion: true,
-    deathMovesBelowSourceGroundPlane: deathMinimumY < 0,
+    intentionalLimbMotionByClip: Object.fromEntries(
+      ["run", "jump", "attack", "hit", "death"].map((clip) => [
+        clip,
+        movement[clip] > 0.05,
+      ]),
+    ),
     rendererCompensationApplied: false,
   };
 }

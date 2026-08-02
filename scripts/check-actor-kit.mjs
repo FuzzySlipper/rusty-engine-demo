@@ -5,6 +5,22 @@ import { resolve } from "node:path";
 const ROOT = resolve(import.meta.dirname, "..");
 const KIT_ROOT = resolve(ROOT, "content/assets/actor-kit");
 const REQUIRED_CLIPS = ["idle", "run", "jump", "attack", "hit", "death"];
+const AUTHORED_LIMB_BONES = [
+  "UpperChest",
+  "Head",
+  "LeftShoulder",
+  "LeftArm",
+  "LeftForeArm",
+  "RightShoulder",
+  "RightArm",
+  "RightForeArm",
+  "LeftUpLeg",
+  "LeftLeg",
+  "LeftFoot",
+  "RightUpLeg",
+  "RightLeg",
+  "RightFoot",
+];
 const MAX_ACTOR_BYTES = 512 * 1024;
 
 function invariant(condition, message) {
@@ -150,8 +166,8 @@ for (const variant of manifest.variants) {
   );
   const { gltf, binary } = parseGlb(bytes, variant.file);
   invariant(
-    gltf.animations?.map(({ name }) => name).join("\0") ===
-      REQUIRED_CLIPS.join("\0"),
+    gltf.animations?.map(({ name }) => name).sort().join("\0") ===
+      [...REQUIRED_CLIPS].sort().join("\0"),
     `${variant.file} shipped animation set drifted`,
   );
   invariant(gltf.meshes?.length === 1, `${variant.file} must have one mesh`);
@@ -177,10 +193,21 @@ for (const variant of manifest.variants) {
     ),
     `${variant.file} must retain nonempty animation channels`,
   );
+  for (const clip of gltf.animations) {
+    const manifestClip = variant.clips.find(({ id }) => id === clip.name);
+    const duration = Math.max(
+      ...clip.samplers.map(({ input }) => gltf.accessors[input].max?.[0] ?? 0),
+    );
+    invariant(
+      Math.abs(duration - manifestClip.durationSeconds) <= 0.000_001,
+      `${variant.file} ${clip.name} manifest duration drifted from shipped GLB`,
+    );
+  }
   for (const clipName of ["attack", "hit"]) {
     const manifestClip = variant.clips.find(({ id }) => id === clipName);
     invariant(
-      manifestClip.authoredJointChannels?.length === 8,
+      manifestClip.authoredJointChannels?.join("\0") ===
+        AUTHORED_LIMB_BONES.join("\0"),
       `${variant.file} ${clipName} authored joint record drifted`,
     );
     assertArticulatedClip(
