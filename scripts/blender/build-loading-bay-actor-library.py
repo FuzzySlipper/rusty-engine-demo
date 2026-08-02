@@ -45,7 +45,7 @@ def enable_blender_modules() -> None:
 enable_blender_modules()
 
 import bpy  # noqa: E402
-from mathutils import Euler, Matrix  # noqa: E402
+from mathutils import Euler, Matrix, Vector  # noqa: E402
 
 
 TARGET_HEIGHT = 1.78
@@ -53,8 +53,8 @@ FPS = 30
 SOURCE_CLIPS = {
     "idle": ("idle.fbx", "Idle"),
     "run": ("run.fbx", "Run"),
-    "jump": ("jump.fbx", "Jump"),
 }
+REFERENCE_SOURCE_FILES = ("jump.fbx",)
 VARIANTS = (
     ("arc-warden", "zombieMaleA.png", "Arc Warden"),
     ("bay-rusher", "zombieFemaleA.png", "Bay Rusher"),
@@ -69,6 +69,12 @@ AUTHORED_LIMB_BONES = (
     "RightShoulder",
     "RightArm",
     "RightForeArm",
+    "LeftUpLeg",
+    "LeftLeg",
+    "LeftFoot",
+    "RightUpLeg",
+    "RightLeg",
+    "RightFoot",
 )
 
 
@@ -108,7 +114,12 @@ def import_model(model_path: Path) -> tuple[bpy.types.Object, bpy.types.Object]:
     source_height = max(float(mesh.dimensions.z), 0.000_001)
     scale = TARGET_HEIGHT / source_height
     armature.scale = (scale, scale, scale)
-    mesh.scale = (scale, scale, scale)
+    bpy.context.view_layer.update()
+    actual_height = float(mesh.dimensions.z)
+    if not math.isclose(actual_height, TARGET_HEIGHT, rel_tol=0.0, abs_tol=0.01):
+        raise RuntimeError(
+            f"scaled actor height is {actual_height}, expected {TARGET_HEIGHT}"
+        )
     for pose_bone in armature.pose.bones:
         pose_bone.custom_shape = None
     return armature, mesh
@@ -149,6 +160,16 @@ def import_source_actions(
     for clip_id, (filename, source_name) in SOURCE_CLIPS.items():
         actions_before = set(bpy.data.actions)
         bpy.ops.import_scene.fbx(filepath=str(source_root / "Animations" / filename))
+        imported_armatures = [
+            obj
+            for obj in bpy.context.scene.objects
+            if obj not in retained_objects and obj.type == "ARMATURE"
+        ]
+        if len(imported_armatures) != 1:
+            raise RuntimeError(
+                f"{filename} produced {len(imported_armatures)} animation armatures"
+            )
+        source_armature = imported_armatures[0]
         candidates = [
             action
             for action in bpy.data.actions
@@ -158,41 +179,109 @@ def import_source_actions(
             raise RuntimeError(
                 f"{filename} produced {len(candidates)} `{source_name}` actions"
             )
-        action = candidates[0]
-        action.name = clip_id
-        action.use_fake_user = True
+        source_action = candidates[0]
+        action = retarget_source_action(
+            source_armature,
+            source_action,
+            actor_armature,
+            clip_id,
+        )
         imported_actions.append(action)
 
         for obj in list(bpy.context.scene.objects):
             if obj not in retained_objects:
                 bpy.data.objects.remove(obj, do_unlink=True)
-        for action in list(bpy.data.actions):
-            if action not in actions_before and action is not candidates[0]:
-                bpy.data.actions.remove(action)
+        for imported in list(bpy.data.actions):
+            if imported not in actions_before and imported is not action:
+                bpy.data.actions.remove(imported)
 
     actor_armature.animation_data_create()
     actor_armature.animation_data.action = imported_actions[0]
     return imported_actions
 
 
-def key_object_action(
-    armature: bpy.types.Object,
-    name: str,
-    frames: list[tuple[int, tuple[float, float, float], tuple[float, float, float]]],
+def retarget_source_action(
+    source_armature: bpy.types.Object,
+    source_action: bpy.types.Action,
+    target_armature: bpy.types.Object,
+    clip_id: str,
 ) -> bpy.types.Action:
-    armature.animation_data_create()
-    action = bpy.data.actions.new(name=name)
+    """Bake source pose deltas onto the model's distinct bind skeleton.
+
+    Kenney's animation-only FBXs contain the same named hierarchy but their
+    rest transforms are the captured animation pose, not the model FBX bind
+    pose. Reusing those F-curves directly therefore keys source-relative bone
+    locations onto a different rest skeleton and visibly stretches the skin.
+    The portable clip is the animated local delta from the animation FBX rest,
+    composed with the model FBX rest at each integer source frame.
+    """
+
+    source_names = set(source_armature.pose.bones.keys())
+    target_names = set(target_armature.pose.bones.keys())
+    if source_names != target_names:
+        raise RuntimeError(
+            f"{clip_id} source/model bone inventories differ: "
+            f"source-only={sorted(source_names - target_names)}, "
+            f"model-only={sorted(target_names - source_names)}"
+        )
+
+    source_armature.animation_data_create()
+    source_armature.animation_data.action = source_action
+    if len(source_action.slots) == 1:
+        source_armature.animation_data.action_slot = source_action.slots[0]
+
+    target_armature.animation_data_create()
+    action = bpy.data.actions.new(name=clip_id)
     action.use_fake_user = True
-    armature.animation_data.action = action
-    armature.rotation_mode = "XYZ"
-    for frame, location, rotation in frames:
-        armature.location = location
-        armature.rotation_euler = rotation
-        armature.keyframe_insert(data_path="location", frame=frame, group=name)
-        armature.keyframe_insert(data_path="rotation_euler", frame=frame, group=name)
+    target_armature.animation_data.action = action
+    start, end = (int(round(value)) for value in source_action.frame_range)
+    for frame in range(start, end + 1):
+        bpy.context.scene.frame_set(frame)
+        bpy.context.view_layer.update()
+        for target_pose in target_armature.pose.bones:
+            source_pose = source_armature.pose.bones[target_pose.name]
+            source_location, source_rotation, _source_scale = (
+                source_pose.matrix_basis.decompose()
+            )
+            # The animation FBXs bake a location channel for every joint against
+            # their animation-specific rest pose. Those locations are not
+            # portable to the model bind skeleton and were the source of the
+            # visible limb separation. Preserve only true root motion; local
+            # rotations are the portable motion delta and bone lengths remain
+            # owned by the model bind skeleton.
+            target_pose.location = (
+                source_location if target_pose.parent is None else Vector((0, 0, 0))
+            )
+            target_pose.rotation_mode = "QUATERNION"
+            target_pose.rotation_quaternion = source_rotation
+            target_pose.scale = (1.0, 1.0, 1.0)
+            target_pose.keyframe_insert(
+                data_path="location", frame=frame, group=target_pose.name
+            )
+            target_pose.keyframe_insert(
+                data_path="rotation_quaternion", frame=frame, group=target_pose.name
+            )
+            target_pose.keyframe_insert(
+                data_path="scale", frame=frame, group=target_pose.name
+            )
+
+    reset_armature_pose(target_armature)
+    return action
+
+
+def reset_armature_pose(armature: bpy.types.Object) -> None:
+    armature.animation_data_create()
+    armature.animation_data.action = None
+    for track in armature.animation_data.nla_tracks:
+        track.mute = True
+    for pose_bone in armature.pose.bones:
+        pose_bone.matrix_basis = Matrix.Identity(4)
     armature.location = (0.0, 0.0, 0.0)
     armature.rotation_euler = (0.0, 0.0, 0.0)
-    return action
+    armature.data.pose_position = "REST"
+    bpy.context.view_layer.update()
+    armature.data.pose_position = "POSE"
+    bpy.context.view_layer.update()
 
 
 def key_pose_action(
@@ -205,14 +294,16 @@ def key_pose_action(
     missing = [name for name in AUTHORED_LIMB_BONES if name not in armature.pose.bones]
     if missing:
         raise RuntimeError(f"actor rig is missing authored limb bones: {missing}")
+    reset_armature_pose(armature)
     armature.animation_data_create()
     action = bpy.data.actions.new(name=name)
     action.use_fake_user = True
     armature.animation_data.action = action
     for frame, rotations in frames:
+        for pose_bone in armature.pose.bones:
+            pose_bone.matrix_basis = Matrix.Identity(4)
         for bone_name in AUTHORED_LIMB_BONES:
             pose_bone = armature.pose.bones[bone_name]
-            pose_bone.matrix_basis = Matrix.Identity(4)
             pose_bone.rotation_mode = "QUATERNION"
             rotation = rotations.get(bone_name, (0.0, 0.0, 0.0))
             pose_bone.rotation_quaternion = Euler(
@@ -226,10 +317,109 @@ def key_pose_action(
     return action
 
 
+def key_body_action(
+    armature: bpy.types.Object,
+    name: str,
+    frames: list[
+        tuple[
+            int,
+            tuple[float, float, float],
+            tuple[float, float, float],
+            dict[str, tuple[float, float, float]],
+        ]
+    ],
+) -> bpy.types.Action:
+    """Key an intentional whole-body pose without changing bind bone lengths."""
+
+    reset_armature_pose(armature)
+    root = armature.pose.bones.get("HipsCtrl")
+    if root is None:
+        raise RuntimeError("actor rig is missing portable HipsCtrl root bone")
+    referenced_bones = {bone_name for *_, rotations in frames for bone_name in rotations}
+    missing = sorted(referenced_bones - set(armature.pose.bones.keys()))
+    if missing:
+        raise RuntimeError(f"actor rig is missing authored body bones: {missing}")
+
+    armature.animation_data_create()
+    action = bpy.data.actions.new(name=name)
+    action.use_fake_user = True
+    armature.animation_data.action = action
+    for frame, root_location, root_rotation, rotations in frames:
+        for pose_bone in armature.pose.bones:
+            pose_bone.matrix_basis = Matrix.Identity(4)
+        root.location = root_location
+        root.rotation_mode = "QUATERNION"
+        root.rotation_quaternion = Euler(
+            tuple(math.radians(value) for value in root_rotation), "XYZ"
+        ).to_quaternion()
+        root.keyframe_insert(data_path="location", frame=frame, group=root.name)
+        root.keyframe_insert(
+            data_path="rotation_quaternion", frame=frame, group=root.name
+        )
+        for bone_name, rotation in rotations.items():
+            pose_bone = armature.pose.bones[bone_name]
+            pose_bone.rotation_mode = "QUATERNION"
+            pose_bone.rotation_quaternion = Euler(
+                tuple(math.radians(value) for value in rotation), "XYZ"
+            ).to_quaternion()
+            pose_bone.keyframe_insert(
+                data_path="rotation_quaternion", frame=frame, group=bone_name
+            )
+    reset_armature_pose(armature)
+    return action
+
+
 def add_original_actions(armature: bpy.types.Object) -> list[bpy.types.Action]:
     """Author bounded combat poses as local rotations on the imported rig."""
 
     return [
+        key_body_action(
+            armature,
+            "jump",
+            [
+                (
+                    0,
+                    (0.0, 0.0, 0.0),
+                    (0.0, 0.0, 0.0),
+                    {
+                        "LeftUpLeg": (18, 0, -5),
+                        "LeftLeg": (-24, 0, 0),
+                        "RightUpLeg": (18, 0, 5),
+                        "RightLeg": (-24, 0, 0),
+                        "LeftArm": (-18, 0, -12),
+                        "RightArm": (-18, 0, 12),
+                    },
+                ),
+                (
+                    6,
+                    (0.0, 0.0, 0.0),
+                    (-6, 0.0, 0.0),
+                    {
+                        "LeftUpLeg": (-32, 0, -8),
+                        "LeftLeg": (62, 0, 0),
+                        "RightUpLeg": (8, 0, 8),
+                        "RightLeg": (28, 0, 0),
+                        "LeftArm": (-54, 0, -28),
+                        "LeftForeArm": (-28, 0, 0),
+                        "RightArm": (-46, 0, 24),
+                        "RightForeArm": (-24, 0, 0),
+                    },
+                ),
+                (
+                    12,
+                    (0.0, 0.0, 0.0),
+                    (0.0, 0.0, 0.0),
+                    {
+                        "LeftUpLeg": (22, 0, -4),
+                        "LeftLeg": (-30, 0, 0),
+                        "RightUpLeg": (22, 0, 4),
+                        "RightLeg": (-30, 0, 0),
+                        "LeftArm": (-14, 0, -10),
+                        "RightArm": (-14, 0, 10),
+                    },
+                ),
+            ],
+        ),
         key_pose_action(
             armature,
             "attack",
@@ -298,33 +488,94 @@ def add_original_actions(armature: bpy.types.Object) -> list[bpy.types.Action]:
                 (12, {}),
             ],
         ),
-        key_object_action(
+        key_body_action(
             armature,
             "death",
             [
-                (0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                (10, (0.0, 0.0, 0.0), (0.0, math.radians(38), 0.0)),
-                (22, (0.0, 0.0, 0.0), (0.0, math.radians(70), 0.0)),
+                (0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), {}),
+                (
+                    10,
+                    (0.0, 0.0, 0.0),
+                    (38, 0.0, 8),
+                    {
+                        "LeftArm": (-28, 0, -12),
+                        "RightArm": (-20, 0, 14),
+                        "LeftUpLeg": (14, 0, 0),
+                        "RightUpLeg": (-8, 0, 0),
+                    },
+                ),
+                (
+                    22,
+                    (0.0, 0.0, 0.0),
+                    (82, 0.0, 12),
+                    {
+                        "LeftArm": (-42, 0, -18),
+                        "RightArm": (-34, 0, 20),
+                        "LeftUpLeg": (20, 0, 0),
+                        "LeftLeg": (-16, 0, 0),
+                        "RightUpLeg": (-12, 0, 0),
+                        "RightLeg": (18, 0, 0),
+                    },
+                ),
             ],
         ),
     ]
 
 
-def install_export_tracks(
-    armature: bpy.types.Object, actions: list[bpy.types.Action]
+def posed_mesh_minimum_z(mesh: bpy.types.Object) -> float:
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated = mesh.evaluated_get(depsgraph)
+    evaluated_mesh = evaluated.to_mesh()
+    try:
+        return min(
+            (evaluated.matrix_world @ vertex.co).z
+            for vertex in evaluated_mesh.vertices
+        )
+    finally:
+        evaluated.to_mesh_clear()
+
+
+def normalize_action_floor(
+    armature: bpy.types.Object,
+    mesh: bpy.types.Object,
+    action: bpy.types.Action,
 ) -> None:
-    """Expose every reviewed action as one named glTF animation."""
+    """Bake exact posed-vertex floor contact without changing the bind skeleton."""
 
     armature.animation_data_create()
-    armature.animation_data.action = None
-    for track in list(armature.animation_data.nla_tracks):
-        armature.animation_data.nla_tracks.remove(track)
-    for action in actions:
-        track = armature.animation_data.nla_tracks.new()
-        track.name = action.name
-        strip = track.strips.new(action.name, int(action.frame_range[0]), action)
-        strip.action_frame_start = action.frame_range[0]
-        strip.action_frame_end = action.frame_range[1]
+    armature.animation_data.action = action
+    if len(action.slots) == 1:
+        armature.animation_data.action_slot = action.slots[0]
+    root = armature.pose.bones.get("HipsCtrl")
+    if root is None:
+        raise RuntimeError("actor rig is missing portable HipsCtrl root bone")
+    start, end = (int(round(value)) for value in action.frame_range)
+    span = max(end - start, 1)
+    for frame in range(start, end + 1):
+        bpy.context.scene.frame_set(frame)
+        bpy.context.view_layer.update()
+        initial_minimum = posed_mesh_minimum_z(mesh)
+        original_location = root.location.copy()
+        responses: list[float] = []
+        for axis in range(3):
+            root.location = original_location.copy()
+            root.location[axis] += 1.0
+            bpy.context.view_layer.update()
+            responses.append(posed_mesh_minimum_z(mesh) - initial_minimum)
+        root.location = original_location.copy()
+        vertical_axis = max(range(3), key=lambda axis: abs(responses[axis]))
+        response = responses[vertical_axis]
+        if abs(response) < 1e-6:
+            raise RuntimeError(f"{action.name} root does not move its posed mesh vertically")
+        normalized = (frame - start) / span
+        desired_clearance = (
+            0.38 * math.sin(math.pi * normalized)
+            if action.name == "jump"
+            else 0.0
+        )
+        root.location[vertical_axis] += (desired_clearance - initial_minimum) / response
+        root.keyframe_insert(data_path="location", frame=frame, group=root.name)
+    reset_armature_pose(armature)
 
 
 def remove_export_helpers(actor_mesh: bpy.types.Object) -> None:
@@ -353,6 +604,7 @@ def validate_export(output_path: Path, skin_filename: str) -> None:
             f"{output_path.name} clips are {imported_clips}, "
             f"expected {tuple(sorted(REQUIRED_CLIPS))}"
         )
+    reset_armature_pose(armatures[0])
     height = float(meshes[0].dimensions.z)
     if not math.isclose(height, TARGET_HEIGHT, rel_tol=0.0, abs_tol=0.01):
         raise RuntimeError(
@@ -379,7 +631,13 @@ def export_variant(
     install_skin(mesh, source_root / "Skins" / skin_filename)
     source_actions = import_source_actions(source_root, armature)
     authored_actions = add_original_actions(armature)
-    actions = source_actions + authored_actions
+    actions_by_name = {action.name: action for action in source_actions + authored_actions}
+    actions = [actions_by_name[name] for name in REQUIRED_CLIPS]
+    for action in actions:
+        normalize_action_floor(armature, mesh, action)
+    # FBX import adopts the source file's scene rate. The canonical library is
+    # explicitly 30 fps, so restore it after every source action has arrived.
+    bpy.context.scene.render.fps = FPS
     if tuple(action.name for action in actions) != REQUIRED_CLIPS:
         raise RuntimeError(
             f"reviewed clip order drifted to {tuple(action.name for action in actions)}"
@@ -396,12 +654,12 @@ def export_variant(
             if action in source_actions
             else "Loading Bay derivative",
             "authoredJointChannels": list(AUTHORED_LIMB_BONES)
-            if action.name in {"attack", "hit"}
+            if action.name in {"jump", "attack", "hit", "death"}
             else [],
         }
         for action in actions
     ]
-    install_export_tracks(armature, actions)
+    reset_armature_pose(armature)
     remove_export_helpers(mesh)
 
     for obj in bpy.context.scene.objects:
@@ -413,7 +671,8 @@ def export_variant(
         export_format="GLB",
         use_selection=True,
         export_animations=True,
-        export_animation_mode="NLA_TRACKS",
+        export_animation_mode="ACTIONS",
+        export_force_sampling=True,
         export_materials="EXPORT",
         export_image_format="AUTO",
         export_yup=True,
@@ -445,6 +704,7 @@ def main() -> None:
             source_root / "Animations" / filename
             for filename, _ in SOURCE_CLIPS.values()
         ],
+        *[source_root / "Animations" / filename for filename in REFERENCE_SOURCE_FILES],
         *[source_root / "Skins" / skin for _, skin, _ in VARIANTS],
     ]
     missing = [str(path) for path in required if not path.is_file()]

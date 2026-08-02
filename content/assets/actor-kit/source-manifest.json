@@ -47,8 +47,8 @@
   "variants": [
     {
       "file": "arc-warden.glb",
-      "sha256": "5eae9bc3a257e0a31f3a902a7c0cfcbdd5ff8d67757b24ebd18d1e517ee808aa",
-      "bytes": 343584,
+      "sha256": "a1069d4bfa950aeade3ae032291279684014c1cf93e12fd98359555a9fc259e1",
+      "bytes": 353956,
       "skin": "zombieMaleA.png",
       "clips": [
         {
@@ -69,11 +69,26 @@
         },
         {
           "id": "jump",
-          "frameStart": 1,
-          "frameEnd": 13,
+          "frameStart": 0,
+          "frameEnd": 12,
           "durationSeconds": 0.4,
-          "origin": "Kenney source",
-          "authoredJointChannels": []
+          "origin": "Loading Bay derivative",
+          "authoredJointChannels": [
+            "UpperChest",
+            "Head",
+            "LeftShoulder",
+            "LeftArm",
+            "LeftForeArm",
+            "RightShoulder",
+            "RightArm",
+            "RightForeArm",
+            "LeftUpLeg",
+            "LeftLeg",
+            "LeftFoot",
+            "RightUpLeg",
+            "RightLeg",
+            "RightFoot"
+          ]
         },
         {
           "id": "attack",
@@ -89,7 +104,13 @@
             "LeftForeArm",
             "RightShoulder",
             "RightArm",
-            "RightForeArm"
+            "RightForeArm",
+            "LeftUpLeg",
+            "LeftLeg",
+            "LeftFoot",
+            "RightUpLeg",
+            "RightLeg",
+            "RightFoot"
           ]
         },
         {
@@ -106,7 +127,13 @@
             "LeftForeArm",
             "RightShoulder",
             "RightArm",
-            "RightForeArm"
+            "RightForeArm",
+            "LeftUpLeg",
+            "LeftLeg",
+            "LeftFoot",
+            "RightUpLeg",
+            "RightLeg",
+            "RightFoot"
           ]
         },
         {
@@ -115,7 +142,22 @@
           "frameEnd": 22,
           "durationSeconds": 0.733333,
           "origin": "Loading Bay derivative",
-          "authoredJointChannels": []
+          "authoredJointChannels": [
+            "UpperChest",
+            "Head",
+            "LeftShoulder",
+            "LeftArm",
+            "LeftForeArm",
+            "RightShoulder",
+            "RightArm",
+            "RightForeArm",
+            "LeftUpLeg",
+            "LeftLeg",
+            "LeftFoot",
+            "RightUpLeg",
+            "RightLeg",
+            "RightFoot"
+          ]
         }
       ],
       "targetHeight": 1.78,
@@ -125,8 +167,8 @@
     },
     {
       "file": "bay-rusher.glb",
-      "sha256": "a53b783850bb4251788216fc4ea4d425d28efd6876a313498087b50fbf07dd05",
-      "bytes": 338004,
+      "sha256": "e7e5c7a3a79abac6b24b0ec511b61fd75f82d900cdc4af9fb526278c5f5033f7",
+      "bytes": 348372,
       "skin": "zombieFemaleA.png",
       "clips": [
         {
@@ -147,11 +189,26 @@
         },
         {
           "id": "jump",
-          "frameStart": 1,
-          "frameEnd": 13,
+          "frameStart": 0,
+          "frameEnd": 12,
           "durationSeconds": 0.4,
-          "origin": "Kenney source",
-          "authoredJointChannels": []
+          "origin": "Loading Bay derivative",
+          "authoredJointChannels": [
+            "UpperChest",
+            "Head",
+            "LeftShoulder",
+            "LeftArm",
+            "LeftForeArm",
+            "RightShoulder",
+            "RightArm",
+            "RightForeArm",
+            "LeftUpLeg",
+            "LeftLeg",
+            "LeftFoot",
+            "RightUpLeg",
+            "RightLeg",
+            "RightFoot"
+          ]
         },
         {
           "id": "attack",
@@ -167,7 +224,13 @@
             "LeftForeArm",
             "RightShoulder",
             "RightArm",
-            "RightForeArm"
+            "RightForeArm",
+            "LeftUpLeg",
+            "LeftLeg",
+            "LeftFoot",
+            "RightUpLeg",
+            "RightLeg",
+            "RightFoot"
           ]
         },
         {
@@ -184,7 +247,13 @@
             "LeftForeArm",
             "RightShoulder",
             "RightArm",
-            "RightForeArm"
+            "RightForeArm",
+            "LeftUpLeg",
+            "LeftLeg",
+            "LeftFoot",
+            "RightUpLeg",
+            "RightLeg",
+            "RightFoot"
           ]
         },
         {
@@ -193,7 +262,22 @@
           "frameEnd": 22,
           "durationSeconds": 0.733333,
           "origin": "Loading Bay derivative",
-          "authoredJointChannels": []
+          "authoredJointChannels": [
+            "UpperChest",
+            "Head",
+            "LeftShoulder",
+            "LeftArm",
+            "LeftForeArm",
+            "RightShoulder",
+            "RightArm",
+            "RightForeArm",
+            "LeftUpLeg",
+            "LeftLeg",
+            "LeftFoot",
+            "RightUpLeg",
+            "RightLeg",
+            "RightFoot"
+          ]
         }
       ],
       "targetHeight": 1.78,
