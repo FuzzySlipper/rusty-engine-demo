@@ -44,6 +44,14 @@ hazard, beacon, exit, crane, and tank. Its desktop and narrow captures use the s
 viewport's origin, bounds, and contact-plane overlay; the convention is deliberately not a
 universal `minY = 0` rule.
 
+The browser product must compose that visual-local transform with the entity transform when it
+serializes the retained surface. The previous bridge forwarded only the entity transform, so the
+canonical Studio readout was correct while the same meshes floated in the game. The checked
+[`renderable-pivot-product.json`](evidence/renderable-pivot-product.json) pairs the human-reachable
+**Tools > Pivot & Grounding** workflow with a same-view live browser before/after. This is the
+acceptance evidence; the focused Rust regression only prevents the projection path from dropping
+the visual-local transform again.
+
 The wall-alignment descendant keeps that same authority split. Supported Rust voxel editing added
 14 missing material voxels beneath six decorative columns, while the repeated-brush recipe removed
 the overlapping wall presentation at those footprints, aligned both southern corner accents to

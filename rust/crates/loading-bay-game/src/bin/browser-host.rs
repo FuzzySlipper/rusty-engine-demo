@@ -1624,6 +1624,34 @@ mod tests {
     }
 
     #[test]
+    fn canonical_renderable_local_pivots_reach_the_browser_surface() {
+        let runtime = shared_browser_runtime();
+        let value = response_json(route("GET", "/api/state", &[], &runtime, Path::new(".")));
+        let projection = value["projection"].as_array().expect("browser projection");
+
+        for (entity, expected_translation) in [
+            (4_u64, [7.5_f64, -0.000_275_611_88, 12.5]),
+            (6, [11.5, 0.725, 21.5]),
+            (27, [23.5, 0.120_000_005, 25.5]),
+        ] {
+            let node = projection
+                .iter()
+                .find(|candidate| candidate["id"] == entity)
+                .expect("canonical projected renderable");
+            let actual = node["translation"]
+                .as_array()
+                .expect("projected translation");
+            for (index, expected) in expected_translation.into_iter().enumerate() {
+                let actual = actual[index].as_f64().expect("finite translation");
+                assert!(
+                    (actual - expected).abs() < 0.000_01,
+                    "entity {entity} axis {index}: expected {expected}, got {actual}"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn animated_mesh_route_serves_the_durable_project_source_and_rejects_unknown_indices() {
         let runtime = shared_browser_runtime();
         let response = route("GET", "/api/animated-mesh/0", &[], &runtime, Path::new("."));

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "path": "content/projects/loading-bay.project.json",
+    "sha256": "2782a4feb7a9479451c2a523c0e1689f0e5076aeeffe5e44d31ccbe9702af0ec",
+    "schemaVersion": 24
+  },
+  "before": {
+    "demoRevision": "bbe4431dfe9991173905e124a5f4df23867f6ed1",
+    "engineRevision": "f1baabcd55b7075fff40b93b1bae0a16ef88ab0e",
+    "screenshot": "docs/evidence/renderable-pivot-browser-before.png",
+    "screenshotSha256": "4e32ca87c18ffe6118697ce9b5c8f39504924e8d0843cbeb25609dc52ab3147a",
+    "observation": "The arrival Bay Rusher's feet and authored lower bound are visibly above the floor because the browser projection omitted renderable.localTransform."
+  },
+  "after": {
+    "engineRevision": "24b529b51d2b4036c043114c76668dda5bad44c2",
+    "screenshot": "docs/evidence/renderable-pivot-browser-after.png",
+    "screenshotSha256": "9b702691cd89da3a235c5275fb002b69ebb25edcd36d8fc49675ed01416174e3",
+    "observation": "The same canonical arrival view places the Bay Rusher's feet on the floor after the browser host composes entity and renderable-local transforms."
+  },
+  "studio": {
+    "entryPoint": "Tools > Pivot & Grounding",
+    "screenshot": "docs/evidence/renderable-pivot-studio-tools.png",
+    "screenshotSha256": "ad42fc8001b1773609a2e6a5ed9609dea1af88c41a2912289307d79d7c2bd9ca",
+    "selectedEntityId": 4,
+    "selectedEntity": "cargo-loader-arrival",
+    "asset": "mesh-animation/bay-rusher",
+    "lowerBound": -0.000000515007,
+    "contactPlane": 0.0,
+    "clearance": -0.000000515007,
+    "humanReachable": true,
+    "agentReachable": true
+  },
+  "runtimeProjection": {
+    "owner": "loading-bay browser host Rust projection bridge",
+    "composition": "entity transform composed with renderable.localTransform",
+    "representativeCanonicalTranslations": {
+      "4": [7.5, -0.00027561188, 12.5],
+      "6": [11.5, 0.725, 21.5],
+      "27": [23.5, 0.120000005, 25.5]
+    },
+    "worldTransformUnchanged": true,
+    "collisionUnchanged": true,
+    "navigationUnchanged": true,
+    "gameplayUnchanged": true
+  },
+  "verification": {
+    "centralProof": "real canonical Studio workflow plus same-view live browser before/after",
+    "fixtureOrSyntheticCentralProof": false,
+    "fullStudioCiRun": false
+  }
+}

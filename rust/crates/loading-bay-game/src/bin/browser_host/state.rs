@@ -2,6 +2,7 @@
 
 use core_ids::EntityId;
 use core_math::Vec3;
+use entity_state::EntityTransform;
 use loading_bay_game::{
     DoorState, EncounterState, EnemyAttackKind, EnemyCombatPosture, EnemyState,
     ExtractionBeaconState, GameRuntime, ItemKind, LevelExitState, NavigationState,
@@ -331,26 +332,23 @@ pub(super) fn browser_dynamic_state(
         .projection
         .into_iter()
         .map(|node| {
-            let transform = runtime
-                .session()
-                .entity(node.entity)
-                .expect("projected entity remains admitted")
-                .transform;
+            let transform = node
+                .transform
+                .unwrap_or(EntityTransform::IDENTITY)
+                .compose(node.renderable_local_transform);
             BrowserProjectionNode {
                 visual_state: projection_visual_state(runtime, node.entity),
                 id: node.entity.raw(),
                 name: node.name,
                 asset: node.asset,
-                translation: node.translation.map(|value| value.to_array()),
-                rotation: transform.map_or([0.0, 0.0, 0.0, 1.0], |value| {
-                    [
-                        value.rotation.x,
-                        value.rotation.y,
-                        value.rotation.z,
-                        value.rotation.w,
-                    ]
-                }),
-                scale: transform.map_or([1.0; 3], |value| value.scale.to_array()),
+                translation: Some(transform.translation.to_array()),
+                rotation: [
+                    transform.rotation.x,
+                    transform.rotation.y,
+                    transform.rotation.z,
+                    transform.rotation.w,
+                ],
+                scale: transform.scale.to_array(),
                 visible: node.visible,
             }
         })
