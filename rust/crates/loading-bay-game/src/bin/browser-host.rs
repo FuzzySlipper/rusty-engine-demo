@@ -1369,6 +1369,9 @@ fn combat_fact_name(fact: &CombatFact) -> &'static str {
         }
         CombatFact::EnemyDefeated { .. } => "CombatEnemyDefeated",
         CombatFact::EnemyDrop(_) => "EnemyDropMaterialized",
+        CombatFact::ProjectileSpawned { .. } => "ProjectileSpawned",
+        CombatFact::ProjectileImpacted { .. } => "ProjectileImpacted",
+        CombatFact::ProjectileExpired { .. } => "ProjectileExpired",
     }
 }
 

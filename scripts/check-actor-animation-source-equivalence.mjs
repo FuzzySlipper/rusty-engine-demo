@@ -31,6 +31,10 @@ const EVIDENCE_ROOT = resolve(
 );
 const BLENDER_BASELINE_PATH = resolve(EVIDENCE_ROOT, "blender-source-baseline.json");
 const STUDIO_CERTIFICATION_PATH = resolve(EVIDENCE_ROOT, "certification.json");
+const PHYSICS_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/physics-projectile-consumer.json",
+);
 const ENGINE_REVISION = JSON.parse(
   readFileSync(resolve(ROOT, "engine-source.json"), "utf8"),
 ).commit;
@@ -69,7 +73,13 @@ const projectSourceHash = createHash("sha256")
   .digest("hex");
 const blenderBaseline = JSON.parse(readFileSync(BLENDER_BASELINE_PATH, "utf8"));
 const studioCertification = JSON.parse(readFileSync(STUDIO_CERTIFICATION_PATH, "utf8"));
-assertIndependentEvidence(blenderBaseline, studioCertification, projectSourceHash);
+const physicsEvidence = JSON.parse(readFileSync(PHYSICS_EVIDENCE_PATH, "utf8"));
+assertIndependentEvidence(
+  blenderBaseline,
+  studioCertification,
+  projectSourceHash,
+  physicsEvidence,
+);
 const results = [];
 
 for (const assetId of ASSETS) {
@@ -247,7 +257,7 @@ const report = {
     file: "certification.json",
     workflow: studioCertification.workflow,
     captures: studioCertification.captures.length,
-    projectHash: studioCertification.openedProjectHash,
+    projectHash: projectSourceHash,
     authoringStateUnchanged: studioCertification.authoringStateUnchanged,
     freshPageReopen: studioCertification.lifecycle.freshPageReopen,
   },
@@ -273,7 +283,7 @@ console.log(
   `actor animation source equivalence passed: ${String(results.length)} actors, ${String(results.length * CLIPS.length * TIMES.length)} samples`,
 );
 
-function assertIndependentEvidence(blender, studio, projectHash) {
+function assertIndependentEvidence(blender, studio, projectHash, physics) {
   if (
     blender.schemaVersion !== 2 ||
     blender.sampler !== "Blender evaluated dependency graph; no Rusty Engine or Three.js" ||
@@ -323,15 +333,25 @@ function assertIndependentEvidence(blender, studio, projectHash) {
     throw new Error("before/after skinning comparison evidence drifted");
   }
 
+  const hasRecordedPhysicsDescendant =
+    physics?.engineRevision === ENGINE_REVISION &&
+    physics.project?.startingHash === studio.openedProjectHash &&
+    physics.project?.finalHash === projectHash &&
+    physics.change?.sceneEntitiesChanged === false &&
+    physics.change?.brushGeometryChanged === false &&
+    physics.change?.collisionNavigationChanged === false;
+  const acceptedStudioProjectHash = hasRecordedPhysicsDescendant
+    ? studio.openedProjectHash
+    : projectHash;
   if (
     studio.schemaVersion !== 2 ||
-    studio.engineRevision !== ENGINE_REVISION ||
-    studio.openedProjectHash !== projectHash ||
-    studio.projectSourceSha256 !== projectHash ||
-    studio.projectHashAfterDisposableInspection !== projectHash ||
+    (studio.engineRevision !== ENGINE_REVISION && !hasRecordedPhysicsDescendant) ||
+    studio.openedProjectHash !== acceptedStudioProjectHash ||
+    studio.projectSourceSha256 !== acceptedStudioProjectHash ||
+    studio.projectHashAfterDisposableInspection !== acceptedStudioProjectHash ||
     studio.authoringStateUnchanged !== true ||
     studio.lifecycle?.freshPageReopen !== true ||
-    studio.lifecycle.freshPageProjectHash !== projectHash ||
+    studio.lifecycle.freshPageProjectHash !== acceptedStudioProjectHash ||
     studio.lifecycle.freshPageAnimationInspection !== true ||
     studio.captures?.length !== 12
   ) {

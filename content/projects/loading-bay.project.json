@@ -139744,6 +139744,13 @@
       }
     },
     {
+      "id": "ammo/kinetic-slug",
+      "maxQuantity": 32,
+      "kind": {
+        "kind": "ammunition"
+      }
+    },
+    {
       "id": "ammo/scatter-shell",
       "maxQuantity": 50,
       "kind": {
@@ -139818,6 +139825,31 @@
           0.0
         ],
         "presentation": "breach-scattergun"
+      }
+    },
+    {
+      "id": "weapon/kinetic-launcher",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "weapon",
+        "ammunition": "ammo/kinetic-slug",
+        "attackMode": "projectile",
+        "damage": 45,
+        "maxDistance": 60.0,
+        "cooldownTicks": 18,
+        "ammunitionCost": 1,
+        "muzzleOffset": [
+          0.0,
+          0.0,
+          -0.35
+        ],
+        "presentation": "kinetic-launcher",
+        "projectileMass": 0.25,
+        "projectileRadius": 0.12,
+        "projectileImpulse": 18.0,
+        "projectileGravityScale": 0.8,
+        "projectileLifetimeTicks": 180,
+        "projectileRestitution": 0.1
       }
     },
     {
@@ -180611,12 +180643,13 @@
               "selectWeapon": [
                 "Digit1",
                 "Digit2",
-                "Digit3"
+                "Digit3",
+                "Digit4"
               ]
             }
           },
           "inventory": {
-            "capacitySlots": 8,
+            "capacitySlots": 10,
             "startingStacks": [
               {
                 "item": "weapon/arc-pistol",
@@ -180629,13 +180662,22 @@
               {
                 "item": "supply/med-patch",
                 "quantity": 1
+              },
+              {
+                "item": "weapon/kinetic-launcher",
+                "quantity": 1
+              },
+              {
+                "item": "ammo/kinetic-slug",
+                "quantity": 8
               }
             ],
             "initiallyEquippedWeapon": "weapon/arc-pistol",
             "weaponSlots": [
               "weapon/arc-pistol",
               "weapon/breach-scattergun",
-              "weapon/rivet-carbine"
+              "weapon/rivet-carbine",
+              "weapon/kinetic-launcher"
             ]
           }
         },

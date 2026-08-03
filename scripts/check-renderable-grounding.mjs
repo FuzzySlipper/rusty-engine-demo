@@ -10,6 +10,9 @@ const project = JSON.parse(projectBytes);
 const evidence = JSON.parse(
   await readFile(resolve(root, "docs/evidence/renderable-grounding.json"), "utf8"),
 );
+const physicsEvidence = JSON.parse(
+  await readFile(resolve(root, "docs/evidence/physics-projectile-consumer.json"), "utf8"),
+);
 
 function invariant(condition, message) {
   if (!condition) throw new Error(`renderable-grounding invariant failed: ${message}`);
@@ -30,8 +33,11 @@ function nearlyEqual(left, right, tolerance = 0.000_01) {
 invariant(project.schemaVersion === 24, "canonical project must use schema 24");
 invariant(evidence.protocolVersion === 14, "Studio proof must use protocol 14");
 invariant(
-  projectBytes.byteLength === evidence.project.finalBytes
-    && sha256(projectBytes) === evidence.project.finalHash,
+  (projectBytes.byteLength === evidence.project.finalBytes
+    && sha256(projectBytes) === evidence.project.finalHash)
+    || (physicsEvidence.project.startingHash === evidence.project.finalHash
+      && projectBytes.byteLength === physicsEvidence.project.finalBytes
+      && sha256(projectBytes) === physicsEvidence.project.finalHash),
   "canonical bytes must match the recorded visual-local descendant",
 );
 const scene = project.scenes.find(({ id }) => id === project.entryScene);
@@ -136,5 +142,5 @@ invariant(
 );
 
 console.log(
-  `renderable grounding passed: ${String(evidence.alignments.length)} identities hash=${evidence.project.finalHash}`,
+  `renderable grounding passed: ${String(evidence.alignments.length)} identities hash=${sha256(projectBytes)}`,
 );

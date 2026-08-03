@@ -325,7 +325,7 @@ export type RuntimeFeedbackCue =
       readonly attacker: number;
       readonly weapon: string;
       readonly presentation: string;
-      readonly attackMode: "hitscan" | "spread" | "automatic";
+      readonly attackMode: "hitscan" | "spread" | "automatic" | "projectile";
       readonly rayCount: number;
       readonly origin: readonly [number, number, number];
       readonly direction: readonly [number, number, number];
@@ -1075,9 +1075,21 @@ function sameLight(left: LightDescriptor, right: LightDescriptor): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-const PRIMITIVE_FALLBACK_ASSETS = new Set(["mesh/player-marker"]);
+const PRIMITIVE_FALLBACK_ASSETS = new Set(["mesh/player-marker", "mesh/physics-projectile"]);
 
 function primitiveFallbackNode(node: RuntimeProjectionNode): RenderNode {
+  if (node.asset === "mesh/physics-projectile") {
+    const translation = node.translation ?? [0, 0, 0];
+    return primitiveNode(
+      node.name,
+      node.id,
+      "sphere",
+      translation,
+      [0.18, 0.18, 0.18],
+      { color: [1, 0.32, 0.08, 1], wireframe: false },
+      true,
+    );
+  }
   const scale: readonly [number, number, number] = [0.7, 1.4, 0.7];
   const authored = node.translation ?? [0, 0, 0];
   const translation: readonly [number, number, number] = [

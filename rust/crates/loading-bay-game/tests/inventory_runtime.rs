@@ -22,6 +22,7 @@ fn authored_item_vocabulary_and_starting_inventory_admit_as_read_only_views() {
         ids,
         [
             "ammo/energy-cell",
+            "ammo/kinetic-slug",
             "ammo/scatter-shell",
             "armor/impact-vest",
             "key/inert-inspection-tag",
@@ -29,6 +30,7 @@ fn authored_item_vocabulary_and_starting_inventory_admit_as_read_only_views() {
             "supply/med-patch",
             "weapon/arc-pistol",
             "weapon/breach-scattergun",
+            "weapon/kinetic-launcher",
             "weapon/rivet-carbine",
         ]
     );
@@ -70,7 +72,7 @@ fn authored_item_vocabulary_and_starting_inventory_admit_as_read_only_views() {
     ));
 
     let inventory = session.inventory(PLAYER).unwrap();
-    assert_eq!(inventory.capacity_slots, 8);
+    assert_eq!(inventory.capacity_slots, 10);
     assert_eq!(
         inventory
             .stacks
@@ -81,6 +83,8 @@ fn authored_item_vocabulary_and_starting_inventory_admit_as_read_only_views() {
             ("weapon/arc-pistol", 1),
             ("ammo/energy-cell", 18),
             ("supply/med-patch", 1),
+            ("weapon/kinetic-launcher", 1),
+            ("ammo/kinetic-slug", 8),
         ]
     );
     assert_eq!(
@@ -320,7 +324,7 @@ fn inventory_commands_are_atomic_ordered_and_report_exact_before_after_state() {
 #[test]
 fn capacity_and_authored_definition_failures_leave_no_partial_runtime() {
     let mut full: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
-    full["scenes"][0]["entities"][0]["inventory"]["capacitySlots"] = 3.into();
+    full["scenes"][0]["entities"][0]["inventory"]["capacitySlots"] = 5.into();
     let mut runtime = GameRuntime::from_stored_project(&full.to_string()).unwrap();
     let before = runtime.session().inventory(PLAYER).unwrap();
     assert_eq!(
@@ -333,7 +337,7 @@ fn capacity_and_authored_definition_failures_leave_no_partial_runtime() {
             },
         )
         .unwrap_err(),
-        InventoryRejection::InventoryFull { capacity_slots: 3 }
+        InventoryRejection::InventoryFull { capacity_slots: 5 }
     );
     assert_eq!(runtime.session().inventory(PLAYER).unwrap(), before);
 
@@ -434,6 +438,7 @@ fn snapshot_reopen_preserves_canonical_inventory_but_not_command_history() {
             .collect::<Vec<_>>(),
         [
             "ammo/energy-cell",
+            "ammo/kinetic-slug",
             "ammo/scatter-shell",
             "armor/impact-vest",
             "key/inert-inspection-tag",
@@ -441,6 +446,7 @@ fn snapshot_reopen_preserves_canonical_inventory_but_not_command_history() {
             "supply/med-patch",
             "weapon/arc-pistol",
             "weapon/breach-scattergun",
+            "weapon/kinetic-launcher",
             "weapon/rivet-carbine",
         ]
     );

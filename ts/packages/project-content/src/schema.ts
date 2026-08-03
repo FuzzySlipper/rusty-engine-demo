@@ -194,6 +194,25 @@ export type ItemKindDefinition =
       readonly muzzleOffset: Vec3;
       readonly presentation: string;
     }
+  | {
+      readonly kind: "weapon";
+      readonly attackMode: "projectile";
+      readonly pelletCount?: never;
+      readonly spreadDegrees?: never;
+      readonly damage: number;
+      readonly maxDistance: number;
+      readonly cooldownTicks: number;
+      readonly ammunition: string;
+      readonly ammunitionCost: number;
+      readonly muzzleOffset: Vec3;
+      readonly presentation: string;
+      readonly projectileMass: number;
+      readonly projectileRadius: number;
+      readonly projectileImpulse: number;
+      readonly projectileGravityScale: number;
+      readonly projectileLifetimeTicks: number;
+      readonly projectileRestitution: number;
+    }
   | { readonly kind: "ammunition" }
   | { readonly kind: "accessKey" }
   | { readonly kind: "healthSupply"; readonly restoreHealth: number }

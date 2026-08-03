@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "engineRevision": "d52c9b0f3287f21eea81d465871978a117750d0c",
+  "engineRevision": "5019ade33994bba02e8f0f7112fdfd8cd7e0c730",
   "independentSampler": "Blender evaluated dependency graph; no Rusty Engine or Three.js",
   "adjacentRendererSampler": "Three GLTFLoader plus SkeletonUtils clone and AnimationMixer, separate from the Engine loader/registry instance",
   "independentBlenderBaseline": {
@@ -88,7 +88,7 @@
     "file": "certification.json",
     "workflow": "Tools > Animation Inspection through the shared Studio viewport",
     "captures": 12,
-    "projectHash": "6069198b7bac3792ff86c0e245a4cdcae72ae1c68bf90f42cb08c39bc656c328",
+    "projectHash": "ff6eb4e29d7e4906a4ee964614ce306412056a61debfb88c1cc5653e7b900486",
     "authoringStateUnchanged": true,
     "freshPageReopen": true
   },

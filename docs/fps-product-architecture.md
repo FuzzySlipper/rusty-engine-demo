@@ -281,6 +281,21 @@ The route proves weapon and ammo pickups, numeric selection of owned weapons, di
 health/armor, key denial and success, switch consequences, a secret, death/restart, checkpoint
 restore, and completion without requiring copied content or a generalized quest system.
 
+## Physics-driven projectile consumer
+
+The canonical project includes `weapon/kinetic-launcher` and `ammo/kinetic-slug` as the concrete
+downstream consumer for Engine rigid-body work. Loading Bay Rust owns the weapon's ammunition,
+cooldown, damage, target selection, impact-once, and expiry policy. The exact-pinned Engine
+`engine-spatial::RigidBodyService` owns integration, contacts, and rigid-body state publication.
+
+The fixed game loop calls the projectile phase from its combat phase; browser presentation receives
+only an immutable projectile projection and typed facts. Projectile entities use bounded sphere
+colliders and initial `RigidBodyAction` impulses. Active bodies, pending impulses, contact receipts,
+and expiry timers are runtime-transient: snapshots retain the authored weapon/inventory state but
+strip projectile entities before save/reopen. The focused consumer proof is
+`rust/crates/loading-bay-game/tests/projectile_runtime.rs`; it fires the real canonical weapon,
+observes Engine motion, and verifies transient save behavior.
+
 ## Product budgets
 
 Performance certification records machine, OS, browser build, viewport, renderer backend, exact

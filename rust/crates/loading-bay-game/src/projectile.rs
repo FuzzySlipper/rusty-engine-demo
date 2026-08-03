@@ -1,0 +1,395 @@
+use std::collections::BTreeMap;
+
+use core_ids::EntityId;
+use core_math::Vec3;
+use core_time::Tick;
+use engine_spatial::{
+    RigidBodyAction, RigidBodyService, RigidBodyStepError, RigidBodyStepReceipt,
+    RigidBodyStepRequest, VoxelCollisionScene,
+};
+use entity_state::{
+    EntityAuthoringError, EntityAuthoringService, EntityDefinition, EntityTransform,
+    RigidBodyComponent, RigidBodyShape,
+};
+
+use crate::combat::{CombatFact, EnemyState};
+use crate::inventory::{ItemDefinitionId, ProjectileDefinition};
+use crate::runtime_records::GameEvent;
+use crate::session::GameSession;
+use crate::vitality::{DamageCommand, DamageService, DamageSource, VitalityRejection};
+
+const PROJECTILE_ASSET: &str = "mesh/physics-projectile";
+const MAX_PROJECTILE_ENTITIES: usize = 256;
+
+#[derive(Debug)]
+pub enum ProjectileError {
+    EntityAuthoring(EntityAuthoringError),
+    RigidBody(RigidBodyStepError),
+    Vitality(VitalityRejection),
+    EntityLimit { limit: usize },
+}
+
+impl std::fmt::Display for ProjectileError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::EntityAuthoring(error) => {
+                write!(formatter, "projectile entity authoring: {error}")
+            }
+            Self::RigidBody(error) => write!(formatter, "projectile rigid-body step: {error}"),
+            Self::Vitality(error) => write!(formatter, "projectile damage: {error}"),
+            Self::EntityLimit { limit } => {
+                write!(formatter, "projectile entity limit exceeded ({limit})")
+            }
+        }
+    }
+}
+
+impl std::error::Error for ProjectileError {}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ProjectileFact {
+    Spawned {
+        entity: EntityId,
+        owner: EntityId,
+        weapon: ItemDefinitionId,
+        origin: Vec3,
+        impulse: Vec3,
+        expires_at: Tick,
+    },
+    Impacted {
+        entity: EntityId,
+        owner: EntityId,
+        target: Option<EntityId>,
+        position: Vec3,
+        damage: u32,
+    },
+    Expired {
+        entity: EntityId,
+        owner: EntityId,
+        position: Vec3,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProjectilePhaseReceipt {
+    pub facts: Vec<ProjectileFact>,
+    pub combat: Vec<CombatFact>,
+    pub events: Vec<GameEvent>,
+    pub physics: Option<RigidBodyStepReceipt>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct ActiveProjectile {
+    owner: EntityId,
+    weapon: ItemDefinitionId,
+    definition: ProjectileDefinition,
+    damage: u32,
+    expires_at: Tick,
+    pending_impulse: Vec3,
+}
+
+pub(crate) struct ProjectileSpawnRequest {
+    pub(crate) owner: EntityId,
+    pub(crate) weapon: ItemDefinitionId,
+    pub(crate) definition: ProjectileDefinition,
+    pub(crate) damage: u32,
+    pub(crate) origin: Vec3,
+    pub(crate) direction: Vec3,
+    pub(crate) tick: Tick,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct ProjectileService {
+    next_entity_raw: u64,
+    active: BTreeMap<EntityId, ActiveProjectile>,
+    rigid_bodies: RigidBodyService,
+}
+
+impl ProjectileService {
+    pub(crate) fn spawn(
+        &mut self,
+        session: &mut GameSession,
+        request: ProjectileSpawnRequest,
+    ) -> Result<(EntityId, ProjectileFact), ProjectileError> {
+        let ProjectileSpawnRequest {
+            owner,
+            weapon,
+            definition,
+            damage,
+            origin,
+            direction,
+            tick,
+        } = request;
+        if self.active.len() >= MAX_PROJECTILE_ENTITIES {
+            return Err(ProjectileError::EntityLimit {
+                limit: MAX_PROJECTILE_ENTITIES,
+            });
+        }
+        let entity = self.allocate_entity(session)?;
+        let radius = definition.radius;
+        let definition_entity = EntityDefinition::new(entity, "physics projectile")
+            .with_full_transform(EntityTransform::at(origin))
+            .with_bounds(
+                Vec3::new(-radius, -radius, -radius),
+                Vec3::new(radius, radius, radius),
+            )
+            .with_collision(true, false)
+            .with_renderable(PROJECTILE_ASSET, true);
+        let authoring = EntityAuthoringService;
+        let entity_revision = session.entities.revision();
+        authoring
+            .admit(&mut session.entities, entity_revision, [definition_entity])
+            .map_err(ProjectileError::EntityAuthoring)?;
+        let body = RigidBodyComponent {
+            gravity_scale: definition.gravity_scale,
+            restitution: definition.restitution,
+            continuous_collision: true,
+            ..RigidBodyComponent::dynamic(RigidBodyShape::Sphere { radius }, definition.mass)
+        };
+        let component_revision = session
+            .entities
+            .component_revision::<RigidBodyComponent>(entity)
+            .expect("rigid-body component is registered by mechanics registry");
+        authoring
+            .attach_component(&mut session.entities, component_revision, entity, body)
+            .map_err(ProjectileError::EntityAuthoring)?;
+        let impulse = normalize(direction) * definition.impulse;
+        let expires_at = tick.advance(core_time::TickDelta::new(definition.lifetime_ticks));
+        self.active.insert(
+            entity,
+            ActiveProjectile {
+                owner,
+                weapon: weapon.clone(),
+                definition,
+                damage,
+                expires_at,
+                pending_impulse: impulse,
+            },
+        );
+        Ok((
+            entity,
+            ProjectileFact::Spawned {
+                entity,
+                owner,
+                weapon,
+                origin,
+                impulse,
+                expires_at,
+            },
+        ))
+    }
+
+    pub(crate) fn step(
+        &mut self,
+        session: &mut GameSession,
+        scene: &VoxelCollisionScene,
+        tick: Tick,
+        step_seconds: f32,
+    ) -> Result<ProjectilePhaseReceipt, ProjectileError> {
+        if self.active.is_empty() {
+            return Ok(ProjectilePhaseReceipt {
+                facts: Vec::new(),
+                combat: Vec::new(),
+                events: Vec::new(),
+                physics: None,
+            });
+        }
+        let actions = self
+            .active
+            .iter()
+            .map(|(entity, projectile)| {
+                RigidBodyAction::impulse(*entity, projectile.pending_impulse)
+            })
+            .collect();
+        let mut candidate_session = session.clone();
+        let physics = self
+            .rigid_bodies
+            .step(
+                &mut candidate_session.entities,
+                scene,
+                RigidBodyStepRequest {
+                    step_seconds,
+                    steps: 1,
+                    gravity: Vec3::new(0.0, -9.81, 0.0),
+                    actions,
+                },
+            )
+            .map_err(ProjectileError::RigidBody)?;
+        let positions: BTreeMap<_, _> = physics
+            .facts
+            .iter()
+            .map(|fact| (fact.entity, fact.transform_after.translation))
+            .collect();
+        let static_contacts: BTreeMap<_, _> = physics
+            .contacts
+            .iter()
+            .filter(|contact| contact.second.is_none())
+            .map(|contact| (contact.first, *contact))
+            .collect();
+        let mut facts = Vec::new();
+        let mut combat = Vec::new();
+        let mut events = Vec::new();
+        let mut remove = Vec::new();
+        for (entity, projectile) in &self.active {
+            let Some(position) = positions.get(entity).copied() else {
+                continue;
+            };
+            let target = nearest_target(
+                &candidate_session,
+                projectile.owner,
+                position,
+                projectile.definition.radius,
+            );
+            let expired = tick.raw() >= projectile.expires_at.raw();
+            if target.is_some() || static_contacts.contains_key(entity) {
+                if let Some(target) = target {
+                    let damage = DamageService::apply(
+                        &mut candidate_session,
+                        DamageCommand {
+                            source: DamageSource::Weapon {
+                                attacker: projectile.owner,
+                                weapon: projectile.weapon.clone(),
+                            },
+                            target,
+                            amount: projectile.damage,
+                        },
+                    )
+                    .map_err(ProjectileError::Vitality)?;
+                    combat.extend(damage.facts.iter().cloned().map(CombatFact::Vitality));
+                    combat.extend(
+                        damage
+                            .enemy_drops
+                            .iter()
+                            .cloned()
+                            .map(CombatFact::EnemyDrop),
+                    );
+                    combat.extend(
+                        damage
+                            .inventory
+                            .iter()
+                            .flat_map(|receipt| receipt.facts.iter().cloned())
+                            .map(CombatFact::Inventory),
+                    );
+                    if let Some(event) = damage.event {
+                        if let GameEvent::EnemyDefeated { enemy, .. } = event {
+                            combat.push(CombatFact::EnemyDefeated {
+                                attacker: projectile.owner,
+                                enemy,
+                            });
+                        }
+                        events.push(event);
+                    }
+                    facts.push(ProjectileFact::Impacted {
+                        entity: *entity,
+                        owner: projectile.owner,
+                        target: Some(target),
+                        position,
+                        damage: projectile.damage,
+                    });
+                } else {
+                    facts.push(ProjectileFact::Impacted {
+                        entity: *entity,
+                        owner: projectile.owner,
+                        target: None,
+                        position,
+                        damage: 0,
+                    });
+                }
+                remove.push(*entity);
+            } else if expired {
+                facts.push(ProjectileFact::Expired {
+                    entity: *entity,
+                    owner: projectile.owner,
+                    position,
+                });
+                remove.push(*entity);
+            }
+        }
+        for entity in &remove {
+            let revision = candidate_session.entities.revision();
+            EntityAuthoringService
+                .destroy(&mut candidate_session.entities, revision, *entity)
+                .map_err(ProjectileError::EntityAuthoring)?;
+        }
+        *session = candidate_session;
+        for projectile in self.active.values_mut() {
+            projectile.pending_impulse = Vec3::ZERO;
+        }
+        for entity in remove {
+            self.active.remove(&entity);
+        }
+        Ok(ProjectilePhaseReceipt {
+            facts,
+            combat,
+            events,
+            physics: Some(physics),
+        })
+    }
+
+    pub(crate) fn strip_from(&self, session: &mut GameSession) -> Vec<EntityId> {
+        let mut stripped = Vec::new();
+        for entity in self.active.keys().copied().collect::<Vec<_>>() {
+            if session.entities.is_alive(entity) {
+                let revision = session.entities.revision();
+                let _ = EntityAuthoringService.destroy(&mut session.entities, revision, entity);
+                stripped.push(entity);
+            }
+        }
+        stripped
+    }
+
+    fn allocate_entity(&mut self, session: &GameSession) -> Result<EntityId, ProjectileError> {
+        let mut raw = self.next_entity_raw.max(1);
+        loop {
+            let entity = EntityId::new(raw);
+            raw = raw.checked_add(1).ok_or(ProjectileError::EntityLimit {
+                limit: MAX_PROJECTILE_ENTITIES,
+            })?;
+            if !session.entities.contains(entity) {
+                self.next_entity_raw = raw;
+                return Ok(entity);
+            }
+        }
+    }
+}
+
+fn nearest_target(
+    session: &GameSession,
+    owner: EntityId,
+    position: Vec3,
+    radius: f32,
+) -> Option<EntityId> {
+    session
+        .enemies
+        .iter()
+        .filter(|(entity, enemy)| {
+            **entity != owner
+                && enemy.state == EnemyState::Alive
+                && crate::encounter::EncounterService::enemy_is_active(session, **entity)
+        })
+        .filter_map(|(entity, _)| {
+            let health = session.health(*entity)?;
+            let transform = session.entities.transform(*entity)?;
+            let delta = position - transform.translation;
+            (delta.x.abs() <= health.config.hitbox_half_extents.x + radius
+                && delta.y.abs() <= health.config.hitbox_half_extents.y + radius
+                && delta.z.abs() <= health.config.hitbox_half_extents.z + radius)
+                .then_some((*entity, delta.length_squared()))
+        })
+        .min_by(|left, right| {
+            left.1
+                .partial_cmp(&right.1)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| left.0.cmp(&right.0))
+        })
+        .map(|(entity, _)| entity)
+}
+
+fn normalize(direction: Vec3) -> Vec3 {
+    let length = direction.length();
+    if length > f32::EPSILON {
+        direction * length.recip()
+    } else {
+        Vec3::new(0.0, 0.0, -1.0)
+    }
+}

@@ -104,7 +104,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .as_array()
             .unwrap()
             .len()
-            + 3
+            + 4
     );
     let voxel_references = component_references
         .iter()
@@ -126,7 +126,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
         .iter()
         .filter(|reference| reference["componentTypeId"] == "rusty-engine-demo.loading-bay.weapon")
         .collect::<Vec<_>>();
-    assert_eq!(weapon_references.len(), 3);
+    assert_eq!(weapon_references.len(), 4);
     assert_eq!(response["project"]["sceneHierarchy"]["sceneId"], 1);
     assert_eq!(
         response["project"]["sceneHierarchy"]["nodes"]
@@ -163,7 +163,7 @@ fn open_uses_engine_owners_and_returns_canonical_projection_and_voxel_readouts()
             .iter()
             .filter(|node| node["tags"] == json!(["runtime-derived"]))
             .count(),
-        3
+        4
     );
     assert_eq!(response["project"]["projection"]["schemaVersion"], 1);
     assert_eq!(

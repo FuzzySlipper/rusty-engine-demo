@@ -189,6 +189,7 @@ impl BrowserFeedbackProjection {
                         loading_bay_game::WeaponAttackMode::Hitscan => "hitscan",
                         loading_bay_game::WeaponAttackMode::Spread { .. } => "spread",
                         loading_bay_game::WeaponAttackMode::Automatic => "automatic",
+                        loading_bay_game::WeaponAttackMode::Projectile => "projectile",
                     },
                     ray_count: *ray_count,
                     origin: origin.to_array(),
@@ -243,7 +244,11 @@ impl BrowserFeedbackProjection {
                         self.cues.push(cue);
                     }
                 }
-                CombatFact::Inventory(_) | CombatFact::Vitality(_) => {}
+                CombatFact::Inventory(_)
+                | CombatFact::Vitality(_)
+                | CombatFact::ProjectileSpawned { .. }
+                | CombatFact::ProjectileImpacted { .. }
+                | CombatFact::ProjectileExpired { .. } => {}
             }
         }
     }

@@ -727,7 +727,9 @@ fn reject_future_weapon_behavior_fields(legacy: &StoredProject) -> Result<(), St
             &definition.kind,
             StoredItemKind::Weapon {
                 attack_mode: Some(
-                    StoredWeaponAttackMode::Spread | StoredWeaponAttackMode::Automatic
+                    StoredWeaponAttackMode::Spread
+                        | StoredWeaponAttackMode::Automatic
+                        | StoredWeaponAttackMode::Projectile
                 ),
                 ..
             } | StoredItemKind::Weapon {
@@ -799,6 +801,24 @@ fn reject_future_weapon_fields(legacy: &StoredProject) -> Result<(), StoredProje
                 ..
             } | StoredItemKind::Weapon {
                 presentation: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                projectile_mass: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                projectile_radius: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                projectile_impulse: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                projectile_gravity_scale: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                projectile_lifetime_ticks: Some(_),
+                ..
+            } | StoredItemKind::Weapon {
+                projectile_restitution: Some(_),
                 ..
             }
         )
@@ -943,6 +963,7 @@ fn migrate_legacy_weapon_authority(project: &mut StoredProject) -> Result<(), St
             ammunition_cost,
             muzzle_offset,
             presentation,
+            ..
         } = &mut definition.kind
         else {
             continue;
@@ -1007,6 +1028,12 @@ fn legacy_weapon_item_kind(
         ammunition_cost: Some(1),
         muzzle_offset: Some(weapon.muzzle_offset),
         presentation: Some(presentation.to_string()),
+        projectile_mass: None,
+        projectile_radius: None,
+        projectile_impulse: None,
+        projectile_gravity_scale: None,
+        projectile_lifetime_ticks: None,
+        projectile_restitution: None,
     }
 }
 

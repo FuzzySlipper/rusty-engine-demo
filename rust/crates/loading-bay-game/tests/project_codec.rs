@@ -470,6 +470,16 @@ fn schema_fifteen_rejects_future_weapon_modes_and_migrates_hitscan_only_content(
             kind.insert("attackMode".to_owned(), "hitscan".into());
             kind.remove("pelletCount");
             kind.remove("spreadDegrees");
+            for field in [
+                "projectileMass",
+                "projectileRadius",
+                "projectileImpulse",
+                "projectileGravityScale",
+                "projectileLifetimeTicks",
+                "projectileRestitution",
+            ] {
+                kind.remove(field);
+            }
         }
     }
     let migrated = decode_project_document(&future.to_string()).unwrap();
@@ -636,6 +646,12 @@ fn strip_current_weapon_fields(project: &mut serde_json::Value) {
                 "ammunitionCost",
                 "muzzleOffset",
                 "presentation",
+                "projectileMass",
+                "projectileRadius",
+                "projectileImpulse",
+                "projectileGravityScale",
+                "projectileLifetimeTicks",
+                "projectileRestitution",
             ] {
                 kind.remove(field);
             }

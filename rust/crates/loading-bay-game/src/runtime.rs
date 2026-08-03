@@ -32,6 +32,7 @@ use crate::progression::{
     ProgressionFact, ProgressionService, SecretPhaseReceipt, SecretRejection,
 };
 use crate::project_admission::decode_and_admit_stored_project;
+use crate::projectile::{ProjectileError, ProjectilePhaseReceipt, ProjectileService};
 use crate::runtime_records::{readout, GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
@@ -125,6 +126,7 @@ pub enum RuntimeError {
     LoadingBayInterlock(LoadingBayInterlockRejection),
     LevelExit(LevelExitRejection),
     Secret(SecretRejection),
+    Projectile(ProjectileError),
 }
 
 impl std::fmt::Display for RuntimeError {
@@ -146,6 +148,7 @@ pub struct GameRuntime {
     pub(crate) pickup_triggers: TriggerVolumeSystem,
     pub(crate) hazard_triggers: TriggerVolumeSystem,
     pub(crate) secret_triggers: TriggerVolumeSystem,
+    pub(crate) projectiles: ProjectileService,
 }
 
 impl GameRuntime {
@@ -163,6 +166,7 @@ impl GameRuntime {
             pickup_triggers,
             hazard_triggers,
             secret_triggers,
+            projectiles: ProjectileService::default(),
         }
     }
 
@@ -515,8 +519,14 @@ impl GameRuntime {
             .collision_scene
             .as_ref()
             .ok_or(RuntimeError::MissingCollisionScene)?;
-        let resolution =
-            CombatService::attack(&mut self.session, scene, self.tick, attacker, action)?;
+        let resolution = CombatService::attack(
+            &mut self.session,
+            scene,
+            &mut self.projectiles,
+            self.tick,
+            attacker,
+            action,
+        )?;
         for event in resolution.events {
             self.events.push_back(event);
         }
@@ -526,6 +536,29 @@ impl GameRuntime {
             facts: resolution.facts,
             events,
         })
+    }
+
+    /// Advance the Engine-owned rigid-body projectile phase once.
+    ///
+    /// The fixed game loop calls this from its combat phase.  It is public so
+    /// downstream consumers can exercise the same authoritative phase without
+    /// manufacturing a second physics implementation or mutating projections
+    /// directly.
+    pub fn run_projectile_phase(
+        &mut self,
+        step_seconds: f32,
+    ) -> Result<ProjectilePhaseReceipt, RuntimeError> {
+        let scene = self
+            .collision_scene
+            .as_ref()
+            .ok_or(RuntimeError::MissingCollisionScene)?;
+        let mut receipt = self
+            .projectiles
+            .step(&mut self.session, scene, self.tick, step_seconds)
+            .map_err(RuntimeError::Projectile)?;
+        self.events.extend(receipt.events.drain(..));
+        receipt.events = self.drain_events()?;
+        Ok(receipt)
     }
 
     pub fn advance_by(&mut self, ticks: u64) -> Result<RuntimeReceipt, RuntimeError> {

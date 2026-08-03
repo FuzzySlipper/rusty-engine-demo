@@ -69,7 +69,7 @@ fn studio_authored_project_is_static_typed_multi_family_content() {
             .unwrap()
             .weapon_slots
             .len(),
-        3
+        4
     );
     assert!(entities.iter().any(|entity| entity.navigation.is_some()));
     assert!(entities.iter().any(|entity| entity.health.is_some()));

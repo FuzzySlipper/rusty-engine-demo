@@ -360,6 +360,29 @@ fallback. After its schema-11 source is migrated by the Rust project store, the 
 status-runner sources and publishes the five fixture appearances before launch. Those temporary
 proof-project mutations reuse the manifest hashes and copied CC0 notices above.
 
+## Physics projectile consumer
+
+Den task #6580 adds the original `weapon/kinetic-launcher` and `ammo/kinetic-slug` definitions to
+exercise the Engine rigid-body provider requested by Engine task #6535. The launcher reuses the
+existing original `mesh/prop-kit/rivet-carbine` silhouette as a disposable viewmodel reference;
+no new mesh, texture, sound, or third-party asset was introduced. Its authored Rust policy is
+bounded mass/radius/impulse/gravity/lifetime/restitution plus the existing Loading Bay damage,
+cooldown, ammunition, and muzzle-offset fields.
+
+The consumer pins Engine `5019ade33994bba02e8f0f7112fdfd8cd7e0c730`, whose public
+`engine-spatial::RigidBodyService` owns integration, contact generation, and rigid-body state
+publication. Loading Bay's `ProjectileService` owns only projectile entity admission, initial
+impulse requests, target/damage-once policy, impact/expiry facts, and snapshot stripping. The fixed
+Loading Bay game loop is the sole step caller; TypeScript receives an immutable projectile node and
+cannot advance or mutate the body.
+
+The focused downstream proof is `tests/projectile_runtime.rs`: it selects the canonical launcher,
+fires it through `GameRuntime::attack`, observes the real Engine motion receipt and changed
+projection, then confirms snapshot/reopen retains the weapon definition and ammunition state while
+omitting the transient projectile. This is a consumer proof, not an Engine fixture or synthetic
+physics implementation. The canonical project JSON and its existing asset hashes remain otherwise
+unchanged.
+
 ## Proper FPS campaign design
 
 The product architecture, protocol targets, content vocabulary, and original level route in

@@ -72,6 +72,13 @@ const WEAPON_PRESETS: Readonly<Record<string, WeaponPreset>> = {
     scale: [0.72, 0.72, 0.72],
     muzzle: [0.27, -0.13, -1.24],
   },
+  "weapon/kinetic-launcher": {
+    item: "weapon/kinetic-launcher",
+    asset: "mesh/prop-kit/rivet-carbine",
+    translation: [0.29, -0.24, -0.8],
+    scale: [0.76, 0.76, 0.76],
+    muzzle: [0.29, -0.13, -1.28],
+  },
 };
 
 const EMPTY_STATE: ViewmodelState = {

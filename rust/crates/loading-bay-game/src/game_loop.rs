@@ -714,6 +714,15 @@ impl LoadingBayGameLoop {
                 .map(GameLoopFact::EnemyCombat),
         );
         facts.extend(enemy_attacks.events.into_iter().map(GameLoopFact::Event));
+        let projectiles = self.runtime.run_projectile_phase(FIXED_STEP_SECONDS)?;
+        facts.extend(
+            projectiles
+                .facts
+                .into_iter()
+                .map(|fact| GameLoopFact::Combat(projectile_fact_to_combat_fact(fact))),
+        );
+        facts.extend(projectiles.combat.into_iter().map(GameLoopFact::Combat));
+        facts.extend(projectiles.events.into_iter().map(GameLoopFact::Event));
         if DamageService::is_dead(self.runtime.session(), self.player) {
             self.input.clear_intent();
             return Ok(());
@@ -1072,6 +1081,48 @@ impl LoadingBayGameLoop {
             self.dropped_fact_count = self.dropped_fact_count.saturating_add(1);
         }
         self.pending_facts.push_back(fact);
+    }
+}
+
+fn projectile_fact_to_combat_fact(fact: crate::ProjectileFact) -> CombatFact {
+    match fact {
+        crate::ProjectileFact::Spawned {
+            entity,
+            owner,
+            weapon,
+            origin,
+            impulse,
+            expires_at,
+        } => CombatFact::ProjectileSpawned {
+            entity,
+            owner,
+            weapon,
+            origin,
+            impulse,
+            expires_at,
+        },
+        crate::ProjectileFact::Impacted {
+            entity,
+            owner,
+            target,
+            position,
+            damage,
+        } => CombatFact::ProjectileImpacted {
+            entity,
+            owner,
+            target,
+            position,
+            damage,
+        },
+        crate::ProjectileFact::Expired {
+            entity,
+            owner,
+            position,
+        } => CombatFact::ProjectileExpired {
+            entity,
+            owner,
+            position,
+        },
     }
 }
 

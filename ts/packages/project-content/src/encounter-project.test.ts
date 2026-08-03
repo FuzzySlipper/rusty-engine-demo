@@ -189,17 +189,20 @@ test("stored item definitions and starting inventory remain immutable authored d
   );
 
   assert.deepEqual(player?.inventory, {
-    capacitySlots: 8,
+    capacitySlots: 10,
     startingStacks: [
       { item: LOADING_BAY_ITEM_IDS.arcPistol, quantity: 1 },
       { item: LOADING_BAY_ITEM_IDS.energyCell, quantity: 18 },
       { item: LOADING_BAY_ITEM_IDS.medPatch, quantity: 1 },
+      { item: LOADING_BAY_ITEM_IDS.kineticLauncher, quantity: 1 },
+      { item: LOADING_BAY_ITEM_IDS.kineticSlug, quantity: 8 },
     ],
     initiallyEquippedWeapon: LOADING_BAY_ITEM_IDS.arcPistol,
     weaponSlots: [
       LOADING_BAY_ITEM_IDS.arcPistol,
       LOADING_BAY_ITEM_IDS.breachScattergun,
       LOADING_BAY_ITEM_IDS.rivetCarbine,
+      LOADING_BAY_ITEM_IDS.kineticLauncher,
     ],
   });
   assert.deepEqual(
@@ -273,6 +276,7 @@ test("stored item definitions and starting inventory remain immutable authored d
     "Digit1",
     "Digit2",
     "Digit3",
+    "Digit4",
   ]);
   assert.deepEqual(
     project.scenes[0]?.entities.find(

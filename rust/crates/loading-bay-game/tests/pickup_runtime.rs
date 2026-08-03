@@ -429,6 +429,13 @@ fn strip_snapshot_weapon_item_fields(snapshot: &mut serde_json::Value) {
 }
 
 fn strip_project_weapon_item_fields(project: &mut serde_json::Value) {
+    // Schema 12 predates the physics projectile weapon.  Remove that newer
+    // authored identity from this legacy migration fixture instead of making
+    // the migration invent a pre-projectile weapon definition.
+    project["itemDefinitions"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|definition| definition["id"] != "weapon/kinetic-launcher");
     for definition in project["itemDefinitions"].as_array_mut().unwrap() {
         if definition["kind"]["kind"] == "weapon" {
             let kind = definition["kind"].as_object_mut().unwrap();
@@ -448,7 +455,15 @@ fn strip_project_weapon_item_fields(project: &mut serde_json::Value) {
     for scene in project["scenes"].as_array_mut().unwrap() {
         for entity in scene["entities"].as_array_mut().unwrap() {
             if let Some(inventory) = entity.get_mut("inventory") {
-                inventory.as_object_mut().unwrap().remove("weaponSlots");
+                let inventory = inventory.as_object_mut().unwrap();
+                inventory.remove("weaponSlots");
+                if let Some(stacks) = inventory
+                    .get_mut("startingStacks")
+                    .and_then(serde_json::Value::as_array_mut)
+                {
+                    stacks.retain(|stack| stack["item"] != "weapon/kinetic-launcher");
+                    stacks.retain(|stack| stack["item"] != "ammo/kinetic-slug");
+                }
             }
             if let Some(controller) = entity.get_mut("playerController") {
                 controller["bindings"]

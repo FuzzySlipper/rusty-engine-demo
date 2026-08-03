@@ -92,6 +92,39 @@ Open an Engine task only for a renderer-neutral retained/picking/spatial capabil
 consumer. Weapon modes, ammunition policy, cadence, hit selection, damage, and combat facts are
 gameplay and stay here.
 
+## Recipe: add an Engine rigid-body projectile weapon
+
+Use this when a weapon's projectile must be a real Engine rigid body rather than a hitscan ray or a
+browser-side visual effect.
+
+1. Pin the exact reviewed Engine revision that exposes `engine-spatial::RigidBodyService`; record
+   the revision in `engine-source.json`, Cargo, the package locks, and provenance before changing
+   the consumer. Do not add a sibling-path dependency or a demo physics loop.
+2. Extend the downstream stored weapon schema with one closed `projectile` configuration: bounded
+   mass, sphere radius, impulse, gravity scale, lifetime, restitution, and the existing ammo/damage
+   policy. Validate the complete candidate before publication and reject projectile fields on other
+   attack modes.
+3. Spawn the projectile in the Rust combat service by consuming ammo and admitting one runtime
+   entity with a bounded primitive collider, then apply the initial impulse through
+   `RigidBodyAction`. The fixed game loop owns stepping; the browser receives only the immutable
+   projection and typed facts.
+4. Treat Engine contacts and authoritative target overlap as inputs to one downstream impact
+   transaction. Apply damage at most once, destroy the projectile on impact or bounded expiry, and
+   preserve the candidate-session/commit boundary if any validation or damage operation rejects.
+5. Save only the durable weapon definition, inventory, cooldown, and gameplay state. Strip active
+   projectile entities and their tombstones from runtime snapshots; a save/reopen must not resurrect
+   a solver body or pending impulse.
+6. Prove the real path with the canonical project: select the authored weapon, fire through the game
+   runtime, observe an Engine-rigid-body motion receipt, verify impact/expiry and one-shot damage,
+   save/reopen, and inspect the browser projection. Focused Rust proof is required; product-visible
+   changes also run `pnpm run verify`.
+
+The Loading Bay `weapon/kinetic-launcher` and `ProjectileService` are the reference consumer. The
+Engine owns body integration, contacts, and rigid-body state publication; Loading Bay owns weapon
+meaning, ammo, cooldown, target selection, damage, expiry policy, and combat facts. If the Engine
+surface cannot express a required generic invariant, open an upstream task and keep this consumer
+blocked rather than adding a local substitute.
+
 ## Recipe: expose a game-owned project component in Studio
 
 Follow the Loading Bay Weapon path when a durable downstream component needs a typed Studio form:

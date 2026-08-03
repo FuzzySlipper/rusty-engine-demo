@@ -26,6 +26,7 @@ mod progression;
 mod project_admission;
 mod project_codec;
 mod project_store;
+mod projectile;
 mod runtime;
 mod runtime_records;
 mod save_game;
@@ -93,8 +94,10 @@ pub use inventory::{
     InventoryAction, InventoryAdmissionError, InventoryCommand, InventoryConfig, InventoryFact,
     InventoryReceipt, InventoryRejection, InventoryService, InventoryStack, InventoryView,
     ItemDefinition, ItemDefinitionId, ItemDefinitionIdError, ItemDefinitionView, ItemKind,
-    WeaponAttackMode, WeaponDefinition, MAX_INVENTORY_SLOTS, MAX_ITEM_DEFINITION_ID_BYTES,
-    MAX_ITEM_QUANTITY,
+    ProjectileDefinition, WeaponAttackMode, WeaponDefinition, MAX_INVENTORY_SLOTS,
+    MAX_ITEM_DEFINITION_ID_BYTES, MAX_ITEM_QUANTITY, MAX_PROJECTILE_GRAVITY_SCALE,
+    MAX_PROJECTILE_IMPULSE, MAX_PROJECTILE_LIFETIME_TICKS, MAX_PROJECTILE_MASS,
+    MAX_PROJECTILE_RADIUS, MAX_PROJECTILE_RESTITUTION,
 };
 pub use navigation::{
     NavigationComponent, NavigationConfig, NavigationFact, NavigationFailure,
@@ -133,6 +136,7 @@ pub use project_store::{
     LoadedProjectSource, ProjectSaveMode, ProjectStore, ProjectStoreError,
     DEFAULT_MAX_PROJECT_FILE_BYTES,
 };
+pub use projectile::{ProjectileError, ProjectileFact, ProjectilePhaseReceipt};
 pub use runtime::{GameRuntime, RuntimeError, MAX_EVENT_WAVE, MAX_TICK_ADVANCE};
 pub use runtime_records::{GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
 pub use save_game::{
@@ -194,13 +198,13 @@ pub(crate) use voxel_object_projection::project_stored_voxel_objects_with;
 pub use voxel_object_projection::{project_stored_voxel_objects, StoredVoxelObjectProjectionError};
 pub use weapon_authoring::{
     decode_loading_bay_weapon_authoring_request, encode_loading_bay_weapon_authoring_response,
-    LoadingBayWeaponAuthoringAttackMode, LoadingBayWeaponAuthoringBinding,
-    LoadingBayWeaponAuthoringCandidate, LoadingBayWeaponAuthoringCodecError,
-    LoadingBayWeaponAuthoringReceipt, LoadingBayWeaponAuthoringRejection,
-    LoadingBayWeaponAuthoringRejectionCode, LoadingBayWeaponAuthoringRequest,
-    LoadingBayWeaponAuthoringResponse, LoadingBayWeaponAuthoringService,
-    LoadingBayWeaponAuthoringWeapon, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID,
-    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION, LOADING_BAY_WEAPON_COMPONENT_TYPE_ID,
-    MAX_LOADING_BAY_WEAPON_AUTHORING_REQUEST_BYTES,
+    LoadingBayProjectileAuthoringConfig, LoadingBayWeaponAuthoringAttackMode,
+    LoadingBayWeaponAuthoringBinding, LoadingBayWeaponAuthoringCandidate,
+    LoadingBayWeaponAuthoringCodecError, LoadingBayWeaponAuthoringReceipt,
+    LoadingBayWeaponAuthoringRejection, LoadingBayWeaponAuthoringRejectionCode,
+    LoadingBayWeaponAuthoringRequest, LoadingBayWeaponAuthoringResponse,
+    LoadingBayWeaponAuthoringService, LoadingBayWeaponAuthoringWeapon,
+    LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION,
+    LOADING_BAY_WEAPON_COMPONENT_TYPE_ID, MAX_LOADING_BAY_WEAPON_AUTHORING_REQUEST_BYTES,
     MAX_LOADING_BAY_WEAPON_AUTHORING_RESPONSE_BYTES,
 };

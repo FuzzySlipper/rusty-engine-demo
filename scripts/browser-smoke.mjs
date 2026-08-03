@@ -1469,8 +1469,9 @@ function gameShellScenario(viewportLabel) {
         rect.height >= Math.min(500, innerHeight - 30) &&
         aimingTarget === canvas;
       const hotbarPassed =
-        document.querySelectorAll("red-game-hotbar button").length === 3 &&
-        document.body.textContent?.includes("Arc Pistol") === true;
+        document.querySelectorAll("red-game-hotbar button").length === 4 &&
+        document.body.textContent?.includes("Arc Pistol") === true &&
+        document.body.textContent?.includes("Kinetic Launcher") === true;
 
       window.dispatchEvent(
         new KeyboardEvent("keydown", { code: "KeyI", bubbles: true }),

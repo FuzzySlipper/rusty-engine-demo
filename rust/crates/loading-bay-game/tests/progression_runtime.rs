@@ -473,6 +473,16 @@ fn legacy_snapshots_reject_future_progression_state() {
             kind.insert("attackMode".into(), "hitscan".into());
             kind.remove("pelletCount");
             kind.remove("spreadDegrees");
+            for field in [
+                "projectileMass",
+                "projectileRadius",
+                "projectileImpulse",
+                "projectileGravityScale",
+                "projectileLifetimeTicks",
+                "projectileRestitution",
+            ] {
+                kind.remove(field);
+            }
         }
     }
 

@@ -8,8 +8,9 @@ use serde::{Deserialize, Serialize};
 use crate::encounter::EncounterService;
 use crate::inventory::{
     InventoryAction, InventoryCommand, InventoryFact, InventoryRejection, InventoryService,
-    ItemDefinitionId, ItemKind, WeaponDefinition,
+    ItemDefinitionId, ItemKind, WeaponAttackMode, WeaponDefinition,
 };
+use crate::projectile::ProjectileService;
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
@@ -123,6 +124,26 @@ pub enum CombatFact {
         attacker: EntityId,
         enemy: EntityId,
     },
+    ProjectileSpawned {
+        entity: EntityId,
+        owner: EntityId,
+        weapon: ItemDefinitionId,
+        origin: Vec3,
+        impulse: Vec3,
+        expires_at: Tick,
+    },
+    ProjectileImpacted {
+        entity: EntityId,
+        owner: EntityId,
+        target: Option<EntityId>,
+        position: Vec3,
+        damage: u32,
+    },
+    ProjectileExpired {
+        entity: EntityId,
+        owner: EntityId,
+        position: Vec3,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -166,6 +187,7 @@ impl CombatService {
     pub(crate) fn attack(
         session: &mut GameSession,
         scene: &VoxelCollisionScene,
+        projectiles: &mut ProjectileService,
         tick: Tick,
         attacker: EntityId,
         action: ResolvedAttackAction,
@@ -296,7 +318,47 @@ impl CombatService {
                 .map(CombatFact::Inventory),
         );
         let mut events = Vec::new();
+        if let WeaponAttackMode::Projectile = weapon.attack_mode {
+            let projectile = weapon
+                .projectile
+                .expect("validated projectile weapon carries projectile definition");
+            let (_, projectile_fact) = projectiles
+                .spawn(
+                    &mut candidate_session,
+                    crate::projectile::ProjectileSpawnRequest {
+                        owner: attacker,
+                        weapon: weapon_item.clone(),
+                        definition: projectile,
+                        damage: weapon.damage,
+                        origin,
+                        direction,
+                        tick,
+                    },
+                )
+                .map_err(RuntimeError::Projectile)?;
+            if let crate::projectile::ProjectileFact::Spawned {
+                entity,
+                owner,
+                weapon,
+                origin,
+                impulse,
+                expires_at,
+            } = projectile_fact
+            {
+                facts.push(CombatFact::ProjectileSpawned {
+                    entity,
+                    owner,
+                    weapon,
+                    origin,
+                    impulse,
+                    expires_at,
+                });
+            }
+        }
         for (ray_index, direction) in directions.into_iter().enumerate() {
+            if matches!(weapon.attack_mode, WeaponAttackMode::Projectile) {
+                break;
+            }
             let ray_index = ray_index as u8;
             let target = nearest_combat_target(
                 &candidate_session,

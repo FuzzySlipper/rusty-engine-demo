@@ -24,6 +24,10 @@ const GROUNDING_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/renderable-grounding.json",
 );
+const PHYSICS_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/physics-projectile-consumer.json",
+);
 
 function invariant(condition, message) {
   if (!condition) {
@@ -45,6 +49,9 @@ const visualBindingEvidence = JSON.parse(
 const groundingEvidence = JSON.parse(
   await readFile(GROUNDING_EVIDENCE_PATH, "utf8"),
 );
+const physicsEvidence = JSON.parse(
+  await readFile(PHYSICS_EVIDENCE_PATH, "utf8"),
+);
 const scene = project.scenes.find(({ id }) => id === "scene/loading-bay");
 const brushAssets = project.assets.filter(({ voxelObject }) =>
   voxelObject?.assetId.startsWith("voxel-object/brush-"),
@@ -65,7 +72,9 @@ invariant(
         visualBindingEvidence.project.finalHash === sha256(projectBytes)) ||
       (groundingEvidence.project.startingHash ===
         visualBindingEvidence.project.finalHash &&
-        groundingEvidence.project.finalHash === sha256(projectBytes))),
+        groundingEvidence.project.finalHash === sha256(projectBytes)) ||
+      (physicsEvidence.project.startingHash === groundingEvidence.project.finalHash &&
+        physicsEvidence.project.finalHash === sha256(projectBytes))),
   "current project bytes must match the batch publication or its recorded actor descendant",
 );
 invariant(

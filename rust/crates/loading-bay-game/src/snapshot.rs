@@ -145,6 +145,18 @@ pub enum SnapshotItemKind {
         muzzle_offset: Option<[f32; 3]>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         presentation: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_mass: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_radius: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_impulse: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_gravity_scale: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_lifetime_ticks: Option<u64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_restitution: Option<f32>,
     },
     Ammunition,
     AccessKey,
@@ -162,6 +174,7 @@ pub enum SnapshotWeaponAttackMode {
     Hitscan,
     Spread,
     Automatic,
+    Projectile,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -833,6 +846,14 @@ impl std::error::Error for GameSnapshotError {}
 
 impl GameRuntime {
     pub fn snapshot(&self) -> GameSnapshot {
+        let mut snapshot_session = self.session.clone();
+        let stripped_projectiles = self.projectiles.strip_from(&mut snapshot_session);
+        let mut entity_snapshot = snapshot_session.entities.snapshot();
+        if !stripped_projectiles.is_empty() {
+            entity_snapshot
+                .entities
+                .retain(|entity| !stripped_projectiles.contains(&EntityId::new(entity.id)));
+        }
         let has_progression = !self.session.door_access.is_empty()
             || !self.session.loading_bay_interlocks.is_empty()
             || !self.session.secret_regions.is_empty()
@@ -840,7 +861,7 @@ impl GameRuntime {
         GameSnapshot {
             schema_version: GAME_SNAPSHOT_SCHEMA_VERSION,
             tick: self.tick.raw(),
-            entities: self.session.entities.snapshot(),
+            entities: entity_snapshot,
             item_definitions: self
                 .session
                 .item_definitions
@@ -855,16 +876,23 @@ impl GameRuntime {
                                 WeaponAttackMode::Hitscan => SnapshotWeaponAttackMode::Hitscan,
                                 WeaponAttackMode::Spread { .. } => SnapshotWeaponAttackMode::Spread,
                                 WeaponAttackMode::Automatic => SnapshotWeaponAttackMode::Automatic,
+                                WeaponAttackMode::Projectile => {
+                                    SnapshotWeaponAttackMode::Projectile
+                                }
                             }),
                             pellet_count: match weapon.attack_mode {
                                 WeaponAttackMode::Spread { pellet_count, .. } => Some(pellet_count),
-                                WeaponAttackMode::Hitscan | WeaponAttackMode::Automatic => None,
+                                WeaponAttackMode::Hitscan
+                                | WeaponAttackMode::Automatic
+                                | WeaponAttackMode::Projectile => None,
                             },
                             spread_degrees: match weapon.attack_mode {
                                 WeaponAttackMode::Spread { spread_degrees, .. } => {
                                     Some(spread_degrees)
                                 }
-                                WeaponAttackMode::Hitscan | WeaponAttackMode::Automatic => None,
+                                WeaponAttackMode::Hitscan
+                                | WeaponAttackMode::Automatic
+                                | WeaponAttackMode::Projectile => None,
                             },
                             damage: Some(weapon.damage),
                             max_distance: Some(weapon.max_distance),
@@ -872,6 +900,22 @@ impl GameRuntime {
                             ammunition_cost: Some(weapon.ammunition_cost),
                             muzzle_offset: Some(weapon.muzzle_offset.to_array()),
                             presentation: Some(weapon.presentation.clone()),
+                            projectile_mass: weapon.projectile.map(|projectile| projectile.mass),
+                            projectile_radius: weapon
+                                .projectile
+                                .map(|projectile| projectile.radius),
+                            projectile_impulse: weapon
+                                .projectile
+                                .map(|projectile| projectile.impulse),
+                            projectile_gravity_scale: weapon
+                                .projectile
+                                .map(|projectile| projectile.gravity_scale),
+                            projectile_lifetime_ticks: weapon
+                                .projectile
+                                .map(|projectile| projectile.lifetime_ticks),
+                            projectile_restitution: weapon
+                                .projectile
+                                .map(|projectile| projectile.restitution),
                         },
                         ItemKind::Ammunition => SnapshotItemKind::Ammunition,
                         ItemKind::AccessKey => SnapshotItemKind::AccessKey,
@@ -2842,6 +2886,7 @@ impl GameRuntime {
             pickup_triggers,
             hazard_triggers,
             secret_triggers,
+            projectiles: crate::projectile::ProjectileService::default(),
         })
     }
 }
@@ -2879,6 +2924,12 @@ fn snapshot_item_definition(
             ammunition_cost,
             muzzle_offset,
             presentation,
+            projectile_mass,
+            projectile_radius,
+            projectile_impulse,
+            projectile_gravity_scale,
+            projectile_lifetime_ticks,
+            projectile_restitution,
         } => ItemKind::Weapon(WeaponDefinition {
             attack_mode: match attack_mode.ok_or_else(|| {
                 GameSnapshotError::InvalidItemDefinitionId {
@@ -2907,6 +2958,11 @@ fn snapshot_item_definition(
                         }
                     })?,
                 },
+                SnapshotWeaponAttackMode::Projectile
+                    if pellet_count.is_none() && spread_degrees.is_none() =>
+                {
+                    WeaponAttackMode::Projectile
+                }
                 _ => {
                     return Err(GameSnapshotError::InvalidItemDefinitionId {
                         value: format!("{}:incompatible-attack-mode-fields", id.as_str()),
@@ -2942,6 +2998,41 @@ fn snapshot_item_definition(
                     value: format!("{}:missing-presentation", id.as_str()),
                 }
             })?,
+            projectile: match attack_mode {
+                Some(SnapshotWeaponAttackMode::Projectile) => Some(crate::ProjectileDefinition {
+                    mass: projectile_mass.ok_or_else(|| {
+                        GameSnapshotError::InvalidItemDefinitionId {
+                            value: format!("{}:missing-projectile-mass", id.as_str()),
+                        }
+                    })?,
+                    radius: projectile_radius.ok_or_else(|| {
+                        GameSnapshotError::InvalidItemDefinitionId {
+                            value: format!("{}:missing-projectile-radius", id.as_str()),
+                        }
+                    })?,
+                    impulse: projectile_impulse.ok_or_else(|| {
+                        GameSnapshotError::InvalidItemDefinitionId {
+                            value: format!("{}:missing-projectile-impulse", id.as_str()),
+                        }
+                    })?,
+                    gravity_scale: projectile_gravity_scale.ok_or_else(|| {
+                        GameSnapshotError::InvalidItemDefinitionId {
+                            value: format!("{}:missing-projectile-gravity", id.as_str()),
+                        }
+                    })?,
+                    lifetime_ticks: projectile_lifetime_ticks.ok_or_else(|| {
+                        GameSnapshotError::InvalidItemDefinitionId {
+                            value: format!("{}:missing-projectile-lifetime", id.as_str()),
+                        }
+                    })?,
+                    restitution: projectile_restitution.ok_or_else(|| {
+                        GameSnapshotError::InvalidItemDefinitionId {
+                            value: format!("{}:missing-projectile-restitution", id.as_str()),
+                        }
+                    })?,
+                }),
+                _ => None,
+            },
         }),
         SnapshotItemKind::Ammunition => ItemKind::Ammunition,
         SnapshotItemKind::AccessKey => ItemKind::AccessKey,
@@ -2959,7 +3050,9 @@ fn snapshot_has_future_weapon_behavior_fields(snapshot: &GameSnapshot) -> bool {
             definition.kind,
             SnapshotItemKind::Weapon {
                 attack_mode: Some(
-                    SnapshotWeaponAttackMode::Spread | SnapshotWeaponAttackMode::Automatic
+                    SnapshotWeaponAttackMode::Spread
+                        | SnapshotWeaponAttackMode::Automatic
+                        | SnapshotWeaponAttackMode::Projectile
                 ),
                 ..
             } | SnapshotItemKind::Weapon {
@@ -3181,6 +3274,12 @@ fn legacy_snapshot_weapon_kind(
         ammunition_cost: Some(1),
         muzzle_offset: Some(weapon.muzzle_offset),
         presentation: Some(presentation.to_string()),
+        projectile_mass: None,
+        projectile_radius: None,
+        projectile_impulse: None,
+        projectile_gravity_scale: None,
+        projectile_lifetime_ticks: None,
+        projectile_restitution: None,
     }
 }
 

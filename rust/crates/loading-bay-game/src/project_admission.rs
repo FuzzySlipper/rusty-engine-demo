@@ -159,6 +159,12 @@ fn authored_item_definition(
             ammunition_cost,
             muzzle_offset,
             presentation,
+            projectile_mass,
+            projectile_radius,
+            projectile_impulse,
+            projectile_gravity_scale,
+            projectile_lifetime_ticks,
+            projectile_restitution,
         } => ItemKind::Weapon(WeaponDefinition {
             attack_mode: match attack_mode.expect("validated current weapon attack mode") {
                 crate::StoredWeaponAttackMode::Hitscan => WeaponAttackMode::Hitscan,
@@ -167,6 +173,7 @@ fn authored_item_definition(
                     spread_degrees: spread_degrees.expect("validated current weapon spread angle"),
                 },
                 crate::StoredWeaponAttackMode::Automatic => WeaponAttackMode::Automatic,
+                crate::StoredWeaponAttackMode::Projectile => WeaponAttackMode::Projectile,
             },
             damage: damage.expect("validated current weapon damage"),
             max_distance: max_distance.expect("validated current weapon range"),
@@ -179,6 +186,19 @@ fn authored_item_definition(
             presentation: presentation
                 .clone()
                 .expect("validated current weapon presentation"),
+            projectile: match attack_mode.expect("validated current weapon attack mode") {
+                crate::StoredWeaponAttackMode::Projectile => Some(crate::ProjectileDefinition {
+                    mass: projectile_mass.expect("validated projectile mass"),
+                    radius: projectile_radius.expect("validated projectile radius"),
+                    impulse: projectile_impulse.expect("validated projectile impulse"),
+                    gravity_scale: projectile_gravity_scale
+                        .expect("validated projectile gravity scale"),
+                    lifetime_ticks: projectile_lifetime_ticks
+                        .expect("validated projectile lifetime"),
+                    restitution: projectile_restitution.expect("validated projectile restitution"),
+                }),
+                _ => None,
+            },
         }),
         StoredItemKind::Ammunition => ItemKind::Ammunition,
         StoredItemKind::AccessKey => ItemKind::AccessKey,

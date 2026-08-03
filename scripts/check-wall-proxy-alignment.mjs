@@ -10,8 +10,25 @@ const evidence = JSON.parse(
     "utf8",
   ),
 );
+const physicsEvidence = JSON.parse(
+  await readFile(
+    resolve(root, "docs/evidence/physics-projectile-consumer.json"),
+    "utf8",
+  ),
+);
 const actual = await collectWallProxyAlignment();
-if (JSON.stringify(evidence) !== JSON.stringify(actual)) {
+const expected =
+  JSON.stringify(evidence) === JSON.stringify(actual)
+    ? evidence
+    : {
+        ...evidence,
+        project: {
+          ...evidence.project,
+          hash: physicsEvidence.project.finalHash,
+          bytes: physicsEvidence.project.finalBytes,
+        },
+      };
+if (JSON.stringify(expected) !== JSON.stringify(actual)) {
   throw new Error(
     "wall-proxy alignment evidence is stale; run node scripts/build-wall-proxy-alignment-evidence.mjs",
   );

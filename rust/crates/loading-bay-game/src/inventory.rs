@@ -19,6 +19,12 @@ use crate::mechanics::{mechanics_item_id, weapon_slot, InventoryRuntime};
 pub const MAX_ITEM_DEFINITION_ID_BYTES: usize = 96;
 pub const MAX_ITEM_QUANTITY: u32 = 1_000_000;
 pub const MAX_INVENTORY_SLOTS: usize = 64;
+pub const MAX_PROJECTILE_MASS: f32 = 100.0;
+pub const MAX_PROJECTILE_RADIUS: f32 = 2.0;
+pub const MAX_PROJECTILE_IMPULSE: f32 = 1_000.0;
+pub const MAX_PROJECTILE_GRAVITY_SCALE: f32 = 10.0;
+pub const MAX_PROJECTILE_LIFETIME_TICKS: u64 = 3_600;
+pub const MAX_PROJECTILE_RESTITUTION: f32 = 1.0;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ItemDefinitionId(String);
@@ -80,6 +86,7 @@ pub enum WeaponAttackMode {
         spread_degrees: f32,
     },
     Automatic,
+    Projectile,
 }
 
 impl WeaponAttackMode {
@@ -98,12 +105,43 @@ pub struct WeaponDefinition {
     pub ammunition_cost: u32,
     pub muzzle_offset: Vec3,
     pub presentation: String,
+    pub projectile: Option<ProjectileDefinition>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ProjectileDefinition {
+    pub mass: f32,
+    pub radius: f32,
+    pub impulse: f32,
+    pub gravity_scale: f32,
+    pub lifetime_ticks: u64,
+    pub restitution: f32,
+}
+
+impl ProjectileDefinition {
+    pub(crate) fn is_valid(self) -> bool {
+        self.mass.is_finite()
+            && self.mass > 0.0
+            && self.mass <= MAX_PROJECTILE_MASS
+            && self.radius.is_finite()
+            && self.radius > 0.0
+            && self.radius <= MAX_PROJECTILE_RADIUS
+            && self.impulse.is_finite()
+            && self.impulse > 0.0
+            && self.impulse <= MAX_PROJECTILE_IMPULSE
+            && self.gravity_scale.is_finite()
+            && self.gravity_scale >= 0.0
+            && self.gravity_scale <= MAX_PROJECTILE_GRAVITY_SCALE
+            && (1..=MAX_PROJECTILE_LIFETIME_TICKS).contains(&self.lifetime_ticks)
+            && self.restitution.is_finite()
+            && (0.0..=MAX_PROJECTILE_RESTITUTION).contains(&self.restitution)
+    }
 }
 
 impl WeaponDefinition {
     pub(crate) fn is_valid(&self) -> bool {
         let valid_attack_mode = match self.attack_mode {
-            WeaponAttackMode::Hitscan | WeaponAttackMode::Automatic => true,
+            WeaponAttackMode::Hitscan | WeaponAttackMode::Automatic => self.projectile.is_none(),
             WeaponAttackMode::Spread {
                 pellet_count,
                 spread_degrees,
@@ -112,7 +150,11 @@ impl WeaponDefinition {
                     && spread_degrees.is_finite()
                     && spread_degrees > 0.0
                     && spread_degrees <= MAX_WEAPON_SPREAD_DEGREES
+                    && self.projectile.is_none()
             }
+            WeaponAttackMode::Projectile => self
+                .projectile
+                .is_some_and(|projectile| projectile.is_valid()),
         };
         valid_attack_mode
             && (1..=MAX_WEAPON_DAMAGE).contains(&self.damage)

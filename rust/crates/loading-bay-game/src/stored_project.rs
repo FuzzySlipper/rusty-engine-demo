@@ -20,7 +20,11 @@ use crate::combat::{
     MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_PELLETS,
     MAX_WEAPON_RANGE, MAX_WEAPON_SPREAD_DEGREES,
 };
-use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
+use crate::inventory::{
+    ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY, MAX_PROJECTILE_GRAVITY_SCALE,
+    MAX_PROJECTILE_IMPULSE, MAX_PROJECTILE_LIFETIME_TICKS, MAX_PROJECTILE_MASS,
+    MAX_PROJECTILE_RADIUS, MAX_PROJECTILE_RESTITUTION,
+};
 
 pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 24;
 pub const STORED_VISUAL_BINDING_VERSION: u32 = 1;
@@ -112,6 +116,18 @@ pub enum StoredItemKind {
         muzzle_offset: Option<[f32; 3]>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         presentation: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_mass: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_radius: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_impulse: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_gravity_scale: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_lifetime_ticks: Option<u64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        projectile_restitution: Option<f32>,
     },
     Ammunition,
     AccessKey,
@@ -129,6 +145,7 @@ pub enum StoredWeaponAttackMode {
     Hitscan,
     Spread,
     Automatic,
+    Projectile,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -854,6 +871,12 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             ammunition_cost,
             muzzle_offset,
             presentation,
+            projectile_mass,
+            projectile_radius,
+            projectile_impulse,
+            projectile_gravity_scale,
+            projectile_lifetime_ticks,
+            projectile_restitution,
         } = &definition.kind
         else {
             continue;
@@ -866,6 +889,27 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                 pellet_count.is_some_and(|value| (2..=MAX_WEAPON_PELLETS).contains(&value))
                     && spread_degrees.is_some_and(|value| {
                         value.is_finite() && value > 0.0 && value <= MAX_WEAPON_SPREAD_DEGREES
+                    })
+            }
+            Some(StoredWeaponAttackMode::Projectile) => {
+                pellet_count.is_none()
+                    && spread_degrees.is_none()
+                    && projectile_mass.is_some_and(|value| {
+                        value.is_finite() && value > 0.0 && value <= MAX_PROJECTILE_MASS
+                    })
+                    && projectile_radius.is_some_and(|value| {
+                        value.is_finite() && value > 0.0 && value <= MAX_PROJECTILE_RADIUS
+                    })
+                    && projectile_impulse.is_some_and(|value| {
+                        value.is_finite() && value > 0.0 && value <= MAX_PROJECTILE_IMPULSE
+                    })
+                    && projectile_gravity_scale.is_some_and(|value| {
+                        value.is_finite() && (0.0..=MAX_PROJECTILE_GRAVITY_SCALE).contains(&value)
+                    })
+                    && projectile_lifetime_ticks
+                        .is_some_and(|value| (1..=MAX_PROJECTILE_LIFETIME_TICKS).contains(&value))
+                    && projectile_restitution.is_some_and(|value| {
+                        value.is_finite() && (0.0..=MAX_PROJECTILE_RESTITUTION).contains(&value)
                     })
             }
             None => false,
@@ -883,7 +927,18 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             })
             && presentation
                 .as_ref()
-                .is_some_and(|value| !value.is_empty() && value.len() <= 96);
+                .is_some_and(|value| !value.is_empty() && value.len() <= 96)
+            && match attack_mode {
+                Some(StoredWeaponAttackMode::Projectile) => true,
+                _ => {
+                    projectile_mass.is_none()
+                        && projectile_radius.is_none()
+                        && projectile_impulse.is_none()
+                        && projectile_gravity_scale.is_none()
+                        && projectile_lifetime_ticks.is_none()
+                        && projectile_restitution.is_none()
+                }
+            };
         if !valid_weapon {
             return Err(failure(
                 diagnostic_code::INVALID_VALUE,

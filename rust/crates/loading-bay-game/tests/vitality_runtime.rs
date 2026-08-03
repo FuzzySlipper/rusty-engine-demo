@@ -355,6 +355,16 @@ fn project_and_snapshot_admission_fail_closed_for_future_hazard_state() {
             );
             weapon.remove("pelletCount");
             weapon.remove("spreadDegrees");
+            for field in [
+                "projectileMass",
+                "projectileRadius",
+                "projectileImpulse",
+                "projectileGravityScale",
+                "projectileLifetimeTicks",
+                "projectileRestitution",
+            ] {
+                weapon.remove(field);
+            }
         }
     }
     for entity in legacy_project["scenes"][0]["entities"]

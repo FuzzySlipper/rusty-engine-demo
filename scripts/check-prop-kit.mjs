@@ -25,6 +25,10 @@ const GROUNDING_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/renderable-grounding.json",
 );
+const PHYSICS_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/physics-projectile-consumer.json",
+);
 
 function invariant(condition, message) {
   if (!condition) throw new Error(`prop-kit invariant failed: ${message}`);
@@ -45,6 +49,9 @@ const visualBindingEvidence = JSON.parse(
 );
 const groundingEvidence = JSON.parse(
   await readFile(GROUNDING_EVIDENCE_PATH, "utf8"),
+);
+const physicsEvidence = JSON.parse(
+  await readFile(PHYSICS_EVIDENCE_PATH, "utf8"),
 );
 const scene = project.scenes.find(({ id }) => id === project.entryScene);
 
@@ -74,7 +81,9 @@ invariant(
       visualBindingEvidence.project.finalHash === currentProjectHash) ||
     (groundingEvidence.project.startingHash ===
       visualBindingEvidence.project.finalHash &&
-      groundingEvidence.project.finalHash === currentProjectHash),
+      groundingEvidence.project.finalHash === currentProjectHash) ||
+    (physicsEvidence.project.startingHash === groundingEvidence.project.finalHash &&
+      physicsEvidence.project.finalHash === currentProjectHash),
   "canonical project must be the prop publication or a recorded descendant",
 );
 invariant(

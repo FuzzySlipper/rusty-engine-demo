@@ -86,6 +86,19 @@ pub struct LoadingBayWeaponAuthoringCandidate {
     pub ammunition_cost: u32,
     pub muzzle_offset: [f32; 3],
     pub presentation: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projectile: Option<LoadingBayProjectileAuthoringConfig>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LoadingBayProjectileAuthoringConfig {
+    pub mass: f32,
+    pub radius: f32,
+    pub impulse: f32,
+    pub gravity_scale: f32,
+    pub lifetime_ticks: u64,
+    pub restitution: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -102,6 +115,7 @@ pub enum LoadingBayWeaponAuthoringAttackMode {
         spread_degrees: f32,
     },
     Automatic,
+    Projectile,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -485,7 +499,11 @@ impl LoadingBayWeaponAuthoringCandidate {
             LoadingBayWeaponAuthoringAttackMode::Automatic => {
                 (StoredWeaponAttackMode::Automatic, None, None)
             }
+            LoadingBayWeaponAuthoringAttackMode::Projectile => {
+                (StoredWeaponAttackMode::Projectile, None, None)
+            }
         };
+        let projectile = self.projectile;
         StoredItemKind::Weapon {
             ammunition: self.ammunition_item_id,
             attack_mode: Some(attack_mode),
@@ -497,6 +515,12 @@ impl LoadingBayWeaponAuthoringCandidate {
             ammunition_cost: Some(self.ammunition_cost),
             muzzle_offset: Some(self.muzzle_offset),
             presentation: Some(self.presentation),
+            projectile_mass: projectile.map(|value| value.mass),
+            projectile_radius: projectile.map(|value| value.radius),
+            projectile_impulse: projectile.map(|value| value.impulse),
+            projectile_gravity_scale: projectile.map(|value| value.gravity_scale),
+            projectile_lifetime_ticks: projectile.map(|value| value.lifetime_ticks),
+            projectile_restitution: projectile.map(|value| value.restitution),
         }
     }
 }
@@ -624,6 +648,12 @@ fn candidate_from_definition(
         ammunition_cost,
         muzzle_offset,
         presentation,
+        projectile_mass,
+        projectile_radius,
+        projectile_impulse,
+        projectile_gravity_scale,
+        projectile_lifetime_ticks,
+        projectile_restitution,
     } = &definition.kind
     else {
         return None;
@@ -635,6 +665,7 @@ fn candidate_from_definition(
             spread_degrees: (*spread_degrees)?,
         },
         StoredWeaponAttackMode::Automatic => LoadingBayWeaponAuthoringAttackMode::Automatic,
+        StoredWeaponAttackMode::Projectile => LoadingBayWeaponAuthoringAttackMode::Projectile,
     };
     Some(LoadingBayWeaponAuthoringCandidate {
         attack_mode,
@@ -645,6 +676,19 @@ fn candidate_from_definition(
         ammunition_cost: (*ammunition_cost)?,
         muzzle_offset: (*muzzle_offset)?,
         presentation: presentation.clone()?,
+        projectile: match attack_mode {
+            LoadingBayWeaponAuthoringAttackMode::Projectile => {
+                Some(LoadingBayProjectileAuthoringConfig {
+                    mass: (*projectile_mass)?,
+                    radius: (*projectile_radius)?,
+                    impulse: (*projectile_impulse)?,
+                    gravity_scale: (*projectile_gravity_scale)?,
+                    lifetime_ticks: (*projectile_lifetime_ticks)?,
+                    restitution: (*projectile_restitution)?,
+                })
+            }
+            _ => None,
+        },
     })
 }
 

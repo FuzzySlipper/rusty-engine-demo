@@ -34,7 +34,7 @@ fn engine_components_are_canonical_and_schema_nineteen_rejects_projection_drift(
         .components::<ItemComponent>()
         .unwrap()
         .collect::<Vec<_>>();
-    assert_eq!(unique_items.len(), 3);
+    assert_eq!(unique_items.len(), 4);
 
     let encoded = encode_game_snapshot(&runtime).unwrap();
     let snapshot: serde_json::Value = serde_json::from_str(&encoded).unwrap();
