@@ -19,7 +19,17 @@
   },
   "proof": {
     "test": "rust/crates/loading-bay-game/tests/projectile_runtime.rs",
+    "cases": [
+      "canonical Engine rigid-body free flight and impulse/gravity transform",
+      "canonical material voxel floor contact emits one impact and removes the body",
+      "live target overlap applies one typed damage fact before body removal",
+      "lifetime expiry removes a projectile without contact",
+      "empty kinetic ammunition rejects without changing snapshot, projection, or ammo",
+      "save/reopen preserves weapon policy while stripping transient projectile entities"
+    ],
+    "browserSmoke": "scripts/browser-smoke.mjs verifies the four-slot launcher is reachable and primary-fire ammo consumption through the real host",
     "rustVerification": "./scripts/verify-rust.sh",
+    "productVerification": "pnpm run verify",
     "contentRoundTrip": "scripts/check-canonical-projects.mjs",
     "snapshot": "weapon configuration survives; transient rigid-body projectiles are stripped, including tombstones"
   }
