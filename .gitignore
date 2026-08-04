@@ -13,3 +13,4 @@
 /src-tauri/binaries/
 /src-tauri/gen/
 /src-tauri/resources/desktop-package-manifest.json
+.engine-development/

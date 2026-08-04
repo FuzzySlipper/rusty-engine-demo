@@ -16,6 +16,8 @@ import { fileURLToPath } from "node:url";
 import {
   ACTIVE_CARRIER_PATHS,
   checkEngineRevision,
+  loadEngineDevelopment,
+  readDevelopmentResolution,
   updateEngineRevision,
 } from "./engine-revision-lib.mjs";
 
@@ -36,6 +38,32 @@ afterEach(() => {
 test("check accepts the complete current carrier set", () => {
   const fixture = copyCarrierFixture();
   assert.equal(checkEngineRevision(fixture).commit, CURRENT);
+});
+
+test("development intent and resolved report are strict and separate from certification", () => {
+  const fixture = copyCarrierFixture();
+  writeJson(fixture, "engine-development.json", {
+    schemaVersion: 1,
+    repository: "https://github.com/FuzzySlipper/rusty-engine",
+    ref: "refs/heads/main",
+  });
+  assert.equal(loadEngineDevelopment(fixture).ref, "refs/heads/main");
+  mkdirSync(resolve(fixture, ".engine-development"));
+  writeJson(fixture, ".engine-development/resolution.json", {
+    schemaVersion: 1,
+    mode: "development",
+    repository: "https://github.com/FuzzySlipper/rusty-engine",
+    requestedRef: "refs/heads/main",
+    resolvedCommit: CURRENT,
+    source: "public",
+    sourcePath: null,
+    dirty: false,
+    certification: false,
+    applied: true,
+  });
+  assert.equal(readDevelopmentResolution(fixture).resolvedCommit, CURRENT);
+  mutateFile(fixture, "engine-development.json", (content) => content.replace("refs/heads/main", "main"));
+  assert.throws(() => loadEngineDevelopment(fixture), /only refs\/heads\/main/u);
 });
 
 test("check rejects malformed source identity and unexpected fields", () => {

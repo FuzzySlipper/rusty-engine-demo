@@ -1,15 +1,29 @@
 # Rusty Engine revision updates
 
-[`engine-source.json`](../engine-source.json) is the sole declaration of the active Rusty Engine
-repository and commit. The repository URL is canonical and the commit is one lowercase
-40-character hexadecimal SHA. Cargo, renderer, and Studio dependency declarations and both lock
-files must all agree with it.
+[`engine-source.json`](../engine-source.json) is the exact-certification declaration of the active
+Rusty Engine repository and commit. Rolling development is declared separately in
+[`engine-development.json`](../engine-development.json): it follows the canonical public
+`refs/heads/main` line, reports the resolved SHA, and does not promise compatibility.
 
 Run the non-mutating consistency check before working on an Engine-dependent change:
 
 ```console
 ./scripts/engine-revision check
+./scripts/engine-revision certify check
 ```
+
+For rolling development, resolve and report one current provider SHA:
+
+```console
+./scripts/engine-revision dev sync --json
+./scripts/engine-revision dev check
+```
+
+`dev sync` updates all active carriers as one coherent resolution and writes the ignored
+`.engine-development/resolution.json` report. Use `--report-only` to inspect a public ref without
+changing exact carriers, or `--worktree /absolute/engine-root` to inspect an explicitly selected
+local Engine checkout. A dirty local worktree is report-only. The report is operational development
+evidence, not an exact certification pin.
 
 To inspect a proposed public revision without changing the caller's checkout:
 
@@ -54,6 +68,8 @@ Every other repository `package.json` and `Cargo.toml` is discovered and audited
 dependency manifest. Those manifests may consume declared Rust workspace dependencies with
 `.workspace = true`, but cannot introduce another direct Engine source or package revision.
 
-If `check` reports a missing, renamed, mixed-revision, floating, path, sibling, stale-lock, or
-unexpected Engine source, preserve any intentional work first and use the update command to repair
-the whole set. Do not hand-edit only one dependency surface.
+If exact `certify check` reports a missing, renamed, mixed-revision, floating, path, sibling,
+stale-lock, or unexpected Engine source, preserve any intentional work first and use the update
+command to repair the whole set. Development mode may instead expose a compile or protocol
+incompatibility against the newly resolved SHA; that failure is useful feedback and must not be
+hidden by retaining an old exact pin.

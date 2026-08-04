@@ -175,11 +175,13 @@ RUSTY_ENGINE_DEMO_URL=http://127.0.0.1:8787/#/game?mode=new pnpm run capture:fin
 Cold-agent actor and voxel-brush import/place/save/reload recipes are in
 [docs/extension-recipes.md](docs/extension-recipes.md#cold-agent-visual-content-reproduction).
 
-The repository's one active Rusty Engine revision is declared in
-[`engine-source.json`](engine-source.json). Check it with `./scripts/engine-revision check`, preview
-an update without mutating the checkout with
+Exact certification is declared in [`engine-source.json`](engine-source.json). Check it with
+`./scripts/engine-revision certify check` (the legacy `check` alias remains available), preview
+an exact update without mutating the checkout with
 `./scripts/engine-revision update <40-character-public-sha> --dry-run`, or apply the validated
-carrier-only update with `./scripts/engine-revision update <40-character-public-sha>`. The updater
-does not commit, push, rewrite historical evidence, or change protocol fixtures. Its complete
+carrier-only update with `./scripts/engine-revision certify update <40-character-public-sha>`. For
+rolling development, `./scripts/engine-revision dev sync --json` follows the current public Engine
+line, reports the resolved SHA, and records operational state without a compatibility promise. The
+updater does not commit, push, rewrite historical evidence, or change protocol fixtures. Its complete
 preflight, candidate, failure, and recovery contract is documented in
 [docs/engine-revision-updates.md](docs/engine-revision-updates.md).

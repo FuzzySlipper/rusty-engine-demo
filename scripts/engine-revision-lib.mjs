@@ -1,7 +1,9 @@
 import {
   mkdtempSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -11,6 +13,9 @@ import { spawnSync } from "node:child_process";
 
 export const ENGINE_REPOSITORY = "https://github.com/FuzzySlipper/rusty-engine";
 export const COMMIT_PATTERN = /^[0-9a-f]{40}$/u;
+export const DEVELOPMENT_REF = "refs/heads/main";
+export const DEVELOPMENT_MANIFEST = "engine-development.json";
+export const DEVELOPMENT_REPORT = ".engine-development/resolution.json";
 
 export const ENGINE_PACKAGES = new Map([
   ["@rusty-engine/render-contracts", "render/packages/render-contracts"],
@@ -115,6 +120,148 @@ export function loadEngineSource(repoRoot) {
     repository: ENGINE_REPOSITORY,
     commit: source.commit,
   });
+}
+
+export function loadEngineDevelopment(repoRoot) {
+  const relativePath = DEVELOPMENT_MANIFEST;
+  let source;
+  try {
+    source = JSON.parse(readFileSync(resolve(repoRoot, relativePath), "utf8"));
+  } catch (error) {
+    throw new Error(
+      `${relativePath}: cannot decode development intent: ${error.message}`,
+    );
+  }
+  if (source === null || Array.isArray(source) || typeof source !== "object") {
+    throw new Error(`${relativePath}: expected one JSON object`);
+  }
+  const keys = Object.keys(source).sort();
+  const expectedKeys = ["ref", "repository", "schemaVersion"];
+  if (JSON.stringify(keys) !== JSON.stringify(expectedKeys)) {
+    throw new Error(
+      `${relativePath}: expected exactly ${expectedKeys.join(", ")}; observed ${keys.join(", ")}`,
+    );
+  }
+  if (source.schemaVersion !== 1 || source.repository !== ENGINE_REPOSITORY) {
+    throw new Error(`${relativePath}: unsupported public Engine development source`);
+  }
+  if (source.ref !== DEVELOPMENT_REF) {
+    throw new Error(
+      `${relativePath}: only ${DEVELOPMENT_REF} is supported for rolling development; observed ${String(source.ref)}`,
+    );
+  }
+  return Object.freeze({
+    schemaVersion: 1,
+    repository: ENGINE_REPOSITORY,
+    ref: DEVELOPMENT_REF,
+  });
+}
+
+export function readDevelopmentResolution(repoRoot) {
+  const path = resolve(repoRoot, DEVELOPMENT_REPORT);
+  let report;
+  try {
+    report = JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    throw new Error(`${DEVELOPMENT_REPORT}: cannot decode resolution: ${error.message}`);
+  }
+  if (
+    report === null
+    || Array.isArray(report)
+    || typeof report !== "object"
+    || report.schemaVersion !== 1
+    || report.mode !== "development"
+    || report.repository !== ENGINE_REPOSITORY
+    || report.requestedRef !== DEVELOPMENT_REF
+  ) {
+    throw new Error(`${DEVELOPMENT_REPORT}: unsupported development resolution`);
+  }
+  assertCommit(report.resolvedCommit, `${DEVELOPMENT_REPORT}: resolvedCommit`);
+  if (typeof report.source !== "string" || !["public", "local"].includes(report.source)) {
+    throw new Error(`${DEVELOPMENT_REPORT}: source must be public or local`);
+  }
+  if (typeof report.dirty !== "boolean") {
+    throw new Error(`${DEVELOPMENT_REPORT}: dirty must be boolean`);
+  }
+  if (report.certification !== false || typeof report.applied !== "boolean") {
+    throw new Error(`${DEVELOPMENT_REPORT}: certification must be false and applied must be boolean`);
+  }
+  return Object.freeze(report);
+}
+
+export function checkDevelopmentResolution(repoRoot) {
+  const intent = loadEngineDevelopment(repoRoot);
+  const source = loadEngineSource(repoRoot);
+  const report = readDevelopmentResolution(repoRoot);
+  if (report.resolvedCommit !== source.commit) {
+    throw new Error(
+      `${DEVELOPMENT_REPORT}: resolved ${report.resolvedCommit} but active carriers use ${source.commit}`,
+    );
+  }
+  return Object.freeze({ intent, source, report });
+}
+
+export async function syncDevelopmentRevision({
+  repoRoot,
+  worktree,
+  reportOnly = false,
+  json = false,
+  update = updateEngineRevision,
+  resolvePublic = resolvePublicDevelopmentRef,
+}) {
+  const intent = loadEngineDevelopment(repoRoot);
+  const resolved = worktree === undefined
+    ? await resolvePublic(intent.repository, intent.ref)
+    : resolveLocalDevelopmentWorktree(worktree);
+  const report = Object.freeze({
+    schemaVersion: 1,
+    mode: "development",
+    repository: intent.repository,
+    requestedRef: intent.ref,
+    resolvedCommit: resolved.commit,
+    source: resolved.source,
+    sourcePath: resolved.sourcePath ?? null,
+    dirty: resolved.dirty,
+    certification: false,
+    applied: !reportOnly,
+  });
+  if (!reportOnly) {
+    if (resolved.source === "local" && resolved.dirty) {
+      throw new Error(
+        `local Engine worktree ${resolved.sourcePath} is dirty; use --report-only or provide a clean worktree before syncing carriers`,
+      );
+    }
+    await update({ repoRoot, commit: resolved.commit });
+  }
+  mkdirSync(resolve(repoRoot, ".engine-development"), { recursive: true });
+  writeFileSync(
+    resolve(repoRoot, DEVELOPMENT_REPORT),
+    `${JSON.stringify(report, null, 2)}\n`,
+  );
+  if (json) return report;
+  return Object.freeze({ report, applied: !reportOnly });
+}
+
+export async function resolvePublicDevelopmentRef(repository, ref) {
+  const output = run("git", ["ls-remote", repository, ref], { cwd: tmpdir() });
+  const line = output.trim().split("\n").find((value) => value.length > 0);
+  const commit = line?.split(/\s+/u)[0];
+  assertCommit(commit, `public development ref ${ref} resolution`);
+  return Object.freeze({ commit, source: "public", dirty: false });
+}
+
+function resolveLocalDevelopmentWorktree(worktree) {
+  const sourcePath = realpathSync(resolve(worktree));
+  if (sourcePath === resolve(process.cwd())) {
+    throw new Error("local Engine worktree must not be the consumer checkout");
+  }
+  if (!readFileSync(resolve(sourcePath, "Cargo.toml"), "utf8")) {
+    throw new Error(`local Engine worktree ${sourcePath} is missing Cargo.toml`);
+  }
+  const commit = git(sourcePath, ["rev-parse", "HEAD"]).trim();
+  assertCommit(commit, `local development worktree ${sourcePath} HEAD`);
+  const dirty = git(sourcePath, ["status", "--porcelain=v1"]).trim().length > 0;
+  return Object.freeze({ commit, source: "local", sourcePath, dirty });
 }
 
 export function checkEngineRevision(repoRoot) {

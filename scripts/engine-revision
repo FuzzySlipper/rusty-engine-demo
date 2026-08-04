@@ -3,39 +3,79 @@
 import { resolve } from "node:path";
 import {
   checkEngineRevision,
+  checkDevelopmentResolution,
+  syncDevelopmentRevision,
   updateEngineRevision,
 } from "./engine-revision-lib.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
-const [command, commit, flag, ...extra] = process.argv.slice(2);
+const argumentsList = process.argv.slice(2);
 
-try {
-  if (command === "check" && commit === undefined) {
+function usage() {
+  return "usage: ./scripts/engine-revision check | certify check | update <40-character-public-sha> [--dry-run] | certify update <40-character-public-sha> [--dry-run] | dev check | dev sync [--worktree /absolute/engine-root] [--report-only] [--json]";
+}
+
+function printExact(result) {
+  console.log(
+    `${result.dryRun ? "Prospective" : "Applied"} Engine revision diff ${result.before.commit} -> ${result.commit}:`,
+  );
+  process.stdout.write(result.diff || "(no carrier changes)\n");
+}
+
+async function main() {
+  const [command, value, ...rest] = argumentsList;
+  if ((command === "check" && value === undefined) || (command === "certify" && value === "check" && rest.length === 0)) {
     const source = checkEngineRevision(repoRoot);
-    console.log(
-      `Engine revision check passed: ${source.repository}#${source.commit}`,
-    );
-  } else if (
-    command === "update" &&
-    commit !== undefined &&
-    (flag === undefined || flag === "--dry-run") &&
-    extra.length === 0
-  ) {
-    const result = await updateEngineRevision({
-      repoRoot,
-      commit,
-      dryRun: flag === "--dry-run",
-    });
-    console.log(
-      `${result.dryRun ? "Prospective" : "Applied"} Engine revision diff ${result.before.commit} -> ${result.commit}:`,
-    );
-    process.stdout.write(result.diff || "(no carrier changes)\n");
-  } else {
-    throw new Error(
-      "usage: ./scripts/engine-revision check | update <40-character-public-sha> [--dry-run]",
-    );
+    console.log(`Engine revision check passed: ${source.repository}#${source.commit}`);
+    return;
   }
-} catch (error) {
+  if (command === "dev" && value === "check" && rest.length === 0) {
+    const resolution = checkDevelopmentResolution(repoRoot);
+    console.log(
+      `Development resolution check passed: ${resolution.intent.ref} -> ${resolution.report.resolvedCommit} (${resolution.report.source}${resolution.report.dirty ? ", dirty" : ""})`,
+    );
+    return;
+  }
+  if (command === "dev" && value === "sync") {
+    let worktree;
+    let reportOnly = false;
+    let json = false;
+    for (let index = 0; index < rest.length; index += 1) {
+      const argument = rest[index];
+      if (argument === "--report-only") reportOnly = true;
+      else if (argument === "--json") json = true;
+      else if (argument === "--worktree" && rest[index + 1] !== undefined) worktree = rest[++index];
+      else throw new Error(usage());
+    }
+    const result = await syncDevelopmentRevision({ repoRoot, worktree, reportOnly, json });
+    if (json) console.log(JSON.stringify(result));
+    else {
+      console.log(
+        `Development Engine ${result.report.requestedRef} resolved to ${result.report.resolvedCommit} (${result.report.source}${result.report.dirty ? ", dirty" : ""}).`,
+      );
+      console.log(reportOnly
+        ? "Report only: active certification carriers were not changed."
+        : "Active carriers were refreshed as one coherent development resolution; this is not certification evidence.");
+    }
+    return;
+  }
+  const exact = command === "update"
+    ? { commit: value, flags: rest }
+    : command === "certify" && value === "update"
+      ? { commit: rest[0], flags: rest.slice(1) }
+      : null;
+  if (exact !== null && exact.commit !== undefined && (exact.flags.length === 0 || (exact.flags.length === 1 && exact.flags[0] === "--dry-run"))) {
+    printExact(await updateEngineRevision({
+      repoRoot,
+      commit: exact.commit,
+      dryRun: exact.flags[0] === "--dry-run",
+    }));
+    return;
+  }
+  throw new Error(usage());
+}
+
+main().catch((error) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
-}
+});
