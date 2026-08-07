@@ -657,45 +657,68 @@ pub(super) fn browser_dynamic_state(
         tick: readout.tick.raw(),
         entity_revision: readout.entity_revision,
         projection,
-        door_state: match runtime.session().door(EXIT).expect("exit door").state {
-            DoorState::Closed => "closed",
-            DoorState::Open => "open",
-        },
-        encounter_state: match runtime
+        door_state: runtime
+            .session()
+            .door(EXIT)
+            .map(|door| match door.state {
+                DoorState::Closed => "closed",
+                DoorState::Open => "open",
+            })
+            .unwrap_or("closed"),
+        encounter_state: runtime
             .session()
             .encounter(ENCOUNTER)
-            .expect("browser encounter")
-            .state
-        {
-            EncounterState::Dormant => "dormant",
-            EncounterState::Active => "active",
-            EncounterState::Cleared => "cleared",
+            .map(|enc| match enc.state {
+                EncounterState::Dormant => "dormant",
+                EncounterState::Active => "active",
+                EncounterState::Cleared => "cleared",
+            })
+            .unwrap_or("dormant"),
+        motion_state: {
+            let probe_velocity_x = runtime
+                .session()
+                .entity(MOTION_PROBE)
+                .ok()
+                .and_then(|e| e.kinematic)
+                .map(|k| k.velocity.x)
+                .or_else(|| {
+                    runtime
+                        .session()
+                        .entity(ACTOR)
+                        .ok()
+                        .and_then(|e| e.kinematic)
+                        .map(|k| k.velocity.x)
+                })
+                .unwrap_or(0.0);
+            if probe_velocity_x == 0.0 {
+                "blocked"
+            } else {
+                "moving"
+            }
         },
-        motion_state: if runtime
-            .session()
-            .entity(MOTION_PROBE)
-            .expect("motion probe")
-            .kinematic
-            .expect("motion capability")
-            .velocity
-            .x
-            == 0.0
-        {
-            "blocked"
-        } else {
-            "moving"
-        },
-        navigation_state: match runtime
+        navigation_state: runtime
             .session()
             .navigation(EntityId::new(FIRST_ENEMY))
-            .expect("browser navigator")
-            .state
-        {
-            NavigationState::Following => "following",
-            NavigationState::Arrived => "arrived",
-            NavigationState::Blocked => "blocked",
-            NavigationState::Unreachable => "unreachable",
-        },
+            .map(|nav| match nav.state {
+                NavigationState::Following => "following",
+                NavigationState::Arrived => "arrived",
+                NavigationState::Blocked => "blocked",
+                NavigationState::Unreachable => "unreachable",
+            })
+            .or_else(|| {
+                runtime.session().enemy_combatants().find_map(|combatant| {
+                    runtime
+                        .session()
+                        .navigation(combatant.entity)
+                        .map(|nav| match nav.state {
+                            NavigationState::Following => "following",
+                            NavigationState::Arrived => "arrived",
+                            NavigationState::Blocked => "blocked",
+                            NavigationState::Unreachable => "unreachable",
+                        })
+                })
+            })
+            .unwrap_or("blocked"),
         player_motion_state,
         combat_state,
         input: host.runtime.input_session(),

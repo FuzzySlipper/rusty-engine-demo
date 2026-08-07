@@ -582,18 +582,28 @@ pub(super) fn project_presentation(
             posture,
         }
     }));
-    let door_state = runtime
+    if let Some(door_view) = runtime.session().door(door) {
+        animation_states.push(BrowserAnimationState {
+            entity: door.raw(),
+            posture: match door_view.state {
+                DoorState::Closed => "closed",
+                DoorState::Open => "open",
+            },
+        });
+    } else if let Some(first_door) = runtime
         .session()
-        .door(door)
-        .expect("presentation door")
-        .state;
-    animation_states.push(BrowserAnimationState {
-        entity: door.raw(),
-        posture: match door_state {
-            DoorState::Closed => "closed",
-            DoorState::Open => "open",
-        },
-    });
+        .door_accesses()
+        .next()
+        .and_then(|access| runtime.session().door(access.door))
+    {
+        animation_states.push(BrowserAnimationState {
+            entity: first_door.entity.raw(),
+            posture: match first_door.state {
+                DoorState::Closed => "closed",
+                DoorState::Open => "open",
+            },
+        });
+    }
     BrowserPresentation {
         animation_states,
         cues: feedback.cues,
