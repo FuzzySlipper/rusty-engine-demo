@@ -32,9 +32,8 @@ use core_assets::{AssetHash, AssetId, AssetReference, AssetVersionReq};
 use serde::{Deserialize, Serialize};
 
 use asset_catalog::{
-    StoredAssetReference, StoredAssetVersionRequirement, StoredMaterialAuthority,
-    StoredMaterialDefinition, StoredMaterialStyle, StoredVoxelAlphaMode, StoredVoxelSurfaceBinding,
-    StoredVoxelSurfaceMapping,
+    StoredAssetReference, StoredMaterialAuthority, StoredMaterialDefinition, StoredMaterialStyle,
+    StoredVoxelAlphaMode, StoredVoxelSurfaceBinding, StoredVoxelSurfaceMapping,
 };
 
 use crate::stored_project::{
@@ -497,6 +496,39 @@ pub fn validate_doom_palette_closure(
     Ok(())
 }
 
+/// Lightweight check that every PNG on disk matches its manifest hash and
+/// dimensions — used by `pnpm run check:content` style gates and by unit tests.
+pub fn verify_doom_texture_files() -> Result<(), String> {
+    let bindings = load_doom_manifest()?;
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    for binding in &bindings {
+        let png_path = repo_root.join(format!(
+            "content/doom-e1m1/textures/{}/{}.png",
+            binding.kind, binding.name
+        ));
+        let bytes =
+            fs::read(&png_path).map_err(|e| format!("missing PNG {}: {e}", png_path.display()))?;
+        if bytes.len() as u64 != binding.png_byte_length {
+            return Err(format!(
+                "byteLength mismatch for {}: manifest {} vs disk {}",
+                binding.name,
+                binding.png_byte_length,
+                bytes.len()
+            ));
+        }
+        // Basic PNG signature check (non-interlaced RGBA8 sRGB straight-alpha)
+        if !bytes.starts_with(&[137, 80, 78, 71, 13, 10, 26, 10]) {
+            return Err(format!("PNG signature mismatch for {}", binding.name));
+        }
+        // Byte length and existence are the hard gates for `check:content` style
+        // closure. Full SHA-256 content-hash gating is via the catalog/material
+        // hash (`sha256:…`) checked in `validate_doom_palette_closure` — that
+        // path uses the exact `AssetHash` so stale file content cannot hide
+        // behind a stale manifest entry.
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -536,7 +568,7 @@ mod tests {
     #[test]
     fn voxel_doom_closure_rejects_missing_material() {
         let assets = doom_stored_assets().unwrap();
-        let mut project = StoredProject {
+        let project = StoredProject {
             schema_version: crate::stored_project::STORED_PROJECT_SCHEMA_VERSION,
             project_id: "test-doom".to_string(),
             name: "Test".to_string(),
@@ -598,37 +630,4 @@ mod tests {
             crate::stored_project::diagnostic_code::INVALID_MATERIAL
         );
     }
-}
-
-/// Lightweight check that every PNG on disk matches its manifest hash and
-/// dimensions — used by `pnpm run check:content` style gates and by unit tests.
-pub fn verify_doom_texture_files() -> Result<(), String> {
-    let bindings = load_doom_manifest()?;
-    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    for binding in &bindings {
-        let png_path = repo_root.join(format!(
-            "content/doom-e1m1/textures/{}/{}.png",
-            binding.kind, binding.name
-        ));
-        let bytes =
-            fs::read(&png_path).map_err(|e| format!("missing PNG {}: {e}", png_path.display()))?;
-        if bytes.len() as u64 != binding.png_byte_length {
-            return Err(format!(
-                "byteLength mismatch for {}: manifest {} vs disk {}",
-                binding.name,
-                binding.png_byte_length,
-                bytes.len()
-            ));
-        }
-        // Basic PNG signature check (non-interlaced RGBA8 sRGB straight-alpha)
-        if !bytes.starts_with(&[137, 80, 78, 71, 13, 10, 26, 10]) {
-            return Err(format!("PNG signature mismatch for {}", binding.name));
-        }
-        // Byte length and existence are the hard gates for `check:content` style
-        // closure. Full SHA-256 content-hash gating is via the catalog/material
-        // hash (`sha256:…`) checked in `validate_doom_palette_closure` — that
-        // path uses the exact `AssetHash` so stale file content cannot hide
-        // behind a stale manifest entry.
-    }
-    Ok(())
 }
