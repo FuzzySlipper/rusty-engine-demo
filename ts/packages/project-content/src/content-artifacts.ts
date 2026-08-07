@@ -8,6 +8,7 @@ export type ContentGenerationMode = "check" | "write";
 export const CANONICAL_PROJECT_FILES = [
   "loading-bay.project.json",
   "relay-annex.project.json",
+  "doom-e1m1.project.json",
 ] as const;
 
 export function synchronizeGeneratedProjects(

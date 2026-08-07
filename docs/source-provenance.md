@@ -512,3 +512,115 @@ instance is destroyed; #6354 consumes it for world-pickup to camera-relative vie
 without a downstream resource cache or redefinition loop.
 The downstream call site reads `surface.timing()` from the shared auto-started surface; no demo
 frame scheduler, backend clock, renderer object access, or private renderer was introduced.
+
+## Doom E1M1 voxel showcase — offline source, no runtime WAD (Den campaign #6674)
+
+Doom E1M1 “Hangar” is the durable textured-voxel proving ground. The
+original WAD bytes are an **offline source** for an offline Node TS
+forge; no `doom1.wad` is read at runtime, no TS gameplay authority is
+added, and no generic bridge is introduced. Geometry incidence (vertex
+bounds, sector extrusion, wall incidence) and texture incidence (flat and
+wall patch incidence) are the only ported concepts; no Doom code, map
+bytes, sprites, sounds, music, names, or trade dress are shipped.
+
+### Source
+
+- `doom1.wad` (IWAD, id Software shareware) at
+  `/home/research/doom.ts/public/doom1.wad` — **4,196,020 bytes**,
+  **SHA-256 `1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771`**,
+  identification `IWAD`, 1264 lumps. E1M1 is lump 6 (`E1M1`, 467
+  vertices X −768..3808 Y −4864..−2048, 85 sectors floor −136..264,
+  475 linedefs, 648 sidedefs, 138 Things). Only incidence is ported.
+- Reference decoder `doom.ts` at `/home/research/doom.ts`
+  (`src/doom/{wad,level,textures}`, GPL-3.0) is a **reading reference
+  only**. The campaign’s TS decoder at
+  `ts/packages/doom-e1m1-authoring/src/{wad-decode.ts,textures.ts,voxelize.ts}`
+  re-implements `Wad`, `VertexArray`/`SectorArray`/`SideArray`/`ThingArray`,
+  `Flat` (64×64 indexed via `PLAYPAL` 768-byte palette
+  **SHA-256 `fd895921b5d0a394612bb29852ed003d44d69f76dec31c0dc6b5d5fc7d63f7bb`**)
+  and `TextureArray` composite (`PNAMES`+`TEXTURE1`+ patch posts,
+  case-insensitive) without line-copying GPL code. No `doom.ts` file is
+  shipped.
+- Additional shareware WAD extraction directory `public/doom1wad/E1M1.dat`
+  is not consumed; the WAD itself is the hashable source.
+
+### Derived textures (54 VTX6 PNGs, RGBA8 non-interlaced sRGB straight-alpha)
+
+One PNG per distinct E1M1 incidence (32 walls, 22 flats) staged at
+`content/doom-e1m1/textures/{flat,wall}/*.png` with `manifest.json`
+(`wadSha256` above, `paletteSha256` above, `generatedAt`
+`2026-08-07T00:00:00.000Z`). Budgets: each ≤16 MiB, total decoded RGBA
+≤256 MiB, identities ≤256, `tileScale` flats `1/64`, walls `1/width`
+(`1/height`), VTX repeat with Nearest/Repeat.
+
+| Kind | Name | W×H | PNG SHA-256 | Bytes | tileScale |
+|------|------|-----|-------------|-------|-----------|
+| flat | CEIL3_5 | 64x64 | `77c168d323d085f8cbf2086a7c5929659d947c501f417a999b0a5a9d257f4dfb` | 1273 | 0.015625,0.015625 |
+| flat | CEIL5_1 | 64x64 | `b1c0a3108ee78beecb11cfc2d8d5f20ccedf26354f92d96628f18b277ac5e45a` | 1098 | 0.015625,0.015625 |
+| flat | CEIL5_2 | 64x64 | `b6746eff72cc3173498a3c0b51fca60f66539a75225c7ed69adfbbef8eebbd10` | 1915 | 0.015625,0.015625 |
+| flat | F_SKY1 | 64x64 | `6afa2248c3bcaee3ce4c4714c6fc0f2c6e5cc445631ea4ea6a5ffe411eb3e7c6` | 3190 | 0.015625,0.015625 |
+| flat | FLAT14 | 64x64 | `913214c542f492a7c5afd2768627ea66adb6ea92d9552c3e78e816c7cb106a78` | 1915 | 0.015625,0.015625 |
+| flat | FLAT18 | 64x64 | `0304b158fe35b89e9bb34e7bd5f56b4c1284ffa53d829ed3bb425520b46d328a` | 1687 | 0.015625,0.015625 |
+| flat | FLAT20 | 64x64 | `63a81f024b3f1e9dbd410e42c4ac84e68d7222227aa74fbed9daebc84246f29d` | 341 | 0.015625,0.015625 |
+| flat | FLAT23 | 64x64 | `352bc3716d9728d297d5aa5a12d5dafc6dfe6863527b093b3ad21f234a53042c` | 976 | 0.015625,0.015625 |
+| flat | FLAT5_5 | 64x64 | `225965d93b749707eab86b2c046369f015b112bbfc0e60cde54a23713af7a879` | 2707 | 0.015625,0.015625 |
+| flat | FLOOR1_1 | 64x64 | `7276e451cbddc46874e000be70d259c0e25c638a0f7882e8bae6e99fcbe51d74` | 1826 | 0.015625,0.015625 |
+| flat | FLOOR4_8 | 64x64 | `6d5f1445e69515774bbb78fc696aea0ef74fbb0d2124997fa676588d72e9f5c6` | 2215 | 0.015625,0.015625 |
+| flat | FLOOR5_1 | 64x64 | `0bd25482a889c76e680ad9c02897621a5e9c7a6c0b1b1d0f944d667b35904e41` | 2582 | 0.015625,0.015625 |
+| flat | FLOOR5_2 | 64x64 | `18df567753bd8082783706f7263f4922ddfab0505f03e1598e324782747c4fd7` | 1660 | 0.015625,0.015625 |
+| flat | FLOOR6_2 | 64x64 | `72e18d2edd5fb2d2f5c1a7b73ec7982d5509246c491f30a4299a272884570b4a` | 2531 | 0.015625,0.015625 |
+| flat | FLOOR7_1 | 64x64 | `2bb2b48229f67be9fc7f4ebd13e24bc9fed18148cd566284b041ea4d3bb0481a` | 2094 | 0.015625,0.015625 |
+| flat | FLOOR7_2 | 64x64 | `64f9e17663049712b610402edba9904e6125f5387cb6fd97ece8ca16e31f5a2a` | 2094 | 0.015625,0.015625 |
+| flat | NUKAGE3 | 64x64 | `ddf0636c3527c963d10b43a554138271ac62bdd5186d3960d3efb4a21bc9e4ca` | 1855 | 0.015625,0.015625 |
+| flat | STEP2 | 64x64 | `e54d96aab7ded0b654ee7d0c43f108eed91cbe4fa430b3c8e7a9f992da027de2` | 1493 | 0.015625,0.015625 |
+| flat | TLITE6_1 | 64x64 | `c4aa178c7949428c45e713a81ee00c75cad166ea0cc352ef75d941e1260a5d42` | 1177 | 0.015625,0.015625 |
+| flat | TLITE6_4 | 64x64 | `30e4038a6874c014c45ba489b3b745570c42c5d188d038d3809deaa84b1e9b2a` | 1903 | 0.015625,0.015625 |
+| flat | TLITE6_5 | 64x64 | `c9612267547d0e1a0c22d02a6e00497da8d34feee5a3ff8a22b98fd5c48fae31` | 1239 | 0.015625,0.015625 |
+| flat | TLITE6_6 | 64x64 | `ffb2e7c9b9290c514789f6db8cd0e90fb8946f270f90d7a38e262968d8f2872f` | 1944 | 0.015625,0.015625 |
+| wall | BIGDOOR2 | 128x128 | `b71bae2b662f1682be58e1517a0cc5f2b01aec3ebf9b3c9dee7d0ae7ed6d786e` | 7261 | 0.0078125,0.0078125 |
+| wall | BIGDOOR4 | 128x128 | `a896c8326dcc51c30d2844e14acbfc24b5db317f4c6e860d208edfd3e2c58d75` | 6830 | 0.0078125,0.0078125 |
+| wall | BRNBIGC | 128x128 | `fc15b130a553aea061db2273ffb3192a5e898d7ea52b149000405bc0322fff80` | 5018 | 0.0078125,0.0078125 |
+| wall | BRNBIGL | 32x128 | `8505f1ea13c11bea0c12f82cb64f6baf3564d9de1529aa2108a6d69244f4851b` | 2217 | 0.03125,0.0078125 |
+| wall | BRNBIGR | 32x128 | `c4133c71c3ee61d5d28fa3c8df8aa57ee0e22b3cf920e80b7e314df868c8dd17` | 2381 | 0.03125,0.0078125 |
+| wall | BROWN1 | 128x128 | `2834bb6c2e90168f9779df902d6eed2b1a3e1e3d98a082a9846a078beb22ac56` | 6510 | 0.0078125,0.0078125 |
+| wall | BROWN144 | 128x128 | `fced9e2c70a8f86c00460b0ec1cdb80acc1ab942b695bb71cfcbec62509b7e63` | 5941 | 0.0078125,0.0078125 |
+| wall | BROWN96 | 128x128 | `3c00b6ba87dd6d00fa9a7e3f1df23596c1856253a15f6d6b291519a1cd9065ac` | 6422 | 0.0078125,0.0078125 |
+| wall | BROWNGRN | 64x128 | `3bce58e643d453b73480c7411c866079cf86b6b6c1c6aa0352a835b707a13321` | 3350 | 0.015625,0.0078125 |
+| wall | COMPSPAN | 32x128 | `db1241741152f3347df68cd36991a320abc339f7025caadd917271ecd64cdb60` | 178 | 0.03125,0.0078125 |
+| wall | COMPTALL | 256x128 | `2c4f6587ecd2542b14eafbd104b8c0f263523314cbc31d0b5b83918443c244f9` | 8965 | 0.00390625,0.0078125 |
+| wall | COMPTILE | 128x128 | `59a95e2985c3c2ef7b7b4ee44c56c6dc76cfc22f07872b96ea3156e5af028348` | 3413 | 0.0078125,0.0078125 |
+| wall | COMPUTE2 | 256x56 | `ed89cd8eabe4b475d8ab73735c30919fad4638f4b7d24149403849a10a4a2e74` | 4570 | 0.00390625,0.017857142857142856 |
+| wall | DOOR3 | 64x72 | `da36dc35eb653b72f09ae25159c60384467121b41a78140a00b57e44904649e4` | 1731 | 0.015625,0.013888888888888888 |
+| wall | DOORSTOP | 8x128 | `bd7b79b900e735f3d4b643bed2714d84234ad2b8891159c86a0f87918d5ef539` | 363 | 0.125,0.0078125 |
+| wall | DOORTRAK | 8x128 | `132e7c41fc8c2ea67868bcdff16eec298a16bbab9e1a67a28249c5a1839dca99` | 429 | 0.125,0.0078125 |
+| wall | EXITDOOR | 128x72 | `2501c028357eb476b292a5a7e410197efd0b682411a2bd70ecadf25a22d85662` | 7209 | 0.0078125,0.013888888888888888 |
+| wall | EXITSIGN | 64x16 | `938c42fdbde4889cf3b96455a71ba66fa123414581f2f99ce54a635b0f6ae089` | 380 | 0.015625,0.0625 |
+| wall | LITE3 | 32x128 | `63d2f56caa650cf3c74920f6ab58a67fd2332e25d957b16266dd1a1a73e966a4` | 321 | 0.03125,0.0078125 |
+| wall | NUKE24 | 64x24 | `e549beaf06cfa82ea6d4c9fa7f81af73fa0de69f6504ab822695a3cc1c283958` | 1103 | 0.015625,0.041666666666666664 |
+| wall | PLANET1 | 256x128 | `c084de2994185b31090a926cfc280865db82f04015de74a79c5422098d454156` | 12260 | 0.00390625,0.0078125 |
+| wall | SLADWALL | 64x128 | `3d6a991e7b0f20ab908a0362fda304e0ab100c8c9f126befc811d5b78029d484` | 1558 | 0.015625,0.0078125 |
+| wall | STARG3 | 128x128 | `032535e3959581622076ab81fea34709eb0e06d6e2b7302a60497e25edb54e6b` | 6955 | 0.0078125,0.0078125 |
+| wall | STARGR1 | 64x128 | `560ccedb9e872750b7bdfdb2d16f148306435fc2c7ccbd7f88c561302b597f0d` | 2878 | 0.015625,0.0078125 |
+| wall | STARTAN1 | 64x128 | `7c7ce8aac3276d2dc00e415f808be9f831807bd9e6681664475117266b11bb3f` | 2443 | 0.015625,0.0078125 |
+| wall | STARTAN3 | 128x128 | `b72c5adb0f268cdf61a5c43026f8cea186be4a46eb8d2de22a53c9c2942372be` | 7923 | 0.0078125,0.0078125 |
+| wall | STEP1 | 32x8 | `dc082aae89b6ca6fdcc7f36ee83015a5fcdc6a78fcb9cf8249c136b679fa7b9d` | 226 | 0.03125,0.125 |
+| wall | STEP6 | 32x16 | `9de329bb95366757b2695f361122944ddb771b4e4d58ca0079a257a237e04e31` | 486 | 0.03125,0.0625 |
+| wall | SUPPORT2 | 64x128 | `d98692a6a82600dfe8a40ab6b6a3632a417b44b8e2b42c9e6a43af686bade978` | 1519 | 0.015625,0.0078125 |
+| wall | SW1STRTN | 64x128 | `f73dc748f159a09d0845f90863ae5d1d6eb3c1fb0f8314868d98ab7198ee4b67` | 2990 | 0.015625,0.0078125 |
+| wall | TEKWALL1 | 128x128 | `ddad6576ca9d517b76c0fe2a91d75d17b4c64faa9a4996ecfb3d4c8a3091c5ae` | 13248 | 0.0078125,0.0078125 |
+| wall | TEKWALL4 | 128x128 | `fc3ce505cbdb132dae0b36f52c9cc7e46bd5c667b42822465c0c94b9df1efa5d` | 16327 | 0.0078125,0.0078125 |
+
+Exact PNG bytes and hashes are closed by `content/doom-e1m1/textures/manifest.json`. Two golden flats (`FLOOR7_2`, `CEIL3_5`) are byte-equal to the reference `doom.ts` canvas rendering at the same `PLAYPAL` revision; wall provenance for `BIGDOOR2` includes `TEXTURE1` entry bytes (22 B) plus patch `W94_1` bytes.
+
+### Derived voxel asset (single sparse-run volume, gameplay truth)
+
+TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
+`voxelDataHash sha256:1f7ddbaaa17f1d50eaf1ba1a79499b13c7396c726398cb73cca7f8e95167dcf8`
+`contentHash sha256:bdb6b79bc21a88b9762edb5395598f75816f566f39034313c715370ecd121d4e`
+`sparseRuns 14557, voxelCount 50057, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation.
+
+### Authored project
+
+`content/projects/doom-e1m1.project.json` schema 24 `scene/doom-e1m1` embeds the voxel volume (`voxel-volume/doom-e1m1` at identity, plus `voxelEnvironment` material proxy referencing same asset) and 54 VTX6 materials (`material/doom-*` with `voxelSurface` repeat), 54 textures (`texture/doom-*`), and 41 mesh resources copied from `loading-bay` (`mesh/player-marker`, `mesh/prop-kit/*`, `mesh-animation/*`). One `StoredMaterialDefinition` per texture with `tileScaleCells`/`tileOriginCells` straight-alpha Nearest/Repeat. Project admits via `ProjectStore` canonical round-trip (4.6 MiB <8 MiB) and is listed in `libs/project-content` alongside `loading-bay`/`relay-annex`.
+
+No `doom1.wad` is read at runtime; the browser receives only the immutable `RuntimeProjection` and typed facts. The offline forge is deterministic: `node dist/cli.js --check`, `node dist/texture-cli.js --check`, and `cargo run -p loading-bay-game --bin doom-voxel-hash -- doom-e1m1.voxel.json` are the re-producers.

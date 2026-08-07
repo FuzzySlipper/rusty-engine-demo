@@ -50,6 +50,36 @@ import {
           <a routerLink="/settings">Settings</a>
         </nav>
 
+        <section aria-label="Authored projects">
+          <h2>Scenes</h2>
+          <ul class="scene-list">
+            <li>
+              <button type="button" class="quiet" (click)="startScene('loading-bay')">
+                Loading Bay — encounter &amp; beacon
+              </button>
+              <small>Default Rust-owned project at content/projects/loading-bay.project.json</small>
+            </li>
+            <li>
+              <button type="button" class="quiet" (click)="startScene('relay-annex')">
+                Relay Annex — data-only variation
+              </button>
+              <small>Same services, different layout at relay-annex.project.json</small>
+            </li>
+            <li>
+              <button type="button" class="quiet" (click)="startScene('doom-e1m1')">
+                Doom E1M1 — Hangar (voxel showcase)
+              </button>
+              <small>Textured-voxel showcase at content/projects/doom-e1m1.project.json — 54 VTX6 materials, single VoxelAsset</small>
+            </li>
+          </ul>
+          <p class="project-hint">
+            The host selects the authored project at startup via
+            <code>cargo run -p loading-bay-game --bin browser-host -- --project content/projects/&lt;name&gt;.project.json</code>.
+            The card navigates to <code>/game?project=&lt;name&gt;</code> so the single shared
+            <code>RendererSurface</code> and projection adapter remain the only scene owners.
+          </p>
+        </section>
+
         <p
           class="availability"
           [attr.data-session-readiness]="continueReadiness()"
@@ -85,6 +115,12 @@ export class MainMenuComponent {
   protected newGame(): void {
     void this.router.navigate(["/game"], {
       queryParams: { mode: "new" },
+    });
+  }
+
+  protected startScene(scene: "loading-bay" | "relay-annex" | "doom-e1m1"): void {
+    void this.router.navigate(["/game"], {
+      queryParams: { mode: "new", project: scene },
     });
   }
 
