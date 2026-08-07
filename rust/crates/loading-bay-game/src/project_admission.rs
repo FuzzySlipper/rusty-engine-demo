@@ -76,6 +76,28 @@ pub fn admit_stored_project_with_document(
     document: StoredProject,
 ) -> Result<(AdmittedStoredProject, AdmittedProject), StoredProjectError> {
     validate_stored_project(&document)?;
+    if document.project_id == "doom-e1m1" {
+        // Enforce Doom-specific closure before any session is built.
+        // Find the voxel volume palette and validate against the 54-material manifest.
+        if let Some(voxel) = document
+            .assets
+            .iter()
+            .find_map(|asset| asset.voxel_volume.as_ref())
+        {
+            crate::doom_e1m1_materials::validate_doom_palette_closure(
+                &document,
+                &voxel.material_palette,
+            )?;
+        }
+        // Verify on-disk PNG bytes match the manifest digests; a same-length mutation must be rejected.
+        crate::doom_e1m1_materials::verify_doom_texture_files().map_err(|msg| {
+            StoredProjectError::new(
+                crate::stored_project::diagnostic_code::INVALID_MATERIAL,
+                "assets",
+                msg,
+            )
+        })?;
+    }
     let entry_scene_index = document
         .scenes
         .iter()

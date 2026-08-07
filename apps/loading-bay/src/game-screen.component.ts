@@ -1048,6 +1048,15 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       if (this.route.snapshot.queryParamMap.get("visualQa") === "animation") {
         window.__loadingBayAnimationCapture = handle.captureAnimation;
       }
+      const requestedProject = this.route.snapshot.queryParamMap.get("project");
+      if (requestedProject !== null && !["loading-bay", "relay-annex", "doom-e1m1"].includes(requestedProject)) {
+        throw new Error(`Unknown project ${requestedProject}`);
+      }
+      // Host is launched with a fixed --project (see main-menu startScene). The URL param is retained
+      // for deep-linking and for tests to assert that a click on the Doom card produces
+      // `project=doom-e1m1` and that the authoritative host/session reflects that scene.
+      // If URL and host disagree, the host wins – the UI will show the host's actual scene
+      // after the restart, and a mismatch is observable via /api/state.
       const entryMode = this.route.snapshot.queryParamMap.get("mode");
       if (entryMode === "new") {
         if (this.snapshot().paused) {

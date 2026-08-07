@@ -23,6 +23,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use sha2::{Digest, Sha256};
+
 use asset_catalog::{
     AssetCatalog, CatalogEntry, MaterialAuthority, MaterialDefinition, MaterialStyle, Rgba,
     StructuralClass, TextureDefinition, TextureFilter, TextureWrap, UvStrategy, VoxelAlphaMode,
@@ -516,15 +518,19 @@ pub fn verify_doom_texture_files() -> Result<(), String> {
                 bytes.len()
             ));
         }
-        // Basic PNG signature check (non-interlaced RGBA8 sRGB straight-alpha)
         if !bytes.starts_with(&[137, 80, 78, 71, 13, 10, 26, 10]) {
             return Err(format!("PNG signature mismatch for {}", binding.name));
         }
-        // Byte length and existence are the hard gates for `check:content` style
-        // closure. Full SHA-256 content-hash gating is via the catalog/material
-        // hash (`sha256:…`) checked in `validate_doom_palette_closure` — that
-        // path uses the exact `AssetHash` so stale file content cannot hide
-        // behind a stale manifest entry.
+        let mut hasher = Sha256::new();
+        hasher.update(&bytes);
+        let digest = hasher.finalize();
+        let hex = hex::encode(digest);
+        if hex != binding.png_sha256 {
+            return Err(format!(
+                "pngSha256 mismatch for {}: manifest {} vs disk sha256:{} (same-length mutation would have been missed before)",
+                binding.name, binding.png_sha256, hex
+            ));
+        }
     }
     Ok(())
 }

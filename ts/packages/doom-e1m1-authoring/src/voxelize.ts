@@ -178,27 +178,50 @@ export function buildDoomVoxelAsset(intermediatePath: string = fileURLToPath(new
       const upper1 = Math.max(heightToVoxelY(frontSec.ceilingHeight), heightToVoxelY(backSec.ceilingHeight));
       const middle0 = Math.max(heightToVoxelY(frontSec.floorHeight), heightToVoxelY(backSec.floorHeight));
       const middle1 = Math.min(heightToVoxelY(frontSec.ceilingHeight), heightToVoxelY(backSec.ceilingHeight));
-      const wallVox = (a: number, b: number, slot: number) => {
+      const wallVox = (a: number, b: number, slot: number, offX = 0, offZ = 0) => {
         if (a >= b) return;
         const steps = Math.max(Math.abs(wadToVoxelX(v2.x) - wadToVoxelX(v1.x)), Math.abs(wadToVoxelZ(v2.y) - wadToVoxelZ(v1.y)), 1);
         for (let s = 0; s <= steps; s += 1) {
           const t = steps === 0 ? 0 : s / steps;
-          const x = Math.round(wadToVoxelX(v1.x) * (1 - t) + wadToVoxelX(v2.x) * t);
-          const z = Math.round(wadToVoxelZ(v1.y) * (1 - t) + wadToVoxelZ(v2.y) * t);
+          const x = Math.round(wadToVoxelX(v1.x) * (1 - t) + wadToVoxelX(v2.x) * t) + offX;
+          const z = Math.round(wadToVoxelZ(v1.y) * (1 - t) + wadToVoxelZ(v2.y) * t) + offZ;
           for (let y = a; y < b; y += 1) setVoxel(x, y, z, slot);
         }
       };
+      // Lower wall is visible on the side with higher floor; choose that side's texture.
       if (lower1 > lower0) {
-        const tex = frontLower ?? backLower;
-        if (tex) wallVox(lower0, lower1, slotFor(tex, 23));
+        const frontHigher = frontSec.floorHeight > backSec.floorHeight;
+        const tex = frontHigher ? frontLower : backLower;
+        const fallback = frontLower ?? backLower;
+        const chosen = tex ?? fallback;
+        if (chosen) wallVox(lower0, lower1, slotFor(chosen, 23));
+        // If both sides have lower and differ, the opposite face is the other side's wall at same height
+        // but it is interior to the lower sector and not visible; we preserve front authoritative choice
+        // for lower/upper and only split middle where both faces are co-visible.
       }
       if (upper1 > upper0) {
-        const tex = frontUpper ?? backUpper;
-        if (tex) wallVox(upper0, upper1, slotFor(tex, 23));
+        const frontLowerCeil = frontSec.ceilingHeight < backSec.ceilingHeight;
+        const tex = frontLowerCeil ? frontUpper : backUpper;
+        const fallback = frontUpper ?? backUpper;
+        const chosen = tex ?? fallback;
+        if (chosen) wallVox(upper0, upper1, slotFor(chosen, 23));
       }
       if (middle1 > middle0) {
-        const tex = frontMiddle ?? backMiddle;
-        if (tex) wallVox(middle0, middle1, slotFor(tex, 23));
+        // Middle is co-visible when both sides have middle; preserve both incidences offset by normal.
+        const hasFront = !!frontMiddle;
+        const hasBack = !!backMiddle;
+        if (hasFront && hasBack && frontMiddle !== backMiddle) {
+          const dx = v2.x - v1.x;
+          const dy = v2.y - v1.y;
+          const len = Math.hypot(dx, dy) || 1;
+          const nx = Math.round(dy / len);
+          const nz = Math.round(-dx / len);
+          wallVox(middle0, middle1, slotFor(frontMiddle!, 23), 0, 0);
+          wallVox(middle0, middle1, slotFor(backMiddle!, 23), nx, nz);
+        } else {
+          const tex = frontMiddle ?? backMiddle;
+          if (tex) wallVox(middle0, middle1, slotFor(tex, 23));
+        }
       }
       continue;
     }

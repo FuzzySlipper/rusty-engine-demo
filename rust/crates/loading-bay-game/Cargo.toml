@@ -34,3 +34,5 @@ voxel-asset.workspace = true
 voxel-annotation.workspace = true
 voxel-convert.workspace = true
 voxel-object-runtime.workspace = true
+sha2.workspace = true
+hex.workspace = true
