@@ -9,6 +9,7 @@
 mod combat;
 mod content;
 mod definition;
+mod doom_e1m1_materials;
 mod door;
 mod encounter;
 mod enemy_combat;
@@ -48,6 +49,12 @@ pub use content::{
     decode_project_content, AdmittedProject, ProjectContentError, PROJECT_CONTENT_SCHEMA_VERSION,
 };
 pub use definition::{GameEntityDefinition, GameEntityDefinitionError};
+pub use doom_e1m1_materials::{
+    doom_asset_catalog, doom_manifest_path, doom_stored_assets,
+    doom_stored_assets_include_textures, doom_stored_material_assets, load_doom_manifest,
+    validate_doom_palette_closure, verify_doom_texture_files, DoomMaterialBinding, DOOM_FLAT_COUNT,
+    DOOM_MATERIAL_COUNT, DOOM_WALL_COUNT,
+};
 pub use door::{
     security_door_definitions, DoorComponent, DoorConfig, DoorState, DoorView, SecurityDoorIds,
 };
