@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 
 import type { E1M1Intermediate } from "./types.js";
 
@@ -63,37 +64,56 @@ export function buildDoomVoxelAsset(intermediatePath: string = fileURLToPath(new
     }
   };
 
-  // Build sector vertex lookup for bbox
-  // Map sector index -> sidedefs that reference it
-  const sectorSidedefs = new Map<number, number[]>(); // sector idx -> sidedef idxs
+  // Build sector edges for point-in-polygon and wall incidence
+  const sectorSidedefs = new Map<number, number[]>();
   inter.level.sidedefs.forEach((sd, idx) => {
     if (sd.sector < 0 || sd.sector >= inter.level.sectors.length) return;
     const arr = sectorSidedefs.get(sd.sector) ?? [];
     arr.push(idx);
     sectorSidedefs.set(sd.sector, arr);
   });
-
-  // For each sector, emit floor and ceiling layers using bbox fill (over-approx; refines to polygon later)
+  // Precompute sector boundary edges (doom units) for inside test
+  const sectorEdges = new Map<number, { x1: number; y1: number; x2: number; y2: number }[]>();
   for (let si = 0; si < inter.level.sectors.length; si += 1) {
-    const sec = inter.level.sectors[si]!;
-    const floorSlot = flatSlot.get(sec.floorTexture) ?? 1;
-    const ceilSlot = flatSlot.get(sec.ceilingTexture) ?? 1;
-    // skip sky ceilings: F_SKY1 should be no voxel (open sky)
-    const isSky = sec.ceilingTexture === "F_SKY1";
-    // Gather vertices for this sector via its sidedefs' linedefs
     const sidedefIdxs = sectorSidedefs.get(si) ?? [];
-    const verts: { x: number; y: number }[] = [];
+    const edges: { x1: number; y1: number; x2: number; y2: number }[] = [];
     for (const sdi of sidedefIdxs) {
-      // find linedefs that reference this sidedef as front or back
       for (const ld of inter.level.linedefs) {
         if (ld.frontSidedef === sdi || ld.backSidedef === sdi) {
           const v1 = inter.level.vertices[ld.startVertex]!;
           const v2 = inter.level.vertices[ld.endVertex]!;
-          verts.push(v1, v2);
+          edges.push({ x1: v1.x, y1: v1.y, x2: v2.x, y2: v2.y });
         }
       }
     }
-    if (verts.length === 0) continue;
+    sectorEdges.set(si, edges);
+  }
+  const isInsideSector = (px: number, py: number, si: number): boolean => {
+    const edges = sectorEdges.get(si) ?? [];
+    if (edges.length === 0) return false;
+    let inside = false;
+    for (const e of edges) {
+      const { x1, y1, x2, y2 } = e;
+      if ((y1 > py) !== (y2 > py)) {
+        const xinters = ((x2 - x1) * (py - y1)) / (y2 - y1) + x1;
+        if (px < xinters) inside = !inside;
+      }
+    }
+    return inside;
+  };
+
+  // For each sector, emit floor and ceiling layers using polygon fill (not bbox)
+  for (let si = 0; si < inter.level.sectors.length; si += 1) {
+    const sec = inter.level.sectors[si]!;
+    const floorSlot = flatSlot.get(sec.floorTexture) ?? 1;
+    const ceilSlot = flatSlot.get(sec.ceilingTexture) ?? 1;
+    const isSky = sec.ceilingTexture === "F_SKY1";
+    const edges = sectorEdges.get(si) ?? [];
+    if (edges.length === 0) continue;
+    const verts = edges.flatMap((e) => [
+      { x: e.x1, y: e.y1 },
+      { x: e.x2, y: e.y2 },
+    ]);
     const xs = verts.map((v) => v.x);
     const ys = verts.map((v) => v.y);
     const minXw = Math.min(...xs);
@@ -106,11 +126,11 @@ export function buildDoomVoxelAsset(intermediatePath: string = fileURLToPath(new
     const maxZv = wadToVoxelZ(maxYw);
     const floorY = heightToVoxelY(sec.floorHeight);
     const ceilY = heightToVoxelY(sec.ceilingHeight);
-    // Clamp Y to 0..64
-    // Floor layer
     for (let x = minXv; x <= maxXv; x += 1) {
       for (let z = minZv; z <= maxZv; z += 1) {
-        // For now fill entire bbox (over-approx); real polygon test would prune
+        const cx = MIN_X + x * SCALE + SCALE / 2;
+        const cy = MIN_Y_DOOM + z * SCALE + SCALE / 2;
+        if (!isInsideSector(cx, cy, si)) continue;
         setVoxel(x, floorY, z, floorSlot);
         if (!isSky && ceilY > floorY) setVoxel(x, ceilY - 1, z, ceilSlot);
       }
@@ -128,56 +148,59 @@ export function buildDoomVoxelAsset(intermediatePath: string = fileURLToPath(new
     const backSd = ld.backSidedef !== -1 ? inter.level.sidedefs[ld.backSidedef] : null;
     const backSec = backSd ? inter.level.sectors[backSd.sector] : null;
 
-    // Determine wall material: sidedef middle texture for one-sided, else lower/upper
-    // For now use middleTexture if present else upper else lower
-    const wallName = frontSd.middleTexture && frontSd.middleTexture !== "-"
-      ? frontSd.middleTexture
-      : frontSd.upperTexture && frontSd.upperTexture !== "-"
-      ? frontSd.upperTexture
-      : frontSd.lowerTexture && frontSd.lowerTexture !== "-"
-      ? frontSd.lowerTexture
-      : null;
-    const slotForWall = wallName ? (wallSlot.get(wallName) ?? 23) : 23;
+    const frontLower = frontSd.lowerTexture !== "-" ? frontSd.lowerTexture : null;
+    const frontUpper = frontSd.upperTexture !== "-" ? frontSd.upperTexture : null;
+    const frontMiddle = frontSd.middleTexture !== "-" ? frontSd.middleTexture : null;
+    const backLower = backSd?.lowerTexture && backSd.lowerTexture !== "-" ? backSd.lowerTexture : null;
+    const backUpper = backSd?.upperTexture && backSd.upperTexture !== "-" ? backSd.upperTexture : null;
+    const backMiddle = backSd?.middleTexture && backSd.middleTexture !== "-" ? backSd.middleTexture : null;
 
-    // Height range: one-sided from front floor to front ceiling; two-sided: lower wall from min floor to max floor, upper from min ceiling to max ceiling
-    // Simplify: emit from min floor to max ceiling
-    let y0: number, y1: number;
+    const slotFor = (name: string | null, fallback: number): number =>
+      name ? (wallSlot.get(name) ?? fallback) : fallback;
+
     if (!backSec) {
-      y0 = heightToVoxelY(frontSec.floorHeight);
-      y1 = heightToVoxelY(frontSec.ceilingHeight);
+      const wallName = frontMiddle ?? frontUpper ?? frontLower;
+      const slot = slotFor(wallName, 23);
+      const y0 = heightToVoxelY(frontSec.floorHeight);
+      const y1 = heightToVoxelY(frontSec.ceilingHeight);
+      if (y1 <= y0) continue;
+      const steps = Math.max(Math.abs(wadToVoxelX(v2.x) - wadToVoxelX(v1.x)), Math.abs(wadToVoxelZ(v2.y) - wadToVoxelZ(v1.y)), 1);
+      for (let s = 0; s <= steps; s += 1) {
+        const t = steps === 0 ? 0 : s / steps;
+        const x = Math.round(wadToVoxelX(v1.x) * (1 - t) + wadToVoxelX(v2.x) * t);
+        const z = Math.round(wadToVoxelZ(v1.y) * (1 - t) + wadToVoxelZ(v2.y) * t);
+        for (let y = y0; y < y1; y += 1) setVoxel(x, y, z, slot);
+      }
     } else {
-      // two-sided: emit lower wall between floors, upper between ceilings
       const lower0 = Math.min(heightToVoxelY(frontSec.floorHeight), heightToVoxelY(backSec.floorHeight));
       const lower1 = Math.max(heightToVoxelY(frontSec.floorHeight), heightToVoxelY(backSec.floorHeight));
       const upper0 = Math.min(heightToVoxelY(frontSec.ceilingHeight), heightToVoxelY(backSec.ceilingHeight));
       const upper1 = Math.max(heightToVoxelY(frontSec.ceilingHeight), heightToVoxelY(backSec.ceilingHeight));
-      // For now emit both ranges if non-zero
-      // We'll handle via two passes: lower and upper
-      // To keep simple, emit full from lower0 to upper1, but that would fill gap where door is.
-      // Instead emit lower and upper separately
-      // We'll directly emit here for lower and upper
-      const wallVox = (a: number, b: number) => {
+      const middle0 = Math.max(heightToVoxelY(frontSec.floorHeight), heightToVoxelY(backSec.floorHeight));
+      const middle1 = Math.min(heightToVoxelY(frontSec.ceilingHeight), heightToVoxelY(backSec.ceilingHeight));
+      const wallVox = (a: number, b: number, slot: number) => {
         if (a >= b) return;
         const steps = Math.max(Math.abs(wadToVoxelX(v2.x) - wadToVoxelX(v1.x)), Math.abs(wadToVoxelZ(v2.y) - wadToVoxelZ(v1.y)), 1);
         for (let s = 0; s <= steps; s += 1) {
           const t = steps === 0 ? 0 : s / steps;
           const x = Math.round(wadToVoxelX(v1.x) * (1 - t) + wadToVoxelX(v2.x) * t);
           const z = Math.round(wadToVoxelZ(v1.y) * (1 - t) + wadToVoxelZ(v2.y) * t);
-          for (let y = a; y < b; y += 1) setVoxel(x, y, z, slotForWall);
+          for (let y = a; y < b; y += 1) setVoxel(x, y, z, slot);
         }
       };
-      wallVox(lower0, lower1);
-      wallVox(upper0, upper1);
+      if (lower1 > lower0) {
+        const tex = frontLower ?? backLower;
+        if (tex) wallVox(lower0, lower1, slotFor(tex, 23));
+      }
+      if (upper1 > upper0) {
+        const tex = frontUpper ?? backUpper;
+        if (tex) wallVox(upper0, upper1, slotFor(tex, 23));
+      }
+      if (middle1 > middle0) {
+        const tex = frontMiddle ?? backMiddle;
+        if (tex) wallVox(middle0, middle1, slotFor(tex, 23));
+      }
       continue;
-    }
-
-    if (y1! <= y0!) continue;
-    const steps = Math.max(Math.abs(wadToVoxelX(v2.x) - wadToVoxelX(v1.x)), Math.abs(wadToVoxelZ(v2.y) - wadToVoxelZ(v1.y)), 1);
-    for (let s = 0; s <= steps; s += 1) {
-      const t = steps === 0 ? 0 : s / steps;
-      const x = Math.round(wadToVoxelX(v1.x) * (1 - t) + wadToVoxelX(v2.x) * t);
-      const z = Math.round(wadToVoxelZ(v1.y) * (1 - t) + wadToVoxelZ(v2.y) * t);
-      for (let y = y0; y < y1; y += 1) setVoxel(x, y, z, slotForWall);
     }
   }
 
@@ -278,8 +301,14 @@ export function buildDoomVoxelAsset(intermediatePath: string = fileURLToPath(new
 
   mkdirSync(resolve(outPath, ".."), { recursive: true });
   writeFileSync(outPath, `${JSON.stringify(asset, null, 2)}\n`, "utf8");
-  console.log(`Wrote ${outPath} voxels=${voxelCount} runs=${runs.length} bounds=${JSON.stringify(asset.bounds)} palette=${palette.length}`);
-  return asset;
+  // Deterministic canonicalization: rewrite with Rust-computed hashes so a fresh generation is immediately decodable.
+  const fix = spawnSync("cargo", ["run", "--locked", "-p", "loading-bay-game", "--bin", "doom-voxel-hash", "--", outPath], {
+    stdio: "inherit",
+  });
+  if (fix.status !== 0) throw new Error(`doom-voxel-hash failed for ${outPath}`);
+  const fixed: VoxelAssetJson = JSON.parse(readFileSync(outPath, "utf8"));
+  console.log(`Wrote ${outPath} voxels=${voxelCount} runs=${runs.length} bounds=${JSON.stringify(asset.bounds)} palette=${palette.length} hashes=${fixed.voxelDataHash.slice(0, 12)}..`);
+  return fixed;
 }
 
 // CLI

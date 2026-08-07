@@ -74,9 +74,24 @@ export function buildTextureArtifacts(wadPath: string = DEFAULT_WAD, outDir: str
   const tex1Bytes = wadLumpBytes(buffer, tex1Entry);
   const texDefs = decodeTexture1(tex1Bytes, pnames);
   const texByName = new Map(texDefs.map((d) => [d.name, d] as const));
+  // Keep raw TEXTURE1 entry bytes per texture for provenance hashing
+  const texEntryBytesByName = new Map<string, Uint8Array>();
+  {
+    const view = new DataView(tex1Bytes.buffer, tex1Bytes.byteOffset, tex1Bytes.byteLength);
+    const num = view.getInt32(0, true);
+    const offsets: number[] = [];
+    for (let i = 0; i < num; i += 1) offsets.push(view.getInt32(4 + i * 4, true));
+    for (let i = 0; i < num; i += 1) {
+      const off = offsets[i]!;
+      const patchCount = view.getInt16(off + 20, true);
+      const len = 22 + patchCount * 10;
+      texEntryBytesByName.set(texDefs[i]!.name, tex1Bytes.subarray(off, off + len));
+    }
+  }
 
   // Patch cache: decode on demand — WAD names are case-insensitive (PNAMES may be lower, directory upper)
   const patchCache = new Map<string, ReturnType<typeof decodePatch>>();
+  const patchBytesCache = new Map<string, Uint8Array>();
   const getPatch = (name: string) => {
     const key = name.toUpperCase();
     let cached = patchCache.get(key);
@@ -86,7 +101,15 @@ export function buildTextureArtifacts(wadPath: string = DEFAULT_WAD, outDir: str
     const bytes = wadLumpBytes(buffer, entry);
     const decoded = decodePatch(bytes);
     patchCache.set(key, decoded);
+    patchBytesCache.set(key, bytes);
     return decoded;
+  };
+  const getPatchBytes = (name: string): Uint8Array => {
+    const key = name.toUpperCase();
+    let b = patchBytesCache.get(key);
+    if (b) return b;
+    getPatch(name);
+    return patchBytesCache.get(key)!;
   };
   // Preload all patch bytes needed for E1M1 walls (to validate missing-patch early)
   for (const w of wallNames) {
@@ -140,12 +163,19 @@ export function buildTextureArtifacts(wadPath: string = DEFAULT_WAD, outDir: str
     const outPath = join(outDir, "wall", `${wallName}.png`);
     mkdirSync(resolve(outPath, ".."), { recursive: true });
     writeFileSync(outPath, pngBytes);
+    const entryBytes = texEntryBytesByName.get(wallName)!;
+    const patchBytesList = def.patches.map((p) => getPatchBytes(p.patchName));
+    const hasher = createHash("sha256");
+    hasher.update(entryBytes);
+    for (const pb of patchBytesList) hasher.update(pb);
+    const provenanceSha = hasher.digest("hex");
+    const provenanceLen = entryBytes.length + patchBytesList.reduce((s, b) => s + b.length, 0);
     entries.push({
       kind: "wall",
       name: wallName,
       sourceLump: `TEXTURE1:${wallName}`,
-      sourceByteLength: def.width * def.height, // logical; actual composite source is patch-bounded, but record texture dims
-      sourceSha256: sha256HexStr(`${wallName}:${def.width}x${def.height}:${def.patches.map((p) => p.patchName).join(",")}`),
+      sourceByteLength: provenanceLen,
+      sourceSha256: provenanceSha,
       pngSha256: pngSha,
       pngByteLength: pngBytes.length,
       width: def.width,
