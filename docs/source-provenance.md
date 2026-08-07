@@ -615,9 +615,9 @@ Exact PNG bytes and hashes are closed by `content/doom-e1m1/textures/manifest.js
 ### Derived voxel asset (single sparse-run volume, gameplay truth)
 
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
-`voxelDataHash sha256:1f7ddbaaa17f1d50eaf1ba1a79499b13c7396c726398cb73cca7f8e95167dcf8`
-`contentHash sha256:bdb6b79bc21a88b9762edb5395598f75816f566f39034313c715370ecd121d4e`
-`sparseRuns 14557, voxelCount 50057, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation.
+`voxelDataHash sha256:0330c8cbeef48a4a70c1714cca57323feec590daf88296eaed280e1787fb0de5`
+`contentHash sha256:4cb86364d76450428c1a8c6b8a83dbb481103640da2bc68ae042c157fb258a96`
+`sparseRuns ~14.6k mass, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` staticRevision `sha256:cbdd88292c50e00907e0f596da53ca6e9e1669e30d29c7878e5a808a68249bff` (runtime snapshot header).
 
 ### Authored project
 

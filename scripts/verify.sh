@@ -17,4 +17,5 @@ pnpm run build:shell
 pnpm run test:studio
 pnpm run build:studio
 ./scripts/verify-rust.sh
+node scripts/doom-browser-smoke.mjs
 pnpm run test:browser
