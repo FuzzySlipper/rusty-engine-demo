@@ -108,13 +108,36 @@ function copyFixture() {
   }
   for (const relativePath of [
     "engine-development.json",
-    ".engine-development/resolution.json",
     "ts/packages/browser-shell/package.json",
   ]) {
     const target = resolve(fixture, relativePath);
     mkdirSync(dirname(target), { recursive: true });
     cpSync(resolve(repoRoot, relativePath), target);
   }
+  const resolutionPath = resolve(
+    fixture,
+    ".engine-development/resolution.json",
+  );
+  mkdirSync(dirname(resolutionPath), { recursive: true });
+  writeFileSync(
+    resolutionPath,
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        mode: "development",
+        repository: "https://github.com/FuzzySlipper/rusty-engine",
+        requestedRef: "refs/heads/main",
+        resolvedCommit: current,
+        source: "public",
+        sourcePath: null,
+        dirty: false,
+        certification: false,
+        applied: true,
+      },
+      null,
+      2,
+    )}\n`,
+  );
   return fixture;
 }
 
