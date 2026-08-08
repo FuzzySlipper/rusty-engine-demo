@@ -3,9 +3,10 @@ import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const actualRoot = ["/home/dev/", "rusty-engine-demo"].join("");
+const actualRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const doomProject = join(actualRoot, "content/projects/doom-e1m1.project.json");
 const chromium = process.env.CHROMIUM_BIN ?? "/usr/bin/chromium";
 
