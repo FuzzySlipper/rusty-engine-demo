@@ -58,6 +58,7 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
   health: 0,
   headingDegrees: 0,
   hostSessionId: "",
+  projectId: "",
   interactionPrompt: null,
   interactionTarget: null,
   inventoryCapacity: 0,
@@ -1052,11 +1053,23 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       if (requestedProject !== null && !["loading-bay", "relay-annex", "doom-e1m1"].includes(requestedProject)) {
         throw new Error(`Unknown project ${requestedProject}`);
       }
-      // Host is launched with a fixed --project (see main-menu startScene). The URL param is retained
-      // for deep-linking and for tests to assert that a click on the Doom card produces
-      // `project=doom-e1m1` and that the authoritative host/session reflects that scene.
-      // If URL and host disagree, the host wins – the UI will show the host's actual scene
-      // after the restart, and a mismatch is observable via /api/state.
+      // The card targets a host already configured for that project: the host is
+      // launched with a fixed --project (see main-menu startScene). After the
+      // session connects we compare the requested project against the host's
+      // authoritative projectId (exposed in the static session resources). A
+      // mismatch fails loudly instead of silently serving a different scene, so
+      // a real Doom card click only succeeds when the host is running Doom.
+      if (requestedProject !== null) {
+        const hostProjectId = this.snapshot().projectId;
+        if (hostProjectId !== requestedProject) {
+          await handle.dispose();
+          this.handle = null;
+          throw new Error(
+            `This host is serving project "${hostProjectId || "unknown"}", not "${requestedProject}". ` +
+              `Launch the browser host with --project content/projects/${requestedProject}.project.json to open that scene.`,
+          );
+        }
+      }
       const entryMode = this.route.snapshot.queryParamMap.get("mode");
       if (entryMode === "new") {
         if (this.snapshot().paused) {

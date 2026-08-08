@@ -516,12 +516,14 @@ struct BrowserVoxelEditResponse {
 #[serde(rename_all = "camelCase")]
 struct BrowserMenuState {
     host_session_id: String,
+    project_id: String,
     save_slots: Vec<SaveSlotSummary>,
 }
 
 fn browser_menu_state(runtime: &BrowserRuntime) -> BrowserMenuState {
     BrowserMenuState {
         host_session_id: runtime.host_session_id.clone(),
+        project_id: runtime.project.project_id.clone(),
         save_slots: runtime.save_slots.clone(),
     }
 }
@@ -1699,7 +1701,7 @@ mod tests {
         assert_eq!(value["saveSlots"].as_array().unwrap().len(), 4);
         assert_eq!(
             value.as_object().unwrap().keys().collect::<Vec<_>>(),
-            ["hostSessionId", "saveSlots"]
+            ["hostSessionId", "projectId", "saveSlots"]
         );
         assert!(value.get("voxelMeshes").is_none());
         assert!(value.get("projection").is_none());

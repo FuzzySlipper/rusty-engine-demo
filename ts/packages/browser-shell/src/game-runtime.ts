@@ -110,6 +110,7 @@ export interface LoadingBayPresentationSnapshot {
   readonly health: number;
   readonly headingDegrees: number;
   readonly hostSessionId: string;
+  readonly projectId: string;
   readonly interactionPrompt: string | null;
   readonly interactionTarget: number | null;
   readonly inventoryCapacity: number;
@@ -1167,6 +1168,7 @@ export async function mountLoadingBayGame(
       health: state.player.currentHealth,
       headingDegrees: normalizeDegrees(state.player.yawDegrees),
       hostSessionId: state.hostSessionId,
+      projectId: state.projectId,
       interactionPrompt: state.interaction?.prompt ?? null,
       interactionTarget: state.interaction?.target ?? null,
       inventoryCapacity: state.inventory?.capacitySlots ?? 0,

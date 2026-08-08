@@ -54,19 +54,19 @@ import {
           <h2>Scenes</h2>
           <ul class="scene-list">
             <li>
-              <button type="button" class="quiet" (click)="startScene('loading-bay')">
+              <button type="button" class="quiet" (click)="startScene('loading-bay')" [disabled]="!sceneAvailable('loading-bay')" [attr.title]="sceneTitle('loading-bay')">
                 Loading Bay — encounter &amp; beacon
               </button>
               <small>Default Rust-owned project at content/projects/loading-bay.project.json</small>
             </li>
             <li>
-              <button type="button" class="quiet" (click)="startScene('relay-annex')">
+              <button type="button" class="quiet" (click)="startScene('relay-annex')" [disabled]="!sceneAvailable('relay-annex')" [attr.title]="sceneTitle('relay-annex')">
                 Relay Annex — data-only variation
               </button>
               <small>Same services, different layout at relay-annex.project.json</small>
             </li>
             <li>
-              <button type="button" class="quiet" (click)="startScene('doom-e1m1')">
+              <button type="button" class="quiet" (click)="startScene('doom-e1m1')" [disabled]="!sceneAvailable('doom-e1m1')" [attr.title]="sceneTitle('doom-e1m1')">
                 Doom E1M1 — Hangar (voxel showcase)
               </button>
               <small>Textured-voxel showcase at content/projects/doom-e1m1.project.json — 54 VTX6 materials, single VoxelAsset</small>
@@ -75,8 +75,11 @@ import {
           <p class="project-hint">
             The host selects the authored project at startup via
             <code>cargo run -p loading-bay-game --bin browser-host -- --project content/projects/&lt;name&gt;.project.json</code>.
-            The card navigates to <code>/game?project=&lt;name&gt;</code> so the single shared
-            <code>RendererSurface</code> and projection adapter remain the only scene owners.
+            A scene card is enabled only when the host is already serving that project (host identity
+            verified through <code>/api/menu-state</code>); the card then navigates to
+            <code>/game?project=&lt;name&gt;</code> so the single shared <code>RendererSurface</code> and
+            projection adapter remain the only scene owners. Current host project:
+            <code>{{ hostProjectId() || "unavailable" }}</code>
           </p>
         </section>
 
@@ -101,6 +104,7 @@ export class MainMenuComponent {
     "Checking the live Rust-owned session…",
   );
   protected readonly continueReadiness = signal<ContinueReadiness>("checking");
+  protected readonly hostProjectId = signal<string>("");
 
   private readonly documentEffects = browserDocumentEffects();
   private readonly repository = browserHostUserSettingsRepository();
@@ -119,9 +123,27 @@ export class MainMenuComponent {
   }
 
   protected startScene(scene: "loading-bay" | "relay-annex" | "doom-e1m1"): void {
+    if (!this.sceneAvailable(scene)) {
+      return;
+    }
     void this.router.navigate(["/game"], {
       queryParams: { mode: "new", project: scene },
     });
+  }
+
+  protected sceneAvailable(scene: "loading-bay" | "relay-annex" | "doom-e1m1"): boolean {
+    return this.hostProjectId() === scene;
+  }
+
+  protected sceneTitle(scene: "loading-bay" | "relay-annex" | "doom-e1m1"): string {
+    const host = this.hostProjectId();
+    if (host === scene) {
+      return `Open ${scene} on the configured host`;
+    }
+    if (host === "") {
+      return `Host project identity unavailable — launch browser-host with --project content/projects/${scene}.project.json`;
+    }
+    return `Host is serving "${host}", not "${scene}". Launch browser-host with --project content/projects/${scene}.project.json to open this scene.`;
   }
 
   protected continueGame(): void {
@@ -150,6 +172,14 @@ export class MainMenuComponent {
         throw new Error(`host state returned ${String(response.status)}`);
       }
       const value: unknown = await response.json();
+      this.hostProjectId.set(
+        typeof value === "object" &&
+          value !== null &&
+          "projectId" in value &&
+          typeof value.projectId === "string"
+          ? value.projectId
+          : "",
+      );
       const hostSessionId =
         typeof value === "object" &&
         value !== null &&

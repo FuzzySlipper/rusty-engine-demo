@@ -372,6 +372,7 @@ function state(
 ): RuntimeBrowserState {
   return {
     hostSessionId: "host-a",
+    projectId: "loading-bay",
     tick: 0,
     entityRevision: 0,
     voxelRevision: 0,

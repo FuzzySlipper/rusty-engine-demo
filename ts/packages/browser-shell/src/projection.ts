@@ -487,6 +487,7 @@ export interface RuntimeSaveSlotSummary {
 
 export interface RuntimeBrowserState {
   readonly hostSessionId: string;
+  readonly projectId: string;
   readonly tick: number;
   readonly entityRevision: number;
   readonly voxelRevision: number;

@@ -73,7 +73,7 @@ test("voxel synthesis preserves differing front/back middle incidence (R6677-4)"
   }
 });
 
-test("voxel bounds within quota and content hash stable", () => {
+test("voxel bounds within quota and exact bounds contract (R6677-5)", () => {
   const voxel = JSON.parse(readFileSync(VOXEL_PATH, "utf8")) as {
     bounds: { min: [number, number, number]; max: [number, number, number] };
     representation: { sparseRuns: { start: [number, number, number]; length: number }[] };
@@ -86,4 +86,13 @@ test("voxel bounds within quota and content hash stable", () => {
   assert.ok(voxel.voxelDataHash.startsWith("sha256:"), "voxelDataHash must be sha256");
   assert.ok(voxel.contentHash.startsWith("sha256:"), "contentHash must be sha256");
   assert.notEqual(voxel.voxelDataHash, "sha256:0000000000000000000000000000000000000000000000000000000000000000", "placeholder hash not allowed");
+  // Exact bounds contract (R6677-5): authoritative conversion at offset
+  // [-768,-136,-4864], scale 16, floor-min anchored at voxel y=0 produces
+  // vertex-extent cells [0,0,0]..[286,24,176] (doom X −768..3808, Z
+  // −4864..−2048, sector heights −136..264 with ceiling at ceil−1). This
+  // assertion is exact and must never drift.
+  assert.deepEqual(voxel.bounds, {
+    min: [0, 0, 0],
+    max: [286, 24, 176],
+  });
 });

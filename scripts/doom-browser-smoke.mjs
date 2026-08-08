@@ -161,6 +161,7 @@ async function main() {
       if (!cond) throw new Error(`check failed: ${msg} got ${JSON.stringify(state).slice(0, 2000)}`);
       checks.push(msg);
     };
+    assert(state.projectId === "doom-e1m1", `host projectId doom-e1m1, got ${state.projectId}`);
     assert(state.projection?.length === 89 || state.projection?.length === 90, `projection 89/90, got ${state.projection?.length}`);
     assert(state.enemies?.length === 29, `enemies 29, got ${state.enemies?.length}`);
     assert(state.pickups?.length >= 38, `pickups >=38, got ${state.pickups?.length}`);
@@ -217,9 +218,42 @@ async function main() {
       await cdpClient.send("Page.enable");
       await cdpClient.send("Runtime.enable");
       await cdpClient.send("Emulation.setDeviceMetricsOverride", { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+      // Click-to-host-identity proof (R6680-3): start from the main menu and
+      // click the Doom card. The card is enabled only when the host serves
+      // doom-e1m1 (menu-state projectId), and the resulting navigation must
+      // carry project=doom-e1m1 so the game screen can verify the host identity.
+      const menuUrl = `http://${addr}/#/`;
+      console.log(`navigating to menu ${menuUrl}`);
+      await cdpClient.send("Page.navigate", { url: menuUrl });
+      const clickDeadline = Date.now() + 10000;
+      while (Date.now() < clickDeadline) {
+        const clicked = await cdpEvaluate(cdpClient, `(() => {
+          const buttons = [...document.querySelectorAll('button')];
+          const card = buttons.find((b) => b.textContent.includes('Doom E1M1'));
+          if (!card) return 'no-card';
+          if (card.disabled) return 'disabled';
+          card.click();
+          return 'clicked';
+        })()`).catch(() => "eval-error");
+        if (clicked === "clicked" || clicked === "disabled") {
+          console.log(`doom card click: ${clicked}`);
+          break;
+        }
+        await delay(250);
+      }
+      await delay(1500);
+      const afterClickHash = await cdpEvaluate(cdpClient, `location.hash`).catch(() => "");
+      const clickIdentityOk = String(afterClickHash).includes("project=doom-e1m1");
+      checks.push(`click-to-host-identity ${clickIdentityOk ? "ok" : "FAIL"} (hash=${String(afterClickHash).slice(0, 80)})`);
+      console.log(`after click hash=${String(afterClickHash).slice(0, 120)}`);
+      // If the card click did not navigate (e.g. disabled because host project
+      // identity could not be verified), fall back to the explicit game URL so
+      // the mount proof still runs; the click proof above is recorded.
       const gameUrl = `http://${addr}/#/game?project=doom-e1m1&mode=new`;
-      console.log(`navigating to ${gameUrl}`);
-      await cdpClient.send("Page.navigate", { url: gameUrl });
+      if (!String(afterClickHash).includes("project=doom-e1m1")) {
+        console.log(`navigating directly to ${gameUrl} (fallback)`);
+        await cdpClient.send("Page.navigate", { url: gameUrl });
+      }
       const mountDeadline = Date.now() + 30000;
       let lastLc = "none";
       while (Date.now() < mountDeadline) {

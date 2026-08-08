@@ -128,6 +128,7 @@ const dynamic = {
 
 const resources = {
   hostSessionId: "host-a",
+  projectId: "loading-bay",
   staticRevision: "1:abc",
   voxelRevision: 1,
   voxelAuthorityHash: "abc",

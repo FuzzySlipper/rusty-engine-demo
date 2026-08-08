@@ -428,10 +428,13 @@ fn build_stored_assets_from_bindings(
     Ok(assets)
 }
 
-/// Validate that every voxel palette binding has a declared material and that
-/// no extra material is unreferenced (warns).  Missing or stale hash is a
-/// hard `StoredProjectError` with the same diagnostic codes the admission
-/// path uses (`project.missingAsset`, `project.invalidMaterial`).
+/// Validate that the voxel palette's material set EXACTLY equals the manifest's
+/// complete 54-material set and that every binding is present in the project's
+/// assets.  This is a two-way closure check: a palette entry without a declared
+/// material, a declared manifest material missing from the palette (even when no
+/// sparse run uses it, e.g. FLAT23 / F_SKY1), or a stale texture hash is a hard
+/// `StoredProjectError` with the same diagnostic codes the admission path uses
+/// (`project.missingAsset`, `project.invalidMaterial`).
 pub fn validate_doom_palette_closure(
     project: &StoredProject,
     palette: &[voxel_asset::VoxelAssetMaterialBinding],
@@ -443,6 +446,38 @@ pub fn validate_doom_palette_closure(
         .map(|b| (b.material_asset_id.clone(), b))
         .collect();
     let project_assets: BTreeSet<String> = project.assets.iter().map(|a| a.id.clone()).collect();
+
+    // Enforce palette cardinality/set equality: the palette must declare exactly
+    // the manifest's 54 material ids.  A binding that is unused by sparse runs
+    // (e.g. FLAT23 or F_SKY1) is still a required declared material; omitting it
+    // from the palette and its assets must reject before publication.
+    let palette_ids: BTreeSet<&String> = palette
+        .iter()
+        .map(|entry| &entry.material_asset_id)
+        .collect();
+    for binding in &bindings {
+        if !palette_ids.contains(&binding.material_asset_id) {
+            return Err(StoredProjectError::new(
+                diagnostic_code::MISSING_ASSET,
+                format!("voxel palette material {}", binding.material_asset_id),
+                format!(
+                    "declared Doom E1M1 material {} is missing from the voxel palette (expected the complete 54-material manifest set)",
+                    binding.material_asset_id
+                ),
+            ));
+        }
+        if !project_assets.contains(&binding.material_asset_id) {
+            return Err(StoredProjectError::new(
+                diagnostic_code::MISSING_ASSET,
+                format!("assets[{}]", binding.material_asset_id),
+                format!(
+                    "declared Doom E1M1 material asset {} is missing from the project",
+                    binding.material_asset_id
+                ),
+            ));
+        }
+    }
+
     for entry in palette {
         if !declared.contains_key(&entry.material_asset_id) {
             return Err(StoredProjectError::new(
@@ -623,11 +658,29 @@ mod tests {
             item_definitions: Vec::new(),
             scenes: Vec::new(),
         };
-        let palette = vec![voxel_asset::VoxelAssetMaterialBinding {
-            material_slot: 1,
-            material_asset_id: "material/doom-flat-ceil3-5".to_string(),
-            display_name: None,
-        }];
+        // The complete 54-material palette set must be present (R6678-3 set
+        // equality), otherwise the missing-set check fires before the stale
+        // hash check. Build the full palette from the project's material
+        // assets so the stale hash is the only defect left.
+        let mut materials: Vec<String> = project
+            .assets
+            .iter()
+            .filter(|a| a.material.is_some())
+            .map(|a| a.id.clone())
+            .collect();
+        materials.sort();
+        let palette: Vec<voxel_asset::VoxelAssetMaterialBinding> = materials
+            .into_iter()
+            .enumerate()
+            .map(
+                |(index, material_asset_id)| voxel_asset::VoxelAssetMaterialBinding {
+                    material_slot: (index + 1) as u16,
+                    material_asset_id,
+                    display_name: None,
+                },
+            )
+            .collect();
+        assert_eq!(palette.len(), 54);
         let result = validate_doom_palette_closure(&project, &palette);
         assert!(result.is_err());
         let err = result.unwrap_err();

@@ -23,9 +23,13 @@ fn doom_e1m1_voxel_asset_decodes_without_mutation() {
         voxel_count < 1_000_000,
         "voxel count {voxel_count} exceeds 1M"
     );
-    // Bounds should match 16-scale Hangar extents
+    // Bounds should match 16-scale Hangar extents: vertex bounds X −768..3808
+    // (−4864..−2048 in doom Y) and sector heights −136..264 anchored at
+    // floor-min → voxel y=0 (offset [−768,−136,−4864]). Exact contract: min
+    // [0,0,0], max [286,24,176] (ceiling emitted at ceilY−1). R6677-5.
     assert_eq!(asset.grid.cell_size, 1.0);
     assert_eq!(asset.bounds.min, [0, 0, 0]);
+    assert_eq!(asset.bounds.max, [286, 24, 176]);
 }
 
 #[test]

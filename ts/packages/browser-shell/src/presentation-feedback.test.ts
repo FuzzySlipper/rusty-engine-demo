@@ -736,6 +736,7 @@ function particleDescriptors(
 function feedbackState(): RuntimeBrowserState {
   return {
     hostSessionId: "host-a",
+    projectId: "loading-bay",
     tick: 5,
     entityRevision: 8,
     voxelRevision: 0,

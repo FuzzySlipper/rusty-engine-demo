@@ -293,6 +293,7 @@ pub(super) struct BrowserDynamicState {
 #[serde(rename_all = "camelCase")]
 pub(super) struct BrowserStaticResources {
     host_session_id: String,
+    project_id: String,
     static_revision: String,
     voxel_revision: u64,
     voxel_authority_hash: String,
@@ -968,6 +969,7 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
         .collect();
     BrowserStaticResources {
         host_session_id: host.host_session_id.clone(),
+        project_id: host.project.project_id.clone(),
         static_revision: browser_static_revision(host),
         voxel_revision: scene.source_revision().raw(),
         voxel_authority_hash: format!("{:016x}", scene.authority_hash()),

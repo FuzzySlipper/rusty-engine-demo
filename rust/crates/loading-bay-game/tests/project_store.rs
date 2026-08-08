@@ -284,6 +284,62 @@ fn admitted(input: &str) -> AdmittedStoredProject {
         .0
 }
 
+#[test]
+fn doom_admission_rejects_incomplete_palette_set_when_unused_binding_removed() {
+    // R6678-3: the Doom closure contract requires the complete 54-material
+    // manifest set at the authoritative admission boundary. Removing an unused
+    // binding (FLAT23 has no sparse runs) must reject before publication even
+    // though no persisted run references it.
+    let doom_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/projects/doom-e1m1.project.json");
+    let raw = fs::read_to_string(&doom_path).unwrap();
+    let mut document = decode_project_document(&raw).unwrap().project;
+    assert_eq!(document.project_id, "doom-e1m1");
+
+    // Remove the unused material asset, its texture asset, its palette entry,
+    // and its materialMap entry so the document is internally consistent
+    // (runs never reference FLAT23) but the declared manifest set is
+    // incomplete: the manifest still declares 54 materials.
+    const UNUSED_MATERIAL: &str = "material/doom-flat-flat23";
+    const UNUSED_TEXTURE: &str = "texture/doom-flat-flat23";
+    const UNUSED_VOXEL_SLOT: u16 = 7; // materialSlot of FLAT23 in the voxel palette
+    document
+        .assets
+        .retain(|asset| asset.id != UNUSED_MATERIAL && asset.id != UNUSED_TEXTURE);
+    for asset in &mut document.assets {
+        if let Some(voxel) = asset.voxel_volume.as_mut() {
+            voxel
+                .material_palette
+                .retain(|binding| binding.material_asset_id != UNUSED_MATERIAL);
+            voxel
+                .material_map
+                .retain(|mapping| mapping.voxel_material_slot != UNUSED_VOXEL_SLOT);
+            // Keep the embedded voxel artifact internally valid (runs never
+            // reference slot 7) so the only defect left is the incomplete
+            // declared palette set. The voxel asset's own hashes must be
+            // recomputed over the canonical mutated content, otherwise the
+            // generic voxel validation rejects the stale hash first.
+            let recomputed = voxel_asset::with_computed_content_hash(voxel.clone())
+                .expect("mutated voxel asset stays canonical");
+            *voxel = recomputed;
+        }
+    }
+
+    let error = admit_stored_project_with_document(document).unwrap_err();
+    assert_eq!(
+        error.diagnostic().code,
+        loading_bay_game::diagnostic_code::MISSING_ASSET
+    );
+    assert!(
+        error
+            .diagnostic()
+            .message
+            .contains("missing from the voxel palette"),
+        "expected the complete-manifest-set diagnostic, got {}",
+        error.diagnostic().message
+    );
+}
+
 static NEXT_DIRECTORY: AtomicU64 = AtomicU64::new(0);
 
 struct TestDirectory(PathBuf);
