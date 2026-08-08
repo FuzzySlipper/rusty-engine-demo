@@ -60,7 +60,8 @@ const proofDirectory = mkdtempSync(
 );
 if (process.env.RUSTY_BROWSER_CONTROL_ONLY === "1") {
   try {
-    await runBrowserControlShell();
+    const proof = await runBrowserControlShell();
+    console.log(`browser-control proof ${JSON.stringify(proof)}`);
     console.log(
       "browser control smoke passed: authoritative Rust session + HUD/control shell + native renderer boundary",
     );
@@ -192,28 +193,9 @@ async function runBrowserControlShell() {
       `http://${running.address}/#/game?mode=new`,
       `document.body?.dataset.rendererLifecycle === "native-host" &&
         document.querySelector("#viewport")?.dataset.rendererOwner === "rust" &&
-        document.querySelector("#viewport")?.dataset.rendererBackend === "rusty-engine-native-webview"`,
+        document.querySelector("#viewport")?.dataset.rendererBackend === "rusty-engine-native-webview" &&
+        document.querySelector("canvas") === null`,
       30_000,
-      {
-        interactiveSetup: async (client) => {
-          await waitForCdp(
-            client,
-            `document.body?.dataset.rendererLifecycle === "native-host"`,
-            "connected browser control shell",
-          );
-          await delay(1_000);
-          await client.send("Runtime.evaluate", {
-            expression:
-              'globalThis.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" }))',
-          });
-          await delay(300);
-          await client.send("Runtime.evaluate", {
-            expression:
-              'globalThis.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" }))',
-          });
-          await delay(250);
-        },
-      },
     );
     if (result.code !== 0) {
       throw new Error(
@@ -237,6 +219,16 @@ async function runBrowserControlShell() {
         "browser control shell claimed downstream renderer ownership",
       );
     }
+    return {
+      status: "passed",
+      authority: "installed Rust sidecar",
+      rendererLifecycle: "native-host",
+      rendererOwner: "rust",
+      rendererBackend: "rusty-engine-native-webview",
+      canvas: "absent",
+      stateReadback: `project loading-bay at entity revision ${String(before.entityRevision)}`,
+      inputAuthority: "certified by the Engine-owned native host",
+    };
   } finally {
     await stopHost(running.host);
   }

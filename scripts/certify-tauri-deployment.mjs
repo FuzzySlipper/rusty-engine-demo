@@ -23,7 +23,7 @@ const narrowScreenshotPath = resolve(
   process.env.TAURI_SMOKE_NARROW_SCREENSHOT ??
     "target/tauri-installed-smoke-narrow.png",
 );
-const skipCampaign = process.argv.includes("--skip-campaign");
+const skipBrowserControl = process.argv.includes("--skip-campaign");
 
 const status = JSON.parse(
   await runCapture(process.execPath, ["scripts/deploy-tauri.mjs", "status"]),
@@ -44,18 +44,18 @@ const currentRoot = resolve(status.installRoot, "current");
 const application = resolve(currentRoot, "usr/bin/loading-bay-desktop");
 const sidecar = resolve(currentRoot, "usr/bin/loading-bay-browser-host");
 
-let campaignOutput = "";
-if (!skipCampaign) {
+let browserControlOutput = "";
+if (!skipBrowserControl) {
   await run(
     process.execPath,
     ["scripts/browser-smoke.mjs"],
     {
       ...process.env,
       RUSTY_ENGINE_DEMO_HOST_BINARY: sidecar,
-      RUSTY_BROWSER_SMOKE_EXPORT_SAVE_ROOT: status.saveRoot,
+      RUSTY_BROWSER_CONTROL_ONLY: "1",
     },
     (chunk) => {
-      campaignOutput += chunk;
+      browserControlOutput += chunk;
       process.stdout.write(chunk);
     },
   );
@@ -66,17 +66,11 @@ await run(process.execPath, ["scripts/tauri-smoke.mjs"], {
   TAURI_SMOKE_EVIDENCE: smokeEvidencePath,
   TAURI_SMOKE_SCREENSHOT: screenshotPath,
   TAURI_SMOKE_NARROW_SCREENSHOT: narrowScreenshotPath,
-  ...(skipCampaign
-    ? {}
-    : {
-        TAURI_SMOKE_REQUIRE_CONTINUE: "true",
-        TAURI_SMOKE_SEED_SAVE_ROOT: status.saveRoot,
-      }),
 });
 
 const smoke = JSON.parse(readFileSync(smokeEvidencePath, "utf8"));
 const evidence = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   certifiedAt: new Date().toISOString(),
   sourceRevision: release.sourceRevision,
   engineRevision: release.engineRevision,
@@ -97,18 +91,14 @@ const evidence = {
   },
   native: smoke,
   desktopEntry,
-  fullCampaign: skipCampaign
+  browserControl: skipBrowserControl
     ? { status: "skipped", reason: "--skip-campaign" }
     : {
         status: "passed",
         hostBinary: sidecar,
         authority:
-          "unchanged browser-smoke campaign served by the exact installed sidecar and package resources",
-        gameSession: proofFromOutput(campaignOutput, "game-session proof"),
-        renderer: proofFromOutput(
-          campaignOutput,
-          "shared-renderer correctness proof",
-        ),
+          "HUD and control shell served by the exact installed sidecar and package resources; rendering remains in the native Engine host",
+        proof: proofFromOutput(browserControlOutput, "browser-control proof"),
       },
 };
 mkdirSync(dirname(outputPath), { recursive: true });

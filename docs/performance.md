@@ -599,10 +599,11 @@ invented regression or hardware claim.
 
 The native proof additionally records the 960×540 supported minimum without horizontal overflow,
 singleton focus delegation without a second sidecar, renderer disposal/remount, real WebKit and
-WebGL identity, idle CPU/context-switch deltas, normal shutdown, visible startup/host-crash errors,
-shell-crash orphan cleanup, and full/narrow screenshots. The unchanged complete campaign runs
-against the installed sidecar and installed Web assets and covers normal controls,
-route/progression, checkpoint, completed save, reopen/fresh process, converted and migrated
-projects, picking, resize, reset, remount, and disposal. The exact-revision `verify-tauri` artifact
+the expected absence of a WebGL context, idle CPU/context-switch deltas, normal shutdown, visible startup/host-crash errors,
+shell-crash orphan cleanup, and full/narrow screenshots. Certification also runs the browser
+HUD/control shell against the installed sidecar and installed Web assets, reads authoritative Rust
+state, and proves that the browser owns neither a canvas nor renderer/input authority. Native input,
+picking, resize, reset, remount, resource rendering, save round-trip, and disposal remain certified
+by the Engine-owned native host. The exact-revision `verify-tauri` artifact
 `tauri-deployment-evidence.json` is the final release evidence; a focused run with
 `--skip-campaign` is explicitly non-certifying.

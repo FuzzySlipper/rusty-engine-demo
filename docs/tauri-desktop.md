@@ -135,10 +135,13 @@ pnpm run deploy:tauri -- uninstall --purge-data # explicit destructive reset
 binary through Tauri 2 WebDriver from a temporary working directory, captures full and 960×540
 screenshots, checks New Game/native-renderer boundary, browser projection disposal/remount,
 singleton delegation,
-focus loss plus the native show/unminimize/focus activation receipt, WebKit/WebGL identity,
+focus loss plus the native show/unminimize/focus activation receipt, WebKit identity and WebGL absence,
 native process-tree RSS and idle activity,
-normal/crash cleanup, a visible fail-closed startup screen, and then runs the unchanged complete
-campaign against the installed sidecar and its installed Web bundle.
+normal/crash cleanup, a visible fail-closed startup screen, and then verifies that the installed
+sidecar and Web bundle expose only the HUD/control shell while reporting the Engine-owned native
+renderer boundary. Its WebKit evidence also confirms that the HUD shell creates no WebGL context.
+The browser proof reads authoritative Rust state and proves that no canvas or
+downstream renderer or input authority is present; physical input is certified in the native host.
 The native callback schedules one main-thread transaction that requests show, unminimize, native
 focus, and WebView focus on the existing window. The bounded cache receipt is written after those
 requests; the evidence records the window manager's resulting visible/minimized/focus state without
@@ -149,6 +152,7 @@ a nonzero plugin-cleanup status after successful delegation.
 When the smoke owns an Xvfb session, it publishes that exact display for both the driver-owned primary
 and the directly spawned secondary shell; a secondary that cannot initialize the native display is
 therefore not mistaken for successful single-instance delegation.
-Set `--skip-campaign` only for focused iteration; that result is explicitly recorded as skipped and
-is not release certification. The `verify-tauri` GitHub job performs the exact install and complete
+Set `--skip-campaign` only for focused iteration; the compatibility flag skips the installed browser
+control proof, is explicitly recorded as skipped, and is not release certification. The
+`verify-tauri` GitHub job performs the exact install and complete
 certification after building the Debian package, and uploads the receipts and screenshots.
