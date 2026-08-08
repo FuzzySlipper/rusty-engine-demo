@@ -1,8 +1,8 @@
 use std::collections::BTreeSet;
 
-use core_assets::{AssetId, AssetKind};
-use voxel_asset::MAX_CONVERSION_SOURCE_BYTES;
-use voxel_convert::{
+use rusty_engine::core_assets::{AssetId, AssetKind};
+use rusty_engine::voxel_asset::MAX_CONVERSION_SOURCE_BYTES;
+use rusty_engine::voxel_convert::{
     apply_voxel_object_conversion, import_animated_mesh_source, import_mesh_source,
     plan_animated_voxel_object_conversion, plan_static_voxel_object_conversion,
     preview_voxel_object_conversion, source_sha256, AnimationProperty, MeshSourceFormat,
@@ -162,7 +162,7 @@ pub(crate) fn prepare_voxel_object_conversion(
         PreparedProjectVoxelObjectConversion,
         VoxelObjectConversionPlan,
         VoxelObjectConversionPreview,
-        render_model::RenderFrameDiff,
+        rusty_engine::render_model::RenderFrameDiff,
         ProjectionReadout,
     ),
     AdapterRejection,
@@ -245,7 +245,7 @@ fn finish_prepare(
         PreparedProjectVoxelObjectConversion,
         VoxelObjectConversionPlan,
         VoxelObjectConversionPreview,
-        render_model::RenderFrameDiff,
+        rusty_engine::render_model::RenderFrameDiff,
         ProjectionReadout,
     ),
     AdapterRejection,
@@ -288,7 +288,7 @@ pub(crate) fn preview_prepared_voxel_object_conversion(
 ) -> Result<
     (
         VoxelObjectConversionPreview,
-        render_model::RenderFrameDiff,
+        rusty_engine::render_model::RenderFrameDiff,
         ProjectionReadout,
     ),
     AdapterRejection,
@@ -652,7 +652,7 @@ pub(crate) fn prepare_voxel_object_placement(
     expected_project_hash: &str,
     asset_id: &str,
     expected_object_content_hash: &str,
-) -> Result<render_model::RenderFrameDiff, AdapterRejection> {
+) -> Result<rusty_engine::render_model::RenderFrameDiff, AdapterRejection> {
     const MAX_PRESENTATION_IDENTITY_BYTES: usize = 128;
 
     if asset_id.len() > MAX_PRESENTATION_IDENTITY_BYTES {

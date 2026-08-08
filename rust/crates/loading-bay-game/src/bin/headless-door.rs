@@ -1,5 +1,5 @@
-use core_time::TickDelta;
 use loading_bay_game::{encode_game_snapshot, GameRuntime};
+use rusty_engine::core_time::TickDelta;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (ids, mut runtime) = GameRuntime::security_door(Some(TickDelta::new(3)))?;

@@ -1,13 +1,13 @@
-use engine_spatial::{
+use rusty_engine::engine_spatial::{
     decode_voxel_edit_history, encode_voxel_edit_history, VoxelCollisionScene, VoxelEditHistory,
     VoxelEditHistoryLimits,
 };
-use entity_state::{EntityTransform, Quat};
-use render_model::Transform;
-use voxel_annotation::{
+use rusty_engine::entity_state::{EntityTransform, Quat};
+use rusty_engine::render_model::Transform;
+use rusty_engine::voxel_annotation::{
     finalize_annotation_draft, VoxelAnnotationLayerDraft, VoxelAnnotationLimits,
 };
-use voxel_asset::{
+use rusty_engine::voxel_asset::{
     with_computed_content_hash, VoxelAsset, VoxelRepresentation, VoxelRepresentationKind,
     VoxelSparseRun,
 };
@@ -224,7 +224,7 @@ pub(crate) fn retarget_annotations(asset: &mut StoredAsset) -> Result<(), Adapte
                     layer_id: layer.layer_id.clone(),
                     target_voxel_asset_id: target.asset_id.clone(),
                     target_voxel_data_hash: target.voxel_data_hash.clone(),
-                    target_bounds: voxel_annotation::VoxelAnnotationBounds {
+                    target_bounds: rusty_engine::voxel_annotation::VoxelAnnotationBounds {
                         min: target.bounds.min,
                         max: target.bounds.max,
                     },
@@ -282,7 +282,7 @@ pub(crate) fn history_readout(persisted: bool, history: &VoxelEditHistory) -> Vo
 
 pub(crate) fn entity_transform(instance: &StoredVoxelInstance) -> EntityTransform {
     EntityTransform {
-        translation: core_math::Vec3::new(
+        translation: rusty_engine::core_math::Vec3::new(
             instance.translation[0],
             instance.translation[1],
             instance.translation[2],
@@ -293,7 +293,11 @@ pub(crate) fn entity_transform(instance: &StoredVoxelInstance) -> EntityTransfor
             instance.rotation[2],
             instance.rotation[3],
         ),
-        scale: core_math::Vec3::new(instance.scale[0], instance.scale[1], instance.scale[2]),
+        scale: rusty_engine::core_math::Vec3::new(
+            instance.scale[0],
+            instance.scale[1],
+            instance.scale[2],
+        ),
     }
 }
 

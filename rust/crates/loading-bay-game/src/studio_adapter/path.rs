@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
-use content_store::is_safe_relative_path;
+use rusty_engine::content_store::is_safe_relative_path;
 
 pub const MAX_ROOT_PATH_BYTES: usize = 4 * 1024;
 pub const MAX_PROJECT_PATH_BYTES: usize = 1024;

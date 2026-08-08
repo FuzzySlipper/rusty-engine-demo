@@ -1,5 +1,9 @@
 # Loading Bay visual-content pipeline
 
+> Renderer-surface references in this campaign are historical evidence. Task #6703 moved current
+> rendered product integration behind the Engine-owned Rust adapter; [`design.md`](design.md) owns
+> the active dependency and presentation boundary.
+
 This document freezes the pre-replacement visual baseline for Den campaign
 `rusty-engine-demo #6350`. The evidence revision is
 `cd25485445bfb581c4005b221a23caa21408d327`, with Rust, renderer, and Studio packages pinned to

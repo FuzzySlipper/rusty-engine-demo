@@ -1,12 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use core_ids::EntityId;
-use core_math::Vec3;
-use engine_spatial::{
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::engine_spatial::{
     KinematicMotionSystem, MotionFact, MotionPhaseReceipt, NavigationStepError,
     VoxelCollisionScene, MAX_MOTION_DELTA_SECONDS,
 };
-use entity_state::{EntityCommand, EntityCommandBatch, EntityView};
+use rusty_engine::entity_state::{EntityCommand, EntityCommandBatch, EntityView};
 
 use crate::combat::EnemyState;
 use crate::runtime::RuntimeError;

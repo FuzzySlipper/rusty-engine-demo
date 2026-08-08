@@ -1,10 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use core_ids::EntityId;
-use core_math::Vec3;
-use core_time::Tick;
-use engine_spatial::MAX_TRIGGER_DEFINITIONS;
-use entity_state::{EntityState, EntityView};
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::core_time::Tick;
+use rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS;
+use rusty_engine::entity_state::{EntityState, EntityView};
 
 use crate::combat::{EnemyComponent, EnemyState, EnemyView, WeaponState, WeaponView};
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
@@ -699,11 +699,13 @@ impl GameSession {
             }
             pickup.state = PickupState::Dormant;
         }
-        gameplay_mechanics::validate_state_against_catalog(&entities, &mechanics.catalog).map_err(
-            |error| GameEntityDefinitionError::Mechanics {
-                reason: error.to_string(),
-            },
-        )?;
+        rusty_engine::gameplay_mechanics::validate_state_against_catalog(
+            &entities,
+            &mechanics.catalog,
+        )
+        .map_err(|error| GameEntityDefinitionError::Mechanics {
+            reason: error.to_string(),
+        })?;
 
         Ok(Self {
             entities,
@@ -734,7 +736,10 @@ impl GameSession {
         &self.entities
     }
 
-    pub fn entity(&self, entity: EntityId) -> Result<EntityView, entity_state::ViewError> {
+    pub fn entity(
+        &self,
+        entity: EntityId,
+    ) -> Result<EntityView, rusty_engine::entity_state::ViewError> {
         self.entities.view(entity)
     }
 
@@ -837,14 +842,14 @@ impl GameSession {
         let config = *self.health.get(&entity)?;
         let tracks = self
             .entities
-            .component::<gameplay_mechanics::TracksComponent>(entity)
+            .component::<rusty_engine::gameplay_mechanics::TracksComponent>(entity)
             .ok()??;
         let current =
             u32::try_from(tracks.current(&crate::mechanics::health_track())?.get()).ok()?;
         let armor = u32::try_from(tracks.current(&crate::mechanics::armor_track())?.get()).ok()?;
         let armor_item = self
             .entities
-            .component::<gameplay_mechanics::ActiveEffectsComponent>(entity)
+            .component::<rusty_engine::gameplay_mechanics::ActiveEffectsComponent>(entity)
             .ok()??
             .effects()
             .iter()
@@ -1039,7 +1044,7 @@ impl GameSession {
         let runtime = self.inventories.get(&owner)?;
         let equipment = self
             .entities
-            .component::<gameplay_mechanics::EquipmentComponent>(owner)
+            .component::<rusty_engine::gameplay_mechanics::EquipmentComponent>(owner)
             .ok()??;
         let item_entity = equipment.assignment(&crate::mechanics::weapon_slot())?.item;
         runtime

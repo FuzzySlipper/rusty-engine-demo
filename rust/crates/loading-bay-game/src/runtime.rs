@@ -1,9 +1,9 @@
 use std::collections::VecDeque;
 
-use core_ids::EntityId;
-use core_time::{Tick, TickDelta};
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_time::{Tick, TickDelta};
 
-use engine_spatial::{
+use rusty_engine::engine_spatial::{
     KinematicMotionSystem, MotionPhaseError, MotionPhaseReceipt, NavigationStepError,
     SpatialOcclusionError, TriggerVolumeSystem, VoxelCollisionScene, VoxelEditApplyError,
     VoxelEditReceipt, VoxelEditService, VoxelEditTransaction,
@@ -96,7 +96,7 @@ pub enum RuntimeError {
     InvalidPlayerAction {
         action: ResolvedPlayerAction,
     },
-    EntityBatch(entity_state::BatchRejection),
+    EntityBatch(rusty_engine::entity_state::BatchRejection),
     EventWaveLimit {
         limit: usize,
     },

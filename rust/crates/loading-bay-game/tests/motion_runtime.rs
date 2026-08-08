@@ -1,6 +1,6 @@
-use core_ids::EntityId;
 use loading_bay_game::{decode_game_snapshot, encode_game_snapshot, GameRuntime, MotionFact};
 use loading_bay_game::{PlayerControlFact, ResolvedPlayerAction};
+use rusty_engine::core_ids::EntityId;
 use serde_json::{json, Value};
 
 const MOTION_PROJECT: &str = include_str!("../../../../content/generated/motion-lab.project.json");

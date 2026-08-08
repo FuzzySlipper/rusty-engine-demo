@@ -2,13 +2,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use core_ids::EntityId;
 use loading_bay_game::{
     admit_stored_project_with_document, decode_game_snapshot, decode_project_document,
     diagnostic_code, encode_game_snapshot, encode_project_document, DoorState, GameRuntime,
     ItemDefinitionId, ProjectSaveMode, ProjectStore, ProjectStoreError, ResolvedAttackAction,
     ResolvedPlayerAction,
 };
+use rusty_engine::core_ids::EntityId;
 
 const CURRENT_PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const LEGACY_PROJECT: &str =

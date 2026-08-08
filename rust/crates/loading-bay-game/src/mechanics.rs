@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
-use core_ids::EntityId;
-use entity_state::{
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::entity_state::{
     ComponentRegistry, EntityAuthoringService, EntityDefinition, EntityState, RelationshipCommand,
 };
-use gameplay_mechanics::{
+use rusty_engine::gameplay_mechanics::{
     register_gameplay_components, ActiveEffectsComponent, CatalogVersion, DamageKindDefinition,
     DamageKindId, DamageKindSelector, DamageResponseDefinition, EffectDefinition,
     EffectDefinitionId, EffectInstanceId, EffectStackingPolicy, EquipmentAssignment,
@@ -49,7 +49,7 @@ pub(crate) struct InventoryRuntime {
     pub stack_order: Vec<ItemDefinitionId>,
     pub weapon_slots: Vec<ItemDefinitionId>,
     pub weapon_entities: BTreeMap<ItemDefinitionId, EntityId>,
-    pub weapon_ready_at: BTreeMap<ItemDefinitionId, core_time::Tick>,
+    pub weapon_ready_at: BTreeMap<ItemDefinitionId, rusty_engine::core_time::Tick>,
     pub last_applied_command_sequence: Option<u64>,
 }
 
@@ -286,13 +286,15 @@ pub(crate) fn attach_restored_health(
                 .armor
                 .get(item)
                 .ok_or_else(|| format!("missing admitted armor effect for {item}"))?;
-            gameplay_mechanics::ActiveEffectInstance::new(
+            rusty_engine::gameplay_mechanics::ActiveEffectInstance::new(
                 armor_effect_instance(),
                 binding.effect.clone(),
-                gameplay_mechanics::SourceInstanceIdentity::Request {
-                    operation: gameplay_mechanics::OperationId::parse("snapshot-migration")
-                        .expect("fixed mechanics identity"),
-                    instance: gameplay_mechanics::SourceInstanceId::parse("armor")
+                rusty_engine::gameplay_mechanics::SourceInstanceIdentity::Request {
+                    operation: rusty_engine::gameplay_mechanics::OperationId::parse(
+                        "snapshot-migration",
+                    )
+                    .expect("fixed mechanics identity"),
+                    instance: rusty_engine::gameplay_mechanics::SourceInstanceId::parse("armor")
                         .expect("fixed mechanics identity"),
                 },
                 1,
@@ -373,7 +375,7 @@ pub(crate) fn attach_inventory(
             .weapon_slots
             .iter()
             .cloned()
-            .map(|item| (item, core_time::Tick::ZERO))
+            .map(|item| (item, rusty_engine::core_time::Tick::ZERO))
             .collect(),
         last_applied_command_sequence: None,
     })
@@ -415,8 +417,8 @@ pub(crate) fn scalar(value: u32) -> Result<MechanicsScalar, String> {
 
 pub(crate) fn mechanics_item_id(
     item: &ItemDefinitionId,
-) -> Result<gameplay_mechanics::ItemDefinitionId, String> {
-    gameplay_mechanics::ItemDefinitionId::parse(item.as_str().replace('/', "."))
+) -> Result<rusty_engine::gameplay_mechanics::ItemDefinitionId, String> {
+    rusty_engine::gameplay_mechanics::ItemDefinitionId::parse(item.as_str().replace('/', "."))
         .map_err(|error| error.to_string())
 }
 
@@ -460,7 +462,7 @@ fn weapon_classification() -> ItemClassificationId {
     ItemClassificationId::parse(WEAPON_CLASSIFICATION).expect("fixed mechanics identity")
 }
 
-fn attach<T: entity_state::EntityComponent>(
+fn attach<T: rusty_engine::entity_state::EntityComponent>(
     state: &mut EntityState,
     entity: EntityId,
     component: T,

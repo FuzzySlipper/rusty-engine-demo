@@ -1,13 +1,13 @@
 mod support;
 
-use core_ids::EntityId;
-use entity_state::{EntityDefinition, EntityLifecycle};
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, diagnostic_code, encode_game_snapshot,
     encode_project_document, GameEntityDefinition, GameEntityDefinitionError, GameRuntime,
     GameSession, InventoryAction, InventoryCommand, InventoryRejection, ItemDefinitionId,
     PickupConfig, PickupDisposition, PickupFact, PickupRejection, PickupState, RuntimeError,
 };
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::entity_state::{EntityDefinition, EntityLifecycle};
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const PLAYER: EntityId = EntityId::new(1);
@@ -478,7 +478,7 @@ fn strip_project_weapon_item_fields(project: &mut serde_json::Value) {
 #[test]
 fn pickup_trigger_quota_is_rejected_before_runtime_construction_without_panicking() {
     let item = ItemDefinitionId::parse("ammo/quota-probe").unwrap();
-    let definitions = (0..=engine_spatial::MAX_TRIGGER_DEFINITIONS)
+    let definitions = (0..=rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS)
         .map(|index| {
             let entity = EntityId::new(index as u64 + 1);
             GameEntityDefinition::new(EntityDefinition::new(entity, format!("pickup-{index}")))
@@ -489,8 +489,8 @@ fn pickup_trigger_quota_is_rejected_before_runtime_construction_without_panickin
     assert!(matches!(
         GameSession::from_definitions(definitions).unwrap_err(),
         GameEntityDefinitionError::TooManyPickups { count, limit }
-            if count == engine_spatial::MAX_TRIGGER_DEFINITIONS + 1
-                && limit == engine_spatial::MAX_TRIGGER_DEFINITIONS
+            if count == rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS + 1
+                && limit == rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS
     ));
 }
 
@@ -501,15 +501,15 @@ fn snapshot_pickup_trigger_quota_has_a_deterministic_typed_rejection() {
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     let template = snapshot["pickups"][0].clone();
     let pickups = snapshot["pickups"].as_array_mut().unwrap();
-    while pickups.len() <= engine_spatial::MAX_TRIGGER_DEFINITIONS {
+    while pickups.len() <= rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS {
         pickups.push(template.clone());
     }
 
     assert!(matches!(
         decode_game_snapshot(&snapshot.to_string()).unwrap_err(),
         loading_bay_game::GameSnapshotError::TooManyPickups { count, limit }
-            if count == engine_spatial::MAX_TRIGGER_DEFINITIONS + 1
-                && limit == engine_spatial::MAX_TRIGGER_DEFINITIONS
+            if count == rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS + 1
+                && limit == rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS
     ));
 }
 

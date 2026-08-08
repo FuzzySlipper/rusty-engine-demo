@@ -7,10 +7,5 @@
     "test": "node --test src/*.test.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
-  "dependencies": {
-    "@rusty-engine/render-contracts": "github:FuzzySlipper/rusty-engine#5019ade33994bba02e8f0f7112fdfd8cd7e0c730&path:render/packages/render-contracts",
-    "@rusty-engine/render-projection": "github:FuzzySlipper/rusty-engine#5019ade33994bba02e8f0f7112fdfd8cd7e0c730&path:render/packages/render-projection",
-    "@rusty-engine/renderer-host": "github:FuzzySlipper/rusty-engine#5019ade33994bba02e8f0f7112fdfd8cd7e0c730&path:render/packages/renderer-host",
-    "@rusty-engine/renderer-three": "github:FuzzySlipper/rusty-engine#5019ade33994bba02e8f0f7112fdfd8cd7e0c730&path:render/packages/renderer-three"
-  }
+  "dependencies": {}
 }

@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use core_ids::EntityId;
 use loading_bay_game::{ExtractionBeaconFact, ExtractionBeaconState, GameRuntime};
+use rusty_engine::core_ids::EntityId;
 
 const ACTOR: EntityId = EntityId::new(1);
 const BEACON: EntityId = EntityId::new(7);

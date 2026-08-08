@@ -1,6 +1,6 @@
-use core_ids::EntityId;
-use core_time::Tick;
-use entity_state::EntityView;
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_time::Tick;
+use rusty_engine::entity_state::EntityView;
 
 use crate::runtime::RuntimeError;
 use crate::session::GameSession;

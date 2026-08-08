@@ -1,11 +1,11 @@
-use core_ids::EntityId;
-use core_math::Vec3;
-use entity_state::EntityDefinition;
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, encode_game_snapshot, encode_project_document,
     ExtractionBeaconConfig, ExtractionBeaconFact, ExtractionBeaconState, GameEntityDefinition,
     GameRuntime, GameSession, RuntimeError,
 };
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::entity_state::EntityDefinition;
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const ACTOR: EntityId = EntityId::new(1);

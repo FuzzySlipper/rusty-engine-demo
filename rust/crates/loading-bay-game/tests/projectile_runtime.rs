@@ -1,9 +1,9 @@
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, CombatFact, GameEvent, GameLoopFact, GameRuntime,
     InventoryAction, InventoryCommand, ItemDefinitionId, LoadingBayGameLoop, ResolvedAttackAction,
     RuntimeError, VitalityFact, WeaponAttackMode,
 };
+use rusty_engine::core_ids::EntityId;
 use serde_json::Value;
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");

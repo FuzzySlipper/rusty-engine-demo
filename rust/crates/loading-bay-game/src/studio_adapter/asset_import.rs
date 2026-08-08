@@ -2,8 +2,8 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
-use asset_catalog::StoredAssetCatalog;
-use asset_import::{
+use rusty_engine::asset_catalog::StoredAssetCatalog;
+use rusty_engine::asset_import::{
     admit_gltf_source, decode_import_manifest, decode_sidecar, encode_import_manifest,
     encode_sidecar, gltf_relative_resource_uris, import_animated_glb_asset, import_text,
     init_metadata, plan_animated_glb_import, plan_animated_gltf_import, plan_import, reconcile,
@@ -12,7 +12,7 @@ use asset_import::{
     IMPORTER_VERSION, MAX_GLTF_RESOURCE_BYTES, MAX_GLTF_RESOURCE_COUNT,
     MAX_GLTF_TOTAL_RESOURCE_BYTES, MAX_SOURCE_BYTES,
 };
-use voxel_convert::source_sha256;
+use rusty_engine::voxel_convert::source_sha256;
 
 use crate::{
     StoredAsset, StoredAssetCatalogMetadata, StoredAssetImport, StoredImportSource, StoredProject,
@@ -51,7 +51,7 @@ enum PreparedImportedAssets {
 }
 
 impl PreparedImportedAssets {
-    fn catalog(&self) -> &asset_catalog::AssetCatalog {
+    fn catalog(&self) -> &rusty_engine::asset_catalog::AssetCatalog {
         match self {
             Self::Static(imported) => &imported.catalog,
             Self::Animated(imported) => &imported.catalog,
@@ -152,7 +152,7 @@ fn prepare(
     loaded: LoadedImportSource,
     importer_settings: ImportSettings,
     settings: StudioAssetImportSettings,
-    prior: Option<asset_import::ImportManifest>,
+    prior: Option<rusty_engine::asset_import::ImportManifest>,
     sidecar: SidecarMetadata,
     prior_generated_asset_ids: Vec<String>,
 ) -> Result<PreparedAssetImport, AdapterRejection> {

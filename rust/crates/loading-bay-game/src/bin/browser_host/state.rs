@@ -1,8 +1,5 @@
 //! Product-specific static resources and dynamic readouts for the browser shell.
 
-use core_ids::EntityId;
-use core_math::Vec3;
-use entity_state::EntityTransform;
 use loading_bay_game::{
     DoorState, EncounterState, EnemyAttackKind, EnemyCombatPosture, EnemyState,
     ExtractionBeaconState, GameRuntime, ItemKind, LevelExitState, NavigationState,
@@ -10,7 +7,10 @@ use loading_bay_game::{
     SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretRegionState, StoredLight,
     StoredVisualBinding, VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
 };
-use render_model::{
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::entity_state::EntityTransform;
+use rusty_engine::render_model::{
     AnimatedMeshAsset, MaterialUvStrategy, RenderFrameDiff, RenderMaterialDescriptor,
     StaticMeshAsset,
 };

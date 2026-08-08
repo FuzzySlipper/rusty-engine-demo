@@ -1,12 +1,12 @@
 mod support;
 
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, diagnostic_code, encode_game_snapshot, CombatFact, EncounterState,
     EnemyAttackKind, EnemyDropState, EnemyState, GameEvent, GameLoopFact, GameRuntime,
     LoadingBayGameLoop, PickupFact, PickupState, ResolvedAttackAction, RuntimeError,
     MAX_EVENT_WAVE,
 };
+use rusty_engine::core_ids::EntityId;
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const PLAYER: EntityId = EntityId::new(1);

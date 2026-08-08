@@ -1,13 +1,13 @@
 use std::fs;
 use std::path::PathBuf;
 
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, encode_game_snapshot, GameRuntime,
     InventoryAction, InventoryCommand, ItemDefinitionId, ResolvedPlayerAction, SaveGameStore,
     SaveLoadRequest, SaveProjectIdentity, SaveSlotId, SaveWriteRequest, VoxelEdit,
     VoxelEditTransaction, VoxelSourceRevision,
 };
+use rusty_engine::core_ids::EntityId;
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const PLAYER: EntityId = EntityId::new(1);

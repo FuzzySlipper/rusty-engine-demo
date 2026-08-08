@@ -9,13 +9,12 @@ method bridge, behavior graph, or second gameplay/render loop.
 
 ```text
 keyboard / pointer
-  -> browser input capture and bounded LoadingBayGameSession command
+  -> native Engine adapter readout or browser semantic input capture
   -> Rust LoadingBayGameLoop fixed tick
   -> named Rust service mutates a candidate GameSession atomically
   -> typed facts plus immutable runtime snapshot/projection
-  -> bounded WebSocket full/delta update
-  -> Angular view models and RuntimeProjectionAdapter
-  -> one shared auto-started RendererSurface and disposable feedback hosts
+  -> Engine-owned Rust frame/input/pick operations for the rendered native product
+     or bounded WebSocket full/delta update for the browser HUD/control shell
 ```
 
 Ownership and failure behavior are deliberate:
@@ -27,8 +26,8 @@ Ownership and failure behavior are deliberate:
 | Tick order and live gameplay state         | `LoadingBayGameLoop`, `GameRuntime`, and named Rust services                     | Mutate a candidate session and publish only after every checked phase succeeds                   |
 | Save/project persistence                   | Rust project store and save store                                                | Authored projects and runtime snapshots stay distinct; replacement is fail-atomic                |
 | Transport                                  | game-specific Rust host plus `LoadingBayGameSession`                             | No mutation retry; gaps resync, transport loss reconnects, queues reject visibly at their bounds |
-| HUD and retained world projection          | Angular components and `RuntimeProjectionAdapter`                                | Immutable projection only; rejection never creates local inventory, combat, or progression state |
-| Rendering and effects                      | exact-pinned shared Rusty Engine surface/hosts                                   | Presentation may be dropped or reset without changing gameplay                                   |
+| HUD and browser readout                    | Angular components and browser-shell view models                                 | Immutable readout only; rejection never creates local inventory, combat, or progression state    |
+| Rendering and effects                      | Engine-owned Rust host adapter and private renderer artifact                     | Presentation may be dropped or reset without changing gameplay                                   |
 
 Before changing code, read [the product architecture](fps-product-architecture.md), [the session
 protocol](game-session-protocol.md), and the Den document
@@ -52,7 +51,7 @@ inert item whose existing `ItemKind` already expresses its meaning.
 
 Rust admission is in `stored_project.rs` and `project_admission.rs`; Loading Bay item identities,
 kinds, definitions, slot/cooldown policy, and command translation are in `inventory.rs`.
-`mechanics.rs` admits those definitions into the exact-pinned Engine gameplay-mechanics catalog,
+`mechanics.rs` admits those definitions through the rolling Engine facade's gameplay-mechanics catalog,
 whose components and named services own live quantities, containment, equipment, tracks, effects,
 damage, and healing. Pickup transactions remain in `pickup.rs`. Add a new Rust item kind only when
 the item has a genuinely new game-owned transaction. Do not encode behavior in an asset name or a
@@ -73,12 +72,12 @@ Use an existing explicit attack mode (`hitscan`, bounded `spread`, or `automatic
    identity.
 2. Add the weapon identity to the player's authored `weaponSlots`; add a pickup and starter ammo
    only if the level calls for it.
-3. Add an original renderer-neutral silhouette in
-   `ts/packages/browser-shell/src/weapon-viewmodel.ts` and disposable cue mapping in
-   `presentation-feedback.ts`.
+3. Add the weapon's renderer-neutral retained description in the downstream Rust presentation
+   owner used by `native-host`; keep semantic weapon identity and action consequences in gameplay
+   Rust.
 4. Prove definition/ammo/cooldown/selection/snapshot behavior in
-   `weapon_inventory_runtime.rs` and `game_loop.rs`; prove descriptor/reset behavior in
-   `weapon-viewmodel.test.ts` and real selection/fire/dry-fire in Chromium.
+   `weapon_inventory_runtime.rs` and `game_loop.rs`; prove frame/resource/reset behavior through
+   `pnpm run verify:native` and browser HUD selection/fire/dry-fire through the session shell.
 5. Save/reload the canonical project, run `pnpm run check:content`, and update provenance.
 
 `combat.rs` and the fixed combat phase remain the only hit/ammo/damage authority. A new firing

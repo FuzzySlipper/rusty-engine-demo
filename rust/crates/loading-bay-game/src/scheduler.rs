@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use core_ids::EntityId;
-use core_time::Tick;
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_time::Tick;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ScheduledIntentKind {

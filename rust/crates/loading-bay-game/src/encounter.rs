@@ -1,4 +1,4 @@
-use core_ids::EntityId;
+use rusty_engine::core_ids::EntityId;
 
 use crate::combat::EnemyState;
 use crate::runtime_records::GameEvent;

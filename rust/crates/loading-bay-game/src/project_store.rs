@@ -9,7 +9,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 
-use content_store::ContentHash;
+use rusty_engine::content_store::ContentHash;
 
 use crate::project_admission::AdmittedStoredProject;
 use crate::project_codec::{

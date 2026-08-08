@@ -1,4 +1,4 @@
-use core_ids::EntityId;
+use rusty_engine::core_ids::EntityId;
 
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;

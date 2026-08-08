@@ -58,6 +58,17 @@ if (bundledRuntimeSurface.length > 0) {
 const proofDirectory = mkdtempSync(
   join(tmpdir(), "rusty-engine-browser-smoke-"),
 );
+if (process.env.RUSTY_BROWSER_CONTROL_ONLY === "1") {
+  try {
+    await runBrowserControlShell();
+    console.log(
+      "browser control smoke passed: authoritative Rust session + HUD/control shell + native renderer boundary",
+    );
+  } finally {
+    rmSync(proofDirectory, { recursive: true, force: true });
+  }
+  process.exit(0);
+}
 try {
   const persistedProject = resolve(proofDirectory, "loading-bay.project.json");
   const convertedProject = resolve(
@@ -152,6 +163,83 @@ try {
   );
 } finally {
   rmSync(proofDirectory, { recursive: true, force: true });
+}
+
+async function runBrowserControlShell() {
+  const project = resolve(
+    repoRoot,
+    "content/projects/loading-bay.project.json",
+  );
+  const running = await launchHost(project);
+  try {
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
+    const beforeResponse = await fetch(`http://${running.address}/api/state`);
+    const before = await beforeResponse.json();
+    if (
+      !beforeResponse.ok ||
+      typeof before.entityRevision !== "number" ||
+      before.projectId !== "loading-bay"
+    ) {
+      throw new Error(
+        `browser control baseline was invalid\n${JSON.stringify(before)}`,
+      );
+    }
+    const result = await runChromiumSmoke(
+      `http://${running.address}/#/game?mode=new`,
+      `document.body?.dataset.rendererLifecycle === "native-host" &&
+        document.querySelector("#viewport")?.dataset.rendererOwner === "rust" &&
+        document.querySelector("#viewport")?.dataset.rendererBackend === "rusty-engine-native-webview"`,
+      30_000,
+      {
+        interactiveSetup: async (client) => {
+          await waitForCdp(
+            client,
+            `document.body?.dataset.rendererLifecycle === "native-host"`,
+            "connected browser control shell",
+          );
+          await delay(1_000);
+          await client.send("Runtime.evaluate", {
+            expression:
+              'globalThis.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" }))',
+          });
+          await delay(300);
+          await client.send("Runtime.evaluate", {
+            expression:
+              'globalThis.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" }))',
+          });
+          await delay(250);
+        },
+      },
+    );
+    if (result.code !== 0) {
+      throw new Error(
+        `browser control shell did not expose the native boundary\n${result.stderr.slice(-4_000)}`,
+      );
+    }
+    for (const expected of [
+      'data-renderer-lifecycle="native-host"',
+      'data-renderer-owner="rust"',
+      'data-renderer-backend="rusty-engine-native-webview"',
+    ]) {
+      if (!result.stdout.includes(expected)) {
+        throw new Error(`browser control shell omitted ${expected}`);
+      }
+    }
+    if (
+      result.stdout.includes("@rusty-engine/renderer-") ||
+      result.stdout.includes('data-renderer-lifecycle="mounted"')
+    ) {
+      throw new Error(
+        "browser control shell claimed downstream renderer ownership",
+      );
+    }
+  } finally {
+    await stopHost(running.host);
+  }
 }
 
 function durableBrowserAuthority(state) {

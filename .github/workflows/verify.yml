@@ -36,6 +36,10 @@ jobs:
           sudo apt-get install --no-install-recommends -y \
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
+            libxkbcommon-x11-0 \
+            ripgrep \
+            xvfb \
+            xdotool \
             librsvg2-dev
 
       - name: Install dependencies

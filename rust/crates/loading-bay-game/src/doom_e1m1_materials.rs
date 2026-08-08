@@ -25,15 +25,15 @@ use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
-use asset_catalog::{
+use rusty_engine::asset_catalog::{
     AssetCatalog, CatalogEntry, MaterialAuthority, MaterialDefinition, MaterialStyle, Rgba,
     StructuralClass, TextureDefinition, TextureFilter, TextureWrap, UvStrategy, VoxelAlphaMode,
     VoxelSurfaceBinding, VoxelSurfaceMapping,
 };
-use core_assets::{AssetHash, AssetId, AssetReference, AssetVersionReq};
+use rusty_engine::core_assets::{AssetHash, AssetId, AssetReference, AssetVersionReq};
 use serde::{Deserialize, Serialize};
 
-use asset_catalog::{
+use rusty_engine::asset_catalog::{
     StoredAssetReference, StoredMaterialAuthority, StoredMaterialDefinition, StoredMaterialStyle,
     StoredVoxelAlphaMode, StoredVoxelSurfaceBinding, StoredVoxelSurfaceMapping,
 };
@@ -293,7 +293,7 @@ fn build_catalog_from_bindings(bindings: &[DoomMaterialBinding]) -> Result<Asset
         );
     }
     let catalog = AssetCatalog::from_entries(entries);
-    let report = asset_catalog::validate_catalog(&catalog);
+    let report = rusty_engine::asset_catalog::validate_catalog(&catalog);
     if !report.is_ok() {
         let codes: Vec<String> = report.errors.iter().map(|e| e.code().to_string()).collect();
         return Err(format!("catalog validation failed: {}", codes.join(", ")));
@@ -363,7 +363,7 @@ fn build_stored_assets_from_bindings(
     for binding in bindings {
         let texture_ref = StoredAssetReference {
             id: binding.texture_asset_id.clone(),
-            version: asset_catalog::StoredAssetVersionRequirement::Exact { value: 1 },
+            version: rusty_engine::asset_catalog::StoredAssetVersionRequirement::Exact { value: 1 },
             hash: Some(format!("sha256:{}", binding.png_sha256)),
         };
         let voxel_surface = StoredVoxelSurfaceBinding {
@@ -437,7 +437,7 @@ fn build_stored_assets_from_bindings(
 /// (`project.missingAsset`, `project.invalidMaterial`).
 pub fn validate_doom_palette_closure(
     project: &StoredProject,
-    palette: &[voxel_asset::VoxelAssetMaterialBinding],
+    palette: &[rusty_engine::voxel_asset::VoxelAssetMaterialBinding],
 ) -> Result<(), StoredProjectError> {
     let bindings = load_doom_manifest()
         .map_err(|msg| StoredProjectError::new(diagnostic_code::INVALID_MATERIAL, "assets", msg))?;
@@ -592,7 +592,7 @@ mod tests {
     #[test]
     fn voxel_doom_catalog_validates() {
         let catalog = doom_asset_catalog().unwrap();
-        let report = asset_catalog::validate_catalog(&catalog);
+        let report = rusty_engine::asset_catalog::validate_catalog(&catalog);
         assert!(report.is_ok(), "catalog should be valid: {report:?}");
         assert_eq!(catalog.entries.len(), 108); // 54 textures + 54 materials
     }
@@ -622,7 +622,7 @@ mod tests {
             scenes: Vec::new(),
         };
         // Add a minimal palette referencing the missing material
-        let palette = vec![voxel_asset::VoxelAssetMaterialBinding {
+        let palette = vec![rusty_engine::voxel_asset::VoxelAssetMaterialBinding {
             material_slot: 1,
             material_asset_id: "material/doom-flat-ceil3-5".to_string(),
             display_name: None,
@@ -669,16 +669,16 @@ mod tests {
             .map(|a| a.id.clone())
             .collect();
         materials.sort();
-        let palette: Vec<voxel_asset::VoxelAssetMaterialBinding> = materials
+        let palette: Vec<rusty_engine::voxel_asset::VoxelAssetMaterialBinding> = materials
             .into_iter()
             .enumerate()
-            .map(
-                |(index, material_asset_id)| voxel_asset::VoxelAssetMaterialBinding {
+            .map(|(index, material_asset_id)| {
+                rusty_engine::voxel_asset::VoxelAssetMaterialBinding {
                     material_slot: (index + 1) as u16,
                     material_asset_id,
                     display_name: None,
-                },
-            )
+                }
+            })
             .collect();
         assert_eq!(palette.len(), 54);
         let result = validate_doom_palette_closure(&project, &palette);

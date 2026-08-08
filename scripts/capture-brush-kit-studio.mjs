@@ -47,11 +47,11 @@ if (typeof PROJECT_HASH !== "string") {
 }
 const ENGINE_REVISION = (JSON.parse(
   await readFile(resolve(ROOT, "package.json"), "utf8"),
-).dependencies["@rusty-engine/renderer-host"].match(/#([0-9a-f]{40})&/u) ??
+).dependencies["@rusty-engine/studio-viewport"].match(/#([0-9a-f]{40})&/u) ??
   [])[1];
 if (ENGINE_REVISION === undefined) {
   throw new Error(
-    "renderer-host dependency is not pinned to an exact revision",
+    "studio-viewport dependency is not pinned to an exact revision",
   );
 }
 const PORT = 9436;

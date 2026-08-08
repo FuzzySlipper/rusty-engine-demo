@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
-use core_ids::EntityId;
+use rusty_engine::core_ids::EntityId;
 use serde::{Deserialize, Serialize};
 
 use crate::{

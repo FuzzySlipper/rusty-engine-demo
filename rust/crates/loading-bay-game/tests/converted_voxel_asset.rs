@@ -2,7 +2,7 @@ use loading_bay_game::{
     decode_project_document, diagnostic_code, encode_project_document, GameRuntime, RuntimeError,
     VoxelEdit, VoxelEditTransaction, VoxelProjectionRevisions,
 };
-use voxel_asset::{decode_voxel_asset, VoxelAsset};
+use rusty_engine::voxel_asset::{decode_voxel_asset, VoxelAsset};
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const ASSET: &str = include_str!("../../../../content/assets/kenney-wall-a.voxel.json");

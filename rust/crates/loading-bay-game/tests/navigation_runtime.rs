@@ -1,7 +1,7 @@
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, GameRuntime, NavigationFact, NavigationState,
 };
+use rusty_engine::core_ids::EntityId;
 use serde_json::{json, Value};
 
 const PROJECT: &str = include_str!("../../../../content/generated/encounter-gate.project.json");
@@ -200,7 +200,7 @@ fn one_bounded_phase_advances_many_agents_without_scattered_updates() {
     assert_eq!(receipt.motion.moved_bodies, 32);
 }
 
-fn navigator_position(runtime: &GameRuntime) -> core_math::Vec3 {
+fn navigator_position(runtime: &GameRuntime) -> rusty_engine::core_math::Vec3 {
     runtime
         .session()
         .navigation(NAVIGATOR)

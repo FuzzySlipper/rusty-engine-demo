@@ -1,8 +1,8 @@
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, decode_stored_project, diagnostic_code, encode_game_snapshot,
     GameRuntime, ProjectDiagnostic, ResolvedPlayerAction, RuntimeError, StoredItemKind,
 };
+use rusty_engine::core_ids::EntityId;
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 
@@ -39,7 +39,7 @@ fn studio_authored_project_is_static_typed_multi_family_content() {
         .all(
             |asset| asset.static_mesh.as_ref().is_some_and(|mesh| matches!(
                 mesh.collision,
-                render_model::MeshCollisionPolicy::VisualOnly
+                rusty_engine::render_model::MeshCollisionPolicy::VisualOnly
             ))
         ));
     assert_eq!(project.scenes.len(), 1);

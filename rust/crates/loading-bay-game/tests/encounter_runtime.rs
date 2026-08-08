@@ -1,9 +1,9 @@
-use core_ids::EntityId;
-use core_math::Vec3;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, DoorState, EncounterState, EnemyState, GameEvent,
     GameRuntime, ProjectContentError,
 };
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
 
 const ENCOUNTER_PROJECT: &str =
     include_str!("../../../../content/generated/encounter-gate.project.json");

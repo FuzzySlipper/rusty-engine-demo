@@ -1,7 +1,7 @@
-use core_ids::EntityId;
-use core_math::Vec3;
-use entity_state::{EntityCommand, EntityCommandBatch};
-use gameplay_mechanics::{
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::entity_state::{EntityCommand, EntityCommandBatch};
+use rusty_engine::gameplay_mechanics::{
     DamagePart, DamageRequest, DamageService as MechanicsDamageService, EffectRemovalRequest,
     EffectReplaceRequest, EffectService, OperationId, SourceInstanceId, SourceInstanceIdentity,
     TrackMutationRequest, TrackService,
@@ -197,7 +197,7 @@ pub enum VitalityRejection {
         player: EntityId,
     },
     Inventory(InventoryRejection),
-    EntityMutation(entity_state::BatchRejection),
+    EntityMutation(rusty_engine::entity_state::BatchRejection),
     EnemyDrop(EnemyDropRejection),
     Mechanics {
         reason: String,
@@ -458,7 +458,7 @@ impl DamageService {
                 track: crate::mechanics::armor_track(),
                 amount: crate::mechanics::scalar(protection)
                     .map_err(|reason| VitalityRejection::Mechanics { reason })?,
-                kind: gameplay_mechanics::TrackAdjustmentKind::Restore,
+                kind: rusty_engine::gameplay_mechanics::TrackAdjustmentKind::Restore,
                 expected_revision: None,
             },
         )
@@ -550,7 +550,7 @@ impl DamageService {
                 track: crate::mechanics::health_track(),
                 amount: crate::mechanics::scalar(restore_health)
                     .map_err(|reason| VitalityRejection::Mechanics { reason })?,
-                kind: gameplay_mechanics::TrackAdjustmentKind::Restore,
+                kind: rusty_engine::gameplay_mechanics::TrackAdjustmentKind::Restore,
                 expected_revision: None,
             },
         )
@@ -615,7 +615,9 @@ fn request_source(
     })
 }
 
-fn mechanics_rejection(error: gameplay_mechanics::MechanicsError) -> VitalityRejection {
+fn mechanics_rejection(
+    error: rusty_engine::gameplay_mechanics::MechanicsError,
+) -> VitalityRejection {
     VitalityRejection::Mechanics {
         reason: error.to_string(),
     }

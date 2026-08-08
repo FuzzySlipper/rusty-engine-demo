@@ -1,26 +1,26 @@
-use asset_catalog::StoredMaterialDefinition;
-use engine_inspector::{
+use rusty_engine::asset_catalog::StoredMaterialDefinition;
+use rusty_engine::engine_inspector::{
     CatalogInspection, DiagnosticSet, EntityStateInspection, NamedCount, PersistenceInspection,
     SceneInspection, VoxelAssetInspection, VoxelStateInspection,
 };
-use engine_spatial::{VoxelEditDelta, VoxelPrimitiveRequest, VoxelTemplateRequest};
-use render_model::{RenderFrameDiff, Transform};
-use serde::{Deserialize, Serialize};
-use voxel_annotation::{
+use rusty_engine::engine_spatial::{VoxelEditDelta, VoxelPrimitiveRequest, VoxelTemplateRequest};
+use rusty_engine::render_model::{RenderFrameDiff, Transform};
+use rusty_engine::voxel_annotation::{
     VoxelAnnotationEditTransaction, VoxelAnnotationLayerDraft, VoxelAnnotationQuery,
     VoxelAnnotationRegionReadout,
 };
-use voxel_asset::{
+use rusty_engine::voxel_asset::{
     VoxelAssetBounds, VoxelAssetMaterialBinding, VoxelAssetMaterialMapping,
     VoxelObjectProvenanceKind, VoxelObjectSourceClipProvenance,
 };
-use voxel_convert::{
+use rusty_engine::voxel_convert::{
     ConversionPlanSettings, VoxelConversionPlan, VoxelConversionPreview, VoxelModelInfoReadout,
     VoxelModelWindowReadout, VoxelModelWindowRequest, VoxelObjectClipConversionRequest,
     VoxelObjectConversionPlan, VoxelObjectConversionPreview, VoxelObjectConversionSettings,
     VoxelObjectFrameSelection,
 };
-use voxel_object_runtime::{VoxelObjectLoopMode, VoxelObjectPlaybackRate};
+use rusty_engine::voxel_object_runtime::{VoxelObjectLoopMode, VoxelObjectPlaybackRate};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     StoredCollision, StoredImportSource, StoredKinematic, StoredLight, StoredVoxelInstance,
@@ -1181,10 +1181,10 @@ pub struct EmptyVoxelSurfaceAuthoringReadout {
 #[serde(rename_all = "camelCase")]
 pub struct VoxelObjectSourceInspection {
     pub source_kind: StudioVoxelObjectSourceKind,
-    pub source: voxel_convert::MeshSourceRef,
+    pub source: rusty_engine::voxel_convert::MeshSourceRef,
     pub source_path: String,
     pub source_byte_count: u64,
-    pub metadata: voxel_convert::MeshSourceMetadata,
+    pub metadata: rusty_engine::voxel_convert::MeshSourceMetadata,
     pub clips: Vec<VoxelObjectSourceClipReadout>,
     pub diagnostics: Vec<VoxelObjectSourceDiagnostic>,
 }

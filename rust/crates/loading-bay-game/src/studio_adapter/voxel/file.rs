@@ -1,4 +1,4 @@
-use voxel_asset::{
+use rusty_engine::voxel_asset::{
     decode_voxel_asset, encode_voxel_asset, with_computed_content_hash, MAX_ARTIFACT_BYTES,
 };
 

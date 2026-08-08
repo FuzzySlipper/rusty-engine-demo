@@ -6,12 +6,12 @@ components, services, project schema, scheduling, persistence, authored content,
 and user-facing acceptance. Rusty Engine owns reusable entity, spatial, collision, navigation,
 voxel, mesh, asset, and conversion mechanisms.
 
-The Rust game vertical is named `loading-bay-game`. Its Rust and browser Engine dependencies are
-public Git dependencies pinned to reviewed provider revision
-`0e0c49442d0c3d876a1336a5a829087f6e2314db`; a sibling checkout is not required. The demo owns its
-Angular/Nx browser shell, route-scoped input lifecycle, and semantic projection adapter, while Rusty
-Engine owns the shared render contracts, retained projection, Three/WebGL backend, surface host,
-audio, particle, billboard, and telemetry hosts.
+The Rust game vertical is named `loading-bay-game`. It consumes one rolling-current public
+`rusty-engine` facade dependency, with the exact resolved SHA recorded in the lock and
+`engine-source.json`; a sibling checkout is not required. The demo owns its Angular/Nx browser
+control/HUD shell and the native product window, timing, semantic input mapping, resource policy,
+and gameplay consequences. Rusty Engine owns retained rendering, the private TypeScript boundary
+and artifact, and renderer lifecycle behind a named Rust host adapter.
 
 The demo-owned `ExtractionBeacon` is the first post-extraction gameplay addition. Its authored
 configuration and live state remain on the beacon entity, `ExtractionBeaconService` owns the
@@ -41,6 +41,13 @@ pnpm run verify:tauri       # native binary, real WebKit smoke, and process life
 pnpm run build:tauri        # deb + AppImage on the documented Ubuntu baseline
 ```
 
+The directly rendered Rust-native product and its real X11 proof are:
+
+```bash
+pnpm run native
+pnpm run verify:native
+```
+
 The directly runnable binary is `target/release/loading-bay-desktop`. Its sidecar and resource
 tree are intentionally separate build outputs and must stay beside it in the layout documented in
 [docs/tauri-desktop.md](docs/tauri-desktop.md). The installable Linux bundles carry that layout
@@ -51,12 +58,10 @@ install ...`; status, atomic rollback, ordinary uninstall with save preservation
 purge, desktop entry, and the installed-product certification command are documented in
 [docs/tauri-desktop.md](docs/tauri-desktop.md#local-deployment).
 
-The root route is a full-viewport FPS surface with a disposable HUD projection. Its diagnostics
-drawer exposes only concrete Rust host actions. Renderer-owned frame cadence and synchronous
-backend submission time are shown separately from server tick, snapshot cadence, payload, input,
-and command-RTT counters; backend submission is not GPU timing. The hash-routed diagnostics screen
-is also the browser lifecycle proof: leaving the game route releases the shared renderer before
-another route can mount it.
+The root browser route is a disposable HUD/control projection over the Rust session. Its
+diagnostics drawer exposes only concrete Rust host actions and transport counters. Rendered world,
+resource, input, pick, resize, and lifecycle acceptance now belongs to `native-host`; browser route
+changes cannot acquire or release renderer authority.
 
 For a managed LAN-facing session, use the repository manifest:
 
@@ -75,8 +80,9 @@ The complete product gate is:
 pnpm run verify
 ```
 
-It checks package and repository boundaries, TypeScript content and presentation tests, the exact
-Engine Git resolution, the complete Rust suite and Clippy, and a real Chromium/Three/WebGL flow.
+It checks package and repository boundaries, TypeScript content and browser-shell tests, rolling
+Engine freshness, the complete Rust suite and Clippy, the Engine-owned native renderer path, and
+the retained browser product flows that remain in scope.
 For Rust-only iteration, `./scripts/verify-rust.sh` remains available.
 
 For focused diagnosis:

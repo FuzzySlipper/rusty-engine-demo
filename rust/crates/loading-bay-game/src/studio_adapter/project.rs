@@ -1,30 +1,30 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use asset_catalog::{
+use rusty_engine::asset_catalog::{
     decode_catalog, encode_catalog, generate_lock, validate_catalog, AssetCatalog,
     StoredAssetCatalog, StoredAssetReference, StoredAssetVersionRequirement, StoredCatalogEntry,
     UvStrategy,
 };
-use authored_scene::{
+use rusty_engine::authored_scene::{
     composed_world_transforms, encode_scene, validate_scene, AvailableSceneAsset,
     FlatSceneDocument, NodeMetadata, SceneAdmissionPlan, SceneEditCommand, SceneEditService,
     SceneLight, SceneLightShadowIntent, SceneMetadata, SceneNode, SceneNodeKind, SceneNodeRecord,
     SceneResolutionContext, SceneTransform, CURRENT_SCENE_SCHEMA_VERSION,
 };
-use content_store::{
+use rusty_engine::content_store::{
     admit_source_batch, encode_manifest, ArtifactRole, ContentArtifact, ContentBody, ContentHash,
     ContentManifest, ContentSourceBatch, ContentStoreIdentity, ContentWrite, ContentWriteCandidate,
     ContentWriteSetDraft,
 };
-use core_assets::{AssetId, AssetKind, AssetReference, AssetVersionReq};
-use core_ids::{SceneId, SceneNodeId};
-use core_math::Vec3;
-use engine_inspector::{
+use rusty_engine::core_assets::{AssetId, AssetKind, AssetReference, AssetVersionReq};
+use rusty_engine::core_ids::{SceneId, SceneNodeId};
+use rusty_engine::core_math::Vec3;
+use rusty_engine::engine_inspector::{
     inspect_catalog, inspect_content_manifest, inspect_entity_state, inspect_scene,
     inspect_voxel_state, NamedCount,
 };
-use entity_state::{encode_durable_snapshot, EntityState, EntityTransform, Quat};
-use render_model::{
+use rusty_engine::entity_state::{encode_durable_snapshot, EntityState, EntityTransform, Quat};
+use rusty_engine::render_model::{
     AnimatedMeshPlaybackCommand, AnimationLoopMode, LightDescriptor, LightShadowIntent,
     MaterialUvStrategy, MeshAttribute, MeshAttributeKind, MeshAttributeName, MeshBoundsDescriptor,
     MeshBufferLayout, MeshCollisionPolicy, MeshGroupDescriptor, MeshIndexWidth, MeshMaterialSlot,
@@ -32,14 +32,14 @@ use render_model::{
     RenderFrameDiff, RenderMaterialDescriptor, RenderMetadata, ResolvedRenderAsset,
     StaticMeshAsset, Transform,
 };
-use render_projection::{
+use rusty_engine::render_projection::{
     AppearanceLight, AppearanceScene, EntityProjectionDiagnostic, EntityProjectionReadout,
     EntityRenderProjector, ProjectionAvailability, ProjectionMode, SceneAppearanceProjector,
     VoxelObjectProjectionInstance, VoxelObjectRenderProjector,
 };
-use voxel_asset::{VoxelFrame, VoxelObjectAsset};
-use voxel_convert::VoxelObjectFrameSelection;
-use voxel_object_runtime::{admit_voxel_object, VoxelObjectRuntimeLimits};
+use rusty_engine::voxel_asset::{VoxelFrame, VoxelObjectAsset};
+use rusty_engine::voxel_convert::VoxelObjectFrameSelection;
+use rusty_engine::voxel_object_runtime::{admit_voxel_object, VoxelObjectRuntimeLimits};
 
 use crate::stored_project::validate_voxel_object_aggregate_budget;
 use crate::weapon_authoring::loading_bay_weapon_owner_entity_ids;
@@ -1910,7 +1910,7 @@ fn append_hierarchy_node(
     depth: u32,
     world: &BTreeMap<SceneNodeId, EntityTransform>,
     child_orders: &BTreeMap<SceneNodeId, u32>,
-    entities: &BTreeMap<SceneNodeId, core_ids::EntityId>,
+    entities: &BTreeMap<SceneNodeId, rusty_engine::core_ids::EntityId>,
     nodes: &mut Vec<SceneHierarchyNodeReadout>,
 ) {
     let display_order = nodes.len() as u32;

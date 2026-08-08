@@ -2,12 +2,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use content_store::ContentHash;
 use loading_bay_game::{
     admit_stored_project_with_document, decode_project_document, encode_project_document,
     AdmittedStoredProject, ProjectSaveMode, ProjectStore, ProjectStoreError,
     STORED_PROJECT_SCHEMA_VERSION,
 };
+use rusty_engine::content_store::ContentHash;
 
 const CURRENT_PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const LEGACY_PROJECT: &str =
@@ -319,7 +319,7 @@ fn doom_admission_rejects_incomplete_palette_set_when_unused_binding_removed() {
             // declared palette set. The voxel asset's own hashes must be
             // recomputed over the canonical mutated content, otherwise the
             // generic voxel validation rejects the stale hash first.
-            let recomputed = voxel_asset::with_computed_content_hash(voxel.clone())
+            let recomputed = rusty_engine::voxel_asset::with_computed_content_hash(voxel.clone())
                 .expect("mutated voxel asset stays canonical");
             *voxel = recomputed;
         }

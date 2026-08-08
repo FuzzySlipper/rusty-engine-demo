@@ -2,7 +2,6 @@ mod support;
 
 use std::time::Duration;
 
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, CombatFact, CombatRejectionReason,
     GameLoopEdgeCommand, GameLoopEdgeCommandKind, GameLoopFact, GameRuntime,
@@ -11,6 +10,7 @@ use loading_bay_game::{
     SaveSlotId, WeaponAttackMode, FIXED_STEP_DURATION, FIXED_TICK_PHASE_ORDER, MAX_CATCH_UP_TICKS,
     MAX_EDGE_COMMANDS,
 };
+use rusty_engine::core_ids::EntityId;
 
 const PLAYER: EntityId = EntityId::new(1);
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");

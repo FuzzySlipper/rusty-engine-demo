@@ -1,13 +1,13 @@
 use std::collections::BTreeMap;
 
-use core_ids::EntityId;
-use core_math::Vec3;
-use core_time::Tick;
-use engine_spatial::{
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::core_time::Tick;
+use rusty_engine::engine_spatial::{
     RigidBodyAction, RigidBodyService, RigidBodyStepError, RigidBodyStepReceipt,
     RigidBodyStepRequest, VoxelCollisionScene,
 };
-use entity_state::{
+use rusty_engine::entity_state::{
     EntityAuthoringError, EntityAuthoringService, EntityDefinition, EntityTransform,
     RigidBodyComponent, RigidBodyShape,
 };
@@ -154,7 +154,9 @@ impl ProjectileService {
             .attach_component(&mut session.entities, component_revision, entity, body)
             .map_err(ProjectileError::EntityAuthoring)?;
         let impulse = normalize(direction) * definition.impulse;
-        let expires_at = tick.advance(core_time::TickDelta::new(definition.lifetime_ticks));
+        let expires_at = tick.advance(rusty_engine::core_time::TickDelta::new(
+            definition.lifetime_ticks,
+        ));
         self.active.insert(
             entity,
             ActiveProjectile {

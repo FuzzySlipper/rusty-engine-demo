@@ -1,13 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use core_ids::EntityId;
-use core_math::Vec3;
-use core_time::{Tick, TickDelta};
-use engine_spatial::{
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::core_time::{Tick, TickDelta};
+use rusty_engine::engine_spatial::{
     GeneratedRoomConfig, MaterialVoxel, TriggerVolumeSnapshot, TriggerVolumeSystem,
     VoxelCollisionScene, VoxelSourceRevision, GENERATED_ROOM_VERSION,
 };
-use entity_state::{EntityLifecycle, EntityState, EntityStateSnapshot};
+use rusty_engine::entity_state::{EntityLifecycle, EntityState, EntityStateSnapshot};
 use serde::{Deserialize, Serialize};
 
 use crate::combat::{EnemyComponent, EnemyState};
@@ -600,8 +600,8 @@ pub enum GameSnapshotError {
     UnsupportedSchema {
         actual: u32,
     },
-    EntityState(entity_state::EntityStateSnapshotError),
-    CollisionScene(engine_spatial::CollisionSceneError),
+    EntityState(rusty_engine::entity_state::EntityStateSnapshotError),
+    CollisionScene(rusty_engine::engine_spatial::CollisionSceneError),
     AmbiguousVoxelSnapshot,
     GeneratedRoomRevisionMismatch {
         actual: u64,
@@ -653,7 +653,7 @@ pub enum GameSnapshotError {
     Inventory(InventoryAdmissionError),
     FutureInventoryStateInLegacySnapshot,
     FutureGameplayMechanicsStateInLegacySnapshot,
-    TriggerVolume(engine_spatial::TriggerVolumeError),
+    TriggerVolume(rusty_engine::engine_spatial::TriggerVolumeError),
     DuplicateInventory {
         owner: u64,
     },
@@ -1510,10 +1510,13 @@ impl GameRuntime {
         let mechanics = crate::mechanics::build_runtime(&item_definitions)
             .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
         if source_schema_version >= GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION {
-            gameplay_mechanics::validate_state_against_catalog(&entities, &mechanics.catalog)
-                .map_err(|error| GameSnapshotError::Mechanics {
-                    reason: error.to_string(),
-                })?;
+            rusty_engine::gameplay_mechanics::validate_state_against_catalog(
+                &entities,
+                &mechanics.catalog,
+            )
+            .map_err(|error| GameSnapshotError::Mechanics {
+                reason: error.to_string(),
+            })?;
         }
         let mut doors = BTreeMap::new();
         let mut door_ids = BTreeSet::new();
@@ -1897,7 +1900,7 @@ impl GameRuntime {
                 .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
             } else {
                 let tracks = entities
-                    .component::<gameplay_mechanics::TracksComponent>(entity)
+                    .component::<rusty_engine::gameplay_mechanics::TracksComponent>(entity)
                     .map_err(|error| GameSnapshotError::Mechanics {
                         reason: error.to_string(),
                     })?
@@ -1911,7 +1914,7 @@ impl GameRuntime {
                     .current(&crate::mechanics::armor_track())
                     .and_then(|value| u32::try_from(value.get()).ok());
                 let canonical_armor_item = entities
-                    .component::<gameplay_mechanics::ActiveEffectsComponent>(entity)
+                    .component::<rusty_engine::gameplay_mechanics::ActiveEffectsComponent>(entity)
                     .map_err(|error| GameSnapshotError::Mechanics {
                         reason: error.to_string(),
                     })?
@@ -1940,7 +1943,7 @@ impl GameRuntime {
                 continue;
             };
             let current = entities
-                .component::<gameplay_mechanics::TracksComponent>(*entity)
+                .component::<rusty_engine::gameplay_mechanics::TracksComponent>(*entity)
                 .ok()
                 .flatten()
                 .and_then(|tracks| tracks.current(&crate::mechanics::health_track()))
@@ -2311,7 +2314,7 @@ impl GameRuntime {
                         .starting_stacks
                         .iter()
                         .any(|stack| stack.item == *item && stack.quantity > 0);
-                    let mut definition = entity_state::EntityDefinition::new(
+                    let mut definition = rusty_engine::entity_state::EntityDefinition::new(
                         entity,
                         format!("Inventory weapon {}", item.as_str()),
                     );
@@ -2319,7 +2322,7 @@ impl GameRuntime {
                         definition = definition.with_containment(owner);
                     }
                     let expected_revision = entities.revision();
-                    entity_state::EntityAuthoringService
+                    rusty_engine::entity_state::EntityAuthoringService
                         .admit(&mut entities, expected_revision, [definition])
                         .map_err(|error| GameSnapshotError::Mechanics {
                             reason: error.to_string(),
@@ -2352,7 +2355,7 @@ impl GameRuntime {
                         });
                     }
                     let component = entities
-                        .component::<gameplay_mechanics::ItemComponent>(entity)
+                        .component::<rusty_engine::gameplay_mechanics::ItemComponent>(entity)
                         .map_err(|error| GameSnapshotError::Mechanics {
                             reason: error.to_string(),
                         })?
@@ -2375,7 +2378,7 @@ impl GameRuntime {
             runtime.weapon_entities = weapon_entities;
             runtime.weapon_ready_at = cooldowns;
             if source_schema_version >= GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION {
-                let canonical = gameplay_mechanics::InventoryService::view(
+                let canonical = rusty_engine::gameplay_mechanics::InventoryService::view(
                     &entities,
                     &mechanics.catalog,
                     owner,
@@ -2419,7 +2422,7 @@ impl GameRuntime {
                     .map(|stack| (stack.item.clone(), stack.quantity))
                     .collect::<BTreeMap<_, _>>();
                 let equipped = entities
-                    .component::<gameplay_mechanics::EquipmentComponent>(owner)
+                    .component::<rusty_engine::gameplay_mechanics::EquipmentComponent>(owner)
                     .map_err(|error| GameSnapshotError::Mechanics {
                         reason: error.to_string(),
                     })?
@@ -2447,10 +2450,10 @@ impl GameRuntime {
             inventories.insert(owner, runtime);
         }
 
-        if snapshot.pickups.len() > engine_spatial::MAX_TRIGGER_DEFINITIONS {
+        if snapshot.pickups.len() > rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS {
             return Err(GameSnapshotError::TooManyPickups {
                 count: snapshot.pickups.len(),
-                limit: engine_spatial::MAX_TRIGGER_DEFINITIONS,
+                limit: rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS,
             });
         }
         let mut pickups = BTreeMap::new();
@@ -2606,7 +2609,7 @@ impl GameRuntime {
                 let valid = definition.scope == PICKUP_TRIGGER_SCOPE
                     && definition.tags == ["pickup".to_string()]
                     && definition.geometry_source()
-                        == engine_spatial::TriggerGeometrySource::EntityBounds;
+                        == rusty_engine::engine_spatial::TriggerGeometrySource::EntityBounds;
                 (definition.trigger_id(), valid)
             })
             .collect::<Vec<_>>();
@@ -2628,7 +2631,7 @@ impl GameRuntime {
             .len()
             .saturating_add(hazards.len())
             .saturating_add(secret_regions.len())
-            > engine_spatial::MAX_TRIGGER_DEFINITIONS
+            > rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS
         {
             return Err(GameSnapshotError::InvalidSecretTriggerDefinitions);
         }
@@ -2650,7 +2653,7 @@ impl GameRuntime {
                 let valid = definition.scope == HAZARD_TRIGGER_SCOPE
                     && definition.tags == ["hazard".to_string()]
                     && definition.geometry_source()
-                        == engine_spatial::TriggerGeometrySource::EntityBounds;
+                        == rusty_engine::engine_spatial::TriggerGeometrySource::EntityBounds;
                 (definition.trigger_id(), valid)
             })
             .collect::<Vec<_>>();
@@ -2677,7 +2680,7 @@ impl GameRuntime {
                 let valid = definition.scope == SECRET_TRIGGER_SCOPE
                     && definition.tags == ["secret".to_string()]
                     && definition.geometry_source()
-                        == engine_spatial::TriggerGeometrySource::EntityBounds;
+                        == rusty_engine::engine_spatial::TriggerGeometrySource::EntityBounds;
                 (definition.trigger_id(), valid)
             })
             .collect::<Vec<_>>();

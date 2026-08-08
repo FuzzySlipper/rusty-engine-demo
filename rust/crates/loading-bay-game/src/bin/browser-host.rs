@@ -8,7 +8,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, LockResult, Mutex, MutexGuard};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use core_ids::EntityId;
 use loading_bay_game::{
     admit_stored_project_with_document, encode_project_document, materialize_stored_project_voxels,
     project_stored_voxel_objects, AdmittedStoredProject, CombatFact, CombatMissReason, GameEvent,
@@ -17,9 +16,10 @@ use loading_bay_game::{
     SaveSlotSummary, SaveWriteRequest, StoredAsset, StoredImportSource, StoredProject, VoxelEdit,
     VoxelEditTransaction, VoxelSourceRevision, MAX_PENDING_GAME_LOOP_FACTS,
 };
-use render_model::RenderFrameDiff;
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::render_model::RenderFrameDiff;
+use rusty_engine::voxel_convert::source_sha256;
 use serde::{Deserialize, Serialize};
-use voxel_convert::source_sha256;
 
 #[path = "browser_host/presentation.rs"]
 mod presentation;
@@ -1839,7 +1839,7 @@ mod tests {
         assert!(host
             .session()
             .hazards()
-            .all(|hazard| hazard.ready_at_tick == core_time::Tick::ZERO));
+            .all(|hazard| hazard.ready_at_tick == rusty_engine::core_time::Tick::ZERO));
         assert_eq!(
             host.adopt_consumed_restart(generation, 1),
             Some(replacement_generation)

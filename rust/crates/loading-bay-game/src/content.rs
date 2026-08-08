@@ -1,8 +1,8 @@
-use core_ids::EntityId;
-use core_math::Vec3;
-use core_time::TickDelta;
-use engine_spatial::{GeneratedRoomConfig, VoxelCollisionScene};
-use entity_state::{EntityDefinition, MAX_ABS_TRANSLATION};
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::core_time::TickDelta;
+use rusty_engine::engine_spatial::{GeneratedRoomConfig, VoxelCollisionScene};
+use rusty_engine::entity_state::{EntityDefinition, MAX_ABS_TRANSLATION};
 use serde::Deserialize;
 
 use crate::combat::WeaponConfig;
@@ -167,7 +167,7 @@ pub enum ProjectContentError {
     KinematicMissingCollisionScene { entity: EntityId },
     NavigationMissingCollisionScene { entity: EntityId },
     AmbiguousVoxelEnvironment,
-    CollisionScene(engine_spatial::CollisionSceneError),
+    CollisionScene(rusty_engine::engine_spatial::CollisionSceneError),
     Definition(GameEntityDefinitionError),
     Migration(crate::StoredProjectError),
 }

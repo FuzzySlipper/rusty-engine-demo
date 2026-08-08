@@ -1,22 +1,22 @@
-use asset_catalog::StoredMaterialDefinition;
-use core_assets::{AssetId, AssetKind};
-use engine_spatial::{
+use rusty_engine::asset_catalog::StoredMaterialDefinition;
+use rusty_engine::core_assets::{AssetId, AssetKind};
+use rusty_engine::engine_spatial::{
     VoxelEdit, VoxelEditHistoryDiffOptions, VoxelPrimitive, VoxelPrimitiveEditService,
     VoxelPrimitiveRequest, VoxelTemplate, VoxelTemplateEditService, VoxelTemplateRequest,
     VOXEL_HOUSE_TEMPLATE_BOUNDS,
 };
-use voxel_annotation::{
+use rusty_engine::voxel_annotation::{
     finalize_annotation_draft, VoxelAnnotationEditService, VoxelAnnotationEditTransaction,
     VoxelAnnotationLayerDraft, VoxelAnnotationLimits,
 };
-use voxel_asset::{
+use rusty_engine::voxel_asset::{
     replace_voxel_palette, with_computed_content_hash, VoxelAsset, VoxelAssetBounds,
     VoxelAssetGrid, VoxelAssetMaterialBinding, VoxelAssetMaterialMapping, VoxelAssetProvenance,
     VoxelAssetProvenanceKind, VoxelCoordinateSystem, VoxelPaletteUpdateRequest,
     VoxelRepresentation, VoxelRepresentationKind, VoxelSparseRun, MAX_REPRESENTED_VOXELS,
     VOXEL_ASSET_SCHEMA_VERSION,
 };
-use voxel_convert::source_sha256;
+use rusty_engine::voxel_convert::source_sha256;
 
 use crate::{StoredAsset, StoredVoxelInstance};
 
@@ -445,8 +445,10 @@ pub(crate) fn apply_brush(
             radius,
         },
         material: match paint_slot {
-            Some(material_slot) => engine_spatial::VoxelPrimitiveMaterial::Set { material_slot },
-            None => engine_spatial::VoxelPrimitiveMaterial::Clear,
+            Some(material_slot) => {
+                rusty_engine::engine_spatial::VoxelPrimitiveMaterial::Set { material_slot }
+            }
+            None => rusty_engine::engine_spatial::VoxelPrimitiveMaterial::Clear,
         },
     };
     mutation_result(publish_project_mutation(

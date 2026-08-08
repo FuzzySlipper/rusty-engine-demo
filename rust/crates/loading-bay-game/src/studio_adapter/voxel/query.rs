@@ -1,9 +1,11 @@
-use content_store::ContentHash;
-use core_space::{Direction6, Face};
-use engine_spatial::{VoxelPickHint, VoxelPickService};
-use render_model::Transform;
-use voxel_annotation::{export_annotation_layer, query_annotation_layer, VoxelAnnotationQuery};
-use voxel_convert::{
+use rusty_engine::content_store::ContentHash;
+use rusty_engine::core_space::{Direction6, Face};
+use rusty_engine::engine_spatial::{VoxelPickHint, VoxelPickService};
+use rusty_engine::render_model::Transform;
+use rusty_engine::voxel_annotation::{
+    export_annotation_layer, query_annotation_layer, VoxelAnnotationQuery,
+};
+use rusty_engine::voxel_convert::{
     query_model_info, query_model_window, VoxelModelInfoRequest, VoxelModelWindowRequest,
 };
 
@@ -89,11 +91,11 @@ pub(crate) fn validate_pick(
 }
 
 fn preview_transform(
-    instance: entity_state::EntityTransform,
+    instance: rusty_engine::entity_state::EntityTransform,
     authority_voxel: [i64; 3],
     cell_size: f64,
 ) -> Transform {
-    let local_center = core_math::Vec3::new(
+    let local_center = rusty_engine::core_math::Vec3::new(
         ((authority_voxel[0] as f64 + 0.5) * cell_size) as f32,
         ((authority_voxel[1] as f64 + 0.5) * cell_size) as f32,
         ((authority_voxel[2] as f64 + 0.5) * cell_size) as f32,
@@ -233,7 +235,9 @@ pub(crate) fn load_expected(
     Ok(project)
 }
 
-pub(crate) fn conversion_rejection(error: voxel_convert::ConversionError) -> AdapterRejection {
+pub(crate) fn conversion_rejection(
+    error: rusty_engine::voxel_convert::ConversionError,
+) -> AdapterRejection {
     let diagnostic = error
         .diagnostics()
         .first()
@@ -267,14 +271,14 @@ pub(crate) const fn readout_face(face: Face) -> VoxelPickFace {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use entity_state::Quat;
+    use rusty_engine::entity_state::Quat;
 
     #[test]
     fn preview_transform_preserves_translated_rotated_anisotropic_instance_geometry() {
-        let transform = entity_state::EntityTransform {
-            translation: core_math::Vec3::new(-3.0, 0.0, 2.0),
+        let transform = rusty_engine::entity_state::EntityTransform {
+            translation: rusty_engine::core_math::Vec3::new(-3.0, 0.0, 2.0),
             rotation: Quat::new(0.0, 0.382_683_43, 0.0, 0.923_879_5),
-            scale: core_math::Vec3::new(0.75, 1.25, 0.5),
+            scale: rusty_engine::core_math::Vec3::new(0.75, 1.25, 0.5),
         };
 
         let preview = preview_transform(transform, [4, 0, 6], 1.0);

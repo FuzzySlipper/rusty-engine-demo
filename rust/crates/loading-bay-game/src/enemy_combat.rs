@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
 
-use core_ids::EntityId;
-use core_math::Vec3;
-use core_time::{Tick, TickDelta};
-use engine_spatial::{SpatialOcclusionQuery, SpatialOcclusionService, VoxelCollisionScene};
-use entity_state::EntityState;
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::core_time::{Tick, TickDelta};
+use rusty_engine::engine_spatial::{
+    SpatialOcclusionQuery, SpatialOcclusionService, VoxelCollisionScene,
+};
+use rusty_engine::entity_state::EntityState;
 
 use crate::combat::EnemyState;
 use crate::encounter::EncounterService;

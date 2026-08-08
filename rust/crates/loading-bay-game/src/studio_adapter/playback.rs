@@ -1,5 +1,5 @@
-use render_projection::VoxelObjectRenderProjector;
-use voxel_object_runtime::{
+use rusty_engine::render_projection::VoxelObjectRenderProjector;
+use rusty_engine::voxel_object_runtime::{
     admit_voxel_object, AdmittedVoxelObject, VoxelObjectLoopMode, VoxelObjectPlaybackRate,
     VoxelObjectPlaybackStatus, VoxelObjectPlayer, VoxelObjectRuntimeLimits,
 };
@@ -26,7 +26,7 @@ struct PlaybackSession {
 
 pub(crate) struct PlaybackPresentation {
     pub readout: VoxelObjectInstancePlaybackReadout,
-    pub projection: render_model::RenderFrameDiff,
+    pub projection: rusty_engine::render_model::RenderFrameDiff,
     pub projection_readout: ProjectionReadout,
 }
 

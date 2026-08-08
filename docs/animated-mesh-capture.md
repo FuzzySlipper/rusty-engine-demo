@@ -1,5 +1,8 @@
 # Animated mesh capture certification
 
+> This document preserves predecessor browser-renderer capture evidence. It is not current host
+> integration guidance after task #6703; see [`design.md`](design.md).
+
 The Loading Bay product certifies Rusty Engine's public animated-mesh capture
 surface against the two authored actors in the checked project. The capture
 path does not create a second renderer: it locates the retained animated-mesh

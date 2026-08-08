@@ -1,5 +1,5 @@
-use core_ids::EntityId;
-use entity_state::EntityDefinition;
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::entity_state::EntityDefinition;
 
 use crate::combat::WeaponConfig;
 use crate::door::DoorConfig;
@@ -180,7 +180,7 @@ impl GameEntityDefinition {
 
 #[derive(Debug)]
 pub enum GameEntityDefinitionError {
-    EntityState(entity_state::EntityDefinitionError),
+    EntityState(rusty_engine::entity_state::EntityDefinitionError),
     Inventory(InventoryAdmissionError),
     Mechanics {
         reason: String,

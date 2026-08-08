@@ -1,6 +1,5 @@
 mod support;
 
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, DoorAccessRejection, DoorState,
     EdgeCommandRejection, GameLoopEdgeCommand, GameLoopEdgeCommandKind, GameLoopFact,
@@ -8,6 +7,7 @@ use loading_bay_game::{
     ItemKind, LevelExitState, LoadingBayGameLoop, ProgressionFact, RequiredKeyPolicy,
     SecretRegionState,
 };
+use rusty_engine::core_ids::EntityId;
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const PLAYER: EntityId = EntityId::new(1);

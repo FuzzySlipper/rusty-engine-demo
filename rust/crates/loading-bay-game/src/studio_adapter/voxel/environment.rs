@@ -1,12 +1,12 @@
-use authored_scene::SceneTransform;
-use core_ids::SceneNodeId;
-use core_math::Vec3;
-use environment_authoring::{
+use rusty_engine::authored_scene::SceneTransform;
+use rusty_engine::core_ids::SceneNodeId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::environment_authoring::{
     materialize_environment, EnvironmentLimits, EnvironmentMarkerTarget,
     EnvironmentMaterializationRequest, EnvironmentTarget, TunnelGeneratorConfig, TunnelPreset,
     TUNNEL_GENERATOR_ID,
 };
-use voxel_asset::VoxelAssetMaterialBinding;
+use rusty_engine::voxel_asset::VoxelAssetMaterialBinding;
 
 use crate::{StoredAsset, StoredVoxelInstance};
 
@@ -173,7 +173,7 @@ fn require_scene_and_entities(
 }
 
 fn marker_translation(
-    materialized: &environment_authoring::MaterializedEnvironment,
+    materialized: &rusty_engine::environment_authoring::MaterializedEnvironment,
     source_id: &str,
 ) -> Result<[f32; 3], AdapterRejection> {
     let marker = materialized
@@ -196,7 +196,7 @@ fn marker_translation(
 fn install_environment_asset(
     project: &mut crate::StoredProject,
     asset_id: String,
-    candidate: voxel_asset::VoxelAsset,
+    candidate: rusty_engine::voxel_asset::VoxelAsset,
 ) -> Result<(), AdapterRejection> {
     match project.assets.iter().position(|asset| asset.id == asset_id) {
         Some(index) => {

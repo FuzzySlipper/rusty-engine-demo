@@ -1,5 +1,5 @@
-use core_ids::EntityId;
 use loading_bay_game::{encode_game_snapshot, GameRuntime};
+use rusty_engine::core_ids::EntityId;
 
 const PROJECT: &str = include_str!("../../../../../content/projects/loading-bay.project.json");
 

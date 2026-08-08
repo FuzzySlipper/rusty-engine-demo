@@ -1,12 +1,12 @@
-use core_ids::EntityId;
-use core_math::Vec3;
-use core_time::{Tick, TickDelta};
-use entity_state::EntityDefinition;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, security_door_definitions, DoorState,
     GameEntityDefinition, GameEntityDefinitionError, GameEvent, GameRuntime,
     GAME_SNAPSHOT_SCHEMA_VERSION,
 };
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::core_time::{Tick, TickDelta};
+use rusty_engine::entity_state::EntityDefinition;
 
 #[test]
 fn switch_opens_and_scheduled_intent_closes_door() {

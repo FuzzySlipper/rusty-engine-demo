@@ -1,6 +1,6 @@
-use core_ids::EntityId;
-use core_math::Vec3;
-use entity_state::EntityCommand;
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::entity_state::EntityCommand;
 
 use crate::inventory::ItemDefinitionId;
 use crate::pickup::PickupState;

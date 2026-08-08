@@ -4,12 +4,12 @@
 //! from current authoritative state, while cues live only in one HTTP response.
 //! Nothing here can mutate a session or enter a gameplay snapshot.
 
-use core_ids::EntityId;
 use loading_bay_game::{
     CombatFact, DoorState, EnemyCombatFact, EnemyState, ExtractionBeaconFact,
     ExtractionBeaconState, GameEvent, GameRuntime, NavigationState, PickupFact, PlayerControlFact,
     ProgressionFact, VitalityFact,
 };
+use rusty_engine::core_ids::EntityId;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -613,7 +613,7 @@ pub(super) fn project_presentation(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use core_math::Vec3;
+    use rusty_engine::core_math::Vec3;
 
     #[test]
     fn typed_facts_keep_payloads_and_collapse_repeated_disposable_cues() {
@@ -648,7 +648,7 @@ mod tests {
                 spread_seed: 17,
                 ammo_before: 8,
                 ammo_after: 7,
-                ready_at_tick: core_time::Tick::new(2),
+                ready_at_tick: rusty_engine::core_time::Tick::new(2),
             },
             CombatFact::Vitality(VitalityFact::DamageApplied {
                 source: loading_bay_game::DamageSource::Weapon {
@@ -684,7 +684,7 @@ mod tests {
         projection.extend_extraction_beacon(ExtractionBeaconFact::Activated {
             beacon: EntityId::new(7),
             actor,
-            tick: core_time::Tick::new(2),
+            tick: rusty_engine::core_time::Tick::new(2),
         });
 
         assert_eq!(projection.cues.len(), 7);

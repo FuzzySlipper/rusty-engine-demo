@@ -1,6 +1,6 @@
-use render_projection::VoxelObjectRenderProjector;
+use rusty_engine::render_projection::VoxelObjectRenderProjector;
+use rusty_engine::voxel_convert::PreparedVoxelConversion;
 use serde_json::Value;
-use voxel_convert::PreparedVoxelConversion;
 
 use crate::{
     decode_loading_bay_weapon_authoring_request, encode_loading_bay_weapon_authoring_response,

@@ -1,5 +1,9 @@
 # Loading Bay campaign playtest
 
+> This playtest records the predecessor browser-rendered campaign. Task #6703 retained game and
+> browser-session authority but moved rendering to the Engine-owned Rust adapter. Use
+> [`design.md`](design.md) for current ownership and `pnpm run verify:native` for rendered proof.
+
 Loading Bay is a compact original FPS route composed as immutable project data and admitted by the
 same Rust runtime used by the browser product. It targets a five-to-ten-minute exploratory first
 run. A direct expert route is intentionally shorter; the extra time comes from reading the space,

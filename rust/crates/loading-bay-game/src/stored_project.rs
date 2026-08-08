@@ -6,15 +6,19 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use asset_catalog::{StoredAssetReference, StoredMaterialDefinition};
-use content_store::is_safe_relative_path;
-use core_assets::{AssetId, AssetKind};
-use engine_spatial::{decode_voxel_edit_history, MaterialVoxel, VoxelEditHistoryLimits};
-use render_model::{AnimatedMeshAsset, StaticMeshAsset};
+use rusty_engine::asset_catalog::{StoredAssetReference, StoredMaterialDefinition};
+use rusty_engine::content_store::is_safe_relative_path;
+use rusty_engine::core_assets::{AssetId, AssetKind};
+use rusty_engine::engine_spatial::{
+    decode_voxel_edit_history, MaterialVoxel, VoxelEditHistoryLimits,
+};
+use rusty_engine::render_model::{AnimatedMeshAsset, StaticMeshAsset};
+use rusty_engine::voxel_annotation::{
+    validate_annotation_layer, VoxelAnnotationLayer, VoxelAnnotationLimits,
+};
+use rusty_engine::voxel_asset::{VoxelAsset, VoxelObjectAsset};
+use rusty_engine::voxel_object_runtime::{admit_voxel_object, VoxelObjectRuntimeLimits};
 use serde::{Deserialize, Serialize};
-use voxel_annotation::{validate_annotation_layer, VoxelAnnotationLayer, VoxelAnnotationLimits};
-use voxel_asset::{VoxelAsset, VoxelObjectAsset};
-use voxel_object_runtime::{admit_voxel_object, VoxelObjectRuntimeLimits};
 
 use crate::combat::{
     MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_PELLETS,
@@ -1423,7 +1427,7 @@ fn add_voxel_object_resources(
 
 fn add_voxel_frame_cells(
     total: u64,
-    frame: &voxel_asset::VoxelFrame,
+    frame: &rusty_engine::voxel_asset::VoxelFrame,
 ) -> Result<u64, StoredProjectError> {
     frame
         .representation
@@ -1454,21 +1458,22 @@ fn validate_stored_import(
     asset_index: usize,
 ) -> Result<(), StoredProjectError> {
     let path = format!("assets[{asset_index}].import");
-    let manifest =
-        asset_import::decode_import_manifest(&import.manifest_json).map_err(|error| {
+    let manifest = rusty_engine::asset_import::decode_import_manifest(&import.manifest_json)
+        .map_err(|error| {
             failure(
                 diagnostic_code::INVALID_IMPORT,
                 format!("{path}.manifestJson.{}", error.path),
                 error.message,
             )
         })?;
-    let sidecar = asset_import::decode_sidecar(&import.sidecar_json).map_err(|error| {
-        failure(
-            diagnostic_code::INVALID_IMPORT,
-            format!("{path}.sidecarJson.{}", error.path),
-            error.message,
-        )
-    })?;
+    let sidecar =
+        rusty_engine::asset_import::decode_sidecar(&import.sidecar_json).map_err(|error| {
+            failure(
+                diagnostic_code::INVALID_IMPORT,
+                format!("{path}.sidecarJson.{}", error.path),
+                error.message,
+            )
+        })?;
     if manifest.mesh_asset_id != asset_id
         || manifest.source_hash != import.source_hash
         || sidecar.source_hash != import.source_hash
@@ -1715,14 +1720,13 @@ fn validate_scene_entities(
         }
         validate_entity_transform(entity, &root)?;
         if let Some(bounds) = entity.bounds {
-            let valid =
-                bounds.min.into_iter().chain(bounds.max).all(|value| {
-                    value.is_finite() && value.abs() <= entity_state::MAX_ABS_TRANSLATION
-                }) && bounds
-                    .min
-                    .into_iter()
-                    .zip(bounds.max)
-                    .all(|(minimum, maximum)| minimum <= maximum);
+            let valid = bounds.min.into_iter().chain(bounds.max).all(|value| {
+                value.is_finite() && value.abs() <= rusty_engine::entity_state::MAX_ABS_TRANSLATION
+            }) && bounds
+                .min
+                .into_iter()
+                .zip(bounds.max)
+                .all(|(minimum, maximum)| minimum <= maximum);
             if !valid {
                 return Err(failure(
                     diagnostic_code::INVALID_COMPONENT,
@@ -2178,7 +2182,7 @@ fn validate_stored_voxel_asset(
             ),
         ));
     }
-    if let Err(error) = voxel_asset::validate_voxel_asset(voxel) {
+    if let Err(error) = rusty_engine::voxel_asset::validate_voxel_asset(voxel) {
         let diagnostic = error
             .diagnostics()
             .first()

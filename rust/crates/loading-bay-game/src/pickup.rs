@@ -1,9 +1,9 @@
-use core_ids::EntityId;
-use engine_spatial::{
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::engine_spatial::{
     KinematicTriggerDefinition, TriggerGeometrySource, TriggerOverlapFact, TriggerReconcileCause,
     TriggerReconcileReceipt, TriggerVolumeDiagnostic, TriggerVolumeSystem,
 };
-use entity_state::{EntityAuthoringFact, EntityAuthoringService};
+use rusty_engine::entity_state::{EntityAuthoringFact, EntityAuthoringService};
 
 use crate::inventory::{
     InventoryAction, InventoryCommand, InventoryFact, InventoryReceipt, InventoryRejection,
@@ -384,7 +384,7 @@ impl PickupService {
         let entered = facts
             .iter()
             .filter(|fact| {
-                fact.kind == engine_spatial::TriggerOverlapFactKind::Enter
+                fact.kind == rusty_engine::engine_spatial::TriggerOverlapFactKind::Enter
                     && fact.pair.subject_id() == actor
                     && session
                         .pickups

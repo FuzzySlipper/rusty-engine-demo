@@ -1,4 +1,4 @@
-use voxel_asset::decode_voxel_asset;
+use rusty_engine::voxel_asset::decode_voxel_asset;
 
 #[test]
 fn doom_e1m1_voxel_asset_decodes_without_mutation() {
@@ -38,7 +38,7 @@ fn doom_e1m1_voxel_hash_is_stable() {
     let path = format!("{manifest_dir}/../../../content/doom-e1m1/doom-e1m1.voxel.json");
     let input = std::fs::read_to_string(&path).expect("read");
     let first = decode_voxel_asset(&input).expect("decode");
-    let encoded = voxel_asset::encode_voxel_asset(&first).expect("encode");
+    let encoded = rusty_engine::voxel_asset::encode_voxel_asset(&first).expect("encode");
     let second = decode_voxel_asset(&encoded).expect("re-decode");
     assert_eq!(first.voxel_data_hash, second.voxel_data_hash);
     assert_eq!(first.content_hash, second.content_hash);

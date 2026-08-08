@@ -1,6 +1,6 @@
-use core_ids::EntityId;
-use core_time::Tick;
-use entity_state::{EntityFact, ProjectionNode};
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_time::Tick;
+use rusty_engine::entity_state::{EntityFact, ProjectionNode};
 
 use crate::scheduler::Scheduler;
 use crate::session::GameSession;

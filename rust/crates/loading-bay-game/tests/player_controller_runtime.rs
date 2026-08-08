@@ -1,8 +1,8 @@
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, GameEntityDefinitionError, GameRuntime,
     PlayerControlFact, ProjectContentError, ResolvedPlayerAction, RuntimeError,
 };
+use rusty_engine::core_ids::EntityId;
 use serde_json::{json, Value};
 
 const PROJECT: &str = include_str!("../../../../content/generated/encounter-gate.project.json");
@@ -49,7 +49,7 @@ fn semantic_move_actions_use_the_collision_aware_kinematic_path() {
             .kinematic
             .unwrap()
             .velocity,
-        core_math::Vec3::ZERO,
+        rusty_engine::core_math::Vec3::ZERO,
         "an action cannot leave polling-style velocity behind",
     );
 }
@@ -195,7 +195,7 @@ fn snapshot_reopen_preserves_player_pose_and_controller_but_derives_no_camera_st
     );
 }
 
-fn player_position(runtime: &GameRuntime) -> core_math::Vec3 {
+fn player_position(runtime: &GameRuntime) -> rusty_engine::core_math::Vec3 {
     runtime
         .session()
         .player_controller(PLAYER)

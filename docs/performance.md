@@ -1,5 +1,9 @@
 # Loading Bay performance evidence
 
+> Historical browser-renderer measurements: task #6703 removed the downstream browser renderer.
+> These captures remain predecessor provenance. Current rendered-host acceptance is
+> `pnpm run verify:native`; [`design.md`](design.md) owns the active boundary.
+
 The Loading Bay product uses one `autoStart: true` Rusty Engine renderer surface. Browser input and
 authoritative session snapshots update that retained surface; the demo does not schedule another
 render loop or call `renderOnce()` alongside the automatic loop.

@@ -1,7 +1,7 @@
-use core_ids::EntityId;
-use core_math::Vec3;
-use core_time::TickDelta;
-use entity_state::{EntityCommand, EntityCommandBatch, EntityDefinition, EntityView};
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::core_time::TickDelta;
+use rusty_engine::entity_state::{EntityCommand, EntityCommandBatch, EntityDefinition, EntityView};
 
 use crate::definition::GameEntityDefinition;
 use crate::runtime::RuntimeError;

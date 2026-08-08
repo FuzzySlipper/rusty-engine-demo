@@ -54,31 +54,63 @@ import {
           <h2>Scenes</h2>
           <ul class="scene-list">
             <li>
-              <button type="button" class="quiet" (click)="startScene('loading-bay')" [disabled]="!sceneAvailable('loading-bay')" [attr.title]="sceneTitle('loading-bay')">
+              <button
+                type="button"
+                class="quiet"
+                (click)="startScene('loading-bay')"
+                [disabled]="!sceneAvailable('loading-bay')"
+                [attr.title]="sceneTitle('loading-bay')"
+              >
                 Loading Bay — encounter &amp; beacon
               </button>
-              <small>Default Rust-owned project at content/projects/loading-bay.project.json</small>
+              <small
+                >Default Rust-owned project at
+                content/projects/loading-bay.project.json</small
+              >
             </li>
             <li>
-              <button type="button" class="quiet" (click)="startScene('relay-annex')" [disabled]="!sceneAvailable('relay-annex')" [attr.title]="sceneTitle('relay-annex')">
+              <button
+                type="button"
+                class="quiet"
+                (click)="startScene('relay-annex')"
+                [disabled]="!sceneAvailable('relay-annex')"
+                [attr.title]="sceneTitle('relay-annex')"
+              >
                 Relay Annex — data-only variation
               </button>
-              <small>Same services, different layout at relay-annex.project.json</small>
+              <small
+                >Same services, different layout at
+                relay-annex.project.json</small
+              >
             </li>
             <li>
-              <button type="button" class="quiet" (click)="startScene('doom-e1m1')" [disabled]="!sceneAvailable('doom-e1m1')" [attr.title]="sceneTitle('doom-e1m1')">
+              <button
+                type="button"
+                class="quiet"
+                (click)="startScene('doom-e1m1')"
+                [disabled]="!sceneAvailable('doom-e1m1')"
+                [attr.title]="sceneTitle('doom-e1m1')"
+              >
                 Doom E1M1 — Hangar (voxel showcase)
               </button>
-              <small>Textured-voxel showcase at content/projects/doom-e1m1.project.json — 54 VTX6 materials, single VoxelAsset</small>
+              <small
+                >Textured-voxel showcase at
+                content/projects/doom-e1m1.project.json — 54 VTX6 materials,
+                single VoxelAsset</small
+              >
             </li>
           </ul>
           <p class="project-hint">
             The host selects the authored project at startup via
-            <code>cargo run -p loading-bay-game --bin browser-host -- --project content/projects/&lt;name&gt;.project.json</code>.
-            A scene card is enabled only when the host is already serving that project (host identity
-            verified through <code>/api/menu-state</code>); the card then navigates to
-            <code>/game?project=&lt;name&gt;</code> so the single shared <code>RendererSurface</code> and
-            projection adapter remain the only scene owners. Current host project:
+            <code
+              >cargo run -p loading-bay-game --bin browser-host -- --project
+              content/projects/&lt;name&gt;.project.json</code
+            >. A scene card is enabled only when the host is already serving
+            that project (host identity verified through
+            <code>/api/menu-state</code>); the card then navigates to
+            <code>/game?project=&lt;name&gt;</code> as a Rust-session HUD/control
+            shell. Launch <code>pnpm run native</code> for the Engine-owned
+            rendered product. Current host project:
             <code>{{ hostProjectId() || "unavailable" }}</code>
           </p>
         </section>
@@ -122,7 +154,9 @@ export class MainMenuComponent {
     });
   }
 
-  protected startScene(scene: "loading-bay" | "relay-annex" | "doom-e1m1"): void {
+  protected startScene(
+    scene: "loading-bay" | "relay-annex" | "doom-e1m1",
+  ): void {
     if (!this.sceneAvailable(scene)) {
       return;
     }
@@ -131,11 +165,15 @@ export class MainMenuComponent {
     });
   }
 
-  protected sceneAvailable(scene: "loading-bay" | "relay-annex" | "doom-e1m1"): boolean {
+  protected sceneAvailable(
+    scene: "loading-bay" | "relay-annex" | "doom-e1m1",
+  ): boolean {
     return this.hostProjectId() === scene;
   }
 
-  protected sceneTitle(scene: "loading-bay" | "relay-annex" | "doom-e1m1"): string {
+  protected sceneTitle(
+    scene: "loading-bay" | "relay-annex" | "doom-e1m1",
+  ): string {
     const host = this.hostProjectId();
     if (host === scene) {
       return `Open ${scene} on the configured host`;

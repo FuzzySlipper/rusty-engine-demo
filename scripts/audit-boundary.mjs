@@ -100,6 +100,12 @@ for (const file of downstreamTypeScript) {
     ["parallel animation-frame scheduler", "cancelAnimationFrame("],
     ["private Three renderer construction", "new WebGLRenderer("],
     ["private Three renderer construction", "THREE.WebGLRenderer"],
+    ["direct Engine renderer import", "@rusty-engine/render-contracts"],
+    ["direct Engine renderer import", "@rusty-engine/render-projection"],
+    ["direct Engine renderer import", "@rusty-engine/renderer-host"],
+    ["direct Engine renderer import", "@rusty-engine/renderer-three"],
+    ["direct Three import", 'from "three'],
+    ["direct Three import", "from 'three"],
   ]) {
     if (content.includes(marker)) {
       violations.push(`${relative}: ${label} (${marker})`);
@@ -199,15 +205,20 @@ for (const packageName of [
   "renderer-three",
 ]) {
   const dependencyName = `@rusty-engine/${packageName}`;
-  const expected = `github:FuzzySlipper/rusty-engine#${renderEngineRevision}&path:render/packages/${packageName}`;
-  if (browserPackage.dependencies?.[dependencyName] !== expected) {
+  if (browserPackage.dependencies?.[dependencyName] !== undefined) {
     violations.push(
-      `ts/packages/browser-shell/package.json: ${dependencyName} must resolve from exact Engine revision ${renderEngineRevision}`,
+      `ts/packages/browser-shell/package.json: ${dependencyName} is an Engine-private renderer dependency`,
     );
   }
-  if (rootPackage.dependencies?.[dependencyName] !== expected) {
+  if (rootPackage.dependencies?.[dependencyName] !== undefined) {
     violations.push(
-      `package.json: ${dependencyName} must resolve from exact Engine revision ${renderEngineRevision}`,
+      `package.json: ${dependencyName} must not be an ordinary product dependency`,
+    );
+  }
+  const expected = `github:FuzzySlipper/rusty-engine#${renderEngineRevision}&path:render/packages/${packageName}`;
+  if (rootPackage.devDependencies?.[dependencyName] !== expected) {
+    violations.push(
+      `package.json: ${dependencyName} must remain an exact dev-only Studio peer resolver at ${renderEngineRevision}`,
     );
   }
 }
@@ -233,14 +244,19 @@ if (!cargoManifest.includes(`revision = "${rustEngineRevision}"`)) {
     `Cargo.toml: Engine metadata revision must be ${rustEngineRevision}`,
   );
 }
-for (const match of cargoManifest.matchAll(
-  /git = "https:\/\/github\.com\/FuzzySlipper\/rusty-engine\.git", rev = "([0-9a-f]+)"/g,
-)) {
-  if (match[1] !== rustEngineRevision) {
-    violations.push(
-      `Cargo.toml: Rust Engine dependency resolves ${match[1]} instead of ${rustEngineRevision}`,
-    );
-  }
+const engineDependencies = [
+  ...cargoManifest.matchAll(
+    /^([a-z0-9-]+)\s*=\s*\{[^\n]*git\s*=\s*"https:\/\/github\.com\/FuzzySlipper\/rusty-engine"[^\n]*\}$/gmu,
+  ),
+];
+if (
+  engineDependencies.length !== 1 ||
+  engineDependencies[0][1] !== "rusty-engine" ||
+  !engineDependencies[0][0].includes('branch = "main"')
+) {
+  violations.push(
+    "Cargo.toml: ordinary Rust must use one rolling rusty-engine facade dependency",
+  );
 }
 
 if (violations.length > 0) {
@@ -250,7 +266,7 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `downstream boundary audit passed: ${String(files.length)} operational files, three demo-owned package identities, exact shared Engine Rust/render dependencies, no private renderer or historical runtime references`,
+  `downstream boundary audit passed: ${String(files.length)} operational files, one rolling Rust facade, native renderer ownership, Studio-only renderer peer resolution, no downstream renderer imports`,
 );
 
 function collect(path) {

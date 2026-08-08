@@ -2,15 +2,15 @@
 
 use std::collections::BTreeMap;
 
-use core_assets::{AssetId, AssetKind};
-use core_ids::EntityId;
-use core_math::Vec3;
-use core_time::TickDelta;
-use engine_spatial::{
+use rusty_engine::core_assets::{AssetId, AssetKind};
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::core_time::TickDelta;
+use rusty_engine::engine_spatial::{
     validate_material_voxel, GeneratedRoomConfig, MaterialVoxel, VoxelAuthorityValidationError,
     VoxelCollisionScene,
 };
-use entity_state::{EntityDefinition, EntityTransform, Quat, MAX_ABS_TRANSLATION};
+use rusty_engine::entity_state::{EntityDefinition, EntityTransform, Quat, MAX_ABS_TRANSLATION};
 
 use crate::combat::WeaponConfig;
 use crate::content::AdmittedProject;
@@ -336,7 +336,7 @@ impl<'a> ProjectAssetCatalog<'a> {
         &self,
         asset_id: &str,
         path: &str,
-    ) -> Result<&'a voxel_asset::VoxelAsset, StoredProjectError> {
+    ) -> Result<&'a rusty_engine::voxel_asset::VoxelAsset, StoredProjectError> {
         let id = AssetId::parse(asset_id).map_err(|error| {
             StoredProjectError::new(diagnostic_code::INVALID_ASSET_ID, path, error.to_string())
         })?;
@@ -834,45 +834,58 @@ fn definition_error(
         ),
         Error::Inventory(source) => inventory_error_path(source, scene_index, indexes),
         Error::EntityState(source) => match source {
-            entity_state::EntityDefinitionError::DuplicateEntity { entity } => (
+            rusty_engine::entity_state::EntityDefinitionError::DuplicateEntity { entity } => (
                 diagnostic_code::DUPLICATE_ENTITY,
                 entity_path(scene_index, indexes, *entity, "id"),
             ),
-            entity_state::EntityDefinitionError::EmptyName { entity } => (
+            rusty_engine::entity_state::EntityDefinitionError::EmptyName { entity } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "name"),
             ),
-            entity_state::EntityDefinitionError::DuplicateLabel { entity, .. } => (
+            rusty_engine::entity_state::EntityDefinitionError::DuplicateLabel {
+                entity, ..
+            } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "labels"),
             ),
-            entity_state::EntityDefinitionError::InvalidSource { entity } => (
+            rusty_engine::entity_state::EntityDefinitionError::InvalidSource { entity } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "source"),
             ),
-            entity_state::EntityDefinitionError::InvalidTransform { entity } => (
+            rusty_engine::entity_state::EntityDefinitionError::InvalidTransform { entity } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "translation"),
             ),
-            entity_state::EntityDefinitionError::InvalidRenderableTransform { entity } => (
+            rusty_engine::entity_state::EntityDefinitionError::InvalidRenderableTransform {
+                entity,
+            } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "renderable.localTransform"),
             ),
-            entity_state::EntityDefinitionError::InvalidBounds { entity } => (
+            rusty_engine::entity_state::EntityDefinitionError::InvalidBounds { entity } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "bounds"),
             ),
-            entity_state::EntityDefinitionError::EmptyAsset { entity } => (
+            rusty_engine::entity_state::EntityDefinitionError::EmptyAsset { entity } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "renderable.asset"),
             ),
-            entity_state::EntityDefinitionError::KinematicMissingTransform { entity }
-            | entity_state::EntityDefinitionError::InvalidKinematicHalfExtents { entity }
-            | entity_state::EntityDefinitionError::InvalidKinematicVelocity { entity } => (
+            rusty_engine::entity_state::EntityDefinitionError::KinematicMissingTransform {
+                entity,
+            }
+            | rusty_engine::entity_state::EntityDefinitionError::InvalidKinematicHalfExtents {
+                entity,
+            }
+            | rusty_engine::entity_state::EntityDefinitionError::InvalidKinematicVelocity {
+                entity,
+            } => (
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "kinematic"),
             ),
-            entity_state::EntityDefinitionError::InvalidRelationship { entity, .. } => (
+            rusty_engine::entity_state::EntityDefinitionError::InvalidRelationship {
+                entity,
+                ..
+            } => (
                 diagnostic_code::INVALID_RELATIONSHIP,
                 entity_path(scene_index, indexes, *entity, "relationships"),
             ),

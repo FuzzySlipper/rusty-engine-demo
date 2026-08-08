@@ -216,11 +216,12 @@ fn material_voxel_bounds_are_identical_for_admission_save_and_reopen() {
         panic!("converted project must use material voxels");
     };
     environment.material_voxels[0].address = [
-        -engine_spatial::MAX_VOXEL_COORDINATE_ABS,
-        engine_spatial::MAX_VOXEL_COORDINATE_ABS,
+        -rusty_engine::engine_spatial::MAX_VOXEL_COORDINATE_ABS,
+        rusty_engine::engine_spatial::MAX_VOXEL_COORDINATE_ABS,
         0,
     ];
-    environment.material_voxels[0].material_slot = engine_spatial::MAX_VOXEL_MATERIAL_SLOT;
+    environment.material_voxels[0].material_slot =
+        rusty_engine::engine_spatial::MAX_VOXEL_MATERIAL_SLOT;
     let (boundary, _) =
         admit_stored_project_with_document(boundary).expect("inclusive bounds admit");
 
@@ -235,14 +236,18 @@ fn material_voxel_bounds_are_identical_for_admission_save_and_reopen() {
 
     for (address, material_slot, expected_field) in [
         (
-            [engine_spatial::MAX_VOXEL_COORDINATE_ABS + 1, 0, 0],
+            [
+                rusty_engine::engine_spatial::MAX_VOXEL_COORDINATE_ABS + 1,
+                0,
+                0,
+            ],
             1,
             "address[0]",
         ),
         ([0, 0, 0], 0, "materialSlot"),
         (
             [0, 0, 0],
-            engine_spatial::MAX_VOXEL_MATERIAL_SLOT + 1,
+            rusty_engine::engine_spatial::MAX_VOXEL_MATERIAL_SLOT + 1,
             "materialSlot",
         ),
     ] {

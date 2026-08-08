@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use core_ids::EntityId;
-use core_math::Vec3;
-use core_time::Tick;
-use gameplay_mechanics::{
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::core_time::Tick;
+use rusty_engine::gameplay_mechanics::{
     EquipmentEquipRequest, EquipmentService as MechanicsEquipmentService, EquipmentSwapRequest,
     EquipmentUnequipRequest, InventoryMutationRequest,
     InventoryService as MechanicsInventoryService, OperationId, SourceInstanceId,
@@ -1006,7 +1006,7 @@ fn require_definition<'a>(
 
 fn product_item_id(
     definitions: &BTreeMap<ItemDefinitionId, ItemDefinition>,
-    mechanics: &gameplay_mechanics::ItemDefinitionId,
+    mechanics: &rusty_engine::gameplay_mechanics::ItemDefinitionId,
 ) -> Result<ItemDefinitionId, InventoryRejection> {
     definitions
         .keys()
@@ -1036,7 +1036,9 @@ fn source_identity(operation: OperationId) -> Result<SourceInstanceIdentity, Inv
     })
 }
 
-fn mechanics_rejection(error: gameplay_mechanics::MechanicsError) -> InventoryRejection {
+fn mechanics_rejection(
+    error: rusty_engine::gameplay_mechanics::MechanicsError,
+) -> InventoryRejection {
     InventoryRejection::Mechanics {
         reason: error.to_string(),
     }

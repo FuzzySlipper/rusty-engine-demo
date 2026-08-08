@@ -91,14 +91,14 @@ fn transaction_count() -> usize {
     transactions
 }
 
-fn mesh_payload_bytes(scene: &engine_spatial::VoxelCollisionScene) -> usize {
+fn mesh_payload_bytes(scene: &rusty_engine::engine_spatial::VoxelCollisionScene) -> usize {
     scene
         .mesh_chunks()
         .iter()
         .map(|mesh| {
             (mesh.positions.len() + mesh.normals.len()) * size_of::<f32>()
                 + mesh.indices.len() * size_of::<u32>()
-                + mesh.groups.len() * size_of::<engine_spatial::VoxelMeshGroup>()
+                + mesh.groups.len() * size_of::<rusty_engine::engine_spatial::VoxelMeshGroup>()
         })
         .sum()
 }

@@ -1,7 +1,9 @@
 use std::fs;
 use std::path::PathBuf;
 
-use voxel_asset::{decode_voxel_asset, encode_voxel_asset, with_computed_content_hash};
+use rusty_engine::voxel_asset::{
+    decode_voxel_asset, encode_voxel_asset, with_computed_content_hash,
+};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -21,7 +23,8 @@ fn main() {
         // Clear hashes to allow with_computed_content_hash to succeed via manual construction?
         // Instead, construct via serde then call with_computed_content_hash which will validate semantic before hash check.
         // Use serde to get VoxelAsset with placeholder hashes, then clear and recompute.
-        let mut asset: voxel_asset::VoxelAsset = serde_json::from_value(raw).expect("serde");
+        let mut asset: rusty_engine::voxel_asset::VoxelAsset =
+            serde_json::from_value(raw).expect("serde");
         asset.voxel_data_hash.clear();
         asset.content_hash.clear();
         with_computed_content_hash(asset).expect("recompute")

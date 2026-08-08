@@ -2,11 +2,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use asset_import::MAX_SOURCE_BYTES;
 use loading_bay_game::{
     decode_project_document, encode_project_document, StudioAdapterService,
     MAX_STUDIO_ADAPTER_REQUEST_BYTES, STORED_PROJECT_SCHEMA_VERSION,
 };
+use rusty_engine::asset_import::MAX_SOURCE_BYTES;
 use serde_json::{json, Value};
 
 const CURRENT_PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");

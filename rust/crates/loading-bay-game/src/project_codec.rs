@@ -5,8 +5,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use rusty_engine::voxel_asset::{canonicalize_voxel_asset, canonicalize_voxel_object};
 use serde::Deserialize;
-use voxel_asset::{canonicalize_voxel_asset, canonicalize_voxel_object};
 
 use crate::content::PROJECT_CONTENT_SCHEMA_VERSION;
 use crate::stored_project::{

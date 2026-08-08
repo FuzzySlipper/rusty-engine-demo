@@ -1,10 +1,10 @@
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, CombatFact, CombatMissReason,
     CombatRejectionReason, DoorState, EncounterState, EnemyState, GameEntityDefinitionError,
     GameEvent, GameRuntime, ItemDefinitionId, ProjectContentError, ResolvedAttackAction,
     RuntimeError, VitalityFact,
 };
+use rusty_engine::core_ids::EntityId;
 use serde_json::{json, Value};
 
 const PLAYER: EntityId = EntityId::new(1);
@@ -356,7 +356,7 @@ fn combat_project(
     })
 }
 
-fn enemy_position(runtime: &GameRuntime) -> core_math::Vec3 {
+fn enemy_position(runtime: &GameRuntime) -> rusty_engine::core_math::Vec3 {
     runtime
         .session()
         .enemy(ENEMY)

@@ -7,7 +7,7 @@
 
 use std::collections::BTreeMap;
 
-use content_store::ContentHash;
+use rusty_engine::content_store::ContentHash;
 use serde::{Deserialize, Serialize};
 
 use crate::{

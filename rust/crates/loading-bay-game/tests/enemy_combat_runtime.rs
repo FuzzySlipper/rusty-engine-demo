@@ -1,6 +1,5 @@
 mod support;
 
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, diagnostic_code, encode_game_snapshot, EnemyAttackKind,
     EnemyAttackMissReason, EnemyCombatFact, EnemyCombatPosture, GameLoopEdgeCommand,
@@ -8,6 +7,7 @@ use loading_bay_game::{
     PlayerInputCommand, PlayerInputIntent, ProgressionFact, ResolvedAttackAction,
     ResolvedPlayerAction, RuntimeError, VitalityFact, VitalityState,
 };
+use rusty_engine::core_ids::EntityId;
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const PLAYER: EntityId = EntityId::new(1);

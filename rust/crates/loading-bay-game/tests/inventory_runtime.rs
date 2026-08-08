@@ -1,11 +1,11 @@
 mod support;
 
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, diagnostic_code, encode_game_snapshot,
     encode_project_document, GameRuntime, InventoryAction, InventoryCommand, InventoryFact,
     InventoryRejection, ItemDefinitionId, ItemKind, RuntimeError, STORED_PROJECT_SCHEMA_VERSION,
 };
+use rusty_engine::core_ids::EntityId;
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const PLAYER: EntityId = EntityId::new(1);
 

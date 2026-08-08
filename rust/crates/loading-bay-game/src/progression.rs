@@ -1,10 +1,10 @@
-use core_ids::EntityId;
-use core_time::Tick;
-use engine_spatial::{
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_time::Tick;
+use rusty_engine::engine_spatial::{
     KinematicTriggerDefinition, TriggerGeometrySource, TriggerOverlapFact, TriggerReconcileCause,
     TriggerVolumeDiagnostic, TriggerVolumeSystem,
 };
-use entity_state::EntityView;
+use rusty_engine::entity_state::EntityView;
 
 use crate::door::{DoorService, DoorState, DoorTransition};
 use crate::interaction::InteractionService;

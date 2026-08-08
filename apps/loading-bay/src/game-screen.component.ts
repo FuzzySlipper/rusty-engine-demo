@@ -1050,7 +1050,10 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
         window.__loadingBayAnimationCapture = handle.captureAnimation;
       }
       const requestedProject = this.route.snapshot.queryParamMap.get("project");
-      if (requestedProject !== null && !["loading-bay", "relay-annex", "doom-e1m1"].includes(requestedProject)) {
+      if (
+        requestedProject !== null &&
+        !["loading-bay", "relay-annex", "doom-e1m1"].includes(requestedProject)
+      ) {
         throw new Error(`Unknown project ${requestedProject}`);
       }
       // The card targets a host already configured for that project: the host is
@@ -1112,7 +1115,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       ) {
         this.restoreModalFocus();
       }
-      document.body.dataset.rendererLifecycle = "mounted";
+      document.body.dataset.rendererLifecycle = "native-host";
       if (new URLSearchParams(location.search).has("lifecycle-smoke")) {
         await this.router.navigateByUrl("/diagnostics");
       }

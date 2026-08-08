@@ -9,24 +9,21 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 import { afterEach, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
   ACTIVE_CARRIER_PATHS,
+  checkDevelopmentResolution,
   checkEngineRevision,
-  loadEngineDevelopment,
-  readDevelopmentResolution,
   updateEngineRevision,
 } from "./engine-revision-lib.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CURRENT = JSON.parse(
+const current = JSON.parse(
   readFileSync(resolve(repoRoot, "engine-source.json"), "utf8"),
 ).commit;
-const NEXT = "1111111111111111111111111111111111111111";
-const HISTORICAL = "2222222222222222222222222222222222222222";
+const next = "1111111111111111111111111111111111111111";
 const temporaryRoots = [];
 
 afterEach(() => {
@@ -35,388 +32,95 @@ afterEach(() => {
   }
 });
 
-test("check accepts the complete current carrier set", () => {
-  const fixture = copyCarrierFixture();
-  assert.equal(checkEngineRevision(fixture).commit, CURRENT);
-});
-
-test("development intent and resolved report are strict and separate from certification", () => {
-  const fixture = copyCarrierFixture();
-  writeJson(fixture, "engine-development.json", {
-    schemaVersion: 1,
-    repository: "https://github.com/FuzzySlipper/rusty-engine",
-    ref: "refs/heads/main",
-  });
-  assert.equal(loadEngineDevelopment(fixture).ref, "refs/heads/main");
-  mkdirSync(resolve(fixture, ".engine-development"));
-  writeJson(fixture, ".engine-development/resolution.json", {
-    schemaVersion: 1,
-    mode: "development",
-    repository: "https://github.com/FuzzySlipper/rusty-engine",
-    requestedRef: "refs/heads/main",
-    resolvedCommit: CURRENT,
-    source: "public",
-    sourcePath: null,
-    dirty: false,
-    certification: false,
-    applied: true,
-  });
-  assert.equal(readDevelopmentResolution(fixture).resolvedCommit, CURRENT);
-  mutateFile(fixture, "engine-development.json", (content) => content.replace("refs/heads/main", "main"));
-  assert.throws(() => loadEngineDevelopment(fixture), /only refs\/heads\/main/u);
-});
-
-test("check rejects malformed source identity and unexpected fields", () => {
-  const fixture = copyCarrierFixture();
-  writeJson(fixture, "engine-source.json", {
-    schemaVersion: 1,
-    repository: "https://example.invalid/private-engine",
-    commit: CURRENT.toUpperCase(),
-    branch: "main",
-  });
-  assert.throws(
-    () => checkEngineRevision(fixture),
-    /expected exactly commit, repository, schemaVersion/u,
+test("check accepts the rolling facade and private Studio resolver closure", () => {
+  const fixture = copyFixture();
+  assert.equal(checkEngineRevision(fixture).commit, current);
+  assert.equal(
+    checkDevelopmentResolution(fixture).report.resolvedCommit,
+    current,
   );
 });
 
-test("check rejects missing renamed mixed and path Rust carriers", () => {
-  for (const mutate of [
-    (content) => content.replace("asset-catalog =", "renamed-asset-catalog ="),
-    (content) =>
-      content.replace(
-        `asset-catalog = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "${CURRENT}" }`,
-        "",
-      ),
-    (content) => content.replace(CURRENT, NEXT),
-    (content) =>
-      content.replace(
-        `git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "${CURRENT}"`,
-        `path = "${["..", "rusty-engine", "crates", "asset-catalog"].join("/")}"`,
-      ),
-  ]) {
-    const fixture = copyCarrierFixture();
-    mutateFile(fixture, "Cargo.toml", mutate);
-    assert.throws(() => checkEngineRevision(fixture), /Cargo\.toml/u);
-  }
-});
-
-test("check rejects renderer Studio and allow-build drift", () => {
-  const packageFixture = copyCarrierFixture();
-  mutateFile(packageFixture, "package.json", (content) =>
-    content.replace(CURRENT, NEXT),
-  );
-  assert.throws(
-    () => checkEngineRevision(packageFixture),
-    /package\.json: @rusty-engine\/render-contracts/u,
-  );
-
-  const browserFixture = copyCarrierFixture();
-  mutateFile(
-    browserFixture,
-    "ts/packages/browser-shell/package.json",
-    (content) => content.replace("&path:", "-floating&path:"),
-  );
-  assert.throws(
-    () => checkEngineRevision(browserFixture),
-    /browser-shell\/package\.json/u,
-  );
-
-  const workspaceFixture = copyCarrierFixture();
-  mutateFile(workspaceFixture, "pnpm-workspace.yaml", (content) =>
+test("check rejects a second direct Rust owner dependency", () => {
+  const fixture = copyFixture();
+  mutate(fixture, "Cargo.toml", (content) =>
     content.replace(
-      '"@rusty-engine/studio-viewport@',
-      '"@rusty-engine/studio-renamed@',
+      "rusty-engine = {",
+      `core-ids = { git = "https://github.com/FuzzySlipper/rusty-engine", branch = "main" }\nrusty-engine = {`,
     ),
   );
-  assert.throws(
-    () => checkEngineRevision(workspaceFixture),
-    /pnpm-workspace\.yaml/u,
-  );
-
-  const unexpectedFixture = copyCarrierFixture();
-  const manifest = JSON.parse(
-    readFileSync(resolve(unexpectedFixture, "package.json"), "utf8"),
-  );
-  manifest.devDependencies = {
-    ...manifest.devDependencies,
-    "@rusty-engine/unexpected": `github:FuzzySlipper/rusty-engine#${CURRENT}&path:tools/unexpected`,
-  };
-  writeJson(unexpectedFixture, "package.json", manifest);
-  assert.throws(
-    () => checkEngineRevision(unexpectedFixture),
-    /unexpected Engine package @rusty-engine\/unexpected in devDependencies/u,
-  );
+  assert.throws(() => checkEngineRevision(fixture), /exactly one rolling/u);
 });
 
-test("check rejects Engine sources in adjacent dependency manifests", () => {
-  const packageFixture = copyCarrierFixture();
-  mkdirSync(resolve(packageFixture, "ts/packages/project-content"), {
-    recursive: true,
-  });
-  writeJson(packageFixture, "ts/packages/project-content/package.json", {
-    name: "@rusty-engine-demo/project-content",
-    private: true,
-    dependencies: {
-      "@rusty-engine/unexpected": `github:FuzzySlipper/rusty-engine#${NEXT}&path:tools/unexpected`,
-    },
-  });
-  assert.throws(
-    () => checkEngineRevision(packageFixture),
-    /ts\/packages\/project-content\/package\.json: unexpected Engine source @rusty-engine\/unexpected/u,
-  );
-
-  const cargoFixture = copyCarrierFixture();
-  mkdirSync(resolve(cargoFixture, "rust/crates/adjacent"), {
-    recursive: true,
-  });
-  writeFileSync(
-    resolve(cargoFixture, "rust/crates/adjacent/Cargo.toml"),
-    `[package]
-name = "adjacent"
-version = "0.1.0"
-
-[dependencies]
-asset-catalog = { git = "https://github.com/FuzzySlipper/rusty-engine.git", rev = "${NEXT}" }
-`,
-  );
-  assert.throws(
-    () => checkEngineRevision(cargoFixture),
-    /rust\/crates\/adjacent\/Cargo\.toml: unexpected direct Engine dependency carrier/u,
-  );
+test("check rejects an Engine renderer dependency in the browser package", () => {
+  const fixture = copyFixture();
+  const path = resolve(fixture, "ts/packages/browser-shell/package.json");
+  const manifest = JSON.parse(readFileSync(path, "utf8"));
+  manifest.dependencies["@rusty-engine/renderer-host"] =
+    `github:FuzzySlipper/rusty-engine#${current}&path:render/packages/renderer-host`;
+  writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
+  assert.throws(() => checkEngineRevision(fixture), /browser-shell/u);
 });
 
-test("check rejects equivalent-case Engine repository identities", () => {
-  const packageFixture = copyCarrierFixture();
-  mkdirSync(resolve(packageFixture, "ts/packages/project-content"), {
-    recursive: true,
-  });
-  writeJson(packageFixture, "ts/packages/project-content/package.json", {
-    name: "@rusty-engine-demo/project-content",
-    private: true,
-    dependencies: {
-      unexpected: `github:FuzzySlipper/Rusty-Engine#${NEXT}&path:tools/unexpected`,
-    },
-  });
-  assert.throws(
-    () => checkEngineRevision(packageFixture),
-    /ts\/packages\/project-content\/package\.json: unexpected Engine source unexpected/u,
-  );
-
-  const cargoFixture = copyCarrierFixture();
-  mkdirSync(resolve(cargoFixture, "rust/crates/adjacent"), {
-    recursive: true,
-  });
-  writeFileSync(
-    resolve(cargoFixture, "rust/crates/adjacent/Cargo.toml"),
-    `[package]
-name = "adjacent"
-version = "0.1.0"
-
-[dependencies]
-unexpected = { git = "https://github.com/FuzzySlipper/Rusty-Engine.git", rev = "${NEXT}" }
-`,
-  );
-  assert.throws(
-    () => checkEngineRevision(cargoFixture),
-    /rust\/crates\/adjacent\/Cargo\.toml: unexpected direct Engine dependency carrier/u,
-  );
-});
-
-test("check rejects stale Cargo and pnpm locks and path fallback", () => {
-  const cargoFixture = copyCarrierFixture();
-  mutateFile(cargoFixture, "Cargo.lock", (content) =>
-    content.replace(CURRENT, NEXT),
+test("check rejects stale Cargo and pnpm locks", () => {
+  const cargoFixture = copyFixture();
+  mutate(cargoFixture, "Cargo.lock", (content) =>
+    content.replaceAll(current, next),
   );
   assert.throws(() => checkEngineRevision(cargoFixture), /Cargo\.lock/u);
 
-  const pnpmFixture = copyCarrierFixture();
-  mutateFile(pnpmFixture, "pnpm-lock.yaml", (content) =>
-    content.replace(CURRENT, NEXT),
+  const pnpmFixture = copyFixture();
+  mutate(pnpmFixture, "pnpm-lock.yaml", (content) =>
+    content.replace(current, next),
   );
   assert.throws(() => checkEngineRevision(pnpmFixture), /pnpm-lock\.yaml/u);
-
-  const cargoCaseFixture = copyCarrierFixture();
-  mutateFile(cargoCaseFixture, "Cargo.lock", (content) =>
-    content.replaceAll(
-      "FuzzySlipper/rusty-engine",
-      "FuzzySlipper/Rusty-Engine",
-    ),
-  );
-  assert.throws(() => checkEngineRevision(cargoCaseFixture), /Cargo\.lock/u);
-
-  const pnpmCaseFixture = copyCarrierFixture();
-  mutateFile(pnpmCaseFixture, "pnpm-lock.yaml", (content) =>
-    content.replaceAll(
-      "FuzzySlipper/rusty-engine",
-      "FuzzySlipper/Rusty-Engine",
-    ),
-  );
-  assert.throws(
-    () => checkEngineRevision(pnpmCaseFixture),
-    /pnpm-lock\.yaml: Engine repository identity must use canonical spelling/u,
-  );
-
-  const pathFixture = copyCarrierFixture();
-  mutateFile(pathFixture, "pnpm-lock.yaml", (content) =>
-    content.replace(
-      `github:FuzzySlipper/rusty-engine#${CURRENT}`,
-      `file:${["..", "rusty-engine"].join("/")}`,
-    ),
-  );
-  assert.throws(() => checkEngineRevision(pathFixture), /pnpm-lock\.yaml/u);
 });
 
-test("update validates shape and public reachability before creating a worktree", async () => {
-  const fixture = gitFixture();
-  await assert.rejects(
-    updateEngineRevision({ repoRoot: fixture, commit: "main" }),
-    /lowercase 40-character/u,
+test("check rejects stale Studio allow-build carriers", () => {
+  const fixture = copyFixture();
+  mutate(fixture, "pnpm-workspace.yaml", (content) =>
+    content.replace(current, next),
   );
-  await assert.rejects(
-    updateEngineRevision({
-      repoRoot: fixture,
-      commit: NEXT,
-      provePublic: async () => {
-        throw new Error("not public");
-      },
-    }),
-    /not public/u,
-  );
-  assert.equal(worktreeCount(fixture), 1);
+  assert.throws(() => checkEngineRevision(fixture), /allowBuilds/u);
 });
 
-test("update rejects a case-variant adjacent source before fetch or worktree mutation", async () => {
-  const fixture = gitFixture();
-  const before = carrierSnapshot(fixture);
-  mkdirSync(resolve(fixture, "ts/packages/project-content"), {
-    recursive: true,
-  });
-  writeJson(fixture, "ts/packages/project-content/package.json", {
-    name: "@rusty-engine-demo/project-content",
-    private: true,
-    dependencies: {
-      unexpected: `github:FuzzySlipper/Rusty-Engine#${NEXT}&path:tools/unexpected`,
-    },
-  });
-  let publicFetchCalled = false;
-  await assert.rejects(
-    updateEngineRevision({
-      repoRoot: fixture,
-      commit: NEXT,
-      provePublic: async () => {
-        publicFetchCalled = true;
-      },
-    }),
-    /unexpected Engine source unexpected/u,
-  );
-  assert.equal(publicFetchCalled, false);
-  assert.deepEqual(carrierSnapshot(fixture), before);
-  assert.equal(worktreeCount(fixture), 1);
-});
-
-test("dry-run is non-mutating, scoped, and cleans its worktree", async () => {
-  const fixture = gitFixture();
+test("exact update dry-run validates public reachability without mutation", async () => {
+  const fixture = copyFixture();
   const before = carrierSnapshot(fixture);
   const result = await updateEngineRevision({
     repoRoot: fixture,
-    commit: NEXT,
+    commit: next,
     dryRun: true,
     provePublic: async () => {},
-    regenerate: fakeRegenerate,
-    validate: async (candidate) => checkEngineRevision(candidate),
   });
-  assert.match(result.diff, /engine-source\.json/u);
-  assert.match(result.diff, new RegExp(NEXT, "u"));
+  assert.equal(result.commit, next);
+  assert.match(result.diff, new RegExp(next, "u"));
   assert.deepEqual(carrierSnapshot(fixture), before);
-  assert.equal(
-    readFileSync(resolve(fixture, "docs/history.txt"), "utf8"),
-    `${HISTORICAL}\n`,
-  );
-  assert.equal(worktreeCount(fixture), 1);
 });
 
-test("ordinary update preserves unrelated dirty files and historical values", async () => {
-  const fixture = gitFixture();
-  writeFileSync(resolve(fixture, "unrelated.txt"), "user change\n");
-  const result = await updateEngineRevision({
-    repoRoot: fixture,
-    commit: NEXT,
-    provePublic: async () => {},
-    regenerate: fakeRegenerate,
-    validate: async (candidate) => checkEngineRevision(candidate),
-  });
-  assert.equal(checkEngineRevision(fixture).commit, NEXT);
-  assert.match(result.diff, new RegExp(NEXT, "u"));
-  assert.equal(
-    readFileSync(resolve(fixture, "docs/history.txt"), "utf8"),
-    `${HISTORICAL}\n`,
-  );
-  assert.equal(
-    readFileSync(resolve(fixture, "unrelated.txt"), "utf8"),
-    "user change\n",
-  );
-  assert.equal(worktreeCount(fixture), 1);
-});
-
-test("update rejects dirty carriers and cleans up after candidate failure", async () => {
-  const dirtyFixture = gitFixture();
-  mutateFile(dirtyFixture, "package.json", (content) => `${content}\n`);
-  await assert.rejects(
-    updateEngineRevision({
-      repoRoot: dirtyFixture,
-      commit: NEXT,
-      provePublic: async () => {},
-    }),
-    /carrier or lock files are dirty/u,
-  );
-  assert.equal(worktreeCount(dirtyFixture), 1);
-
-  const failedFixture = gitFixture();
-  const before = carrierSnapshot(failedFixture);
-  await assert.rejects(
-    updateEngineRevision({
-      repoRoot: failedFixture,
-      commit: NEXT,
-      provePublic: async () => {},
-      regenerate: async () => {
-        throw new Error("synthetic regeneration failure");
-      },
-    }),
-    /synthetic regeneration failure/u,
-  );
-  assert.deepEqual(carrierSnapshot(failedFixture), before);
-  assert.equal(worktreeCount(failedFixture), 1);
-});
-
-function copyCarrierFixture() {
-  const root = temporaryRoot();
+function copyFixture() {
+  const fixture = mkdtempSync(resolve(tmpdir(), "rusty-demo-engine-revision-"));
+  temporaryRoots.push(fixture);
   for (const relativePath of ACTIVE_CARRIER_PATHS) {
-    const destination = resolve(root, relativePath);
-    mkdirSync(dirname(destination), { recursive: true });
-    cpSync(resolve(repoRoot, relativePath), destination);
+    const target = resolve(fixture, relativePath);
+    mkdirSync(dirname(target), { recursive: true });
+    cpSync(resolve(repoRoot, relativePath), target);
   }
-  return root;
+  for (const relativePath of [
+    "engine-development.json",
+    ".engine-development/resolution.json",
+    "ts/packages/browser-shell/package.json",
+  ]) {
+    const target = resolve(fixture, relativePath);
+    mkdirSync(dirname(target), { recursive: true });
+    cpSync(resolve(repoRoot, relativePath), target);
+  }
+  return fixture;
 }
 
-function gitFixture() {
-  const root = copyCarrierFixture();
-  mkdirSync(resolve(root, "docs"), { recursive: true });
-  writeFileSync(resolve(root, "docs/history.txt"), `${HISTORICAL}\n`);
-  git(root, ["init", "--quiet"]);
-  git(root, ["config", "user.email", "engine-revision-test@example.invalid"]);
-  git(root, ["config", "user.name", "Engine Revision Test"]);
-  git(root, ["add", "."]);
-  git(root, ["commit", "--quiet", "-m", "fixture"]);
-  return root;
-}
-
-async function fakeRegenerate(candidate, previousCommit, commit) {
-  for (const relativePath of ["Cargo.lock", "pnpm-lock.yaml"]) {
-    mutateFile(candidate, relativePath, (content) =>
-      content.replaceAll(previousCommit, commit),
-    );
-  }
+function mutate(root, relativePath, transform) {
+  const path = resolve(root, relativePath);
+  writeFileSync(path, transform(readFileSync(path, "utf8")));
 }
 
 function carrierSnapshot(root) {
@@ -426,36 +130,4 @@ function carrierSnapshot(root) {
       readFileSync(resolve(root, relativePath), "utf8"),
     ]),
   );
-}
-
-function writeJson(root, relativePath, value) {
-  writeFileSync(
-    resolve(root, relativePath),
-    `${JSON.stringify(value, null, 2)}\n`,
-  );
-}
-
-function mutateFile(root, relativePath, mutate) {
-  const path = resolve(root, relativePath);
-  writeFileSync(path, mutate(readFileSync(path, "utf8")));
-}
-
-function worktreeCount(root) {
-  return git(root, ["worktree", "list", "--porcelain"])
-    .split("\n")
-    .filter((line) => line.startsWith("worktree ")).length;
-}
-
-function git(cwd, args) {
-  const result = spawnSync("git", args, { cwd, encoding: "utf8" });
-  if (result.status !== 0) {
-    throw new Error(result.stderr || result.stdout);
-  }
-  return result.stdout;
-}
-
-function temporaryRoot() {
-  const root = mkdtempSync(resolve(tmpdir(), "engine-revision-test-"));
-  temporaryRoots.push(root);
-  return root;
 }

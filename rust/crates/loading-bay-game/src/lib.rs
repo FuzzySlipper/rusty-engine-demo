@@ -73,11 +73,6 @@ pub use enemy_drop::{
     EnemyDropComponent, EnemyDropConfig, EnemyDropFact, EnemyDropRejection, EnemyDropState,
     EnemyDropView,
 };
-pub use engine_spatial::{
-    MaterialVoxel, VoxelEdit, VoxelEditApplyError, VoxelEditFact, VoxelEditReceipt,
-    VoxelEditRejection, VoxelEditTransaction, VoxelProjectionRevisions, VoxelSourceRevision,
-};
-pub use engine_spatial::{MotionAxis, MotionFact, MotionPhaseReceipt};
 pub use extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconFact,
     ExtractionBeaconReceipt, ExtractionBeaconState, ExtractionBeaconView,
@@ -146,6 +141,11 @@ pub use project_store::{
 pub use projectile::{ProjectileError, ProjectileFact, ProjectilePhaseReceipt};
 pub use runtime::{GameRuntime, RuntimeError, MAX_EVENT_WAVE, MAX_TICK_ADVANCE};
 pub use runtime_records::{GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
+pub use rusty_engine::engine_spatial::{
+    MaterialVoxel, VoxelEdit, VoxelEditApplyError, VoxelEditFact, VoxelEditReceipt,
+    VoxelEditRejection, VoxelEditTransaction, VoxelProjectionRevisions, VoxelSourceRevision,
+};
+pub use rusty_engine::engine_spatial::{MotionAxis, MotionFact, MotionPhaseReceipt};
 pub use save_game::{
     LoadedSaveGame, SaveGameError, SaveGameMetadata, SaveGameStore, SaveLoadRequest,
     SavePlayerState, SaveProjectIdentity, SaveSlotCompatibility, SaveSlotId, SaveSlotSummary,

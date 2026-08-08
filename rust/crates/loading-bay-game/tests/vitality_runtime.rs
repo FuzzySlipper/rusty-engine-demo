@@ -1,6 +1,5 @@
 mod support;
 
-use core_ids::EntityId;
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, diagnostic_code, encode_game_snapshot,
     DamageCommand, DamageDisposition, DamageService, DamageSource, EdgeCommandRejection, GameEvent,
@@ -9,6 +8,7 @@ use loading_bay_game::{
     ItemDefinitionId, LoadingBayGameLoop, PlayerInputCommand, PlayerInputIntent, VitalityFact,
     VitalityRejection, VitalityState, STORED_PROJECT_SCHEMA_VERSION,
 };
+use rusty_engine::core_ids::EntityId;
 use serde_json::{json, Value};
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");

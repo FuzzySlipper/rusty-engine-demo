@@ -1,10 +1,3 @@
-import {
-  decodeRenderFrameDiff,
-  type RenderFrameDiff,
-  type RenderMaterialDescriptor,
-  type StaticMeshAsset,
-} from "@rusty-engine/render-contracts";
-
 import type { RuntimeBrowserState } from "./projection.js";
 
 export const LOADING_BAY_PROTOCOL_VERSION = 1;
@@ -1246,222 +1239,18 @@ function isRuntimeStaticResources(
       value.voxelEnvironmentRole !== "gameplayProxy" &&
       value.voxelEnvironmentRole !== "none") ||
     !Array.isArray(value.voxelMeshes) ||
-    !isRenderFrameDiff(value.voxelObjectFrame) ||
+    !isRecord(value.voxelObjectFrame) ||
     !Array.isArray(value.lights) ||
     !Array.isArray(value.renderMaterials) ||
-    !value.renderMaterials.every(isRuntimeRenderMaterial) ||
     !Array.isArray(value.staticMeshes) ||
-    !value.staticMeshes.every(isRuntimeStaticMesh) ||
     !Array.isArray(value.animatedMeshes) ||
-    !value.animatedMeshes.every(isRuntimeAnimatedMesh) ||
     !Array.isArray(value.visualBindings) ||
-    !value.visualBindings.every(isRuntimeVisualBinding) ||
     (value.generatedEnvironment !== null &&
       !isRecord(value.generatedEnvironment))
   ) {
     return false;
   }
-  const materialIds = new Set(
-    value.renderMaterials.map((material) => material.id),
-  );
-  const meshIds = new Set(value.staticMeshes.map((mesh) => mesh.asset));
-  const animatedMeshIds = new Set(
-    value.animatedMeshes.map((mesh) => mesh.asset),
-  );
-  const bindingEntityIds = new Set(
-    value.visualBindings.map((binding) => binding.entity),
-  );
-  return (
-    materialIds.size === value.renderMaterials.length &&
-    meshIds.size === value.staticMeshes.length &&
-    animatedMeshIds.size === value.animatedMeshes.length &&
-    bindingEntityIds.size === value.visualBindings.length &&
-    value.staticMeshes.every((mesh) =>
-      mesh.materialSlots.every(({ material }) => materialIds.has(material)),
-    )
-  );
-}
-
-function isRuntimeAnimatedMesh(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    typeof value.asset === "string" &&
-    value.runtimeFormat === "glb" &&
-    typeof value.contentHash === "string" &&
-    value.contentHash.length > 0 &&
-    typeof value.resourceUrl === "string" &&
-    value.resourceUrl.startsWith("/api/animated-mesh/") &&
-    Array.isArray(value.clips) &&
-    value.clips.length > 0 &&
-    value.clips.every(
-      (clip) =>
-        isRecord(clip) &&
-        typeof clip.id === "string" &&
-        (clip.name === null || typeof clip.name === "string") &&
-        (clip.durationSeconds === null ||
-          isFiniteNumber(clip.durationSeconds)),
-    ) &&
-    (value.defaultClip === null || typeof value.defaultClip === "string") &&
-    Array.isArray(value.materialSlots) &&
-    isRecord(value.bounds) &&
-    isFiniteVector3(value.bounds.min) &&
-    isFiniteVector3(value.bounds.max)
-  );
-}
-
-function isRuntimeVisualBinding(value: unknown): boolean {
-  if (
-    !isRecord(value) ||
-    !isFiniteNumber(value.entity) ||
-    !isRecord(value.binding) ||
-    value.binding.version !== 1 ||
-    !Array.isArray(value.binding.states) ||
-    value.binding.states.length === 0
-  ) {
-    return false;
-  }
-  const states = value.binding.states;
-  const stateIds = new Set<string>();
-  for (const state of states) {
-    if (
-      !isRecord(state) ||
-      !isRuntimeBoundVisualState(state.state) ||
-      stateIds.has(state.state)
-    ) {
-      return false;
-    }
-    stateIds.add(state.state);
-    if (state.kind === "material") {
-      if (
-        !isFiniteVector4(state.textureTint) ||
-        !isFiniteVector3(state.emissionColor) ||
-        !isFiniteNumber(state.emissionIntensity)
-      ) {
-        return false;
-      }
-    } else if (
-      state.kind !== "animation" ||
-      typeof state.clip !== "string" ||
-      (state.loopMode !== "once" && state.loopMode !== "repeat") ||
-      !isFiniteNumber(state.speed) ||
-      (state.fadeSeconds !== null && !isFiniteNumber(state.fadeSeconds))
-    ) {
-      return false;
-    }
-  }
   return true;
-}
-
-function isRuntimeBoundVisualState(value: unknown): value is string {
-  return (
-    value === "default" ||
-    value === "open" ||
-    value === "closed" ||
-    value === "active" ||
-    value === "inactive" ||
-    value === "standby" ||
-    value === "available" ||
-    value === "dormant" ||
-    value === "collected" ||
-    value === "cooling" ||
-    value === "completed" ||
-    value === "idle" ||
-    value === "moving" ||
-    value === "alert" ||
-    value === "attacking" ||
-    value === "hit" ||
-    value === "defeated"
-  );
-}
-
-function isRenderFrameDiff(value: unknown): value is RenderFrameDiff {
-  try {
-    decodeRenderFrameDiff(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isRuntimeRenderMaterial(
-  value: unknown,
-): value is RenderMaterialDescriptor {
-  return (
-    isRecord(value) &&
-    value.schemaVersion === 1 &&
-    typeof value.id === "string" &&
-    isFiniteVector4(value.color) &&
-    (value.texture === null || typeof value.texture === "string") &&
-    isFiniteNumber(value.roughness) &&
-    isFiniteVector4(value.textureTint) &&
-    isFiniteVector3(value.emissionColor) &&
-    isFiniteNumber(value.emissionIntensity) &&
-    (value.uvStrategy === "flat" ||
-      value.uvStrategy === "planar" ||
-      value.uvStrategy === "atlas")
-  );
-}
-
-function isRuntimeStaticMesh(value: unknown): value is StaticMeshAsset {
-  if (
-    !isRecord(value) ||
-    typeof value.asset !== "string" ||
-    !isRecord(value.payload) ||
-    !isRecord(value.payload.layout) ||
-    !isRecord(value.payload.bounds) ||
-    !isRecord(value.payload.source) ||
-    !Array.isArray(value.payload.groups) ||
-    !Array.isArray(value.materialSlots) ||
-    !isRecord(value.collision)
-  ) {
-    return false;
-  }
-  const { layout, bounds, source } = value.payload;
-  if (
-    !isSafeNonNegativeInteger(layout.vertexCount) ||
-    !isSafeNonNegativeInteger(layout.indexCount) ||
-    !Array.isArray(layout.attributes) ||
-    !isFiniteVector3(bounds.min) ||
-    !isFiniteVector3(bounds.max)
-  ) {
-    return false;
-  }
-  const vertexCount = layout.vertexCount;
-  const indexCount = layout.indexCount;
-  const boundsMin = bounds.min;
-  const boundsMax = bounds.max;
-  if (
-    boundsMin[0] > boundsMax[0] ||
-    boundsMin[1] > boundsMax[1] ||
-    boundsMin[2] > boundsMax[2] ||
-    source.kind !== "inline" ||
-    !Array.isArray(source.positions) ||
-    !Array.isArray(source.normals) ||
-    !Array.isArray(source.indices) ||
-    source.positions.length !== vertexCount * 3 ||
-    source.normals.length !== vertexCount * 3 ||
-    source.indices.length !== indexCount ||
-    !source.positions.every(isFiniteNumber) ||
-    !source.normals.every(isFiniteNumber) ||
-    !source.indices.every(
-      (index) =>
-        Number.isSafeInteger(index) && index >= 0 && index < vertexCount,
-    )
-  ) {
-    return false;
-  }
-  return (
-    value.materialSlots.every(
-      (slot) =>
-        isRecord(slot) &&
-        isSafeNonNegativeInteger(slot.slot) &&
-        typeof slot.material === "string",
-    ) &&
-    (value.collision.kind === "visualOnly" ||
-      value.collision.kind === "aabbFallback" ||
-      (value.collision.kind === "proxy" &&
-        typeof value.collision.proxyAsset === "string"))
-  );
 }
 
 function isRuntimePlayerState(value: unknown): boolean {
@@ -1682,6 +1471,31 @@ function isRuntimeProjectionNode(value: unknown): boolean {
     isFiniteVector3(value.scale) &&
     typeof value.visible === "boolean" &&
     isRuntimeBoundVisualState(value.visualState)
+  );
+}
+
+function isRuntimeBoundVisualState(value: unknown): boolean {
+  return (
+    typeof value === "string" &&
+    [
+      "default",
+      "open",
+      "closed",
+      "active",
+      "inactive",
+      "standby",
+      "available",
+      "dormant",
+      "collected",
+      "cooling",
+      "completed",
+      "idle",
+      "moving",
+      "alert",
+      "attacking",
+      "hit",
+      "defeated",
+    ].includes(value)
   );
 }
 

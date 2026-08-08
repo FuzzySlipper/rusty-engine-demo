@@ -1,10 +1,12 @@
 mod support;
 
-use core_ids::EntityId;
-use gameplay_mechanics::{EquipmentComponent, InventoryComponent, ItemComponent, TracksComponent};
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, GameRuntime, GameSnapshotError,
     GAME_SNAPSHOT_SCHEMA_VERSION,
+};
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::gameplay_mechanics::{
+    EquipmentComponent, InventoryComponent, ItemComponent, TracksComponent,
 };
 
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");

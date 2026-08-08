@@ -8,14 +8,14 @@ use loading_bay_game::{
     MAX_PROJECT_VOXEL_OBJECT_INSTANCES, MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS,
     STORED_PROJECT_SCHEMA_VERSION,
 };
-use serde_json::{json, Value};
-use voxel_asset::{
+use rusty_engine::voxel_asset::{
     with_computed_voxel_object_hashes, VoxelAssetBounds, VoxelAssetMaterialBinding,
     VoxelAssetMaterialMapping, VoxelCoordinateSystem, VoxelFrame, VoxelObjectAnimationFrame,
     VoxelObjectAsset, VoxelObjectClip, VoxelObjectGrid, VoxelObjectProvenance,
     VoxelObjectProvenanceKind, VoxelRepresentation, VoxelRepresentationKind, VoxelSparseRun,
     VOXEL_OBJECT_SCHEMA_VERSION,
 };
+use serde_json::{json, Value};
 
 const STATIC_PROJECT: &str =
     include_str!("../../../../content/projects/converted-wall.project.json");

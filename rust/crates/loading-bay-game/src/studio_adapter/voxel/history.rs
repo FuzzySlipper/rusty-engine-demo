@@ -1,4 +1,4 @@
-use engine_spatial::{
+use rusty_engine::engine_spatial::{
     PreparedVoxelHistoryRevert, VoxelEditHistoryDiffOptions, VoxelEditHistoryRevertReceipt,
 };
 

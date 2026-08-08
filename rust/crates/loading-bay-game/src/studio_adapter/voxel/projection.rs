@@ -1,11 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use asset_catalog::{AssetCatalog, UvStrategy, VoxelMaterialTable};
-use core_assets::AssetId;
-use core_voxel::VoxelMaterialId;
-use engine_inspector::inspect_voxel_asset;
-use render_model::{MaterialUvStrategy, RenderFrameDiff, RenderMaterialDescriptor};
-use render_projection::{voxel_material_id, VoxelProjectionInstance, VoxelRenderProjector};
+use rusty_engine::asset_catalog::{AssetCatalog, UvStrategy, VoxelMaterialTable};
+use rusty_engine::core_assets::AssetId;
+use rusty_engine::core_voxel::VoxelMaterialId;
+use rusty_engine::engine_inspector::inspect_voxel_asset;
+use rusty_engine::render_model::{MaterialUvStrategy, RenderFrameDiff, RenderMaterialDescriptor};
+use rusty_engine::render_projection::{
+    voxel_material_id, VoxelProjectionInstance, VoxelRenderProjector,
+};
 
 use crate::StoredProject;
 
@@ -184,7 +186,10 @@ pub(crate) fn voxel_authoring_readout(
     })
 }
 
-fn render_material(slot: u16, material: asset_catalog::RenderMaterial) -> RenderMaterialDescriptor {
+fn render_material(
+    slot: u16,
+    material: rusty_engine::asset_catalog::RenderMaterial,
+) -> RenderMaterialDescriptor {
     RenderMaterialDescriptor {
         schema_version: 1,
         id: voxel_material_id(slot),

@@ -8,7 +8,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-use core_ids::EntityId;
+use rusty_engine::core_ids::EntityId;
 use serde::{Deserialize, Serialize};
 
 use crate::{

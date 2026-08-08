@@ -6,14 +6,16 @@
 
 use std::collections::BTreeMap;
 
-use render_model::{
+use rusty_engine::render_model::{
     MaterialUvStrategy, MeshMaterialSlot, RenderFrameDiff, RenderMaterialDescriptor,
     RenderMetadata, Transform,
 };
-use render_projection::{VoxelObjectProjectionInstance, VoxelObjectRenderProjector};
-use voxel_asset::VoxelObjectAsset;
-use voxel_convert::VoxelObjectFrameSelection;
-use voxel_object_runtime::{admit_voxel_object, AdmittedVoxelObject, VoxelObjectRuntimeLimits};
+use rusty_engine::render_projection::{VoxelObjectProjectionInstance, VoxelObjectRenderProjector};
+use rusty_engine::voxel_asset::VoxelObjectAsset;
+use rusty_engine::voxel_convert::VoxelObjectFrameSelection;
+use rusty_engine::voxel_object_runtime::{
+    admit_voxel_object, AdmittedVoxelObject, VoxelObjectRuntimeLimits,
+};
 
 use crate::stored_project::validate_voxel_object_aggregate_budget;
 use crate::{StoredProject, StoredVoxelObjectFrameSelection, StoredVoxelObjectMaterialOverride};
@@ -239,7 +241,7 @@ fn projection_error(message: impl Into<String>) -> StoredVoxelObjectProjectionEr
 
 #[cfg(test)]
 mod tests {
-    use render_model::RenderDiff;
+    use rusty_engine::render_model::RenderDiff;
 
     use super::project_stored_voxel_objects;
     use crate::decode_project_document;
