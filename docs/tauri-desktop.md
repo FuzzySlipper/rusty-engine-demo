@@ -133,7 +133,8 @@ pnpm run deploy:tauri -- uninstall --purge-data # explicit destructive reset
 
 `pnpm run certify:tauri-deploy` certifies the active install. It drives the absolute installed
 binary through Tauri 2 WebDriver from a temporary working directory, captures full and 960×540
-screenshots, checks New Game/first frame, renderer disposal/remount, singleton delegation,
+screenshots, checks New Game/native-renderer boundary, browser projection disposal/remount,
+singleton delegation,
 focus loss plus the native show/unminimize/focus activation receipt, WebKit/WebGL identity,
 native process-tree RSS and idle activity,
 normal/crash cleanup, a visible fail-closed startup screen, and then runs the unchanged complete

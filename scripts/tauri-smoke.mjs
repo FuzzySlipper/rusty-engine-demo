@@ -436,16 +436,17 @@ async function runProductSession({
               `status=${state.rendererStatus} overlay=${state.overlay} error=${state.runtimeError}\n`,
           );
         }
-        return state.lifecycle === "mounted" &&
-          state.renderSequence > 0 &&
+        return state.lifecycle === "native-host" &&
+          state.renderSequence === null &&
+          state.runtimeError === "" &&
           (continueGame ? state.overlay : !state.overlay)
           ? state
           : null;
       },
-      "authoritative rendered game frame",
+      "native renderer boundary and authoritative Rust session",
       240_000,
     );
-    frame.firstFrameMilliseconds = performance.now() - gameStartedAt;
+    frame.boundaryReadyMilliseconds = performance.now() - gameStartedAt;
     frame.continuedCompletedCampaign = continueGame
       ? await execute(
           sessionId,
@@ -581,31 +582,67 @@ async function exerciseInstalledWindow(first) {
   mkdirSync(dirname(narrowScreenshotPath), { recursive: true });
   writeFileSync(narrowScreenshotPath, Buffer.from(narrowScreenshot, "base64"));
 
-  const remount = await executeAsync(
-    first.sessionId,
-    `const done = arguments[arguments.length - 1];
-     (async () => {
-       const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-       const waitFor = async (predicate, label) => {
-         const deadline = Date.now() + 30000;
-         while (Date.now() < deadline) {
-           if (predicate()) return;
-           await delay(50);
-         }
-         throw new Error("timed out waiting for " + label);
-       };
-       location.hash = "#/diagnostics";
-       await waitFor(() => document.body.dataset.rendererLifecycle === "disposed", "renderer disposal");
-       history.back();
-       await waitFor(() => document.body.dataset.rendererLifecycle === "mounted", "renderer remount");
-       return {
-         lifecycle: document.body.dataset.rendererLifecycle,
-         routeDisposal: document.body.dataset.routeDisposal ?? null,
-         renderSequence: Number(document.querySelector("#renderer-telemetry")?.dataset.rendererRenderSequence ?? "0"),
-       };
-     })().then(done, (error) => done({ error: String(error?.stack ?? error) }));`,
+  await execute(first.sessionId, `document.exitPointerLock(); return true;`);
+  await waitFor(
+    () =>
+      execute(first.sessionId, `return document.pointerLockElement === null;`),
+    "pointer lock release before route navigation",
   );
-  if (remount?.error) throw new Error(remount.error);
+  const openedDiagnostics = await execute(
+    first.sessionId,
+    `const link = document.querySelector("a.diagnostics-link");
+     if (!(link instanceof HTMLAnchorElement)) return false;
+     link.click();
+     return true;`,
+  );
+  if (!openedDiagnostics) {
+    throw new Error("browser projection exposes no Diagnostics route link");
+  }
+  let lastDisposalState = null;
+  try {
+    await waitFor(async () => {
+      lastDisposalState = await execute(
+        first.sessionId,
+        `return {
+          hash: location.hash,
+          diagnostics: document.querySelector("red-diagnostics-screen") !== null,
+          lifecycle: document.body.dataset.rendererLifecycle ?? null,
+          routeDisposal: document.body.dataset.routeDisposal ?? null,
+        };`,
+      );
+      return lastDisposalState.diagnostics &&
+        lastDisposalState.routeDisposal === "pass"
+        ? lastDisposalState
+        : null;
+    }, "browser projection disposal receipt");
+  } catch (error) {
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}: ${JSON.stringify(lastDisposalState)}`,
+    );
+  }
+  const returnedToGame = await execute(
+    first.sessionId,
+    `const link = document.querySelector("red-diagnostics-screen a");
+     if (!(link instanceof HTMLAnchorElement)) return false;
+     link.click();
+     return true;`,
+  );
+  if (!returnedToGame) {
+    throw new Error("Diagnostics route exposes no game return link");
+  }
+  const remount = await waitFor(async () => {
+    const state = await execute(
+      first.sessionId,
+      `return {
+        lifecycle: document.body.dataset.rendererLifecycle ?? null,
+        routeDisposal: document.body.dataset.routeDisposal ?? null,
+        renderSequence: Number(document.querySelector("#renderer-telemetry")?.dataset.rendererRenderSequence ?? "0"),
+      };`,
+    );
+    return state.lifecycle === "native-host" && state.renderSequence === 0
+      ? state
+      : null;
+  }, "browser projection remount");
   return { narrowViewport, remount, narrowScreenshot: narrowScreenshotPath };
 }
 
@@ -617,10 +654,7 @@ async function proveSingleInstance(first) {
   const before = readdirSync(readyDirectory).filter((name) =>
     /^host-ready-\d+\.json$/.test(name),
   );
-  const activationReceiptPath = join(
-    readyDirectory,
-    "desktop-activation.json",
-  );
+  const activationReceiptPath = join(readyDirectory, "desktop-activation.json");
   const activationReceiptBefore = existsSync(activationReceiptPath)
     ? readFileSync(activationReceiptPath, "utf8")
     : null;
@@ -636,14 +670,16 @@ async function proveSingleInstance(first) {
     () => execute(first.sessionId, "return document.hasFocus() === false;"),
     "native window focus loss",
   );
-  const display = process.env.DISPLAY ??
+  const display =
+    process.env.DISPLAY ??
     (existsSync(displayEvidencePath)
       ? readFileSync(displayEvidencePath, "utf8").trim()
       : "");
   if (!display) {
     throw new Error("single-instance proof has no native display");
   }
-  const xauthority = process.env.XAUTHORITY ??
+  const xauthority =
+    process.env.XAUTHORITY ??
     (existsSync(xauthorityEvidencePath)
       ? readFileSync(xauthorityEvidencePath, "utf8").trim()
       : "");
@@ -659,8 +695,9 @@ async function proveSingleInstance(first) {
   });
   const secondaryOutput = { stdout: "", stderr: "" };
   const retainSecondaryOutput = (stream, chunk) => {
-    secondaryOutput[stream] =
-      `${secondaryOutput[stream]}${chunk}`.slice(-16_384);
+    secondaryOutput[stream] = `${secondaryOutput[stream]}${chunk}`.slice(
+      -16_384,
+    );
   };
   second.stdout.on("data", (chunk) => retainSecondaryOutput("stdout", chunk));
   second.stderr.on("data", (chunk) => retainSecondaryOutput("stderr", chunk));
@@ -864,9 +901,10 @@ try {
   if (
     !/^http:\/\/127\.0\.0\.1:\d+$/.test(first.result.origin) ||
     typeof first.result.menu?.hostSessionId !== "string" ||
-    first.result.renderSequence <= 0 ||
-    first.result.lifecycle !== "mounted" ||
+    first.result.renderSequence !== null ||
+    first.result.lifecycle !== "native-host" ||
     first.result.runtimeError !== "" ||
+    first.result.webGl?.renderer !== null ||
     !first.result.securityHeaders?.contentSecurityPolicy?.includes(
       "ws://127.0.0.1:*",
     ) ||

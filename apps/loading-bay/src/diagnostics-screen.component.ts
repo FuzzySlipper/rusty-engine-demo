@@ -12,11 +12,12 @@ import { RouterLink } from "@angular/router";
   standalone: true,
   template: `
     <main class="lifecycle-screen">
-      <p class="eyebrow">Renderer lifecycle proof</p>
-      <h1>Shared surface released</h1>
+      <p class="eyebrow">Projection lifecycle proof</p>
+      <h1>Browser projection released</h1>
       <p>
-        This route owns no renderer. Returning to the game creates one new
-        shared surface under the game route lifecycle.
+        This route owns no renderer. Returning to the game reconnects the
+        HUD/control projection while the rendered world remains in the native
+        Engine host.
       </p>
       <a routerLink="/game">Return to Loading Bay</a>
     </main>
@@ -25,7 +26,10 @@ import { RouterLink } from "@angular/router";
 export class DiagnosticsScreenComponent {
   constructor() {
     afterNextRender(() => {
-      const disposed = document.body.dataset.rendererLifecycle === "disposed";
+      const disposed =
+        document.querySelector("red-game-screen") === null &&
+        document.querySelector("#viewport") === null;
+      document.body.dataset.rendererLifecycle = "disposed";
       document.body.dataset.routeDisposal = disposed ? "pass" : "fail";
       if (new URLSearchParams(location.search).has("lifecycle-smoke")) {
         document.body.dataset.smokeStatus = disposed ? "pass" : "fail";

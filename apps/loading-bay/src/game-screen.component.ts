@@ -107,16 +107,15 @@ declare global {
       <section
         class="viewport-card"
         [class.hud-hidden]="!settings().hudVisible"
-        aria-label="Three-dimensional encounter view"
+        aria-label="Native game controls"
       >
-        <canvas
+        <div
           id="viewport"
-          width="1600"
-          height="900"
           tabindex="0"
           [attr.inert]="modalActive() ? '' : null"
-          aria-label="Loading Bay first-person viewport. Click to capture the pointer."
-        ></canvas>
+          role="application"
+          aria-label="Loading Bay native input surface. Click to capture the pointer."
+        ></div>
         <div
           id="feedback-layer"
           class="feedback-layer"
@@ -592,7 +591,7 @@ Awaiting session telemetry</pre
       </details>
 
       <footer>
-        <span id="renderer-status">Renderer starting…</span>
+        <span id="renderer-status">World rendering: native Engine host</span>
         <span id="smoke-result" data-status="idle">Product proof idle</span>
       </footer>
     </main>
@@ -723,8 +722,8 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     const handle = this.handle;
     this.handle = null;
     delete window.__loadingBayAnimationCapture;
+    document.body.dataset.rendererLifecycle = "disposed";
     if (handle !== null) {
-      document.body.dataset.rendererLifecycle = "disposed";
       void handle.dispose();
     }
   }
