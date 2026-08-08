@@ -185,11 +185,11 @@ const rustBrowserSession = readFileSync(
 );
 if (
   !rustBrowserSession.includes(
-    "const MAX_OUTBOUND_BUFFER_BYTES: usize = 2 * 1024 * 1024;",
+    "const MAX_OUTBOUND_BUFFER_BYTES: usize = 4 * 1024 * 1024;",
   )
 ) {
   violations.push(
-    "rust/crates/loading-bay-game/src/bin/browser_host/session.rs: cold bootstrap transport must retain its explicit 2 MiB bound",
+    "rust/crates/loading-bay-game/src/bin/browser_host/session.rs: cold bootstrap transport must retain its explicit 4 MiB bound (doom-e1m1 1.99M envelope requires headroom beyond 2M)",
   );
 }
 for (const packageName of [

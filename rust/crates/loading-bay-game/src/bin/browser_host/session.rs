@@ -27,10 +27,10 @@ use super::{
 
 const PROTOCOL_VERSION: u16 = 1;
 const SESSION_READ_TIMEOUT: Duration = Duration::from_millis(1);
-const SESSION_WRITE_TIMEOUT: Duration = Duration::from_millis(100);
+const SESSION_WRITE_TIMEOUT: Duration = Duration::from_millis(2000);
 const MAX_COMMAND_BYTES: usize = 16 * 1024;
 const MAX_COMMANDS_PER_POLL: usize = 32;
-const MAX_OUTBOUND_BUFFER_BYTES: usize = 2 * 1024 * 1024;
+const MAX_OUTBOUND_BUFFER_BYTES: usize = 4 * 1024 * 1024;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
