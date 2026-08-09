@@ -380,7 +380,7 @@ async function main() {
           return 'clicked';
         })()`,
         ).catch(() => "eval-error");
-        if (clickResult === "clicked" || clickResult === "disabled") {
+        if (clickResult === "clicked") {
           console.log(`doom card click: ${clickResult}`);
           break;
         }
