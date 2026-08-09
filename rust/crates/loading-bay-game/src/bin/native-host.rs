@@ -8,7 +8,8 @@ use std::{
 use anyhow::{bail, Context, Result};
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, encode_game_snapshot,
-    project_stored_voxel_volume, GameRuntime, ResolvedPlayerAction, StoredProject,
+    project_stored_voxel_volume, GameRuntime, LoadingBayGameLoop, PlayerInputCommand,
+    PlayerInputIntent, ResolvedPlayerAction, StoredProject,
 };
 use rusty_engine::{
     core_ids::EntityId,
@@ -130,7 +131,9 @@ struct PendingPick {
 
 struct NativeApplication {
     options: Options,
-    runtime: GameRuntime,
+    runtime: LoadingBayGameLoop,
+    input_sequence: u64,
+    last_loop_advance: Instant,
     mesh: StaticMeshAsset,
     resources: Vec<RendererResource>,
     doom_texture_frame: Option<RenderFrameDiff>,
@@ -231,9 +234,14 @@ impl NativeApplication {
                 0,
             )
         };
+        let mut runtime = LoadingBayGameLoop::new(runtime, PLAYER)
+            .context("create the native product game loop")?;
+        runtime.start_connection();
         Ok(Self {
             options,
             runtime,
+            input_sequence: 0,
+            last_loop_advance: Instant::now(),
             mesh,
             resources,
             doom_texture_frame,
@@ -359,18 +367,23 @@ impl NativeApplication {
 
     fn apply_input(&mut self, input: &RendererPhysicalInputReadout) -> Result<()> {
         let pressed = input.pressed_codes.iter().cloned().collect::<BTreeSet<_>>();
-        let revision_before = self.runtime.readout().entity_revision;
+        let revision_before = self.runtime.runtime().readout().entity_revision;
         if pressed.is_empty() && input.pointer.buttons == 0 {
-            self.proof.input_noop |= self.runtime.readout().entity_revision == revision_before;
+            self.proof.input_noop |=
+                self.runtime.runtime().readout().entity_revision == revision_before;
         }
-        if input.pointer.buttons & 1 != 0 && self.pointer_buttons & 1 == 0 {
+        if !self.options.doom_e1m1
+            && input.pointer.buttons & 1 != 0
+            && self.pointer_buttons & 1 == 0
+        {
             let before = self
                 .runtime
+                .runtime()
                 .session()
                 .player_controller(PLAYER)
                 .context("project player controller is missing")?
                 .state;
-            self.runtime.apply_player_action(
+            self.runtime.runtime_mut().apply_player_action(
                 PLAYER,
                 ResolvedPlayerAction::Look {
                     yaw_delta: 0.25,
@@ -379,6 +392,7 @@ impl NativeApplication {
             )?;
             let after = self
                 .runtime
+                .runtime()
                 .session()
                 .player_controller(PLAYER)
                 .context("project player controller disappeared")?
@@ -389,36 +403,33 @@ impl NativeApplication {
         if self.options.doom_e1m1 {
             let forward = f32::from(pressed.contains("KeyW")) - f32::from(pressed.contains("KeyS"));
             let right = f32::from(pressed.contains("KeyD")) - f32::from(pressed.contains("KeyA"));
-            if forward != 0.0 || right != 0.0 {
-                self.runtime
-                    .apply_player_action(PLAYER, ResolvedPlayerAction::Move { forward, right })?;
-            }
             let yaw_delta = f32::from(pressed.contains("ArrowRight"))
                 - f32::from(pressed.contains("ArrowLeft"));
             let pitch_delta =
                 f32::from(pressed.contains("ArrowDown")) - f32::from(pressed.contains("ArrowUp"));
-            if yaw_delta != 0.0 || pitch_delta != 0.0 {
-                self.runtime.apply_player_action(
-                    PLAYER,
-                    ResolvedPlayerAction::Look {
-                        yaw_delta: yaw_delta * 0.12,
-                        pitch_delta: pitch_delta * 0.12,
+            self.input_sequence = self.input_sequence.saturating_add(1);
+            self.runtime
+                .submit_input(PlayerInputCommand {
+                    connection_generation: self.runtime.input_session().connection_generation,
+                    sequence: self.input_sequence,
+                    intent: PlayerInputIntent {
+                        movement: [forward, right],
+                        look_delta: [yaw_delta * 0.12, pitch_delta * 0.12],
+                        primary_fire_held: input.pointer.buttons & 1 != 0,
                     },
-                )?;
-            }
-            if forward != 0.0 || right != 0.0 || yaw_delta != 0.0 || pitch_delta != 0.0 {
-                self.sync_doom_camera()?;
-            }
+                })
+                .map_err(|error| anyhow::anyhow!("submit native semantic input: {error}"))?;
         } else if let Some(code) = pressed.difference(&self.pressed_codes).next() {
-            let revision_before = self.runtime.readout().entity_revision;
+            let revision_before = self.runtime.runtime().readout().entity_revision;
             if code == "Enter" {
                 let before = self
                     .runtime
+                    .runtime()
                     .session()
                     .player_controller(PLAYER)
                     .context("project player controller is missing")?
                     .state;
-                self.runtime.apply_player_action(
+                self.runtime.runtime_mut().apply_player_action(
                     PLAYER,
                     ResolvedPlayerAction::Look {
                         yaw_delta: 0.25,
@@ -427,6 +438,7 @@ impl NativeApplication {
                 )?;
                 let after = self
                     .runtime
+                    .runtime()
                     .session()
                     .player_controller(PLAYER)
                     .context("project player controller disappeared")?
@@ -436,7 +448,8 @@ impl NativeApplication {
                     self.request_pick(PickKind::Miss)?;
                 }
             } else if code == "Escape" {
-                self.proof.input_noop = self.runtime.readout().entity_revision == revision_before;
+                self.proof.input_noop =
+                    self.runtime.runtime().readout().entity_revision == revision_before;
             }
         }
         self.pressed_codes = pressed;
@@ -453,9 +466,24 @@ impl NativeApplication {
         Ok(())
     }
 
+    fn advance_doom_game_loop(&mut self) -> Result<()> {
+        let now = Instant::now();
+        let elapsed = now.saturating_duration_since(self.last_loop_advance);
+        self.last_loop_advance = now;
+        if self.options.proof || !self.options.doom_e1m1 || !self.ready {
+            return Ok(());
+        }
+        let receipt = self.runtime.advance_elapsed(elapsed)?;
+        if !receipt.fixed_ticks.is_empty() {
+            self.sync_doom_camera()?;
+        }
+        Ok(())
+    }
+
     fn doom_camera_pose(&self) -> Result<RendererCameraPose> {
         let player = self
             .runtime
+            .runtime()
             .session()
             .player_controller(PLAYER)
             .context("Doom player controller is missing")?;
@@ -502,7 +530,7 @@ impl NativeApplication {
         self.pending_pick = Some(PendingPick {
             request_id,
             kind,
-            revision_before: self.runtime.readout().entity_revision,
+            revision_before: self.runtime.runtime().readout().entity_revision,
         });
         Ok(())
     }
@@ -525,7 +553,7 @@ impl NativeApplication {
         match pending.kind {
             PickKind::Miss => {
                 if receipt.hint.is_some()
-                    || self.runtime.readout().entity_revision != pending.revision_before
+                    || self.runtime.runtime().readout().entity_revision != pending.revision_before
                 {
                     bail!("miss pick changed Loading Bay authority");
                 }
@@ -543,20 +571,22 @@ impl NativeApplication {
                 }
                 let before = self
                     .runtime
+                    .runtime()
                     .session()
                     .switch(INTERLOCK)
                     .context("authored generator interlock is missing")?
                     .activation_count;
-                self.runtime.interact(PLAYER, INTERLOCK)?;
+                self.runtime.runtime_mut().interact(PLAYER, INTERLOCK)?;
                 let after = self
                     .runtime
+                    .runtime()
                     .session()
                     .switch(INTERLOCK)
                     .context("authored generator interlock disappeared")?
                     .activation_count;
                 self.proof.pick_authority = after == before.saturating_add(1)
-                    && self.runtime.readout().entity_revision > pending.revision_before;
-                let saved = encode_game_snapshot(&self.runtime)?;
+                    && self.runtime.runtime().readout().entity_revision > pending.revision_before;
+                let saved = encode_game_snapshot(self.runtime.runtime())?;
                 let restored = decode_game_snapshot(&saved)?;
                 self.proof.save_round_trip = restored
                     .session()
@@ -564,6 +594,7 @@ impl NativeApplication {
                     .map(|view| view.state)
                     == self
                         .runtime
+                        .runtime()
                         .session()
                         .player_controller(PLAYER)
                         .map(|view| view.state)
@@ -573,6 +604,7 @@ impl NativeApplication {
                         .map(|view| view.activation_count)
                         == self
                             .runtime
+                            .runtime()
                             .session()
                             .switch(INTERLOCK)
                             .map(|view| view.activation_count);
@@ -771,6 +803,10 @@ impl ApplicationHandler for NativeApplication {
         if self.failure.is_some() || self.dispose_request.is_some() {
             return;
         }
+        if let Err(error) = self.advance_doom_game_loop() {
+            self.fail(event_loop, error);
+            return;
+        }
         if (!self.options.doom_e1m1 || !self.options.proof)
             && self.ready
             && self.renderer.is_some()
@@ -780,7 +816,7 @@ impl ApplicationHandler for NativeApplication {
                 self.fail(event_loop, error);
                 return;
             }
-            self.next_input_poll = Instant::now() + Duration::from_millis(40);
+            self.next_input_poll = Instant::now() + Duration::from_millis(16);
         }
         let proof_complete = if self.options.doom_e1m1 {
             self.proof.frame
