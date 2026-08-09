@@ -1,13 +1,13 @@
 {
   "kind": "doom-browser-smoke.v1",
-  "generatedAt": "2026-08-09T10:51:44.197Z",
+  "generatedAt": "2026-08-09T11:54:34.354Z",
   "host": {
     "projectId": "doom-e1m1",
     "assets": 150,
     "entities": 90,
-    "address": "127.0.0.1:39613",
+    "address": "127.0.0.1:46511",
     "health": "ok",
-    "stateTick": 3,
+    "stateTick": 1,
     "player": [
       114,
       9.5,
@@ -40,10 +40,10 @@
     "click-to-host-identity ok (hash=#/game?mode=new&project=doom-e1m1)",
     "Chromium interaction control activated switch 88 and opened door at tick 77",
     "Chromium Mouse0 fired weapon/arc-pistol (30 -> 29)",
-    "WASD traversed admitted E1M1 sectors at WAD floor heights 0, -8, -16, and -24",
-    "Chromium interaction control completed exit 89 at tick 7694"
+    "Rust terrain-contact readback proved 4 admitted E1M1 floor levels (6, 7, 8, 9)",
+    "Chromium interaction control completed exit 89 at tick 7410"
   ],
-  "chromiumDumpBytes": 4135,
+  "chromiumDumpBytes": 4189,
   "staticRevision": "sha256:0d64257bc223f624a5697b2b0e9063b97c135ed87b3a0b88974aab7ea324e4dc",
   "headless": {
     "lifecycle": "native-host",
@@ -66,10 +66,2583 @@
         "before": 30,
         "after": 29
       },
-      "traversalSampleCount": 300,
+      "traversalSampleCount": 285,
       "traversalHeightRange": [
         9.5,
         9.5
+      ],
+      "admittedFloorLevels": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "terrainContacts": [
+        {
+          "voxel": [
+            114,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            114,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            114,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            114,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            114,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            114,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            116,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            118,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            118,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            118,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            119,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            119,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            119,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            119,
+            8,
+            78
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            119,
+            8,
+            79
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            119,
+            8,
+            79
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            119,
+            8,
+            79
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            121,
+            8,
+            79
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            121,
+            8,
+            79
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            121,
+            8,
+            79
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            121,
+            8,
+            80
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            121,
+            8,
+            80
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            122,
+            8,
+            80
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            122,
+            8,
+            80
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            122,
+            8,
+            80
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            122,
+            8,
+            80
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            122,
+            8,
+            81
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            122,
+            8,
+            81
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            122,
+            8,
+            81
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            122,
+            8,
+            81
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            123,
+            8,
+            81
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            123,
+            8,
+            81
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            123,
+            8,
+            81
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            123,
+            8,
+            81
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            123,
+            8,
+            82
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            123,
+            8,
+            82
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            125,
+            8,
+            82
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            125,
+            8,
+            82
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            125,
+            8,
+            82
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            125,
+            8,
+            83
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            125,
+            8,
+            83
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            125,
+            8,
+            83
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            127,
+            8,
+            83
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            83
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            83
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            85
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            87
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            89
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            91
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            7,
+            93
+          ],
+          "surfaceY": 8,
+          "materialSlot": 50
+        },
+        {
+          "voxel": [
+            129,
+            7,
+            95
+          ],
+          "surfaceY": 8,
+          "materialSlot": 4
+        },
+        {
+          "voxel": [
+            129,
+            7,
+            97
+          ],
+          "surfaceY": 8,
+          "materialSlot": 4
+        },
+        {
+          "voxel": [
+            129,
+            7,
+            99
+          ],
+          "surfaceY": 8,
+          "materialSlot": 4
+        },
+        {
+          "voxel": [
+            129,
+            7,
+            101
+          ],
+          "surfaceY": 8,
+          "materialSlot": 4
+        },
+        {
+          "voxel": [
+            129,
+            7,
+            103
+          ],
+          "surfaceY": 8,
+          "materialSlot": 4
+        },
+        {
+          "voxel": [
+            129,
+            7,
+            105
+          ],
+          "surfaceY": 8,
+          "materialSlot": 4
+        },
+        {
+          "voxel": [
+            129,
+            7,
+            107
+          ],
+          "surfaceY": 8,
+          "materialSlot": 4
+        },
+        {
+          "voxel": [
+            129,
+            7,
+            109
+          ],
+          "surfaceY": 8,
+          "materialSlot": 4
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            111
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            113
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            115
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            117
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            119
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            121
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            123
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            125
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            127
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            129
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            129,
+            8,
+            129
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            129
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            129
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            129
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            131
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            133
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            135
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            137
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            137
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            138
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            138
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            138
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            130,
+            8,
+            138
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            131,
+            8,
+            138
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            131,
+            8,
+            138
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            131,
+            8,
+            138
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            131,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            131,
+            8,
+            142
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            131,
+            8,
+            143
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            131,
+            8,
+            143
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            131,
+            8,
+            143
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            133,
+            8,
+            143
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            133,
+            8,
+            143
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            133,
+            8,
+            144
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            133,
+            8,
+            144
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            133,
+            8,
+            144
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            135,
+            8,
+            144
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            136,
+            8,
+            144
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            136,
+            8,
+            144
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            136,
+            8,
+            144
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            136,
+            8,
+            144
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            136,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            136,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            136,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            138,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            140,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            142,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            144,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            146,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            148,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            150,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            152,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            154,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            156,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            158,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            160,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            162,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            164,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            166,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            168,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            170,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            172,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            174,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            176,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            176,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            177,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            177,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            177,
+            8,
+            145
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            177,
+            8,
+            143
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            177,
+            8,
+            141
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            177,
+            8,
+            141
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            177,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            177,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            177,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            179,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            181,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            183,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            185,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            187,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            189,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            191,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            193,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            195,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            197,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            199,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            201,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            203,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            205,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            207,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            209,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            211,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            213,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            215,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            217,
+            8,
+            140
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            219,
+            7,
+            140
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            221,
+            7,
+            140
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            223,
+            7,
+            140
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            223,
+            7,
+            140
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            223,
+            7,
+            139
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            223,
+            7,
+            139
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            223,
+            7,
+            139
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            223,
+            7,
+            139
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            225,
+            7,
+            139
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            225,
+            7,
+            139
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            225,
+            7,
+            138
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            225,
+            7,
+            138
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            225,
+            7,
+            138
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            227,
+            7,
+            138
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            227,
+            7,
+            138
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            227,
+            7,
+            137
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            227,
+            7,
+            137
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            227,
+            7,
+            137
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            227,
+            7,
+            137
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            229,
+            7,
+            137
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            229,
+            7,
+            137
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            229,
+            7,
+            136
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            229,
+            7,
+            136
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            229,
+            7,
+            136
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            229,
+            7,
+            136
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            229,
+            7,
+            136
+          ],
+          "surfaceY": 8,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            230,
+            7,
+            136
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            230,
+            7,
+            136
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            230,
+            7,
+            136
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            230,
+            7,
+            135
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            230,
+            7,
+            135
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            230,
+            7,
+            135
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            135
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            135
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            135
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            133
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            132
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            132
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            132
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            132
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            132
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            232,
+            7,
+            132
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            232,
+            7,
+            132
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            232,
+            7,
+            132
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            232,
+            7,
+            130
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            232,
+            7,
+            130
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            130
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            130
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            130
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            128
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            127
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            127
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            127
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            127
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            234,
+            7,
+            127
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            234,
+            7,
+            127
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            234,
+            7,
+            127
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            234,
+            7,
+            125
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            234,
+            7,
+            124
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            234,
+            7,
+            124
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            234,
+            7,
+            124
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            124
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            124
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            124
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            124
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            122
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            120
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            118
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            116
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            114
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            112
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            110
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            108
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            106
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            6,
+            104
+          ],
+          "surfaceY": 7,
+          "materialSlot": 42
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            102
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            100
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            98
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            5,
+            96
+          ],
+          "surfaceY": 6,
+          "materialSlot": 17
+        },
+        {
+          "voxel": [
+            235,
+            5,
+            94
+          ],
+          "surfaceY": 6,
+          "materialSlot": 17
+        },
+        {
+          "voxel": [
+            235,
+            5,
+            92
+          ],
+          "surfaceY": 6,
+          "materialSlot": 17
+        },
+        {
+          "voxel": [
+            235,
+            5,
+            90
+          ],
+          "surfaceY": 6,
+          "materialSlot": 17
+        },
+        {
+          "voxel": [
+            235,
+            5,
+            88
+          ],
+          "surfaceY": 6,
+          "materialSlot": 17
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            86
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            84
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            82
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            80
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            80
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            78
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            76
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            74
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            72
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            70
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            68
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            66
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            64
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            62
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            60
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            58
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            56
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            54
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            52
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            50
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            48
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            46
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            44
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            42
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            40
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            40
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            38
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            36
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            34
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            32
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            30
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            28
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            26
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            24
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            22
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            20
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            18
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            16
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            14
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            12
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            10
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            235,
+            7,
+            10
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            10
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            10
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            232,
+            7,
+            10
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            232,
+            7,
+            10
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            232,
+            7,
+            10
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            8
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            7
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            231,
+            7,
+            5
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        }
       ],
       "authoredFloorHeights": [
         0,
@@ -78,9 +2651,9 @@
         -24
       ],
       "finalPosition": [
-        231.31622,
+        231.25763,
         9.5,
-        6.582236
+        5.3508654
       ],
       "completedExit": {
         "id": 89,
@@ -88,7 +2661,7 @@
         "activationRadius": 2.5,
         "presentation": "Doom E1M1 complete",
         "completedBy": 1,
-        "completedAtTick": 7694
+        "completedAtTick": 7410
       }
     }
   }

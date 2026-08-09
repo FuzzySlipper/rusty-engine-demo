@@ -1,16 +1,18 @@
 use std::{
     collections::BTreeSet,
-    env,
+    env, fs,
     io::{self, Write},
     time::{Duration, Instant},
 };
 
 use anyhow::{bail, Context, Result};
 use loading_bay_game::{
-    decode_game_snapshot, encode_game_snapshot, GameRuntime, ResolvedPlayerAction,
+    decode_game_snapshot, decode_project_document, encode_game_snapshot,
+    project_stored_voxel_volume, GameRuntime, ResolvedPlayerAction, StoredProject,
 };
 use rusty_engine::{
     core_ids::EntityId,
+    engine_spatial::VoxelCollisionScene,
     render_host_contracts::{
         RendererCameraPose, RendererCameraProjection, RendererCompositionCamera,
         RendererCompositionTarget, RendererPhysicalInputReadout, RendererPickFilter,
@@ -24,8 +26,8 @@ use rusty_engine::{
         MeshCollisionPolicy, MeshGroupDescriptor, MeshIndexWidth, MeshMaterialSlot,
         MeshPayloadDescriptor, MeshPayloadSource, MeshProvenance, PackedMeshResource, RenderDiff,
         RenderFrameDiff, RenderHandle, RenderLayer, RenderMaterialDescriptor, RenderMetadata,
-        RenderNode, StaticMeshAsset, StaticMeshInstanceDescriptor, Transform,
-        MAX_MESH_RESOURCE_BYTES,
+        RenderNode, StaticMeshAsset, StaticMeshInstanceDescriptor, TextureDescriptor,
+        TextureFilter, TextureWrap, Transform, MAX_MESH_RESOURCE_BYTES,
     },
     renderer_webview_host::{
         RendererResource, RendererWebviewAdapter, RendererWebviewBounds,
@@ -49,12 +51,14 @@ const MATERIAL_ID: &str = "material/brush-kit/vent-panel";
 struct Options {
     proof: bool,
     corrupt_resource: bool,
+    doom_e1m1: bool,
 }
 
 impl Options {
     fn parse() -> Result<Self> {
         let mut proof = false;
         let mut corrupt_resource = false;
+        let mut doom_e1m1 = false;
         for argument in env::args().skip(1) {
             match argument.as_str() {
                 "--proof" => proof = true,
@@ -62,12 +66,17 @@ impl Options {
                     proof = true;
                     corrupt_resource = true;
                 }
+                "--proof-doom-e1m1" => {
+                    proof = true;
+                    doom_e1m1 = true;
+                }
                 _ => bail!("unknown argument {argument}"),
             }
         }
         Ok(Self {
             proof,
             corrupt_resource,
+            doom_e1m1,
         })
     }
 }
@@ -122,7 +131,15 @@ struct NativeApplication {
     options: Options,
     runtime: GameRuntime,
     mesh: StaticMeshAsset,
-    resource: PackedMeshResource,
+    resources: Vec<RendererResource>,
+    doom_texture_frame: Option<RenderFrameDiff>,
+    doom_frame: Option<RenderFrameDiff>,
+    doom_scene_submitted: bool,
+    doom_texture_request: Option<u64>,
+    doom_scene_request: Option<u64>,
+    doom_horizontal_surfaces: bool,
+    doom_vertical_surfaces: bool,
+    doom_texture_count: usize,
     window: Option<Window>,
     renderer: Option<RendererWebviewAdapter>,
     pressed_codes: BTreeSet<String>,
@@ -139,15 +156,101 @@ struct NativeApplication {
 
 impl NativeApplication {
     fn new(options: Options) -> Result<Self> {
-        let project = include_str!("../../../../../content/projects/loading-bay.project.json");
+        let project = if options.doom_e1m1 {
+            include_str!("../../../../../content/projects/doom-e1m1.project.json")
+        } else {
+            include_str!("../../../../../content/projects/loading-bay.project.json")
+        };
         let runtime = GameRuntime::from_stored_project(project)
-            .context("admit the checked-in Loading Bay project")?;
+            .context("admit the checked-in native product project")?;
         let (mesh, resource) = prepare_product_mesh(PRODUCT_GLB)?;
+        let (
+            resources,
+            doom_texture_frame,
+            doom_frame,
+            doom_horizontal_surfaces,
+            doom_vertical_surfaces,
+            doom_texture_count,
+        ) = if options.doom_e1m1 {
+            let stored = decode_project_document(project)?.project;
+            let admitted_scene = runtime
+                .collision_scene()
+                .context("Doom project has no admitted voxel environment")?;
+            let route_scene = VoxelCollisionScene::from_material_voxels(
+                admitted_scene.voxel_size(),
+                admitted_scene.chunk_size(),
+                admitted_scene
+                    .material_voxels()
+                    .iter()
+                    .filter(|voxel| {
+                        (105..=150).contains(&voxel.address[0])
+                            && (60..=155).contains(&voxel.address[2])
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            )
+            .map_err(|error| anyhow::anyhow!("admit Doom route capture volume: {error:?}"))?;
+            let doom_horizontal_surfaces = route_scene.mesh_chunks().iter().any(|chunk| {
+                chunk
+                    .normals
+                    .chunks_exact(3)
+                    .any(|normal| normal[1].abs() > 0.9)
+            });
+            let doom_vertical_surfaces = route_scene.mesh_chunks().iter().any(|chunk| {
+                chunk
+                    .normals
+                    .chunks_exact(3)
+                    .any(|normal| normal[0].abs() > 0.9 || normal[2].abs() > 0.9)
+            });
+            if !doom_horizontal_surfaces || !doom_vertical_surfaces {
+                bail!("Doom route capture does not contain both horizontal and vertical surfaces");
+            }
+            let frame = project_stored_voxel_volume(&stored, &route_scene)?;
+            let (frame, mut resources) = externalize_frame_meshes(frame)?;
+            let (texture_resources, texture_ops) = doom_texture_projection(&stored)?;
+            let doom_texture_count = texture_resources.len();
+            if doom_texture_count != 54 {
+                bail!("Doom native proof requires 54 textures, found {doom_texture_count}");
+            }
+            resources.extend(texture_resources);
+            let texture_frame = RenderFrameDiff::try_from_ops(texture_ops)
+                .map_err(|error| anyhow::anyhow!("build Doom texture frame: {error:?}"))?;
+            (
+                resources,
+                Some(texture_frame),
+                Some(frame),
+                doom_horizontal_surfaces,
+                doom_vertical_surfaces,
+                doom_texture_count,
+            )
+        } else {
+            (
+                vec![RendererResource {
+                    identity: resource.resource.clone(),
+                    content_hash: resource.content_hash.clone(),
+                    media_type: "application/vnd.rusty-engine.mesh-resource".to_owned(),
+                    bytes: resource.bytes.clone(),
+                }],
+                None,
+                None,
+                false,
+                false,
+                0,
+            )
+        };
         Ok(Self {
             options,
             runtime,
             mesh,
-            resource,
+            resources,
+            doom_texture_frame,
+            doom_frame,
+            doom_scene_submitted: false,
+            doom_texture_request: None,
+            doom_scene_request: None,
+            doom_horizontal_surfaces,
+            doom_vertical_surfaces,
+            doom_texture_count,
             window: None,
             renderer: None,
             pressed_codes: BTreeSet::new(),
@@ -167,13 +270,18 @@ impl NativeApplication {
         let window = event_loop
             .create_window(
                 Window::default_attributes()
-                    .with_title("Loading Bay — Rust-native Engine renderer")
+                    .with_title(if self.options.doom_e1m1 {
+                        "Doom E1M1 — Rust-native Engine renderer"
+                    } else {
+                        "Loading Bay — Rust-native Engine renderer"
+                    })
                     .with_inner_size(winit::dpi::LogicalSize::new(960, 640)),
             )
             .context("create Loading Bay product window")?;
-        let mut bytes = self.resource.bytes.clone();
+        let mut resources = self.resources.clone();
         if self.options.corrupt_resource {
-            *bytes
+            *resources[0]
+                .bytes
                 .last_mut()
                 .context("packed product resource is empty")? ^= 0xff;
         }
@@ -184,12 +292,7 @@ impl NativeApplication {
                 bounds: window_bounds(&window),
                 clear_color: Some(0x101820),
                 pixel_ratio: window.scale_factor(),
-                resources: vec![RendererResource {
-                    identity: self.resource.resource.clone(),
-                    content_hash: self.resource.content_hash.clone(),
-                    media_type: "application/vnd.rusty-engine.mesh-resource".to_owned(),
-                    bytes,
-                }],
+                resources,
             },
         )
         .map_err(|error| anyhow::anyhow!("mount Engine-owned renderer: {error:?}"))?;
@@ -200,13 +303,34 @@ impl NativeApplication {
 
     fn initialize_renderer(&mut self) -> Result<()> {
         let renderer = self.renderer.as_mut().context("renderer unavailable")?;
-        renderer.submit_frame(&product_frame(&self.mesh)?)?;
+        let frame = if self.options.doom_e1m1 {
+            self.doom_texture_frame
+                .as_ref()
+                .or(self.doom_frame.as_ref())
+                .context("Doom native frame is missing")?
+                .clone()
+        } else {
+            product_frame(&self.mesh)?
+        };
+        let frame_request = renderer.submit_frame(&frame)?;
+        if self.options.doom_e1m1 {
+            if self.doom_texture_frame.is_some() {
+                self.doom_texture_request = Some(frame_request);
+            } else {
+                self.doom_scene_request = Some(frame_request);
+                self.doom_scene_submitted = true;
+            }
+        }
         renderer.configure_views(&product_views(1))?;
         renderer.set_camera_pose(
             RendererCameraPose {
-                position: [0.0, 6.0, 9.0],
-                pitch_degrees: -25.0,
-                yaw_degrees: 0.0,
+                position: if self.options.doom_e1m1 {
+                    [114.0, 10.5, 78.0]
+                } else {
+                    [0.0, 6.0, 9.0]
+                },
+                pitch_degrees: if self.options.doom_e1m1 { -8.0 } else { -25.0 },
+                yaw_degrees: if self.options.doom_e1m1 { 90.0 } else { 0.0 },
             },
             None,
         )?;
@@ -224,7 +348,9 @@ impl NativeApplication {
                 .context("window unavailable")?
                 .scale_factor(),
         )?;
-        self.request_input()?;
+        if !self.options.doom_e1m1 {
+            self.request_input()?;
+        }
         Ok(())
     }
 
@@ -421,18 +547,45 @@ impl NativeApplication {
                     bail!("corrupt resource unexpectedly reached ready state");
                 }
                 if self.options.proof {
-                    println!("LOADING_BAY_NATIVE_READY_FOR_INPUT");
+                    println!(
+                        "{}",
+                        if self.options.doom_e1m1 {
+                            "DOOM_E1M1_NATIVE_READY_FOR_CAPTURE"
+                        } else {
+                            "LOADING_BAY_NATIVE_READY_FOR_INPUT"
+                        }
+                    );
                     io::stdout().flush()?;
                 }
                 self.ready = true;
                 self.initialize_renderer()?;
             }
-            RendererWebviewObservation::FrameApplied { receipt, .. } => {
+            RendererWebviewObservation::FrameApplied {
+                request_id,
+                receipt,
+            } => {
                 if !receipt.applied {
                     bail!("renderer rejected product frame: {:?}", receipt.diagnostics);
                 }
-                self.proof.frame = true;
-                self.proof.resource_rendered = true;
+                if self.options.doom_e1m1
+                    && self.doom_texture_request == Some(request_id)
+                    && !self.doom_scene_submitted
+                {
+                    let scene_request = self
+                        .renderer
+                        .as_mut()
+                        .context("renderer unavailable after Doom texture frame")?
+                        .submit_frame(
+                            self.doom_frame
+                                .as_ref()
+                                .context("Doom scene frame is missing")?,
+                        )?;
+                    self.doom_scene_request = Some(scene_request);
+                    self.doom_scene_submitted = true;
+                } else if !self.options.doom_e1m1 || self.doom_scene_request == Some(request_id) {
+                    self.proof.frame = true;
+                    self.proof.resource_rendered = true;
+                }
             }
             RendererWebviewObservation::ViewsConfigured { receipt, .. } => {
                 if !receipt.applied {
@@ -460,21 +613,25 @@ impl NativeApplication {
             RendererWebviewObservation::Disposed { request_id }
                 if self.dispose_request == Some(request_id) =>
             {
-                println!(
-                    "LOADING_BAY_NATIVE_PROOF_OK frame={} views={} camera={} resize={} resource_rendered={} input_authority={} input_noop={} pick_authority={} pick_miss={} state={} render={} save_round_trip={} lifecycle=disposed",
-                    self.proof.frame,
-                    self.proof.views,
-                    self.proof.camera,
-                    self.proof.resize,
-                    self.proof.resource_rendered,
-                    self.proof.input_authority,
-                    self.proof.input_noop,
-                    self.proof.pick_authority,
-                    self.proof.pick_miss,
-                    self.proof.state,
-                    self.proof.render,
-                    self.proof.save_round_trip,
-                );
+                if self.options.doom_e1m1 {
+                    println!(
+                        "DOOM_E1M1_NATIVE_PROOF_OK frame={} views={} camera={} resize={} resource_rendered={} input_authority={} input_noop={} pick_authority={} pick_miss={} state={} render={} save_round_trip={} textures={} horizontal_surfaces={} vertical_surfaces={} lifecycle=disposed",
+                        self.proof.frame, self.proof.views, self.proof.camera, self.proof.resize,
+                        self.proof.resource_rendered, self.proof.input_authority,
+                        self.proof.input_noop, self.proof.pick_authority, self.proof.pick_miss,
+                        self.proof.state, self.proof.render, self.proof.save_round_trip,
+                        self.doom_texture_count, self.doom_horizontal_surfaces,
+                        self.doom_vertical_surfaces,
+                    );
+                } else {
+                    println!(
+                        "LOADING_BAY_NATIVE_PROOF_OK frame={} views={} camera={} resize={} resource_rendered={} input_authority={} input_noop={} pick_authority={} pick_miss={} state={} render={} save_round_trip={} lifecycle=disposed",
+                        self.proof.frame, self.proof.views, self.proof.camera, self.proof.resize,
+                        self.proof.resource_rendered, self.proof.input_authority,
+                        self.proof.input_noop, self.proof.pick_authority, self.proof.pick_miss,
+                        self.proof.state, self.proof.render, self.proof.save_round_trip,
+                    );
+                }
                 event_loop.exit();
             }
             RendererWebviewObservation::MountFailed { message } => {
@@ -569,14 +726,30 @@ impl ApplicationHandler for NativeApplication {
         if self.failure.is_some() || self.dispose_request.is_some() {
             return;
         }
-        if self.ready && self.renderer.is_some() && Instant::now() >= self.next_input_poll {
+        if !self.options.doom_e1m1
+            && self.ready
+            && self.renderer.is_some()
+            && Instant::now() >= self.next_input_poll
+        {
             if let Err(error) = self.request_input() {
                 self.fail(event_loop, error);
                 return;
             }
             self.next_input_poll = Instant::now() + Duration::from_millis(40);
         }
-        if self.options.proof && self.proof.complete() {
+        let proof_complete = if self.options.doom_e1m1 {
+            self.proof.frame
+                && self.proof.views
+                && self.proof.camera
+                && self.proof.resize
+                && self.proof.resource_rendered
+                && self.proof.state
+                && self.proof.render
+                && self.started_at.elapsed() >= Duration::from_secs(4)
+        } else {
+            self.proof.complete()
+        };
+        if self.options.proof && proof_complete {
             match self.renderer.as_mut().map(RendererWebviewAdapter::dispose) {
                 Some(Ok(request_id)) => self.dispose_request = Some(request_id),
                 Some(Err(error)) => self.fail(event_loop, error),
@@ -657,6 +830,105 @@ fn prepare_product_mesh(glb: &[u8]) -> Result<(StaticMeshAsset, PackedMeshResour
     mesh.validate()
         .map_err(|error| anyhow::anyhow!("validate checked-in product mesh: {error:?}"))?;
     Ok((mesh, resource))
+}
+
+fn doom_texture_projection(
+    project: &StoredProject,
+) -> Result<(Vec<RendererResource>, Vec<RenderDiff>)> {
+    let projected = project
+        .assets
+        .iter()
+        .filter(|asset| asset.id.starts_with("texture/doom-"))
+        .map(|asset| {
+            let metadata = asset
+                .catalog
+                .as_ref()
+                .context("Doom texture is missing catalog metadata")?;
+            let source_path = metadata
+                .source_path
+                .as_ref()
+                .context("Doom texture is missing its checked-in source path")?;
+            let content_hash = metadata
+                .hash
+                .as_ref()
+                .context("Doom texture is missing its declared content hash")?;
+            let bytes = fs::read(source_path)
+                .with_context(|| format!("read checked-in Doom texture {source_path}"))?;
+            let texture = TextureDescriptor::admit_png_rgba8_resource(
+                asset.id.clone(),
+                &bytes,
+                TextureFilter::Nearest,
+                TextureWrap::Repeat,
+                metadata.version,
+            )
+            .map_err(|error| anyhow::anyhow!("admit Doom texture {source_path}: {error:?}"))?;
+            if texture.content_hash.as_ref() != Some(content_hash) {
+                bail!("Doom texture {source_path} differs from its declared hash");
+            }
+            let resource_identity = format!(
+                "texture-resource/{}",
+                content_hash
+                    .strip_prefix("sha256:")
+                    .context("Doom texture hash is not SHA-256")?
+            );
+            Ok((
+                RendererResource {
+                    identity: resource_identity,
+                    content_hash: content_hash.clone(),
+                    media_type: "image/png".to_owned(),
+                    bytes,
+                },
+                RenderDiff::DefineTexture { texture },
+            ))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    Ok(projected.into_iter().unzip())
+}
+
+fn externalize_frame_meshes(
+    mut frame: RenderFrameDiff,
+) -> Result<(RenderFrameDiff, Vec<RendererResource>)> {
+    let payloads = frame
+        .ops
+        .iter()
+        .filter_map(|operation| match operation {
+            RenderDiff::ReplaceMeshPayload { payload, .. } => Some(payload.clone()),
+            RenderDiff::DefineStaticMesh { asset } => Some(asset.payload.clone()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    let packed = pack_mesh_resources(&payloads, MAX_MESH_RESOURCE_BYTES)
+        .map_err(|error| anyhow::anyhow!("pack Doom voxel meshes: {error:?}"))?;
+    let mut replacements = packed.payloads.into_iter();
+    for operation in &mut frame.ops {
+        match operation {
+            RenderDiff::ReplaceMeshPayload { payload, .. } => {
+                *payload = replacements
+                    .next()
+                    .context("packed Doom mesh payload is missing")?;
+            }
+            RenderDiff::DefineStaticMesh { asset } => {
+                asset.payload = replacements
+                    .next()
+                    .context("packed Doom static-mesh payload is missing")?;
+            }
+            _ => {}
+        }
+    }
+    if replacements.next().is_some() {
+        bail!("packed Doom mesh payload count exceeded the frame");
+    }
+    let resources = packed
+        .resources
+        .into_iter()
+        .map(|resource| RendererResource {
+            identity: resource.resource,
+            content_hash: resource.content_hash,
+            media_type: "application/vnd.rusty-engine.mesh-resource".to_owned(),
+            bytes: resource.bytes,
+        })
+        .collect();
+    Ok((frame, resources))
 }
 
 fn product_frame(mesh: &StaticMeshAsset) -> Result<RenderFrameDiff> {

@@ -38,6 +38,7 @@ mod stored_project;
 mod studio_adapter;
 mod vitality;
 mod voxel_object_projection;
+mod voxel_volume_projection;
 mod weapon_authoring;
 
 pub use combat::{
@@ -203,6 +204,7 @@ pub use vitality::{
 };
 pub(crate) use voxel_object_projection::project_stored_voxel_objects_with;
 pub use voxel_object_projection::{project_stored_voxel_objects, StoredVoxelObjectProjectionError};
+pub use voxel_volume_projection::{project_stored_voxel_volume, StoredVoxelVolumeProjectionError};
 pub use weapon_authoring::{
     decode_loading_bay_weapon_authoring_request, encode_loading_bay_weapon_authoring_response,
     LoadingBayProjectileAuthoringConfig, LoadingBayWeaponAuthoringAttackMode,

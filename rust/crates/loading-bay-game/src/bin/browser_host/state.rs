@@ -75,6 +75,15 @@ struct BrowserPlayerState {
     armor: u32,
     max_armor: u32,
     vitality_state: &'static str,
+    terrain_contact: Option<BrowserTerrainContact>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserTerrainContact {
+    voxel: [i64; 3],
+    surface_y: f64,
+    material_slot: u16,
 }
 
 #[derive(Debug, Serialize)]
@@ -424,14 +433,35 @@ pub(super) fn browser_dynamic_state(
                 },
             )
         });
+    let player_position = player
+        .entity_view
+        .transform
+        .expect("browser player transform")
+        .translation
+        .to_array();
+    let terrain_contact = runtime.collision_scene().and_then(|scene| {
+        let voxel_size = scene.voxel_size();
+        let cell_x = (f64::from(player_position[0]) / voxel_size).floor() as i64;
+        let cell_z = (f64::from(player_position[2]) / voxel_size).floor() as i64;
+        let player_cell_y = (f64::from(player_position[1]) / voxel_size).floor() as i64;
+        scene
+            .material_voxels()
+            .iter()
+            .filter(|voxel| {
+                voxel.address[0] == cell_x
+                    && voxel.address[2] == cell_z
+                    && voxel.address[1] < player_cell_y
+            })
+            .max_by_key(|voxel| voxel.address[1])
+            .map(|voxel| BrowserTerrainContact {
+                voxel: voxel.address,
+                surface_y: (voxel.address[1] + 1) as f64 * voxel_size,
+                material_slot: voxel.material_slot,
+            })
+    });
     let player_state = BrowserPlayerState {
         id: ACTOR.raw(),
-        position: player
-            .entity_view
-            .transform
-            .expect("browser player transform")
-            .translation
-            .to_array(),
+        position: player_position,
         yaw_degrees: player.state.yaw_degrees,
         pitch_degrees: player.state.pitch_degrees,
         move_step_seconds: player.config.move_step_seconds,
@@ -450,6 +480,7 @@ pub(super) fn browser_dynamic_state(
         armor,
         max_armor,
         vitality_state,
+        terrain_contact,
     };
     let weapon = runtime
         .session()

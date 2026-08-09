@@ -270,7 +270,11 @@ async function moveToWorldPoint(client, addr, target, traversalSamples) {
       throw new Error(`player died while moving to ${JSON.stringify(target)}`);
     }
     const [x, y, z] = state.player.position;
-    traversalSamples.push({ tick: state.tick, position: [x, y, z] });
+    traversalSamples.push({
+      tick: state.tick,
+      position: [x, y, z],
+      terrainContact: state.player.terrainContact,
+    });
     const dx = target[0] - x;
     const dz = target[1] - z;
     const distance = Math.hypot(dx, dz);
@@ -708,6 +712,7 @@ async function main() {
         traversalSamples.push({
           tick: candidate.tick,
           position: candidate.player.position,
+          terrainContact: candidate.player.terrainContact,
         });
         if (candidate.interaction?.target === 89) break;
         await pulseKeys(cdpClient, ["KeyW", "KeyD"], 500);
@@ -739,8 +744,24 @@ async function main() {
       );
       const minHeight = Math.min(...traversalHeights);
       const maxHeight = Math.max(...traversalHeights);
+      const terrainContacts = traversalSamples
+        .map((sample) => sample.terrainContact)
+        .filter(Boolean);
+      const admittedFloorLevels = [
+        ...new Set(terrainContacts.map((contact) => contact.surfaceY)),
+      ].sort((left, right) => left - right);
+      if (terrainContacts.length !== traversalSamples.length) {
+        throw new Error(
+          `authoritative terrain contact missing from ${traversalSamples.length - terrainContacts.length} traversal samples`,
+        );
+      }
+      if (admittedFloorLevels.length < 2) {
+        throw new Error(
+          `route did not traverse distinct admitted floor levels: ${JSON.stringify(admittedFloorLevels)}`,
+        );
+      }
       checks.push(
-        "WASD traversed admitted E1M1 sectors at WAD floor heights 0, -8, -16, and -24",
+        `Rust terrain-contact readback proved ${admittedFloorLevels.length} admitted E1M1 floor levels (${admittedFloorLevels.join(", ")})`,
       );
       checks.push(
         `Chromium interaction control completed exit 89 at tick ${completed.levelExits.find((entry) => entry.id === 89).completedAtTick}`,
@@ -754,6 +775,8 @@ async function main() {
         },
         traversalSampleCount: traversalSamples.length,
         traversalHeightRange: [minHeight, maxHeight],
+        admittedFloorLevels,
+        terrainContacts,
         authoredFloorHeights: [0, -8, -16, -24],
         finalPosition: completed.player.position,
         completedExit: completed.levelExits.find((entry) => entry.id === 89),
