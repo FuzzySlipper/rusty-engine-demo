@@ -23,6 +23,7 @@
     "engine:freshness": "python3 scripts/check-downstream-engine-freshness.py Cargo.lock --manifest Cargo.toml",
     "engine:update": "./scripts/engine-revision update",
     "native": "cargo run -p loading-bay-game --bin native-host --locked",
+    "native:doom": "cargo run -p loading-bay-game --bin native-host --locked -- --doom-e1m1",
     "generate:content": "pnpm --filter @rusty-engine-demo/project-content generate",
     "deploy:tauri": "node scripts/deploy-tauri.mjs",
     "inspect:tauri": "node scripts/inspect-tauri-package.mjs",

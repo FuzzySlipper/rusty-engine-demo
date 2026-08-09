@@ -280,13 +280,17 @@ async function moveToWorldPoint(client, addr, target, traversalSamples) {
     const distance = Math.hypot(dx, dz);
     if (distance <= 0.7) return state;
 
-    // E1M1 starts at yaw 90 degrees and this smoke deliberately leaves yaw
-    // unchanged. At that heading S/W move +/-X and A/D move +/-Z.
+    // Resolve the world-space route into the admitted Rust player heading.
+    // This keeps the smoke valid when the Doom-to-Engine angle conversion is
+    // corrected instead of baking one historical spawn yaw into the route.
+    const yaw = (state.player.yawDegrees * Math.PI) / 180;
+    const localForward = -Math.sin(yaw) * dx - Math.cos(yaw) * dz;
+    const localRight = Math.cos(yaw) * dx - Math.sin(yaw) * dz;
     const codes = [];
-    if (Math.abs(dx) >= Math.abs(dz) && Math.abs(dx) > 0.45) {
-      codes.push(dx > 0 ? "KeyS" : "KeyW");
-    } else if (Math.abs(dz) > 0.45) {
-      codes.push(dz > 0 ? "KeyA" : "KeyD");
+    if (Math.abs(localForward) >= Math.abs(localRight) && Math.abs(localForward) > 0.45) {
+      codes.push(localForward > 0 ? "KeyW" : "KeyS");
+    } else if (Math.abs(localRight) > 0.45) {
+      codes.push(localRight > 0 ? "KeyD" : "KeyA");
     }
     await pulseKeys(client, codes, distance < 2 ? 80 : 500);
 
@@ -707,16 +711,7 @@ async function main() {
           `route ${waypoint.join(",")} -> ${reached.player.position.join(",")} tick=${reached.tick}`,
         );
       }
-      for (let attempt = 0; attempt < 30; attempt += 1) {
-        const candidate = await fetchAuthoritativeState(addr);
-        traversalSamples.push({
-          tick: candidate.tick,
-          position: candidate.player.position,
-          terrainContact: candidate.player.terrainContact,
-        });
-        if (candidate.interaction?.target === 89) break;
-        await pulseKeys(cdpClient, ["KeyW", "KeyD"], 500);
-      }
+      await moveToWorldPoint(cdpClient, addr, [231.3, 7.1], traversalSamples);
       const exitReady = await waitForAuthoritativeState(
         addr,
         "Doom exit in interaction range",

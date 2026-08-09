@@ -70,6 +70,7 @@ impl Options {
                     proof = true;
                     doom_e1m1 = true;
                 }
+                "--doom-e1m1" => doom_e1m1 = true,
                 _ => bail!("unknown argument {argument}"),
             }
         }
@@ -179,17 +180,9 @@ impl NativeApplication {
             let route_scene = VoxelCollisionScene::from_material_voxels(
                 admitted_scene.voxel_size(),
                 admitted_scene.chunk_size(),
-                admitted_scene
-                    .material_voxels()
-                    .iter()
-                    .filter(|voxel| {
-                        (105..=150).contains(&voxel.address[0])
-                            && (60..=155).contains(&voxel.address[2])
-                    })
-                    .cloned()
-                    .collect::<Vec<_>>(),
+                admitted_scene.material_voxels().to_vec(),
             )
-            .map_err(|error| anyhow::anyhow!("admit Doom route capture volume: {error:?}"))?;
+            .map_err(|error| anyhow::anyhow!("admit Doom rendered volume: {error:?}"))?;
             let doom_horizontal_surfaces = route_scene.mesh_chunks().iter().any(|chunk| {
                 chunk
                     .normals
@@ -302,6 +295,15 @@ impl NativeApplication {
     }
 
     fn initialize_renderer(&mut self) -> Result<()> {
+        let camera_pose = if self.options.doom_e1m1 {
+            self.doom_camera_pose()?
+        } else {
+            RendererCameraPose {
+                position: [0.0, 6.0, 9.0],
+                pitch_degrees: -25.0,
+                yaw_degrees: 0.0,
+            }
+        };
         let renderer = self.renderer.as_mut().context("renderer unavailable")?;
         let frame = if self.options.doom_e1m1 {
             self.doom_texture_frame
@@ -322,18 +324,7 @@ impl NativeApplication {
             }
         }
         renderer.configure_views(&product_views(1))?;
-        renderer.set_camera_pose(
-            RendererCameraPose {
-                position: if self.options.doom_e1m1 {
-                    [114.0, 10.5, 78.0]
-                } else {
-                    [0.0, 6.0, 9.0]
-                },
-                pitch_degrees: if self.options.doom_e1m1 { -8.0 } else { -25.0 },
-                yaw_degrees: if self.options.doom_e1m1 { 90.0 } else { 0.0 },
-            },
-            None,
-        )?;
+        renderer.set_camera_pose(camera_pose, None)?;
         renderer.read_state()?;
         renderer.render_once(None)?;
         let bounds = window_bounds(self.window.as_ref().context("window unavailable")?);
@@ -395,7 +386,30 @@ impl NativeApplication {
             self.proof.input_authority = after != before;
             self.request_pick(PickKind::Miss)?;
         }
-        if let Some(code) = pressed.difference(&self.pressed_codes).next() {
+        if self.options.doom_e1m1 {
+            let forward = f32::from(pressed.contains("KeyW")) - f32::from(pressed.contains("KeyS"));
+            let right = f32::from(pressed.contains("KeyD")) - f32::from(pressed.contains("KeyA"));
+            if forward != 0.0 || right != 0.0 {
+                self.runtime
+                    .apply_player_action(PLAYER, ResolvedPlayerAction::Move { forward, right })?;
+            }
+            let yaw_delta = f32::from(pressed.contains("ArrowRight"))
+                - f32::from(pressed.contains("ArrowLeft"));
+            let pitch_delta =
+                f32::from(pressed.contains("ArrowDown")) - f32::from(pressed.contains("ArrowUp"));
+            if yaw_delta != 0.0 || pitch_delta != 0.0 {
+                self.runtime.apply_player_action(
+                    PLAYER,
+                    ResolvedPlayerAction::Look {
+                        yaw_delta: yaw_delta * 0.12,
+                        pitch_delta: pitch_delta * 0.12,
+                    },
+                )?;
+            }
+            if forward != 0.0 || right != 0.0 || yaw_delta != 0.0 || pitch_delta != 0.0 {
+                self.sync_doom_camera()?;
+            }
+        } else if let Some(code) = pressed.difference(&self.pressed_codes).next() {
             let revision_before = self.runtime.readout().entity_revision;
             if code == "Enter" {
                 let before = self
@@ -428,6 +442,37 @@ impl NativeApplication {
         self.pressed_codes = pressed;
         self.pointer_buttons = input.pointer.buttons;
         Ok(())
+    }
+
+    fn sync_doom_camera(&mut self) -> Result<()> {
+        let camera_pose = self.doom_camera_pose()?;
+        self.renderer
+            .as_mut()
+            .context("renderer unavailable")?
+            .set_camera_pose(camera_pose, None)?;
+        Ok(())
+    }
+
+    fn doom_camera_pose(&self) -> Result<RendererCameraPose> {
+        let player = self
+            .runtime
+            .session()
+            .player_controller(PLAYER)
+            .context("Doom player controller is missing")?;
+        let position = player
+            .entity_view
+            .world_transform
+            .context("Doom player world transform is missing")?
+            .translation;
+        Ok(RendererCameraPose {
+            position: [
+                f64::from(position.x),
+                f64::from(position.y + 1.5),
+                f64::from(position.z),
+            ],
+            pitch_degrees: f64::from(player.state.pitch_degrees),
+            yaw_degrees: f64::from(player.state.yaw_degrees),
+        })
     }
 
     fn request_pick(&mut self, kind: PickKind) -> Result<()> {
@@ -726,7 +771,7 @@ impl ApplicationHandler for NativeApplication {
         if self.failure.is_some() || self.dispose_request.is_some() {
             return;
         }
-        if !self.options.doom_e1m1
+        if (!self.options.doom_e1m1 || !self.options.proof)
             && self.ready
             && self.renderer.is_some()
             && Instant::now() >= self.next_input_poll

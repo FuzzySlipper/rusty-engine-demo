@@ -90,6 +90,15 @@ test("flat PNG golden hashes for FLOOR7_2 and CEIL3_5 are stable", () => {
   assert.equal(bigdoor.pngSha256, "b71bae2b662f1682be58e1517a0cc5f2b01aec3ebf9b3c9dee7d0ae7ed6d786e");
 });
 
+test("texture repeat scale is expressed in voxel cells, not reciprocal pixels", () => {
+  const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as {
+    entries: { width: number; height: number; tileScale: [number, number] }[];
+  };
+  for (const entry of manifest.entries) {
+    assert.deepEqual(entry.tileScale, [entry.width / 16, entry.height / 16]);
+  }
+});
+
 test("wall provenance covers TEXTURE1 entry plus patch bytes (R6676-1 regression)", async () => {
   if (!existsSync(MANIFEST_PATH)) {
     test.skip("manifest missing");

@@ -10,6 +10,7 @@ const DEFAULT_WAD = "/home/research/doom.ts/public/doom1.wad";
 const DEFAULT_OUT_DIR = resolve(new URL("../../../../content/doom-e1m1/textures", import.meta.url).pathname);
 const DEFAULT_MANIFEST = resolve(DEFAULT_OUT_DIR, "manifest.json");
 const DEFAULT_STAGING_DIR = resolve(new URL("../../../../content/doom-e1m1", import.meta.url).pathname);
+const DOOM_UNITS_PER_VOXEL_CELL = 16;
 
 export interface TextureManifestEntry {
   readonly kind: "flat" | "wall";
@@ -147,7 +148,7 @@ export function buildTextureArtifacts(wadPath: string = DEFAULT_WAD, outDir: str
       pngByteLength: pngBytes.length,
       width: 64,
       height: 64,
-      tileScale: [1 / 64, 1 / 64],
+      tileScale: [64 / DOOM_UNITS_PER_VOXEL_CELL, 64 / DOOM_UNITS_PER_VOXEL_CELL],
     });
   }
 
@@ -180,7 +181,9 @@ export function buildTextureArtifacts(wadPath: string = DEFAULT_WAD, outDir: str
       pngByteLength: pngBytes.length,
       width: def.width,
       height: def.height,
-      tileScale: def.width ? [1 / def.width, 1 / def.height] : null,
+      tileScale: def.width
+        ? [def.width / DOOM_UNITS_PER_VOXEL_CELL, def.height / DOOM_UNITS_PER_VOXEL_CELL]
+        : null,
     });
   }
 

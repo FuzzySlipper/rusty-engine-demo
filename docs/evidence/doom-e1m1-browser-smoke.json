@@ -1,11 +1,11 @@
 {
   "kind": "doom-browser-smoke.v1",
-  "generatedAt": "2026-08-09T11:54:34.354Z",
+  "generatedAt": "2026-08-09T12:36:18.411Z",
   "host": {
     "projectId": "doom-e1m1",
     "assets": 150,
     "entities": 90,
-    "address": "127.0.0.1:46511",
+    "address": "127.0.0.1:35451",
     "health": "ok",
     "stateTick": 1,
     "player": [
@@ -18,7 +18,7 @@
       {
         "id": 89,
         "state": "available",
-        "activationRadius": 2.5,
+        "activationRadius": 4,
         "presentation": "Doom E1M1 complete",
         "completedBy": null,
         "completedAtTick": null
@@ -38,16 +38,16 @@
     "dump-dom contains Doom E1M1 card",
     "card navigates to doom",
     "click-to-host-identity ok (hash=#/game?mode=new&project=doom-e1m1)",
-    "Chromium interaction control activated switch 88 and opened door at tick 77",
+    "Chromium interaction control activated switch 88 and opened door at tick 78",
     "Chromium Mouse0 fired weapon/arc-pistol (30 -> 29)",
     "Rust terrain-contact readback proved 4 admitted E1M1 floor levels (6, 7, 8, 9)",
-    "Chromium interaction control completed exit 89 at tick 7410"
+    "Chromium interaction control completed exit 89 at tick 7447"
   ],
-  "chromiumDumpBytes": 4189,
-  "staticRevision": "sha256:0d64257bc223f624a5697b2b0e9063b97c135ed87b3a0b88974aab7ea324e4dc",
+  "chromiumDumpBytes": 4135,
+  "staticRevision": "sha256:f0b0ef955a9d24e90d6dd48d335c473566f8f31639917849659bc05f6c044c22",
   "headless": {
     "lifecycle": "native-host",
-    "screenshotBytes": 115872,
+    "screenshotBytes": 115912,
     "screenshotPath": "docs/evidence/doom-e1m1-headless.png",
     "webgl": "no-canvas",
     "error": null,
@@ -66,7 +66,7 @@
         "before": 30,
         "after": 29
       },
-      "traversalSampleCount": 285,
+      "traversalSampleCount": 289,
       "traversalHeightRange": [
         9.5,
         9.5
@@ -829,15 +829,6 @@
           "voxel": [
             131,
             8,
-            138
-          ],
-          "surfaceY": 9,
-          "materialSlot": 10
-        },
-        {
-          "voxel": [
-            131,
-            8,
             140
           ],
           "surfaceY": 9,
@@ -848,6 +839,15 @@
             131,
             8,
             142
+          ],
+          "surfaceY": 9,
+          "materialSlot": 10
+        },
+        {
+          "voxel": [
+            131,
+            8,
+            143
           ],
           "surfaceY": 9,
           "materialSlot": 10
@@ -1178,7 +1178,7 @@
         },
         {
           "voxel": [
-            176,
+            177,
             8,
             145
           ],
@@ -1486,7 +1486,7 @@
           "voxel": [
             223,
             7,
-            139
+            140
           ],
           "surfaceY": 8,
           "materialSlot": 10
@@ -1540,7 +1540,7 @@
           "voxel": [
             225,
             7,
-            138
+            139
           ],
           "surfaceY": 8,
           "materialSlot": 10
@@ -1565,7 +1565,7 @@
         },
         {
           "voxel": [
-            227,
+            225,
             7,
             138
           ],
@@ -1585,7 +1585,7 @@
           "voxel": [
             227,
             7,
-            137
+            138
           ],
           "surfaceY": 8,
           "materialSlot": 10
@@ -1639,16 +1639,7 @@
           "voxel": [
             229,
             7,
-            136
-          ],
-          "surfaceY": 8,
-          "materialSlot": 10
-        },
-        {
-          "voxel": [
-            229,
-            7,
-            136
+            137
           ],
           "surfaceY": 8,
           "materialSlot": 10
@@ -1703,6 +1694,15 @@
             230,
             7,
             136
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            230,
+            7,
+            135
           ],
           "surfaceY": 8,
           "materialSlot": 12
@@ -1808,15 +1808,6 @@
         },
         {
           "voxel": [
-            231,
-            7,
-            132
-          ],
-          "surfaceY": 8,
-          "materialSlot": 12
-        },
-        {
-          "voxel": [
             232,
             7,
             132
@@ -1854,6 +1845,15 @@
         {
           "voxel": [
             232,
+            7,
+            130
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
             7,
             130
           ],
@@ -1925,7 +1925,7 @@
         },
         {
           "voxel": [
-            233,
+            234,
             7,
             127
           ],
@@ -2573,6 +2573,24 @@
         },
         {
           "voxel": [
+            235,
+            7,
+            10
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            233,
+            7,
+            10
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
             233,
             7,
             10
@@ -2612,6 +2630,24 @@
             232,
             7,
             10
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            232,
+            7,
+            8
+          ],
+          "surfaceY": 8,
+          "materialSlot": 12
+        },
+        {
+          "voxel": [
+            232,
+            7,
+            8
           ],
           "surfaceY": 8,
           "materialSlot": 12
@@ -2638,7 +2674,7 @@
           "voxel": [
             231,
             7,
-            5
+            7
           ],
           "surfaceY": 8,
           "materialSlot": 12
@@ -2651,17 +2687,17 @@
         -24
       ],
       "finalPosition": [
-        231.25763,
+        231.4061,
         9.5,
-        5.3508654
+        7.6006184
       ],
       "completedExit": {
         "id": 89,
         "state": "completed",
-        "activationRadius": 2.5,
+        "activationRadius": 4,
         "presentation": "Doom E1M1 complete",
         "completedBy": 1,
-        "completedAtTick": 7410
+        "completedAtTick": 7447
       }
     }
   }

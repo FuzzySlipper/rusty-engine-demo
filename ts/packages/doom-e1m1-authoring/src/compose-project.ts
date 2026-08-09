@@ -116,7 +116,10 @@ export function buildDoomE1M1Project(
     const k = kebab(entry.name);
     const matId = `material/doom-${entry.kind}-${k}`;
     const texId = `texture/doom-${entry.kind}-${k}`;
-    const tileScale: [number, number] = entry.tileScale ?? [1 / entry.width, 1 / entry.height];
+    const tileScale: [number, number] = entry.tileScale ?? [
+      entry.width / SCALE,
+      entry.height / SCALE,
+    ];
     // texture asset
     assets.push({
       id: texId,
@@ -274,7 +277,9 @@ export function buildDoomE1M1Project(
   // kinematic body one half-cell higher so its lower face does not begin
   // overlapped with that voxel and axis sweeps remain playable.
   playerPos[1] += 0.5;
-  const playerYaw = playerThing.angle; // Doom 0=east
+  // Doom 0 degrees points +X and increases toward +Y. The Engine camera uses
+  // yaw 0 toward -Z, while the forge maps Doom +Y to world +Z.
+  const playerYaw = ((270 - playerThing.angle) % 360 + 360) % 360;
   entities.push({
     id: nextId++,
     name: "player",
@@ -518,7 +523,7 @@ export function buildDoomE1M1Project(
         ],
       },
     },
-    levelExit: { activationRadius: 2.5, presentation: "Doom E1M1 complete" },
+    levelExit: { activationRadius: 4, presentation: "Doom E1M1 complete" },
   });
 
   // Secret — first secret sector (special 9) center

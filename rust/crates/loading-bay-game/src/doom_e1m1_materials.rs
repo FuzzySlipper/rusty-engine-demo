@@ -12,8 +12,9 @@
 //! `material/doom-flat-ceil3-5`, `material/doom-wall-bigdoor2`, …
 //! Texture ids are `texture/doom-flat-…` / `texture/doom-wall-…`.  Each
 //! material's `StoredMaterialDefinition.style.voxelSurface` is a
-//! `Repeat { texture, tileScale, tileOrigin }` binding (flats `1/64`, walls
-//! `1/width,1/height`, origin `[0,0]`, filter Nearest, wrap Repeat,
+//! `Repeat { texture, tileScale, tileOrigin }` binding in voxel cells (texture
+//! pixel dimensions divided by the 16 Doom-units-per-cell forge scale),
+//! origin `[0,0]`, filter Nearest, wrap Repeat,
 //! sRGB straight-alpha).  Closure is the hard gate: a voxel palette entry
 //! without a declared material, or a material whose texture hash is stale,
 //! fails with `project.missingAsset` / `project.invalidMaterial` before

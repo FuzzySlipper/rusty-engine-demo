@@ -45,6 +45,7 @@ The directly rendered Rust-native product and its real X11 proof are:
 
 ```bash
 pnpm run native
+pnpm run native:doom      # interactive E1M1; WASD moves, arrow keys look
 pnpm run verify:native
 ```
 
@@ -58,7 +59,8 @@ install ...`; status, atomic rollback, ordinary uninstall with save preservation
 purge, desktop entry, and the installed-product certification command are documented in
 [docs/tauri-desktop.md](docs/tauri-desktop.md#local-deployment).
 
-The root browser route is a disposable HUD/control projection over the Rust session. Its
+The root browser route, including sessions started by `den-serve`, is a disposable HUD/control
+projection over the Rust session and does not display the native renderer window. Its
 diagnostics drawer exposes only concrete Rust host actions and transport counters. Rendered world,
 resource, input, pick, resize, and lifecycle acceptance now belongs to `native-host`; browser route
 changes cannot acquire or release renderer authority.
