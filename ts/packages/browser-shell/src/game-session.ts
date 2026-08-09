@@ -800,6 +800,25 @@ export class LoadingBayGameSession {
   }
 
   #receiveRejection(rejection: CommandRejectionEnvelope): void {
+    const sequence = rejection.commandSequence;
+    const belongsToTrackedWork =
+      sequence === undefined ||
+      sequence === this.#resyncInFlight ||
+      sequence === this.#inputInFlight ||
+      this.#pendingEdges.has(sequence) ||
+      this.#restart?.sequence === sequence ||
+      this.#sentAt.has(sequence);
+    if (
+      rejection.code === "sessionClosed" &&
+      sequence !== undefined &&
+      !belongsToTrackedWork
+    ) {
+      // An authoritative restart/load replaces the session id and clears all
+      // old pending work. The host can still drain one already-buffered old
+      // envelope afterwards; its rejection belongs to the retired session and
+      // must not take the successfully replaced browser session offline.
+      return;
+    }
     const error = new GameSessionError(
       rejection.code,
       rejection.message,

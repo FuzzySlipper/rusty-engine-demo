@@ -277,12 +277,14 @@ export async function mountLoadingBayGame(
     ) {
       void viewport.requestPointerLock();
     }
-    session.queueInput({
-      movement: movement(),
-      lookDelta: [0, 0],
-      primaryFireHeld: true,
-    });
-    queueMicrotask(() => queueMovement());
+    void session
+      .sendInput({
+        movement: movement(),
+        lookDelta: [0, 0],
+        primaryFireHeld: true,
+      })
+      .then(() => queueMovement())
+      .catch(record);
   }
 
   function queueMovement(): void {

@@ -270,6 +270,10 @@ export function buildDoomE1M1Project(
   // Player — first type 1
   const playerThing = inter.level.things.find((t) => t.type === 1)!;
   const playerPos = doomToWorldForThing(playerThing);
+  // `wadToWorld` identifies the center of the admitted floor voxel. Place the
+  // kinematic body one half-cell higher so its lower face does not begin
+  // overlapped with that voxel and axis sweeps remain playable.
+  playerPos[1] += 0.5;
   const playerYaw = playerThing.angle; // Doom 0=east
   entities.push({
     id: nextId++,
@@ -427,7 +431,12 @@ export function buildDoomE1M1Project(
     const floor = si >= 0 ? inter.level.sectors[si]!.floorHeight : 0;
     const ceil = si >= 0 ? inter.level.sectors[si]!.ceilingHeight : 72;
     const pos = wadToWorld(mx, my, floor);
-    const openPos: [number, number, number] = [pos[0], (ceil - MIN_FLOOR) / SCALE + 0.5, pos[2]];
+    const admittedCeiling = (ceil - MIN_FLOOR) / SCALE + 0.5;
+    const openPos: [number, number, number] = [
+      pos[0],
+      Math.max(admittedCeiling, pos[1] + 4),
+      pos[2],
+    ];
     const id = nextId++;
     entities.push({
       id,
@@ -453,7 +462,7 @@ export function buildDoomE1M1Project(
 
   // One switch that controls first door
   const doorIds = entities.filter((e) => e.door).map((e) => e.id);
-  if (doorIds.length > 0) {
+  if (doorIds.length >= 2) {
     const swPos = wadToWorld(1088, -3600, 0);
     const id = nextId++;
     entities.push({
@@ -472,7 +481,13 @@ export function buildDoomE1M1Project(
           ],
         },
       },
-      switch: { controls: doorIds.slice(0, 1) },
+      switch: {
+        controls: doorIds,
+        loadingBayInterlock: {
+          closeDoor: doorIds[1]!,
+          openDoor: doorIds[0]!,
+        },
+      },
     });
   }
 

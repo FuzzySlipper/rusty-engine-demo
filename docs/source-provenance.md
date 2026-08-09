@@ -633,9 +633,9 @@ Exact PNG bytes and hashes are closed by `content/doom-e1m1/textures/manifest.js
 ### Derived voxel asset (single sparse-run volume, gameplay truth)
 
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
-`voxelDataHash sha256:0330c8cbeef48a4a70c1714cca57323feec590daf88296eaed280e1787fb0de5`
-`contentHash sha256:4cb86364d76450428c1a8c6b8a83dbb481103640da2bc68ae042c157fb258a96`
-`sparseRuns ~14.6k mass, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` staticRevision `sha256:cbdd88292c50e00907e0f596da53ca6e9e1669e30d29c7878e5a808a68249bff` (runtime snapshot header).
+`voxelDataHash sha256:fad81c1c1d8b8ffe30b733817f70b494b26c1ca788e4c8a40a6fe16ffb6c756d`
+`contentHash sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c`
+`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` staticRevision `sha256:0d64257bc223f624a5697b2b0e9063b97c135ed87b3a0b88974aab7ea324e4dc` (runtime snapshot header).
 
 ### Authored project
 

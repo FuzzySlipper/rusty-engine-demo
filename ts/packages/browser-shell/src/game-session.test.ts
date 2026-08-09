@@ -661,6 +661,10 @@ test("a fixed-tick restart rejection settles and releases the restart slot", asy
     assert.equal(session.serverTick, 2);
     assert.equal(session.snapshotSequence, 2);
     assert.notEqual(session.lastSnapshotCadenceMilliseconds, null);
+    const replacementFailures: string[] = [];
+    session.setFailureListener((error) => {
+      replacementFailures.push(error.code);
+    });
 
     const restarted = await session.sendEdge({
       kind: "restart",
@@ -671,6 +675,9 @@ test("a fixed-tick restart rejection settles and releases the restart slot", asy
     assert.equal(session.serverTick, 0);
     assert.equal(session.snapshotSequence, 1);
     assert.equal(session.lastSnapshotCadenceMilliseconds, null);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.deepEqual(replacementFailures, []);
     await session.close();
   } finally {
     restoreGlobal("location", originalLocation);
@@ -1322,6 +1329,17 @@ class RestartRejectionSocket extends EventTarget {
         facts: [],
         metrics,
       });
+      queueMicrotask(() => {
+        this.#emit({
+          protocolVersion: 1,
+          sessionId: "loading-bay-2",
+          commandSequence: command.sequence + 1,
+          acknowledgedCommandSequence: 0,
+          code: "sessionClosed",
+          retry: "reconnect",
+          message: "command belongs to a replaced session",
+        });
+      });
     });
   }
 
@@ -1330,7 +1348,7 @@ class RestartRejectionSocket extends EventTarget {
     this.dispatchEvent(new Event("close"));
   }
 
-  #emit(envelope: ServerUpdateEnvelope): void {
+  #emit(envelope: object): void {
     this.dispatchEvent(
       new MessageEvent("message", { data: JSON.stringify(envelope) }),
     );

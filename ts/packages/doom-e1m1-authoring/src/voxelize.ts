@@ -148,6 +148,12 @@ export function buildDoomVoxelAsset(intermediatePath: string = fileURLToPath(new
     const backSd = ld.backSidedef !== -1 ? inter.level.sidedefs[ld.backSidedef] : null;
     const backSec = backSd ? inter.level.sectors[backSd.sector] : null;
 
+    // Type 1 is Doom's ordinary door action. The complete portal span is
+    // represented by the authored Rust-owned door entity; retaining any of
+    // its lower, middle, or upper line voxels would leave immutable collision
+    // behind after DoorService moves that entity open.
+    if (ld.lineType === 1) continue;
+
     const frontLower = frontSd.lowerTexture !== "-" ? frontSd.lowerTexture : null;
     const frontUpper = frontSd.upperTexture !== "-" ? frontSd.upperTexture : null;
     const frontMiddle = frontSd.middleTexture !== "-" ? frontSd.middleTexture : null;
