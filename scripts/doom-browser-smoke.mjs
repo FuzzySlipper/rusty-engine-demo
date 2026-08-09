@@ -367,8 +367,9 @@ async function main() {
       console.log(`navigating to menu ${menuUrl}`);
       await cdpClient.send("Page.navigate", { url: menuUrl });
       const clickDeadline = Date.now() + 10000;
+      let clickResult = "timeout";
       while (Date.now() < clickDeadline) {
-        const clicked = await cdpEvaluate(
+        clickResult = await cdpEvaluate(
           cdpClient,
           `(() => {
           const buttons = [...document.querySelectorAll('button')];
@@ -379,8 +380,8 @@ async function main() {
           return 'clicked';
         })()`,
         ).catch(() => "eval-error");
-        if (clicked === "clicked" || clicked === "disabled") {
-          console.log(`doom card click: ${clicked}`);
+        if (clickResult === "clicked" || clickResult === "disabled") {
+          console.log(`doom card click: ${clickResult}`);
           break;
         }
         await delay(250);
@@ -392,18 +393,15 @@ async function main() {
       ).catch(() => "");
       const clickIdentityOk =
         String(afterClickHash).includes("project=doom-e1m1");
-      checks.push(
-        `click-to-host-identity ${clickIdentityOk ? "ok" : "FAIL"} (hash=${String(afterClickHash).slice(0, 80)})`,
-      );
       console.log(`after click hash=${String(afterClickHash).slice(0, 120)}`);
-      // If the card click did not navigate (e.g. disabled because host project
-      // identity could not be verified), fall back to the explicit game URL so
-      // the mount proof still runs; the click proof above is recorded.
-      const gameUrl = `http://${addr}/#/game?project=doom-e1m1&mode=new`;
-      if (!String(afterClickHash).includes("project=doom-e1m1")) {
-        console.log(`navigating directly to ${gameUrl} (fallback)`);
-        await cdpClient.send("Page.navigate", { url: gameUrl });
+      if (!clickIdentityOk) {
+        throw new Error(
+          `Doom card click must navigate to project=doom-e1m1 before mount proof (result=${clickResult}, hash=${String(afterClickHash).slice(0, 120)})`,
+        );
       }
+      checks.push(
+        `click-to-host-identity ok (hash=${String(afterClickHash).slice(0, 80)})`,
+      );
       const mountDeadline = Date.now() + 30000;
       let lastLc = "none";
       while (Date.now() < mountDeadline) {

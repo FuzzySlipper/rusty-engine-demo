@@ -340,6 +340,49 @@ fn doom_admission_rejects_incomplete_palette_set_when_unused_binding_removed() {
     );
 }
 
+#[test]
+fn doom_admission_rejects_duplicate_palette_identity_under_unique_slot() {
+    // R6678-4: set equality alone is insufficient because a duplicate material
+    // identity disappears when palette ids are collected into a set. Preserve
+    // the complete declared set, add a 55th binding under a valid unique slot,
+    // and prove the authoritative admission boundary rejects it.
+    let doom_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/projects/doom-e1m1.project.json");
+    let raw = fs::read_to_string(&doom_path).unwrap();
+    let mut document = decode_project_document(&raw).unwrap().project;
+    assert_eq!(document.project_id, "doom-e1m1");
+
+    for asset in &mut document.assets {
+        if let Some(voxel) = asset.voxel_volume.as_mut() {
+            let mut duplicate = voxel
+                .material_palette
+                .iter()
+                .find(|binding| binding.material_asset_id == "material/doom-flat-ceil3-5")
+                .expect("declared Doom material binding")
+                .clone();
+            duplicate.material_slot = 4095;
+            voxel.material_palette.push(duplicate);
+            let recomputed = rusty_engine::voxel_asset::with_computed_content_hash(voxel.clone())
+                .expect("mutated voxel asset stays canonical");
+            *voxel = recomputed;
+        }
+    }
+
+    let error = admit_stored_project_with_document(document).unwrap_err();
+    assert_eq!(
+        error.diagnostic().code,
+        loading_bay_game::diagnostic_code::INVALID_MATERIAL
+    );
+    assert!(
+        error
+            .diagnostic()
+            .message
+            .contains("55 bindings for 54 unique identities"),
+        "expected the duplicate-identity diagnostic, got {}",
+        error.diagnostic().message
+    );
+}
+
 static NEXT_DIRECTORY: AtomicU64 = AtomicU64::new(0);
 
 struct TestDirectory(PathBuf);

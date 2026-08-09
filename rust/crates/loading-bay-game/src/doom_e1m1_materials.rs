@@ -455,6 +455,18 @@ pub fn validate_doom_palette_closure(
         .iter()
         .map(|entry| &entry.material_asset_id)
         .collect();
+    if palette_ids.len() != palette.len() {
+        return Err(StoredProjectError::new(
+            diagnostic_code::INVALID_MATERIAL,
+            "voxel palette",
+            format!(
+                "Doom E1M1 voxel palette must contain exactly {} unique material identities; found {} bindings for {} unique identities",
+                declared.len(),
+                palette.len(),
+                palette_ids.len(),
+            ),
+        ));
+    }
     for binding in &bindings {
         if !palette_ids.contains(&binding.material_asset_id) {
             return Err(StoredProjectError::new(
