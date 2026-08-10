@@ -617,8 +617,12 @@ async function main() {
       });
       const worldPath = join(profileDir, "doom-e1m1-world.png");
       writeFileSync(worldPath, Buffer.from(worldShot.data, "base64"));
+      const imageMagickCommand =
+        spawnSync("magick", ["-version"], { encoding: "utf8" }).status === 0
+          ? "magick"
+          : "convert";
       const imageReadout = spawnSync(
-        "magick",
+        imageMagickCommand,
         [
           worldPath,
           "-resize",
