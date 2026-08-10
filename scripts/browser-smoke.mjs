@@ -197,6 +197,8 @@ async function runBrowserControlShell() {
         document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length === 1 &&
         document.querySelector("[data-rusty-application-host]")?.dataset.state === "ready" &&
         document.body?.dataset.applicationInputProof === "pass" &&
+        document.body?.dataset.applicationHudPointerProof === "pass" &&
+        document.body?.dataset.applicationBackgroundPointerProof === "pass" &&
         document.body?.dataset.applicationModalProof === "pass"`,
       30_000,
       {
@@ -225,35 +227,150 @@ async function runBrowserControlShell() {
               "browser control proof could not locate the gameplay viewport",
             );
           }
+          const controlPoint = async (label) => {
+            const result = await client.send("Runtime.evaluate", {
+              expression: `(() => {
+                const button = [...document.querySelectorAll("button")].find(
+                  (candidate) => candidate.textContent?.trim() === ${JSON.stringify(label)},
+                );
+                const rect = button?.getBoundingClientRect();
+                return rect === undefined ? null : {
+                  x: rect.x + rect.width / 2,
+                  y: rect.y + rect.height / 2,
+                };
+              })()`,
+              returnByValue: true,
+            });
+            const value = result?.result?.value;
+            if (value === null || typeof value?.x !== "number") {
+              throw new Error(
+                `browser control proof could not locate ${label}`,
+              );
+            }
+            return value;
+          };
           await client.send("Page.bringToFront");
+          const gameplayBefore = await (
+            await fetch(`http://${running.address}/api/state`)
+          ).json();
           await dispatchPhysicalClick(client, point.x, point.y);
           await waitForCdp(
             client,
             `document.querySelector("[data-rusty-application-host]")?.dataset.pointerLocked === "true"`,
             "Engine-owned gameplay pointer capture",
           );
-          await client.send("Input.dispatchKeyEvent", {
-            type: "keyDown",
-            code: "KeyI",
-            key: "i",
-            windowsVirtualKeyCode: 73,
+          await waitForHostState(
+            running.address,
+            (state) =>
+              state.input.acknowledgedSequence >
+              gameplayBefore.input.acknowledgedSequence,
+            "background gameplay pointer input",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `document.exitPointerLock?.()`,
           });
-          await client.send("Input.dispatchKeyEvent", {
-            type: "keyUp",
-            code: "KeyI",
-            key: "i",
-            windowsVirtualKeyCode: 73,
-          });
+          await waitForCdp(
+            client,
+            `document.pointerLockElement === null`,
+            "released pointer before HUD control proof",
+          );
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          const inventoryBefore = await (
+            await fetch(`http://${running.address}/api/state`)
+          ).json();
+          const inventoryPoint = await controlPoint("Inventory");
+          await dispatchPhysicalClick(
+            client,
+            inventoryPoint.x,
+            inventoryPoint.y,
+          );
           await waitForCdp(
             client,
             `document.querySelector("[data-rusty-application-host]")?.dataset.interactionMode === "modal" &&
               document.pointerLockElement === null &&
-              document.querySelector("[data-active-modal]") !== null`,
-            "modal UI input arbitration",
+              document.querySelector(".game-panel")?.textContent?.includes("Inventory") === true`,
+            "physical Inventory HUD control",
           );
-          const modalBefore = await (
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          const inventoryAfter = await (
             await fetch(`http://${running.address}/api/state`)
           ).json();
+          if (
+            inventoryAfter.input.acknowledgedSequence !==
+              inventoryBefore.input.acknowledgedSequence + 1 ||
+            inventoryAfter.weapon.ammoRemaining !==
+              inventoryBefore.weapon.ammoRemaining
+          ) {
+            throw new Error(
+              `Inventory HUD pointer leaked gameplay input: before=${JSON.stringify(
+                {
+                  input: inventoryBefore.input,
+                  ammo: inventoryBefore.weapon.ammoRemaining,
+                },
+              )} after=${JSON.stringify({
+                input: inventoryAfter.input,
+                ammo: inventoryAfter.weapon.ammoRemaining,
+              })}`,
+            );
+          }
+          await client.send("Runtime.evaluate", {
+            expression: `([...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "Return to game",
+            ))?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector("[data-rusty-application-host]")?.dataset.interactionMode === "gameplay" &&
+              document.querySelector("[data-active-modal]") === null`,
+            "gameplay restored after Inventory",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `document.exitPointerLock?.()`,
+          });
+          await waitForCdp(
+            client,
+            `document.pointerLockElement === null`,
+            "released pointer before Pause HUD proof",
+          );
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          const pauseBefore = await (
+            await fetch(`http://${running.address}/api/state`)
+          ).json();
+          const pausePoint = await controlPoint("Pause");
+          await dispatchPhysicalClick(client, pausePoint.x, pausePoint.y);
+          await waitForCdp(
+            client,
+            `document.querySelector("[data-rusty-application-host]")?.dataset.interactionMode === "modal" &&
+              document.pointerLockElement === null &&
+              document.querySelector(".game-panel")?.textContent?.includes("Restart loading bay") === true`,
+            "physical Pause HUD control",
+          );
+          const pauseAfter = await waitForHostState(
+            running.address,
+            (state) =>
+              state.input.paused === true &&
+              state.input.acknowledgedSequence >=
+                pauseBefore.input.acknowledgedSequence + 2,
+            "Rust pause acknowledgement and input neutralization",
+          );
+          if (
+            pauseAfter.input.acknowledgedSequence !==
+              pauseBefore.input.acknowledgedSequence + 2 ||
+            pauseAfter.weapon.ammoRemaining !== pauseBefore.weapon.ammoRemaining
+          ) {
+            throw new Error(
+              `Pause HUD pointer leaked gameplay input: before=${JSON.stringify(
+                {
+                  input: pauseBefore.input,
+                  ammo: pauseBefore.weapon.ammoRemaining,
+                },
+              )} after=${JSON.stringify({
+                input: pauseAfter.input,
+                ammo: pauseAfter.weapon.ammoRemaining,
+              })}`,
+            );
+          }
+          const modalBefore = pauseAfter;
           await client.send("Input.dispatchKeyEvent", {
             type: "keyDown",
             code: "KeyW",
@@ -283,6 +400,8 @@ async function runBrowserControlShell() {
           await client.send("Runtime.evaluate", {
             expression: `(() => {
               document.body.dataset.applicationInputProof = "pass";
+              document.body.dataset.applicationHudPointerProof = "pass";
+              document.body.dataset.applicationBackgroundPointerProof = "pass";
               document.body.dataset.applicationModalProof = "pass";
             })()`,
           });

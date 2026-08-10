@@ -84,7 +84,7 @@ export interface LoadingBayRenderProjection {
 }
 
 export interface LoadingBayGameOptions {
-  readonly inputEnabled?: () => boolean;
+  readonly inputEnabled?: (event: Event) => boolean;
   readonly onProjection?: (snapshot: LoadingBayPresentationSnapshot) => void;
   readonly onRenderProjection?: (
     rendering: LoadingBayRenderProjection,
@@ -283,7 +283,7 @@ export async function mountLoadingBayGame(
     if (
       event.repeat ||
       keyboardTargetOwnsInput(event.target) ||
-      options.inputEnabled?.() === false
+      options.inputEnabled?.(event) === false
     )
       return;
     pressed.add(event.code);
@@ -298,7 +298,7 @@ export async function mountLoadingBayGame(
 
   function onKeyUp(event: KeyboardEvent): void {
     pressed.delete(event.code);
-    if (options.inputEnabled?.() === false) {
+    if (options.inputEnabled?.(event) === false) {
       session.neutralizeInput();
       return;
     }
@@ -308,7 +308,7 @@ export async function mountLoadingBayGame(
   function onMouseMove(event: MouseEvent): void {
     if (
       document.pointerLockElement === null ||
-      options.inputEnabled?.() === false
+      options.inputEnabled?.(event) === false
     )
       return;
     const invert = preferences.invertY ? -1 : 1;
@@ -326,7 +326,7 @@ export async function mountLoadingBayGame(
     if (
       event.button !== 0 ||
       keyboardTargetOwnsInput(event.target) ||
-      options.inputEnabled?.() === false
+      options.inputEnabled?.(event) === false
     )
       return;
     void session

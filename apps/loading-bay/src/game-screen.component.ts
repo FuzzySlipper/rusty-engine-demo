@@ -1034,8 +1034,8 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     document.body.dataset.rendererLifecycle = "mounting";
     try {
       const handle = await mountLoadingBayGame({
-        inputEnabled: () =>
-          this.engineApplication.ui.interactionMode() === "gameplay",
+        inputEnabled: (event) =>
+          this.engineApplication.ui.allowsGameplayInput(event),
         onRenderProjection: async (rendering) => {
           if (rendering.replaceFrame) {
             const frameReceipt =
