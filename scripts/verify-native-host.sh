@@ -31,7 +31,8 @@ fi
 
 cargo build -p loading-bay-game --bin native-host --locked
 xvfb-run -a ./scripts/run-native-host-proof-linux.sh "$proof_output"
-xvfb-run -a ./scripts/run-doom-e1m1-native-proof-linux.sh "$doom_output" "$doom_screenshot"
+xvfb-run -a --server-args='-screen 0 640x480x24' \
+  ./scripts/run-doom-e1m1-native-proof-linux.sh "$doom_output" "$doom_screenshot"
 xvfb-run -a env -u WAYLAND_DISPLAY -u WAYLAND_SOCKET \
   GDK_BACKEND=x11 LIBGL_ALWAYS_SOFTWARE=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 \
   ./target/debug/native-host --proof-corrupt-resource >"$rejection_output" 2>&1
