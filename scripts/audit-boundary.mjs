@@ -197,20 +197,37 @@ for (const [label, packageJson] of [
 ]) {
   for (const section of ["dependencies", "devDependencies"]) {
     for (const dependencyName of Object.keys(packageJson[section] ?? {})) {
-      if (dependencyName.startsWith("@rusty-engine/")) {
+      const allowedApplicationHost =
+        label === "package.json" &&
+        section === "dependencies" &&
+        dependencyName === "@rusty-engine/application-host";
+      if (
+        dependencyName.startsWith("@rusty-engine/") &&
+        !allowedApplicationHost
+      ) {
         violations.push(
-          `${label}: downstream ${section} must not contain Engine Studio or renderer package ${dependencyName}`,
+          `${label}: downstream ${section} must contain only the public Engine application host, not ${dependencyName}`,
         );
       }
     }
   }
+}
+if (
+  rootPackage.dependencies?.["@rusty-engine/application-host"] !==
+  "file:../rusty-engine/render/artifacts/application-host"
+) {
+  violations.push(
+    "package.json: the sole Engine web dependency must use the adjacent bundled application-host artifact",
+  );
 }
 for (const relativePath of [
   "apps/loading-bay-studio/project.json",
   "libs/studio-weapon-inspector/project.json",
 ]) {
   if (existsSync(resolve(repoRoot, relativePath))) {
-    violations.push(`${relativePath}: downstream-owned Studio code must remain absent`);
+    violations.push(
+      `${relativePath}: downstream-owned Studio code must remain absent`,
+    );
   }
 }
 
@@ -244,7 +261,7 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `downstream boundary audit passed: ${String(files.length)} operational files, one adjacent Rust facade, native renderer ownership, no downstream Studio or renderer packages`,
+  `downstream boundary audit passed: ${String(files.length)} operational files, one adjacent Rust facade, one bundled Engine application host, no downstream Studio or renderer internals`,
 );
 
 function collect(path) {

@@ -114,6 +114,7 @@ function inputCategory(input) {
     return "three";
   }
   if (
+    input.includes("@rusty-engine+application-host") ||
     input.includes("@rusty-engine+renderer") ||
     input.includes("@rusty-engine+render-")
   ) {

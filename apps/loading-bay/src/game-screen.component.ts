@@ -4,6 +4,7 @@ import {
   type AfterViewInit,
   type OnDestroy,
   computed,
+  effect,
   HostListener,
   inject,
   signal,
@@ -36,6 +37,7 @@ import {
   type InventoryWeaponView,
   type KeyBindingView,
 } from "@rusty-engine-demo/ui-game-panels";
+import { ENGINE_APPLICATION } from "./engine-application";
 
 const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
   ammoCapacity: 0,
@@ -107,14 +109,14 @@ declare global {
       <section
         class="viewport-card"
         [class.hud-hidden]="!settings().hudVisible"
-        aria-label="Native game controls"
+        aria-label="Engine-rendered game controls"
       >
         <div
           id="viewport"
           tabindex="0"
           [attr.inert]="modalActive() ? '' : null"
           role="application"
-          aria-label="Loading Bay native input surface. Click to capture the pointer."
+          aria-label="Loading Bay Engine-rendered input surface. Click to capture the pointer."
         ></div>
         <div
           id="feedback-layer"
@@ -591,7 +593,9 @@ Awaiting session telemetry</pre
       </details>
 
       <footer>
-        <span id="renderer-status">World rendering: native Engine host</span>
+        <span id="renderer-status"
+          >World rendering: Engine application host</span
+        >
         <span id="smoke-result" data-status="idle">Product proof idle</span>
       </footer>
     </main>
@@ -703,11 +707,17 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   );
 
   private readonly documentEffects = browserDocumentEffects();
+  private readonly engineApplication = inject(ENGINE_APPLICATION);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private destroyed = false;
   private focusReturnTarget: HTMLElement | null = null;
   private handle: LoadingBayGameHandle | null = null;
+  private readonly engineInteractionEffect = effect(() => {
+    const mode = this.modalActive() ? "modal" : "gameplay";
+    this.engineApplication.ui.setInteractionMode(mode);
+    if (mode === "modal") this.handle?.releaseInput();
+  });
 
   ngAfterViewInit(): void {
     this.documentEffects.setTitle("Rusty Engine — Loading Bay");
@@ -722,10 +732,14 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     const handle = this.handle;
     this.handle = null;
     delete window.__loadingBayAnimationCapture;
-    document.body.dataset.rendererLifecycle = "disposed";
-    if (handle !== null) {
-      void handle.dispose();
-    }
+    this.engineApplication.ui.setInteractionMode("interface");
+    void (async () => {
+      await handle?.dispose();
+      if (this.engineApplication.ui.active()) {
+        await this.engineApplication.renderer.clear();
+        document.body.dataset.rendererLifecycle = "application-host-idle";
+      }
+    })();
   }
 
   @HostListener("window:keydown", ["$event"])
@@ -1020,6 +1034,24 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     document.body.dataset.rendererLifecycle = "mounting";
     try {
       const handle = await mountLoadingBayGame({
+        inputEnabled: () =>
+          this.engineApplication.ui.interactionMode() === "gameplay",
+        onRenderProjection: async (rendering) => {
+          if (rendering.replaceFrame) {
+            const frameReceipt =
+              await this.engineApplication.renderer.replaceFrame(
+                rendering.frame,
+              );
+            if (!frameReceipt.applied) {
+              throw new Error(
+                `Engine application host rejected the Rust frame: ${frameReceipt.diagnostics
+                  .map((diagnostic) => diagnostic.message)
+                  .join("; ")}`,
+              );
+            }
+          }
+          this.engineApplication.renderer.setCameraPose(rendering.camera);
+        },
         onProjection: (snapshot) => {
           const wasDead = this.snapshot().vitalityState === "dead";
           const wasComplete = this.snapshot().levelComplete;
@@ -1114,7 +1146,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       ) {
         this.restoreModalFocus();
       }
-      document.body.dataset.rendererLifecycle = "native-host";
+      document.body.dataset.rendererLifecycle = "mounted";
       if (new URLSearchParams(location.search).has("lifecycle-smoke")) {
         await this.router.navigateByUrl("/diagnostics");
       }
@@ -1172,7 +1204,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   }
 
   private focusViewport(): void {
-    document.getElementById("viewport")?.focus();
+    this.engineApplication.ui.focusGameplay();
   }
 
   private rememberFocusForModal(): void {

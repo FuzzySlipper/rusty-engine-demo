@@ -27,6 +27,11 @@ a {
   position: relative;
 }
 
+html.game-route-active .game-shell,
+html.game-route-active .viewport-card {
+  background: transparent;
+}
+
 .viewport-card {
   background: #071012;
   height: calc(100dvh - 30px);

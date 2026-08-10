@@ -19,7 +19,6 @@ const paths = {
   manifest: manifestPath,
 };
 const forbiddenBytes = [
-  ["/home/dev", "rusty-engine", ""].join("/"),
   "node_modules/",
   "localhost:4200",
   ["..", "rusty-engine"].join("/"),

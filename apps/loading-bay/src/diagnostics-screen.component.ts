@@ -2,8 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   afterNextRender,
+  inject,
 } from "@angular/core";
 import { RouterLink } from "@angular/router";
+import { ENGINE_APPLICATION } from "./engine-application";
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -13,27 +15,38 @@ import { RouterLink } from "@angular/router";
   template: `
     <main class="lifecycle-screen">
       <p class="eyebrow">Projection lifecycle proof</p>
-      <h1>Browser projection released</h1>
+      <h1>Game projection released</h1>
       <p>
-        This route owns no renderer. Returning to the game reconnects the
-        HUD/control projection while the rendered world remains in the native
-        Engine host.
+        The game route and its Rust session are disposed. The Engine application
+        host remains mounted once for the product shell with an empty retained
+        frame; returning to the game reconnects Rust facts and the rich UI.
       </p>
       <a routerLink="/game">Return to Loading Bay</a>
     </main>
   `,
 })
 export class DiagnosticsScreenComponent {
+  private readonly engineApplication = inject(ENGINE_APPLICATION);
+
   constructor() {
     afterNextRender(() => {
-      const disposed =
-        document.querySelector("red-game-screen") === null &&
-        document.querySelector("#viewport") === null;
-      document.body.dataset.rendererLifecycle = "disposed";
-      document.body.dataset.routeDisposal = disposed ? "pass" : "fail";
-      if (new URLSearchParams(location.search).has("lifecycle-smoke")) {
-        document.body.dataset.smokeStatus = disposed ? "pass" : "fail";
-      }
+      void this.proveReleasedGameRoute();
     });
+  }
+
+  private async proveReleasedGameRoute(): Promise<void> {
+    this.engineApplication.ui.setInteractionMode("interface");
+    await this.engineApplication.renderer.clear();
+    const disposed =
+      document.querySelector("red-game-screen") === null &&
+      document.querySelector("#viewport") === null &&
+      document.querySelectorAll(
+        "canvas[data-rusty-application-renderer='engine-owned']",
+      ).length === 1;
+    document.body.dataset.rendererLifecycle = "application-host-idle";
+    document.body.dataset.routeDisposal = disposed ? "pass" : "fail";
+    if (new URLSearchParams(location.search).has("lifecycle-smoke")) {
+      document.body.dataset.smokeStatus = disposed ? "pass" : "fail";
+    }
   }
 }

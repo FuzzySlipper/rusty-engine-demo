@@ -4,6 +4,7 @@ import type {
   RuntimeSaveSlotId,
   RuntimeSaveSlotSummary,
 } from "./projection.js";
+import { derivePlayerCameraPose } from "./projection.js";
 
 export interface LoadingBayHostPresentationPreferences {
   readonly mouseSensitivity: number;
@@ -72,8 +73,22 @@ export interface LoadingBayPresentationSnapshot {
   readonly weaponSlots: readonly LoadingBayWeaponSlot[];
 }
 
+export interface LoadingBayRenderProjection {
+  readonly camera: {
+    readonly position: readonly [number, number, number];
+    readonly pitchDegrees: number;
+    readonly yawDegrees: number;
+  };
+  readonly frame: Readonly<Record<string, unknown>>;
+  readonly replaceFrame: boolean;
+}
+
 export interface LoadingBayGameOptions {
+  readonly inputEnabled?: () => boolean;
   readonly onProjection?: (snapshot: LoadingBayPresentationSnapshot) => void;
+  readonly onRenderProjection?: (
+    rendering: LoadingBayRenderProjection,
+  ) => void | Promise<void>;
   readonly onConnectionFailure?: (message: string) => void;
   readonly preferences?: LoadingBayHostPresentationPreferences;
 }
@@ -102,12 +117,9 @@ export interface LoadingBayGameHandle {
 }
 
 /**
- * Mount the browser control shell around the Rust gameplay session.
- *
- * Rendering deliberately does not happen here. The visible retained viewport
- * is owned by the Engine Rust webview adapter and is launched with
- * `pnpm run native`; this shell remains useful for accessible controls,
- * project/save inspection, and browser-host diagnostics.
+ * Mount the downstream control and transport owner around the Rust gameplay
+ * session. Rust projects every renderer-neutral frame and camera pose; the
+ * application bootstrap hands those values to Engine's bounded host port.
  */
 export async function mountLoadingBayGame(
   options: LoadingBayGameOptions = {},
@@ -119,38 +131,51 @@ export async function mountLoadingBayGame(
   let disposed = false;
   const session = await LoadingBayGameSession.connect();
   let current = session.state;
+  let lastRenderFrame: Readonly<Record<string, unknown>> | null = null;
+  let projectionQueue: Promise<void> = Promise.resolve();
 
-  markNativeViewportBoundary();
-  publish(current);
-  session.setStateListener((state) => {
-    current = state;
-    publish(state);
-  });
-  session.setFailureListener((error) => {
-    lastRejection = error.message;
-    publish(current);
-    if (error.retry === "reconnect") {
-      options.onConnectionFailure?.(error.message);
-    }
-  });
+  try {
+    markApplicationViewportBoundary();
+    await publish(current);
+    session.setStateListener((state) => {
+      current = state;
+      projectionQueue = projectionQueue
+        .then(() => publish(state))
+        .catch(recordProjectionFailure);
+    });
+    session.setFailureListener((error) => {
+      lastRejection = error.message;
+      projectionQueue = projectionQueue
+        .then(() => publish(current))
+        .catch(recordProjectionFailure);
+      if (error.retry === "reconnect") {
+        options.onConnectionFailure?.(error.message);
+      }
+    });
 
-  globalThis.addEventListener("keydown", onKeyDown, {
-    signal: controller.signal,
-  });
-  globalThis.addEventListener("keyup", onKeyUp, {
-    signal: controller.signal,
-  });
-  globalThis.addEventListener("mousemove", onMouseMove, {
-    signal: controller.signal,
-  });
-  globalThis.addEventListener("mousedown", onMouseDown, {
-    signal: controller.signal,
-  });
+    globalThis.addEventListener("keydown", onKeyDown, {
+      signal: controller.signal,
+    });
+    globalThis.addEventListener("keyup", onKeyUp, {
+      signal: controller.signal,
+    });
+    globalThis.addEventListener("mousemove", onMouseMove, {
+      signal: controller.signal,
+    });
+    globalThis.addEventListener("mousedown", onMouseDown, {
+      signal: controller.signal,
+    });
+  } catch (cause) {
+    controller.abort();
+    session.neutralizeInput();
+    await session.close();
+    throw cause;
+  }
 
   return {
     captureAnimation: () => {
       throw new Error(
-        "animated renderer capture is owned by the native Engine host",
+        "animated renderer capture is not exposed by the Engine application host",
       );
     },
     dispose: async () => {
@@ -159,8 +184,9 @@ export async function mountLoadingBayGame(
       controller.abort();
       pressed.clear();
       session.neutralizeInput();
+      await projectionQueue.catch(() => undefined);
       await session.close();
-      document.body.dataset.rendererLifecycle = "native-host";
+      document.body.dataset.rendererLifecycle = "application-host-idle";
     },
     interact: async (target) => {
       await session.sendEdge({ kind: "interact", target });
@@ -201,7 +227,14 @@ export async function mountLoadingBayGame(
     },
   };
 
-  function publish(state: RuntimeBrowserState): void {
+  async function publish(state: RuntimeBrowserState): Promise<void> {
+    const replaceFrame = lastRenderFrame !== state.voxelObjectFrame;
+    await options.onRenderProjection?.({
+      camera: derivePlayerCameraPose(state.player),
+      frame: state.voxelObjectFrame,
+      replaceFrame,
+    });
+    if (replaceFrame) lastRenderFrame = state.voxelObjectFrame;
     const completedExit = state.levelExits.find(
       (candidate) => candidate.state === "completed",
     );
@@ -238,8 +271,21 @@ export async function mountLoadingBayGame(
     });
   }
 
+  function recordProjectionFailure(cause: unknown): void {
+    if (disposed) return;
+    const message = cause instanceof Error ? cause.message : String(cause);
+    lastRejection = message;
+    options.onConnectionFailure?.(message);
+    void session.close();
+  }
+
   function onKeyDown(event: KeyboardEvent): void {
-    if (event.repeat || keyboardTargetOwnsInput(event.target)) return;
+    if (
+      event.repeat ||
+      keyboardTargetOwnsInput(event.target) ||
+      options.inputEnabled?.() === false
+    )
+      return;
     pressed.add(event.code);
     queueMovement();
     const slot = current.player.bindings.selectWeapon.indexOf(event.code);
@@ -252,11 +298,19 @@ export async function mountLoadingBayGame(
 
   function onKeyUp(event: KeyboardEvent): void {
     pressed.delete(event.code);
+    if (options.inputEnabled?.() === false) {
+      session.neutralizeInput();
+      return;
+    }
     queueMovement();
   }
 
   function onMouseMove(event: MouseEvent): void {
-    if (document.pointerLockElement === null) return;
+    if (
+      document.pointerLockElement === null ||
+      options.inputEnabled?.() === false
+    )
+      return;
     const invert = preferences.invertY ? -1 : 1;
     session.queueInput({
       movement: movement(),
@@ -269,14 +323,12 @@ export async function mountLoadingBayGame(
   }
 
   function onMouseDown(event: MouseEvent): void {
-    if (event.button !== 0 || keyboardTargetOwnsInput(event.target)) return;
-    const viewport = document.getElementById("viewport");
     if (
-      viewport instanceof HTMLElement &&
-      document.pointerLockElement === null
-    ) {
-      void viewport.requestPointerLock();
-    }
+      event.button !== 0 ||
+      keyboardTargetOwnsInput(event.target) ||
+      options.inputEnabled?.() === false
+    )
+      return;
     void session
       .sendInput({
         movement: movement(),
@@ -312,15 +364,15 @@ export async function mountLoadingBayGame(
   }
 }
 
-function markNativeViewportBoundary(): void {
-  document.body.dataset.rendererLifecycle = "native-host";
+function markApplicationViewportBoundary(): void {
+  document.body.dataset.rendererLifecycle = "mounted";
   const viewport = document.getElementById("viewport");
   if (viewport instanceof HTMLElement) {
-    viewport.dataset.rendererBackend = "rusty-engine-native-webview";
-    viewport.dataset.rendererOwner = "rust";
+    viewport.dataset.rendererBackend = "rusty-engine-application-host";
+    viewport.dataset.rendererOwner = "engine";
     viewport.setAttribute(
       "aria-label",
-      "Engine-owned native viewport; launch pnpm run native for rendered play",
+      "Engine-owned rendered viewport. Click to capture gameplay input.",
     );
   }
 }

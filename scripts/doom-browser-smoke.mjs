@@ -287,7 +287,10 @@ async function moveToWorldPoint(client, addr, target, traversalSamples) {
     const localForward = -Math.sin(yaw) * dx - Math.cos(yaw) * dz;
     const localRight = Math.cos(yaw) * dx - Math.sin(yaw) * dz;
     const codes = [];
-    if (Math.abs(localForward) >= Math.abs(localRight) && Math.abs(localForward) > 0.45) {
+    if (
+      Math.abs(localForward) >= Math.abs(localRight) &&
+      Math.abs(localForward) > 0.45
+    ) {
       codes.push(localForward > 0 ? "KeyW" : "KeyS");
     } else if (Math.abs(localRight) > 0.45) {
       codes.push(localRight > 0 ? "KeyD" : "KeyA");
@@ -523,7 +526,7 @@ async function main() {
           console.log(`  lifecycle ${lc}`);
           lastLc = lc;
         }
-        if (lc === "native-host" || lc === "failed") break;
+        if (lc === "mounted" || lc === "failed") break;
         await delay(500);
       }
       const finalLc = await cdpEvaluate(
@@ -547,9 +550,9 @@ async function main() {
       headless.webgl = webglDiag;
       headless.lifecycle = finalLc;
       console.log(`final lifecycle ${finalLc} webgl=${webglDiag}`);
-      if (finalLc !== "native-host" || webglDiag !== "no-canvas") {
+      if (finalLc !== "mounted" || !webglDiag.startsWith("has-gl renderer=")) {
         throw new Error(
-          `browser renderer isolation failed before playthrough lifecycle=${finalLc} webgl=${webglDiag}`,
+          `Engine application host failed before playthrough lifecycle=${finalLc} webgl=${webglDiag}`,
         );
       }
 
@@ -793,12 +796,12 @@ async function main() {
       } catch (e) {
         console.warn(`screenshot failed ${String(e).slice(0, 300)}`);
       }
-      if (finalLc !== "native-host" || webglDiag !== "no-canvas") {
+      if (finalLc !== "mounted" || !webglDiag.startsWith("has-gl renderer=")) {
         headless.error = `unexpected browser renderer surface lifecycle=${finalLc} webgl=${webglDiag}`;
         console.log(headless.error);
       } else {
         console.log(
-          "browser renderer isolation confirmed: native-host lifecycle, no canvas",
+          "Engine application host confirmed: mounted lifecycle and one WebGL canvas",
         );
       }
     } catch (e) {
@@ -823,8 +826,8 @@ async function main() {
     }
 
     if (
-      headless.lifecycle !== "native-host" ||
-      headless.webgl !== "no-canvas" ||
+      headless.lifecycle !== "mounted" ||
+      !headless.webgl?.startsWith("has-gl renderer=") ||
       headless.playthrough === undefined
     ) {
       throw new Error(

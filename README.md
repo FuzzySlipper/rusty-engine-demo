@@ -59,11 +59,12 @@ install ...`; status, atomic rollback, ordinary uninstall with save preservation
 purge, desktop entry, and the installed-product certification command are documented in
 [docs/tauri-desktop.md](docs/tauri-desktop.md#local-deployment).
 
-The root browser route, including sessions started by `den-serve`, is a disposable HUD/control
-projection over the Rust session and does not display the native renderer window. Its
-diagnostics drawer exposes only concrete Rust host actions and transport counters. Rendered world,
-resource, input, pick, resize, and lifecycle acceptance now belongs to `native-host`; browser route
-changes cannot acquire or release renderer authority.
+The root browser route, including sessions started by `den-serve`, composes the rich Angular HUD
+and controls over one Engine-owned renderer through `@rusty-engine/application-host`. The browser
+shell imports no renderer internals and owns no canvas, backend, frame decoder, or render loop.
+Rust supplies the retained frame, camera, gameplay facts, and semantic input consequences; Engine
+owns DOM/canvas composition, replacement, resize, pointer arbitration, and renderer lifecycle. The
+same web bundle is used unchanged inside the Tauri wrapper.
 
 For a managed LAN-facing session, use the repository manifest:
 
@@ -82,9 +83,9 @@ The complete product gate is:
 pnpm run verify
 ```
 
-It checks package and repository boundaries, TypeScript content and browser-shell tests, rolling
-Engine freshness, the complete Rust suite and Clippy, the Engine-owned native renderer path, and
-the retained browser product flows that remain in scope.
+It checks package and repository boundaries, TypeScript content and browser-shell tests, the
+adjacent Engine facade and bundled application host, the complete Rust suite and Clippy, the
+Engine-owned native adapter proof, and retained browser/Tauri product flows.
 For Rust-only iteration, `./scripts/verify-rust.sh` remains available.
 
 For focused diagnosis:
@@ -93,7 +94,7 @@ For focused diagnosis:
 pnpm run check:content       # generated fixtures match; canonical projects Rust-admit and round-trip
 pnpm run test:shell          # protocol, projection, input, and presentation units
 pnpm run test:browser        # real Chromium campaign and lifecycle proof
-pnpm run audit:boundary      # exact pins and forbidden downstream shortcuts
+pnpm run audit:boundary      # adjacent facades and forbidden downstream shortcuts
 ```
 
 `GET /health` identifies a running browser host and `GET /api/state` is a read-only diagnostic

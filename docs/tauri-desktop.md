@@ -18,8 +18,12 @@ Tauri commands.
 ## Build inputs and outputs
 
 All Tauri, plugin, and CLI versions are exact in `src-tauri/Cargo.toml`, `Cargo.lock`,
-`package.json`, and `pnpm-lock.yaml`. Build from a checkout of the public Demo repository; a sibling
-Engine checkout is neither read nor accepted.
+`package.json`, and `pnpm-lock.yaml`. Build beside the rolling-current Engine checkout used by the
+Demo's Rust facade and application-host path dependencies. Those paths are compile-time inputs only:
+the packaged application copies the sidecar, web assets, and content closure and performs no sibling
+Engine lookup at runtime. Release binaries may retain compiler source-provenance strings, so the
+package inspector rejects runtime-relative sibling paths and unpackaged dependency trees rather than
+ordinary build-machine source paths.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -133,15 +137,17 @@ pnpm run deploy:tauri -- uninstall --purge-data # explicit destructive reset
 
 `pnpm run certify:tauri-deploy` certifies the active install. It drives the absolute installed
 binary through Tauri 2 WebDriver from a temporary working directory, captures full and 960×540
-screenshots, checks New Game/native-renderer boundary, browser projection disposal/remount,
+screenshots, checks New Game/application-host rendering, game-frame release/replacement,
 singleton delegation,
-focus loss plus the native show/unminimize/focus activation receipt, WebKit identity and WebGL absence,
+focus loss plus the native show/unminimize/focus activation receipt, WebKit identity and the
+Engine-owned WebGL surface,
 native process-tree RSS and idle activity,
 normal/crash cleanup, a visible fail-closed startup screen, and then verifies that the installed
-sidecar and Web bundle expose only the HUD/control shell while reporting the Engine-owned native
-renderer boundary. Its WebKit evidence also confirms that the HUD shell creates no WebGL context.
-The browser proof reads authoritative Rust state and proves that no canvas or
-downstream renderer or input authority is present; physical input is certified in the native host.
+sidecar and Web bundle expose only the single public Engine application-host package rather than
+renderer internals. WebKit now carries the Engine-owned WebGL canvas beneath the Angular UI; that
+does not give downstream TypeScript backend or input authority. The browser and Tauri proofs read
+authoritative Rust state and verify Engine pointer/modal arbitration; the focused `native-host`
+gate separately certifies the Rust webview adapter's physical-input and pick path.
 The native callback schedules one main-thread transaction that requests show, unminimize, native
 focus, and WebView focus on the existing window. The bounded cache receipt is written after those
 requests; the evidence records the window manager's resulting visible/minimized/focus state without

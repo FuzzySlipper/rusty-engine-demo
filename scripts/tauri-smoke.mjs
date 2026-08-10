@@ -221,7 +221,7 @@ async function nativeInputProof(sessionId) {
     () =>
       execute(
         sessionId,
-        `return document.pointerLockElement?.id === "viewport";`,
+        `return document.pointerLockElement?.dataset.rustyApplicationRenderer === "engine-owned";`,
       ),
     "native WebKit pointer lock",
   );
@@ -436,14 +436,14 @@ async function runProductSession({
               `status=${state.rendererStatus} overlay=${state.overlay} error=${state.runtimeError}\n`,
           );
         }
-        return state.lifecycle === "native-host" &&
+        return state.lifecycle === "mounted" &&
           state.renderSequence === null &&
           state.runtimeError === "" &&
           (continueGame ? state.overlay : !state.overlay)
           ? state
           : null;
       },
-      "native renderer boundary and authoritative Rust session",
+      "Engine application host and authoritative Rust session",
       240_000,
     );
     frame.boundaryReadyMilliseconds = performance.now() - gameStartedAt;
@@ -639,7 +639,7 @@ async function exerciseInstalledWindow(first) {
         renderSequence: Number(document.querySelector("#renderer-telemetry")?.dataset.rendererRenderSequence ?? "0"),
       };`,
     );
-    return state.lifecycle === "native-host" && state.renderSequence === 0
+    return state.lifecycle === "mounted" && state.renderSequence === 0
       ? state
       : null;
   }, "browser projection remount");
@@ -902,9 +902,9 @@ try {
     !/^http:\/\/127\.0\.0\.1:\d+$/.test(first.result.origin) ||
     typeof first.result.menu?.hostSessionId !== "string" ||
     first.result.renderSequence !== null ||
-    first.result.lifecycle !== "native-host" ||
+    first.result.lifecycle !== "mounted" ||
     first.result.runtimeError !== "" ||
-    first.result.webGl?.renderer !== null ||
+    typeof first.result.webGl?.version !== "string" ||
     !first.result.securityHeaders?.contentSecurityPolicy?.includes(
       "ws://127.0.0.1:*",
     ) ||

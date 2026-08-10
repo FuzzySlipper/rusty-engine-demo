@@ -63,7 +63,7 @@ if (process.env.RUSTY_BROWSER_CONTROL_ONLY === "1") {
     const proof = await runBrowserControlShell();
     console.log(`browser-control proof ${JSON.stringify(proof)}`);
     console.log(
-      "browser control smoke passed: authoritative Rust session + HUD/control shell + native renderer boundary",
+      "browser control smoke passed: authoritative Rust session + rich Angular UI + Engine application host",
     );
   } finally {
     rmSync(proofDirectory, { recursive: true, force: true });
@@ -191,43 +191,137 @@ async function runBrowserControlShell() {
     }
     const result = await runChromiumSmoke(
       `http://${running.address}/#/game?mode=new`,
-      `document.body?.dataset.rendererLifecycle === "native-host" &&
-        document.querySelector("#viewport")?.dataset.rendererOwner === "rust" &&
-        document.querySelector("#viewport")?.dataset.rendererBackend === "rusty-engine-native-webview" &&
-        document.querySelector("canvas") === null`,
+      `document.body?.dataset.rendererLifecycle === "mounted" &&
+        document.querySelector("#viewport")?.dataset.rendererOwner === "engine" &&
+        document.querySelector("#viewport")?.dataset.rendererBackend === "rusty-engine-application-host" &&
+        document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length === 1 &&
+        document.querySelector("[data-rusty-application-host]")?.dataset.state === "ready" &&
+        document.body?.dataset.applicationInputProof === "pass" &&
+        document.body?.dataset.applicationModalProof === "pass"`,
       30_000,
+      {
+        interactiveSetup: async (client) => {
+          await waitForCdp(
+            client,
+            `document.body?.dataset.rendererLifecycle === "mounted" &&
+              document.querySelector("[data-rusty-application-host]")?.dataset.state === "ready" &&
+              document.querySelector("[data-rusty-application-host]")?.dataset.interactionMode === "gameplay"`,
+            "mounted Engine application host",
+            25_000,
+          );
+          const viewport = await client.send("Runtime.evaluate", {
+            expression: `(() => {
+              const rect = document.querySelector("#viewport")?.getBoundingClientRect();
+              return rect === undefined ? null : {
+                x: rect.x + rect.width / 2,
+                y: rect.y + rect.height / 2,
+              };
+            })()`,
+            returnByValue: true,
+          });
+          const point = viewport?.result?.value;
+          if (point === null || typeof point?.x !== "number") {
+            throw new Error(
+              "browser control proof could not locate the gameplay viewport",
+            );
+          }
+          await client.send("Page.bringToFront");
+          await dispatchPhysicalClick(client, point.x, point.y);
+          await waitForCdp(
+            client,
+            `document.querySelector("[data-rusty-application-host]")?.dataset.pointerLocked === "true"`,
+            "Engine-owned gameplay pointer capture",
+          );
+          await client.send("Input.dispatchKeyEvent", {
+            type: "keyDown",
+            code: "KeyI",
+            key: "i",
+            windowsVirtualKeyCode: 73,
+          });
+          await client.send("Input.dispatchKeyEvent", {
+            type: "keyUp",
+            code: "KeyI",
+            key: "i",
+            windowsVirtualKeyCode: 73,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector("[data-rusty-application-host]")?.dataset.interactionMode === "modal" &&
+              document.pointerLockElement === null &&
+              document.querySelector("[data-active-modal]") !== null`,
+            "modal UI input arbitration",
+          );
+          const modalBefore = await (
+            await fetch(`http://${running.address}/api/state`)
+          ).json();
+          await client.send("Input.dispatchKeyEvent", {
+            type: "keyDown",
+            code: "KeyW",
+            key: "w",
+            windowsVirtualKeyCode: 87,
+          });
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          await client.send("Input.dispatchKeyEvent", {
+            type: "keyUp",
+            code: "KeyW",
+            key: "w",
+            windowsVirtualKeyCode: 87,
+          });
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          const modalAfter = await (
+            await fetch(`http://${running.address}/api/state`)
+          ).json();
+          if (
+            JSON.stringify(modalAfter.player?.position) !==
+            JSON.stringify(modalBefore.player?.position)
+          ) {
+            throw new Error(
+              `modal key leaked into Rust movement: before=${JSON.stringify(modalBefore.player?.position)} ` +
+                `after=${JSON.stringify(modalAfter.player?.position)}`,
+            );
+          }
+          await client.send("Runtime.evaluate", {
+            expression: `(() => {
+              document.body.dataset.applicationInputProof = "pass";
+              document.body.dataset.applicationModalProof = "pass";
+            })()`,
+          });
+        },
+      },
     );
     if (result.code !== 0) {
       throw new Error(
-        `browser control shell did not expose the native boundary\n${result.stderr.slice(-4_000)}`,
+        `browser control shell did not expose the application-host boundary\n` +
+          `DOM=${result.stdout.slice(-6_000)}\n${result.stderr.slice(-4_000)}`,
       );
     }
     for (const expected of [
-      'data-renderer-lifecycle="native-host"',
-      'data-renderer-owner="rust"',
-      'data-renderer-backend="rusty-engine-native-webview"',
+      'data-renderer-owner="engine"',
+      'data-renderer-backend="rusty-engine-application-host"',
+      'data-rusty-application-renderer="engine-owned"',
+      'data-rusty-application-state="ready"',
+      'data-application-input-proof="pass"',
+      'data-application-modal-proof="pass"',
     ]) {
       if (!result.stdout.includes(expected)) {
         throw new Error(`browser control shell omitted ${expected}`);
       }
     }
-    if (
-      result.stdout.includes("@rusty-engine/renderer-") ||
-      result.stdout.includes('data-renderer-lifecycle="mounted"')
-    ) {
+    if (result.stdout.includes("@rusty-engine/renderer-")) {
       throw new Error(
-        "browser control shell claimed downstream renderer ownership",
+        "browser control shell exposed an internal Engine renderer package",
       );
     }
     return {
       status: "passed",
-      authority: "installed Rust sidecar",
-      rendererLifecycle: "native-host",
-      rendererOwner: "rust",
-      rendererBackend: "rusty-engine-native-webview",
-      canvas: "absent",
+      authority: "Rust browser host plus Engine application host",
+      rendererLifecycle: "mounted",
+      rendererOwner: "engine",
+      rendererBackend: "rusty-engine-application-host",
+      canvas: "one Engine-owned surface",
       stateReadback: `project loading-bay at entity revision ${String(before.entityRevision)}`,
-      inputAuthority: "certified by the Engine-owned native host",
+      inputAuthority:
+        "semantic input remains certified by Rust session readback",
     };
   } finally {
     await stopHost(running.host);
@@ -2654,6 +2748,30 @@ async function waitForCdp(client, expression, label, timeout = 15_000) {
     await delay(50);
   }
   throw new Error(`timed out waiting for ${label}`);
+}
+
+async function dispatchPhysicalClick(client, x, y) {
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseMoved",
+    x,
+    y,
+  });
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+    x,
+    y,
+  });
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    button: "left",
+    buttons: 0,
+    clickCount: 1,
+    x,
+    y,
+  });
 }
 
 async function waitForChromiumTarget(port, process, output) {

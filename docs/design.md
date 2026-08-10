@@ -42,11 +42,13 @@ never reaches into the renderer or keeps a local mode override.
 
 ## Concrete hosts
 
-`browser-host` remains the game-specific transport and diagnostics host. Its browser client is a
-control/HUD shell and does not mount an Engine renderer. `native-host` is the concrete rendered
-Loading Bay product: it admits the canonical project, packages a checked-in product GLB through
-Engine Rust types, submits retained frames, maps physical input to player-controller mutations,
-maps picks to a named game interaction, and verifies transactional mount failure and disposal.
+`browser-host` remains the game-specific transport and diagnostics host. Its Rust projection feeds
+one bundled `@rusty-engine/application-host`, which owns renderer/DOM composition while Angular
+owns Loading Bay's rich HUD, forms, menus, and accessibility tree. The identical web application
+runs in an ordinary browser and the Tauri wrapper; only the existing Rust transport/sidecar launch
+varies. `native-host` remains a focused Rust-adapter acceptance product for named operations,
+physical input, picking, resource admission, transactional mount failure, and disposal.
 
-There is intentionally no generic command tunnel, eval seam, callback registry, shared downstream
-renderer bootstrap, or universal host abstraction.
+There is intentionally no generic command tunnel, eval seam, callback registry, renderer-package
+graph, or downstream renderer bootstrap. The one application-host import exposes only bounded
+frame, camera, interaction-mode, and lifecycle ports.
