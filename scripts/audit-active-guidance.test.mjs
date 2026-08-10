@@ -165,6 +165,38 @@ for (const [name, statement] of [
     "noun-led branches before historical clause",
     "Branches must follow main or Engine historical evidence used an old renderer.",
   ],
+  [
+    "noun-led revisions with unlisted predicate after anti-ceremony",
+    "Do not pin Engine and revisions remain on public main for builds.",
+  ],
+  [
+    "noun-led revisions with unlisted predicate before anti-ceremony",
+    "Revisions remain on public main for builds and do not pin Engine.",
+  ],
+  [
+    "noun-led tags with unlisted predicate after historical clause",
+    "Engine historical evidence used an old renderer and tags track v2 for current builds.",
+  ],
+  [
+    "noun-led tags with unlisted predicate before historical clause",
+    "Tags track v2 for current builds and Engine historical evidence used an old renderer.",
+  ],
+  [
+    "noun-led branches with unlisted predicate after anti-ceremony",
+    "Do not pin Engine or branches point at main for production.",
+  ],
+  [
+    "noun-led branches with unlisted predicate before anti-ceremony",
+    "Branches point at main for production or do not pin Engine.",
+  ],
+  [
+    "noun-led commits with unlisted predicate after historical clause",
+    "Engine historical evidence used an old renderer or commits identify production builds.",
+  ],
+  [
+    "noun-led commits with unlisted predicate before historical clause",
+    "Commits identify production builds or Engine historical evidence used an old renderer.",
+  ],
 ]) {
   test(`active guidance rejects ${name}`, () => {
     assert.notDeepEqual(
@@ -185,13 +217,16 @@ test("active guidance permits the adjacent sibling facade", () => {
 });
 
 test("active guidance permits gameplay commit verbs", () => {
-  assert.deepEqual(
-    auditActiveGuidance(
-      "docs/studio-adapter.md",
-      "The Engine adapter commits a complete replacement and observes the canonical reread.",
-    ),
-    [],
-  );
+  for (const statement of [
+    "The Engine adapter commits a complete replacement and observes the canonical reread.",
+    "Engine tools commit a complete replacement and observe the canonical reread.",
+  ]) {
+    assert.deepEqual(
+      auditActiveGuidance("docs/studio-adapter.md", statement),
+      [],
+      statement,
+    );
+  }
 });
 
 test("active guidance permits explicit anti-ceremony rules", () => {
@@ -236,6 +271,13 @@ test("historical provenance may retain exact revision language", () => {
     auditActiveGuidance(
       "docs/weapon-authoring-contract.md",
       "Historical evidence recorded Engine revision and commit.",
+    ),
+    [],
+  );
+  assert.deepEqual(
+    auditActiveGuidance(
+      "docs/weapon-authoring-contract.md",
+      "Historical evidence recorded Engine revision and SHA.",
     ),
     [],
   );

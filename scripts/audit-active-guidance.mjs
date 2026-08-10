@@ -19,8 +19,8 @@ const checkout = /\bcheckout\b/iu;
 const checkoutCeremony =
   /\b(?:fresh|freshness|refresh|sync|synchronize|match|update|fetch|pull|follow)\b/iu;
 const freshness = /\bfreshness\b/iu;
-const identityClausePredicate =
-  /\b(?:must|should|shall|will|is|are|was|were|uses?|used|ships?|deploys?|matches?|follows?|resolves?|requires?|selects?|locks?|pins?|updates?|governs?)\b/iu;
+const plainGitIdentityListItem =
+  /^\s*(?:(?:the|exact|current|historical|reviewed)\s+)?(?:revisions?|commits?|shas?|git\s+(?:identity|ref)|tags?|branches?|public\s+main|main\s+branch)(?:\s+provenance)?[.,:]?\s*$/iu;
 const antiCeremony =
   /(?:\b(?:no|without|must\s+not|do\s+not|does\s+not|is\s+not|not\s+as|never)\b[^,;.!?\n]{0,120}\b(?:add|use|fetch|manage|mutate|certify|lock|pin|refresh|sync|synchronize|match|update|pull|follow|freshness|revision|commit|sha|git\s+(?:identity|ref)|tag|branch)\b|\b(?:revision|commit|sha|git\s+(?:identity|ref)|tag|branch|freshness|refresh|sync|synchronization|update|lock|pin)\b[^,;.!?\n]{0,80}\b(?:is|are)\s+not\b)/iu;
 const historicalScope =
@@ -94,8 +94,7 @@ function guidanceClauses(content) {
           .reduce((classified, clause) => {
             if (
               classified.length > 0 &&
-              gitIdentity.test(clause) &&
-              !identityClausePredicate.test(clause)
+              plainGitIdentityListItem.test(clause)
             ) {
               classified[classified.length - 1] += ` and ${clause}`;
             } else {
