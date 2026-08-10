@@ -13,12 +13,14 @@ export const activeGuidancePaths = new Set([
 
 const engine = /\b(?:Rusty\s+)?Engine\b/iu;
 const gitIdentity =
-  /\b(?:revisions?|commit|shas?|git\s+(?:identity|ref)|tags?|branches?|public\s+main|main\s+branch)\b/iu;
+  /\b(?:revisions?|commits?(?!\s+(?:a|an|the)\b)|shas?|git\s+(?:identity|ref)|tags?|branches?|public\s+main|main\s+branch)\b/iu;
 const pinOrLock = /\b(?:pin|pins|pinned|lock|locks|locked)\b/iu;
 const checkout = /\bcheckout\b/iu;
 const checkoutCeremony =
   /\b(?:fresh|freshness|refresh|sync|synchronize|match|update|fetch|pull|follow)\b/iu;
 const freshness = /\bfreshness\b/iu;
+const identityClausePredicate =
+  /\b(?:must|should|shall|will|is|are|was|were|uses?|used|ships?|deploys?|matches?|follows?|resolves?|requires?|selects?|locks?|pins?|updates?|governs?)\b/iu;
 const antiCeremony =
   /(?:\b(?:no|without|must\s+not|do\s+not|does\s+not|is\s+not|not\s+as|never)\b[^,;.!?\n]{0,120}\b(?:add|use|fetch|manage|mutate|certify|lock|pin|refresh|sync|synchronize|match|update|pull|follow|freshness|revision|commit|sha|git\s+(?:identity|ref)|tag|branch)\b|\b(?:revision|commit|sha|git\s+(?:identity|ref)|tag|branch|freshness|refresh|sync|synchronization|update|lock|pin)\b[^,;.!?\n]{0,80}\b(?:is|are)\s+not\b)/iu;
 const historicalScope =
@@ -85,9 +87,22 @@ function guidanceClauses(content) {
     }
     for (const unit of units) {
       for (const sentence of unit.split(/(?<=[.!?])\s+(?=[A-Z`])/u)) {
-        const clauses = sentence.split(
-          /\s*;\s*|\s*,\s*(?=(?:but|yet|however|while)\b)|\s+(?:and|or)\s+(?!(?:revisions?|commits?|shas?|tags?|branches?|public\s+main|main\s+branch)\b)/iu,
-        );
+        const clauses = sentence
+          .split(
+            /\s*;\s*|\s*,\s*(?=(?:but|yet|however|while)\b)|\s+(?:and|or)\s+/iu,
+          )
+          .reduce((classified, clause) => {
+            if (
+              classified.length > 0 &&
+              gitIdentity.test(clause) &&
+              !identityClausePredicate.test(clause)
+            ) {
+              classified[classified.length - 1] += ` and ${clause}`;
+            } else {
+              classified.push(clause);
+            }
+            return classified;
+          }, []);
         const governedByEngine = engine.test(sentence);
         statements.push(
           ...clauses.map((clause) =>

@@ -133,6 +133,38 @@ for (const [name, statement] of [
     "shared Engine subject after or authority",
     `Use revision ${sha} for every build or do not pin Engine.`,
   ],
+  [
+    "noun-led revisions after anti-ceremony",
+    "Do not pin Engine and revisions must match public main before builds.",
+  ],
+  [
+    "noun-led revisions before anti-ceremony",
+    "Revisions must match public main before builds and do not pin Engine.",
+  ],
+  [
+    "noun-led tags after historical clause",
+    "Engine historical evidence used an old renderer and tags must follow v2 for current builds.",
+  ],
+  [
+    "noun-led tags before historical clause",
+    "Tags must follow v2 for current builds and Engine historical evidence used an old renderer.",
+  ],
+  [
+    "noun-led commits after anti-ceremony",
+    `Do not pin Engine or commits must match ${sha}.`,
+  ],
+  [
+    "noun-led commits before anti-ceremony",
+    `Commits must match ${sha} or do not pin Engine.`,
+  ],
+  [
+    "noun-led branches after historical clause",
+    "Engine historical evidence used an old renderer or branches must follow main.",
+  ],
+  [
+    "noun-led branches before historical clause",
+    "Branches must follow main or Engine historical evidence used an old renderer.",
+  ],
 ]) {
   test(`active guidance rejects ${name}`, () => {
     assert.notDeepEqual(
@@ -147,6 +179,16 @@ test("active guidance permits the adjacent sibling facade", () => {
     auditActiveGuidance(
       "docs/design.md",
       "Use one Cargo path to the complete adjacent sibling Engine facade.",
+    ),
+    [],
+  );
+});
+
+test("active guidance permits gameplay commit verbs", () => {
+  assert.deepEqual(
+    auditActiveGuidance(
+      "docs/studio-adapter.md",
+      "The Engine adapter commits a complete replacement and observes the canonical reread.",
     ),
     [],
   );
@@ -193,7 +235,7 @@ test("historical provenance may retain exact revision language", () => {
   assert.deepEqual(
     auditActiveGuidance(
       "docs/weapon-authoring-contract.md",
-      `Historical Engine revision and commit provenance used ${sha}.`,
+      "Historical evidence recorded Engine revision and commit.",
     ),
     [],
   );
