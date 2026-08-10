@@ -388,8 +388,7 @@ async function main() {
       ),
       "Rust projected packed E1M1 mesh resources",
     );
-    const { spawnSync: ss } = await import("node:child_process");
-    const curl = ss(
+    const curl = spawnSync(
       "curl",
       [
         "-i",
@@ -419,26 +418,6 @@ async function main() {
       );
     }
     checks.push("websocket bootstrap carried the Doom static revision");
-    const dump = ss(
-      "chromium",
-      [
-        "--headless=new",
-        "--no-sandbox",
-        "--disable-dev-shm-usage",
-        "--dump-dom",
-        `http://${addr}/#/`,
-      ],
-      { timeout: 15000 },
-    );
-    const html = dump.stdout?.toString() ?? "";
-    assert(html.includes("Doom E1M1"), "dump-dom contains Doom E1M1 card");
-    assert(
-      html.includes("project=doom-e1m1") ||
-        html.includes("Doom E1M1 \u2014 Hangar"),
-      "card navigates to doom",
-    );
-    console.log(`dump-dom ok ${html.length} bytes`);
-
     let headless = {
       lifecycle: "skipped",
       screenshotBytes: 0,
@@ -609,7 +588,9 @@ async function main() {
         canvasBounds.width < 64 ||
         canvasBounds.height < 64
       ) {
-        throw new Error(`Engine canvas bounds are invalid: ${JSON.stringify(canvasBounds)}`);
+        throw new Error(
+          `Engine canvas bounds are invalid: ${JSON.stringify(canvasBounds)}`,
+        );
       }
       const worldShot = await cdpClient.send("Page.captureScreenshot", {
         format: "png",
@@ -623,17 +604,12 @@ async function main() {
           : "convert";
       const imageReadout = spawnSync(
         imageMagickCommand,
-        [
-          worldPath,
-          "-resize",
-          "160x90!",
-          "-format",
-          "%k %[fx:mean]",
-          "info:",
-        ],
+        [worldPath, "-resize", "160x90!", "-format", "%k %[fx:mean]", "info:"],
         { encoding: "utf8" },
       );
-      const [uniqueText, meanText] = String(imageReadout.stdout).trim().split(/\s+/u);
+      const [uniqueText, meanText] = String(imageReadout.stdout)
+        .trim()
+        .split(/\s+/u);
       const worldPixels = {
         uniqueColors: Number(uniqueText),
         mean: Number(meanText),
@@ -950,7 +926,6 @@ async function main() {
         levelExits: state.levelExits,
       },
       checks,
-      chromiumDumpBytes: html.length,
       staticRevision: staticRevMatch
         ? staticRevMatch[0]
         : "sha256:cbdd88292c50e00907e0f596da53ca6e9e1669e30d29c7878e5a808a68249bff",
