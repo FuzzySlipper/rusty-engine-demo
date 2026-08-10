@@ -639,6 +639,30 @@ async function exerciseInstalledWindow(first) {
   if (!returnedToGame) {
     throw new Error("Diagnostics route exposes no game return link");
   }
+  await waitFor(async () => {
+    const state = await execute(
+      first.sessionId,
+      `return {
+        game: document.querySelector("red-game-screen") !== null,
+        lifecycle: document.body.dataset.rendererLifecycle ?? null,
+        release: document.body.dataset.retiredRouteRelease ?? null,
+        canvasCount: document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length,
+      };`,
+    );
+    return state.game &&
+      state.lifecycle === "mounting" &&
+      state.release === "pending" &&
+      state.canvasCount === 1
+      ? state
+      : null;
+  }, "successor route awaiting retired Rust session");
+  await execute(
+    first.sessionId,
+    `window.__releaseLoadingBayRouteDisposal?.();
+     delete window.__releaseLoadingBayRouteDisposal;
+     delete window.__loadingBayRouteDisposalGate;
+     return true;`,
+  );
   const remount = await waitFor(async () => {
     const state = await execute(
       first.sessionId,
@@ -659,13 +683,6 @@ async function exerciseInstalledWindow(first) {
       ? state
       : null;
   }, "browser projection remount");
-  await execute(
-    first.sessionId,
-    `window.__releaseLoadingBayRouteDisposal?.();
-     delete window.__releaseLoadingBayRouteDisposal;
-     delete window.__loadingBayRouteDisposalGate;
-     return true;`,
-  );
   const retiredRouteRelease = await waitFor(async () => {
     const state = await execute(
       first.sessionId,

@@ -14,6 +14,7 @@ export const ENGINE_APPLICATION = new InjectionToken<RustyApplicationUiContext>(
 interface RendererRouteAuthority {
   generation: number;
   mutationQueue: Promise<void>;
+  sessionRetirement: Promise<void>;
 }
 
 export interface EngineRendererRouteLease {
@@ -43,6 +44,7 @@ export function claimEngineRendererRoute(
   const authority = rendererRouteAuthorities.get(application) ?? {
     generation: 0,
     mutationQueue: Promise.resolve(),
+    sessionRetirement: Promise.resolve(),
   };
   rendererRouteAuthorities.set(application, authority);
   const generation = ++authority.generation;
@@ -84,6 +86,7 @@ export function claimEngineRendererRoute(
       retired = true;
     },
     clearIfOwned: async () => {
+      if (authority.generation !== generation) return false;
       const queued = authority.mutationQueue
         .catch(() => undefined)
         .then(async () => {
@@ -98,4 +101,30 @@ export function claimEngineRendererRoute(
       return await queued;
     },
   };
+}
+
+/** Wait until the previous game route has released the single Rust session. */
+export function waitForEngineRouteSessionRetirement(
+  application: RustyApplicationUiContext,
+): Promise<void> {
+  return (
+    rendererRouteAuthorities.get(application)?.sessionRetirement ??
+    Promise.resolve()
+  );
+}
+
+/** Publish teardown before a successor route is allowed to connect to Rust. */
+export function queueEngineRouteSessionRetirement(
+  application: RustyApplicationUiContext,
+  retirement: () => Promise<void>,
+): Promise<void> {
+  const authority = rendererRouteAuthorities.get(application);
+  if (authority === undefined) {
+    throw new Error("Engine renderer route must be claimed before retirement");
+  }
+  const queued = authority.sessionRetirement
+    .catch(() => undefined)
+    .then(retirement);
+  authority.sessionRetirement = queued.catch(() => undefined);
+  return queued;
 }

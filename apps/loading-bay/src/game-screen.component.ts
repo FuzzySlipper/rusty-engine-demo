@@ -40,6 +40,8 @@ import {
 import {
   claimEngineRendererRoute,
   ENGINE_APPLICATION,
+  queueEngineRouteSessionRetirement,
+  waitForEngineRouteSessionRetirement,
 } from "./engine-application";
 
 const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
@@ -741,8 +743,8 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     this.handle = null;
     delete window.__loadingBayAnimationCapture;
     this.engineApplication.ui.setInteractionMode("interface");
-    void (async () => {
-      document.body.dataset.retiredRouteRelease = "pending";
+    document.body.dataset.retiredRouteRelease = "pending";
+    void queueEngineRouteSessionRetirement(this.engineApplication, async () => {
       await window.__loadingBayRouteDisposalGate;
       await handle?.dispose();
       const cleared = await this.rendererRoute.clearIfOwned();
@@ -750,7 +752,11 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
         document.body.dataset.rendererLifecycle = "application-host-idle";
       }
       document.body.dataset.retiredRouteRelease = "pass";
-    })();
+    }).catch((error: unknown) => {
+      document.body.dataset.retiredRouteRelease = "fail";
+      document.body.dataset.runtimeError =
+        error instanceof Error ? error.message : String(error);
+    });
   }
 
   @HostListener("window:keydown", ["$event"])
@@ -1044,6 +1050,10 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     }
     document.body.dataset.rendererLifecycle = "mounting";
     try {
+      await waitForEngineRouteSessionRetirement(this.engineApplication);
+      if (this.destroyed) {
+        return;
+      }
       const handle = await mountLoadingBayGame({
         inputEnabled: (event) =>
           this.engineApplication.ui.allowsGameplayInput(event),

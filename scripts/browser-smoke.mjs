@@ -1417,28 +1417,45 @@ async function runOverlappingRouteRetirementProof(project) {
           await waitForCdp(
             client,
             `document.querySelector("red-game-screen") !== null &&
-              document.body.dataset.rendererLifecycle === "mounted" &&
-              Number(document.body.dataset.rendererRouteGeneration) >= 3 &&
-              document.body.dataset.rendererRouteFrame === "rust-authoritative" &&
-              document.body.dataset.rendererRouteCamera?.length > 0 &&
+              document.body.dataset.rendererLifecycle === "mounting" &&
+              document.body.dataset.retiredRouteRelease === "pending" &&
               document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length === 1`,
-            "successor route Rust frame",
+            "successor route awaiting retired Rust session",
           );
           await client.send("Runtime.evaluate", {
             expression: `window.__releaseLoadingBayRouteDisposal?.();
               delete window.__releaseLoadingBayRouteDisposal;
               delete window.__loadingBayRouteDisposalGate`,
           });
-          await waitForCdp(
-            client,
-            `document.body.dataset.retiredRouteRelease === "pass" &&
-              document.body.dataset.rendererLifecycle === "mounted" &&
-              Number(document.body.dataset.rendererRouteGeneration) >= 3 &&
-              document.body.dataset.rendererRouteFrame === "rust-authoritative" &&
-              document.body.dataset.rendererRouteCamera?.length > 0 &&
-              document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length === 1`,
-            "successor route survives retired teardown",
-          );
+          try {
+            await waitForCdp(
+              client,
+              `document.body.dataset.retiredRouteRelease === "pass" &&
+                document.body.dataset.rendererLifecycle === "mounted" &&
+                Number(document.body.dataset.rendererRouteGeneration) >= 3 &&
+                document.body.dataset.rendererRouteFrame === "rust-authoritative" &&
+                document.body.dataset.rendererRouteCamera?.length > 0 &&
+                document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length === 1`,
+              "successor route survives retired teardown",
+            );
+          } catch (error) {
+            const diagnostic = await client.send("Runtime.evaluate", {
+              expression: `({
+                release: document.body.dataset.retiredRouteRelease ?? null,
+                lifecycle: document.body.dataset.rendererLifecycle ?? null,
+                generation: document.body.dataset.rendererRouteGeneration ?? null,
+                frame: document.body.dataset.rendererRouteFrame ?? null,
+                camera: document.body.dataset.rendererRouteCamera ?? null,
+                canvasCount: document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length,
+                runtimeError: document.body.dataset.runtimeError ?? null,
+                hash: location.hash,
+              })`,
+              returnByValue: true,
+            });
+            throw new Error(
+              `${error instanceof Error ? error.message : String(error)}: ${JSON.stringify(diagnostic?.result?.value)}`,
+            );
+          }
           await client.send("Runtime.evaluate", {
             expression: `document.body.dataset.routeOverlapProof = "pass"`,
           });
