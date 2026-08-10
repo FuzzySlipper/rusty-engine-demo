@@ -10,10 +10,10 @@ an Asha compatibility project and it is not the place to generalize speculative 
 - TypeScript owns immutable content composition, browser semantic-input capture, tooling, HUD state,
   and disposable product-shell presentation only. It does not import or configure the Engine
   renderer.
-- Keep one unconditional, one-way `rusty-engine` facade dependency on the public `main` branch.
-  Owner namespaces remain explicit (`rusty_engine::<owner>`), but downstream must consume the
-  complete facade rather than selecting crates. The lock must stay current with upstream and a
-  local sibling path is never a supported fallback.
+- Keep one unconditional, one-way Cargo path dependency on the complete sibling `rusty-engine`
+  facade. Owner namespaces remain explicit (`rusty_engine::<owner>`), but downstream must not
+  select Engine crates or manage the adjacent checkout with versions, Git pins, SHAs, freshness
+  checks, update helpers, or lockfile ceremony.
 - The native product owns its window, bounded mount region, frame timing, resource policy, semantic
   input mapping, picks, and game consequences. Call the Engine-owned Rust webview adapter; never
   reach through it to the private TypeScript bridge or packaged renderer artifact.

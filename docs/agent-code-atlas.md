@@ -10,8 +10,8 @@ remain authoritative.
 | Fixed input/game phases           | `game_loop.rs`, `player.rs`, `combat.rs`                                                       | game-loop and controller tests                         |
 | Native rendered product           | `src/bin/native-host.rs`                                                                       | `pnpm run verify:native`                               |
 | Browser transport and HUD shell   | `src/bin/browser-host.rs`, `ts/packages/browser-shell`, `apps/loading-bay`                     | `pnpm run test:shell`, browser smoke                   |
-| Studio adapter and product        | `studio_adapter/`, `apps/loading-bay-studio`                                                   | `pnpm run test:studio`                                 |
-| Engine revision and isolation     | root manifests, `engine-source.json`, `scripts/engine-revision*`, `scripts/audit-boundary.mjs` | `pnpm run engine:freshness`, `pnpm run audit:boundary` |
+| Studio adapter and bootstrap      | `studio_adapter/`, `.rusty-studio.json`                                                        | focused Studio adapter tests                           |
+| Engine dependency boundary        | root manifests, `scripts/audit-boundary.mjs`                                                   | `pnpm run audit:boundary`                              |
 | Durable ownership intent          | `docs/design.md`                                                                               | doc review and full gate                               |
 | Source and asset provenance       | `docs/source-provenance.md`                                                                    | provenance review and content gate                     |
 

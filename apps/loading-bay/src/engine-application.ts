@@ -1,5 +1,6 @@
 import { InjectionToken } from "@angular/core";
 import type {
+  RustyApplicationContent,
   RustyApplicationCameraPose,
   RustyApplicationFrame,
   RustyApplicationFrameReceipt,
@@ -23,6 +24,7 @@ export interface EngineRendererRouteLease {
   readonly publish: (
     frame: RustyApplicationFrame,
     camera: RustyApplicationCameraPose,
+    content: RustyApplicationContent | null,
     replaceFrame: boolean,
   ) => Promise<RustyApplicationFrameReceipt | null>;
   readonly retire: () => void;
@@ -68,13 +70,15 @@ export function claimEngineRendererRoute(
 
   return {
     generation,
-    publish: (frame, camera, replaceFrame) =>
+    publish: (frame, camera, content, replaceFrame) =>
       enqueue(async () => {
         let receipt: RustyApplicationFrameReceipt = {
           applied: true,
           diagnostics: [],
         };
-        if (replaceFrame) {
+        if (content !== null) {
+          receipt = await application.renderer.replaceContent(content);
+        } else if (replaceFrame) {
           receipt = await application.renderer.replaceFrame(frame);
         }
         if (authority.generation === generation && !retired) {

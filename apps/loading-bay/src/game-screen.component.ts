@@ -1061,6 +1061,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
           const frameReceipt = await this.rendererRoute.publish(
             rendering.frame,
             rendering.camera,
+            rendering.content,
             rendering.replaceFrame,
           );
           if (frameReceipt !== null) {
@@ -1078,6 +1079,22 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
             document.body.dataset.rendererRouteCamera = JSON.stringify(
               rendering.camera,
             );
+            if (rendering.content !== null) {
+              document.body.dataset.rendererContent = "complete";
+              document.body.dataset.rendererFrameOps = String(
+                Array.isArray(rendering.content.frame["ops"])
+                  ? rendering.content.frame["ops"].length
+                  : 0,
+              );
+              document.body.dataset.rendererResourceCount = String(
+                rendering.content.resources.length,
+              );
+              document.body.dataset.rendererTextureCount = String(
+                rendering.content.resources.filter(
+                  (resource) => resource.mediaType === "image/png",
+                ).length,
+              );
+            }
           }
         },
         onProjection: (snapshot) => {

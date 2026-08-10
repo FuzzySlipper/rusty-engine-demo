@@ -137,6 +137,20 @@ for (const relativePath of [
   }
 }
 
+for (const relativePath of [
+  "engine-source.json",
+  "engine-development.json",
+  "docs/engine-revision-updates.md",
+  "scripts/engine-revision.mjs",
+  "scripts/verify-engine-freshness.mjs",
+]) {
+  if (existsSync(resolve(repoRoot, relativePath))) {
+    violations.push(
+      `${relativePath}: adjacent Engine development must not reintroduce revision or freshness machinery`,
+    );
+  }
+}
+
 const browserPackage = JSON.parse(
   readFileSync(
     resolve(repoRoot, "ts/packages/browser-shell/package.json"),
@@ -146,6 +160,13 @@ const browserPackage = JSON.parse(
 const rootPackage = JSON.parse(
   readFileSync(resolve(repoRoot, "package.json"), "utf8"),
 );
+for (const scriptName of Object.keys(rootPackage.scripts ?? {})) {
+  if (/engine:(?:revision|freshness|pin|update)/u.test(scriptName)) {
+    violations.push(
+      `package.json: obsolete Engine lifecycle script must remain absent (${scriptName})`,
+    );
+  }
+}
 const browserGameRuntime = readFileSync(
   resolve(repoRoot, "ts/packages/browser-shell/src/game-runtime.ts"),
   "utf8",

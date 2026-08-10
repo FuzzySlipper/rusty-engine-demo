@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 const actualRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const doomProject = join(actualRoot, "content/projects/doom-e1m1.project.json");
 const chromium = process.env.CHROMIUM_BIN ?? "/usr/bin/chromium";
+const updateEvidence = process.env.UPDATE_EVIDENCE === "1";
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -370,6 +371,23 @@ async function main() {
       ok16 || ok20,
       `player at [114,9,78] or [91.2,7.3,62.4], got ${state.player?.position}`,
     );
+    const applicationResources = state.applicationContent?.resources ?? [];
+    assert(
+      (state.applicationContent?.frame?.ops?.length ?? 0) > 0,
+      "Rust projected a non-empty application frame",
+    );
+    assert(
+      applicationResources.filter(
+        (resource) => resource.mediaType === "image/png",
+      ).length === 54,
+      "Rust projected all 54 E1M1 textures",
+    );
+    assert(
+      applicationResources.some(
+        (resource) => resource.mediaType === "application/octet-stream",
+      ),
+      "Rust projected packed E1M1 mesh resources",
+    );
     const { spawnSync: ss } = await import("node:child_process");
     const curl = ss(
       "curl",
@@ -427,6 +445,8 @@ async function main() {
       screenshotPath: null,
       webgl: null,
       error: null,
+      content: null,
+      worldPixels: null,
     };
     try {
       debugPort = await reservePort();
@@ -555,6 +575,95 @@ async function main() {
           `Engine application host failed before playthrough lifecycle=${finalLc} webgl=${webglDiag}`,
         );
       }
+      const content = await cdpEvaluate(
+        cdpClient,
+        `({
+          state: document.body.dataset.rendererContent ?? null,
+          frameOps: Number(document.body.dataset.rendererFrameOps ?? 0),
+          resourceCount: Number(document.body.dataset.rendererResourceCount ?? 0),
+          textureCount: Number(document.body.dataset.rendererTextureCount ?? 0),
+        })`,
+      );
+      if (
+        content?.state !== "complete" ||
+        content.frameOps <= 0 ||
+        content.resourceCount <= 54 ||
+        content.textureCount !== 54
+      ) {
+        throw new Error(
+          `Engine did not admit the complete Rust content closure: ${JSON.stringify(content)}`,
+        );
+      }
+      headless.content = content;
+      const canvasBounds = await cdpEvaluate(
+        cdpClient,
+        `(() => {
+          const canvas = document.querySelector('canvas');
+          if (!canvas) return null;
+          const bounds = canvas.getBoundingClientRect();
+          return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+        })()`,
+      );
+      if (
+        canvasBounds === null ||
+        canvasBounds.width < 64 ||
+        canvasBounds.height < 64
+      ) {
+        throw new Error(`Engine canvas bounds are invalid: ${JSON.stringify(canvasBounds)}`);
+      }
+      const worldShot = await cdpClient.send("Page.captureScreenshot", {
+        format: "png",
+        clip: { ...canvasBounds, scale: 1 },
+      });
+      const worldPath = join(profileDir, "doom-e1m1-world.png");
+      writeFileSync(worldPath, Buffer.from(worldShot.data, "base64"));
+      const imageReadout = spawnSync(
+        "magick",
+        [
+          worldPath,
+          "-resize",
+          "160x90!",
+          "-format",
+          "%k %[fx:mean]",
+          "info:",
+        ],
+        { encoding: "utf8" },
+      );
+      const [uniqueText, meanText] = String(imageReadout.stdout).trim().split(/\s+/u);
+      const worldPixels = {
+        uniqueColors: Number(uniqueText),
+        mean: Number(meanText),
+      };
+      if (
+        imageReadout.status !== 0 ||
+        worldPixels.uniqueColors < 8 ||
+        worldPixels.mean < 0.02
+      ) {
+        throw new Error(
+          `Engine canvas did not contain visible E1M1 pixels: ${JSON.stringify(worldPixels)}`,
+        );
+      }
+      headless.worldPixels = worldPixels;
+      if (updateEvidence) {
+        const evidenceShot = await cdpClient.send("Page.captureScreenshot", {
+          format: "png",
+          captureBeyondViewport: true,
+        });
+        const evidenceBytes = Buffer.from(evidenceShot.data, "base64");
+        const evidencePath = join(
+          actualRoot,
+          "docs/evidence/doom-e1m1-headless.png",
+        );
+        writeFileSync(evidencePath, evidenceBytes);
+        headless.screenshotBytes = evidenceBytes.length;
+        headless.screenshotPath = "docs/evidence/doom-e1m1-headless.png";
+        console.log(
+          `initial-world screenshot ${evidenceBytes.length} bytes -> ${evidencePath}`,
+        );
+      }
+      checks.push(
+        `Engine admitted ${content.frameOps} Rust frame ops with ${content.resourceCount} resources and rendered ${worldPixels.uniqueColors} sampled colors`,
+      );
 
       const traversalSamples = [];
       await moveToWorldPoint(cdpClient, addr, [115.4, 78.6], traversalSamples);
@@ -779,23 +888,6 @@ async function main() {
         finalPosition: completed.player.position,
         completedExit: completed.levelExits.find((entry) => entry.id === 89),
       };
-      try {
-        const shot = await cdpClient.send("Page.captureScreenshot", {
-          format: "png",
-          captureBeyondViewport: true,
-        });
-        const pngBytes = Buffer.from(shot.data, "base64");
-        const screenshotPath = join(
-          actualRoot,
-          "docs/evidence/doom-e1m1-headless.png",
-        );
-        writeFileSync(screenshotPath, pngBytes);
-        headless.screenshotBytes = pngBytes.length;
-        headless.screenshotPath = "docs/evidence/doom-e1m1-headless.png";
-        console.log(`screenshot ${pngBytes.length} bytes -> ${screenshotPath}`);
-      } catch (e) {
-        console.warn(`screenshot failed ${String(e).slice(0, 300)}`);
-      }
       if (finalLc !== "mounted" || !webglDiag.startsWith("has-gl renderer=")) {
         headless.error = `unexpected browser renderer surface lifecycle=${finalLc} webgl=${webglDiag}`;
         console.log(headless.error);
@@ -828,6 +920,8 @@ async function main() {
     if (
       headless.lifecycle !== "mounted" ||
       !headless.webgl?.startsWith("has-gl renderer=") ||
+      headless.content?.state !== "complete" ||
+      headless.worldPixels?.uniqueColors < 8 ||
       headless.playthrough === undefined
     ) {
       throw new Error(
@@ -858,12 +952,14 @@ async function main() {
         : "sha256:cbdd88292c50e00907e0f596da53ca6e9e1669e30d29c7878e5a808a68249bff",
       headless,
     };
-    const outPath = resolve(
-      actualRoot,
-      "docs/evidence/doom-e1m1-browser-smoke.json",
-    );
-    writeFileSync(outPath, JSON.stringify(evidence, null, 2) + "\n", "utf8");
-    console.log(`wrote ${outPath}`);
+    if (updateEvidence) {
+      const outPath = resolve(
+        actualRoot,
+        "docs/evidence/doom-e1m1-browser-smoke.json",
+      );
+      writeFileSync(outPath, JSON.stringify(evidence, null, 2) + "\n", "utf8");
+      console.log(`wrote ${outPath}`);
+    }
     console.log(
       "DOOM BROWSER SMOKE PASS",
       checks.join(", "),

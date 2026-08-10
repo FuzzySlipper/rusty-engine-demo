@@ -4,11 +4,10 @@ Rusty Engine Demo was originally extracted from
 [`FuzzySlipper/rusty-engine`](https://github.com/FuzzySlipper/rusty-engine) at commit
 `a2e55f9660e46751d4c78bcdd23b9a321b0dc961` under Den task #6137.
 
-The current Rust facade and Studio composition packages resolve at public Engine revision
-`d0b5e672b83d463bff71d8d35c877f770142ff3c`, recorded in
-[`engine-source.json`](../engine-source.json). The Rust dependency follows public `main` and the
-lock is required to remain current. Older revisions below remain historical extraction and
-feature-provider points, not active dependency selections.
+The current Rust facade resolves directly from the adjacent `../rusty-engine` checkout.
+This repository does not record or manage an active Engine revision. Exact revisions below are
+historical extraction, feature-provider, and review provenance only; they are not dependency
+selections or freshness requirements.
 
 ## Task #6703 facade and renderer-boundary migration
 

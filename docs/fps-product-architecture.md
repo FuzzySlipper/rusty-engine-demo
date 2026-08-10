@@ -332,7 +332,7 @@ cross-language changes.
 
 | Proof                 | Required evidence                                                                                                                                                                                              |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Architecture boundary | `pnpm run audit:boundary`; exact public Git pins; no sibling path, private renderer, generic bridge, or TypeScript gameplay store                                                                              |
+| Architecture boundary | `pnpm run audit:boundary`; one adjacent Engine facade path; no revision machinery, private renderer, generic bridge, or TypeScript gameplay store                                                             |
 | Fixed loop            | Deterministic Rust tests for cadence independence, phase order, catch-up bound, stale intent, disconnect, pause, death, and restart                                                                            |
 | Protocol              | Codec tests, sequence/ack/idempotence tests, queue overflow yielding exactly `edgeQueueSaturated` with no silent loss or partial mutation, reconnect/full resync, typed failures, payload-size instrumentation |
 | Inventory/combat      | Atomic grant/consume/equip/fire tests, weapon ownership, distinct ammo, cooldown, spread determinism, death and reopen                                                                                         |
@@ -345,12 +345,12 @@ cross-language changes.
 
 Before implementing a missing mechanism:
 
-1. Inspect current Den guidance/tasks and the exact public Engine package surface.
+1. Inspect current Den guidance/tasks and the adjacent Engine facade surface.
 2. Classify the need as Loading Bay semantics or a smaller reusable provider/renderer mechanism.
 3. For upstream ownership, open/link a task in project `rusty-engine`, stop the local substitute,
-   and make the consumer task depend on the reviewed public revision.
-4. Pin the exact public revision and run the complete downstream proof. Never make a sibling path
-   the supported build.
+   and make the consumer task depend on that reviewed Engine task.
+4. Fix the adjacent consumer forward and run the complete downstream proof without adding revision
+   or checkout-management machinery.
 
 The two proven upstream gaps were renderer-owned timing (Rusty Engine #6213, public SHA
 `2665b74566136fb77e3a26b0766394124c8f58d3`) and a reusable retained camera-relative viewmodel

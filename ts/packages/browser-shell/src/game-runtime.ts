@@ -1,5 +1,6 @@
 import { GameSessionError, LoadingBayGameSession } from "./game-session.js";
 import type {
+  RuntimeApplicationContent,
   RuntimeBrowserState,
   RuntimeSaveSlotId,
   RuntimeSaveSlotSummary,
@@ -80,7 +81,18 @@ export interface LoadingBayRenderProjection {
     readonly yawDegrees: number;
   };
   readonly frame: Readonly<Record<string, unknown>>;
+  readonly content: LoadingBayApplicationContent | null;
   readonly replaceFrame: boolean;
+}
+
+export interface LoadingBayApplicationContent {
+  readonly frame: Readonly<Record<string, unknown>>;
+  readonly resources: readonly {
+    readonly identity: string;
+    readonly contentHash: string;
+    readonly mediaType: string;
+    readonly bytes: Uint8Array;
+  }[];
 }
 
 export interface LoadingBayGameOptions {
@@ -132,6 +144,7 @@ export async function mountLoadingBayGame(
   const session = await LoadingBayGameSession.connect();
   let current = session.state;
   let lastRenderFrame: Readonly<Record<string, unknown>> | null = null;
+  let lastApplicationContent: RuntimeApplicationContent | null = null;
   let projectionQueue: Promise<void> = Promise.resolve();
 
   try {
@@ -227,12 +240,23 @@ export async function mountLoadingBayGame(
   };
 
   async function publish(state: RuntimeBrowserState): Promise<void> {
-    const replaceFrame = lastRenderFrame !== state.voxelObjectFrame;
+    const descriptor = state.applicationContent ?? null;
+    const content =
+      descriptor !== null && descriptor !== lastApplicationContent
+        ? await loadApplicationContent(descriptor)
+        : null;
+    const replaceFrame =
+      content === null && lastRenderFrame !== state.voxelObjectFrame;
     await options.onRenderProjection?.({
       camera: derivePlayerCameraPose(state.player),
+      content,
       frame: state.voxelObjectFrame,
       replaceFrame,
     });
+    if (content !== null) {
+      lastApplicationContent = descriptor;
+      lastRenderFrame = state.voxelObjectFrame;
+    }
     if (replaceFrame) lastRenderFrame = state.voxelObjectFrame;
     const completedExit = state.levelExits.find(
       (candidate) => candidate.state === "completed",
@@ -361,6 +385,34 @@ export async function mountLoadingBayGame(
     lastRejection = error instanceof Error ? error.message : String(error);
     publish(current);
   }
+}
+
+async function loadApplicationContent(
+  descriptor: RuntimeApplicationContent,
+): Promise<LoadingBayApplicationContent> {
+  const resources = await Promise.all(
+    descriptor.resources.map(async (resource) => {
+      const response = await fetch(resource.resourceUrl, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(
+          `Rust application resource ${resource.identity} returned HTTP ${String(response.status)}`,
+        );
+      }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      if (bytes.byteLength !== resource.byteLength) {
+        throw new Error(
+          `Rust application resource ${resource.identity} declared ${String(resource.byteLength)} bytes but returned ${String(bytes.byteLength)}`,
+        );
+      }
+      return {
+        identity: resource.identity,
+        contentHash: resource.contentHash,
+        mediaType: resource.mediaType,
+        bytes,
+      };
+    }),
+  );
+  return { frame: descriptor.frame, resources };
 }
 
 function markApplicationViewportBoundary(): void {

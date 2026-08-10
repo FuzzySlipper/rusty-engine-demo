@@ -9,8 +9,8 @@ capture, bounded coalescing, structural decoding, immutable projection compositi
 disposable presentation.
 
 The protocol is deliberately downstream. It is not an Engine provider, generic message bridge,
-renderer cache, gameplay RPC registry, or TypeScript simulation. The renderer remains the pinned
-Rusty Engine retained surface.
+renderer cache, gameplay RPC registry, or TypeScript simulation. The renderer remains the
+Engine-owned retained surface.
 
 ## Lifecycle
 

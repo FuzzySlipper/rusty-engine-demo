@@ -83,7 +83,8 @@ type StaticStateKey =
   | "staticMeshes"
   | "animatedMeshes"
   | "visualBindings"
-  | "generatedEnvironment";
+  | "generatedEnvironment"
+  | "applicationContent";
 
 type RuntimeDynamicState = Omit<RuntimeBrowserState, StaticStateKey>;
 type RuntimeStaticResources = Pick<RuntimeBrowserState, StaticStateKey> & {
@@ -1317,12 +1318,49 @@ function isRuntimeStaticResources(
     !Array.isArray(value.staticMeshes) ||
     !Array.isArray(value.animatedMeshes) ||
     !Array.isArray(value.visualBindings) ||
+    (value.applicationContent !== undefined &&
+      value.applicationContent !== null &&
+      !isRuntimeApplicationContent(value.applicationContent)) ||
     (value.generatedEnvironment !== null &&
       !isRecord(value.generatedEnvironment))
   ) {
     return false;
   }
   return true;
+}
+
+function isRuntimeApplicationContent(value: unknown): boolean {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.frame) ||
+    !Array.isArray(value.resources) ||
+    value.resources.length > 512
+  ) {
+    return false;
+  }
+  const identities = new Set<string>();
+  return value.resources.every((resource) => {
+    if (
+      !isRecord(resource) ||
+      typeof resource.identity !== "string" ||
+      !/^(mesh|texture)-resource\/[0-9a-f]{64}$/u.test(
+        resource.identity,
+      ) ||
+      identities.has(resource.identity) ||
+      typeof resource.contentHash !== "string" ||
+      !/^sha256:[0-9a-f]{64}$/u.test(resource.contentHash) ||
+      (resource.mediaType !== "application/octet-stream" &&
+        resource.mediaType !== "image/png") ||
+      !isFiniteNumber(resource.byteLength) ||
+      resource.byteLength <= 0 ||
+      typeof resource.resourceUrl !== "string" ||
+      !/^\/api\/application-resource\/\d+$/u.test(resource.resourceUrl)
+    ) {
+      return false;
+    }
+    identities.add(resource.identity);
+    return true;
+  });
 }
 
 function isRuntimePlayerState(value: unknown): boolean {
@@ -1650,5 +1688,8 @@ function runtimeStateResources(
     animatedMeshes: resources.animatedMeshes,
     visualBindings: resources.visualBindings,
     generatedEnvironment: resources.generatedEnvironment,
+    ...(resources.applicationContent === undefined
+      ? {}
+      : { applicationContent: resources.applicationContent }),
   };
 }

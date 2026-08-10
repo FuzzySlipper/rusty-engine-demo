@@ -2,6 +2,19 @@ type RenderFrameDiff = Readonly<Record<string, unknown>>;
 type RenderMaterialDescriptor = Readonly<Record<string, unknown>>;
 type StaticMeshAsset = Readonly<Record<string, unknown>>;
 
+export interface RuntimeApplicationResource {
+  readonly identity: string;
+  readonly contentHash: string;
+  readonly mediaType: "application/octet-stream" | "image/png";
+  readonly byteLength: number;
+  readonly resourceUrl: string;
+}
+
+export interface RuntimeApplicationContent {
+  readonly frame: RenderFrameDiff;
+  readonly resources: readonly RuntimeApplicationResource[];
+}
+
 export type RuntimeVisualState =
   | "default"
   | "open"
@@ -511,6 +524,7 @@ export interface RuntimeBrowserState {
   readonly animatedMeshes: readonly RuntimeAnimatedMeshResource[];
   readonly visualBindings: readonly RuntimeVisualBindingResource[];
   readonly generatedEnvironment: RuntimeGeneratedEnvironment | null;
+  readonly applicationContent?: RuntimeApplicationContent | null;
   readonly enemies: readonly RuntimeEnemyState[];
   readonly presentation: RuntimePresentationState;
   readonly lastEvents: readonly string[];

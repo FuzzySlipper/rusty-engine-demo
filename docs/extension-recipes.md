@@ -96,9 +96,8 @@ gameplay and stay here.
 Use this when a weapon's projectile must be a real Engine rigid body rather than a hitscan ray or a
 browser-side visual effect.
 
-1. Pin the exact reviewed Engine revision that exposes `engine-spatial::RigidBodyService`; record
-   the revision in `engine-source.json`, Cargo, the package locks, and provenance before changing
-   the consumer. Do not add a sibling-path dependency or a demo physics loop.
+1. Confirm the adjacent Engine facade exposes `engine-spatial::RigidBodyService`. Do not add a
+   selective Engine dependency, revision machinery, or a demo physics loop.
 2. Extend the downstream stored weapon schema with one closed `projectile` configuration: bounded
    mass, sphere radius, impulse, gravity scale, lifetime, restitution, and the existing ammo/damage
    policy. Validate the complete candidate before publication and reject projectile fields on other

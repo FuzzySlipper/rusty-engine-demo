@@ -1,15 +1,15 @@
 use std::{
     collections::BTreeSet,
-    env, fs,
+    env,
     io::{self, Write},
     time::{Duration, Instant},
 };
 
 use anyhow::{bail, Context, Result};
 use loading_bay_game::{
-    decode_game_snapshot, decode_project_document, encode_game_snapshot,
-    project_stored_voxel_volume, GameRuntime, LoadingBayGameLoop, PlayerInputCommand,
-    PlayerInputIntent, ResolvedPlayerAction, StoredProject,
+    decode_game_snapshot, decode_project_document, doom_texture_projection, encode_game_snapshot,
+    externalize_frame_meshes, project_stored_voxel_volume, GameRuntime, LoadingBayGameLoop,
+    PlayerInputCommand, PlayerInputIntent, ResolvedPlayerAction,
 };
 use rusty_engine::{
     core_ids::EntityId,
@@ -27,8 +27,8 @@ use rusty_engine::{
         MeshCollisionPolicy, MeshGroupDescriptor, MeshIndexWidth, MeshMaterialSlot,
         MeshPayloadDescriptor, MeshPayloadSource, MeshProvenance, PackedMeshResource, RenderDiff,
         RenderFrameDiff, RenderHandle, RenderLayer, RenderMaterialDescriptor, RenderMetadata,
-        RenderNode, StaticMeshAsset, StaticMeshInstanceDescriptor, TextureDescriptor,
-        TextureFilter, TextureWrap, Transform, MAX_MESH_RESOURCE_BYTES,
+        RenderNode, StaticMeshAsset, StaticMeshInstanceDescriptor, Transform,
+        MAX_MESH_RESOURCE_BYTES,
     },
     renderer_webview_host::{
         RendererResource, RendererWebviewAdapter, RendererWebviewBounds,
@@ -911,105 +911,6 @@ fn prepare_product_mesh(glb: &[u8]) -> Result<(StaticMeshAsset, PackedMeshResour
     mesh.validate()
         .map_err(|error| anyhow::anyhow!("validate checked-in product mesh: {error:?}"))?;
     Ok((mesh, resource))
-}
-
-fn doom_texture_projection(
-    project: &StoredProject,
-) -> Result<(Vec<RendererResource>, Vec<RenderDiff>)> {
-    let projected = project
-        .assets
-        .iter()
-        .filter(|asset| asset.id.starts_with("texture/doom-"))
-        .map(|asset| {
-            let metadata = asset
-                .catalog
-                .as_ref()
-                .context("Doom texture is missing catalog metadata")?;
-            let source_path = metadata
-                .source_path
-                .as_ref()
-                .context("Doom texture is missing its checked-in source path")?;
-            let content_hash = metadata
-                .hash
-                .as_ref()
-                .context("Doom texture is missing its declared content hash")?;
-            let bytes = fs::read(source_path)
-                .with_context(|| format!("read checked-in Doom texture {source_path}"))?;
-            let texture = TextureDescriptor::admit_png_rgba8_resource(
-                asset.id.clone(),
-                &bytes,
-                TextureFilter::Nearest,
-                TextureWrap::Repeat,
-                metadata.version,
-            )
-            .map_err(|error| anyhow::anyhow!("admit Doom texture {source_path}: {error:?}"))?;
-            if texture.content_hash.as_ref() != Some(content_hash) {
-                bail!("Doom texture {source_path} differs from its declared hash");
-            }
-            let resource_identity = format!(
-                "texture-resource/{}",
-                content_hash
-                    .strip_prefix("sha256:")
-                    .context("Doom texture hash is not SHA-256")?
-            );
-            Ok((
-                RendererResource {
-                    identity: resource_identity,
-                    content_hash: content_hash.clone(),
-                    media_type: "image/png".to_owned(),
-                    bytes,
-                },
-                RenderDiff::DefineTexture { texture },
-            ))
-        })
-        .collect::<Result<Vec<_>>>()?;
-    Ok(projected.into_iter().unzip())
-}
-
-fn externalize_frame_meshes(
-    mut frame: RenderFrameDiff,
-) -> Result<(RenderFrameDiff, Vec<RendererResource>)> {
-    let payloads = frame
-        .ops
-        .iter()
-        .filter_map(|operation| match operation {
-            RenderDiff::ReplaceMeshPayload { payload, .. } => Some(payload.clone()),
-            RenderDiff::DefineStaticMesh { asset } => Some(asset.payload.clone()),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-    let packed = pack_mesh_resources(&payloads, MAX_MESH_RESOURCE_BYTES)
-        .map_err(|error| anyhow::anyhow!("pack Doom voxel meshes: {error:?}"))?;
-    let mut replacements = packed.payloads.into_iter();
-    for operation in &mut frame.ops {
-        match operation {
-            RenderDiff::ReplaceMeshPayload { payload, .. } => {
-                *payload = replacements
-                    .next()
-                    .context("packed Doom mesh payload is missing")?;
-            }
-            RenderDiff::DefineStaticMesh { asset } => {
-                asset.payload = replacements
-                    .next()
-                    .context("packed Doom static-mesh payload is missing")?;
-            }
-            _ => {}
-        }
-    }
-    if replacements.next().is_some() {
-        bail!("packed Doom mesh payload count exceeded the frame");
-    }
-    let resources = packed
-        .resources
-        .into_iter()
-        .map(|resource| RendererResource {
-            identity: resource.resource,
-            content_hash: resource.content_hash,
-            media_type: "application/vnd.rusty-engine.mesh-resource".to_owned(),
-            bytes: resource.bytes,
-        })
-        .collect();
-    Ok((frame, resources))
 }
 
 fn product_frame(mesh: &StaticMeshAsset) -> Result<RenderFrameDiff> {

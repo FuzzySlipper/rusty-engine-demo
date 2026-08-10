@@ -10,13 +10,15 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use loading_bay_game::{
     admit_stored_project_with_document, encode_project_document, materialize_stored_project_voxels,
-    project_stored_voxel_objects, AdmittedStoredProject, CombatFact, CombatMissReason, GameEvent,
-    GameLoopFact, GameRuntime, LoadingBayGameLoop, NavigationFact, PlayerControlFact,
-    ProjectSaveMode, ProjectStore, SaveGameError, SaveGameStore, SaveProjectIdentity, SaveSlotId,
-    SaveSlotSummary, SaveWriteRequest, StoredAsset, StoredImportSource, StoredProject, VoxelEdit,
+    project_doom_e1m1_application_content, project_stored_voxel_objects, AdmittedStoredProject,
+    CombatFact, CombatMissReason, GameEvent, GameLoopFact, GameRuntime, LoadingBayGameLoop,
+    NavigationFact, PlayerControlFact, ProjectSaveMode, ProjectStore, ProjectedApplicationContent,
+    SaveGameError, SaveGameStore, SaveProjectIdentity, SaveSlotId, SaveSlotSummary,
+    SaveWriteRequest, StoredAsset, StoredImportSource, StoredProject, VoxelEdit,
     VoxelEditTransaction, VoxelSourceRevision, MAX_PENDING_GAME_LOOP_FACTS,
 };
 use rusty_engine::core_ids::EntityId;
+use rusty_engine::engine_spatial::VoxelCollisionScene;
 use rusty_engine::render_model::RenderFrameDiff;
 use rusty_engine::voxel_convert::source_sha256;
 use serde::{Deserialize, Serialize};
@@ -59,6 +61,7 @@ struct BrowserRuntime {
     runtime: LoadingBayGameLoop,
     authored: AdmittedStoredProject,
     voxel_object_frame: RenderFrameDiff,
+    application_content: Option<ProjectedApplicationContent>,
     voxel_environment_role: &'static str,
     project_path: PathBuf,
     project: BrowserProjectSummary,
@@ -142,16 +145,40 @@ impl BrowserRuntime {
                     "visible"
                 }
             });
+        let runtime = LoadingBayGameLoop::new(GameRuntime::from_admitted_project(admitted), ACTOR)
+            .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?;
+        let application_content = if project.project_id == "doom-e1m1" {
+            let admitted_scene = runtime
+                .runtime()
+                .collision_scene()
+                .ok_or_else(|| "Doom E1M1 has no admitted voxel environment".to_owned())?;
+            let rendered_scene = VoxelCollisionScene::from_material_voxels(
+                admitted_scene.voxel_size(),
+                admitted_scene.chunk_size(),
+                admitted_scene.material_voxels().to_vec(),
+            )
+            .map_err(|error| format!("admit Doom E1M1 rendered volume: {error:?}"))?;
+            Some(
+                project_doom_e1m1_application_content(
+                    authored.document(),
+                    &rendered_scene,
+                    &voxel_object_frame,
+                )
+                .map_err(|error| format!("project Doom E1M1 application content: {error}"))?,
+            )
+        } else {
+            None
+        };
         let save_identity = SaveProjectIdentity::from_project(authored.document(), ACTOR)
             .map_err(|error| format!("could not identify authored project for saves: {error}"))?;
         let save_store = SaveGameStore::new(save_root);
         let save_slots = save_store.inspect_all(&save_identity);
         Ok(Self {
             host_session_id: new_host_session_id(),
-            runtime: LoadingBayGameLoop::new(GameRuntime::from_admitted_project(admitted), ACTOR)
-                .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?,
+            runtime,
             authored,
             voxel_object_frame,
+            application_content,
             voxel_environment_role,
             project_path,
             project,
@@ -337,6 +364,7 @@ impl BrowserRuntime {
                 .map_err(|error| format!("could not restore Loading Bay game loop: {error}"))?,
             authored: self.authored.clone(),
             voxel_object_frame: self.voxel_object_frame.clone(),
+            application_content: self.application_content.clone(),
             voxel_environment_role: self.voxel_environment_role,
             project_path: self.project_path.clone(),
             project: self.project.clone(),
@@ -976,6 +1004,16 @@ fn route(
             let runtime = runtime.lock().expect("runtime lock");
             serve_animated_mesh_resource(&runtime, index)
         }
+        ("GET", path) if path.starts_with("/api/application-resource/") => {
+            let Some(index) = path
+                .strip_prefix("/api/application-resource/")
+                .and_then(|value| value.parse::<usize>().ok())
+            else {
+                return error_json(404, "application resource not found");
+            };
+            let runtime = runtime.lock().expect("runtime lock");
+            serve_application_resource(&runtime, index)
+        }
         ("POST", "/api/voxel-edit") => {
             let request: BrowserVoxelEditRequest = match serde_json::from_slice(body) {
                 Ok(request) => request,
@@ -1047,6 +1085,25 @@ fn route(
         ("GET", _) | ("HEAD", _) => serve_static(method, path, dist),
         _ => error_json(405, "method not allowed"),
     }
+}
+
+fn serve_application_resource(
+    runtime: &BrowserRuntime,
+    index: usize,
+) -> (u16, &'static str, Vec<u8>) {
+    let Some(resource) = runtime
+        .application_content
+        .as_ref()
+        .and_then(|content| content.resources.get(index))
+    else {
+        return error_json(404, "application resource not found");
+    };
+    let media_type = if resource.identity.starts_with("texture-resource/") {
+        "image/png"
+    } else {
+        "application/octet-stream"
+    };
+    (200, media_type, resource.bytes.clone())
 }
 
 fn serve_animated_mesh_resource(

@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+mod application_content_projection;
 mod combat;
 mod content;
 mod definition;
@@ -41,6 +42,10 @@ mod voxel_object_projection;
 mod voxel_volume_projection;
 mod weapon_authoring;
 
+pub use application_content_projection::{
+    doom_texture_projection, externalize_frame_meshes, project_doom_e1m1_application_content,
+    ProjectedApplicationContent,
+};
 pub use combat::{
     CombatFact, CombatMissReason, CombatReceipt, CombatRejectionReason, EnemyComponent, EnemyState,
     EnemyView, ResolvedAttackAction, WeaponConfig, WeaponState, WeaponView, MAX_WEAPON_AMMO,

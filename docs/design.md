@@ -6,23 +6,21 @@ orchestration.
 
 ## Dependency direction
 
-The only normal Rust provider dependency is the rolling-current `rusty-engine` facade. Downstream
+The only normal Rust provider dependency is the adjacent complete `rusty-engine` facade. Downstream
 imports preserved owner namespaces such as `rusty_engine::entity_state` and
-`rusty_engine::render_model`; it does not select an accidental subset of provider crates. The
-checked lock records the exact resolved public SHA, and `engine:freshness` fails when that SHA is
-behind the canonical public `main` branch.
+`rusty_engine::render_model`; it does not select an accidental subset of provider crates or manage
+the sibling checkout through versions, Git pins, SHAs, freshness checks, or update helpers.
 
-Engine Studio packages are first-party authoring dependencies. Their renderer peers appear only as
-exact root dev resolvers because the Git packages currently publish those peers externally. No
-ordinary product package depends on them and no downstream source may import them.
+Rusty Studio is an Engine-hosted product. This repository exposes `.rusty-studio.json`, project
+content, and its Rust adapter; it does not install or import Studio or renderer packages.
 
 ## Runtime authority
 
 - Loading Bay Rust owns project admission, live gameplay state, fixed phases, consequences,
   snapshots, saves, and persistence.
-- Browser TypeScript owns semantic device capture, transport, HUD/readout composition, and bounded
-  startup or failure state. Renderer payload fields crossing the existing browser protocol are
-  opaque compatibility data and are not interpreted as a renderer API.
+- Browser TypeScript owns semantic device capture, typed transport, HUD/readout composition, and
+  bounded startup or failure state. It transports the complete Rust-projected content aggregate
+  without deriving renderer manifests or backend configuration.
 - The native product owns its window, mount rectangle, timing, semantic input mapping, picks and
   their consequences, and product resource selection.
 - Rusty Engine owns retained rendering, the Rust-to-TypeScript decoder border, the private renderer

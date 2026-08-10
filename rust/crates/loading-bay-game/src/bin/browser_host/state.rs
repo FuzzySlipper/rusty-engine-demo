@@ -318,6 +318,24 @@ pub(super) struct BrowserStaticResources {
     static_meshes: Vec<StaticMeshAsset>,
     animated_meshes: Vec<BrowserAnimatedMeshResource>,
     visual_bindings: Vec<BrowserVisualBindingResource>,
+    application_content: Option<BrowserApplicationContent>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserApplicationContent {
+    frame: RenderFrameDiff,
+    resources: Vec<BrowserApplicationResource>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserApplicationResource {
+    identity: String,
+    content_hash: String,
+    media_type: &'static str,
+    byte_length: usize,
+    resource_url: String,
 }
 
 pub(super) fn browser_state(
@@ -998,6 +1016,28 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
             })
         })
         .collect();
+    let application_content =
+        host.application_content
+            .as_ref()
+            .map(|content| BrowserApplicationContent {
+                frame: content.frame.clone(),
+                resources: content
+                    .resources
+                    .iter()
+                    .enumerate()
+                    .map(|(index, resource)| BrowserApplicationResource {
+                        identity: resource.identity.clone(),
+                        content_hash: resource.content_hash.clone(),
+                        media_type: if resource.identity.starts_with("texture-resource/") {
+                            "image/png"
+                        } else {
+                            "application/octet-stream"
+                        },
+                        byte_length: resource.bytes.len(),
+                        resource_url: format!("/api/application-resource/{index}"),
+                    })
+                    .collect(),
+            });
     BrowserStaticResources {
         host_session_id: host.host_session_id.clone(),
         project_id: host.project.project_id.clone(),
@@ -1024,6 +1064,7 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
         static_meshes,
         animated_meshes,
         visual_bindings,
+        application_content,
     }
 }
 
