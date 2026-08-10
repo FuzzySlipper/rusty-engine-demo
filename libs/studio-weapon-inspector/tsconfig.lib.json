@@ -1,9 +1,0 @@
-{
-  "extends": "../../tsconfig.angular.json",
-  "compilerOptions": {
-    "outDir": "../../dist/out-tsc/studio-weapon-inspector",
-    "tsBuildInfoFile": "../../dist/out-tsc/studio-weapon-inspector.tsbuildinfo"
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts"]
-}

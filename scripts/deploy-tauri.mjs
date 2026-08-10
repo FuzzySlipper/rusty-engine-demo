@@ -295,7 +295,6 @@ function releaseRecord(
   return {
     releaseId,
     sourceRevision: evidence.sourceRevision,
-    engineRevision: evidence.engineRevision,
     appVersion: readJson(
       join(
         releaseRoot,
@@ -364,7 +363,6 @@ function install(options, paths) {
       `evidence source ${evidence.sourceRevision} does not match ${expectedSourceRevision}`,
     );
   }
-  exactSha(evidence.engineRevision, "Engine revision");
 
   requireManagedOrAbsent(paths.launcherPath, paths.installRoot);
   requireManagedOrAbsent(

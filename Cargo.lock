@@ -137,7 +137,6 @@ checksum = "175571dd1d178ced59193a6fc02dde1b972eb0bc56c892cde9beeceac5bf0f6b"
 [[package]]
 name = "asset-catalog"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-assets",
  "core-voxel",
@@ -150,7 +149,6 @@ dependencies = [
 [[package]]
 name = "asset-import"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "asset-catalog",
  "base64 0.22.1",
@@ -327,7 +325,6 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 [[package]]
 name = "authored-scene"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-assets",
  "core-ids",
@@ -661,7 +658,6 @@ dependencies = [
 [[package]]
 name = "content-store"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "asset-catalog",
  "authored-scene",
@@ -689,7 +685,6 @@ dependencies = [
 [[package]]
 name = "core-assets"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 
 [[package]]
 name = "core-foundation"
@@ -768,27 +763,22 @@ dependencies = [
 [[package]]
 name = "core-ids"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 
 [[package]]
 name = "core-math"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 
 [[package]]
 name = "core-space"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 
 [[package]]
 name = "core-time"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 
 [[package]]
 name = "core-voxel"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 
 [[package]]
 name = "cpufeatures"
@@ -1010,7 +1000,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -1220,7 +1210,6 @@ checksum = "66b7e2430c6dff6a955451e2cfc438f09cea1965a9d6f87f7e3b90decc014099"
 [[package]]
 name = "engine-inspector"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "asset-catalog",
  "asset-import",
@@ -1239,7 +1228,6 @@ dependencies = [
 [[package]]
 name = "engine-spatial"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-ids",
  "core-math",
@@ -1262,7 +1250,6 @@ dependencies = [
 [[package]]
 name = "entity-state"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-assets",
  "core-ids",
@@ -1295,7 +1282,6 @@ dependencies = [
 [[package]]
 name = "environment-authoring"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "authored-scene",
  "core-assets",
@@ -1330,7 +1316,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -1529,7 +1515,6 @@ dependencies = [
 [[package]]
 name = "gameplay-mechanics"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-ids",
  "entity-state",
@@ -1541,7 +1526,6 @@ dependencies = [
 [[package]]
 name = "gameplay-rules"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "serde_json",
  "sha2",
@@ -2708,7 +2692,7 @@ dependencies = [
  "png 0.18.1",
  "serde",
  "thiserror 2.0.20",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -3317,7 +3301,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -3864,7 +3848,6 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 [[package]]
 name = "render-host-contracts"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "render-model",
  "serde",
@@ -3873,7 +3856,6 @@ dependencies = [
 [[package]]
 name = "render-model"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "serde",
  "serde_json",
@@ -3883,7 +3865,6 @@ dependencies = [
 [[package]]
 name = "render-presentation"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "render-model",
  "serde",
@@ -3893,7 +3874,6 @@ dependencies = [
 [[package]]
 name = "render-projection"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "asset-catalog",
  "core-assets",
@@ -3909,7 +3889,6 @@ dependencies = [
 [[package]]
 name = "renderer-webview-host"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "base64 0.22.1",
  "render-host-contracts",
@@ -4010,7 +3989,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -4022,7 +4001,6 @@ checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 [[package]]
 name = "rusty-engine"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "asset-catalog",
  "asset-import",
@@ -4533,7 +4511,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -4605,7 +4583,6 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 [[package]]
 name = "state-machine"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-ids",
  "entity-state",
@@ -4656,7 +4633,6 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 [[package]]
 name = "svc-collision"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-space",
  "core-voxel",
@@ -4669,7 +4645,6 @@ dependencies = [
 [[package]]
 name = "svc-mesh"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-space",
  "core-voxel",
@@ -4680,7 +4655,6 @@ dependencies = [
 [[package]]
 name = "svc-pathfinding"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-math",
  "core-space",
@@ -4690,12 +4664,10 @@ dependencies = [
 [[package]]
 name = "svc-rng"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 
 [[package]]
 name = "svc-spatial"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-space",
  "core-voxel",
@@ -4705,7 +4677,6 @@ dependencies = [
 [[package]]
 name = "svc-volume"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-space",
  "core-voxel",
@@ -5117,10 +5088,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -5494,7 +5465,7 @@ dependencies = [
  "png 0.18.1",
  "serde",
  "thiserror 2.0.20",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -5546,7 +5517,7 @@ checksum = "f2f6fb2847f6742cd76af783a2a2c49e9375d0a111c7bef6f71cd9e738c72d6e"
 dependencies = [
  "memoffset",
  "tempfile",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -5665,7 +5636,6 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "voxel-annotation"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-assets",
  "serde",
@@ -5678,7 +5648,6 @@ dependencies = [
 [[package]]
 name = "voxel-asset"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-assets",
  "serde",
@@ -5690,7 +5659,6 @@ dependencies = [
 [[package]]
 name = "voxel-convert"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-assets",
  "gltf",
@@ -5704,7 +5672,6 @@ dependencies = [
 [[package]]
 name = "voxel-object-runtime"
 version = "0.1.0"
-source = "git+https://github.com/FuzzySlipper/rusty-engine?branch=main#d0b5e672b83d463bff71d8d35c877f770142ff3c"
 dependencies = [
  "core-assets",
  "serde",
@@ -6087,7 +6054,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]

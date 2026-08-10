@@ -21,9 +21,6 @@
         "ts/packages/browser-shell/src/game-runtime.ts"
       ],
       "@rusty-engine-demo/platform": ["libs/platform/src/index.ts"],
-      "@rusty-engine-demo/studio-weapon-inspector": [
-        "libs/studio-weapon-inspector/src/index.ts"
-      ],
       "@rusty-engine-demo/ui-combat-log": ["libs/ui-combat-log/src/index.ts"],
       "@rusty-engine-demo/ui-compass": ["libs/ui-compass/src/index.ts"],
       "@rusty-engine-demo/ui-game-panels": ["libs/ui-game-panels/src/index.ts"]

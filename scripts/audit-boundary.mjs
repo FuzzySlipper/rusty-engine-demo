@@ -1,7 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkEngineRevision } from "./engine-revision-lib.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const auditPath = resolve(repoRoot, "scripts/audit-boundary.mjs");
@@ -23,10 +22,6 @@ const operationalRoots = [
   "rust",
   "ts",
 ];
-const engineSource = checkEngineRevision(repoRoot);
-const rustEngineRevision = engineSource.commit;
-const renderEngineRevision = engineSource.commit;
-
 const files = operationalRoots.flatMap((entry) =>
   collect(resolve(repoRoot, entry)),
 );
@@ -49,8 +44,6 @@ const forbidden = [
   ["old decision receipt", "DecisionReceipt"],
   ["old replay record", "ReplayRecord"],
   ["old proposal envelope", "ProposalEnvelope"],
-  ["absolute sibling checkout", ["/home/dev/", "rusty-engine"].join("")],
-  ["relative sibling checkout", ["../", "rusty-engine"].join("")],
 ];
 
 const violations = [];
@@ -198,64 +191,49 @@ if (
     "rust/crates/loading-bay-game/src/bin/browser_host/session.rs: cold bootstrap transport must retain its explicit 4 MiB bound (doom-e1m1 1.99M envelope requires headroom beyond 2M)",
   );
 }
-for (const packageName of [
-  "render-contracts",
-  "render-projection",
-  "renderer-host",
-  "renderer-three",
+for (const [label, packageJson] of [
+  ["package.json", rootPackage],
+  ["ts/packages/browser-shell/package.json", browserPackage],
 ]) {
-  const dependencyName = `@rusty-engine/${packageName}`;
-  if (browserPackage.dependencies?.[dependencyName] !== undefined) {
-    violations.push(
-      `ts/packages/browser-shell/package.json: ${dependencyName} is an Engine-private renderer dependency`,
-    );
-  }
-  if (rootPackage.dependencies?.[dependencyName] !== undefined) {
-    violations.push(
-      `package.json: ${dependencyName} must not be an ordinary product dependency`,
-    );
-  }
-  const expected = `github:FuzzySlipper/rusty-engine#${renderEngineRevision}&path:render/packages/${packageName}`;
-  if (rootPackage.devDependencies?.[dependencyName] !== expected) {
-    violations.push(
-      `package.json: ${dependencyName} must remain an exact dev-only Studio peer resolver at ${renderEngineRevision}`,
-    );
+  for (const section of ["dependencies", "devDependencies"]) {
+    for (const dependencyName of Object.keys(packageJson[section] ?? {})) {
+      if (dependencyName.startsWith("@rusty-engine/")) {
+        violations.push(
+          `${label}: downstream ${section} must not contain Engine Studio or renderer package ${dependencyName}`,
+        );
+      }
+    }
   }
 }
-for (const [packageName, packagePath] of [
-  ["studio-adapter-client", "studio/libs/adapter-client"],
-  ["studio-editor-shell", "studio/libs/editor-shell"],
-  ["studio-user-settings", "studio/libs/user-settings"],
-  ["studio-viewport", "studio/libs/viewport"],
-  ["studio-voxel-editor", "studio/libs/voxel-editor"],
+for (const relativePath of [
+  "apps/loading-bay-studio/project.json",
+  "libs/studio-weapon-inspector/project.json",
 ]) {
-  const dependencyName = `@rusty-engine/${packageName}`;
-  const expected = `github:FuzzySlipper/rusty-engine#${renderEngineRevision}&path:${packagePath}`;
-  if (rootPackage.dependencies?.[dependencyName] !== expected) {
-    violations.push(
-      `package.json: ${dependencyName} must resolve from exact Engine revision ${renderEngineRevision}`,
-    );
+  if (existsSync(resolve(repoRoot, relativePath))) {
+    violations.push(`${relativePath}: downstream-owned Studio code must remain absent`);
   }
 }
 
 const cargoManifest = readFileSync(resolve(repoRoot, "Cargo.toml"), "utf8");
-if (!cargoManifest.includes(`revision = "${rustEngineRevision}"`)) {
+const expectedEngineDependency =
+  'rusty-engine = { path = "../rusty-engine/rust/crates/rusty-engine" }';
+if (!cargoManifest.split("\n").includes(expectedEngineDependency)) {
   violations.push(
-    `Cargo.toml: Engine metadata revision must be ${rustEngineRevision}`,
+    "Cargo.toml: ordinary Rust must use one adjacent rusty-engine facade dependency",
   );
 }
 const engineDependencies = [
   ...cargoManifest.matchAll(
-    /^([a-z0-9-]+)\s*=\s*\{[^\n]*git\s*=\s*"https:\/\/github\.com\/FuzzySlipper\/rusty-engine"[^\n]*\}$/gmu,
+    /^([a-z0-9-]+)\s*=\s*\{[^\n]*(?:git\s*=\s*"[^"]*rusty-engine|path\s*=\s*"[^"]*rusty-engine)[^\n]*\}$/gmu,
   ),
 ];
 if (
   engineDependencies.length !== 1 ||
   engineDependencies[0][1] !== "rusty-engine" ||
-  !engineDependencies[0][0].includes('branch = "main"')
+  engineDependencies[0][0] !== expectedEngineDependency
 ) {
   violations.push(
-    "Cargo.toml: ordinary Rust must use one rolling rusty-engine facade dependency",
+    "Cargo.toml: ordinary Rust must use only the adjacent rusty-engine facade dependency",
   );
 }
 
@@ -266,7 +244,7 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `downstream boundary audit passed: ${String(files.length)} operational files, one rolling Rust facade, native renderer ownership, Studio-only renderer peer resolution, no downstream renderer imports`,
+  `downstream boundary audit passed: ${String(files.length)} operational files, one adjacent Rust facade, native renderer ownership, no downstream Studio or renderer packages`,
 );
 
 function collect(path) {

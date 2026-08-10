@@ -32,12 +32,9 @@ const desktopEntry = JSON.parse(
   await runCapture(process.execPath, ["scripts/probe-tauri-desktop-entry.mjs"]),
 );
 const release = status.release;
-if (
-  release?.sourceRevision === undefined ||
-  release?.engineRevision === undefined
-) {
+if (release?.sourceRevision === undefined) {
   throw new Error(
-    "installed deployment status has no exact source/Engine identity",
+    "installed deployment status has no exact product source identity",
   );
 }
 const currentRoot = resolve(status.installRoot, "current");
@@ -73,7 +70,6 @@ const evidence = {
   schemaVersion: 2,
   certifiedAt: new Date().toISOString(),
   sourceRevision: release.sourceRevision,
-  engineRevision: release.engineRevision,
   activeRelease: status.active,
   artifact: release.artifact,
   installedApplication: release.installedApplication,

@@ -69,9 +69,6 @@ for (const path of Object.values(paths)) {
 const evidence = {
   schemaVersion: 1,
   sourceRevision: manifest.sourceRevision,
-  engineRevision: JSON.parse(
-    readFileSync(resolve(repoRoot, "engine-source.json"), "utf8"),
-  ).commit,
   targetTriple: manifest.targetTriple,
   files: Object.fromEntries(
     Object.entries(paths).map(([label, path]) => [

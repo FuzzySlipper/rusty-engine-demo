@@ -77,7 +77,6 @@ function fixture(root, revision, label) {
   const evidence = {
     schemaVersion: 1,
     sourceRevision: revision,
-    engineRevision: "0e0c49442d0c3d876a1336a5a829087f6e2314db",
     files: {
       application: {
         byteLen: Buffer.byteLength(`desktop-${label}-before-bundler-strip`),
