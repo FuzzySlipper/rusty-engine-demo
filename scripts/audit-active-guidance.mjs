@@ -22,7 +22,7 @@ const freshness = /\bfreshness\b/iu;
 const antiCeremony =
   /(?:\b(?:no|without|must\s+not|do\s+not|does\s+not|is\s+not|not\s+as|never)\b[^,;.!?\n]{0,120}\b(?:add|use|fetch|manage|mutate|certify|lock|pin|refresh|sync|synchronize|match|update|pull|follow|freshness|revision|commit|sha|git\s+(?:identity|ref)|tag|branch)\b|\b(?:revision|commit|sha|git\s+(?:identity|ref)|tag|branch|freshness|refresh|sync|synchronization|update|lock|pin)\b[^,;.!?\n]{0,80}\b(?:is|are)\s+not\b)/iu;
 const historicalScope =
-  /\b(?:historical|predecessor|then-(?:current|reviewed)|proven\s+upstream\s+gaps|evidence\s+(?:used|recorded)|reviewed\s+at|approved\s+at)\b/iu;
+  /\b(?:historical|predecessor|then-(?:current|reviewed)|proven\s+upstream\s+gaps?|evidence\s+(?:used|recorded)|reviewed\s+at|approved\s+at)\b/iu;
 const siblingPathProhibition =
   /(?:\b(?:forbid(?:den)?|reject(?:ed)?|prohibit(?:ed)?|must\s+not|do\s+not|never|wrong)\b[^\n]{0,180}\bsibling[ -]paths?\b|\bsibling[ -]paths?\b[^\n]{0,180}\b(?:forbid(?:den)?|reject(?:ed)?|prohibit(?:ed)?|must\s+not|do\s+not|never|wrong)\b)/iu;
 
@@ -86,7 +86,9 @@ function guidanceClauses(content) {
     for (const unit of units) {
       for (const sentence of unit.split(/(?<=[.!?])\s+(?=[A-Z`])/u)) {
         statements.push(
-          ...sentence.split(/\s*;\s*|\s*,\s*(?=(?:but|yet|however|while)\b)/iu),
+          ...sentence.split(
+            /\s*;\s*|\s*,\s*(?=(?:but|yet|however|while)\b)|\s+(?:and|or)\s+(?!(?:revisions?|commits?|shas?|tags?|branches?|public\s+main|main\s+branch)\b)/iu,
+          ),
         );
       }
     }

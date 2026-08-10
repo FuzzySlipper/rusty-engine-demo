@@ -77,6 +77,38 @@ for (const [name, statement] of [
     "Engine revision before unrelated no clause",
     `Production uses Engine revision ${sha}, but no renderer APIs are added.`,
   ],
+  [
+    "unrelated negative and Engine revision",
+    `Do not change the UI and use Engine revision ${sha} for every build.`,
+  ],
+  [
+    "Engine revision and unrelated negative",
+    `Use Engine revision ${sha} for every build and do not change the UI.`,
+  ],
+  [
+    "unrelated no and Engine commit",
+    `No renderer APIs are added and production uses Engine commit ${sha}.`,
+  ],
+  [
+    "Engine commit and unrelated no",
+    `Production uses Engine commit ${sha} and no renderer APIs are added.`,
+  ],
+  [
+    "historical and current Engine tag",
+    "Historical evidence used an old renderer and production uses Engine tag v2.",
+  ],
+  [
+    "current Engine tag and historical",
+    "Production uses Engine tag v2 and historical evidence used an old renderer.",
+  ],
+  [
+    "unrelated negative or Engine revision",
+    `Do not change the UI or use Engine revision ${sha} for every build.`,
+  ],
+  [
+    "Engine revision or unrelated negative",
+    `Use Engine revision ${sha} for every build or do not change the UI.`,
+  ],
 ]) {
   test(`active guidance rejects ${name}`, () => {
     assert.notDeepEqual(
@@ -99,6 +131,7 @@ test("active guidance permits the adjacent sibling facade", () => {
 test("active guidance permits explicit anti-ceremony rules", () => {
   for (const statement of [
     "Do not pin Engine to a revision or SHA.",
+    "Do not bind Engine to a revision and SHA.",
     "The Engine checkout is not locked to a commit.",
     "Use the adjacent Engine facade without revision, freshness, or update machinery.",
     "Rusty Engine changes are fixed forward; this repo does not synchronize public main.",
@@ -130,6 +163,13 @@ test("historical provenance may retain exact revision language", () => {
     auditActiveGuidance(
       "docs/weapon-authoring-contract.md",
       `The historical design was approved at Rusty Engine revision ${sha}.`,
+    ),
+    [],
+  );
+  assert.deepEqual(
+    auditActiveGuidance(
+      "docs/weapon-authoring-contract.md",
+      `Historical Engine revision and commit provenance used ${sha}.`,
     ),
     [],
   );

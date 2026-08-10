@@ -353,9 +353,10 @@ Before implementing a missing mechanism:
 4. Fix the adjacent consumer forward and run the complete downstream proof without adding revision
    or checkout-management machinery.
 
-The two proven upstream gaps were renderer-owned timing (Rusty Engine #6213, public SHA
-`2665b74566136fb77e3a26b0766394124c8f58d3`) and a reusable retained camera-relative viewmodel
-channel (Rusty Engine #6263, public SHA `e622c941671bc0f167206b049ab94ea63495a86d`). The fixed game
+The first proven upstream gap was renderer-owned timing (Rusty Engine #6213, public SHA
+`2665b74566136fb77e3a26b0766394124c8f58d3`). The second proven upstream gap was a reusable
+retained camera-relative viewmodel channel (Rusty Engine #6263, public SHA
+`e622c941671bc0f167206b049ab94ea63495a86d`). The fixed game
 loop, input-intent semantics, Loading Bay session transport, items, inventory, weapons, enemies,
 progression, save policy, and level remain downstream. No evidence presently justifies an Engine
 plugin API, scheduler, service registry, behavior IR, method bridge, private renderer, or
