@@ -48,6 +48,35 @@ for (const [name, statement] of [
     "The Engine checkout must be fresh before building.",
   ],
   ["Engine tag update", "Update Rusty Engine to tag v2 before building."],
+  ["Engine commit deployment", `Production ships Engine commit ${sha}.`],
+  [
+    "reordered Engine commit deployment",
+    `Engine commit ${sha} ships in production.`,
+  ],
+  [
+    "Engine checkout match",
+    "The Engine checkout must match public main before building.",
+  ],
+  [
+    "reordered Engine checkout match",
+    "Before building, public main must match the Engine checkout.",
+  ],
+  [
+    "unrelated negative clause before Engine revision",
+    `Do not change the UI; use Engine revision ${sha} for every build.`,
+  ],
+  [
+    "unrelated no clause before Engine revision",
+    `No renderer APIs are added, but production uses Engine revision ${sha}.`,
+  ],
+  [
+    "Engine revision before unrelated negative clause",
+    `Production uses Engine revision ${sha}; do not change the UI.`,
+  ],
+  [
+    "Engine revision before unrelated no clause",
+    `Production uses Engine revision ${sha}, but no renderer APIs are added.`,
+  ],
 ]) {
   test(`active guidance rejects ${name}`, () => {
     assert.notDeepEqual(

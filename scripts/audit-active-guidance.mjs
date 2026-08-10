@@ -14,29 +14,22 @@ export const activeGuidancePaths = new Set([
 const engine = /\b(?:Rusty\s+)?Engine\b/iu;
 const gitIdentity =
   /\b(?:revisions?|commit|shas?|git\s+(?:identity|ref)|tags?|branches?|public\s+main|main\s+branch)\b/iu;
-const identityAuthority =
-  /\b(?:exact|floating|use|uses|using|require|required|requires|resolve|resolves|select|selects|tie|tied|fix|fixed|set|sets|lock|locks|locked|pin|pins|pinned|refresh|sync|synchronize|update|fetch|pull|follow)\b/iu;
 const pinOrLock = /\b(?:pin|pins|pinned|lock|locks|locked)\b/iu;
-const checkoutSynchronization =
-  /\b(?:refresh|sync|synchronize|update|fetch|pull|follow)\b/iu;
-const checkoutOrMain =
-  /\b(?:checkout|public\s+main|main\s+branch|branch\s+main)\b/iu;
+const checkout = /\bcheckout\b/iu;
+const checkoutCeremony =
+  /\b(?:fresh|freshness|refresh|sync|synchronize|match|update|fetch|pull|follow)\b/iu;
 const freshness = /\bfreshness\b/iu;
-const freshCheckout = /\bfresh\b/iu;
-const concreteGitIdentity = /\b[0-9a-f]{40}\b/iu;
 const antiCeremony =
-  /\b(?:no|without|must\s+not|do\s+not|does\s+not|is\s+not|not\s+as|never)\b[^.!?\n]{0,220}\b(?:fetch|manage|mutate|certify|add|exact|floating|use|require|resolve|select|tie|fix|set|lock|pin|refresh|sync|synchronize|update|pull|follow|freshness|revision|commit|sha|git\s+(?:identity|ref)|tag|branch)\b/iu;
+  /(?:\b(?:no|without|must\s+not|do\s+not|does\s+not|is\s+not|not\s+as|never)\b[^,;.!?\n]{0,120}\b(?:add|use|fetch|manage|mutate|certify|lock|pin|refresh|sync|synchronize|match|update|pull|follow|freshness|revision|commit|sha|git\s+(?:identity|ref)|tag|branch)\b|\b(?:revision|commit|sha|git\s+(?:identity|ref)|tag|branch|freshness|refresh|sync|synchronization|update|lock|pin)\b[^,;.!?\n]{0,80}\b(?:is|are)\s+not\b)/iu;
 const historicalScope =
   /\b(?:historical|predecessor|then-(?:current|reviewed)|proven\s+upstream\s+gaps|evidence\s+(?:used|recorded)|reviewed\s+at|approved\s+at)\b/iu;
-const currentDirective =
-  /\b(?:must|should|required|requires?|use|builds?|before\s+building|refresh|sync|synchronize|resolve|lock|update|pull|follow)\b/iu;
 const siblingPathProhibition =
   /(?:\b(?:forbid(?:den)?|reject(?:ed)?|prohibit(?:ed)?|must\s+not|do\s+not|never|wrong)\b[^\n]{0,180}\bsibling[ -]paths?\b|\bsibling[ -]paths?\b[^\n]{0,180}\b(?:forbid(?:den)?|reject(?:ed)?|prohibit(?:ed)?|must\s+not|do\s+not|never|wrong)\b)/iu;
 
 export function auditActiveGuidance(relativePath, content) {
   if (!activeGuidancePaths.has(relativePath)) return [];
   const findings = [];
-  for (const excerpt of guidanceStatements(content)) {
+  for (const excerpt of guidanceClauses(content)) {
     if (excerpt === "") continue;
     const siblingMatch = excerpt.match(siblingPathProhibition);
     if (siblingMatch !== null) {
@@ -46,23 +39,13 @@ export function auditActiveGuidance(relativePath, content) {
       });
     }
     if (!engine.test(excerpt)) continue;
-    const historicallyScoped =
-      historicalScope.test(excerpt) && !currentDirective.test(excerpt);
-    if (historicallyScoped || antiCeremony.test(excerpt)) continue;
-    const tiesEngineToGitIdentity =
-      gitIdentity.test(excerpt) &&
-      (identityAuthority.test(excerpt) ||
-        (concreteGitIdentity.test(excerpt) && currentDirective.test(excerpt)));
+    if (historicalScope.test(excerpt) || antiCeremony.test(excerpt)) continue;
+    const tiesEngineToGitIdentity = gitIdentity.test(excerpt);
     const managesEngineCheckout =
-      checkoutSynchronization.test(excerpt) && checkoutOrMain.test(excerpt);
-    const requiresFreshCheckout =
-      freshCheckout.test(excerpt) &&
-      checkoutOrMain.test(excerpt) &&
-      currentDirective.test(excerpt);
+      checkout.test(excerpt) && checkoutCeremony.test(excerpt);
     if (
       pinOrLock.test(excerpt) ||
       freshness.test(excerpt) ||
-      requiresFreshCheckout ||
       tiesEngineToGitIdentity ||
       managesEngineCheckout
     ) {
@@ -75,7 +58,7 @@ export function auditActiveGuidance(relativePath, content) {
   return findings;
 }
 
-function guidanceStatements(content) {
+function guidanceClauses(content) {
   const statements = [];
   for (const paragraph of content.split(/\n\s*\n/u)) {
     const lines = paragraph
@@ -101,7 +84,11 @@ function guidanceStatements(content) {
       units.push(lines.join(" "));
     }
     for (const unit of units) {
-      statements.push(...unit.split(/(?<=[.!?])\s+(?=[A-Z`])/u));
+      for (const sentence of unit.split(/(?<=[.!?])\s+(?=[A-Z`])/u)) {
+        statements.push(
+          ...sentence.split(/\s*;\s*|\s*,\s*(?=(?:but|yet|however|while)\b)/iu),
+        );
+      }
     }
   }
   return statements;
