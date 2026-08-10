@@ -109,6 +109,30 @@ for (const [name, statement] of [
     "Engine revision or unrelated negative",
     `Use Engine revision ${sha} for every build or do not change the UI.`,
   ],
+  [
+    "shared Engine subject before and authority",
+    `Do not pin Engine and use revision ${sha} for every build.`,
+  ],
+  [
+    "shared Engine subject after and authority",
+    `Use revision ${sha} for every build and do not pin Engine.`,
+  ],
+  [
+    "shared Engine historical subject before current tag",
+    "Engine historical evidence used an old renderer and now uses tag v2.",
+  ],
+  [
+    "shared Engine historical subject after current tag",
+    "Now uses tag v2 and Engine historical evidence used an old renderer.",
+  ],
+  [
+    "shared Engine subject before or authority",
+    `Do not pin Engine or use revision ${sha} for every build.`,
+  ],
+  [
+    "shared Engine subject after or authority",
+    `Use revision ${sha} for every build or do not pin Engine.`,
+  ],
 ]) {
   test(`active guidance rejects ${name}`, () => {
     assert.notDeepEqual(

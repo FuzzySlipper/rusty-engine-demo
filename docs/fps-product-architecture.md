@@ -303,9 +303,9 @@ observes Engine motion, and verifies transient save behavior.
 ## Product budgets
 
 Performance certification records machine, OS, browser build, viewport, renderer backend, and
-exact Demo SHA. It records the observed local Engine state as diagnostic context, not as dependency
-or freshness machinery. Headless SwiftShader smoke is correctness evidence, not the interactive
-performance machine.
+exact Demo SHA. It records the observed local Engine state only as diagnostic context. That context
+does not govern dependency or freshness machinery. Headless SwiftShader smoke is correctness
+evidence, not the interactive performance machine.
 
 | Concern                | Required budget                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------- |

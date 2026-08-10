@@ -85,9 +85,15 @@ function guidanceClauses(content) {
     }
     for (const unit of units) {
       for (const sentence of unit.split(/(?<=[.!?])\s+(?=[A-Z`])/u)) {
+        const clauses = sentence.split(
+          /\s*;\s*|\s*,\s*(?=(?:but|yet|however|while)\b)|\s+(?:and|or)\s+(?!(?:revisions?|commits?|shas?|tags?|branches?|public\s+main|main\s+branch)\b)/iu,
+        );
+        const governedByEngine = engine.test(sentence);
         statements.push(
-          ...sentence.split(
-            /\s*;\s*|\s*,\s*(?=(?:but|yet|however|while)\b)|\s+(?:and|or)\s+(?!(?:revisions?|commits?|shas?|tags?|branches?|public\s+main|main\s+branch)\b)/iu,
+          ...clauses.map((clause) =>
+            governedByEngine && !engine.test(clause)
+              ? `Engine ${clause}`
+              : clause,
           ),
         );
       }
