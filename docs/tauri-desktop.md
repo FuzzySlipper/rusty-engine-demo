@@ -18,7 +18,7 @@ Tauri commands.
 ## Build inputs and outputs
 
 All Tauri, plugin, and CLI versions are exact in `src-tauri/Cargo.toml`, `Cargo.lock`,
-`package.json`, and `pnpm-lock.yaml`. Build beside the rolling-current Engine checkout used by the
+`package.json`, and `pnpm-lock.yaml`. Build beside the adjacent Engine checkout used by the
 Demo's Rust facade and application-host path dependencies. Those paths are compile-time inputs only:
 the packaged application copies the sidecar, web assets, and content closure and performs no sibling
 Engine lookup at runtime. Release binaries may retain compiler source-provenance strings, so the
