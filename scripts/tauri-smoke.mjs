@@ -590,9 +590,27 @@ async function exerciseInstalledWindow(first) {
   );
   const initialRouteGeneration = await execute(
     first.sessionId,
-    `window.__loadingBayRouteDisposalGate = new Promise(
-       (resolve) => { window.__releaseLoadingBayRouteDisposal = resolve; },
-     );
+    `window.__loadingBayNativeSocketClose = WebSocket.prototype.close;
+     window.__loadingBayHeldSocketRetirement = null;
+     WebSocket.prototype.close = function (...args) {
+       if (
+         this.url.endsWith("/api/session") &&
+         window.__loadingBayHeldSocketRetirement === null
+       ) {
+         window.__loadingBayHeldSocketRetirement = { socket: this, args };
+         document.body.dataset.transportRetirement = "pending";
+         return;
+       }
+       return window.__loadingBayNativeSocketClose.apply(this, args);
+     };
+     window.__releaseLoadingBayTransportRetirement = () => {
+       const held = window.__loadingBayHeldSocketRetirement;
+       WebSocket.prototype.close = window.__loadingBayNativeSocketClose;
+       if (held !== null) {
+         window.__loadingBayNativeSocketClose.apply(held.socket, held.args);
+       }
+       document.body.dataset.transportRetirement = "released";
+     };
      return Number(document.body.dataset.rendererRouteGeneration ?? "0");`,
   );
   const openedDiagnostics = await execute(
@@ -616,11 +634,13 @@ async function exerciseInstalledWindow(first) {
           lifecycle: document.body.dataset.rendererLifecycle ?? null,
           routeDisposal: document.body.dataset.routeDisposal ?? null,
           retiredRouteRelease: document.body.dataset.retiredRouteRelease ?? null,
+          transportRetirement: document.body.dataset.transportRetirement ?? null,
         };`,
       );
       return lastDisposalState.diagnostics &&
         lastDisposalState.routeDisposal === "pass" &&
-        lastDisposalState.retiredRouteRelease === "pending"
+        lastDisposalState.retiredRouteRelease === "pending" &&
+        lastDisposalState.transportRetirement === "pending"
         ? lastDisposalState
         : null;
     }, "browser projection disposal receipt");
@@ -646,21 +666,24 @@ async function exerciseInstalledWindow(first) {
         game: document.querySelector("red-game-screen") !== null,
         lifecycle: document.body.dataset.rendererLifecycle ?? null,
         release: document.body.dataset.retiredRouteRelease ?? null,
+        transportRetirement: document.body.dataset.transportRetirement ?? null,
         canvasCount: document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length,
       };`,
     );
     return state.game &&
       state.lifecycle === "mounting" &&
       state.release === "pending" &&
+      state.transportRetirement === "pending" &&
       state.canvasCount === 1
       ? state
       : null;
-  }, "successor route awaiting retired Rust session");
+  }, "successor route awaiting retired WebSocket closure");
   await execute(
     first.sessionId,
-    `window.__releaseLoadingBayRouteDisposal?.();
-     delete window.__releaseLoadingBayRouteDisposal;
-     delete window.__loadingBayRouteDisposalGate;
+    `window.__releaseLoadingBayTransportRetirement?.();
+     delete window.__releaseLoadingBayTransportRetirement;
+     delete window.__loadingBayHeldSocketRetirement;
+     delete window.__loadingBayNativeSocketClose;
      return true;`,
   );
   const remount = await waitFor(async () => {

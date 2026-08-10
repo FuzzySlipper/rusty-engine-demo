@@ -5,6 +5,7 @@ export const MAX_PENDING_EDGE_COMMANDS = 32;
 export const MAX_WEBSOCKET_BUFFERED_BYTES = 64 * 1024;
 export const INPUT_SEND_INTERVAL_MILLISECONDS = 1_000 / 60;
 export const SESSION_CONNECT_TIMEOUT_MILLISECONDS = 5_000;
+export const SESSION_CLOSE_TIMEOUT_MILLISECONDS = 5_000;
 
 export interface SessionInputIntent {
   readonly movement: readonly [number, number];
@@ -411,6 +412,7 @@ export class LoadingBayGameSession {
   #resyncInFlight: number | null = null;
   #resyncTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
   #closed = false;
+  #closePromise: Promise<void> | null = null;
   #onState:
     | ((state: RuntimeBrowserState, delivery: SessionStateDelivery) => void)
     | null = null;
@@ -703,8 +705,8 @@ export class LoadingBayGameSession {
   }
 
   async close(): Promise<void> {
-    if (this.#closed) {
-      return;
+    if (this.#closePromise !== null) {
+      return this.#closePromise;
     }
     this.#closed = true;
     if (this.#inputTimer !== null) {
@@ -719,7 +721,58 @@ export class LoadingBayGameSession {
         "Loading Bay game session disposed",
       ),
     );
-    this.#socket.close(1000, "route disposed");
+    this.#closePromise = new Promise<void>((resolve, reject) => {
+      const cleanup = (): void => {
+        globalThis.clearTimeout(timeout);
+        this.#socket.removeEventListener("close", closed);
+        this.#socket.removeEventListener("error", failed);
+      };
+      const closed = (): void => {
+        cleanup();
+        resolve();
+      };
+      const failed = (): void => {
+        cleanup();
+        reject(
+          new GameSessionError(
+            "transportLost",
+            "Loading Bay game session failed while retiring its transport",
+            "reconnect",
+          ),
+        );
+      };
+      const timeout = globalThis.setTimeout(() => {
+        cleanup();
+        reject(
+          new GameSessionError(
+            "transportLost",
+            "Loading Bay game session transport retirement timed out",
+            "reconnect",
+          ),
+        );
+      }, SESSION_CLOSE_TIMEOUT_MILLISECONDS);
+      this.#socket.addEventListener("close", closed);
+      this.#socket.addEventListener("error", failed);
+      if (this.#socket.readyState === 3) {
+        closed();
+        return;
+      }
+      try {
+        this.#socket.close(1000, "route disposed");
+      } catch (error) {
+        cleanup();
+        reject(
+          error instanceof Error
+            ? error
+            : new GameSessionError(
+                "transportLost",
+                "Loading Bay game session transport retirement failed",
+                "reconnect",
+              ),
+        );
+      }
+    });
+    return this.#closePromise;
   }
 
   #receive(data: unknown): void {

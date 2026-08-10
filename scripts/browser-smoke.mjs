@@ -1388,7 +1388,17 @@ async function runOverlappingRouteRetirementProof(project) {
             "route-overlap main menu",
           );
           await client.send("Runtime.evaluate", {
-            expression: `[...document.querySelectorAll("button")].find(
+            expression: `window.__loadingBayNativeWebSocket = WebSocket;
+              window.__loadingBaySessionSocketCount = 0;
+              window.WebSocket = new Proxy(window.__loadingBayNativeWebSocket, {
+                construct(target, args) {
+                  if (String(args[0]).endsWith("/api/session")) {
+                    window.__loadingBaySessionSocketCount += 1;
+                  }
+                  return Reflect.construct(target, args);
+                },
+              });
+              [...document.querySelectorAll("button")].find(
               (button) => button.textContent?.trim() === "New game",
             )?.click()`,
           });
@@ -1400,16 +1410,35 @@ async function runOverlappingRouteRetirementProof(project) {
             "route-overlap initial Rust frame",
           );
           await client.send("Runtime.evaluate", {
-            expression: `window.__loadingBayRouteDisposalGate = new Promise(
-                (resolve) => { window.__releaseLoadingBayRouteDisposal = resolve; },
-              );
+            expression: `window.__loadingBayNativeSocketClose = WebSocket.prototype.close;
+              window.__loadingBayHeldSocketRetirement = null;
+              WebSocket.prototype.close = function (...args) {
+                if (
+                  this.url.endsWith("/api/session") &&
+                  window.__loadingBayHeldSocketRetirement === null
+                ) {
+                  window.__loadingBayHeldSocketRetirement = { socket: this, args };
+                  document.body.dataset.transportRetirement = "pending";
+                  return;
+                }
+                return window.__loadingBayNativeSocketClose.apply(this, args);
+              };
+              window.__releaseLoadingBayTransportRetirement = () => {
+                const held = window.__loadingBayHeldSocketRetirement;
+                WebSocket.prototype.close = window.__loadingBayNativeSocketClose;
+                if (held !== null) {
+                  window.__loadingBayNativeSocketClose.apply(held.socket, held.args);
+                }
+                document.body.dataset.transportRetirement = "released";
+              };
               document.querySelector("a.diagnostics-link")?.click()`,
           });
           await waitForCdp(
             client,
             `document.querySelector("red-diagnostics-screen a") !== null &&
-              document.body.dataset.retiredRouteRelease === "pending"`,
-            "retired route held during diagnostics navigation",
+              document.body.dataset.retiredRouteRelease === "pending" &&
+              document.body.dataset.transportRetirement === "pending"`,
+            "retired transport held after close initiation",
           );
           await client.send("Runtime.evaluate", {
             expression: `document.querySelector("red-diagnostics-screen a")?.click()`,
@@ -1419,13 +1448,16 @@ async function runOverlappingRouteRetirementProof(project) {
             `document.querySelector("red-game-screen") !== null &&
               document.body.dataset.rendererLifecycle === "mounting" &&
               document.body.dataset.retiredRouteRelease === "pending" &&
+              document.body.dataset.transportRetirement === "pending" &&
+              window.__loadingBaySessionSocketCount === 1 &&
               document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length === 1`,
-            "successor route awaiting retired Rust session",
+            "successor route awaiting retired WebSocket closure",
           );
           await client.send("Runtime.evaluate", {
-            expression: `window.__releaseLoadingBayRouteDisposal?.();
-              delete window.__releaseLoadingBayRouteDisposal;
-              delete window.__loadingBayRouteDisposalGate`,
+            expression: `window.__releaseLoadingBayTransportRetirement?.();
+              delete window.__releaseLoadingBayTransportRetirement;
+              delete window.__loadingBayHeldSocketRetirement;
+              delete window.__loadingBayNativeSocketClose`,
           });
           try {
             await waitForCdp(
@@ -1435,6 +1467,7 @@ async function runOverlappingRouteRetirementProof(project) {
                 Number(document.body.dataset.rendererRouteGeneration) >= 3 &&
                 document.body.dataset.rendererRouteFrame === "rust-authoritative" &&
                 document.body.dataset.rendererRouteCamera?.length > 0 &&
+                window.__loadingBaySessionSocketCount === 2 &&
                 document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length === 1`,
               "successor route survives retired teardown",
             );
@@ -1442,6 +1475,7 @@ async function runOverlappingRouteRetirementProof(project) {
             const diagnostic = await client.send("Runtime.evaluate", {
               expression: `({
                 release: document.body.dataset.retiredRouteRelease ?? null,
+                transportRetirement: document.body.dataset.transportRetirement ?? null,
                 lifecycle: document.body.dataset.rendererLifecycle ?? null,
                 generation: document.body.dataset.rendererRouteGeneration ?? null,
                 frame: document.body.dataset.rendererRouteFrame ?? null,
@@ -1449,6 +1483,7 @@ async function runOverlappingRouteRetirementProof(project) {
                 canvasCount: document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length,
                 runtimeError: document.body.dataset.runtimeError ?? null,
                 hash: location.hash,
+                sessionSocketCount: window.__loadingBaySessionSocketCount ?? null,
               })`,
               returnByValue: true,
             });
@@ -1456,6 +1491,53 @@ async function runOverlappingRouteRetirementProof(project) {
               `${error instanceof Error ? error.message : String(error)}: ${JSON.stringify(diagnostic?.result?.value)}`,
             );
           }
+          await client.send("Runtime.evaluate", {
+            expression: `document.body.dataset.successfulRetirementProof = "pass";
+              window.__loadingBayNativeSocketClose = WebSocket.prototype.close;
+              window.__loadingBayHeldSocketRetirement = null;
+              WebSocket.prototype.close = function (...args) {
+                if (
+                  this.url.endsWith("/api/session") &&
+                  window.__loadingBayHeldSocketRetirement === null
+                ) {
+                  window.__loadingBayHeldSocketRetirement = { socket: this, args };
+                  document.body.dataset.transportRetirement = "timeout-pending";
+                  return;
+                }
+                return window.__loadingBayNativeSocketClose.apply(this, args);
+              };
+              document.querySelector("a.diagnostics-link")?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector("red-diagnostics-screen a") !== null &&
+              document.body.dataset.retiredRouteRelease === "pending" &&
+              document.body.dataset.transportRetirement === "timeout-pending"`,
+            "failed retirement transport held after close initiation",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `document.querySelector("red-diagnostics-screen a")?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector("red-game-screen") !== null &&
+              document.body.dataset.rendererLifecycle === "failed" &&
+              document.body.dataset.retiredRouteRelease === "fail" &&
+              document.body.dataset.runtimeError?.includes("transport retirement timed out") &&
+              window.__loadingBaySessionSocketCount === 2 &&
+              document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length === 1`,
+            "failed retirement blocks successor connection",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `const held = window.__loadingBayHeldSocketRetirement;
+              WebSocket.prototype.close = window.__loadingBayNativeSocketClose;
+              if (held !== null) {
+                window.__loadingBayNativeSocketClose.apply(held.socket, held.args);
+              }
+              document.body.dataset.failedRetirementProof = "pass";
+              delete window.__loadingBayHeldSocketRetirement;
+              delete window.__loadingBayNativeSocketClose`,
+          });
           await client.send("Runtime.evaluate", {
             expression: `document.body.dataset.routeOverlapProof = "pass"`,
           });
@@ -1465,7 +1547,8 @@ async function runOverlappingRouteRetirementProof(project) {
     if (
       result.code !== 0 ||
       !result.stdout.includes('data-route-overlap-proof="pass"') ||
-      !result.stdout.includes('data-retired-route-release="pass"') ||
+      !result.stdout.includes('data-successful-retirement-proof="pass"') ||
+      !result.stdout.includes('data-failed-retirement-proof="pass"') ||
       !result.stdout.includes('data-renderer-route-frame="rust-authoritative"')
     ) {
       throw new Error(

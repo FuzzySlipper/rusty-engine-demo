@@ -534,6 +534,49 @@ test("coalesced look remains within the authoritative input envelope", () => {
   );
 });
 
+test("session close settles only after the WebSocket close event", async () => {
+  const originalLocation = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "location",
+  );
+  const originalWebSocket = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "WebSocket",
+  );
+  const sockets: HeldCloseSocket[] = [];
+
+  Object.defineProperty(globalThis, "location", {
+    configurable: true,
+    value: { host: "loading-bay.test", protocol: "http:" },
+  });
+  Object.defineProperty(globalThis, "WebSocket", {
+    configurable: true,
+    value: class extends HeldCloseSocket {
+      constructor() {
+        super();
+        sockets.push(this);
+      }
+    },
+  });
+
+  try {
+    const session = await LoadingBayGameSession.connect();
+    let retired = false;
+    const closing = session.close().then(() => {
+      retired = true;
+    });
+    await Promise.resolve();
+    assert.equal(sockets[0]?.closeInvoked, true);
+    assert.equal(retired, false);
+    sockets[0]?.releaseClose();
+    await closing;
+    assert.equal(retired, true);
+  } finally {
+    restoreGlobal("location", originalLocation);
+    restoreGlobal("WebSocket", originalWebSocket);
+  }
+});
+
 test("session replacement preparation cancels unsent transient input", async () => {
   const originalLocation = Object.getOwnPropertyDescriptor(
     globalThis,
@@ -876,6 +919,45 @@ test("typed item rejections settle without closing the live session", async () =
     restoreGlobal("WebSocket", originalWebSocket);
   }
 });
+
+class HeldCloseSocket extends EventTarget {
+  static readonly OPEN = 1;
+  readonly bufferedAmount = 0;
+  readyState = HeldCloseSocket.OPEN;
+  closeInvoked = false;
+
+  constructor() {
+    super();
+    queueMicrotask(() => {
+      this.dispatchEvent(
+        new MessageEvent("message", {
+          data: JSON.stringify({
+            protocolVersion: 1,
+            sessionId: "loading-bay-held-close",
+            connectionGeneration: 1,
+            serverTick: 1,
+            snapshotSequence: 1,
+            acknowledgedCommandSequence: 0,
+            staticRevision: resources.staticRevision,
+            update: { kind: "full", state: dynamic },
+            resources,
+            facts: [],
+            metrics,
+          } satisfies ServerUpdateEnvelope),
+        }),
+      );
+    });
+  }
+
+  close(): void {
+    this.closeInvoked = true;
+  }
+
+  releaseClose(): void {
+    this.readyState = 3;
+    this.dispatchEvent(new Event("close"));
+  }
+}
 
 class SelectionSocket extends EventTarget {
   static readonly OPEN = 1;

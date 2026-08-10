@@ -122,9 +122,7 @@ export function queueEngineRouteSessionRetirement(
   if (authority === undefined) {
     throw new Error("Engine renderer route must be claimed before retirement");
   }
-  const queued = authority.sessionRetirement
-    .catch(() => undefined)
-    .then(retirement);
-  authority.sessionRetirement = queued.catch(() => undefined);
+  const queued = authority.sessionRetirement.then(retirement);
+  authority.sessionRetirement = queued;
   return queued;
 }
