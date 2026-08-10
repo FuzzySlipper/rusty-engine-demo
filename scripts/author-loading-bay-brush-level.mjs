@@ -14,7 +14,7 @@ const EVIDENCE = resolve(
   ROOT,
   "docs/evidence/voxel-level-brush-authoring.json",
 );
-const PROTOCOL_VERSION = 14;
+const PROTOCOL_VERSION = 15;
 const BATCH_LIMIT = 32;
 const SURFACE_TILE_LIMIT = 8;
 const SCENE_ID = "scene/loading-bay";
@@ -292,6 +292,7 @@ function sameInstance(left, right) {
     JSON.stringify({
       instanceId: left.instanceId,
       voxelObjectAssetId: left.voxelObjectAssetId,
+      surfaceMode: left.surfaceMode ?? "greedyCubes",
       frame: left.frame,
       translation: left.translation,
       rotation: left.rotation,
@@ -334,6 +335,7 @@ function tileLayer(cells, y, prefix, assetId, worldY, project) {
       instance: {
         instanceId: `level-${prefix}-x${String(x).padStart(2, "0")}-z${String(z).padStart(2, "0")}-${String(width)}x${String(depth)}`,
         voxelObjectAssetId: assetId,
+        surfaceMode: "greedyCubes",
         frame: { kind: "default" },
         translation: [x, worldY, z],
         rotation: [0, 0, 0, 1],
@@ -399,6 +401,7 @@ function buildPlacements(project) {
         instance: {
           instanceId: `level-wall-x${String(x).padStart(2, "0")}-z${String(z).padStart(2, "0")}`,
           voxelObjectAssetId: assetId,
+          surfaceMode: "greedyCubes",
           frame: { kind: "default" },
           translation: [x, 0, z],
           rotation: [0, 0, 0, 1],
@@ -427,6 +430,7 @@ function buildPlacements(project) {
         instance: {
           instanceId: `level-doorway-owner-${String(entity.id)}`,
           voxelObjectAssetId: placement.assetId,
+          surfaceMode: "greedyCubes",
           frame: { kind: "default" },
           translation: placement.translation,
           rotation: [0, 0, 0, 1],
@@ -464,6 +468,7 @@ function buildPlacements(project) {
     instance: {
       instanceId: `level-${name}`,
       voxelObjectAssetId: assetId,
+      surfaceMode: "greedyCubes",
       frame: { kind: "default" },
       translation,
       rotation: [0, 0, 0, 1],

@@ -25,9 +25,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     StoredCollision, StoredImportSource, StoredKinematic, StoredLight, StoredVoxelInstance,
     StoredVoxelObjectFrameSelection, StoredVoxelObjectMaterialOverride,
+    StoredVoxelObjectSurfaceMode,
 };
 
-pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 14;
+pub const STUDIO_ADAPTER_PROTOCOL_VERSION: u32 = 15;
 pub const MAX_STUDIO_ADAPTER_REQUEST_BYTES: usize = 256 * 1024;
 pub const MAX_STUDIO_ADAPTER_RESPONSE_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_REQUEST_ID_BYTES: usize = 256;
@@ -548,6 +549,14 @@ pub enum StudioAdapterRequest {
         expected_project_hash: String,
         placements: Vec<StudioVoxelObjectPlacement>,
     },
+    SetVoxelObjectInstanceSurfaceMode {
+        protocol_version: u32,
+        request_id: String,
+        expected_project_hash: String,
+        scene_id: String,
+        instance_id: String,
+        surface_mode: StoredVoxelObjectSurfaceMode,
+    },
     PreviewVoxelObjectInstance {
         protocol_version: u32,
         request_id: String,
@@ -568,6 +577,7 @@ pub enum StudioAdapterRequest {
 pub struct StudioVoxelObjectInstance {
     pub instance_id: String,
     pub voxel_object_asset_id: String,
+    pub surface_mode: StoredVoxelObjectSurfaceMode,
     pub frame: StoredVoxelObjectFrameSelection,
     pub translation: [f32; 3],
     pub rotation: [f32; 4],
@@ -824,6 +834,9 @@ impl StudioAdapterRequest {
             | Self::AttachVoxelObjectInstances {
                 protocol_version, ..
             }
+            | Self::SetVoxelObjectInstanceSurfaceMode {
+                protocol_version, ..
+            }
             | Self::PreviewVoxelObjectInstance {
                 protocol_version, ..
             }
@@ -897,6 +910,7 @@ impl StudioAdapterRequest {
             | Self::PrepareVoxelObjectPlacement { request_id, .. }
             | Self::AttachVoxelObjectInstance { request_id, .. }
             | Self::AttachVoxelObjectInstances { request_id, .. }
+            | Self::SetVoxelObjectInstanceSurfaceMode { request_id, .. }
             | Self::PreviewVoxelObjectInstance { request_id, .. }
             | Self::CloseProject { request_id, .. } => request_id,
         }
@@ -1769,6 +1783,12 @@ pub enum ProjectMutationReceipt {
     },
     VoxelObjectInstancesAttached {
         placements: Vec<VoxelObjectInstanceAttachmentReceipt>,
+    },
+    VoxelObjectSurfaceModeSet {
+        scene_id: String,
+        instance_id: String,
+        before: StoredVoxelObjectSurfaceMode,
+        after: StoredVoxelObjectSurfaceMode,
     },
 }
 

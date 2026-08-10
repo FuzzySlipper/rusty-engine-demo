@@ -14,7 +14,8 @@ use rusty_engine::render_projection::{VoxelObjectProjectionInstance, VoxelObject
 use rusty_engine::voxel_asset::VoxelObjectAsset;
 use rusty_engine::voxel_convert::VoxelObjectFrameSelection;
 use rusty_engine::voxel_object_runtime::{
-    admit_voxel_object, AdmittedVoxelObject, VoxelObjectRuntimeLimits,
+    admit_voxel_object, admit_voxel_object_with_options, AdmittedVoxelObject,
+    VoxelObjectAdmissionOptions, VoxelObjectRuntimeLimits,
 };
 
 use crate::stored_project::validate_voxel_object_aggregate_budget;
@@ -68,52 +69,94 @@ pub(crate) fn project_stored_voxel_objects_with(
         .iter()
         .find(|scene| scene.id == project.entry_scene)
         .ok_or_else(|| projection_error("entry scene is missing"))?;
-    let mut resolved = Vec::with_capacity(
+    let requested_variants = entry_scene
+        .voxel_object_instances
+        .iter()
+        .filter(|instance| !instance.surface_mode.is_default())
+        .map(|instance| {
+            (
+                instance.voxel_object_asset_id.clone(),
+                instance.surface_mode,
+            )
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    let mut variants = BTreeMap::new();
+    for (asset_id, surface_mode) in requested_variants {
+        let canonical = admitted.get(&asset_id).ok_or_else(|| {
+            projection_error(format!(
+                "surface mode references missing object `{asset_id}`"
+            ))
+        })?;
+        let variant = admit_voxel_object_with_options(
+            canonical.source(),
+            VoxelObjectAdmissionOptions {
+                surface_mode: surface_mode.as_engine(),
+                ..VoxelObjectAdmissionOptions::default()
+            },
+        )
+        .map_err(|error| {
+            projection_error(format!(
+                "{asset_id} {} admission failed: {error}",
+                surface_mode.as_str()
+            ))
+        })?;
+        variants.insert((asset_id, surface_mode), variant);
+    }
+
+    let mut instances = Vec::with_capacity(
         entry_scene.voxel_object_instances.len() + usize::from(candidate.is_some()),
     );
     for instance in &entry_scene.voxel_object_instances {
-        let object = admitted
-            .get(&instance.voxel_object_asset_id)
-            .ok_or_else(|| {
-                projection_error(format!(
-                    "instance `{}` references missing object `{}`",
-                    instance.instance_id, instance.voxel_object_asset_id
-                ))
-            })?;
-        resolved.push((
-            instance.instance_id.clone(),
-            instance.voxel_object_asset_id.clone(),
-            frame_override
+        let object = if instance.surface_mode.is_default() {
+            admitted.get(&instance.voxel_object_asset_id)
+        } else {
+            variants.get(&(
+                instance.voxel_object_asset_id.clone(),
+                instance.surface_mode,
+            ))
+        }
+        .ok_or_else(|| {
+            projection_error(format!(
+                "instance `{}` references missing object `{}`",
+                instance.instance_id, instance.voxel_object_asset_id
+            ))
+        })?;
+        instances.push(VoxelObjectProjectionInstance {
+            instance_id: instance.instance_id.clone(),
+            object,
+            frame: frame_override
                 .filter(|(instance_id, _)| *instance_id == instance.instance_id)
                 .map_or_else(
                     || stored_object_frame(object, &instance.frame),
                     |(_, frame)| Ok(frame),
                 )?,
-            Transform {
+            transform: Transform {
                 translation: instance.translation,
                 rotation: instance.rotation,
                 scale: instance.scale,
             },
-            material_overrides(&instance.material_overrides),
-            RenderMetadata {
+            visible: true,
+            material_overrides: material_overrides(&instance.material_overrides),
+            metadata: RenderMetadata {
                 source_entity: Some(instance.owner_entity_id),
                 source_scene_node: Some(instance.owner_entity_id),
                 tags: vec!["studio".to_string(), "voxel-object".to_string()],
                 label: Some(instance.instance_id.clone()),
             },
-        ));
+        });
     }
     if let Some((candidate_asset, selection)) = candidate {
         let object = admitted
             .get(&candidate_asset.asset_id)
             .expect("candidate admitted above");
-        resolved.push((
-            "studio-voxel-object-candidate".to_string(),
-            candidate_asset.asset_id.clone(),
-            selected_object_frame(object, selection)?,
-            Transform::IDENTITY,
-            Vec::new(),
-            RenderMetadata {
+        instances.push(VoxelObjectProjectionInstance {
+            instance_id: "studio-voxel-object-candidate".to_string(),
+            object,
+            frame: selected_object_frame(object, selection)?,
+            transform: Transform::IDENTITY,
+            visible: true,
+            material_overrides: Vec::new(),
+            metadata: RenderMetadata {
                 source_entity: None,
                 source_scene_node: None,
                 tags: vec![
@@ -123,27 +166,8 @@ pub(crate) fn project_stored_voxel_objects_with(
                 ],
                 label: Some("Voxel object candidate".to_string()),
             },
-        ));
+        });
     }
-
-    let instances = resolved
-        .iter()
-        .map(
-            |(instance_id, asset_id, frame, transform, overrides, metadata)| {
-                VoxelObjectProjectionInstance {
-                    instance_id: instance_id.clone(),
-                    object: admitted
-                        .get(asset_id)
-                        .expect("resolved object remains admitted"),
-                    frame: *frame,
-                    transform: *transform,
-                    visible: true,
-                    material_overrides: overrides.clone(),
-                    metadata: metadata.clone(),
-                }
-            },
-        )
-        .collect::<Vec<_>>();
     projector
         .project(&instances, &stored_project_material_descriptors(project))
         .map(|projected| projected.frame)

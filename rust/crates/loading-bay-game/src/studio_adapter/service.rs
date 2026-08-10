@@ -41,7 +41,7 @@ use super::voxel_object::{
     apply_prepared_voxel_object_conversion, attach_voxel_object_instance,
     attach_voxel_object_instances, inspect_voxel_object_source, prepare_voxel_object_conversion,
     prepare_voxel_object_placement, preview_prepared_voxel_object_conversion,
-    PreparedProjectVoxelObjectConversion,
+    set_voxel_object_instance_surface_mode, PreparedProjectVoxelObjectConversion,
 };
 
 struct OpenProject {
@@ -144,7 +144,7 @@ impl StudioAdapterService {
                 request_id,
                 adapter: AdapterDescription {
                     adapter_id: "rusty-engine-demo.loading-bay",
-                    adapter_version: 14,
+                    adapter_version: 15,
                     protocol_version: STUDIO_ADAPTER_PROTOCOL_VERSION,
                     project_kind: "loadingBayProject",
                     project_schema_version: STORED_PROJECT_SCHEMA_VERSION,
@@ -211,6 +211,7 @@ impl StudioAdapterService {
                         "prepareVoxelObjectPlacement",
                         "attachVoxelObjectInstance",
                         "attachVoxelObjectInstances",
+                        "setVoxelObjectInstanceSurfaceMode",
                         "previewVoxelObjectInstance",
                         "closeProject",
                     ],
@@ -1371,6 +1372,21 @@ impl StudioAdapterService {
                     )
                 })
             }
+            StudioAdapterRequest::SetVoxelObjectInstanceSurfaceMode {
+                expected_project_hash,
+                scene_id,
+                instance_id,
+                surface_mode,
+                ..
+            } => self.mutate(request_id, |location| {
+                set_voxel_object_instance_surface_mode(
+                    location,
+                    &expected_project_hash,
+                    scene_id,
+                    instance_id,
+                    surface_mode,
+                )
+            }),
             StudioAdapterRequest::PreviewVoxelObjectInstance {
                 expected_project_hash,
                 scene_id,

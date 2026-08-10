@@ -32,6 +32,14 @@ ordinary product package depends on them and no downstream source may import the
 The renderer observes Rust facts. A renderer failure can discard presentation, but cannot publish
 or retain a second gameplay, project, or save state.
 
+Studio protocol 15 exposes the Engine-owned voxel surface selector for voxel-object entities. The
+dropdown is observational TypeScript wiring over a closed Rust mutation: Loading Bay persists the
+per-instance `surfaceMode`, guards it with the exact project hash, stages complete admission and
+projection before atomic replacement, and returns the canonical readout. Engine remains the owner
+of greedy-cube, marching-cubes, and dual-contouring meshing and of their renderer resource
+lifecycle. Textured reconstructed surfaces reject until Engine has a stable UV contract; Studio
+never reaches into the renderer or keeps a local mode override.
+
 ## Concrete hosts
 
 `browser-host` remains the game-specific transport and diagnostics host. Its browser client is a

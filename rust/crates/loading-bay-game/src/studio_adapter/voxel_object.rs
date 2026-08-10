@@ -13,7 +13,8 @@ use rusty_engine::voxel_convert::{
 };
 
 use crate::{
-    StoredAsset, StoredEntityDefinition, StoredVoxelObjectFrameSelection, StoredVoxelObjectInstance,
+    StoredAsset, StoredEntityDefinition, StoredVoxelObjectFrameSelection,
+    StoredVoxelObjectInstance, StoredVoxelObjectMaterialOverride, StoredVoxelObjectSurfaceMode,
 };
 
 use super::path::ProjectLocation;
@@ -401,6 +402,12 @@ pub(crate) fn attach_voxel_object_instance(
     };
     let published =
         publish_project_mutation(location, expected_project_hash, move |_, project| {
+            ensure_surface_mode_supported(
+                project,
+                &instance.voxel_object_asset_id,
+                &instance.material_overrides,
+                instance.surface_mode,
+            )?;
             let scene = project
                 .scenes
                 .iter_mut()
@@ -543,6 +550,12 @@ pub(crate) fn attach_voxel_object_instances(
                 .unwrap_or(0);
             let mut receipt = Vec::with_capacity(placements.len());
             for (index, placement) in placements.into_iter().enumerate() {
+                ensure_surface_mode_supported(
+                    project,
+                    &placement.instance.voxel_object_asset_id,
+                    &placement.instance.material_overrides,
+                    placement.instance.surface_mode,
+                )?;
                 next_owner_entity_id = next_owner_entity_id
                     .checked_add(1)
                     .filter(|entity_id| *entity_id <= JSON_SAFE_U64_MASK)
@@ -647,6 +660,55 @@ pub(crate) fn attach_voxel_object_instances(
     Ok((published.value, published.readout))
 }
 
+pub(crate) fn set_voxel_object_instance_surface_mode(
+    location: &ProjectLocation,
+    expected_project_hash: &str,
+    scene_id: String,
+    instance_id: String,
+    surface_mode: StoredVoxelObjectSurfaceMode,
+) -> Result<(ProjectMutationReceipt, StudioProjectReadout), AdapterRejection> {
+    let published =
+        publish_project_mutation(location, expected_project_hash, move |_, project| {
+            let scene_index = project
+                .scenes
+                .iter()
+                .position(|scene| scene.id == scene_id)
+                .ok_or_else(|| {
+                    reject(
+                        "project.missingScene",
+                        format!("project has no scene `{scene_id}`"),
+                    )
+                })?;
+            let instance_index = project.scenes[scene_index]
+                .voxel_object_instances
+                .iter()
+                .position(|instance| instance.instance_id == instance_id)
+                .ok_or_else(|| {
+                    reject(
+                        "voxelObject.instanceMissing",
+                        format!("scene `{scene_id}` has no voxel-object instance `{instance_id}`"),
+                    )
+                })?;
+            let instance = &project.scenes[scene_index].voxel_object_instances[instance_index];
+            ensure_surface_mode_supported(
+                project,
+                &instance.voxel_object_asset_id,
+                &instance.material_overrides,
+                surface_mode,
+            )?;
+            let instance = &mut project.scenes[scene_index].voxel_object_instances[instance_index];
+            let before = instance.surface_mode;
+            instance.surface_mode = surface_mode;
+            Ok(ProjectMutationReceipt::VoxelObjectSurfaceModeSet {
+                scene_id,
+                instance_id,
+                before,
+                after: surface_mode,
+            })
+        })?;
+    Ok((published.value, published.readout))
+}
+
 pub(crate) fn prepare_voxel_object_placement(
     location: &ProjectLocation,
     expected_project_hash: &str,
@@ -685,12 +747,59 @@ fn stored_voxel_object_instance(
         owner_entity_id,
         instance_id: instance.instance_id,
         voxel_object_asset_id: instance.voxel_object_asset_id,
+        surface_mode: instance.surface_mode,
         frame: instance.frame,
         translation: instance.translation,
         rotation: instance.rotation,
         scale: instance.scale,
         material_overrides: instance.material_overrides,
     }
+}
+
+fn ensure_surface_mode_supported(
+    project: &crate::StoredProject,
+    asset_id: &str,
+    material_overrides: &[StoredVoxelObjectMaterialOverride],
+    surface_mode: StoredVoxelObjectSurfaceMode,
+) -> Result<(), AdapterRejection> {
+    if surface_mode.is_default() {
+        return Ok(());
+    }
+    let object = project
+        .assets
+        .iter()
+        .find(|asset| asset.id == asset_id)
+        .and_then(|asset| asset.voxel_object.as_ref())
+        .ok_or_else(|| {
+            reject(
+                "voxelObject.assetMissing",
+                format!("project has no voxel-object asset `{asset_id}`"),
+            )
+        })?;
+    let textured = object.material_palette.iter().any(|binding| {
+        let material_id = material_overrides
+            .iter()
+            .find(|entry| entry.material_slot == binding.material_slot)
+            .map_or(binding.material_asset_id.as_str(), |entry| {
+                entry.material_asset_id.as_str()
+            });
+        project.assets.iter().any(|asset| {
+            asset.id == material_id
+                && asset.material.as_ref().is_some_and(|material| {
+                    material.style.texture.is_some() || material.style.voxel_surface.is_some()
+                })
+        })
+    });
+    if textured {
+        return Err(reject(
+            "voxelObject.surfaceTextureUnsupported",
+            format!(
+                "{} has no stable UV contract for a textured voxel-object material",
+                surface_mode.as_str()
+            ),
+        ));
+    }
+    Ok(())
 }
 
 fn voxel_object_owner(
@@ -774,4 +883,52 @@ fn source_import_request(
 
 fn reject(code: impl Into<String>, message: impl Into<String>) -> AdapterRejection {
     AdapterRejection::new(code, message)
+}
+
+#[cfg(test)]
+mod tests {
+    use rusty_engine::asset_catalog::{StoredAssetReference, StoredAssetVersionRequirement};
+
+    use super::ensure_surface_mode_supported;
+    use crate::{decode_project_document, StoredVoxelObjectSurfaceMode};
+
+    const LOADING_BAY_PROJECT: &str =
+        include_str!("../../../../../content/projects/loading-bay.project.json");
+
+    #[test]
+    fn reconstructed_surface_rejects_an_effective_textured_material() {
+        let mut project = decode_project_document(LOADING_BAY_PROJECT)
+            .unwrap()
+            .project;
+        let object = project
+            .assets
+            .iter()
+            .find_map(|asset| asset.voxel_object.as_ref())
+            .unwrap();
+        let asset_id = object.asset_id.clone();
+        let material_id = object.material_palette[0].material_asset_id.clone();
+        project
+            .assets
+            .iter_mut()
+            .find(|asset| asset.id == material_id)
+            .unwrap()
+            .material
+            .as_mut()
+            .unwrap()
+            .style
+            .texture = Some(StoredAssetReference {
+            id: "texture/test-tile".to_string(),
+            version: StoredAssetVersionRequirement::Exact { value: 1 },
+            hash: None,
+        });
+
+        let rejected = ensure_surface_mode_supported(
+            &project,
+            &asset_id,
+            &[],
+            StoredVoxelObjectSurfaceMode::MarchingCubes,
+        )
+        .unwrap_err();
+        assert_eq!(rejected.code, "voxelObject.surfaceTextureUnsupported");
+    }
 }

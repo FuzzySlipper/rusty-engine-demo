@@ -180,10 +180,11 @@ pub use stored_project::{
     StoredSolidVoxelEnvironment, StoredSwitch, StoredVisualAnimationLoopMode, StoredVisualBinding,
     StoredVisualBindingState, StoredVisualPresentation, StoredVisualState, StoredVoxelEnvironment,
     StoredVoxelInstance, StoredVoxelObjectFrameSelection, StoredVoxelObjectInstance,
-    StoredVoxelObjectMaterialOverride, StoredWeapon, StoredWeaponAttackMode,
-    MAX_PROJECT_VOXEL_OBJECTS, MAX_PROJECT_VOXEL_OBJECT_FRAMES, MAX_PROJECT_VOXEL_OBJECT_INSTANCES,
-    MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK, MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS,
-    MAX_STORED_VISUAL_BINDING_STATES, STORED_PROJECT_SCHEMA_VERSION, STORED_VISUAL_BINDING_VERSION,
+    StoredVoxelObjectMaterialOverride, StoredVoxelObjectSurfaceMode, StoredWeapon,
+    StoredWeaponAttackMode, MAX_PROJECT_VOXEL_OBJECTS, MAX_PROJECT_VOXEL_OBJECT_FRAMES,
+    MAX_PROJECT_VOXEL_OBJECT_INSTANCES, MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK,
+    MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS, MAX_STORED_VISUAL_BINDING_STATES,
+    STORED_PROJECT_SCHEMA_VERSION, STORED_VISUAL_BINDING_VERSION,
 };
 pub use studio_adapter::{
     AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,

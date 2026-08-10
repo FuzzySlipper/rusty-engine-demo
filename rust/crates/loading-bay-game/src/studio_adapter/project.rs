@@ -1446,6 +1446,7 @@ fn voxel_object_authoring_readout(project: &StoredProject) -> VoxelObjectAuthori
                     instance: StudioVoxelObjectInstance {
                         instance_id: instance.instance_id,
                         voxel_object_asset_id: instance.voxel_object_asset_id,
+                        surface_mode: instance.surface_mode,
                         frame: instance.frame,
                         translation: instance.translation,
                         rotation: instance.rotation,

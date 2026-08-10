@@ -5,7 +5,7 @@ import { createInterface } from "node:readline";
 import { performance } from "node:perf_hooks";
 
 const ROOT = resolve(import.meta.dirname, "..");
-const PROTOCOL_VERSION = 14;
+const PROTOCOL_VERSION = 15;
 const PROJECT =
   process.argv[2] === undefined
     ? resolve(ROOT, "content/projects/loading-bay.project.json")
@@ -418,6 +418,7 @@ for (const [name, instanceId, translation, yaw] of placements) {
     instance: {
       instanceId: `brush-proof-${instanceId}`,
       voxelObjectAssetId: objectId(name),
+      surfaceMode: "greedyCubes",
       frame: { kind: "default" },
       translation,
       rotation: quaternion(yaw),

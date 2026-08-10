@@ -163,7 +163,9 @@ Use the real Studio/adapter asset path for a new actor, prop, landmark, or reusa
    the named adapter operation, then inspect its catalog identity, source hash, dependencies,
    bounds, material slots, clips or voxel-object content hash, and aggregate project budget.
 3. Attach the resource to a stable entity or place a voxel-object instance through the checked
-   Studio viewport workflow. Keep collision, navigation, interaction, pickup, and trigger proxies
+   Studio viewport workflow. A voxel-object entity may select greedy cubes, marching cubes, or
+   dual contouring in its built-in inspector; that selection is a guarded Rust project mutation,
+   not local renderer state. Keep collision, navigation, interaction, pickup, and trigger proxies
    explicit on responsible entities; visual bounds do not become gameplay truth.
 4. Save through the adapter mutation lease, reload, start a fresh adapter process, and verify the
    same project/content hashes. `pnpm run generate:content` must leave the canonical project bytes

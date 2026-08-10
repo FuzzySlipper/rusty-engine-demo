@@ -42,7 +42,7 @@ fn static_object_candidate_is_private_projected_atomic_and_restart_stable() {
         &mut service,
         json!({
             "type": "inspectVoxelObjectSource",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "inspect-static-host",
             "expectedProjectHash": project_hash(&opened),
             "sourceKind": "static",
@@ -63,7 +63,7 @@ fn static_object_candidate_is_private_projected_atomic_and_restart_stable() {
         &mut service,
         json!({
             "type": "inspectVoxelObjectSource",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "inspect-static",
             "expectedProjectHash": project_hash(&opened),
             "sourceKind": "static",
@@ -105,7 +105,7 @@ fn static_object_candidate_is_private_projected_atomic_and_restart_stable() {
         &mut service,
         json!({
             "type": "previewVoxelObjectConversion",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "preview-replaced",
             "planId": replaced["plan"]["planId"],
             "expectedPlanHash": replaced["plan"]["planHash"],
@@ -119,7 +119,7 @@ fn static_object_candidate_is_private_projected_atomic_and_restart_stable() {
         &mut service,
         json!({
             "type": "discardVoxelObjectConversion",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "discard",
             "planId": prepared_to_discard["plan"]["planId"]
         }),
@@ -146,7 +146,7 @@ fn static_object_candidate_is_private_projected_atomic_and_restart_stable() {
         &mut service,
         json!({
             "type": "previewVoxelObjectConversion",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "scrub-default",
             "planId": plan_id,
             "expectedPlanHash": plan_hash,
@@ -217,7 +217,7 @@ fn static_object_candidate_is_private_projected_atomic_and_restart_stable() {
         &mut service,
         json!({
             "type": "prepareVoxelObjectPlacement",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "prepare-placement",
             "expectedProjectHash": project_hash(&applied),
             "assetId": "voxel-object/wall-preview",
@@ -278,7 +278,7 @@ fn static_object_candidate_is_private_projected_atomic_and_restart_stable() {
             &mut service,
             json!({
                 "type": "prepareVoxelObjectPlacement",
-                "protocolVersion": 14,
+                "protocolVersion": 15,
                 "requestId": request_id,
                 "expectedProjectHash": project_hash,
                 "assetId": asset_id,
@@ -297,13 +297,14 @@ fn static_object_candidate_is_private_projected_atomic_and_restart_stable() {
         &mut service,
         json!({
             "type": "attachVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "attach",
             "expectedProjectHash": project_hash(&applied),
             "sceneId": "scene/converted-wall",
             "instance": {
                 "instanceId": "wall-object",
                 "voxelObjectAssetId": "voxel-object/wall-preview",
+                "surfaceMode": "greedyCubes",
                 "frame": { "kind": "default" },
                 "translation": [3.0, 2.0, 1.0],
                 "rotation": [0.0, 0.0, 0.0, 1.0],
@@ -497,6 +498,7 @@ fn object_instance_batch_is_ordered_create_only_and_fail_atomic() {
                 "instance": {
                     "instanceId": format!("batch-block-{index:02}"),
                     "voxelObjectAssetId": "voxel-object/batch-block",
+                    "surfaceMode": "greedyCubes",
                     "frame": { "kind": "default" },
                     "translation": [index as f32, 0.0, 0.0],
                     "rotation": [0.0, 0.0, 0.0, 1.0],
@@ -510,7 +512,7 @@ fn object_instance_batch_is_ordered_create_only_and_fail_atomic() {
         &mut service,
         json!({
             "type": "attachVoxelObjectInstances",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "attach-batch",
             "expectedProjectHash": project_hash(&opened),
             "placements": placements
@@ -543,7 +545,7 @@ fn object_instance_batch_is_ordered_create_only_and_fail_atomic() {
         &mut service,
         json!({
             "type": "attachVoxelObjectInstances",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "attach-one-over",
             "expectedProjectHash": project_hash(&attached),
             "placements": (0..33).map(|index| json!({
@@ -551,6 +553,7 @@ fn object_instance_batch_is_ordered_create_only_and_fail_atomic() {
                 "instance": {
                     "instanceId": format!("one-over-{index:02}"),
                     "voxelObjectAssetId": "voxel-object/batch-block",
+                    "surfaceMode": "greedyCubes",
                     "frame": { "kind": "default" },
                     "translation": [0.0, 0.0, index as f32],
                     "rotation": [0.0, 0.0, 0.0, 1.0],
@@ -609,7 +612,7 @@ fn object_instance_batch_is_ordered_create_only_and_fail_atomic() {
             &mut service,
             json!({
                 "type": "attachVoxelObjectInstances",
-                "protocolVersion": 14,
+                "protocolVersion": 15,
                 "requestId": request_id,
                 "expectedProjectHash": project_hash(&attached),
                 "placements": placements
@@ -629,6 +632,162 @@ fn object_instance_batch_is_ordered_create_only_and_fail_atomic() {
     assert_eq!(
         reopened["project"]["voxelObjectAuthoring"]["instances"],
         attached["project"]["voxelObjectAuthoring"]["instances"]
+    );
+}
+
+#[test]
+fn surface_mode_switch_is_authoritative_persistent_and_mixed_per_asset() {
+    let root = TestRoot::static_project();
+    let mut project = decode_project_document(STATIC_PROJECT).unwrap().project;
+    project
+        .assets
+        .push(stored_budget_object("voxel-object/surface-block", 4));
+    let object_content_hash = project
+        .assets
+        .last()
+        .unwrap()
+        .voxel_object
+        .as_ref()
+        .unwrap()
+        .content_hash
+        .clone();
+    fs::write(
+        root.project_file(),
+        encode_project_document(&project).unwrap(),
+    )
+    .unwrap();
+
+    let mut service = StudioAdapterService::new();
+    let opened = open(&mut service, &root);
+    let attached = send(
+        &mut service,
+        json!({
+            "type": "attachVoxelObjectInstances",
+            "protocolVersion": 15,
+            "requestId": "attach-surface-modes",
+            "expectedProjectHash": project_hash(&opened),
+            "placements": [
+                {
+                    "sceneId": "scene/converted-wall",
+                    "instance": batch_instance("surface-greedy", "voxel-object/surface-block")
+                },
+                {
+                    "sceneId": "scene/converted-wall",
+                    "instance": batch_instance("surface-switch", "voxel-object/surface-block")
+                }
+            ]
+        }),
+    );
+    let attached_hash = project_hash(&attached).to_string();
+    let switched = send(
+        &mut service,
+        json!({
+            "type": "setVoxelObjectInstanceSurfaceMode",
+            "protocolVersion": 15,
+            "requestId": "set-surface-mode",
+            "expectedProjectHash": attached_hash,
+            "sceneId": "scene/converted-wall",
+            "instanceId": "surface-switch",
+            "surfaceMode": "marchingCubes"
+        }),
+    );
+    assert_eq!(
+        switched["receipt"],
+        json!({
+            "kind": "voxelObjectSurfaceModeSet",
+            "sceneId": "scene/converted-wall",
+            "instanceId": "surface-switch",
+            "before": "greedyCubes",
+            "after": "marchingCubes"
+        })
+    );
+    assert_ne!(project_hash(&switched), attached_hash);
+    let instances = switched["project"]["voxelObjectAuthoring"]["instances"]
+        .as_array()
+        .unwrap();
+    assert_eq!(
+        instances
+            .iter()
+            .find(|entry| entry["instance"]["instanceId"] == "surface-greedy")
+            .unwrap()["instance"]["surfaceMode"],
+        "greedyCubes"
+    );
+    assert_eq!(
+        instances
+            .iter()
+            .find(|entry| entry["instance"]["instanceId"] == "surface-switch")
+            .unwrap()["instance"]["surfaceMode"],
+        "marchingCubes"
+    );
+    let defined_assets = switched["project"]["projection"]["ops"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|operation| operation["op"] == "defineVoxelObject")
+        .map(|operation| operation["asset"]["asset"].as_str().unwrap())
+        .filter(|asset| asset.starts_with("voxel-object/surface-block"))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        defined_assets,
+        vec![
+            "voxel-object/surface-block#surface=greedyCubes",
+            "voxel-object/surface-block#surface=marchingCubes"
+        ]
+    );
+
+    let durable_bytes = fs::read(root.project_file()).unwrap();
+    let durable = decode_project_document(std::str::from_utf8(&durable_bytes).unwrap())
+        .unwrap()
+        .project;
+    assert_eq!(
+        durable
+            .assets
+            .iter()
+            .find(|asset| asset.id == "voxel-object/surface-block")
+            .unwrap()
+            .voxel_object
+            .as_ref()
+            .unwrap()
+            .content_hash,
+        object_content_hash
+    );
+    assert_eq!(
+        durable.scenes[0]
+            .voxel_object_instances
+            .iter()
+            .find(|instance| instance.instance_id == "surface-switch")
+            .unwrap()
+            .surface_mode
+            .as_str(),
+        "marchingCubes"
+    );
+
+    let stale = send(
+        &mut service,
+        json!({
+            "type": "setVoxelObjectInstanceSurfaceMode",
+            "protocolVersion": 15,
+            "requestId": "stale-surface-mode",
+            "expectedProjectHash": attached_hash,
+            "sceneId": "scene/converted-wall",
+            "instanceId": "surface-switch",
+            "surfaceMode": "dualContouring"
+        }),
+    );
+    assert_eq!(stale["type"], "rejected", "{stale:#}");
+    assert_eq!(stale["error"]["code"], "project.staleHash");
+    assert_eq!(fs::read(root.project_file()).unwrap(), durable_bytes);
+
+    let mut restarted = StudioAdapterService::new();
+    let reopened = open(&mut restarted, &root);
+    assert_eq!(
+        reopened["project"]["voxelObjectAuthoring"]["instances"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|entry| entry["instance"]["instanceId"] == "surface-switch")
+            .unwrap()["instance"]["surfaceMode"],
+        "marchingCubes"
     );
 }
 
@@ -715,7 +874,7 @@ fn canonical_brush_level_transform_delete_and_reopen_are_owner_atomic() {
         &mut service,
         json!({
             "type": "setSceneObjectTransform",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "move-level-wall",
             "expectedProjectHash": project_hash(&opened),
             "expectedSceneRevision": opened["project"]["identity"]["sceneRevision"],
@@ -743,7 +902,7 @@ fn canonical_brush_level_transform_delete_and_reopen_are_owner_atomic() {
         &mut service,
         json!({
             "type": "deleteSceneObject",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "delete-level-wall",
             "expectedProjectHash": project_hash(&moved),
             "expectedSceneRevision": moved["project"]["identity"]["sceneRevision"],
@@ -796,13 +955,14 @@ fn applied_playback_is_incremental_bounded_transient_and_lifecycle_scoped() {
         &mut service,
         json!({
             "type": "attachVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "attach-two-frame",
             "expectedProjectHash": project_hash(&opened),
             "sceneId": "scene/converted-wall",
             "instance": {
                 "instanceId": "two-frame-object",
                 "voxelObjectAssetId": "voxel-object/two-frame",
+                "surfaceMode": "greedyCubes",
                 "frame": { "kind": "default" },
                 "translation": [0.0, 0.0, 0.0],
                 "rotation": [0.0, 0.0, 0.0, 1.0],
@@ -956,7 +1116,7 @@ fn applied_playback_is_incremental_bounded_transient_and_lifecycle_scoped() {
         &mut service,
         json!({
             "type": "readProject",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "reread-clears"
         }),
     );
@@ -1017,6 +1177,7 @@ fn aggregate_object_budget_preflights_projects_and_preserves_private_candidate()
             owner_entity_id: index + 1,
             instance_id: format!("budget-instance-{index}"),
             voxel_object_asset_id: "voxel-object/budget-a".to_string(),
+            surface_mode: Default::default(),
             frame: StoredVoxelObjectFrameSelection::Default,
             translation: [0.0, 0.0, 0.0],
             rotation: [0.0, 0.0, 0.0, 1.0],
@@ -1037,7 +1198,7 @@ fn aggregate_object_budget_preflights_projects_and_preserves_private_candidate()
         &mut service,
         json!({
             "type": "readProject",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "read-one-over"
         }),
     );
@@ -1056,7 +1217,7 @@ fn aggregate_object_budget_preflights_projects_and_preserves_private_candidate()
         &mut fresh,
         json!({
             "type": "openProject",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "open-one-over",
             "root": root.path(),
             "projectFile": root.project_relative()
@@ -1073,7 +1234,7 @@ fn aggregate_object_budget_preflights_projects_and_preserves_private_candidate()
         &mut service,
         json!({
             "type": "readProject",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "read-restored"
         }),
     );
@@ -1108,7 +1269,7 @@ fn aggregate_object_budget_preflights_projects_and_preserves_private_candidate()
         &mut service,
         json!({
             "type": "previewVoxelObjectConversion",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "preview-retained",
             "planId": retained["plan"]["planId"],
             "expectedPlanHash": retained["plan"]["planHash"],
@@ -1138,13 +1299,14 @@ fn aggregate_object_budget_preflights_projects_and_preserves_private_candidate()
         &mut service,
         json!({
             "type": "attachVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "attach-after-budget-preflight",
             "expectedProjectHash": project_hash(&applied),
             "sceneId": "scene/converted-wall",
             "instance": {
                 "instanceId": "budget-object",
                 "voxelObjectAssetId": "voxel-object/budget-a",
+                "surfaceMode": "greedyCubes",
                 "frame": { "kind": "default" },
                 "translation": [0.0, 0.0, 0.0],
                 "rotation": [0.0, 0.0, 0.0, 1.0],
@@ -1174,7 +1336,7 @@ fn oversized_object_source_is_rejected_without_project_mutation() {
         &mut service,
         json!({
             "type": "inspectVoxelObjectSource",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "inspect-malformed",
             "expectedProjectHash": project_hash(&opened),
             "sourceKind": "static",
@@ -1199,7 +1361,7 @@ fn oversized_object_source_is_rejected_without_project_mutation() {
         &mut service,
         json!({
             "type": "inspectVoxelObjectSource",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "inspect-oversized",
             "expectedProjectHash": project_hash(&opened),
             "sourceKind": "static",
@@ -1224,7 +1386,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "upsertMaterial",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "material",
             "expectedProjectHash": project_hash(&opened),
             "assetId": "material/character-voxel",
@@ -1240,7 +1402,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "inspectVoxelObjectSource",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "inspect-animated",
             "expectedProjectHash": project_hash(&material),
             "sourceKind": "animated",
@@ -1280,7 +1442,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "prepareVoxelObjectConversion",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "prepare-animated",
             "expectedProjectHash": project_hash(&material),
             "sourceKind": "animated",
@@ -1319,7 +1481,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "previewVoxelObjectConversion",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "scrub",
             "planId": prepared["plan"]["planId"],
             "expectedPlanHash": prepared["plan"]["planHash"],
@@ -1336,7 +1498,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "applyVoxelObjectConversion",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "apply-animated",
             "expectedProjectHash": project_hash(&material),
             "planId": prepared["plan"]["planId"],
@@ -1370,13 +1532,14 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "attachVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "attach-animated",
             "expectedProjectHash": project_hash(&applied),
             "sceneId": "scene/loading-bay",
             "instance": {
                 "instanceId": "character-object",
                 "voxelObjectAssetId": "voxel-object/character-idle",
+                "surfaceMode": "greedyCubes",
                 "frame": { "kind": "clip", "clipId": "idle", "frameIndex": 0 },
                 "translation": [4.0, 1.0, 8.0],
                 "rotation": [0.0, 0.0, 0.0, 1.0],
@@ -1417,7 +1580,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "previewVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "scrub-applied",
             "expectedProjectHash": project_hash(&attached),
             "sceneId": "scene/loading-bay",
@@ -1455,7 +1618,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "previewVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "play-applied",
             "expectedProjectHash": project_hash(&attached),
             "sceneId": "scene/loading-bay",
@@ -1474,7 +1637,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "previewVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "sample-applied",
             "expectedProjectHash": project_hash(&attached),
             "sceneId": "scene/loading-bay",
@@ -1490,7 +1653,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "previewVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "scrub-ping-pong",
             "expectedProjectHash": project_hash(&attached),
             "sceneId": "scene/loading-bay",
@@ -1511,7 +1674,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "previewVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "stop-applied",
             "expectedProjectHash": project_hash(&attached),
             "sceneId": "scene/loading-bay",
@@ -1531,7 +1694,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "previewVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "select-before-read",
             "expectedProjectHash": project_hash(&attached),
             "sceneId": "scene/loading-bay",
@@ -1550,7 +1713,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "readProject",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "read-clears-playback"
         }),
     );
@@ -1559,7 +1722,7 @@ fn animated_source_clips_are_inspected_converted_scrubbed_and_persisted() {
         &mut service,
         json!({
             "type": "previewVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "sample-after-read",
             "expectedProjectHash": project_hash(&reread),
             "sceneId": "scene/loading-bay",
@@ -1630,7 +1793,7 @@ fn request_prepare_static(
         service,
         json!({
             "type": "prepareVoxelObjectConversion",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": request_id,
             "expectedProjectHash": project_hash(current),
             "sourceKind": "static",
@@ -1673,7 +1836,7 @@ fn apply_static(
         service,
         json!({
             "type": "applyVoxelObjectConversion",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": request_id,
             "expectedProjectHash": project_hash(current),
             "planId": plan_id,
@@ -1749,7 +1912,7 @@ fn preview_applied(
         service,
         json!({
             "type": "previewVoxelObjectInstance",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": request_id,
             "expectedProjectHash": project_hash(current),
             "sceneId": "scene/converted-wall",
@@ -1930,6 +2093,7 @@ fn batch_instance(instance_id: &str, asset_id: &str) -> Value {
     json!({
         "instanceId": instance_id,
         "voxelObjectAssetId": asset_id,
+        "surfaceMode": "greedyCubes",
         "frame": { "kind": "default" },
         "translation": [0.0, 0.0, 0.0],
         "rotation": [0.0, 0.0, 0.0, 1.0],
@@ -1955,7 +2119,7 @@ fn open(service: &mut StudioAdapterService, root: &TestRoot) -> Value {
         service,
         json!({
             "type": "openProject",
-            "protocolVersion": 14,
+            "protocolVersion": 15,
             "requestId": "open",
             "root": root.path(),
             "projectFile": root.project_relative()

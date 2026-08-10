@@ -249,6 +249,11 @@ pub struct StoredVoxelObjectInstance {
     pub owner_entity_id: u64,
     pub instance_id: String,
     pub voxel_object_asset_id: String,
+    #[serde(
+        default,
+        skip_serializing_if = "StoredVoxelObjectSurfaceMode::is_default"
+    )]
+    pub surface_mode: StoredVoxelObjectSurfaceMode,
     pub frame: StoredVoxelObjectFrameSelection,
     pub translation: [f32; 3],
     pub rotation: [f32; 4],
@@ -267,6 +272,33 @@ pub struct StoredVoxelObjectInstance {
 pub enum StoredVoxelObjectFrameSelection {
     Default,
     Clip { clip_id: String, frame_index: u32 },
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StoredVoxelObjectSurfaceMode {
+    #[default]
+    GreedyCubes,
+    MarchingCubes,
+    DualContouring,
+}
+
+impl StoredVoxelObjectSurfaceMode {
+    pub const fn is_default(&self) -> bool {
+        matches!(self, Self::GreedyCubes)
+    }
+
+    pub const fn as_str(self) -> &'static str {
+        self.as_engine().as_str()
+    }
+
+    pub const fn as_engine(self) -> rusty_engine::svc_mesh::SurfaceMode {
+        match self {
+            Self::GreedyCubes => rusty_engine::svc_mesh::SurfaceMode::GreedyCubes,
+            Self::MarchingCubes => rusty_engine::svc_mesh::SurfaceMode::MarchingCubes,
+            Self::DualContouring => rusty_engine::svc_mesh::SurfaceMode::DualContouring,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
