@@ -588,6 +588,13 @@ async function exerciseInstalledWindow(first) {
       execute(first.sessionId, `return document.pointerLockElement === null;`),
     "pointer lock release before route navigation",
   );
+  const initialRouteGeneration = await execute(
+    first.sessionId,
+    `window.__loadingBayRouteDisposalGate = new Promise(
+       (resolve) => { window.__releaseLoadingBayRouteDisposal = resolve; },
+     );
+     return Number(document.body.dataset.rendererRouteGeneration ?? "0");`,
+  );
   const openedDiagnostics = await execute(
     first.sessionId,
     `const link = document.querySelector("a.diagnostics-link");
@@ -608,10 +615,12 @@ async function exerciseInstalledWindow(first) {
           diagnostics: document.querySelector("red-diagnostics-screen") !== null,
           lifecycle: document.body.dataset.rendererLifecycle ?? null,
           routeDisposal: document.body.dataset.routeDisposal ?? null,
+          retiredRouteRelease: document.body.dataset.retiredRouteRelease ?? null,
         };`,
       );
       return lastDisposalState.diagnostics &&
-        lastDisposalState.routeDisposal === "pass"
+        lastDisposalState.routeDisposal === "pass" &&
+        lastDisposalState.retiredRouteRelease === "pending"
         ? lastDisposalState
         : null;
     }, "browser projection disposal receipt");
@@ -636,14 +645,54 @@ async function exerciseInstalledWindow(first) {
       `return {
         lifecycle: document.body.dataset.rendererLifecycle ?? null,
         routeDisposal: document.body.dataset.routeDisposal ?? null,
-        renderSequence: Number(document.querySelector("#renderer-telemetry")?.dataset.rendererRenderSequence ?? "0"),
+        routeGeneration: Number(document.body.dataset.rendererRouteGeneration ?? "0"),
+        frame: document.body.dataset.rendererRouteFrame ?? null,
+        camera: document.body.dataset.rendererRouteCamera ?? null,
+        canvasCount: document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length,
       };`,
     );
-    return state.lifecycle === "mounted" && state.renderSequence === 0
+    return state.lifecycle === "mounted" &&
+      state.routeGeneration > initialRouteGeneration &&
+      state.frame === "rust-authoritative" &&
+      state.camera !== null &&
+      state.canvasCount === 1
       ? state
       : null;
   }, "browser projection remount");
-  return { narrowViewport, remount, narrowScreenshot: narrowScreenshotPath };
+  await execute(
+    first.sessionId,
+    `window.__releaseLoadingBayRouteDisposal?.();
+     delete window.__releaseLoadingBayRouteDisposal;
+     delete window.__loadingBayRouteDisposalGate;
+     return true;`,
+  );
+  const retiredRouteRelease = await waitFor(async () => {
+    const state = await execute(
+      first.sessionId,
+      `return {
+        release: document.body.dataset.retiredRouteRelease ?? null,
+        lifecycle: document.body.dataset.rendererLifecycle ?? null,
+        routeGeneration: Number(document.body.dataset.rendererRouteGeneration ?? "0"),
+        frame: document.body.dataset.rendererRouteFrame ?? null,
+        camera: document.body.dataset.rendererRouteCamera ?? null,
+        canvasCount: document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length,
+      };`,
+    );
+    return state.release === "pass" &&
+      state.lifecycle === "mounted" &&
+      state.routeGeneration === remount.routeGeneration &&
+      state.frame === "rust-authoritative" &&
+      state.camera === remount.camera &&
+      state.canvasCount === 1
+      ? state
+      : null;
+  }, "retired route release without successor frame loss");
+  return {
+    narrowViewport,
+    remount,
+    retiredRouteRelease,
+    narrowScreenshot: narrowScreenshotPath,
+  };
 }
 
 async function proveSingleInstance(first) {

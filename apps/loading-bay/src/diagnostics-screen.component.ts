@@ -5,7 +5,10 @@ import {
   inject,
 } from "@angular/core";
 import { RouterLink } from "@angular/router";
-import { ENGINE_APPLICATION } from "./engine-application";
+import {
+  claimEngineRendererRoute,
+  ENGINE_APPLICATION,
+} from "./engine-application";
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,6 +30,9 @@ import { ENGINE_APPLICATION } from "./engine-application";
 })
 export class DiagnosticsScreenComponent {
   private readonly engineApplication = inject(ENGINE_APPLICATION);
+  private readonly rendererRoute = claimEngineRendererRoute(
+    this.engineApplication,
+  );
 
   constructor() {
     afterNextRender(() => {
@@ -36,14 +42,16 @@ export class DiagnosticsScreenComponent {
 
   private async proveReleasedGameRoute(): Promise<void> {
     this.engineApplication.ui.setInteractionMode("interface");
-    await this.engineApplication.renderer.clear();
+    const cleared = await this.rendererRoute.clearIfOwned();
     const disposed =
       document.querySelector("red-game-screen") === null &&
       document.querySelector("#viewport") === null &&
       document.querySelectorAll(
         "canvas[data-rusty-application-renderer='engine-owned']",
       ).length === 1;
-    document.body.dataset.rendererLifecycle = "application-host-idle";
+    if (cleared) {
+      document.body.dataset.rendererLifecycle = "application-host-idle";
+    }
     document.body.dataset.routeDisposal = disposed ? "pass" : "fail";
     if (new URLSearchParams(location.search).has("lifecycle-smoke")) {
       document.body.dataset.smokeStatus = disposed ? "pass" : "fail";

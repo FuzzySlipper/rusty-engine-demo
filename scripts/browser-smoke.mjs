@@ -61,6 +61,9 @@ const proofDirectory = mkdtempSync(
 if (process.env.RUSTY_BROWSER_CONTROL_ONLY === "1") {
   try {
     const proof = await runBrowserControlShell();
+    await runOverlappingRouteRetirementProof(
+      resolve(repoRoot, "content/projects/loading-bay.project.json"),
+    );
     console.log(`browser-control proof ${JSON.stringify(proof)}`);
     console.log(
       "browser control smoke passed: authoritative Rust session + rich Angular UI + Engine application host",
@@ -896,6 +899,7 @@ async function runFullBrowserProduct(project) {
         `browser lifecycle smoke missing ${missingLifecycle.join(", ")}\n${lifecycleResult.stdout.slice(-6_000)}`,
       );
     }
+    await runOverlappingRouteRetirementProof(project);
     await runViewmodelResizeProof(project);
     await runIsolatedGameShellProof(project, {
       width: 1440,
@@ -1361,6 +1365,98 @@ async function runHostReplacementContinueProof(project) {
   } finally {
     await stopHost(running.host);
     removeChromiumProfile(profileDirectory);
+  }
+}
+
+async function runOverlappingRouteRetirementProof(project) {
+  const running = await launchHost(project);
+  try {
+    await waitForHealth(
+      `http://${running.address}/health`,
+      running.host,
+      running.output,
+    );
+    const result = await runChromiumSmoke(
+      `http://${running.address}/#/`,
+      "document.body?.dataset.routeOverlapProof === 'pass' || document.body?.dataset.routeOverlapProof === 'fail'",
+      45_000,
+      {
+        interactiveSetup: async (client) => {
+          await waitForCdp(
+            client,
+            "document.querySelector('red-main-menu') !== null",
+            "route-overlap main menu",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `[...document.querySelectorAll("button")].find(
+              (button) => button.textContent?.trim() === "New game",
+            )?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.body.dataset.rendererLifecycle === "mounted" &&
+              document.body.dataset.rendererRouteFrame === "rust-authoritative" &&
+              document.body.dataset.rendererRouteCamera?.length > 0`,
+            "route-overlap initial Rust frame",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `window.__loadingBayRouteDisposalGate = new Promise(
+                (resolve) => { window.__releaseLoadingBayRouteDisposal = resolve; },
+              );
+              document.querySelector("a.diagnostics-link")?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector("red-diagnostics-screen a") !== null &&
+              document.body.dataset.retiredRouteRelease === "pending"`,
+            "retired route held during diagnostics navigation",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `document.querySelector("red-diagnostics-screen a")?.click()`,
+          });
+          await waitForCdp(
+            client,
+            `document.querySelector("red-game-screen") !== null &&
+              document.body.dataset.rendererLifecycle === "mounted" &&
+              Number(document.body.dataset.rendererRouteGeneration) >= 3 &&
+              document.body.dataset.rendererRouteFrame === "rust-authoritative" &&
+              document.body.dataset.rendererRouteCamera?.length > 0 &&
+              document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length === 1`,
+            "successor route Rust frame",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `window.__releaseLoadingBayRouteDisposal?.();
+              delete window.__releaseLoadingBayRouteDisposal;
+              delete window.__loadingBayRouteDisposalGate`,
+          });
+          await waitForCdp(
+            client,
+            `document.body.dataset.retiredRouteRelease === "pass" &&
+              document.body.dataset.rendererLifecycle === "mounted" &&
+              Number(document.body.dataset.rendererRouteGeneration) >= 3 &&
+              document.body.dataset.rendererRouteFrame === "rust-authoritative" &&
+              document.body.dataset.rendererRouteCamera?.length > 0 &&
+              document.querySelectorAll("canvas[data-rusty-application-renderer='engine-owned']").length === 1`,
+            "successor route survives retired teardown",
+          );
+          await client.send("Runtime.evaluate", {
+            expression: `document.body.dataset.routeOverlapProof = "pass"`,
+          });
+        },
+      },
+    );
+    if (
+      result.code !== 0 ||
+      !result.stdout.includes('data-route-overlap-proof="pass"') ||
+      !result.stdout.includes('data-retired-route-release="pass"') ||
+      !result.stdout.includes('data-renderer-route-frame="rust-authoritative"')
+    ) {
+      throw new Error(
+        `overlapping route retirement proof failed\n${result.stderr.slice(-4_000)}\n${result.stdout.slice(-8_000)}`,
+      );
+    }
+  } finally {
+    await stopHost(running.host);
   }
 }
 

@@ -186,7 +186,6 @@ export async function mountLoadingBayGame(
       session.neutralizeInput();
       await projectionQueue.catch(() => undefined);
       await session.close();
-      document.body.dataset.rendererLifecycle = "application-host-idle";
     },
     interact: async (target) => {
       await session.sendEdge({ kind: "interact", target });

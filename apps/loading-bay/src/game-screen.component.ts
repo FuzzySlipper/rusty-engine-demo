@@ -37,7 +37,10 @@ import {
   type InventoryWeaponView,
   type KeyBindingView,
 } from "@rusty-engine-demo/ui-game-panels";
-import { ENGINE_APPLICATION } from "./engine-application";
+import {
+  claimEngineRendererRoute,
+  ENGINE_APPLICATION,
+} from "./engine-application";
 
 const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
   ammoCapacity: 0,
@@ -89,6 +92,7 @@ type ConnectionState =
 declare global {
   interface Window {
     __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
+    __loadingBayRouteDisposalGate?: Promise<void>;
   }
 }
 
@@ -708,6 +712,9 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
 
   private readonly documentEffects = browserDocumentEffects();
   private readonly engineApplication = inject(ENGINE_APPLICATION);
+  private readonly rendererRoute = claimEngineRendererRoute(
+    this.engineApplication,
+  );
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private destroyed = false;
@@ -728,17 +735,21 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyed = true;
+    this.rendererRoute.retire();
     this.documentEffects.setRootClass("game-route-active", false);
     const handle = this.handle;
     this.handle = null;
     delete window.__loadingBayAnimationCapture;
     this.engineApplication.ui.setInteractionMode("interface");
     void (async () => {
+      document.body.dataset.retiredRouteRelease = "pending";
+      await window.__loadingBayRouteDisposalGate;
       await handle?.dispose();
-      if (this.engineApplication.ui.active()) {
-        await this.engineApplication.renderer.clear();
+      const cleared = await this.rendererRoute.clearIfOwned();
+      if (cleared && this.engineApplication.ui.active()) {
         document.body.dataset.rendererLifecycle = "application-host-idle";
       }
+      document.body.dataset.retiredRouteRelease = "pass";
     })();
   }
 
@@ -1037,11 +1048,12 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
         inputEnabled: (event) =>
           this.engineApplication.ui.allowsGameplayInput(event),
         onRenderProjection: async (rendering) => {
-          if (rendering.replaceFrame) {
-            const frameReceipt =
-              await this.engineApplication.renderer.replaceFrame(
-                rendering.frame,
-              );
+          const frameReceipt = await this.rendererRoute.publish(
+            rendering.frame,
+            rendering.camera,
+            rendering.replaceFrame,
+          );
+          if (frameReceipt !== null) {
             if (!frameReceipt.applied) {
               throw new Error(
                 `Engine application host rejected the Rust frame: ${frameReceipt.diagnostics
@@ -1049,8 +1061,14 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
                   .join("; ")}`,
               );
             }
+            document.body.dataset.rendererRouteGeneration = String(
+              this.rendererRoute.generation,
+            );
+            document.body.dataset.rendererRouteFrame = "rust-authoritative";
+            document.body.dataset.rendererRouteCamera = JSON.stringify(
+              rendering.camera,
+            );
           }
-          this.engineApplication.renderer.setCameraPose(rendering.camera);
         },
         onProjection: (snapshot) => {
           const wasDead = this.snapshot().vitalityState === "dead";
