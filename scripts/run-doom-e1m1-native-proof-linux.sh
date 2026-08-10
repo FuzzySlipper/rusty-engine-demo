@@ -34,7 +34,11 @@ done
 grep -Fq 'DOOM_E1M1_NATIVE_READY_FOR_CAPTURE' "$proof_output"
 sleep 1
 
-import -window root "$screenshot_output"
+window_reference='Doom E1M1 — Rust-native Engine renderer'
+# Capture the rendered product window itself. A root-window capture is not
+# evidence of the product when Xvfb has no window manager: the mapped 960x640
+# native window may not occupy the 640x480 root viewport at all.
+import -window "$window_reference" -crop 640x480+0+0 +repage "$screenshot_output"
 test -s "$screenshot_output"
 
 wait "$application_pid"
