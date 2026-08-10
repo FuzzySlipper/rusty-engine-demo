@@ -213,18 +213,46 @@ async function nativeInputProof(sessionId) {
       `WebDriver returned no viewport element: ${JSON.stringify(element)}`,
     );
   }
-  await request(`/session/${sessionId}/element/${elementId}/click`, {
-    method: "POST",
-    body: "{}",
-  });
-  await waitFor(
-    () =>
-      execute(
-        sessionId,
-        `return document.pointerLockElement?.dataset.rustyApplicationRenderer === "engine-owned";`,
-      ),
-    "native WebKit pointer lock",
-  );
+  let pointerLockState = null;
+  try {
+    await waitFor(
+      async () => {
+        pointerLockState = await execute(
+          sessionId,
+          `const viewport = document.querySelector("#viewport");
+         return {
+           locked: document.pointerLockElement?.dataset.rustyApplicationRenderer === "engine-owned",
+           documentFocused: document.hasFocus(),
+           activeElement: document.activeElement?.id ?? document.activeElement?.tagName ?? null,
+           inert: viewport?.hasAttribute("inert") ?? null,
+           lifecycle: document.body.dataset.rendererLifecycle ?? null,
+           runtimeError: document.body.dataset.runtimeError ?? null,
+         };`,
+        );
+        if (pointerLockState.locked) return pointerLockState;
+        await execute(
+          sessionId,
+          `document.querySelector("#viewport")?.focus(); return true;`,
+        );
+        try {
+          await request(`/session/${sessionId}/element/${elementId}/click`, {
+            method: "POST",
+            body: "{}",
+          });
+        } catch (error) {
+          output.push(`pointer-lock click retry ${String(error)}`);
+        }
+        await delay(500);
+        return null;
+      },
+      "native WebKit pointer lock",
+      45_000,
+    );
+  } catch (error) {
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}: ${JSON.stringify(pointerLockState)}`,
+    );
+  }
   await request(`/session/${sessionId}/actions`, {
     method: "POST",
     body: JSON.stringify({
