@@ -2,6 +2,11 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  activeGuidancePaths,
+  auditActiveGuidance,
+} from "./audit-active-guidance.mjs";
+
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const auditPath = resolve(repoRoot, "scripts/audit-boundary.mjs");
 const ignoredDirectories = new Set([".git", "dist", "node_modules", "target"]);
@@ -47,6 +52,19 @@ const forbidden = [
 ];
 
 const violations = [];
+for (const relativePath of activeGuidancePaths) {
+  const path = resolve(repoRoot, relativePath);
+  if (!existsSync(path)) {
+    violations.push(`${relativePath}: active guidance file is missing`);
+    continue;
+  }
+  const content = readFileSync(path, "utf8");
+  for (const finding of auditActiveGuidance(relativePath, content)) {
+    violations.push(
+      `${relativePath}: ${finding.label} (${finding.excerpt.replaceAll("\n", " ")})`,
+    );
+  }
+}
 for (const file of files) {
   if (file === auditPath) continue;
   const content = readFileSync(file, "utf8");

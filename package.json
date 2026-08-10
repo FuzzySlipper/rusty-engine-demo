@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "scripts": {
-    "audit:boundary": "node scripts/audit-boundary.mjs",
+    "audit:boundary": "node --test scripts/audit-active-guidance.test.mjs && node scripts/audit-boundary.mjs",
     "build:shell": "nx build loading-bay",
     "build:tauri": "tauri build --bundles deb,appimage",
     "build:tauri:binary": "tauri build --no-bundle",
