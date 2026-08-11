@@ -506,7 +506,7 @@ async function proveFocusedDeathAndRestart(client, addr) {
       client,
       `(() => {
         const button = [...document.querySelectorAll('button')].find(
-          (candidate) => candidate.textContent.includes('Restart loading bay'),
+          (candidate) => candidate.textContent.trim().startsWith('Restart'),
         );
         if (!button || button.disabled) return null;
         const bounds = button.getBoundingClientRect();
