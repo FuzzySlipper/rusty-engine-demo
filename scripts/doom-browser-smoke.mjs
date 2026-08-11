@@ -1044,7 +1044,7 @@ async function physicallyAimAtEnemy(
   let desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
   let desiredPitch =
     (Math.atan2(
-      enemy.position[1] - (before.player.position[1] + before.player.eyeHeight),
+      enemy.position[1] - before.player.position[1],
       Math.hypot(dx, dz),
     ) *
       180) /
@@ -1090,8 +1090,7 @@ async function physicallyAimAtEnemy(
       desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
       desiredPitch =
         (Math.atan2(
-          currentEnemy.position[1] -
-            (state.player.position[1] + state.player.eyeHeight),
+          currentEnemy.position[1] - state.player.position[1],
           Math.hypot(dx, dz),
         ) *
           180) /
