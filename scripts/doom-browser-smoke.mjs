@@ -1123,12 +1123,12 @@ async function physicallyAimAtEnemy(
     }
     const degreesPerPointerUnit = encounterExitEvidence ? 0.24 : 0.12;
     const movementX = Math.max(
-      -700,
-      Math.min(700, -yawError / degreesPerPointerUnit),
+      -40,
+      Math.min(40, -yawError / degreesPerPointerUnit),
     );
     const movementY = Math.max(
-      -700,
-      Math.min(700, -pitchError / degreesPerPointerUnit),
+      -40,
+      Math.min(40, -pitchError / degreesPerPointerUnit),
     );
     if (encounterExitEvidence && headedOzonePlatform === "x11") {
       const moved = spawnSync(
