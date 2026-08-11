@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -13,6 +19,7 @@ const updateEvidence = process.env.UPDATE_EVIDENCE === "1";
 const focused = process.env.RUSTY_DOOM_SMOKE_FOCUSED === "1";
 const traversalEvidence = process.env.RUSTY_DOOM_TRAVERSAL_EVIDENCE === "1";
 const traversalEvidenceDir = process.env.RUSTY_DOOM_EVIDENCE_DIR ?? null;
+const expectedEvidenceSha = process.env.RUSTY_DOOM_EXPECTED_SHA ?? null;
 
 if (focused && traversalEvidence) {
   throw new Error(
@@ -22,6 +29,11 @@ if (focused && traversalEvidence) {
 if (traversalEvidence && traversalEvidenceDir === null) {
   throw new Error(
     "RUSTY_DOOM_EVIDENCE_DIR is required for traversal evidence mode",
+  );
+}
+if (traversalEvidence && expectedEvidenceSha === null) {
+  throw new Error(
+    "RUSTY_DOOM_EXPECTED_SHA is required for traversal evidence mode",
   );
 }
 
@@ -418,6 +430,7 @@ async function captureCanvasEvidence(client, canvasBounds, path) {
 }
 
 async function proveLandmarkTraversal(client, addr, canvasBounds, evidenceDir) {
+  const startedAtMs = Date.now();
   mkdirSync(evidenceDir, { recursive: true });
   const inputSurface = await focusGameplayCanvas(client);
   const traversalSamples = [];
@@ -488,6 +501,20 @@ async function proveLandmarkTraversal(client, addr, canvasBounds, evidenceDir) {
       `L2 arrival mismatch: ${JSON.stringify(l2.player.position)}`,
     );
   }
+  if (
+    l1.player?.grounded !== true ||
+    l2.player?.grounded !== true ||
+    l1.player?.terrainContact === null ||
+    l2.player?.terrainContact === null ||
+    l2.player.terrainContact.surfaceY <= l1.player.terrainContact.surfaceY
+  ) {
+    throw new Error(
+      `L1-L2 authoritative contact mismatch: ${JSON.stringify({ l1: l1.player, l2: l2.player })}`,
+    );
+  }
+  if (l2.levelComplete === true) {
+    throw new Error("bounded L1-L2 evidence must stop before level completion");
+  }
   const l2Screenshot = join(evidenceDir, "l2-green-armor-court.png");
   const l2ScreenshotBytes = await captureCanvasEvidence(
     client,
@@ -549,6 +576,7 @@ async function proveLandmarkTraversal(client, addr, canvasBounds, evidenceDir) {
     },
     route: l1ToL2Route,
     traversalSampleCount: traversalSamples.length,
+    elapsedMs: Date.now() - startedAtMs,
     admittedFloorLevels,
     jump: {
       airborne: {
@@ -574,6 +602,25 @@ async function proveLandmarkTraversal(client, addr, canvasBounds, evidenceDir) {
 }
 
 async function main() {
+  const revision = {
+    head: spawnSync("git", ["rev-parse", "HEAD"], {
+      cwd: actualRoot,
+      encoding: "utf8",
+    }).stdout.trim(),
+    clean:
+      spawnSync("git", ["status", "--porcelain"], {
+        cwd: actualRoot,
+        encoding: "utf8",
+      }).stdout.trim().length === 0,
+  };
+  if (
+    traversalEvidence &&
+    (revision.head !== expectedEvidenceSha || !revision.clean)
+  ) {
+    throw new Error(
+      `traversal evidence requires exact clean head ${expectedEvidenceSha}; got ${JSON.stringify(revision)}`,
+    );
+  }
   const port = await reservePort();
   const addr = `127.0.0.1:${port}`;
   const saveRoot = mkdtempSync(join(tmpdir(), "doom-smoke-"));
@@ -584,6 +631,7 @@ async function main() {
   let debugPort = null;
   let profileDir = null;
   let profileRemoved = false;
+  let persistedEvidence = null;
   try {
     await waitForHealth(`http://${addr}/health`, host, getOut);
     console.log(`health ok ${getOut().slice(-400)}`);
@@ -1216,15 +1264,10 @@ async function main() {
       kind: "doom-browser-smoke.v1",
       generatedAt: new Date().toISOString(),
       revision: {
-        head: spawnSync("git", ["rev-parse", "HEAD"], {
-          cwd: actualRoot,
-          encoding: "utf8",
-        }).stdout.trim(),
-        clean:
-          spawnSync("git", ["status", "--porcelain"], {
-            cwd: actualRoot,
-            encoding: "utf8",
-          }).stdout.trim().length === 0,
+        ...revision,
+        viewport: [1600, 900],
+        inputPath:
+          "Chromium CDP physical keyboard events -> browser semantic input -> Rust fixed-step game loop",
       },
       host: {
         projectId: "doom-e1m1",
@@ -1254,6 +1297,7 @@ async function main() {
     if (traversalEvidence) {
       const outPath = resolve(traversalEvidenceDir, "playtest-index.json");
       writeFileSync(outPath, JSON.stringify(evidence, null, 2) + "\n", "utf8");
+      persistedEvidence = evidence;
       console.log(`wrote ${outPath}`);
     }
     console.log(
@@ -1266,6 +1310,20 @@ async function main() {
     await delay(500);
     if (host.exitCode === null) host.kill("SIGKILL");
     rmSync(saveRoot, { recursive: true, force: true });
+    if (traversalEvidence && persistedEvidence !== null) {
+      persistedEvidence.headless.playthrough.cleanup.hostClosed =
+        host.exitCode !== null;
+      persistedEvidence.headless.playthrough.cleanup.saveRootRemoved =
+        !existsSync(saveRoot);
+      persistedEvidence.headless.playthrough.cleanup.evidenceDirectoryRetained =
+        existsSync(traversalEvidenceDir);
+      const outPath = resolve(traversalEvidenceDir, "playtest-index.json");
+      writeFileSync(
+        outPath,
+        JSON.stringify(persistedEvidence, null, 2) + "\n",
+        "utf8",
+      );
+    }
   }
 }
 

@@ -394,7 +394,7 @@ impl PlayerControllerService {
                 } else {
                     false
                 };
-                let after = player_translation(session, player)?;
+                let mut after = player_translation(session, player)?;
                 let grounded_after = stepped
                     || (vertical_velocity <= 0.0
                         && player_is_grounded(
@@ -404,7 +404,18 @@ impl PlayerControllerService {
                             after,
                             component.config.traversal.ground_probe_distance,
                         )?);
-                let landed = downward_contact && grounded_after;
+                let landed = !grounded_before && grounded_after;
+                if grounded_after && vertical_velocity < 0.0 {
+                    settle_downward_collision(
+                        session,
+                        scene,
+                        player,
+                        after,
+                        after.y - component.config.traversal.ground_probe_distance,
+                    )?;
+                    after = player_translation(session, player)?;
+                    vertical_velocity = 0.0;
+                }
                 let controller = session
                     .player_controllers
                     .get_mut(&player)

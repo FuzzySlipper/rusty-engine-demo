@@ -261,6 +261,7 @@ fn jump_is_grounded_deterministic_and_stops_at_head_collision() {
         reopened_airborne.session().player_controller(PLAYER),
         "snapshot must retain grounded eligibility and the live jump velocity"
     );
+    let mut landed = false;
     for _ in 0..12 {
         first
             .apply_player_action(
@@ -280,7 +281,21 @@ fn jump_is_grounded_deterministic_and_stops_at_head_collision() {
                 },
             )
             .unwrap();
+        if first
+            .session()
+            .player_controller(PLAYER)
+            .unwrap()
+            .state
+            .grounded
+        {
+            landed = true;
+            break;
+        }
     }
+    assert!(
+        landed,
+        "jump must land within the deterministic test horizon"
+    );
     assert_eq!(player_position(&first), player_position(&second));
     assert!(
         first
@@ -292,6 +307,17 @@ fn jump_is_grounded_deterministic_and_stops_at_head_collision() {
         "trajectory ended at {:?} with {:?}",
         player_position(&first),
         first.session().player_controller(PLAYER).unwrap().state
+    );
+    assert!((player_position(&first).y - 1.2501).abs() < 0.000_1);
+    assert_eq!(
+        first
+            .session()
+            .player_controller(PLAYER)
+            .unwrap()
+            .state
+            .vertical_velocity,
+        0.0,
+        "the first grounded landing tick must settle and clear downward velocity"
     );
 
     let mut ceiling = traversal_runtime(vec![[0, 0, 0], [0, 2, 0]], true, 0);
