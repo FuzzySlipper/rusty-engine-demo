@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
+import { certifySchemaOnlyMigration } from "./project-schema-lineage.mjs";
+
 const ROOT = resolve(import.meta.dirname, "..");
 const PROJECT_PATH = resolve(ROOT, "content/projects/loading-bay.project.json");
 const EVIDENCE_PATH = resolve(
@@ -35,6 +37,10 @@ const GROUNDING_EVIDENCE_PATH = resolve(
 const PHYSICS_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/physics-projectile-consumer.json",
+);
+const SCHEMA_MIGRATION_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/loading-bay-schema-25-migration.json",
 );
 
 const expectedModules = new Set([
@@ -85,10 +91,18 @@ const groundingEvidence = JSON.parse(
 const physicsEvidence = JSON.parse(
   await readFile(PHYSICS_EVIDENCE_PATH, "utf8"),
 );
+const schemaMigrationEvidence = JSON.parse(
+  await readFile(SCHEMA_MIGRATION_EVIDENCE_PATH, "utf8"),
+);
 const scene = project.scenes.find(
   ({ id }) => id === evidence.proofRoom.sceneId,
 );
 const currentProjectHash = sha256(projectBytes);
+const schemaOnlyMigration = certifySchemaOnlyMigration(
+  projectBytes,
+  project,
+  schemaMigrationEvidence,
+);
 
 invariant(scene !== undefined, "proof-room scene must exist");
 invariant(
@@ -105,7 +119,9 @@ invariant(
       visualBindingEvidence.project.finalHash &&
       groundingEvidence.project.finalHash === currentProjectHash) ||
     (physicsEvidence.project.startingHash === groundingEvidence.project.finalHash &&
-      physicsEvidence.project.finalHash === currentProjectHash),
+      (physicsEvidence.project.finalHash === currentProjectHash ||
+        (physicsEvidence.project.finalHash === schemaMigrationEvidence.startingHash &&
+          schemaOnlyMigration))),
   "current project must retain the exact brush proof in a recorded descendant",
 );
 invariant(

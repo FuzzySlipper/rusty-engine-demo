@@ -277,26 +277,76 @@ export function buildDoomE1M1Project(
     voxelVolume: voxel,
   });
 
-  // E1M1's single-player weapon vocabulary. Rust owns the reusable firing
-  // state machines; these identities and values are authored map calibration.
+  // E1M1's single-player item vocabulary. Rust owns the reusable pickup,
+  // vitality, and firing state machines; these values are authored calibration.
   const itemDefinitions = [
     { id: "ammo/bullets", maxQuantity: 200, kind: { kind: "ammunition" } },
     { id: "ammo/shells", maxQuantity: 50, kind: { kind: "ammunition" } },
     {
-      id: "armor/impact-vest",
+      id: "armor/bonus",
       maxQuantity: 1,
-      kind: { kind: "armor", protection: 100 },
+      kind: {
+        kind: "armor",
+        protection: 1,
+        maximumArmor: 200,
+        absorptionPercent: 33,
+        grantMode: "add",
+        transition: "preserve",
+      },
     },
     {
-      id: "key/inert-inspection-tag",
+      id: "armor/green",
       maxQuantity: 1,
-      kind: { kind: "accessKey" },
+      kind: {
+        kind: "armor",
+        protection: 100,
+        maximumArmor: 200,
+        absorptionPercent: 33,
+        grantMode: "setMinimum",
+        transition: "replace",
+      },
     },
-    { id: "key/maintenance-pass", maxQuantity: 1, kind: { kind: "accessKey" } },
     {
-      id: "supply/med-patch",
-      maxQuantity: 5,
-      kind: { kind: "healthSupply", restoreHealth: 25 },
+      id: "armor/blue",
+      maxQuantity: 1,
+      kind: {
+        kind: "armor",
+        protection: 200,
+        maximumArmor: 200,
+        absorptionPercent: 50,
+        grantMode: "setMinimum",
+        transition: "replace",
+      },
+    },
+    {
+      id: "supply/stimpack",
+      maxQuantity: 1,
+      kind: {
+        kind: "healthSupply",
+        restoreHealth: 10,
+        maximumHealth: 100,
+        automaticUse: true,
+      },
+    },
+    {
+      id: "supply/medikit",
+      maxQuantity: 1,
+      kind: {
+        kind: "healthSupply",
+        restoreHealth: 25,
+        maximumHealth: 100,
+        automaticUse: true,
+      },
+    },
+    {
+      id: "supply/health-bonus",
+      maxQuantity: 1,
+      kind: {
+        kind: "healthSupply",
+        restoreHealth: 1,
+        maximumHealth: 200,
+        automaticUse: true,
+      },
     },
     {
       id: "weapon/fist",
@@ -383,10 +433,11 @@ export function buildDoomE1M1Project(
     collision: { enabled: true, staticCollider: false },
     renderable: { asset: "mesh/player-marker", visible: true },
     health: {
-      max: 100,
+      max: 200,
+      startingHealth: 100,
       hitboxHalfExtents: [0.25, 0.5, 0.25],
-      maxArmor: 100,
-      armorAbsorptionPercent: 50,
+      maxArmor: 200,
+      armorAbsorptionPercent: 33,
     },
     kinematic: { halfExtents: [0.25, 0.25, 0.25], velocity: [0, 0, 0] },
     playerController: {
@@ -464,32 +515,32 @@ export function buildDoomE1M1Project(
       mesh: "mesh/prop-kit/scatter-shells",
     },
     2011: {
-      item: "supply/med-patch",
+      item: "supply/stimpack",
       quantity: 1,
       mesh: "mesh/prop-kit/med-patch",
     },
     2012: {
-      item: "supply/med-patch",
-      quantity: 2,
+      item: "supply/medikit",
+      quantity: 1,
       mesh: "mesh/prop-kit/med-patch",
     },
     2014: {
-      item: "supply/med-patch",
+      item: "supply/health-bonus",
       quantity: 1,
       mesh: "mesh/prop-kit/med-patch",
     },
     2015: {
-      item: "armor/impact-vest",
+      item: "armor/bonus",
       quantity: 1,
       mesh: "mesh/prop-kit/impact-vest",
     },
     2018: {
-      item: "armor/impact-vest",
+      item: "armor/green",
       quantity: 1,
       mesh: "mesh/prop-kit/impact-vest",
     },
     2019: {
-      item: "armor/impact-vest",
+      item: "armor/blue",
       quantity: 1,
       mesh: "mesh/prop-kit/impact-vest",
     },
@@ -701,6 +752,41 @@ export function buildDoomE1M1Project(
         ...(mapping.starterAmmunition
           ? { starterAmmunition: mapping.starterAmmunition }
           : {}),
+      },
+    });
+  }
+
+  // Special-7 nukage sectors use the reusable bounded hazard owner. The map
+  // supplies region geometry and source timing; Rust owns overlap and damage.
+  const damagingSectorIndices = inter.level.sectors
+    .map((sector, index) => (sector.special === 7 ? index : -1))
+    .filter((index) => index >= 0);
+  for (const sectorIndex of damagingSectorIndices) {
+    const edges = sectorEdges.get(sectorIndex) ?? [];
+    if (edges.length === 0) continue;
+    const xs = edges.flatMap((edge) => [edge.x1, edge.x2]);
+    const ys = edges.flatMap((edge) => [edge.y1, edge.y2]);
+    const minX = (Math.min(...xs) - MIN_X) / SCALE;
+    const maxX = (Math.max(...xs) - MIN_X) / SCALE;
+    const minZ = (Math.min(...ys) - MIN_Y) / SCALE;
+    const maxZ = (Math.max(...ys) - MIN_Y) / SCALE;
+    const sector = inter.level.sectors[sectorIndex]!;
+    const center = wadToWorld(
+      (Math.min(...xs) + Math.max(...xs)) / 2,
+      (Math.min(...ys) + Math.max(...ys)) / 2,
+      sector.floorHeight,
+    );
+    const halfX = Math.max(0.05, (maxX - minX) / 2 - 0.05);
+    const halfZ = Math.max(0.05, (maxZ - minZ) / 2 - 0.05);
+    entities.push({
+      id: nextId++,
+      name: `doom-damaging-sector-${sectorIndex}`,
+      translation: center,
+      bounds: { min: [-halfX, -0.6, -halfZ], max: [halfX, 0.6, halfZ] },
+      renderable: { asset: "mesh/player-marker", visible: false },
+      hazard: {
+        damage: 5,
+        cooldownTicks: 55,
       },
     });
   }
@@ -969,7 +1055,7 @@ export function buildDoomE1M1Project(
   entities.sort((a, b) => a.id - b.id);
 
   const project = {
-    schemaVersion: 24,
+    schemaVersion: 25,
     projectId: "doom-e1m1",
     name: "Doom E1M1 — Hangar (VoXel Showcase)",
     entryScene: "scene/doom-e1m1",

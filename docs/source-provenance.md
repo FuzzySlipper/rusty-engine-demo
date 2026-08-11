@@ -640,11 +640,11 @@ Exact PNG bytes and hashes are closed by `content/doom-e1m1/textures/manifest.js
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
 `voxelDataHash sha256:fad81c1c1d8b8ffe30b733817f70b494b26c1ca788e4c8a40a6fe16ffb6c756d`
 `contentHash sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c`
-`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:e40c9cb3b711bd6e4aa7a26f4d85e669d5c1a18e3d57c458c6d7a4d30867bb89`.
+`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:57778b06c0c98347ec23a17f356eb25d530951d416180d67ed23b18cb54ad7bd`.
 
 ### Authored project
 
-`content/projects/doom-e1m1.project.json` schema 24 `scene/doom-e1m1` embeds the voxel volume (`voxel-volume/doom-e1m1` at identity, plus `voxelEnvironment` material proxy referencing same asset) and 54 VTX6 materials (`material/doom-*` with `voxelSurface` repeat), 54 textures (`texture/doom-*`), and 41 mesh resources copied from `loading-bay` (`mesh/player-marker`, `mesh/prop-kit/*`, `mesh-animation/*`). One `StoredMaterialDefinition` per texture with `tileScaleCells`/`tileOriginCells` straight-alpha Nearest/Repeat. Project admits via `ProjectStore` canonical round-trip (4.6 MiB <8 MiB) and is listed in `libs/project-content` alongside `loading-bay`/`relay-annex`.
+`content/projects/doom-e1m1.project.json` schema 25 `scene/doom-e1m1` embeds the voxel volume (`voxel-volume/doom-e1m1` at identity, plus `voxelEnvironment` material proxy referencing same asset) and 54 VTX6 materials (`material/doom-*` with `voxelSurface` repeat), 54 textures (`texture/doom-*`), and 41 mesh resources copied from `loading-bay` (`mesh/player-marker`, `mesh/prop-kit/*`, `mesh-animation/*`). One `StoredMaterialDefinition` per texture with `tileScaleCells`/`tileOriginCells` straight-alpha Nearest/Repeat. Project admits via `ProjectStore` canonical round-trip (4.6 MiB <8 MiB) and is listed in `libs/project-content` alongside `loading-bay`/`relay-annex`.
 
 Task #6804 ports only E1M1's single-player weapon subset: the starting fist and
 pistol, the one placed shotgun, bullets, and shells. Thing types 2001, 2007, 2008,
@@ -662,5 +662,17 @@ death, drop, fact, and snapshot owners; TypeScript only composes these values
 and disposable presentation identities. Existing original Loading Bay prop
 meshes remain temporary visual substitutes and are not represented as Doom
 sprites or weapon art.
+
+Task #6805 reads E1M1's single-player health and armor Things from the same
+hashed intermediate: one stimpack grants 10 and three medikits grant 25 through
+the ordinary 100-health ceiling; thirteen health bonuses grant one through 200;
+twenty-five armor bonuses grant one through 200 while preserving an active armor
+class; green armor raises armor to 100 with one-third absorption; blue armor
+raises armor to 200 with one-half absorption. Four sector-special-7 regions are
+authored as ordinary hazard objects applying five damage every 55 Demo fixed
+ticks, the nearest integral 60 Hz conversion of 32 source tics. Rust owns atomic
+eligibility, effect application, rejection-without-removal, damage ordering,
+death, restart, facts, and snapshots. Item names, caps, transition policies,
+absorption, region bounds, and timing remain authored data.
 
 No `doom1.wad` is read at runtime; the browser receives only the immutable `RuntimeProjection` and typed facts. The offline forge is deterministic: `node dist/cli.js --check`, `node dist/texture-cli.js --check`, and `cargo run -p loading-bay-game --bin doom-voxel-hash -- doom-e1m1.voxel.json` are the re-producers.

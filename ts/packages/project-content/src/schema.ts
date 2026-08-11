@@ -145,6 +145,7 @@ export interface ExtractionBeaconDefinition {
 
 export interface HealthDefinition {
   readonly max: number;
+  readonly startingHealth?: number;
   readonly hitboxHalfExtents: Vec3;
   readonly maxArmor?: number;
   readonly armorAbsorptionPercent?: number;
@@ -272,8 +273,20 @@ export type ItemKindDefinition =
     }
   | { readonly kind: "ammunition" }
   | { readonly kind: "accessKey" }
-  | { readonly kind: "healthSupply"; readonly restoreHealth: number }
-  | { readonly kind: "armor"; readonly protection: number };
+  | {
+      readonly kind: "healthSupply";
+      readonly restoreHealth: number;
+      readonly maximumHealth?: number;
+      readonly automaticUse?: boolean;
+    }
+  | {
+      readonly kind: "armor";
+      readonly protection: number;
+      readonly maximumArmor?: number;
+      readonly absorptionPercent?: number;
+      readonly grantMode?: "add" | "setMinimum";
+      readonly transition?: "rejectDifferent" | "preserve" | "replace";
+    };
 
 export interface ItemDefinition {
   readonly id: string;
@@ -541,7 +554,7 @@ export interface StoredSceneDefinition {
 }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 24;
+  readonly schemaVersion: 25;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

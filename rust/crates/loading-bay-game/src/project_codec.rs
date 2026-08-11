@@ -19,7 +19,8 @@ use crate::stored_project::{
 
 pub const MIGRATED_V6_PROJECT_ID: &str = "migrated-v6-project";
 pub const MIGRATED_V6_SCENE_ID: &str = "scene/migrated-v6-entry";
-const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 23;
+const PREVIOUS_STORED_PROJECT_SCHEMA_VERSION: u32 = 24;
+const LEGACY_V23_STORED_PROJECT_SCHEMA_VERSION: u32 = 23;
 const LEGACY_V22_STORED_PROJECT_SCHEMA_VERSION: u32 = 22;
 const LEGACY_V21_STORED_PROJECT_SCHEMA_VERSION: u32 = 21;
 const LEGACY_V20_STORED_PROJECT_SCHEMA_VERSION: u32 = 20;
@@ -68,6 +69,10 @@ pub fn decode_project_document(input: &str) -> Result<DecodedProjectDocument, St
     let project = match source_schema_version {
         STORED_PROJECT_SCHEMA_VERSION => decode_stored_project(input)?,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION => {
+            reject_schema_twenty_four_vitality_item_fields(input)?;
+            migrate_v24(decode_legacy_project(input)?)?
+        }
+        LEGACY_V23_STORED_PROJECT_SCHEMA_VERSION => {
             reject_schema_twenty_three_renderable_transform_field(input)?;
             migrate_v23(decode_legacy_project(input)?)?
         }
@@ -252,10 +257,75 @@ fn migrate_v22(mut legacy: StoredProject) -> Result<StoredProject, StoredProject
 fn migrate_v23(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
     debug_assert_eq!(
         legacy.schema_version,
+        LEGACY_V23_STORED_PROJECT_SCHEMA_VERSION
+    );
+    legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
+    canonicalize(legacy)
+}
+
+fn migrate_v24(mut legacy: StoredProject) -> Result<StoredProject, StoredProjectError> {
+    debug_assert_eq!(
+        legacy.schema_version,
         PREVIOUS_STORED_PROJECT_SCHEMA_VERSION
     );
     legacy.schema_version = STORED_PROJECT_SCHEMA_VERSION;
     canonicalize(legacy)
+}
+
+fn reject_schema_twenty_four_vitality_item_fields(input: &str) -> Result<(), StoredProjectError> {
+    let value: serde_json::Value = serde_json::from_str(input).map_err(|error| {
+        StoredProjectError::new(diagnostic_code::DECODE, "$", error.to_string())
+    })?;
+    for (index, definition) in value["itemDefinitions"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .enumerate()
+    {
+        let Some(kind) = definition
+            .get("kind")
+            .and_then(serde_json::Value::as_object)
+        else {
+            continue;
+        };
+        for field in [
+            "maximumHealth",
+            "automaticUse",
+            "maximumArmor",
+            "absorptionPercent",
+            "grantMode",
+            "transition",
+        ] {
+            if kind.contains_key(field) {
+                return Err(StoredProjectError::new(
+                    diagnostic_code::UNSUPPORTED_SCHEMA,
+                    format!("itemDefinitions[{index}].kind.{field}"),
+                    "schema 24 cannot contain schema 25 vitality item fields",
+                ));
+            }
+        }
+    }
+    for (scene_index, scene) in value["scenes"].as_array().into_iter().flatten().enumerate() {
+        for (entity_index, entity) in scene["entities"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .enumerate()
+        {
+            if entity
+                .get("health")
+                .and_then(serde_json::Value::as_object)
+                .is_some_and(|health| health.contains_key("startingHealth"))
+            {
+                return Err(StoredProjectError::new(
+                    diagnostic_code::UNSUPPORTED_SCHEMA,
+                    format!("scenes[{scene_index}].entities[{entity_index}].health.startingHealth"),
+                    "schema 24 cannot contain schema 25 starting health",
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 fn reject_schema_twenty_three_renderable_transform_field(

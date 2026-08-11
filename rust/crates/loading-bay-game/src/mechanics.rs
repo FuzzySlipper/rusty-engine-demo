@@ -233,7 +233,7 @@ pub(crate) fn attach_health(
         TracksComponent::new(
             version.clone(),
             vec![
-                TrackValue::new(health_track(), scalar(config.max)?),
+                TrackValue::new(health_track(), scalar(config.starting)?),
                 TrackValue::new(armor_track(), MechanicsScalar::zero()),
             ],
         )

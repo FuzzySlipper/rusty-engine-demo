@@ -10,8 +10,8 @@ const project = JSON.parse(
   ),
 );
 
-if (project.schemaVersion !== 24) {
-  throw new Error(`expected project schema 24, found ${project.schemaVersion}`);
+if (project.schemaVersion !== 25) {
+  throw new Error(`expected project schema 25, found ${project.schemaVersion}`);
 }
 
 const actors = [];

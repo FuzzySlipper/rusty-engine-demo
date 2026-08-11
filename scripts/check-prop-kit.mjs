@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
+import { certifySchemaOnlyMigration } from "./project-schema-lineage.mjs";
+
 const ROOT = resolve(import.meta.dirname, "..");
 const PROJECT_PATH = resolve(ROOT, "content/projects/loading-bay.project.json");
 const MANIFEST_PATH = resolve(
@@ -29,6 +31,10 @@ const PHYSICS_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/physics-projectile-consumer.json",
 );
+const SCHEMA_MIGRATION_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/loading-bay-schema-25-migration.json",
+);
 
 function invariant(condition, message) {
   if (!condition) throw new Error(`prop-kit invariant failed: ${message}`);
@@ -53,6 +59,9 @@ const groundingEvidence = JSON.parse(
 const physicsEvidence = JSON.parse(
   await readFile(PHYSICS_EVIDENCE_PATH, "utf8"),
 );
+const schemaMigrationEvidence = JSON.parse(
+  await readFile(SCHEMA_MIGRATION_EVIDENCE_PATH, "utf8"),
+);
 const scene = project.scenes.find(({ id }) => id === project.entryScene);
 
 invariant(scene !== undefined, "entry scene must exist");
@@ -71,6 +80,11 @@ invariant(
   "Studio evidence must cover two decorative landmarks",
 );
 const currentProjectHash = sha256(projectBytes);
+const schemaOnlyMigration = certifySchemaOnlyMigration(
+  projectBytes,
+  project,
+  schemaMigrationEvidence,
+);
 invariant(
   currentProjectHash === evidence.project.finalHash ||
     currentProjectHash === levelEvidence.projectHashAfter ||
@@ -83,7 +97,9 @@ invariant(
       visualBindingEvidence.project.finalHash &&
       groundingEvidence.project.finalHash === currentProjectHash) ||
     (physicsEvidence.project.startingHash === groundingEvidence.project.finalHash &&
-      physicsEvidence.project.finalHash === currentProjectHash),
+      (physicsEvidence.project.finalHash === currentProjectHash ||
+        (physicsEvidence.project.finalHash === schemaMigrationEvidence.startingHash &&
+          schemaOnlyMigration))),
   "canonical project must be the prop publication or a recorded descendant",
 );
 invariant(

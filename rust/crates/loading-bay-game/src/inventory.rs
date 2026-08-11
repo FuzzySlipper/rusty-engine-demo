@@ -187,8 +187,31 @@ pub enum ItemKind {
     Weapon(WeaponDefinition),
     Ammunition,
     AccessKey,
-    HealthSupply { restore_health: u32 },
-    Armor { protection: u32 },
+    HealthSupply {
+        restore_health: u32,
+        maximum_health: Option<u32>,
+        automatic_use: bool,
+    },
+    Armor {
+        protection: u32,
+        maximum_armor: Option<u32>,
+        absorption_percent: Option<u8>,
+        grant_mode: ArmorGrantMode,
+        transition: ArmorTransition,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArmorGrantMode {
+    Add,
+    SetMinimum,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArmorTransition {
+    RejectDifferent,
+    Preserve,
+    Replace,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -533,7 +556,23 @@ pub(crate) fn admit_item_definitions(
             || matches!(&definition.kind, ItemKind::Weapon(weapon) if !weapon.is_valid())
             || matches!(
                 definition.kind,
-                ItemKind::HealthSupply { restore_health: 0 } | ItemKind::Armor { protection: 0 }
+                ItemKind::HealthSupply {
+                    restore_health: 0,
+                    ..
+                } | ItemKind::Armor { protection: 0, .. }
+            )
+            || matches!(
+                definition.kind,
+                ItemKind::HealthSupply {
+                    maximum_health: Some(0),
+                    ..
+                } | ItemKind::Armor {
+                    maximum_armor: Some(0),
+                    ..
+                } | ItemKind::Armor {
+                    absorption_percent: Some(0 | 101..),
+                    ..
+                }
             )
         {
             return Err(InventoryAdmissionError::InvalidItemDefinition {

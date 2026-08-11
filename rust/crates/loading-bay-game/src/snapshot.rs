@@ -31,8 +31,9 @@ use crate::hazard::{
 };
 use crate::interaction::{SwitchComponent, SwitchConfig, SwitchEffect};
 use crate::inventory::{
-    admit_item_definitions, inventory_from_config, InventoryAdmissionError, InventoryConfig,
-    InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind, WeaponAttackMode, WeaponDefinition,
+    admit_item_definitions, inventory_from_config, ArmorGrantMode, ArmorTransition,
+    InventoryAdmissionError, InventoryConfig, InventoryStack, ItemDefinition, ItemDefinitionId,
+    ItemKind, WeaponAttackMode, WeaponDefinition,
 };
 use crate::lift::{LiftComponent, LiftConfig, LiftState, LIFT_TRIGGER_SCOPE};
 use crate::navigation::{
@@ -56,7 +57,8 @@ use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::{HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 21;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 22;
+const VITALITY_ITEM_SNAPSHOT_SCHEMA_VERSION: u32 = 22;
 const SWITCH_CONFIG_SNAPSHOT_SCHEMA_VERSION: u32 = 21;
 const GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION: u32 = 19;
 const INVENTORY_WEAPON_SNAPSHOT_SCHEMA_VERSION: u32 = 13;
@@ -180,10 +182,47 @@ pub enum SnapshotItemKind {
     AccessKey,
     HealthSupply {
         restore_health: u32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        maximum_health: Option<u32>,
+        #[serde(default, skip_serializing_if = "is_false")]
+        automatic_use: bool,
     },
     Armor {
         protection: u32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        maximum_armor: Option<u32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        absorption_percent: Option<u8>,
+        #[serde(default, skip_serializing_if = "is_default_snapshot_armor_grant_mode")]
+        grant_mode: SnapshotArmorGrantMode,
+        #[serde(default, skip_serializing_if = "is_default_snapshot_armor_transition")]
+        transition: SnapshotArmorTransition,
     },
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotArmorGrantMode {
+    #[default]
+    Add,
+    SetMinimum,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotArmorTransition {
+    #[default]
+    RejectDifferent,
+    Preserve,
+    Replace,
+}
+
+fn is_default_snapshot_armor_grant_mode(value: &SnapshotArmorGrantMode) -> bool {
+    *value == SnapshotArmorGrantMode::default()
+}
+
+fn is_default_snapshot_armor_transition(value: &SnapshotArmorTransition) -> bool {
+    *value == SnapshotArmorTransition::default()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -1169,13 +1208,36 @@ impl GameRuntime {
                         },
                         ItemKind::Ammunition => SnapshotItemKind::Ammunition,
                         ItemKind::AccessKey => SnapshotItemKind::AccessKey,
-                        ItemKind::HealthSupply { restore_health } => {
-                            SnapshotItemKind::HealthSupply {
-                                restore_health: *restore_health,
-                            }
-                        }
-                        ItemKind::Armor { protection } => SnapshotItemKind::Armor {
+                        ItemKind::HealthSupply {
+                            restore_health,
+                            maximum_health,
+                            automatic_use,
+                        } => SnapshotItemKind::HealthSupply {
+                            restore_health: *restore_health,
+                            maximum_health: *maximum_health,
+                            automatic_use: *automatic_use,
+                        },
+                        ItemKind::Armor {
+                            protection,
+                            maximum_armor,
+                            absorption_percent,
+                            grant_mode,
+                            transition,
+                        } => SnapshotItemKind::Armor {
                             protection: *protection,
+                            maximum_armor: *maximum_armor,
+                            absorption_percent: *absorption_percent,
+                            grant_mode: match grant_mode {
+                                ArmorGrantMode::Add => SnapshotArmorGrantMode::Add,
+                                ArmorGrantMode::SetMinimum => SnapshotArmorGrantMode::SetMinimum,
+                            },
+                            transition: match transition {
+                                ArmorTransition::RejectDifferent => {
+                                    SnapshotArmorTransition::RejectDifferent
+                                }
+                                ArmorTransition::Preserve => SnapshotArmorTransition::Preserve,
+                                ArmorTransition::Replace => SnapshotArmorTransition::Replace,
+                            },
                         },
                     },
                 })
@@ -1691,6 +1753,33 @@ impl GameRuntime {
             });
         }
         let source_schema_version = snapshot.schema_version;
+        if source_schema_version < VITALITY_ITEM_SNAPSHOT_SCHEMA_VERSION
+            && snapshot
+                .item_definitions
+                .iter()
+                .any(|definition| match definition.kind {
+                    SnapshotItemKind::HealthSupply {
+                        maximum_health,
+                        automatic_use,
+                        ..
+                    } => maximum_health.is_some() || automatic_use,
+                    SnapshotItemKind::Armor {
+                        maximum_armor,
+                        absorption_percent,
+                        grant_mode,
+                        transition,
+                        ..
+                    } => {
+                        maximum_armor.is_some()
+                            || absorption_percent.is_some()
+                            || grant_mode != SnapshotArmorGrantMode::default()
+                            || transition != SnapshotArmorTransition::default()
+                    }
+                    _ => false,
+                })
+        {
+            return Err(GameSnapshotError::FutureVitalityStateInLegacySnapshot);
+        }
         if source_schema_version < GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION
             && (!snapshot.entities.registered_components.is_empty()
                 || snapshot
@@ -2430,6 +2519,7 @@ impl GameRuntime {
             }
             let config = HealthConfig {
                 max: health_snapshot.max,
+                starting: health_snapshot.max,
                 hitbox_half_extents: array_vec3(health_snapshot.hitbox_half_extents),
                 max_armor: health_snapshot.max_armor,
                 armor_absorption_percent: health_snapshot.armor_absorption_percent,
@@ -3698,10 +3788,35 @@ fn snapshot_item_definition(
         }),
         SnapshotItemKind::Ammunition => ItemKind::Ammunition,
         SnapshotItemKind::AccessKey => ItemKind::AccessKey,
-        SnapshotItemKind::HealthSupply { restore_health } => {
-            ItemKind::HealthSupply { restore_health }
-        }
-        SnapshotItemKind::Armor { protection } => ItemKind::Armor { protection },
+        SnapshotItemKind::HealthSupply {
+            restore_health,
+            maximum_health,
+            automatic_use,
+        } => ItemKind::HealthSupply {
+            restore_health,
+            maximum_health,
+            automatic_use,
+        },
+        SnapshotItemKind::Armor {
+            protection,
+            maximum_armor,
+            absorption_percent,
+            grant_mode,
+            transition,
+        } => ItemKind::Armor {
+            protection,
+            maximum_armor,
+            absorption_percent,
+            grant_mode: match grant_mode {
+                SnapshotArmorGrantMode::Add => ArmorGrantMode::Add,
+                SnapshotArmorGrantMode::SetMinimum => ArmorGrantMode::SetMinimum,
+            },
+            transition: match transition {
+                SnapshotArmorTransition::RejectDifferent => ArmorTransition::RejectDifferent,
+                SnapshotArmorTransition::Preserve => ArmorTransition::Preserve,
+                SnapshotArmorTransition::Replace => ArmorTransition::Replace,
+            },
+        },
     };
     Ok(ItemDefinition::new(id, kind, snapshot.max_quantity))
 }

@@ -1,6 +1,7 @@
 import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
+import { certifySchemaOnlyMigration } from "./project-schema-lineage.mjs";
 import { collectWallProxyAlignment } from "./wall-proxy-alignment.mjs";
 
 const root = resolve(import.meta.dirname, "..");
@@ -16,6 +17,20 @@ const physicsEvidence = JSON.parse(
     "utf8",
   ),
 );
+const schemaMigrationEvidence = JSON.parse(
+  await readFile(
+    resolve(root, "docs/evidence/loading-bay-schema-25-migration.json"),
+    "utf8",
+  ),
+);
+const projectBytes = await readFile(
+  resolve(root, schemaMigrationEvidence.project),
+);
+const schemaOnlyMigration = certifySchemaOnlyMigration(
+  projectBytes,
+  JSON.parse(projectBytes),
+  schemaMigrationEvidence,
+);
 const actual = await collectWallProxyAlignment();
 const expected =
   JSON.stringify(evidence) === JSON.stringify(actual)
@@ -24,8 +39,17 @@ const expected =
         ...evidence,
         project: {
           ...evidence.project,
-          hash: physicsEvidence.project.finalHash,
-          bytes: physicsEvidence.project.finalBytes,
+          schemaVersion: schemaMigrationEvidence.toSchemaVersion,
+          hash:
+            schemaOnlyMigration &&
+            physicsEvidence.project.finalHash === schemaMigrationEvidence.startingHash
+              ? schemaMigrationEvidence.finalHash
+              : physicsEvidence.project.finalHash,
+          bytes:
+            schemaOnlyMigration &&
+            physicsEvidence.project.finalBytes === schemaMigrationEvidence.startingBytes
+              ? schemaMigrationEvidence.finalBytes
+              : physicsEvidence.project.finalBytes,
         },
       };
 if (JSON.stringify(expected) !== JSON.stringify(actual)) {

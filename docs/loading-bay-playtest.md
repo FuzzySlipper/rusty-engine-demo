@@ -16,10 +16,10 @@ The checked-in files under `content/projects` are the canonical Studio-owned sou
 
 | Artifact                                    | SHA-256                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------ |
-| `content/projects/loading-bay.project.json` | `048b1b9400fe670d2ac4c1f5faecf189cccf5f8e906ba65b15095f3879f2b6e3` |
-| `content/projects/relay-annex.project.json` | `0f5c5bc55f8643b75a395d83037a03dbc9c1ad938aa1622c070a9a9272a87bf3` |
+| `content/projects/loading-bay.project.json` | `bcbf453428ad91cb638808791c330c176f091c8659169e14c3010915594163fe` |
+| `content/projects/relay-annex.project.json` | `58329c1d62a9c9c6fc002a33881adfc6e1a2779d62278f573fbcb731300eefd3` |
 
-The schema-24 Loading Bay artifact contains one scene, 3,945 gameplay-proxy material voxels, 417
+The schema-25 Loading Bay artifact contains one scene, 3,945 gameplay-proxy material voxels, 417
 entities, 89 retained asset identities, nine item definitions, eight enemies, three encounters,
 eight authored pickup caches, eight dormant defeat drops, five doors, eight lights, one secret, and
 one level exit. Its visible room reuses nine canonical voxel-object definitions across 340 route
@@ -32,8 +32,8 @@ verification gate. Fixture generation cannot write either canonical file.
 All eight enemies plus the control panel, extraction beacon, and coolant hazard carry authored
 renderable-local translations. These presentation-only offsets align their differently authored
 mesh bounds to the contact plane while entity translations, collision shapes, navigation goals,
-and gameplay remain unchanged. Studio reads and writes the offsets through the guarded schema-24
-project contract.
+and gameplay remain unchanged. Studio reads and writes the offsets through the guarded schema-25
+project contract; the presentation field itself was introduced by schema 24.
 
 | Asset class            | Loading Bay convention                                                                                                                                | Reviewed examples                                          |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |

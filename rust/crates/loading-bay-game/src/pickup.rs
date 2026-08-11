@@ -288,21 +288,35 @@ impl PickupService {
             );
         }
         let mut vitality_facts = Vec::new();
-        if candidate_session
+        let immediate_vitality_kind = candidate_session
             .item_definitions
             .get(&component.config.item)
-            .is_some_and(|definition| {
-                matches!(definition.kind, crate::inventory::ItemKind::Armor { .. })
-            })
-        {
-            let vitality = DamageService::grant_armor(
-                &mut candidate_session,
-                command.actor,
-                component.config.item.clone(),
-            )
-            .map_err(PickupRejection::Vitality)?;
-            vitality_facts.extend(vitality.facts);
-            inventory.extend(vitality.inventory);
+            .map(|definition| definition.kind.clone());
+        match immediate_vitality_kind {
+            Some(crate::inventory::ItemKind::Armor { .. }) => {
+                let vitality = DamageService::grant_armor(
+                    &mut candidate_session,
+                    command.actor,
+                    component.config.item.clone(),
+                )
+                .map_err(PickupRejection::Vitality)?;
+                vitality_facts.extend(vitality.facts);
+                inventory.extend(vitality.inventory);
+            }
+            Some(crate::inventory::ItemKind::HealthSupply {
+                automatic_use: true,
+                ..
+            }) => {
+                let vitality = DamageService::use_health_supply(
+                    &mut candidate_session,
+                    command.actor,
+                    component.config.item.clone(),
+                )
+                .map_err(PickupRejection::Vitality)?;
+                vitality_facts.extend(vitality.facts);
+                inventory.extend(vitality.inventory);
+            }
+            _ => {}
         }
         let entity_revision = candidate_session.entities.revision();
         let entity_receipt = EntityAuthoringService

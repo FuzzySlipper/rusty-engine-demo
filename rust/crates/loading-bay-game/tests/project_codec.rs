@@ -155,7 +155,7 @@ fn schema_nine_project_migrates_with_deterministic_root_order_and_identity_trans
 
 #[test]
 fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
-    for schema_version in [0, 5, 25, 99] {
+    for schema_version in [0, 5, 26, 99] {
         let input = format!("{{\"schemaVersion\":{schema_version}}}");
         let error = decode_project_document(&input).unwrap_err();
         assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
@@ -165,6 +165,49 @@ fn migration_and_current_decode_reject_unknown_versions_fail_closed() {
     let error = decode_project_document("{}").unwrap_err();
     assert_eq!(error.diagnostic().code, diagnostic_code::DECODE);
     assert_eq!(error.diagnostic().path, "schemaVersion");
+}
+
+#[test]
+fn schema_twenty_four_migrates_without_vitality_item_policy_and_rejects_future_fields() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["schemaVersion"] = 24.into();
+    let decoded = decode_project_document(&previous.to_string()).unwrap();
+    assert_eq!(decoded.source_schema_version, 24);
+    assert_eq!(
+        decoded.project.schema_version,
+        STORED_PROJECT_SCHEMA_VERSION
+    );
+    assert!(decoded.was_migrated());
+
+    previous["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find_map(|entity| entity.get_mut("health"))
+        .unwrap()["startingHealth"] = 50.into();
+    let error = decode_project_document(&previous.to_string()).unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
+    assert!(error.diagnostic().path.ends_with("health.startingHealth"));
+
+    previous["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find_map(|entity| entity.get_mut("health"))
+        .unwrap()
+        .as_object_mut()
+        .unwrap()
+        .remove("startingHealth");
+    let item_kind = previous["itemDefinitions"][0]["kind"]
+        .as_object_mut()
+        .unwrap();
+    item_kind.insert("automaticUse".to_owned(), true.into());
+    let error = decode_project_document(&previous.to_string()).unwrap_err();
+    assert_eq!(error.diagnostic().code, diagnostic_code::UNSUPPORTED_SCHEMA);
+    assert_eq!(
+        error.diagnostic().path,
+        "itemDefinitions[0].kind.automaticUse"
+    );
 }
 
 #[test]

@@ -453,6 +453,90 @@ async function proveFocusedWeaponSelection(client, addr) {
   };
 }
 
+async function proveFocusedVitality(addr) {
+  const state = await waitForAuthoritativeState(
+    addr,
+    "authored vitality pickups and nukage update Rust-owned player state",
+    (candidate) =>
+      candidate.player?.maxHealth === 200 &&
+      candidate.player?.maxArmor === 200 &&
+      candidate.player?.currentHealth < 100 &&
+      candidate.player?.armor > 0 &&
+      ["supply/health-bonus", "armor/green"].every((item) =>
+        candidate.pickups?.some(
+          (pickup) => pickup.item === item && pickup.state === "collected",
+        ),
+      ) &&
+      !candidate.inventory?.stacks?.some((stack) =>
+        ["supply/health-bonus", "armor/green"].includes(stack.item),
+      ),
+  );
+  return {
+    tick: state.tick,
+    health: state.player.currentHealth,
+    armor: state.player.armor,
+    maxHealth: state.player.maxHealth,
+    maxArmor: state.player.maxArmor,
+  };
+}
+
+async function proveFocusedDeathAndRestart(client, addr) {
+  const defeated = await waitForAuthoritativeState(
+    addr,
+    "authored nukage defeats the player",
+    (candidate) =>
+      candidate.player?.vitalityState === "dead" &&
+      candidate.player?.currentHealth === 0 &&
+      candidate.restart?.authoredBaselineAvailable === true,
+  );
+  const deadline = Date.now() + 10000;
+  let restartButton = null;
+  while (Date.now() < deadline && restartButton === null) {
+    restartButton = await cdpEvaluate(
+      client,
+      `(() => {
+        const button = [...document.querySelectorAll('button')].find(
+          (candidate) => candidate.textContent.includes('Restart loading bay'),
+        );
+        if (!button || button.disabled) return null;
+        const bounds = button.getBoundingClientRect();
+        return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+      })()`,
+    );
+    if (restartButton === null) await delay(100);
+  }
+  if (restartButton === null) {
+    throw new Error("visible authored-restart button did not become actionable");
+  }
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    x: restartButton.x,
+    y: restartButton.y,
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+  });
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    x: restartButton.x,
+    y: restartButton.y,
+    button: "left",
+    buttons: 0,
+    clickCount: 1,
+  });
+  const restarted = await waitForAuthoritativeState(
+    addr,
+    "physical restart restores the authored E1M1 baseline",
+    (candidate) =>
+      candidate.player?.vitalityState === "alive" &&
+      candidate.player?.currentHealth === 100 &&
+      candidate.player?.armor === 0 &&
+      candidate.weapon?.item === "weapon/pistol" &&
+      candidate.pickups?.every((pickup) => pickup.state !== "collected"),
+  );
+  return { defeatedTick: defeated.tick, restartedTick: restarted.tick };
+}
+
 async function proveFocusedFireStopsOnBlur(client, addr) {
   await delay(500);
   const before = await fetchAuthoritativeState(addr);
@@ -974,12 +1058,21 @@ async function main() {
     const shotgun = entities.find(
       (entity) => entity.pickup?.item === "weapon/shotgun",
     );
-    if (!player || !shotgun) {
-      throw new Error("focused shotgun fixture could not resolve player and pickup");
+    const healthBonus = entities.find(
+      (entity) => entity.pickup?.item === "supply/health-bonus",
+    );
+    const greenArmor = entities.find(
+      (entity) => entity.pickup?.item === "armor/green",
+    );
+    const nukage = entities.filter((entity) => entity.hazard?.damage === 5);
+    if (!player || !shotgun || !healthBonus || !greenArmor || nukage.length !== 4) {
+      throw new Error("focused fixture could not resolve weapon and vitality owners");
     }
-    // Keep the canonical authored pickup transaction while bounding this smoke
-    // to weapon selection instead of requiring an unrelated level traversal.
-    shotgun.translation = [...player.translation];
+    // Keep the canonical authored transactions while bounding this smoke to
+    // weapon/vitality behavior instead of requiring an unrelated traversal.
+    for (const entity of [shotgun, healthBonus, greenArmor, ...nukage]) {
+      entity.translation = [...player.translation];
+    }
     projectPath = join(saveRoot, "doom-e1m1-focused.project.json");
     writeFileSync(projectPath, JSON.stringify(project), "utf8");
   }
@@ -1012,8 +1105,8 @@ async function main() {
       `host projectId doom-e1m1, got ${state.projectId}`,
     );
     assert(
-      state.projection?.length === (focused ? 87 : 88),
-      `projection ${focused ? 87 : 88}, got ${state.projection?.length}`,
+      state.projection?.length === (focused ? 89 : 92),
+      `projection ${focused ? 89 : 92}, got ${state.projection?.length}`,
     );
     assert(
       state.enemies?.length === 29,
@@ -1342,14 +1435,18 @@ async function main() {
         );
       } else if (focused) {
         const inputProof = await proveFocusedHeldMovement(cdpClient, addr);
+        const vitalityProof = await proveFocusedVitality(addr);
         const selectionProof = await proveFocusedWeaponSelection(cdpClient, addr);
         const fireProof = await proveFocusedHeldPistolFire(cdpClient, addr);
         const blurProof = await proveFocusedFireStopsOnBlur(cdpClient, addr);
+        const restartProof = await proveFocusedDeathAndRestart(cdpClient, addr);
         headless.playthrough = { status: "skipped", reason: "focused smoke" };
         headless.input = inputProof;
+        headless.vitality = vitalityProof;
         headless.selection = selectionProof;
         headless.fire = fireProof;
         headless.blur = blurProof;
+        headless.restart = restartProof;
         checks.push(
           `single keydown sustained ${inputProof.heldDistance.toFixed(2)} world units without mouse motion and keyup stopped within ${inputProof.stoppedDistance.toFixed(2)} units`,
         );
@@ -1357,10 +1454,16 @@ async function main() {
           `held Mouse0 fired pistol ${fireProof.shots} times and reduced authoritative bullets ${fireProof.ammoBefore}->${fireProof.ammoAfter}`,
         );
         checks.push(
+          `authored automatic health/armor pickups and nukage produced ${vitalityProof.health}/${vitalityProof.maxHealth} health and ${vitalityProof.armor}/${vitalityProof.maxArmor} armor at tick ${vitalityProof.tick}`,
+        );
+        checks.push(
           `authored shotgun pickup settled at tick ${selectionProof.acquiredTick}, physical Digit2 selected it at tick ${selectionProof.shotgunTick}, Digit3 selected fist at tick ${selectionProof.fistTick}, and Digit1 restored pistol at tick ${selectionProof.pistolTick}`,
         );
         checks.push(
           `blur without MouseUp stopped held fire after bullets ${blurProof.ammoBefore}->${blurProof.ammoAfterShot}->${blurProof.ammoAfterBlur}`,
+        );
+        checks.push(
+          `four authored nukage owners defeated the player at tick ${restartProof.defeatedTick}, and a physical restart-button click restored the 100-health, 0-armor authored baseline at tick ${restartProof.restartedTick}`,
         );
         checks.push("full E1M1 traversal reserved for pnpm run certify:e1m1");
       }

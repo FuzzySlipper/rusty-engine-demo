@@ -162,7 +162,7 @@ Studio import, and shared-renderer lifecycle proof are recorded in
 The exact-time contact sheets, independent source-sampler comparison, and retained authored-motion
 limitations are recorded in
 [docs/animated-mesh-capture.md](docs/animated-mesh-capture.md).
-The canonical schema-24 project binds those actors and the industrial prop kit to Rust-owned
+The canonical schema-25 project binds those actors and the industrial prop kit to Rust-owned
 gameplay posture/state through versioned renderer-only visual bindings; the ownership and
 full-product proof are documented in
 [docs/visual-content-pipeline.md](docs/visual-content-pipeline.md#vc8-serialized-gameplay-visual-bindings).

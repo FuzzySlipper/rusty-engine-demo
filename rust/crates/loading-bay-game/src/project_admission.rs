@@ -25,8 +25,8 @@ use crate::floor_action::FloorActionConfig;
 use crate::hazard::HazardConfig;
 use crate::interaction::{SwitchConfig, SwitchEffect};
 use crate::inventory::{
-    InventoryConfig, InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind, WeaponAttackMode,
-    WeaponDefinition,
+    ArmorGrantMode, ArmorTransition, InventoryConfig, InventoryStack, ItemDefinition,
+    ItemDefinitionId, ItemKind, WeaponAttackMode, WeaponDefinition,
 };
 use crate::lift::LiftConfig;
 use crate::navigation::NavigationConfig;
@@ -231,11 +231,34 @@ fn authored_item_definition(
         }),
         StoredItemKind::Ammunition => ItemKind::Ammunition,
         StoredItemKind::AccessKey => ItemKind::AccessKey,
-        StoredItemKind::HealthSupply { restore_health } => ItemKind::HealthSupply {
+        StoredItemKind::HealthSupply {
+            restore_health,
+            maximum_health,
+            automatic_use,
+        } => ItemKind::HealthSupply {
             restore_health: *restore_health,
+            maximum_health: *maximum_health,
+            automatic_use: *automatic_use,
         },
-        StoredItemKind::Armor { protection } => ItemKind::Armor {
+        StoredItemKind::Armor {
+            protection,
+            maximum_armor,
+            absorption_percent,
+            grant_mode,
+            transition,
+        } => ItemKind::Armor {
             protection: *protection,
+            maximum_armor: *maximum_armor,
+            absorption_percent: *absorption_percent,
+            grant_mode: match grant_mode {
+                crate::StoredArmorGrantMode::Add => ArmorGrantMode::Add,
+                crate::StoredArmorGrantMode::SetMinimum => ArmorGrantMode::SetMinimum,
+            },
+            transition: match transition {
+                crate::StoredArmorTransition::RejectDifferent => ArmorTransition::RejectDifferent,
+                crate::StoredArmorTransition::Preserve => ArmorTransition::Preserve,
+                crate::StoredArmorTransition::Replace => ArmorTransition::Replace,
+            },
         },
     };
     Ok(ItemDefinition::new(id, kind, authored.max_quantity))
@@ -746,6 +769,7 @@ fn authored_definition(
     if let Some(health) = authored.health {
         definition = definition.with_health(HealthConfig {
             max: health.max,
+            starting: health.starting_health.unwrap_or(health.max),
             hitbox_half_extents: array_vec3(health.hitbox_half_extents),
             max_armor: health.max_armor,
             armor_absorption_percent: health.armor_absorption_percent,

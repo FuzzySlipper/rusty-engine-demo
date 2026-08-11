@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
+import { certifySchemaOnlyMigration } from "./project-schema-lineage.mjs";
+
 const root = resolve(import.meta.dirname, "..");
 const projectBytes = await readFile(
   resolve(root, "content/projects/loading-bay.project.json"),
@@ -12,6 +14,9 @@ const evidence = JSON.parse(
 );
 const physicsEvidence = JSON.parse(
   await readFile(resolve(root, "docs/evidence/physics-projectile-consumer.json"), "utf8"),
+);
+const schemaMigrationEvidence = JSON.parse(
+  await readFile(resolve(root, "docs/evidence/loading-bay-schema-25-migration.json"), "utf8"),
 );
 
 function invariant(condition, message) {
@@ -30,14 +35,16 @@ function nearlyEqual(left, right, tolerance = 0.000_01) {
   return Math.abs(left - right) <= tolerance;
 }
 
-invariant(project.schemaVersion === 24, "canonical project must use schema 24");
+invariant(project.schemaVersion === 25, "canonical project must use schema 25");
 invariant(evidence.protocolVersion === 14, "Studio proof must use protocol 14");
 invariant(
   (projectBytes.byteLength === evidence.project.finalBytes
     && sha256(projectBytes) === evidence.project.finalHash)
     || (physicsEvidence.project.startingHash === evidence.project.finalHash
-      && projectBytes.byteLength === physicsEvidence.project.finalBytes
-      && sha256(projectBytes) === physicsEvidence.project.finalHash),
+      && ((projectBytes.byteLength === physicsEvidence.project.finalBytes
+        && sha256(projectBytes) === physicsEvidence.project.finalHash)
+        || (physicsEvidence.project.finalHash === schemaMigrationEvidence.startingHash
+          && certifySchemaOnlyMigration(projectBytes, project, schemaMigrationEvidence)))),
   "canonical bytes must match the recorded visual-local descendant",
 );
 const scene = project.scenes.find(({ id }) => id === project.entryScene);

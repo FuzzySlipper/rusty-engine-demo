@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
+import { certifySchemaOnlyMigration } from "./project-schema-lineage.mjs";
+
 const ROOT = resolve(import.meta.dirname, "..");
 const PROJECT_PATH = resolve(ROOT, "content/projects/loading-bay.project.json");
 const EVIDENCE_PATH = resolve(
@@ -28,6 +30,10 @@ const PHYSICS_EVIDENCE_PATH = resolve(
   ROOT,
   "docs/evidence/physics-projectile-consumer.json",
 );
+const SCHEMA_MIGRATION_EVIDENCE_PATH = resolve(
+  ROOT,
+  "docs/evidence/loading-bay-schema-25-migration.json",
+);
 
 function invariant(condition, message) {
   if (!condition) {
@@ -52,6 +58,14 @@ const groundingEvidence = JSON.parse(
 const physicsEvidence = JSON.parse(
   await readFile(PHYSICS_EVIDENCE_PATH, "utf8"),
 );
+const schemaMigrationEvidence = JSON.parse(
+  await readFile(SCHEMA_MIGRATION_EVIDENCE_PATH, "utf8"),
+);
+const schemaOnlyMigration = certifySchemaOnlyMigration(
+  projectBytes,
+  project,
+  schemaMigrationEvidence,
+);
 const scene = project.scenes.find(({ id }) => id === "scene/loading-bay");
 const brushAssets = project.assets.filter(({ voxelObject }) =>
   voxelObject?.assetId.startsWith("voxel-object/brush-"),
@@ -74,7 +88,9 @@ invariant(
         visualBindingEvidence.project.finalHash &&
         groundingEvidence.project.finalHash === sha256(projectBytes)) ||
       (physicsEvidence.project.startingHash === groundingEvidence.project.finalHash &&
-        physicsEvidence.project.finalHash === sha256(projectBytes))),
+        (physicsEvidence.project.finalHash === sha256(projectBytes) ||
+          (physicsEvidence.project.finalHash === schemaMigrationEvidence.startingHash &&
+            schemaOnlyMigration)))),
   "current project bytes must match the batch publication or its recorded actor descendant",
 );
 invariant(

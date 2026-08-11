@@ -36,7 +36,7 @@ use crate::inventory::{
 };
 use crate::lift::LiftConfig;
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 24;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 25;
 pub const STORED_VISUAL_BINDING_VERSION: u32 = 1;
 pub const MAX_STORED_VISUAL_BINDING_STATES: usize = 16;
 pub const MAX_PROJECT_VOXEL_OBJECTS: u64 = 256;
@@ -147,10 +147,47 @@ pub enum StoredItemKind {
     AccessKey,
     HealthSupply {
         restore_health: u32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        maximum_health: Option<u32>,
+        #[serde(default, skip_serializing_if = "is_false")]
+        automatic_use: bool,
     },
     Armor {
         protection: u32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        maximum_armor: Option<u32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        absorption_percent: Option<u8>,
+        #[serde(default, skip_serializing_if = "is_default_armor_grant_mode")]
+        grant_mode: StoredArmorGrantMode,
+        #[serde(default, skip_serializing_if = "is_default_armor_transition")]
+        transition: StoredArmorTransition,
     },
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StoredArmorGrantMode {
+    #[default]
+    Add,
+    SetMinimum,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StoredArmorTransition {
+    #[default]
+    RejectDifferent,
+    Preserve,
+    Replace,
+}
+
+fn is_default_armor_grant_mode(value: &StoredArmorGrantMode) -> bool {
+    *value == StoredArmorGrantMode::default()
+}
+
+fn is_default_armor_transition(value: &StoredArmorTransition) -> bool {
+    *value == StoredArmorTransition::default()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -862,6 +899,8 @@ pub struct StoredExtractionBeacon {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredHealth {
     pub max: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub starting_health: Option<u32>,
     pub hitbox_half_extents: [f32; 3],
     #[serde(default, skip_serializing_if = "is_zero_u32")]
     pub max_armor: u32,
@@ -1103,8 +1142,23 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             ) && definition.max_quantity != 1
             || matches!(
                 definition.kind,
-                StoredItemKind::HealthSupply { restore_health: 0 }
-                    | StoredItemKind::Armor { protection: 0 }
+                StoredItemKind::HealthSupply {
+                    restore_health: 0,
+                    ..
+                } | StoredItemKind::Armor { protection: 0, .. }
+            )
+            || matches!(
+                definition.kind,
+                StoredItemKind::HealthSupply {
+                    maximum_health: Some(0),
+                    ..
+                } | StoredItemKind::Armor {
+                    maximum_armor: Some(0),
+                    ..
+                } | StoredItemKind::Armor {
+                    absorption_percent: Some(0 | 101..),
+                    ..
+                }
             )
         {
             return Err(failure(

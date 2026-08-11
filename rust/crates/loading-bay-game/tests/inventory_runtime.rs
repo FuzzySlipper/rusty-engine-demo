@@ -61,14 +61,20 @@ fn authored_item_vocabulary_and_starting_inventory_admit_as_read_only_views() {
             .item_definition(&item("supply/med-patch"))
             .unwrap()
             .kind,
-        ItemKind::HealthSupply { restore_health: 25 }
+        ItemKind::HealthSupply {
+            restore_health: 25,
+            ..
+        }
     ));
     assert!(matches!(
         session
             .item_definition(&item("armor/impact-vest"))
             .unwrap()
             .kind,
-        ItemKind::Armor { protection: 100 }
+        ItemKind::Armor {
+            protection: 100,
+            ..
+        }
     ));
 
     let inventory = session.inventory(PLAYER).unwrap();

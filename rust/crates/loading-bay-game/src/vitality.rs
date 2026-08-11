@@ -10,8 +10,8 @@ use rusty_engine::gameplay_mechanics::{
 use crate::combat::EnemyState;
 use crate::enemy_drop::{EnemyDropFact, EnemyDropRejection, EnemyDropService};
 use crate::inventory::{
-    InventoryAction, InventoryCommand, InventoryReceipt, InventoryRejection, InventoryService,
-    ItemDefinitionId, ItemKind,
+    ArmorGrantMode, ArmorTransition, InventoryAction, InventoryCommand, InventoryReceipt,
+    InventoryRejection, InventoryService, ItemDefinitionId, ItemKind,
 };
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
@@ -24,6 +24,7 @@ pub const MAX_COMBAT_HITBOX_HALF_EXTENT: f32 = 100_000.0;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HealthConfig {
     pub max: u32,
+    pub starting: u32,
     pub hitbox_half_extents: Vec3,
     pub max_armor: u32,
     pub armor_absorption_percent: u8,
@@ -33,6 +34,7 @@ impl HealthConfig {
     pub fn unarmored(max: u32, hitbox_half_extents: Vec3) -> Self {
         Self {
             max,
+            starting: max,
             hitbox_half_extents,
             max_armor: 0,
             armor_absorption_percent: 0,
@@ -41,6 +43,7 @@ impl HealthConfig {
 
     pub(crate) fn is_valid(self) -> bool {
         (1..=MAX_HEALTH).contains(&self.max)
+            && (1..=self.max).contains(&self.starting)
             && vec3_is_finite(self.hitbox_half_extents)
             && self.hitbox_half_extents.x > 0.0
             && self.hitbox_half_extents.y > 0.0
@@ -243,10 +246,20 @@ impl DamageService {
             });
         }
 
-        let armor_eligible = u32::try_from(
-            u64::from(command.amount) * u64::from(before.config.armor_absorption_percent) / 100,
-        )
-        .expect("bounded damage and percentage fit u32");
+        let armor_absorption_percent = before
+            .armor_item
+            .as_ref()
+            .and_then(|item| session.item_definitions.get(item))
+            .and_then(|definition| match definition.kind {
+                ItemKind::Armor {
+                    absorption_percent, ..
+                } => absorption_percent,
+                _ => None,
+            })
+            .unwrap_or(before.config.armor_absorption_percent);
+        let armor_eligible =
+            u32::try_from(u64::from(command.amount) * u64::from(armor_absorption_percent) / 100)
+                .expect("bounded damage and percentage fit u32");
         let mut candidate = session.clone();
         let operation = operation_id("damage", source.raw(), command.target.raw())?;
         let _receipt = MechanicsDamageService::apply(
@@ -408,24 +421,40 @@ impl DamageService {
         if before.config.max_armor == 0 {
             return Err(VitalityRejection::ArmorUnsupported { player });
         }
-        if before.armor >= before.config.max_armor {
+        let definition = session
+            .item_definitions
+            .get(&item)
+            .ok_or_else(|| VitalityRejection::MissingItemDefinition { item: item.clone() })?;
+        let ItemKind::Armor {
+            protection,
+            maximum_armor,
+            absorption_percent: _,
+            grant_mode,
+            transition,
+        } = definition.kind
+        else {
+            return Err(VitalityRejection::IncompatibleItem { item });
+        };
+        let maximum_armor = maximum_armor
+            .unwrap_or(before.config.max_armor)
+            .min(before.config.max_armor);
+        let target_armor = match grant_mode {
+            ArmorGrantMode::Add => before.armor.saturating_add(protection).min(maximum_armor),
+            ArmorGrantMode::SetMinimum => before.armor.max(protection).min(maximum_armor),
+        };
+        if target_armor <= before.armor {
             return Err(VitalityRejection::ArmorFull { player });
         }
-        if let Some(active) = &before.armor_item {
-            if active != &item {
+        let effect_item = match (&before.armor_item, transition) {
+            (Some(active), ArmorTransition::RejectDifferent) if active != &item => {
                 return Err(VitalityRejection::ArmorItemConflict {
                     player,
                     active: active.clone(),
                     offered: item,
                 });
             }
-        }
-        let definition = session
-            .item_definitions
-            .get(&item)
-            .ok_or_else(|| VitalityRejection::MissingItemDefinition { item: item.clone() })?;
-        let ItemKind::Armor { protection } = definition.kind else {
-            return Err(VitalityRejection::IncompatibleItem { item });
+            (Some(active), ArmorTransition::Preserve) => active.clone(),
+            _ => item.clone(),
         };
         let mut candidate = session.clone();
         let sequence = next_inventory_sequence(&candidate, player)?;
@@ -456,7 +485,7 @@ impl DamageService {
                 source: request_source(operation.clone(), "armor")?,
                 entity: player,
                 track: crate::mechanics::armor_track(),
-                amount: crate::mechanics::scalar(protection)
+                amount: crate::mechanics::scalar(target_armor - before.armor)
                     .map_err(|reason| VitalityRejection::Mechanics { reason })?,
                 kind: rusty_engine::gameplay_mechanics::TrackAdjustmentKind::Restore,
                 expected_revision: None,
@@ -466,10 +495,10 @@ impl DamageService {
         let binding = candidate
             .mechanics
             .armor
-            .get(&item)
+            .get(&effect_item)
             .cloned()
             .ok_or_else(|| VitalityRejection::Mechanics {
-                reason: format!("missing admitted armor effect for {item}"),
+                reason: format!("missing admitted armor effect for {effect_item}"),
             })?;
         EffectService::replace(
             &mut candidate.entities,
@@ -493,7 +522,7 @@ impl DamageService {
             disposition: DamageDisposition::Applied,
             facts: vec![VitalityFact::ArmorGranted {
                 entity: player,
-                item,
+                item: effect_item,
                 amount: after - before.armor,
                 before: before.armor,
                 after,
@@ -515,16 +544,25 @@ impl DamageService {
         if before.state == VitalityState::Dead {
             return Err(VitalityRejection::PlayerDead { player });
         }
-        if before.current == before.config.max {
-            return Err(VitalityRejection::HealthFull { player });
-        }
         let definition = session
             .item_definitions
             .get(&item)
             .ok_or_else(|| VitalityRejection::MissingItemDefinition { item: item.clone() })?;
-        let ItemKind::HealthSupply { restore_health } = definition.kind else {
+        let ItemKind::HealthSupply {
+            restore_health,
+            maximum_health,
+            ..
+        } = definition.kind
+        else {
             return Err(VitalityRejection::IncompatibleItem { item });
         };
+        let maximum_health = maximum_health
+            .unwrap_or(before.config.max)
+            .min(before.config.max);
+        if before.current >= maximum_health {
+            return Err(VitalityRejection::HealthFull { player });
+        }
+        let restored = restore_health.min(maximum_health - before.current);
         let mut candidate = session.clone();
         let sequence = next_inventory_sequence(&candidate, player)?;
         let inventory = InventoryService::apply(
@@ -548,7 +586,7 @@ impl DamageService {
                 source: request_source(operation, "health")?,
                 entity: player,
                 track: crate::mechanics::health_track(),
-                amount: crate::mechanics::scalar(restore_health)
+                amount: crate::mechanics::scalar(restored)
                     .map_err(|reason| VitalityRejection::Mechanics { reason })?,
                 kind: rusty_engine::gameplay_mechanics::TrackAdjustmentKind::Restore,
                 expected_revision: None,

@@ -438,6 +438,7 @@ fn authored_definition(
     if let Some(health) = authored.health {
         definition = definition.with_health(HealthConfig {
             max: health.max,
+            starting: health.max,
             hitbox_half_extents: array_vec3(health.hitbox_half_extents),
             max_armor: 0,
             armor_absorption_percent: 0,
