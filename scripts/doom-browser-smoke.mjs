@@ -1003,6 +1003,7 @@ async function setMaximumPhysicalMouseSensitivity(client, addr) {
   if (sensitivity !== 2) {
     throw new Error(`physical sensitivity selection settled at ${sensitivity}`);
   }
+  await cdpEvaluate(client, `document.activeElement?.blur()`);
   await client.send("Input.dispatchKeyEvent", {
     type: "keyDown",
     code: "Escape",
