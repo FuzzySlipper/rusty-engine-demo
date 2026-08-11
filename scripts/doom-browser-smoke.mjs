@@ -1088,6 +1088,11 @@ async function physicallyAimAtEnemy(
   const startingPitch = before.player.pitchDegrees;
   let state = before;
   for (let attempt = 0; attempt < 120; attempt += 1) {
+    if (state.player?.vitalityState !== "alive") {
+      throw new Error(
+        `player was defeated while physically aiming at enemy ${enemyId}: ${JSON.stringify({ tick: state.tick, health: state.player?.currentHealth, attempt, yawDegrees: state.player?.yawDegrees, pitchDegrees: state.player?.pitchDegrees })}`,
+      );
+    }
     const yawError = normalizeDegrees(desiredYaw - state.player.yawDegrees);
     const pitchError = desiredPitch - state.player.pitchDegrees;
     if (
