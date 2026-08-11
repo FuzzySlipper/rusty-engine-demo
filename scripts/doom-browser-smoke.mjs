@@ -1003,23 +1003,22 @@ async function setMaximumPhysicalMouseSensitivity(client, addr) {
   if (sensitivity !== 2) {
     throw new Error(`physical sensitivity selection settled at ${sensitivity}`);
   }
-  for (let press = 0; press < 2; press += 1) {
-    await client.send("Input.dispatchKeyEvent", {
-      type: "keyDown",
-      code: "Escape",
-      key: "Escape",
-      windowsVirtualKeyCode: 27,
-      nativeVirtualKeyCode: 27,
-    });
-    await client.send("Input.dispatchKeyEvent", {
-      type: "keyUp",
-      code: "Escape",
-      key: "Escape",
-      windowsVirtualKeyCode: 27,
-      nativeVirtualKeyCode: 27,
-    });
-    await delay(300);
-  }
+  await client.send("Input.dispatchKeyEvent", {
+    type: "keyDown",
+    code: "Escape",
+    key: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  });
+  await client.send("Input.dispatchKeyEvent", {
+    type: "keyUp",
+    code: "Escape",
+    key: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  });
+  await delay(300);
+  await clickVisibleButton(client, "Resume");
   await waitForAuthoritativeState(
     addr,
     "visible Resume returns to live simulation",
