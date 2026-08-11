@@ -1575,6 +1575,7 @@ async function main() {
       cdpClient = await createCdpClient(wsUrl);
       await cdpClient.send("Page.enable");
       await cdpClient.send("Runtime.enable");
+      await cdpClient.send("Page.bringToFront");
       await cdpClient.send("Emulation.setDeviceMetricsOverride", {
         width: 1600,
         height: 900,
@@ -1601,7 +1602,7 @@ async function main() {
           card.click();
           return 'clicked';
         })()`,
-        ).catch(() => "eval-error");
+        ).catch((error) => `eval-error:${String(error).slice(0, 240)}`);
         if (clickResult === "clicked") {
           console.log(`doom card click: ${clickResult}`);
           break;
@@ -1618,7 +1619,7 @@ async function main() {
       console.log(`after click hash=${String(afterClickHash).slice(0, 120)}`);
       if (!clickIdentityOk) {
         throw new Error(
-          `Doom card click must navigate to project=doom-e1m1 before mount proof (result=${clickResult}, hash=${String(afterClickHash).slice(0, 120)})`,
+          `Doom card click must navigate to project=doom-e1m1 before mount proof (result=${clickResult}, hash=${String(afterClickHash).slice(0, 120)}, chromium=${cerr.slice(-1200)})`,
         );
       }
       checks.push(
