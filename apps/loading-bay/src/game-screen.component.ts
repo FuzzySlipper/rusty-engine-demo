@@ -1405,7 +1405,11 @@ function gamePresentationFor(projectId: string): GamePresentation {
 }
 
 function isPlayerFacingEvent(event: string): boolean {
-  return !event.startsWith("Navigation") && event !== "EnemyPostureChanged";
+  return (
+    event !== "InputExpired" &&
+    !event.startsWith("Navigation") &&
+    event !== "EnemyPostureChanged"
+  );
 }
 
 function severityFor(event: string): CombatLogEntryView["severity"] {
