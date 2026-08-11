@@ -355,7 +355,7 @@ impl GameRuntime {
 
     pub(crate) fn run_walk_trigger_motion_phase(&mut self) -> Result<(), RuntimeError> {
         FloorActionService::run_motion_phase(&mut self.session)?;
-        LiftService::run_motion_phase(&mut self.session)
+        LiftService::run_motion_phase(&mut self.session, self.collision_scene.as_ref())
     }
 
     pub fn run_walk_trigger_phase(

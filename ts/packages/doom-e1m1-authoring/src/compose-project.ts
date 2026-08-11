@@ -836,7 +836,10 @@ export function buildDoomE1M1Project(
       translation: raised,
       bounds: { min: [-halfX, -1, -halfZ], max: [halfX, 0, halfZ] },
       collision: { enabled: true, staticCollider: false },
-      kinematic: { halfExtents: [halfX, 0.5, halfZ], velocity: [0, 0, 0] },
+      // The entity translation is the authored floor surface. Keep the dynamic
+      // collider on that surface instead of centering a half-unit box above it,
+      // which would overlap a rider whose feet are correctly at surfaceY.
+      kinematic: { halfExtents: [halfX, 0.001, halfZ], velocity: [0, 0, 0] },
     });
     return { id, raised };
   };

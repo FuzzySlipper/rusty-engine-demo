@@ -3,12 +3,13 @@ use rusty_engine::core_math::Vec3;
 use rusty_engine::core_time::TickDelta;
 use rusty_engine::engine_spatial::{
     KinematicTriggerDefinition, TriggerGeometrySource, TriggerOverlapFact, TriggerOverlapFactKind,
-    TriggerReconcileCause, TriggerVolumeDiagnostic, TriggerVolumeSystem,
+    TriggerReconcileCause, TriggerVolumeDiagnostic, TriggerVolumeSystem, VoxelCollisionScene,
 };
 use rusty_engine::entity_state::{
     EntityCommand, EntityCommandBatch, EntityFact, EntityView, MAX_ABS_TRANSLATION,
 };
 
+use crate::player::PlayerControllerService;
 use crate::runtime::RuntimeError;
 use crate::session::GameSession;
 
@@ -287,12 +288,18 @@ impl LiftService {
         })
     }
 
-    pub(crate) fn run_motion_phase(session: &mut GameSession) -> Result<(), RuntimeError> {
-        let mut commands = Vec::new();
-        let mut updates = Vec::new();
-        for (lift, component) in &session.lifts {
+    pub(crate) fn run_motion_phase(
+        session: &mut GameSession,
+        scene: Option<&VoxelCollisionScene>,
+    ) -> Result<(), RuntimeError> {
+        let lifts = session
+            .lifts
+            .iter()
+            .map(|(lift, component)| (*lift, component.clone()))
+            .collect::<Vec<_>>();
+        for (lift, component) in lifts {
             if !component.config.is_valid() {
-                return Err(RuntimeError::InvalidLiftConfig { lift: *lift });
+                return Err(RuntimeError::InvalidLiftConfig { lift });
             }
             let duration = component.config.motion_duration.raw();
             let (state, motion_elapsed, wait_elapsed, translation) = match component.state {
@@ -383,20 +390,26 @@ impl LiftService {
                     }
                 }
             };
-            commands.push(EntityCommand::SetTranslation {
-                entity: component.config.target_platform,
-                translation,
-            });
-            updates.push((*lift, state, motion_elapsed, wait_elapsed));
-        }
-        if commands.is_empty() {
-            return Ok(());
-        }
-        session
-            .entities
-            .apply_batch(EntityCommandBatch::new(commands))
-            .map_err(RuntimeError::EntityBatch)?;
-        for (lift, state, motion_elapsed, wait_elapsed) in updates {
+            let moved = if let Some(scene) = scene {
+                PlayerControllerService::move_platform_with_supported_players(
+                    session,
+                    scene,
+                    component.config.target_platform,
+                    translation,
+                )?
+            } else {
+                session
+                    .entities
+                    .apply_batch(EntityCommandBatch::new([EntityCommand::SetTranslation {
+                        entity: component.config.target_platform,
+                        translation,
+                    }]))
+                    .map_err(RuntimeError::EntityBatch)?;
+                true
+            };
+            if !moved {
+                continue;
+            }
             let component = session.lifts.get_mut(&lift).expect("lift remains attached");
             component.state = state;
             component.motion_elapsed = motion_elapsed;

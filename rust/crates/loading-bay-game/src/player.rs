@@ -21,6 +21,8 @@ pub const MAX_PLAYER_GRAVITY: f32 = 200.0;
 pub const MAX_GROUND_PROBE_DISTANCE: f32 = 1.0;
 pub const MAX_PLAYER_EYE_HEIGHT: f32 = 10.0;
 const STEP_SEARCH_SLICES: usize = 8;
+const PLATFORM_SUPPORT_EPSILON: f32 = 0.001;
+const PLATFORM_CARRY_EPSILON: f32 = 0.000_1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlayerInputBindings {
@@ -246,6 +248,123 @@ pub struct PlayerControllerView {
 pub(crate) struct PlayerControllerService;
 
 impl PlayerControllerService {
+    pub(crate) fn move_platform_with_supported_players(
+        session: &mut GameSession,
+        scene: &VoxelCollisionScene,
+        platform: EntityId,
+        target_translation: Vec3,
+    ) -> Result<bool, RuntimeError> {
+        let Some(platform_body) = session
+            .entities
+            .kinematic_bodies()
+            .find(|body| body.entity == platform)
+        else {
+            return Ok(false);
+        };
+        let delta = target_translation - platform_body.translation;
+        if delta == Vec3::ZERO {
+            return Ok(true);
+        }
+        let supported_players = session
+            .player_controllers
+            .iter()
+            .filter_map(|(player, controller)| {
+                let body = session
+                    .entities
+                    .kinematic_bodies()
+                    .find(|body| body.entity == *player)?;
+                let collision_enabled = session
+                    .entity(*player)
+                    .ok()
+                    .and_then(|view| view.collision)
+                    .is_some_and(|collision| collision.enabled);
+                let platform_collision_enabled = session
+                    .entity(platform)
+                    .ok()
+                    .and_then(|view| view.collision)
+                    .is_some_and(|collision| collision.enabled);
+                let horizontal_overlap = (body.translation.x - platform_body.translation.x).abs()
+                    <= body.half_extents.x
+                        + platform_body.half_extents.x
+                        + PLATFORM_SUPPORT_EPSILON
+                    && (body.translation.z - platform_body.translation.z).abs()
+                        <= body.half_extents.z
+                            + platform_body.half_extents.z
+                            + PLATFORM_SUPPORT_EPSILON;
+                let player_bottom = body.translation.y - body.half_extents.y;
+                let platform_top = platform_body.translation.y + platform_body.half_extents.y;
+                let support_gap = player_bottom - platform_top;
+                let support_distance = controller
+                    .config
+                    .traversal
+                    .ground_probe_distance
+                    .max(PLATFORM_SUPPORT_EPSILON);
+                (collision_enabled
+                    && platform_collision_enabled
+                    && horizontal_overlap
+                    && controller.state.vertical_velocity <= 0.0
+                    && support_gap.abs() <= support_distance
+                    && (controller.state.grounded || support_gap.abs() <= PLATFORM_SUPPORT_EPSILON))
+                    .then_some((*player, (platform_top - player_bottom).max(0.0)))
+            })
+            .collect::<Vec<_>>();
+
+        let mut candidate = session.clone();
+        let players_move_first = delta.y >= 0.0;
+        if players_move_first && !supported_players.is_empty() {
+            candidate
+                .entities
+                .apply_batch(EntityCommandBatch::new([
+                    EntityCommand::SetCollisionEnabled {
+                        entity: platform,
+                        enabled: false,
+                    },
+                ]))
+                .map_err(RuntimeError::EntityBatch)?;
+            for (player, separation) in &supported_players {
+                let rider_delta = delta + Vec3::new(0.0, *separation, 0.0);
+                if !move_kinematic_exact(&mut candidate, scene, *player, rider_delta)? {
+                    return Ok(false);
+                }
+            }
+            candidate
+                .entities
+                .apply_batch(EntityCommandBatch::new([
+                    EntityCommand::SetCollisionEnabled {
+                        entity: platform,
+                        enabled: true,
+                    },
+                ]))
+                .map_err(RuntimeError::EntityBatch)?;
+        }
+        candidate
+            .entities
+            .apply_batch(EntityCommandBatch::new([EntityCommand::SetTranslation {
+                entity: platform,
+                translation: target_translation,
+            }]))
+            .map_err(RuntimeError::EntityBatch)?;
+        if !players_move_first {
+            for (player, separation) in &supported_players {
+                let rider_delta = delta + Vec3::new(0.0, *separation, 0.0);
+                if !move_kinematic_exact(&mut candidate, scene, *player, rider_delta)? {
+                    return Ok(false);
+                }
+            }
+        }
+        for (player, _) in supported_players {
+            let controller = candidate
+                .player_controllers
+                .get_mut(&player)
+                .expect("supported player controller remains attached");
+            controller.state.vertical_velocity = 0.0;
+            controller.state.grounded = true;
+            controller.state.remaining_air_jumps = controller.config.traversal.max_air_jumps;
+        }
+        *session = candidate;
+        Ok(true)
+    }
+
     pub(crate) fn apply(
         session: &mut GameSession,
         scene: &VoxelCollisionScene,
@@ -499,6 +618,55 @@ impl PlayerControllerService {
             }
         }
     }
+}
+
+fn move_kinematic_exact(
+    session: &mut GameSession,
+    scene: &VoxelCollisionScene,
+    entity: EntityId,
+    delta: Vec3,
+) -> Result<bool, RuntimeError> {
+    let before = session
+        .entity(entity)
+        .ok()
+        .and_then(|view| view.transform)
+        .map(|transform| transform.translation)
+        .ok_or(RuntimeError::UnknownPlayerController { player: entity })?;
+    session
+        .entities
+        .apply_batch(EntityCommandBatch::new([
+            EntityCommand::SetKinematicVelocity {
+                entity,
+                velocity: delta,
+            },
+        ]))
+        .map_err(RuntimeError::EntityBatch)?;
+    KinematicMotionSystem::run_selected(
+        &mut session.entities,
+        scene,
+        1.0,
+        &BTreeSet::from([entity]),
+    )
+    .map_err(RuntimeError::Motion)?;
+    session
+        .entities
+        .apply_batch(EntityCommandBatch::new([
+            EntityCommand::SetKinematicVelocity {
+                entity,
+                velocity: Vec3::ZERO,
+            },
+        ]))
+        .map_err(RuntimeError::EntityBatch)?;
+    let after = session
+        .entity(entity)
+        .ok()
+        .and_then(|view| view.transform)
+        .map(|transform| transform.translation)
+        .ok_or(RuntimeError::UnknownPlayerController { player: entity })?;
+    let expected = before + delta;
+    Ok((after.x - expected.x).abs() <= PLATFORM_CARRY_EPSILON
+        && (after.y - expected.y).abs() <= PLATFORM_CARRY_EPSILON
+        && (after.z - expected.z).abs() <= PLATFORM_CARRY_EPSILON)
 }
 
 fn run_velocity(

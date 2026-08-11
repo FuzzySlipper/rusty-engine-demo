@@ -652,8 +652,17 @@ async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
     [124, 82],
     [124, 83],
     [126, 83],
+  ]);
+  for (const waypoint of [
     [126, 84],
     [129, 84],
+  ]) {
+    await moveToWorldPoint(client, addr, waypoint, traversalSamples, {
+      singleHold: true,
+      arrivalDistance: 0.7,
+    });
+  }
+  await walk([
     [130, 130],
     [131, 130],
     [131, 139],
@@ -695,20 +704,30 @@ async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
         (lift) => lift.id === 90 && lift.state !== "raised",
       ),
   );
-  await waitForAuthoritativeState(
+  await walk([[234, 119]]);
+  const liftWhileTraversing = await waitForAuthoritativeState(
     addr,
-    "type-88 lift completes its cycle before traversal",
+    "physical route advances while type-88 lift is moving",
     (candidate) =>
       candidate.tick > liftActivated.tick &&
+      horizontalDistance(candidate.player.position, liftActivated.player.position) > 2 &&
       candidate.lifts?.some(
-        (lift) => lift.id === 90 && lift.state === "raised",
+        (lift) => lift.id === 90 && lift.state !== "raised",
       ),
   );
-  await walk([
-    [230, 87],
+  await capture("interaction-lift-moving.png");
+  await walk([[230, 87]]);
+  for (const waypoint of [
     [230, 80],
     [234, 80],
     [234, 74],
+  ]) {
+    await moveToWorldPoint(client, addr, waypoint, traversalSamples, {
+      singleHold: true,
+      arrivalDistance: 0.7,
+    });
+  }
+  await walk([
     [234, 70],
     [234, 68],
   ]);
@@ -768,6 +787,9 @@ async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
     lift: {
       id: 90,
       observedState: liftActivated.lifts.find((lift) => lift.id === 90)?.state,
+      traversingState: liftWhileTraversing.lifts.find((lift) => lift.id === 90)
+        ?.state,
+      traversingPlayerPosition: liftWhileTraversing.player.position,
     },
     floorAction: {
       id: 88,
