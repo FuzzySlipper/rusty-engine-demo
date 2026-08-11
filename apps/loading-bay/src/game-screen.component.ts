@@ -668,6 +668,9 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   protected readonly sessionStatus = computed(() => {
     const snapshot = this.snapshot();
     if (snapshot.connected) {
+      if (snapshot.projectId === "doom-e1m1") {
+        return snapshot.levelComplete ? "COMPLETE" : "LIVE";
+      }
       return snapshot.encounterState.toUpperCase();
     }
     const state = this.connectionState();
