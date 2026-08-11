@@ -1243,12 +1243,31 @@ async function proveRepresentativeEncounter(
       (entry) => entry.id === enemyId,
     )?.currentHealth;
     const ammoBefore = latest.weapon?.ammoRemaining;
+    const pointerLocked = await cdpEvaluate(
+      client,
+      `document.pointerLockElement === document.querySelector('canvas')`,
+    );
+    if (!pointerLocked) {
+      throw new Error("physical encounter lost pointer lock before Mouse0");
+    }
+    if (latest.player?.vitalityState !== "alive") {
+      throw new Error(
+        `player was not alive before physical encounter fire: ${JSON.stringify({ tick: latest.tick, health: latest.player?.currentHealth, vitalityState: latest.player?.vitalityState })}`,
+      );
+    }
     await setPhysicalPrimaryFire(client, canvasCenter, true);
     try {
       latest = await waitForAuthoritativeState(
         addr,
         `physical Mouse0 fires at canonical enemy ${enemyId}`,
-        (candidate) => candidate.weapon?.ammoRemaining < ammoBefore,
+        (candidate) => {
+          if (candidate.player?.vitalityState !== "alive") {
+            throw new Error(
+              `player was defeated while physically firing at enemy ${enemyId}: ${JSON.stringify({ tick: candidate.tick, health: candidate.player?.currentHealth, ammoBefore, ammoAfter: candidate.weapon?.ammoRemaining, target: candidate.enemies?.find((entry) => entry.id === enemyId) })}`,
+            );
+          }
+          return candidate.weapon?.ammoRemaining < ammoBefore;
+        },
       );
     } finally {
       await setPhysicalPrimaryFire(client, canvasCenter, false);
