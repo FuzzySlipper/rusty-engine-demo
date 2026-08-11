@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -75,7 +76,7 @@ async function waitForHealth(url, proc, getOut) {
   throw new Error(`health timeout ${getOut().slice(-4000)}`);
 }
 
-function launchHost(addr, saveRoot) {
+function launchHost(addr, saveRoot, projectPath) {
   const proc = spawn(
     "cargo",
     [
@@ -90,7 +91,7 @@ function launchHost(addr, saveRoot) {
       "--addr",
       addr,
       "--project",
-      doomProject,
+      projectPath,
       "--save-root",
       saveRoot,
     ],
@@ -412,6 +413,21 @@ async function proveFocusedHeldPistolFire(client, addr) {
 }
 
 async function proveFocusedWeaponSelection(client, addr) {
+  const acquired = await waitForAuthoritativeState(
+    addr,
+    "bounded product fixture collects the authored shotgun",
+    (candidate) =>
+      candidate.inventory?.weapons?.some(
+        (weapon) => weapon.item === "weapon/shotgun" && weapon.owned === true,
+      ) === true,
+  );
+  await dispatchKey(client, "keyDown", "Digit2");
+  await dispatchKey(client, "keyUp", "Digit2");
+  const shotgun = await waitForAuthoritativeState(
+    addr,
+    "physical Digit2 selects the collected shotgun slot",
+    (candidate) => candidate.weapon?.item === "weapon/shotgun",
+  );
   await dispatchKey(client, "keyDown", "Digit3");
   await dispatchKey(client, "keyUp", "Digit3");
   const fist = await waitForAuthoritativeState(
@@ -429,7 +445,12 @@ async function proveFocusedWeaponSelection(client, addr) {
     "physical Digit1 selects the pistol slot",
     (candidate) => candidate.weapon?.item === "weapon/pistol",
   );
-  return { fistTick: fist.tick, pistolTick: pistol.tick };
+  return {
+    acquiredTick: acquired.tick,
+    shotgunTick: shotgun.tick,
+    fistTick: fist.tick,
+    pistolTick: pistol.tick,
+  };
 }
 
 async function proveFocusedFireStopsOnBlur(client, addr) {
@@ -945,8 +966,25 @@ async function main() {
   const port = await reservePort();
   const addr = `127.0.0.1:${port}`;
   const saveRoot = mkdtempSync(join(tmpdir(), "doom-smoke-"));
+  let projectPath = doomProject;
+  if (focused) {
+    const project = JSON.parse(readFileSync(doomProject, "utf8"));
+    const entities = project.scenes[0].entities;
+    const player = entities.find((entity) => entity.id === 1);
+    const shotgun = entities.find(
+      (entity) => entity.pickup?.item === "weapon/shotgun",
+    );
+    if (!player || !shotgun) {
+      throw new Error("focused shotgun fixture could not resolve player and pickup");
+    }
+    // Keep the canonical authored pickup transaction while bounding this smoke
+    // to weapon selection instead of requiring an unrelated level traversal.
+    shotgun.translation = [...player.translation];
+    projectPath = join(saveRoot, "doom-e1m1-focused.project.json");
+    writeFileSync(projectPath, JSON.stringify(project), "utf8");
+  }
   console.log(`DOOM SMOKE host ${addr} save ${saveRoot}`);
-  const { host, getOut } = launchHost(addr, saveRoot);
+  const { host, getOut } = launchHost(addr, saveRoot, projectPath);
   let chromiumProc = null;
   let cdpClient = null;
   let debugPort = null;
@@ -974,8 +1012,8 @@ async function main() {
       `host projectId doom-e1m1, got ${state.projectId}`,
     );
     assert(
-      state.projection?.length === 88,
-      `projection 88, got ${state.projection?.length}`,
+      state.projection?.length === (focused ? 87 : 88),
+      `projection ${focused ? 87 : 88}, got ${state.projection?.length}`,
     );
     assert(
       state.enemies?.length === 29,
@@ -1319,7 +1357,7 @@ async function main() {
           `held Mouse0 fired pistol ${fireProof.shots} times and reduced authoritative bullets ${fireProof.ammoBefore}->${fireProof.ammoAfter}`,
         );
         checks.push(
-          `physical Digit3 selected fist at tick ${selectionProof.fistTick} and Digit1 restored pistol at tick ${selectionProof.pistolTick}`,
+          `authored shotgun pickup settled at tick ${selectionProof.acquiredTick}, physical Digit2 selected it at tick ${selectionProof.shotgunTick}, Digit3 selected fist at tick ${selectionProof.fistTick}, and Digit1 restored pistol at tick ${selectionProof.pistolTick}`,
         );
         checks.push(
           `blur without MouseUp stopped held fire after bullets ${blurProof.ammoBefore}->${blurProof.ammoAfterShot}->${blurProof.ammoAfterBlur}`,
