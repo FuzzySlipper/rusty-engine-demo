@@ -1122,14 +1122,14 @@ async function physicallyAimAtEnemy(
       continue;
     }
     const degreesPerPointerUnit = encounterExitEvidence ? 0.24 : 0.12;
-    const movementX = Math.max(
-      -40,
-      Math.min(40, -yawError / degreesPerPointerUnit),
-    );
-    const movementY = Math.max(
-      -40,
-      Math.min(40, -pitchError / degreesPerPointerUnit),
-    );
+    const movementX =
+      Math.abs(yawError) > toleranceDegrees
+        ? Math.max(-40, Math.min(40, -yawError / degreesPerPointerUnit))
+        : 0;
+    const movementY =
+      movementX === 0 && Math.abs(pitchError) > toleranceDegrees
+        ? Math.max(-40, Math.min(40, -pitchError / degreesPerPointerUnit))
+        : 0;
     if (encounterExitEvidence && headedOzonePlatform === "x11") {
       const moved = spawnSync(
         "python3",
