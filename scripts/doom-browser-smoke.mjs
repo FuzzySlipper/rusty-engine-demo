@@ -31,6 +31,9 @@ const retainedEvidence =
   traversalEvidence || retainedInteractionEvidence || encounterExitEvidence;
 const traversalEvidenceDir = process.env.RUSTY_DOOM_EVIDENCE_DIR ?? null;
 const expectedEvidenceSha = process.env.RUSTY_DOOM_EXPECTED_SHA ?? null;
+const headedOzonePlatform =
+  process.env.RUSTY_DOOM_HEADED_OZONE ??
+  (process.env.DISPLAY === undefined ? "wayland" : "x11");
 
 if (
   [
@@ -1535,7 +1538,7 @@ async function main() {
             "--disable-backgrounding-occluded-windows",
             "--disable-renderer-backgrounding",
             "--autoplay-policy=no-user-gesture-required",
-            "--ozone-platform=wayland",
+            `--ozone-platform=${headedOzonePlatform}`,
           ]
         : [
             "--headless=new",
