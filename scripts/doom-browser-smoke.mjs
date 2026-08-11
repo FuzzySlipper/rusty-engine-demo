@@ -873,8 +873,8 @@ function resolveInteractionOwners(projectPath) {
     lift: owner("doom-repeatable-lift-linedef-195", "lift"),
     secret: owner("doom-secret-sector-68", "secretRegion"),
     exit: owner("doom-exit", "levelExit"),
-    representativeEnemy: owner("doom-shotgun-guy-14", "enemyCombat"),
-    representativeDrop: owner("doom-drop-shotgun-guy-14", "pickup"),
+    representativeEnemy: owner("doom-shotgun-guy-20", "enemyCombat"),
+    representativeDrop: owner("doom-drop-shotgun-guy-20", "pickup"),
   };
 }
 
@@ -1051,31 +1051,14 @@ async function physicallyAimAtEnemy(
       -80,
       Math.min(80, -error / degreesPerPointerUnit),
     );
-    if (encounterExitEvidence && headedOzonePlatform === "x11") {
-      const physicalMove = spawnSync(
-        "python3",
-        [
-          join(actualRoot, "scripts/x11-send-relative-look.py"),
-          String(Math.round(movementX)),
-          "0",
-        ],
-        { encoding: "utf8" },
-      );
-      if (physicalMove.status !== 0) {
-        throw new Error(
-          `X11 physical pointer movement failed: ${physicalMove.stderr || physicalMove.stdout}`,
-        );
-      }
-    } else {
-      canvasCenter.x += movementX;
-      await client.send("Input.dispatchMouseEvent", {
-        type: "mouseMoved",
-        x: canvasCenter.x,
-        y: canvasCenter.y,
-        button: "none",
-        buttons: 0,
-      });
-    }
+    canvasCenter.x += movementX;
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      x: canvasCenter.x,
+      y: canvasCenter.y,
+      button: "none",
+      buttons: 0,
+    });
     await delay(80);
     state = await fetchAuthoritativeState(addr);
   }
