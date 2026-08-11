@@ -1243,17 +1243,17 @@ async function proveRepresentativeEncounter(
       (entry) => entry.id === enemyId,
     )?.currentHealth;
     const ammoBefore = latest.weapon?.ammoRemaining;
+    if (latest.player?.vitalityState !== "alive") {
+      throw new Error(
+        `player was not alive before physical encounter fire: ${JSON.stringify({ tick: latest.tick, health: latest.player?.currentHealth, vitalityState: latest.player?.vitalityState })}`,
+      );
+    }
     const pointerLocked = await cdpEvaluate(
       client,
       `document.pointerLockElement === document.querySelector('canvas')`,
     );
     if (!pointerLocked) {
       throw new Error("physical encounter lost pointer lock before Mouse0");
-    }
-    if (latest.player?.vitalityState !== "alive") {
-      throw new Error(
-        `player was not alive before physical encounter fire: ${JSON.stringify({ tick: latest.tick, health: latest.player?.currentHealth, vitalityState: latest.player?.vitalityState })}`,
-      );
     }
     await setPhysicalPrimaryFire(client, canvasCenter, true);
     try {
