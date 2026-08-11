@@ -929,37 +929,9 @@ async function resetPhysicalPointerLock(client, canvasBounds, canvasCenter) {
     windowsVirtualKeyCode: 27,
     nativeVirtualKeyCode: 27,
   });
-  await delay(150);
-  // The product deliberately opens its pause panel when Escape releases
-  // pointer lock. Resume through the visible product control before the next
-  // physical canvas click.
-  const resume = await cdpEvaluate(
-    client,
-    `(() => {
-      const button = [...document.querySelectorAll('button')].find(
-        (candidate) => candidate.textContent.trim() === 'Resume',
-      );
-      if (!button || button.disabled) return null;
-      const bounds = button.getBoundingClientRect();
-      return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-    })()`,
-  );
-  if (resume === null) throw new Error("pause Resume control was unavailable");
-  await client.send("Input.dispatchMouseEvent", {
-    type: "mousePressed",
-    ...resume,
-    button: "left",
-    buttons: 1,
-    clickCount: 1,
-  });
-  await client.send("Input.dispatchMouseEvent", {
-    type: "mouseReleased",
-    ...resume,
-    button: "left",
-    buttons: 0,
-    clickCount: 1,
-  });
-  await delay(300);
+  // Chromium briefly suppresses a new pointer-lock request after Escape.
+  // Wait for that browser-owned release window before the next physical click.
+  await delay(1_200);
   const reset = await acquirePhysicalPointerLock(client, canvasBounds);
   canvasCenter.x = reset.x;
   canvasCenter.y = reset.y;
