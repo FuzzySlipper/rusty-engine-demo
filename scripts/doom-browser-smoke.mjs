@@ -1390,15 +1390,28 @@ async function main() {
           `Engine application host failed before playthrough lifecycle=${finalLc} webgl=${webglDiag} runtimeError=${String(runtimeError).slice(0, 1200)}`,
         );
       }
-      const content = await cdpEvaluate(
-        cdpClient,
-        `({
-          state: document.body.dataset.rendererContent ?? null,
-          frameOps: Number(document.body.dataset.rendererFrameOps ?? 0),
-          resourceCount: Number(document.body.dataset.rendererResourceCount ?? 0),
-          textureCount: Number(document.body.dataset.rendererTextureCount ?? 0),
-        })`,
-      );
+      const contentDeadline = Date.now() + 30_000;
+      let content = null;
+      while (Date.now() < contentDeadline) {
+        content = await cdpEvaluate(
+          cdpClient,
+          `({
+            state: document.body.dataset.rendererContent ?? null,
+            frameOps: Number(document.body.dataset.rendererFrameOps ?? 0),
+            resourceCount: Number(document.body.dataset.rendererResourceCount ?? 0),
+            textureCount: Number(document.body.dataset.rendererTextureCount ?? 0),
+          })`,
+        );
+        if (
+          content?.state === "complete" &&
+          content.frameOps > 0 &&
+          content.resourceCount > 54 &&
+          content.textureCount === 54
+        ) {
+          break;
+        }
+        await delay(250);
+      }
       if (
         content?.state !== "complete" ||
         content.frameOps <= 0 ||
