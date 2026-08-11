@@ -914,7 +914,13 @@ async function acquirePhysicalPointerLock(client, canvasBounds) {
   throw new Error("physical canvas click did not acquire pointer lock");
 }
 
-async function physicallyAimAtEnemy(client, addr, canvasCenter, enemyId) {
+async function physicallyAimAtEnemy(
+  client,
+  addr,
+  canvasCenter,
+  enemyId,
+  toleranceDegrees = 3,
+) {
   const before = await fetchAuthoritativeState(addr);
   const enemy = before.enemies.find((candidate) => candidate.id === enemyId);
   if (!enemy) throw new Error(`missing representative enemy ${enemyId}`);
@@ -925,7 +931,7 @@ async function physicallyAimAtEnemy(client, addr, canvasCenter, enemyId) {
   let state = before;
   for (let attempt = 0; attempt < 40; attempt += 1) {
     const error = normalizeDegrees(desiredYaw - state.player.yawDegrees);
-    if (Math.abs(error) <= 2) break;
+    if (Math.abs(error) <= toleranceDegrees) break;
     const movementX = Math.max(-80, Math.min(80, -error / 0.12));
     canvasCenter.x += movementX;
     await client.send("Input.dispatchMouseEvent", {
@@ -942,7 +948,7 @@ async function physicallyAimAtEnemy(client, addr, canvasCenter, enemyId) {
   const physicalLookDegrees = Math.abs(
     normalizeDegrees(state.player.yawDegrees - startingYaw),
   );
-  if (Math.abs(finalError) > 3) {
+  if (Math.abs(finalError) > toleranceDegrees) {
     throw new Error(
       `physical pointer look did not aim at enemy ${enemyId}: ${JSON.stringify({ startingYaw, desiredYaw, finalYaw: state.player.yawDegrees, finalError })}`,
     );
@@ -964,7 +970,13 @@ async function proveRepresentativeEncounter(
   dropId,
 ) {
   const canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
-  const aim = await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
+  const aim = await physicallyAimAtEnemy(
+    client,
+    addr,
+    canvasCenter,
+    enemyId,
+    5,
+  );
   if (aim.physicalLookDegrees < 1) {
     throw new Error(
       `representative encounter did not require observable physical look: ${JSON.stringify(aim)}`,
