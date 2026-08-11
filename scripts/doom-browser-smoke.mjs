@@ -884,6 +884,16 @@ function normalizeDegrees(value) {
 }
 
 async function acquirePhysicalPointerLock(client, canvasBounds) {
+  if (encounterExitEvidence && headedOzonePlatform === "x11") {
+    const centered = spawnSync(
+      "python3",
+      [join(actualRoot, "scripts/x11-pointer-input.py"), "center"],
+      { encoding: "utf8" },
+    );
+    if (centered.status !== 0) {
+      throw new Error(`X11 pointer centering failed: ${centered.stderr}`);
+    }
+  }
   await client.send("Page.bringToFront");
   const center = {
     x: canvasBounds.x + canvasBounds.width / 2,
@@ -1070,15 +1080,31 @@ async function physicallyAimAtEnemy(
       -80,
       Math.min(80, -pitchError / degreesPerPointerUnit),
     );
-    canvasCenter.x += movementX;
-    canvasCenter.y += movementY;
-    await client.send("Input.dispatchMouseEvent", {
-      type: "mouseMoved",
-      x: canvasCenter.x,
-      y: canvasCenter.y,
-      button: "none",
-      buttons: 0,
-    });
+    if (encounterExitEvidence && headedOzonePlatform === "x11") {
+      const moved = spawnSync(
+        "python3",
+        [
+          join(actualRoot, "scripts/x11-pointer-input.py"),
+          "move",
+          String(Math.round(movementX)),
+          String(Math.round(movementY)),
+        ],
+        { encoding: "utf8" },
+      );
+      if (moved.status !== 0) {
+        throw new Error(`X11 relative pointer input failed: ${moved.stderr}`);
+      }
+    } else {
+      canvasCenter.x += movementX;
+      canvasCenter.y += movementY;
+      await client.send("Input.dispatchMouseEvent", {
+        type: "mouseMoved",
+        x: canvasCenter.x,
+        y: canvasCenter.y,
+        button: "none",
+        buttons: 0,
+      });
+    }
     await delay(80);
     state = await fetchAuthoritativeState(addr);
     const currentEnemy = state.enemies.find(
