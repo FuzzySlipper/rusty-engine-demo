@@ -16,6 +16,7 @@ const ENCOUNTER: EntityId = EntityId::new(2);
 const EXIT: EntityId = EntityId::new(3);
 const FIRST_ENEMY: EntityId = EntityId::new(4);
 const SECOND_ENEMY: EntityId = EntityId::new(5);
+const GENERATOR_ENCOUNTER: EntityId = EntityId::new(40);
 
 #[test]
 fn authored_content_materializes_legible_entities_and_relationships() {
@@ -256,6 +257,35 @@ fn project_content_rejects_unknown_contract_fields() {
             ProjectContentError::Decode(_)
         ))
     ));
+}
+
+#[test]
+fn encounter_activation_spreads_first_attacks_over_authored_enemy_cadence() {
+    let mut project: serde_json::Value = serde_json::from_str(STORED_PROJECT).unwrap();
+    let encounter_position =
+        stored_entity_mut(&mut project, GENERATOR_ENCOUNTER)["translation"].clone();
+    stored_entity_mut(&mut project, ACTOR)["translation"] = encounter_position;
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).expect("admit project");
+    let mut game_loop = LoadingBayGameLoop::new(runtime, ACTOR).unwrap();
+
+    let activation = game_loop.run_fixed_tick().expect("activate encounter");
+    assert!(activation.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::Event(GameEvent::EncounterActivated {
+            encounter: GENERATOR_ENCOUNTER,
+            player: ACTOR
+        })
+    )));
+    let session = game_loop.runtime().session();
+    let ready_at = [5, 41, 42].map(|enemy| {
+        session
+            .enemy_combat(EntityId::new(enemy))
+            .expect("encounter combatant")
+            .state
+            .ready_at_tick
+            .raw()
+    });
+    assert_eq!(ready_at, [41, 81, 121]);
 }
 
 #[test]

@@ -1,4 +1,5 @@
 use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_time::{Tick, TickDelta};
 
 use crate::combat::EnemyState;
 use crate::runtime_records::GameEvent;
@@ -72,15 +73,37 @@ impl EncounterService {
         session: &mut GameSession,
         player: EntityId,
         candidates: &[EntityId],
+        tick: Tick,
     ) -> Vec<GameEvent> {
         candidates
             .iter()
             .map(|encounter| {
-                session
+                let component = session
                     .encounters
                     .get_mut(encounter)
-                    .expect("activation candidate remains attached")
-                    .state = EncounterState::Active;
+                    .expect("activation candidate remains attached");
+                component.state = EncounterState::Active;
+                let members = component.config.members.clone();
+                let member_count = members.len() as u64;
+                for (index, member) in members.into_iter().enumerate() {
+                    let Some(combat) = session.enemy_combat.get_mut(&member) else {
+                        continue;
+                    };
+                    // Spread first attacks over each enemy's authored cadence.
+                    // The group still wakes together, while the player receives
+                    // a reaction window instead of simultaneous first damage.
+                    let delay = combat
+                        .config
+                        .attack
+                        .cooldown_ticks
+                        .saturating_mul(index as u64 + 1)
+                        .div_ceil(member_count)
+                        .max(1);
+                    let ready_at = tick.advance(TickDelta::new(delay));
+                    if combat.state.ready_at_tick.raw() < ready_at.raw() {
+                        combat.state.ready_at_tick = ready_at;
+                    }
+                }
                 GameEvent::EncounterActivated {
                     encounter: *encounter,
                     player,

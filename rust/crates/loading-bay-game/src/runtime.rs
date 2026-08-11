@@ -429,6 +429,7 @@ impl GameRuntime {
             &mut self.session,
             player,
             &candidates,
+            self.tick,
         ));
         self.drain_events()
     }
