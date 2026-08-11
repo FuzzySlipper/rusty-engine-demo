@@ -340,12 +340,22 @@ async function focusGameplayCanvas(client) {
 }
 
 async function proveFocusedHeldMovement(client, addr) {
+  const requiredHeldDistance = 2;
   const inputSurface = await focusGameplayCanvas(client);
   const beforeHold = await fetchAuthoritativeState(addr);
   await dispatchKey(client, "keyDown", "KeyW");
-  await delay(450);
-  const duringHold = await fetchAuthoritativeState(addr);
-  await dispatchKey(client, "keyUp", "KeyW");
+  let duringHold;
+  try {
+    duringHold = await waitForAuthoritativeState(
+      addr,
+      "one physical keydown sustains forward movement",
+      (state) =>
+        horizontalDistance(beforeHold.player.position, state.player.position) >=
+        requiredHeldDistance,
+    );
+  } finally {
+    await dispatchKey(client, "keyUp", "KeyW");
+  }
   await delay(250);
   const afterRelease = await fetchAuthoritativeState(addr);
   await delay(250);
@@ -358,7 +368,7 @@ async function proveFocusedHeldMovement(client, addr) {
     afterRelease.player.position,
     stopped.player.position,
   );
-  if (heldDistance < 0.5 || stoppedDistance > 0.15) {
+  if (heldDistance < requiredHeldDistance || stoppedDistance > 0.15) {
     throw new Error(
       `single keydown did not sustain then release movement: ${JSON.stringify({ inputSurface, heldDistance, stoppedDistance, before: beforeHold.player.position, during: duringHold.player.position, afterRelease: afterRelease.player.position, stopped: stopped.player.position })}`,
     );
