@@ -399,22 +399,25 @@ async function proveFocusedHeldPistolFire(client, addr) {
     buttons: 1,
     clickCount: 1,
   });
-  await delay(550);
-  await client.send("Input.dispatchMouseEvent", {
-    type: "mouseReleased",
-    x: canvas.x,
-    y: canvas.y,
-    button: "left",
-    buttons: 0,
-    clickCount: 1,
-  });
-  const after = await waitForAuthoritativeState(
-    addr,
-    "held Mouse0 fires the equipped pistol at authored cadence",
-    (candidate) =>
-      candidate.weapon?.item === "weapon/pistol" &&
-      candidate.weapon.ammoRemaining <= before.weapon.ammoRemaining - 2,
-  );
+  let after;
+  try {
+    after = await waitForAuthoritativeState(
+      addr,
+      "held Mouse0 fires the equipped pistol at authored cadence",
+      (candidate) =>
+        candidate.weapon?.item === "weapon/pistol" &&
+        candidate.weapon.ammoRemaining <= before.weapon.ammoRemaining - 2,
+    );
+  } finally {
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mouseReleased",
+      x: canvas.x,
+      y: canvas.y,
+      button: "left",
+      buttons: 0,
+      clickCount: 1,
+    });
+  }
   return {
     shots: before.weapon.ammoRemaining - after.weapon.ammoRemaining,
     ammoBefore: before.weapon.ammoRemaining,
