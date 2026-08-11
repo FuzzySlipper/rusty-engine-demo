@@ -533,6 +533,11 @@ frame scheduler, backend clock, renderer object access, or private renderer was 
 
 ## Doom E1M1 voxel showcase — offline source, no runtime WAD (Den campaign #6674)
 
+Task #6801's bounded single-player gameplay scope, authored coordinate transform, landmark
+measurements, and current product deltas are recorded in
+[`doom-e1m1-gameplay-ledger.md`](doom-e1m1-gameplay-ledger.md). This provenance section remains the
+authority for source bytes, license boundaries, and derived assets.
+
 Doom E1M1 “Hangar” is the durable textured-voxel proving ground. The
 original WAD bytes are an **offline source** for an offline Node TS
 forge; no `doom1.wad` is read at runtime, no TS gameplay authority is
@@ -635,7 +640,7 @@ Exact PNG bytes and hashes are closed by `content/doom-e1m1/textures/manifest.js
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
 `voxelDataHash sha256:fad81c1c1d8b8ffe30b733817f70b494b26c1ca788e4c8a40a6fe16ffb6c756d`
 `contentHash sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c`
-`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` staticRevision `sha256:0d64257bc223f624a5697b2b0e9063b97c135ed87b3a0b88974aab7ea324e4dc` (runtime snapshot header).
+`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:f0b0ef955a9d24e90d6dd48d335c473566f8f31639917849659bc05f6c044c22`.
 
 ### Authored project
 
