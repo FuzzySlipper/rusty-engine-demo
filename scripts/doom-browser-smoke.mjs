@@ -21,16 +21,25 @@ const focused = process.env.RUSTY_DOOM_SMOKE_FOCUSED === "1";
 const traversalEvidence = process.env.RUSTY_DOOM_TRAVERSAL_EVIDENCE === "1";
 const retainedInteractionEvidence =
   process.env.RUSTY_DOOM_INTERACTION_EVIDENCE === "1";
+const encounterExitEvidence =
+  process.env.RUSTY_DOOM_ENCOUNTER_EXIT_EVIDENCE === "1";
 const interactionEvidence =
-  retainedInteractionEvidence || (!focused && !traversalEvidence);
-const retainedEvidence = traversalEvidence || retainedInteractionEvidence;
+  retainedInteractionEvidence ||
+  encounterExitEvidence ||
+  (!focused && !traversalEvidence);
+const retainedEvidence =
+  traversalEvidence || retainedInteractionEvidence || encounterExitEvidence;
 const traversalEvidenceDir = process.env.RUSTY_DOOM_EVIDENCE_DIR ?? null;
 const expectedEvidenceSha = process.env.RUSTY_DOOM_EXPECTED_SHA ?? null;
 
-if (traversalEvidence && retainedInteractionEvidence) {
-  throw new Error(
-    "traversal and interaction evidence modes are mutually exclusive",
-  );
+if (
+  [
+    traversalEvidence,
+    retainedInteractionEvidence,
+    encounterExitEvidence,
+  ].filter(Boolean).length > 1
+) {
+  throw new Error("retained evidence modes are mutually exclusive");
 }
 if (focused && retainedEvidence) {
   throw new Error(
@@ -390,7 +399,8 @@ async function proveFocusedHeldPistolFire(client, addr) {
       return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
     })()`,
   );
-  if (canvas === null) throw new Error("Engine canvas is unavailable for Mouse0");
+  if (canvas === null)
+    throw new Error("Engine canvas is unavailable for Mouse0");
   await client.send("Input.dispatchMouseEvent", {
     type: "mousePressed",
     x: canvas.x,
@@ -519,7 +529,9 @@ async function proveFocusedDeathAndRestart(client, addr) {
     if (restartButton === null) await delay(100);
   }
   if (restartButton === null) {
-    throw new Error("visible authored-restart button did not become actionable");
+    throw new Error(
+      "visible authored-restart button did not become actionable",
+    );
   }
   await client.send("Input.dispatchMouseEvent", {
     type: "mousePressed",
@@ -562,7 +574,8 @@ async function proveFocusedFireStopsOnBlur(client, addr) {
       return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
     })()`,
   );
-  if (canvas === null) throw new Error("Engine canvas is unavailable for blur proof");
+  if (canvas === null)
+    throw new Error("Engine canvas is unavailable for blur proof");
   await client.send("Input.dispatchMouseEvent", {
     type: "mousePressed",
     x: canvas.x,
@@ -574,7 +587,8 @@ async function proveFocusedFireStopsOnBlur(client, addr) {
   const fired = await waitForAuthoritativeState(
     addr,
     "Mouse0 fires once before focus loss",
-    (candidate) => candidate.weapon.ammoRemaining === before.weapon.ammoRemaining - 1,
+    (candidate) =>
+      candidate.weapon.ammoRemaining === before.weapon.ammoRemaining - 1,
   );
   await cdpEvaluate(client, `globalThis.dispatchEvent(new Event('blur'))`);
   await delay(750);
@@ -856,6 +870,206 @@ function resolveInteractionOwners(projectPath) {
     lift: owner("doom-repeatable-lift-linedef-195", "lift"),
     secret: owner("doom-secret-sector-68", "secretRegion"),
     exit: owner("doom-exit", "levelExit"),
+    representativeEnemy: owner("doom-shotgun-guy-20", "enemyCombat"),
+    representativeDrop: owner("doom-drop-shotgun-guy-20", "pickup"),
+  };
+}
+
+function normalizeDegrees(value) {
+  return ((((value + 180) % 360) + 360) % 360) - 180;
+}
+
+async function acquirePhysicalPointerLock(client, canvasBounds) {
+  await client.send("Page.bringToFront");
+  const center = {
+    x: canvasBounds.x + canvasBounds.width / 2,
+    y: canvasBounds.y + canvasBounds.height / 2,
+  };
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    ...center,
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+  });
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    ...center,
+    button: "left",
+    buttons: 0,
+    clickCount: 1,
+  });
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    const locked = await cdpEvaluate(
+      client,
+      `document.pointerLockElement === document.querySelector('canvas')`,
+    );
+    if (locked) return center;
+    await delay(100);
+  }
+  throw new Error("physical canvas click did not acquire pointer lock");
+}
+
+async function physicallyAimAtEnemy(client, addr, canvasCenter, enemyId) {
+  const before = await fetchAuthoritativeState(addr);
+  const enemy = before.enemies.find((candidate) => candidate.id === enemyId);
+  if (!enemy) throw new Error(`missing representative enemy ${enemyId}`);
+  const dx = enemy.position[0] - before.player.position[0];
+  const dz = enemy.position[2] - before.player.position[2];
+  const desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
+  const startingYaw = before.player.yawDegrees;
+  let state = before;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const error = normalizeDegrees(desiredYaw - state.player.yawDegrees);
+    if (Math.abs(error) <= 2) break;
+    const movementX = Math.max(-80, Math.min(80, -error / 0.12));
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      x: canvasCenter.x + movementX,
+      y: canvasCenter.y,
+      button: "none",
+      buttons: 0,
+    });
+    await delay(80);
+    state = await fetchAuthoritativeState(addr);
+  }
+  const finalError = normalizeDegrees(desiredYaw - state.player.yawDegrees);
+  const physicalLookDegrees = Math.abs(
+    normalizeDegrees(state.player.yawDegrees - startingYaw),
+  );
+  if (Math.abs(finalError) > 3) {
+    throw new Error(
+      `physical pointer look did not aim at enemy ${enemyId}: ${JSON.stringify({ startingYaw, desiredYaw, finalYaw: state.player.yawDegrees, finalError })}`,
+    );
+  }
+  return {
+    startingYaw,
+    desiredYaw,
+    finalYaw: state.player.yawDegrees,
+    physicalLookDegrees,
+  };
+}
+
+async function proveRepresentativeEncounter(
+  client,
+  addr,
+  canvasBounds,
+  traversalSamples,
+  enemyId,
+  dropId,
+) {
+  await moveToWorldPoint(client, addr, [146, 145], traversalSamples, {
+    singleHold: true,
+    arrivalDistance: 0.8,
+  });
+  const alerted = await waitForAuthoritativeState(
+    addr,
+    `canonical enemy ${enemyId} enters live combat`,
+    (candidate) => {
+      const enemy = candidate.enemies?.find((entry) => entry.id === enemyId);
+      return (
+        enemy && enemy.state === "alive" && enemy.combatPosture !== "sleeping"
+      );
+    },
+  );
+  const enemyBefore = alerted.enemies.find((entry) => entry.id === enemyId);
+  const canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
+  const aim = await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
+  if (aim.physicalLookDegrees < 1) {
+    throw new Error(
+      `representative encounter did not require observable physical look: ${JSON.stringify(aim)}`,
+    );
+  }
+  let latest = await fetchAuthoritativeState(addr);
+  let shots = 0;
+  while (
+    latest.enemies.find((entry) => entry.id === enemyId)?.state !==
+      "defeated" &&
+    shots < 6
+  ) {
+    const healthBefore = latest.enemies.find(
+      (entry) => entry.id === enemyId,
+    )?.currentHealth;
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mousePressed",
+      ...canvasCenter,
+      button: "left",
+      buttons: 1,
+      clickCount: 1,
+    });
+    try {
+      latest = await waitForAuthoritativeState(
+        addr,
+        `physical Mouse0 damages canonical enemy ${enemyId}`,
+        (candidate) => {
+          const enemy = candidate.enemies?.find(
+            (entry) => entry.id === enemyId,
+          );
+          return (
+            enemy?.state === "defeated" ||
+            (Number.isFinite(healthBefore) &&
+              enemy?.currentHealth < healthBefore)
+          );
+        },
+      );
+    } finally {
+      await client.send("Input.dispatchMouseEvent", {
+        type: "mouseReleased",
+        ...canvasCenter,
+        button: "left",
+        buttons: 0,
+        clickCount: 1,
+      });
+    }
+    shots += 1;
+    if (
+      latest.enemies.find((entry) => entry.id === enemyId)?.state !== "defeated"
+    ) {
+      await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
+    }
+  }
+  const enemyAfter = latest.enemies.find((entry) => entry.id === enemyId);
+  const drop = latest.pickups?.find((entry) => entry.id === dropId);
+  if (
+    enemyAfter?.state !== "defeated" ||
+    enemyAfter.currentHealth !== 0 ||
+    drop?.state !== "available"
+  ) {
+    throw new Error(
+      `representative encounter did not settle defeat/drop: ${JSON.stringify({ enemyAfter, drop, shots })}`,
+    );
+  }
+  await moveToWorldPoint(
+    client,
+    addr,
+    [enemyAfter.position[0], enemyAfter.position[2]],
+    traversalSamples,
+    { singleHold: true, arrivalDistance: 0.6 },
+  );
+  const collected = await waitForAuthoritativeState(
+    addr,
+    `canonical enemy drop ${dropId} is collected`,
+    (candidate) =>
+      candidate.pickups?.some(
+        (entry) => entry.id === dropId && entry.state === "collected",
+      ) === true,
+  );
+  return {
+    enemy: enemyId,
+    drop: dropId,
+    postureBefore: enemyBefore.combatPosture,
+    healthBefore: enemyBefore.currentHealth,
+    healthAfter: enemyAfter.currentHealth,
+    shots,
+    aim,
+    dropStateBeforeCollection: drop.state,
+    dropStateAfterCollection: collected.pickups.find(
+      (entry) => entry.id === dropId,
+    )?.state,
+    collectedWeapon: collected.inventory?.weapons?.find(
+      (weapon) => weapon.item === "weapon/shotgun",
+    ),
   };
 }
 
@@ -943,6 +1157,19 @@ async function proveInteractionRoute(
     [137, 146],
   ]);
   await openDoor(owners.startDoor, [142, 147]);
+  const representativeEncounter = encounterExitEvidence
+    ? await proveRepresentativeEncounter(
+        client,
+        addr,
+        canvasBounds,
+        traversalSamples,
+        owners.representativeEnemy,
+        owners.representativeDrop,
+      )
+    : null;
+  if (representativeEncounter !== null) {
+    await capture("encounter-defeat-drop.png");
+  }
   await walk([
     [178, 146],
     [178, 140],
@@ -979,7 +1206,10 @@ async function proveInteractionRoute(
     "physical route advances while type-88 lift is moving",
     (candidate) =>
       candidate.tick > liftActivated.tick &&
-      horizontalDistance(candidate.player.position, liftActivated.player.position) > 2 &&
+      horizontalDistance(
+        candidate.player.position,
+        liftActivated.player.position,
+      ) > 2 &&
       candidate.lifts?.some(
         (lift) => lift.id === owners.lift && lift.state !== "raised",
       ),
@@ -1050,7 +1280,9 @@ async function proveInteractionRoute(
   await capture("interaction-exit-complete.png");
   return {
     status: "passed",
-    mode: "task-6803-interactions",
+    mode: encounterExitEvidence
+      ? "task-6807-encounter-exit"
+      : "task-6803-interactions",
     elapsedMs: Date.now() - startedAtMs,
     inputSurface,
     doors: [
@@ -1076,6 +1308,7 @@ async function proveInteractionRoute(
     },
     secret: secret.secretRegions.find((entry) => entry.id === owners.secret),
     exit: completed.levelExits.find((entry) => entry.id === owners.exit),
+    representativeEncounter,
     traversalSampleCount: traversalSamples.length,
     screenshots,
   };
@@ -1121,8 +1354,16 @@ async function main() {
       (entity) => entity.pickup?.item === "armor/green",
     );
     const nukage = entities.filter((entity) => entity.hazard?.damage === 5);
-    if (!player || !shotgun || !healthBonus || !greenArmor || nukage.length !== 4) {
-      throw new Error("focused fixture could not resolve weapon and vitality owners");
+    if (
+      !player ||
+      !shotgun ||
+      !healthBonus ||
+      !greenArmor ||
+      nukage.length !== 4
+    ) {
+      throw new Error(
+        "focused fixture could not resolve weapon and vitality owners",
+      );
     }
     // Keep the canonical authored transactions while bounding this smoke to
     // weapon/vitality behavior instead of requiring an unrelated traversal.
@@ -1148,7 +1389,9 @@ async function main() {
       };
     }
     let focusedEnemyIndex = 0;
-    for (const enemy of entities.filter((entity) => entity.enemyCombat != null)) {
+    for (const enemy of entities.filter(
+      (entity) => entity.enemyCombat != null,
+    )) {
       focusedEnemyIndex += 1;
       enemy.translation = [
         10_000 + focusedEnemyIndex * 4,
@@ -1280,23 +1523,41 @@ async function main() {
       debugPort = await reservePort();
       profileDir = mkdtempSync(join(tmpdir(), "doom-chromium-"));
       console.log(
-        `launching chromium headless SwiftShader debugPort ${debugPort}`,
+        `launching chromium ${encounterExitEvidence ? "headed Wayland" : "headless SwiftShader"} debugPort ${debugPort}`,
       );
+      const chromiumArguments = encounterExitEvidence
+        ? [
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--enable-gpu",
+            "--ignore-gpu-blocklist",
+            "--disable-background-timer-throttling",
+            "--disable-backgrounding-occluded-windows",
+            "--disable-renderer-backgrounding",
+            "--autoplay-policy=no-user-gesture-required",
+            "--ozone-platform=wayland",
+          ]
+        : [
+            "--headless=new",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-background-timer-throttling",
+            "--disable-backgrounding-occluded-windows",
+            "--disable-renderer-backgrounding",
+            "--use-gl=angle",
+            "--use-angle=swiftshader",
+            "--enable-unsafe-swiftshader",
+            "--autoplay-policy=no-user-gesture-required",
+          ];
       chromiumProc = spawn(
         chromium,
         [
-          "--headless=new",
-          "--no-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-background-timer-throttling",
-          "--disable-backgrounding-occluded-windows",
-          "--disable-renderer-backgrounding",
-          "--use-gl=angle",
-          "--use-angle=swiftshader",
-          "--enable-unsafe-swiftshader",
-          "--autoplay-policy=no-user-gesture-required",
+          ...chromiumArguments,
           `--remote-debugging-port=${String(debugPort)}`,
+          "--remote-debugging-address=127.0.0.1",
+          "--remote-allow-origins=*",
           `--user-data-dir=${profileDir}`,
+          "--window-size=1600,900",
           "about:blank",
         ],
         { cwd: actualRoot, stdio: ["ignore", "pipe", "pipe"] },
@@ -1540,9 +1801,17 @@ async function main() {
         checks.push(
           `physical E opened manual doors ${interactionProof.doors.join(", ")}, recorded secret ${interactionProof.secret.id}, and completed exit ${interactionProof.exit.id}`,
         );
+        if (interactionProof.representativeEncounter !== null) {
+          checks.push(
+            `physical pointer look and Mouse0 defeated canonical enemy ${interactionProof.representativeEncounter.enemy} from ${interactionProof.representativeEncounter.healthBefore} health and collected materialized drop ${interactionProof.representativeEncounter.drop}`,
+          );
+        }
       } else if (focused) {
         const inputProof = await proveFocusedHeldMovement(cdpClient, addr);
-        const selectionProof = await proveFocusedWeaponSelection(cdpClient, addr);
+        const selectionProof = await proveFocusedWeaponSelection(
+          cdpClient,
+          addr,
+        );
         const fireProof = await proveFocusedHeldPistolFire(cdpClient, addr);
         const blurProof = await proveFocusedFireStopsOnBlur(cdpClient, addr);
         await proveFocusedHeldMovement(cdpClient, addr);
