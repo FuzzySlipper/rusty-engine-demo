@@ -962,6 +962,10 @@ async function proveRepresentativeEncounter(
   enemyId,
   dropId,
 ) {
+  await moveToWorldPoint(client, addr, [159, 146], traversalSamples, {
+    singleHold: true,
+    arrivalDistance: 0.8,
+  });
   const alerted = await waitForAuthoritativeState(
     addr,
     `canonical enemy ${enemyId} enters live combat`,
@@ -1155,6 +1159,10 @@ async function proveInteractionRoute(
     [137, 145],
     [137, 146],
   ]);
+  await openDoor(
+    owners.startDoor,
+    encounterExitEvidence ? [139, 148] : [142, 147],
+  );
   const representativeEncounter = encounterExitEvidence
     ? await proveRepresentativeEncounter(
         client,
@@ -1168,7 +1176,6 @@ async function proveInteractionRoute(
   if (representativeEncounter !== null) {
     await capture("encounter-defeat-drop.png");
   }
-  await openDoor(owners.startDoor, [142, 147]);
   await walk([
     [178, 146],
     [178, 140],
