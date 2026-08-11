@@ -56,8 +56,8 @@ elif len(sys.argv) == 4 and sys.argv[1] == "move":
         delta_y = int(sys.argv[3])
     except ValueError:
         sys.exit("move deltas must be integers")
-    if abs(delta_x) > 100 or abs(delta_y) > 100:
-        sys.exit("move deltas must stay within 100 units per axis")
+    if abs(delta_x) > 700 or abs(delta_y) > 700:
+        sys.exit("move deltas must stay within 700 units per axis")
     result = xtst.XTestFakeRelativeMotionEvent(display, delta_x, delta_y, 0)
 elif len(sys.argv) == 3 and sys.argv[1] == "button":
     if sys.argv[2] not in ("down", "up"):
