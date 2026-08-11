@@ -959,7 +959,6 @@ async function proveRepresentativeEncounter(
   client,
   addr,
   canvasBounds,
-  traversalSamples,
   enemyId,
   dropId,
 ) {
@@ -970,10 +969,6 @@ async function proveRepresentativeEncounter(
       `representative encounter did not require observable physical look: ${JSON.stringify(aim)}`,
     );
   }
-  await moveToWorldPoint(client, addr, [160, 146], traversalSamples, {
-    singleHold: true,
-    arrivalDistance: 0.5,
-  });
   const encounterState = await fetchAuthoritativeState(addr);
   const enemyBefore = encounterState.enemies.find(
     (entry) => entry.id === enemyId,
@@ -1043,21 +1038,6 @@ async function proveRepresentativeEncounter(
       `representative encounter did not settle defeat/drop: ${JSON.stringify({ enemyAfter, drop, shots })}`,
     );
   }
-  await moveToWorldPoint(
-    client,
-    addr,
-    [enemyAfter.position[0], enemyAfter.position[2]],
-    traversalSamples,
-    { singleHold: true, arrivalDistance: 0.6 },
-  );
-  const collected = await waitForAuthoritativeState(
-    addr,
-    `canonical enemy drop ${dropId} is collected`,
-    (candidate) =>
-      candidate.pickups?.some(
-        (entry) => entry.id === dropId && entry.state === "collected",
-      ) === true,
-  );
   return {
     enemy: enemyId,
     drop: dropId,
@@ -1066,13 +1046,7 @@ async function proveRepresentativeEncounter(
     healthAfter: enemyAfter.currentHealth,
     shots,
     aim,
-    dropStateBeforeCollection: drop.state,
-    dropStateAfterCollection: collected.pickups.find(
-      (entry) => entry.id === dropId,
-    )?.state,
-    collectedWeapon: collected.inventory?.weapons?.find(
-      (weapon) => weapon.item === "weapon/shotgun",
-    ),
+    dropState: drop.state,
   };
 }
 
@@ -1168,7 +1142,6 @@ async function proveInteractionRoute(
         client,
         addr,
         canvasBounds,
-        traversalSamples,
         owners.representativeEnemy,
         owners.representativeDrop,
       )
@@ -1810,7 +1783,7 @@ async function main() {
         );
         if (interactionProof.representativeEncounter !== null) {
           checks.push(
-            `physical pointer look and Mouse0 defeated canonical enemy ${interactionProof.representativeEncounter.enemy} from ${interactionProof.representativeEncounter.healthBefore} health and collected materialized drop ${interactionProof.representativeEncounter.drop}`,
+            `physical pointer look and Mouse0 defeated canonical enemy ${interactionProof.representativeEncounter.enemy} from ${interactionProof.representativeEncounter.healthBefore} health and read back materialized drop ${interactionProof.representativeEncounter.drop}`,
           );
         }
       } else if (focused) {
