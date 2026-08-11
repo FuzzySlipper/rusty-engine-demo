@@ -962,21 +962,19 @@ async function proveRepresentativeEncounter(
   enemyId,
   dropId,
 ) {
-  await moveToWorldPoint(client, addr, [159, 146], traversalSamples, {
+  await moveToWorldPoint(client, addr, [161, 146], traversalSamples, {
     singleHold: true,
     arrivalDistance: 0.8,
   });
-  const alerted = await waitForAuthoritativeState(
-    addr,
-    `canonical enemy ${enemyId} enters live combat`,
-    (candidate) => {
-      const enemy = candidate.enemies?.find((entry) => entry.id === enemyId);
-      return (
-        enemy && enemy.state === "alive" && enemy.combatPosture !== "sleeping"
-      );
-    },
+  const encounterState = await fetchAuthoritativeState(addr);
+  const enemyBefore = encounterState.enemies.find(
+    (entry) => entry.id === enemyId,
   );
-  const enemyBefore = alerted.enemies.find((entry) => entry.id === enemyId);
+  if (!enemyBefore || enemyBefore.state !== "alive") {
+    throw new Error(
+      `canonical representative enemy ${enemyId} was not live: ${JSON.stringify(enemyBefore)}`,
+    );
+  }
   const canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
   const aim = await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
   if (aim.physicalLookDegrees < 1) {
