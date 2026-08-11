@@ -558,6 +558,7 @@ fn project_creation_and_save_as_publish_admitted_canonical_projects() {
 }
 
 #[test]
+#[ignore = "slow Studio scene integration; run pnpm run test:studio-scene-integration"]
 fn scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admitted() {
     let root = TestProjectRoot::new(CURRENT_PROJECT);
     let mut service = StudioAdapterService::new();

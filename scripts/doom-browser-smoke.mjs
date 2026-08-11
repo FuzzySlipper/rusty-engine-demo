@@ -235,16 +235,13 @@ const keyIdentity = {
 async function dispatchKey(client, type, code) {
   const identity = keyIdentity[code];
   if (!identity) throw new Error(`missing CDP key identity for ${code}`);
-  const browserType = type === "keyDown" ? "keydown" : "keyup";
-  await cdpEvaluate(
-    client,
-    `window.dispatchEvent(new KeyboardEvent(${JSON.stringify(browserType)}, {
-      code: ${JSON.stringify(code)},
-      key: ${JSON.stringify(identity.key)},
-      bubbles: true,
-      cancelable: true
-    }))`,
-  );
+  await client.send("Input.dispatchKeyEvent", {
+    type,
+    code,
+    key: identity.key,
+    windowsVirtualKeyCode: identity.virtualKeyCode,
+    nativeVirtualKeyCode: identity.virtualKeyCode,
+  });
 }
 
 async function pulseKeys(client, codes, milliseconds = 140) {
@@ -258,6 +255,67 @@ async function pulseKeys(client, codes, milliseconds = 140) {
   for (const code of [...codes].reverse())
     await dispatchKey(client, "keyUp", code);
   await delay(60);
+}
+
+async function proveFocusedHeldMovement(client, addr) {
+  const gameplayDeadline = Date.now() + 5000;
+  let interactionMode = null;
+  while (Date.now() < gameplayDeadline) {
+    interactionMode = await cdpEvaluate(
+      client,
+      `document.querySelector('[data-rusty-application-host]')?.dataset.interactionMode ?? null`,
+    ).catch(() => null);
+    if (interactionMode === "gameplay") break;
+    await delay(100);
+  }
+  if (interactionMode !== "gameplay") {
+    throw new Error(
+      `Engine interaction mode stayed ${String(interactionMode)}`,
+    );
+  }
+  await cdpEvaluate(
+    client,
+    `document.querySelector('canvas')?.focus({ preventScroll: true })`,
+  );
+  const inputSurface = await cdpEvaluate(
+    client,
+    `(() => {
+      const canvas = document.querySelector('canvas');
+      const host = document.querySelector('[data-rusty-application-host]');
+      return {
+        active: document.activeElement === canvas,
+        interactionMode: host?.dataset.interactionMode ?? null,
+        pointerLocked: document.pointerLockElement === canvas,
+      };
+    })()`,
+  );
+  const beforeHold = await fetchAuthoritativeState(addr);
+  await dispatchKey(client, "keyDown", "KeyW");
+  await delay(450);
+  const duringHold = await fetchAuthoritativeState(addr);
+  await dispatchKey(client, "keyUp", "KeyW");
+  await delay(250);
+  const afterRelease = await fetchAuthoritativeState(addr);
+  await delay(250);
+  const stopped = await fetchAuthoritativeState(addr);
+  const heldDistance = horizontalDistance(
+    beforeHold.player.position,
+    duringHold.player.position,
+  );
+  const stoppedDistance = horizontalDistance(
+    afterRelease.player.position,
+    stopped.player.position,
+  );
+  if (heldDistance < 0.5 || stoppedDistance > 0.15) {
+    throw new Error(
+      `single keydown did not sustain then release movement: ${JSON.stringify({ inputSurface, heldDistance, stoppedDistance, before: beforeHold.player.position, during: duringHold.player.position, afterRelease: afterRelease.player.position, stopped: stopped.player.position })}`,
+    );
+  }
+  return { heldDistance, stoppedDistance };
+}
+
+function horizontalDistance(left, right) {
+  return Math.hypot(right[0] - left[0], right[2] - left[2]);
 }
 
 async function moveToWorldPoint(client, addr, target, traversalSamples) {
@@ -647,7 +705,12 @@ async function main() {
       );
 
       if (focused) {
+        const inputProof = await proveFocusedHeldMovement(cdpClient, addr);
         headless.playthrough = { status: "skipped", reason: "focused smoke" };
+        headless.input = inputProof;
+        checks.push(
+          `single keydown sustained ${inputProof.heldDistance.toFixed(2)} world units without mouse motion and keyup stopped within ${inputProof.stoppedDistance.toFixed(2)} units`,
+        );
         checks.push("full E1M1 traversal reserved for pnpm run certify:e1m1");
       } else {
         const traversalSamples = [];

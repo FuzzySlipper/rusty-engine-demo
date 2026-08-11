@@ -1,4 +1,6 @@
 import { GameSessionError, LoadingBayGameSession } from "./game-session.js";
+import { HeldMovementInput } from "./held-movement.js";
+import { resolvePointerLook } from "./pointer-look.js";
 import type {
   RuntimeApplicationContent,
   RuntimeBrowserState,
@@ -137,12 +139,22 @@ export async function mountLoadingBayGame(
   options: LoadingBayGameOptions = {},
 ): Promise<LoadingBayGameHandle> {
   const controller = new AbortController();
-  const pressed = new Set<string>();
   let preferences = options.preferences ?? defaultPreferences();
   let lastRejection: string | null = null;
   let disposed = false;
   const session = await LoadingBayGameSession.connect();
   let current = session.state;
+  const heldMovement = new HeldMovementInput({
+    bindings: () => current.player.bindings,
+    intervalMilliseconds: () => 16,
+    dispatch: async (action) => {
+      session.queueInput({
+        movement: [action.forward, action.right],
+        lookDelta: [0, 0],
+        primaryFireHeld: false,
+      });
+    },
+  });
   let lastRenderFrame: Readonly<Record<string, unknown>> | null = null;
   let lastApplicationContent: RuntimeApplicationContent | null = null;
   let projectionQueue: Promise<void> = Promise.resolve();
@@ -195,7 +207,7 @@ export async function mountLoadingBayGame(
       if (disposed) return;
       disposed = true;
       controller.abort();
-      pressed.clear();
+      heldMovement.clear(false);
       session.neutralizeInput();
       await projectionQueue.catch(() => undefined);
       await session.close();
@@ -211,7 +223,7 @@ export async function mountLoadingBayGame(
       });
     },
     releaseInput: () => {
-      pressed.clear();
+      heldMovement.clear(false);
       session.neutralizeInput();
     },
     restart: async () => {
@@ -309,8 +321,7 @@ export async function mountLoadingBayGame(
       options.inputEnabled?.(event) === false
     )
       return;
-    pressed.add(event.code);
-    queueMovement();
+    heldMovement.press(event.code);
     const slot = current.player.bindings.selectWeapon.indexOf(event.code);
     if (slot >= 0) {
       void session
@@ -320,12 +331,10 @@ export async function mountLoadingBayGame(
   }
 
   function onKeyUp(event: KeyboardEvent): void {
-    pressed.delete(event.code);
+    heldMovement.release(event.code);
     if (options.inputEnabled?.(event) === false) {
       session.neutralizeInput();
-      return;
     }
-    queueMovement();
   }
 
   function onMouseMove(event: MouseEvent): void {
@@ -334,13 +343,14 @@ export async function mountLoadingBayGame(
       options.inputEnabled?.(event) === false
     )
       return;
-    const invert = preferences.invertY ? -1 : 1;
+    const lookDelta = resolvePointerLook(
+      event.movementX,
+      event.movementY,
+      preferences,
+    );
     session.queueInput({
       movement: movement(),
-      lookDelta: [
-        clamp(event.movementX * preferences.mouseSensitivity * 0.01),
-        clamp(event.movementY * preferences.mouseSensitivity * 0.01 * invert),
-      ],
+      lookDelta,
       primaryFireHeld: false,
     });
   }
@@ -371,14 +381,8 @@ export async function mountLoadingBayGame(
   }
 
   function movement(): readonly [number, number] {
-    const bindings = current.player.bindings;
-    const forward =
-      Number(pressed.has(bindings.moveForward)) -
-      Number(pressed.has(bindings.moveBackward));
-    const right =
-      Number(pressed.has(bindings.moveRight)) -
-      Number(pressed.has(bindings.moveLeft));
-    return [forward, right];
+    const action = heldMovement.current;
+    return [action.forward, action.right];
   }
 
   function record(error: unknown): void {
@@ -439,10 +443,6 @@ function keyboardTargetOwnsInput(target: EventTarget | null): boolean {
 
 function normalizeDegrees(value: number): number {
   return ((value % 360) + 360) % 360;
-}
-
-function clamp(value: number): number {
-  return Math.max(-1, Math.min(1, value));
 }
 
 function defaultPreferences(): LoadingBayHostPresentationPreferences {

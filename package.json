@@ -35,6 +35,7 @@
     "test:performance-tools": "node --test scripts/profile-browser-build.test.mjs",
     "test:platform": "node --test libs/platform/src/*.test.ts",
     "test:shell": "pnpm --filter @rusty-engine-demo/browser-shell test",
+    "test:studio-scene-integration": "cargo test --locked -p loading-bay-game --test studio_adapter scene_object_hierarchy_lights_full_transforms_and_capabilities_are_owner_admitted -- --ignored --exact",
     "test:tauri": "pnpm run prepare:tauri && cargo test --locked -p loading-bay-desktop && node --test scripts/prepare-tauri.test.mjs && pnpm run test:tauri-deploy",
     "test:tauri-deploy": "node --test scripts/deploy-tauri.test.mjs",
     "verify:tauri": "pnpm run test:tauri && pnpm run build:tauri:binary && pnpm run inspect:tauri && pnpm run smoke:tauri",

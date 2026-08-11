@@ -16,11 +16,12 @@ long playthrough certification are separate operations, not per-commit CI.
 
 ## Explicit certification
 
-| Command or workflow                     | When to use it                                                                                                  |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `pnpm run certify:e1m1`                 | Before claiming the complete E1M1 switch, combat, traversal, terrain, and exit route works.                     |
-| `certify Tauri release` GitHub workflow | When producing a Linux release artifact. It builds, installs, certifies, fingerprints, and uploads the package. |
-| Performance and capture commands        | When changing performance-sensitive code or refreshing named visual evidence.                                   |
+| Command or workflow                      | When to use it                                                                                                  |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pnpm run certify:e1m1`                  | Before claiming the complete E1M1 switch, combat, traversal, terrain, and exit route works.                     |
+| `pnpm run test:studio-scene-integration` | When changing Studio scene-object hierarchy, lights, transforms, or capability editing.                         |
+| `certify Tauri release` GitHub workflow  | When producing a Linux release artifact. It builds, installs, certifies, fingerprints, and uploads the package. |
+| Performance and capture commands         | When changing performance-sensitive code or refreshing named visual evidence.                                   |
 
 ## Retired checks
 
@@ -34,6 +35,9 @@ long playthrough certification are separate operations, not per-commit CI.
   desktop binary. Package installation and artifact upload belong to the manual release workflow.
 - Installed-product certification no longer launches a second browser-control campaign. The
   installed Tauri/WebDriver smoke owns that product claim.
+- The roughly 90-second Studio scene-object hierarchy/light/transform integration case is ignored
+  by the normal Rust suite. Its named command remains the required opt-in check for changes to that
+  Studio-owned surface.
 
 Add a smoke only when it owns a product boundary that cannot be asserted more cheaply, has a clear
 failure signal, and is not already covered by a focused test or another retained smoke.
