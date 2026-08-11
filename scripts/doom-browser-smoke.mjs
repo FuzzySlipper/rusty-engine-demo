@@ -925,6 +925,31 @@ async function acquirePhysicalPointerLock(client, canvasBounds) {
   throw new Error("physical canvas click did not acquire pointer lock");
 }
 
+async function setPhysicalPrimaryFire(client, canvasCenter, pressed) {
+  if (encounterExitEvidence && headedOzonePlatform === "x11") {
+    const button = spawnSync(
+      "python3",
+      [
+        join(actualRoot, "scripts/x11-pointer-input.py"),
+        "button",
+        pressed ? "down" : "up",
+      ],
+      { encoding: "utf8" },
+    );
+    if (button.status !== 0) {
+      throw new Error(`X11 primary-fire input failed: ${button.stderr}`);
+    }
+    return;
+  }
+  await client.send("Input.dispatchMouseEvent", {
+    type: pressed ? "mousePressed" : "mouseReleased",
+    ...canvasCenter,
+    button: "left",
+    buttons: pressed ? 1 : 0,
+    clickCount: 1,
+  });
+}
+
 async function clickVisibleButton(client, label) {
   const deadline = Date.now() + 10_000;
   let point = null;
@@ -1193,13 +1218,7 @@ async function proveRepresentativeEncounter(
       (entry) => entry.id === enemyId,
     )?.currentHealth;
     const ammoBefore = latest.weapon?.ammoRemaining;
-    await client.send("Input.dispatchMouseEvent", {
-      type: "mousePressed",
-      ...canvasCenter,
-      button: "left",
-      buttons: 1,
-      clickCount: 1,
-    });
+    await setPhysicalPrimaryFire(client, canvasCenter, true);
     try {
       latest = await waitForAuthoritativeState(
         addr,
@@ -1207,13 +1226,7 @@ async function proveRepresentativeEncounter(
         (candidate) => candidate.weapon?.ammoRemaining < ammoBefore,
       );
     } finally {
-      await client.send("Input.dispatchMouseEvent", {
-        type: "mouseReleased",
-        ...canvasCenter,
-        button: "left",
-        buttons: 0,
-        clickCount: 1,
-      });
+      await setPhysicalPrimaryFire(client, canvasCenter, false);
     }
     shots += 1;
     const targetAfterShot = latest.enemies.find(

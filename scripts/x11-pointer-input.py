@@ -33,6 +33,12 @@ xtst.XTestFakeRelativeMotionEvent.argtypes = [
     ctypes.c_int,
     ctypes.c_ulong,
 ]
+xtst.XTestFakeButtonEvent.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_uint,
+    ctypes.c_int,
+    ctypes.c_ulong,
+]
 
 display = x11.XOpenDisplay(None)
 if not display:
@@ -53,8 +59,12 @@ elif len(sys.argv) == 4 and sys.argv[1] == "move":
     if abs(delta_x) > 100 or abs(delta_y) > 100:
         sys.exit("move deltas must stay within 100 units per axis")
     result = xtst.XTestFakeRelativeMotionEvent(display, delta_x, delta_y, 0)
+elif len(sys.argv) == 3 and sys.argv[1] == "button":
+    if sys.argv[2] not in ("down", "up"):
+        sys.exit("button state must be down or up")
+    result = xtst.XTestFakeButtonEvent(display, 1, sys.argv[2] == "down", 0)
 else:
-    sys.exit("usage: x11-pointer-input.py center | move DX DY")
+    sys.exit("usage: x11-pointer-input.py center | move DX DY | button down|up")
 
 if not result:
     x11.XCloseDisplay(display)
