@@ -1144,6 +1144,15 @@ async function main() {
         max: [0.75, 0.6, 0.75],
       };
     }
+    let focusedEnemyIndex = 0;
+    for (const enemy of entities.filter((entity) => entity.enemyCombat != null)) {
+      focusedEnemyIndex += 1;
+      enemy.translation = [
+        10_000 + focusedEnemyIndex * 4,
+        enemy.translation[1],
+        10_000,
+      ];
+    }
     projectPath = join(saveRoot, "doom-e1m1-focused.project.json");
     writeFileSync(projectPath, JSON.stringify(project), "utf8");
   }
