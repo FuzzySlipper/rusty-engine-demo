@@ -18,7 +18,9 @@ export interface RuntimeApplicationContent {
 export type RuntimeVisualState =
   | "default"
   | "open"
+  | "opening"
   | "closed"
+  | "closing"
   | "active"
   | "inactive"
   | "standby"
@@ -199,7 +201,7 @@ export interface RuntimeExtractionBeaconState {
 
 export interface RuntimeDoorAccessState {
   readonly id: number;
-  readonly state: "closed" | "open";
+  readonly state: "closed" | "opening" | "open" | "closing";
   readonly requiredKey: string;
   readonly keyPolicy: "retain" | "consume";
   readonly activationRadius: number;
@@ -210,6 +212,27 @@ export interface RuntimeSecretRegionState {
   readonly id: number;
   readonly state: "undiscovered" | "discovered";
   readonly presentation: string;
+}
+
+export interface RuntimeFloorActionState {
+  readonly id: number;
+  readonly targetPlatform: number;
+  readonly state: "armed" | "lowering" | "lowered";
+  readonly motionElapsedTicks: number;
+  readonly prompt: string;
+  readonly presentation: string;
+  readonly source: string;
+}
+
+export interface RuntimeLiftState {
+  readonly id: number;
+  readonly targetPlatform: number;
+  readonly state: "raised" | "lowering" | "waiting" | "raising";
+  readonly motionElapsedTicks: number;
+  readonly waitElapsedTicks: number;
+  readonly prompt: string;
+  readonly presentation: string;
+  readonly source: string;
 }
 
 export interface RuntimeLevelExitState {
@@ -310,7 +333,9 @@ export interface RuntimeAnimationState {
     | "attacking"
     | "defeated"
     | "open"
+    | "opening"
     | "closed"
+    | "closing"
     | "standby"
     | "active";
 }
@@ -499,7 +524,7 @@ export interface RuntimeBrowserState {
   readonly voxelNavigationHash: string;
   readonly voxelProbePathLength: number;
   readonly projection: readonly RuntimeProjectionNode[];
-  readonly doorState: "closed" | "open";
+  readonly doorState: "closed" | "opening" | "open" | "closing";
   readonly encounterState: "dormant" | "active" | "cleared";
   readonly motionState: "moving" | "blocked";
   readonly navigationState: "following" | "arrived" | "blocked" | "unreachable";
@@ -516,6 +541,8 @@ export interface RuntimeBrowserState {
   readonly extractionBeacon: RuntimeExtractionBeaconState | null;
   readonly doorAccess: readonly RuntimeDoorAccessState[];
   readonly secretRegions: readonly RuntimeSecretRegionState[];
+  readonly floorActions: readonly RuntimeFloorActionState[];
+  readonly lifts: readonly RuntimeLiftState[];
   readonly levelExits: readonly RuntimeLevelExitState[];
   readonly levelComplete: boolean;
   readonly interaction: RuntimeInteractionState | null;

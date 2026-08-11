@@ -70707,7 +70707,7 @@
       "id": "voxel-volume/doom-e1m1",
       "catalog": {
         "version": 1,
-        "hash": "sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c",
+        "hash": "sha256:06b2cea963c98806b33bec61b9ac57f98ff2f2c9355483ccee9a1702c31b85df",
         "sourcePath": "content/doom-e1m1/doom-e1m1.voxel.json",
         "label": "doom-e1m1"
       },
@@ -183756,15 +183756,6 @@
               "start": [
                 255,
                 14,
-                85
-              ],
-              "length": 8,
-              "materialSlot": 10
-            },
-            {
-              "start": [
-                255,
-                14,
                 113
               ],
               "length": 1,
@@ -185929,33 +185920,6 @@
               ],
               "length": 1,
               "materialSlot": 31
-            },
-            {
-              "start": [
-                256,
-                14,
-                83
-              ],
-              "length": 6,
-              "materialSlot": 10
-            },
-            {
-              "start": [
-                256,
-                14,
-                84
-              ],
-              "length": 7,
-              "materialSlot": 10
-            },
-            {
-              "start": [
-                256,
-                14,
-                86
-              ],
-              "length": 8,
-              "materialSlot": 10
             },
             {
               "start": [
@@ -187275,15 +187239,6 @@
               "start": [
                 257,
                 14,
-                82
-              ],
-              "length": 3,
-              "materialSlot": 10
-            },
-            {
-              "start": [
-                257,
-                14,
                 110
               ],
               "length": 1,
@@ -188328,15 +188283,6 @@
               "start": [
                 258,
                 14,
-                87
-              ],
-              "length": 6,
-              "materialSlot": 10
-            },
-            {
-              "start": [
-                258,
-                14,
                 109
               ],
               "length": 1,
@@ -188836,15 +188782,6 @@
               ],
               "length": 9,
               "materialSlot": 13
-            },
-            {
-              "start": [
-                259,
-                14,
-                88
-              ],
-              "length": 6,
-              "materialSlot": 10
             },
             {
               "start": [
@@ -195060,33 +194997,6 @@
               "start": [
                 269,
                 15,
-                61
-              ],
-              "length": 10,
-              "materialSlot": 10
-            },
-            {
-              "start": [
-                269,
-                15,
-                62
-              ],
-              "length": 10,
-              "materialSlot": 10
-            },
-            {
-              "start": [
-                269,
-                15,
-                63
-              ],
-              "length": 11,
-              "materialSlot": 10
-            },
-            {
-              "start": [
-                269,
-                15,
                 64
               ],
               "length": 4,
@@ -196450,6 +196360,33 @@
               ],
               "length": 9,
               "materialSlot": 13
+            },
+            {
+              "start": [
+                272,
+                15,
+                61
+              ],
+              "length": 7,
+              "materialSlot": 10
+            },
+            {
+              "start": [
+                272,
+                15,
+                62
+              ],
+              "length": 7,
+              "materialSlot": 10
+            },
+            {
+              "start": [
+                272,
+                15,
+                63
+              ],
+              "length": 8,
+              "materialSlot": 10
             },
             {
               "start": [
@@ -201577,8 +201514,8 @@
           "converter": "doom-e1m1.voxelize.v1",
           "settingsSha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
         },
-        "voxelDataHash": "sha256:fad81c1c1d8b8ffe30b733817f70b494b26c1ca788e4c8a40a6fe16ffb6c756d",
-        "contentHash": "sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c"
+        "voxelDataHash": "sha256:321d385afd71fadd4e32e05ae9b58fd251cfcc34ca50113d5e7015b85d47135a",
+        "contentHash": "sha256:06b2cea963c98806b33bec61b9ac57f98ff2f2c9355483ccee9a1702c31b85df"
       }
     }
   ],
@@ -210042,9 +209979,9 @@
         },
         {
           "id": 83,
-          "name": "doom-door-1",
+          "name": "doom-manual-door-sector-4",
           "translation": [
-            144.0,
+            144.5,
             9.0,
             148.0
           ],
@@ -210062,7 +209999,7 @@
           },
           "collision": {
             "enabled": true,
-            "staticCollider": true
+            "staticCollider": false
           },
           "renderable": {
             "asset": "mesh/prop-kit/security-door",
@@ -210087,6 +210024,22 @@
                   "emissionIntensity": 0.12
                 },
                 {
+                  "state": "opening",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.88,
+                    0.58,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.42,
+                    0.08
+                  ],
+                  "emissionIntensity": 0.18
+                },
+                {
                   "state": "open",
                   "kind": "material",
                   "textureTint": [
@@ -210101,17 +210054,51 @@
                     0.52
                   ],
                   "emissionIntensity": 0.35
+                },
+                {
+                  "state": "closing",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.88,
+                    0.58,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.42,
+                    0.08
+                  ],
+                  "emissionIntensity": 0.18
                 }
               ]
             }
           },
           "door": {
             "openTranslation": [
-              144.0,
-              13.0,
+              144.5,
+              13.25,
               148.0
             ],
-            "autoCloseAfterTicks": null
+            "autoCloseAfterTicks": 257,
+            "motionDurationTicks": 58,
+            "source": "doom1.wad:E1M1:linedefs:151,152:type:1:sector:4:texture:BIGDOOR2",
+            "openPresentation": "BIGDOOR2 door opening",
+            "closePresentation": "BIGDOOR2 door closing",
+            "openSound": "doom:DSDOROPN",
+            "closeSound": "doom:DSDORCLS"
+          },
+          "switch": {
+            "controls": [],
+            "activationRadius": 6.0,
+            "prompt": "Open BIGDOOR2 door",
+            "unavailablePresentation": "BIGDOOR2 door unavailable",
+            "effects": [
+              {
+                "kind": "openDoor",
+                "door": 83
+              }
+            ]
           },
           "kinematic": {
             "halfExtents": [
@@ -210128,11 +210115,11 @@
         },
         {
           "id": 84,
-          "name": "doom-door-2",
+          "name": "doom-manual-door-sector-68",
           "translation": [
-            145.0,
-            9.0,
-            148.0
+            231.0,
+            7.5,
+            64.0
           ],
           "bounds": {
             "min": [
@@ -210148,7 +210135,7 @@
           },
           "collision": {
             "enabled": true,
-            "staticCollider": true
+            "staticCollider": false
           },
           "renderable": {
             "asset": "mesh/prop-kit/security-door",
@@ -210173,6 +210160,22 @@
                   "emissionIntensity": 0.12
                 },
                 {
+                  "state": "opening",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.88,
+                    0.58,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.42,
+                    0.08
+                  ],
+                  "emissionIntensity": 0.18
+                },
+                {
                   "state": "open",
                   "kind": "material",
                   "textureTint": [
@@ -210187,17 +210190,51 @@
                     0.52
                   ],
                   "emissionIntensity": 0.35
+                },
+                {
+                  "state": "closing",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.88,
+                    0.58,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.42,
+                    0.08
+                  ],
+                  "emissionIntensity": 0.18
                 }
               ]
             }
           },
           "door": {
             "openTranslation": [
-              145.0,
-              13.5,
-              148.0
+              231.0,
+              11.75,
+              64.0
             ],
-            "autoCloseAfterTicks": null
+            "autoCloseAfterTicks": 257,
+            "motionDurationTicks": 58,
+            "source": "doom1.wad:E1M1:linedefs:247,248:type:1:sector:68:texture:BROWN96",
+            "openPresentation": "BROWN96 door opening",
+            "closePresentation": "BROWN96 door closing",
+            "openSound": "doom:DSDOROPN",
+            "closeSound": "doom:DSDORCLS"
+          },
+          "switch": {
+            "controls": [],
+            "activationRadius": 6.0,
+            "prompt": "Open BROWN96 door",
+            "unavailablePresentation": "BROWN96 door unavailable",
+            "effects": [
+              {
+                "kind": "openDoor",
+                "door": 84
+              }
+            ]
           },
           "kinematic": {
             "halfExtents": [
@@ -210214,11 +210251,11 @@
         },
         {
           "id": 85,
-          "name": "doom-door-3",
+          "name": "doom-manual-door-sector-81",
           "translation": [
-            232.0,
+            236.0,
             7.5,
-            64.0
+            14.0
           ],
           "bounds": {
             "min": [
@@ -210234,7 +210271,7 @@
           },
           "collision": {
             "enabled": true,
-            "staticCollider": true
+            "staticCollider": false
           },
           "renderable": {
             "asset": "mesh/prop-kit/security-door",
@@ -210259,6 +210296,22 @@
                   "emissionIntensity": 0.12
                 },
                 {
+                  "state": "opening",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.88,
+                    0.58,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.42,
+                    0.08
+                  ],
+                  "emissionIntensity": 0.18
+                },
+                {
                   "state": "open",
                   "kind": "material",
                   "textureTint": [
@@ -210273,17 +210326,51 @@
                     0.52
                   ],
                   "emissionIntensity": 0.35
+                },
+                {
+                  "state": "closing",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.88,
+                    0.58,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.42,
+                    0.08
+                  ],
+                  "emissionIntensity": 0.18
                 }
               ]
             }
           },
           "door": {
             "openTranslation": [
-              232.0,
-              20.0,
-              64.0
+              236.0,
+              11.75,
+              14.0
             ],
-            "autoCloseAfterTicks": null
+            "autoCloseAfterTicks": 257,
+            "motionDurationTicks": 58,
+            "source": "doom1.wad:E1M1:linedefs:324,325:type:1:sector:81:texture:EXITDOOR",
+            "openPresentation": "EXITDOOR door opening",
+            "closePresentation": "EXITDOOR door closing",
+            "openSound": "doom:DSDOROPN",
+            "closeSound": "doom:DSDORCLS"
+          },
+          "switch": {
+            "controls": [],
+            "activationRadius": 6.0,
+            "prompt": "Open EXITDOOR door",
+            "unavailablePresentation": "EXITDOOR door unavailable",
+            "effects": [
+              {
+                "kind": "openDoor",
+                "door": 85
+              }
+            ]
           },
           "kinematic": {
             "halfExtents": [
@@ -210300,11 +210387,11 @@
         },
         {
           "id": 86,
-          "name": "doom-door-4",
+          "name": "doom-manual-door-sector-76",
           "translation": [
-            230.0,
+            236.0,
             7.5,
-            64.0
+            52.5
           ],
           "bounds": {
             "min": [
@@ -210320,7 +210407,7 @@
           },
           "collision": {
             "enabled": true,
-            "staticCollider": true
+            "staticCollider": false
           },
           "renderable": {
             "asset": "mesh/prop-kit/security-door",
@@ -210345,6 +210432,22 @@
                   "emissionIntensity": 0.12
                 },
                 {
+                  "state": "opening",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.88,
+                    0.58,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.42,
+                    0.08
+                  ],
+                  "emissionIntensity": 0.18
+                },
+                {
                   "state": "open",
                   "kind": "material",
                   "textureTint": [
@@ -210359,17 +210462,51 @@
                     0.52
                   ],
                   "emissionIntensity": 0.35
+                },
+                {
+                  "state": "closing",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    0.88,
+                    0.58,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.75,
+                    0.42,
+                    0.08
+                  ],
+                  "emissionIntensity": 0.18
                 }
               ]
             }
           },
           "door": {
             "openTranslation": [
-              230.0,
-              11.5,
-              64.0
+              236.0,
+              11.75,
+              52.5
             ],
-            "autoCloseAfterTicks": null
+            "autoCloseAfterTicks": 257,
+            "motionDurationTicks": 58,
+            "source": "doom1.wad:E1M1:linedefs:340,341:type:1:sector:76:texture:BIGDOOR4",
+            "openPresentation": "BIGDOOR4 door opening",
+            "closePresentation": "BIGDOOR4 door closing",
+            "openSound": "doom:DSDOROPN",
+            "closeSound": "doom:DSDORCLS"
+          },
+          "switch": {
+            "controls": [],
+            "activationRadius": 6.0,
+            "prompt": "Open BIGDOOR4 door",
+            "unavailablePresentation": "BIGDOOR4 door unavailable",
+            "effects": [
+              {
+                "kind": "openDoor",
+                "door": 86
+              }
+            ]
           },
           "kinematic": {
             "halfExtents": [
@@ -210386,82 +210523,33 @@
         },
         {
           "id": 87,
-          "name": "doom-door-5",
+          "name": "doom-floor-platform-sector-59",
           "translation": [
-            236.0,
-            7.5,
-            13.5
+            260.0,
+            15.0,
+            85.25
           ],
           "bounds": {
             "min": [
-              -0.8,
-              -1.2,
-              -0.2
+              -5.0,
+              -1.0,
+              -4.25
             ],
             "max": [
-              0.8,
-              1.2,
-              0.2
+              5.0,
+              0.0,
+              4.25
             ]
           },
           "collision": {
             "enabled": true,
-            "staticCollider": true
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/security-door",
-            "visible": true,
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "closed",
-                  "kind": "material",
-                  "textureTint": [
-                    1.0,
-                    0.78,
-                    0.48,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.75,
-                    0.28,
-                    0.05
-                  ],
-                  "emissionIntensity": 0.12
-                },
-                {
-                  "state": "open",
-                  "kind": "material",
-                  "textureTint": [
-                    0.62,
-                    1.0,
-                    0.82,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.82,
-                    0.52
-                  ],
-                  "emissionIntensity": 0.35
-                }
-              ]
-            }
-          },
-          "door": {
-            "openTranslation": [
-              236.0,
-              11.5,
-              13.5
-            ],
-            "autoCloseAfterTicks": null
+            "staticCollider": false
           },
           "kinematic": {
             "halfExtents": [
-              0.8,
-              1.2,
-              0.2
+              5.0,
+              0.5,
+              4.25
             ],
             "velocity": [
               0.0,
@@ -210472,87 +210560,120 @@
         },
         {
           "id": 88,
-          "name": "doom-switch-1",
+          "name": "doom-walk-floor-action-linedef-308",
           "translation": [
-            116.0,
-            9.0,
-            79.0
+            236.0,
+            7.5,
+            44.0
           ],
-          "renderable": {
-            "asset": "mesh/prop-kit/control-panel",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -0.775,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "inactive",
-                  "kind": "material",
-                  "textureTint": [
-                    1.0,
-                    0.78,
-                    0.48,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.75,
-                    0.28,
-                    0.05
-                  ],
-                  "emissionIntensity": 0.12
-                },
-                {
-                  "state": "active",
-                  "kind": "material",
-                  "textureTint": [
-                    0.62,
-                    1.0,
-                    0.82,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.82,
-                    0.52
-                  ],
-                  "emissionIntensity": 0.35
-                }
-              ]
-            }
-          },
-          "switch": {
-            "controls": [
-              83,
-              84,
-              85,
-              86,
-              87
+          "bounds": {
+            "min": [
+              -6.0,
+              -1.0,
+              -0.5
             ],
-            "loadingBayInterlock": {
-              "closeDoor": 84,
-              "openDoor": 83
-            }
+            "max": [
+              6.0,
+              3.0,
+              0.5
+            ]
+          },
+          "floorAction": {
+            "targetPlatform": 87,
+            "upperTranslation": [
+              260.0,
+              15.0,
+              85.25
+            ],
+            "loweredTranslation": [
+              260.0,
+              6.5,
+              85.25
+            ],
+            "motionDurationTicks": 59,
+            "prompt": "Lower turbo floor",
+            "presentation": "Sector 59 lowering",
+            "source": "doom1.wad:E1M1:linedef:308:type:36:tag:1:sector:59:sound:stnmov"
           }
         },
         {
           "id": 89,
+          "name": "doom-lift-platform-sector-70",
+          "translation": [
+            270.0,
+            15.5,
+            62.0
+          ],
+          "bounds": {
+            "min": [
+              -2.0,
+              -1.0,
+              -2.0
+            ],
+            "max": [
+              2.0,
+              0.0,
+              2.0
+            ]
+          },
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "kinematic": {
+            "halfExtents": [
+              2.0,
+              0.5,
+              2.0
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        {
+          "id": 90,
+          "name": "doom-repeatable-lift-linedef-195",
+          "translation": [
+            229.25,
+            7.5,
+            118.75
+          ],
+          "bounds": {
+            "min": [
+              -10.0,
+              -1.0,
+              -6.0
+            ],
+            "max": [
+              10.0,
+              3.0,
+              6.0
+            ]
+          },
+          "lift": {
+            "targetPlatform": 89,
+            "raisedTranslation": [
+              270.0,
+              15.5,
+              62.0
+            ],
+            "loweredTranslation": [
+              270.0,
+              6.0,
+              62.0
+            ],
+            "motionDurationTicks": 65,
+            "loweredWaitTicks": 180,
+            "prompt": "Activate secret lift",
+            "presentation": "Sector 70 lift cycle",
+            "source": "doom1.wad:E1M1:linedef:195:type:88:tag:2:sector:70:sounds:pstart,pstop"
+          }
+        },
+        {
+          "id": 91,
           "name": "doom-exit",
           "translation": [
             230.0,
@@ -210602,12 +210723,13 @@
           },
           "levelExit": {
             "activationRadius": 4.0,
-            "presentation": "Doom E1M1 complete"
+            "presentation": "Doom E1M1 complete",
+            "source": "doom1.wad:E1M1:linedef:330:type:11:texture:SW1STRTN"
           }
         },
         {
-          "id": 90,
-          "name": "doom-secret-1",
+          "id": 92,
+          "name": "doom-secret-sector-68",
           "translation": [
             231.0,
             7.5,
@@ -210626,7 +210748,58 @@
             ]
           },
           "secretRegion": {
-            "presentation": "Hangar secret discovered"
+            "presentation": "Secret 1 discovered",
+            "source": "doom1.wad:E1M1:sector:68:special:9"
+          }
+        },
+        {
+          "id": 93,
+          "name": "doom-secret-sector-69",
+          "translation": [
+            252.0,
+            6.0,
+            63.0
+          ],
+          "bounds": {
+            "min": [
+              -1.5,
+              -0.8,
+              -1.5
+            ],
+            "max": [
+              1.5,
+              0.8,
+              1.5
+            ]
+          },
+          "secretRegion": {
+            "presentation": "Secret 2 discovered",
+            "source": "doom1.wad:E1M1:sector:69:special:9"
+          }
+        },
+        {
+          "id": 94,
+          "name": "doom-secret-sector-70",
+          "translation": [
+            270.0,
+            15.5,
+            62.0
+          ],
+          "bounds": {
+            "min": [
+              -1.5,
+              -0.8,
+              -1.5
+            ],
+            "max": [
+              1.5,
+              0.8,
+              1.5
+            ]
+          },
+          "secretRegion": {
+            "presentation": "Secret 3 discovered",
+            "source": "doom1.wad:E1M1:sector:70:special:9"
           }
         }
       ]

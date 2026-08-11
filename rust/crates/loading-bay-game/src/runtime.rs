@@ -18,9 +18,11 @@ use crate::enemy_combat::{
     EnemyAttackPhaseReceipt, EnemyCombatService, EnemyIntentAndMotionReceipt,
 };
 use crate::extraction_beacon::{ExtractionBeaconReceipt, ExtractionBeaconService};
+use crate::floor_action::{FloorActionPhaseReceipt, FloorActionRejection, FloorActionService};
 use crate::hazard::{HazardPhaseReceipt, HazardRejection, HazardService};
 use crate::interaction::InteractionService;
 use crate::inventory::{InventoryCommand, InventoryReceipt, InventoryRejection, InventoryService};
+use crate::lift::{LiftPhaseReceipt, LiftRejection, LiftService};
 use crate::navigation::{EnemyNavigationSystem, NavigationPhaseReceipt};
 use crate::pickup::{
     PickupCollectionCause, PickupCollectionCommand, PickupPhaseReceipt, PickupReceipt,
@@ -51,6 +53,30 @@ pub enum RuntimeError {
     },
     NotInteractable {
         entity: EntityId,
+    },
+    SwitchActorMissingTransform {
+        actor: EntityId,
+    },
+    SwitchMissingTransform {
+        switch: EntityId,
+    },
+    InvalidSwitchActivationRadius {
+        switch: EntityId,
+        activation_radius: f32,
+    },
+    SwitchOutOfRange {
+        actor: EntityId,
+        switch: EntityId,
+        distance_squared: f32,
+        activation_radius: f32,
+    },
+    SwitchUnavailable {
+        switch: EntityId,
+        presentation: String,
+    },
+    InvalidDoorMotionDuration {
+        door: EntityId,
+        motion_duration: u64,
     },
     UnknownDoor {
         door: EntityId,
@@ -97,6 +123,12 @@ pub enum RuntimeError {
         action: ResolvedPlayerAction,
     },
     EntityBatch(rusty_engine::entity_state::BatchRejection),
+    InvalidFloorActionConfig {
+        action: EntityId,
+    },
+    InvalidLiftConfig {
+        lift: EntityId,
+    },
     EventWaveLimit {
         limit: usize,
     },
@@ -122,6 +154,8 @@ pub enum RuntimeError {
     Pickup(PickupRejection),
     Vitality(VitalityRejection),
     Hazard(HazardRejection),
+    FloorAction(FloorActionRejection),
+    Lift(LiftRejection),
     DoorAccess(DoorAccessRejection),
     LoadingBayInterlock(LoadingBayInterlockRejection),
     LevelExit(LevelExitRejection),
@@ -137,6 +171,12 @@ impl std::fmt::Display for RuntimeError {
 
 impl std::error::Error for RuntimeError {}
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct WalkTriggerPhaseReceipt {
+    pub floor_action: FloorActionPhaseReceipt,
+    pub lift: LiftPhaseReceipt,
+}
+
 #[derive(Debug)]
 pub struct GameRuntime {
     pub(crate) session: GameSession,
@@ -148,6 +188,8 @@ pub struct GameRuntime {
     pub(crate) pickup_triggers: TriggerVolumeSystem,
     pub(crate) hazard_triggers: TriggerVolumeSystem,
     pub(crate) secret_triggers: TriggerVolumeSystem,
+    pub(crate) floor_action_triggers: TriggerVolumeSystem,
+    pub(crate) lift_triggers: TriggerVolumeSystem,
     pub(crate) projectiles: ProjectileService,
 }
 
@@ -156,6 +198,8 @@ impl GameRuntime {
         let pickup_triggers = PickupService::trigger_system(&session);
         let hazard_triggers = HazardService::trigger_system(&session);
         let secret_triggers = ProgressionService::secret_trigger_system(&session);
+        let floor_action_triggers = FloorActionService::trigger_system(&session);
+        let lift_triggers = LiftService::trigger_system(&session);
         Self {
             session,
             tick: Tick::ZERO,
@@ -166,6 +210,8 @@ impl GameRuntime {
             pickup_triggers,
             hazard_triggers,
             secret_triggers,
+            floor_action_triggers,
+            lift_triggers,
             projectiles: ProjectileService::default(),
         }
     }
@@ -301,6 +347,42 @@ impl GameRuntime {
             .ok_or(RuntimeError::MissingCollisionScene)?;
         KinematicMotionSystem::run(&mut self.session.entities, scene, delta_seconds)
             .map_err(RuntimeError::Motion)
+    }
+
+    pub(crate) fn run_door_motion_phase(&mut self) -> Result<(), RuntimeError> {
+        DoorService::run_motion_phase(&mut self.session)
+    }
+
+    pub(crate) fn run_walk_trigger_motion_phase(&mut self) -> Result<(), RuntimeError> {
+        FloorActionService::run_motion_phase(&mut self.session)?;
+        LiftService::run_motion_phase(&mut self.session)
+    }
+
+    pub fn run_walk_trigger_phase(
+        &mut self,
+        actor: EntityId,
+    ) -> Result<WalkTriggerPhaseReceipt, RuntimeError> {
+        let mut candidate_session = self.session.clone();
+        let mut candidate_floor_action_triggers = self.floor_action_triggers.clone();
+        let mut candidate_lift_triggers = self.lift_triggers.clone();
+        let floor_action = FloorActionService::reconcile_and_activate(
+            &mut candidate_session,
+            &mut candidate_floor_action_triggers,
+            actor,
+            self.tick.raw(),
+        )
+        .map_err(RuntimeError::FloorAction)?;
+        let lift = LiftService::reconcile_and_activate(
+            &mut candidate_session,
+            &mut candidate_lift_triggers,
+            actor,
+            self.tick.raw(),
+        )
+        .map_err(RuntimeError::Lift)?;
+        self.session = candidate_session;
+        self.floor_action_triggers = candidate_floor_action_triggers;
+        self.lift_triggers = candidate_lift_triggers;
+        Ok(WalkTriggerPhaseReceipt { floor_action, lift })
     }
 
     /// Run the explicit autonomous-enemy navigation phase. The system derives
@@ -463,8 +545,29 @@ impl GameRuntime {
         switch: EntityId,
     ) -> Result<RuntimeReceipt, RuntimeError> {
         let event =
-            ProgressionService::activate_loading_bay_interlock(&mut self.session, actor, switch)
-                .map_err(RuntimeError::LoadingBayInterlock)?;
+            InteractionService::interact(&mut self.session, actor, switch).map_err(|error| {
+                RuntimeError::LoadingBayInterlock(match error {
+                    RuntimeError::UnknownActor { actor } => {
+                        LoadingBayInterlockRejection::UnknownActor { actor }
+                    }
+                    RuntimeError::PlayerDefeated { player } => {
+                        LoadingBayInterlockRejection::PlayerDefeated { actor: player }
+                    }
+                    RuntimeError::SwitchActorMissingTransform { actor } => {
+                        LoadingBayInterlockRejection::ActorMissingTransform { actor }
+                    }
+                    RuntimeError::SwitchMissingTransform { switch } => {
+                        LoadingBayInterlockRejection::InterlockMissingTransform { switch }
+                    }
+                    RuntimeError::SwitchOutOfRange { actor, switch, .. } => {
+                        LoadingBayInterlockRejection::OutOfRange { actor, switch }
+                    }
+                    RuntimeError::NotInteractable { entity } => {
+                        LoadingBayInterlockRejection::UnknownInterlock { switch: entity }
+                    }
+                    _ => LoadingBayInterlockRejection::InteractionFailed { switch },
+                })
+            })?;
         self.events.push_back(event);
         let events = self.drain_events()?;
         Ok(self.receipt(events))
@@ -571,6 +674,8 @@ impl GameRuntime {
         let mut processed = Vec::new();
         for _ in 0..ticks {
             self.begin_fixed_tick();
+            self.run_door_motion_phase()?;
+            self.run_walk_trigger_motion_phase()?;
             processed.extend(self.run_scheduled_consequence_phase()?);
         }
         Ok(self.receipt(processed))
@@ -615,29 +720,28 @@ impl GameRuntime {
             });
             match &event {
                 GameEvent::SwitchActivated { switch, .. } => {
-                    if let Some(interlock) =
-                        self.session.loading_bay_interlocks.get(switch).copied()
-                    {
-                        if let Some(event) =
-                            DoorService::close(&mut self.session, interlock.close_door)?
-                        {
-                            self.events.push_back(event);
-                        }
-                        if let Some(transition) =
-                            DoorService::open(&mut self.session, interlock.open_door)?
-                        {
-                            self.queue_door_transition(interlock.open_door, transition);
-                        }
-                    }
-                    let targets = self
+                    let effects = self
                         .session
-                        .controls
+                        .switches
                         .get(switch)
-                        .cloned()
+                        .map(|component| component.config.effects.clone())
                         .unwrap_or_default();
-                    for door in targets {
-                        if let Some(transition) = DoorService::open(&mut self.session, door)? {
-                            self.queue_door_transition(door, transition);
+                    for effect in effects {
+                        match effect {
+                            crate::SwitchEffect::OpenDoor(door) => {
+                                if let Some(transition) =
+                                    DoorService::open(&mut self.session, door)?
+                                {
+                                    self.queue_door_transition(door, transition);
+                                }
+                            }
+                            crate::SwitchEffect::CloseDoor(door) => {
+                                self.scheduler
+                                    .cancel(ScheduledIntentKind::CloseDoor { door });
+                                if let Some(event) = DoorService::close(&mut self.session, door)? {
+                                    self.events.push_back(event);
+                                }
+                            }
                         }
                     }
                 }
@@ -663,10 +767,14 @@ impl GameRuntime {
     }
 
     fn queue_door_transition(&mut self, door: EntityId, transition: DoorTransition) {
+        let scheduled_kind = ScheduledIntentKind::CloseDoor { door };
+        self.scheduler.cancel(scheduled_kind);
         if let Some(delay) = transition.auto_close_after {
+            let delay =
+                TickDelta::new(transition.motion_duration.raw().saturating_add(delay.raw()));
             self.scheduler.schedule(ScheduledIntent {
                 due: self.tick.advance(delay),
-                kind: ScheduledIntentKind::CloseDoor { door },
+                kind: scheduled_kind,
             });
         }
         self.events.push_back(transition.event);

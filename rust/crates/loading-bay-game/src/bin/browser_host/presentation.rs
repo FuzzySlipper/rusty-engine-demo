@@ -590,7 +590,9 @@ pub(super) fn project_presentation(
             entity: door.raw(),
             posture: match door_view.state {
                 DoorState::Closed => "closed",
+                DoorState::Opening => "opening",
                 DoorState::Open => "open",
+                DoorState::Closing => "closing",
             },
         });
     } else if let Some(first_door) = runtime
@@ -603,7 +605,9 @@ pub(super) fn project_presentation(
             entity: first_door.entity.raw(),
             posture: match first_door.state {
                 DoorState::Closed => "closed",
+                DoorState::Opening => "opening",
                 DoorState::Open => "open",
+                DoorState::Closing => "closing",
             },
         });
     }

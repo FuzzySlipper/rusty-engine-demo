@@ -4,8 +4,8 @@ use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
 use rusty_engine::core_time::{Tick, TickDelta};
 use rusty_engine::engine_spatial::{
-    GeneratedRoomConfig, MaterialVoxel, TriggerVolumeSnapshot, TriggerVolumeSystem,
-    VoxelCollisionScene, VoxelSourceRevision, GENERATED_ROOM_VERSION,
+    GeneratedRoomConfig, MaterialVoxel, TriggerGeometrySource, TriggerVolumeSnapshot,
+    TriggerVolumeSystem, VoxelCollisionScene, VoxelSourceRevision, GENERATED_ROOM_VERSION,
 };
 use rusty_engine::entity_state::{EntityLifecycle, EntityState, EntityStateSnapshot};
 use serde::{Deserialize, Serialize};
@@ -23,14 +23,18 @@ use crate::enemy_drop::{EnemyDropComponent, EnemyDropConfig, EnemyDropState};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconState,
 };
+use crate::floor_action::{
+    FloorActionComponent, FloorActionConfig, FloorActionState, FLOOR_ACTION_TRIGGER_SCOPE,
+};
 use crate::hazard::{
     HazardComponent, HazardConfig, HAZARD_TRIGGER_SCOPE, MAX_HAZARD_COOLDOWN_TICKS,
 };
-use crate::interaction::SwitchComponent;
+use crate::interaction::{SwitchComponent, SwitchConfig, SwitchEffect};
 use crate::inventory::{
     admit_item_definitions, inventory_from_config, InventoryAdmissionError, InventoryConfig,
     InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind, WeaponAttackMode, WeaponDefinition,
 };
+use crate::lift::{LiftComponent, LiftConfig, LiftState, LIFT_TRIGGER_SCOPE};
 use crate::navigation::{
     NavigationComponent, NavigationConfig, NavigationState, MAX_NAVIGATION_QUERY_BUDGET,
     MAX_NAVIGATION_SPEED_UNITS_PER_SECOND,
@@ -52,7 +56,8 @@ use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::{HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 20;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 21;
+const SWITCH_CONFIG_SNAPSHOT_SCHEMA_VERSION: u32 = 21;
 const GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION: u32 = 19;
 const INVENTORY_WEAPON_SNAPSHOT_SCHEMA_VERSION: u32 = 13;
 const VITALITY_SNAPSHOT_SCHEMA_VERSION: u32 = 14;
@@ -71,6 +76,14 @@ pub struct GameSnapshot {
     pub voxel_collision: Option<VoxelCollisionSnapshot>,
     pub doors: Vec<DoorSnapshot>,
     pub switches: Vec<SwitchSnapshot>,
+    #[serde(default)]
+    pub floor_actions: Vec<FloorActionSnapshot>,
+    #[serde(default)]
+    pub lifts: Vec<LiftSnapshot>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub floor_action_triggers: Option<TriggerVolumeSnapshot>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lift_triggers: Option<TriggerVolumeSnapshot>,
     pub extraction_beacons: Vec<ExtractionBeaconSnapshot>,
     pub controls: Vec<ControlsSnapshot>,
     pub enemies: Vec<EnemySnapshot>,
@@ -284,6 +297,10 @@ pub struct DoorSnapshot {
     pub state: SnapshotDoorState,
     pub closed_translation: [f32; 3],
     pub open_translation: [f32; 3],
+    #[serde(default = "snapshot_default_door_motion_duration_ticks")]
+    pub motion_duration_ticks: u64,
+    #[serde(default)]
+    pub motion_elapsed_ticks: u64,
     pub auto_close_after_ticks: Option<u64>,
 }
 
@@ -291,14 +308,154 @@ pub struct DoorSnapshot {
 #[serde(rename_all = "camelCase")]
 pub enum SnapshotDoorState {
     Closed,
+    Opening,
     Open,
+    Closing,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+fn snapshot_default_door_motion_duration_ticks() -> u64 {
+    crate::door::DEFAULT_DOOR_MOTION_DURATION_TICKS
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct SwitchSnapshot {
     pub entity: u64,
     pub activation_count: u64,
+    #[serde(default = "snapshot_default_switch_activation_radius")]
+    pub activation_radius: f32,
+    #[serde(default = "snapshot_default_switch_prompt")]
+    pub prompt: String,
+    #[serde(default = "snapshot_default_switch_unavailable_presentation")]
+    pub unavailable_presentation: String,
+    #[serde(default = "snapshot_default_switch_repeatable")]
+    pub repeatable: bool,
+    #[serde(default)]
+    pub effects: Vec<SnapshotSwitchEffect>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum SnapshotSwitchEffect {
+    OpenDoor { door: u64 },
+    CloseDoor { door: u64 },
+}
+
+fn snapshot_default_switch_activation_radius() -> f32 {
+    crate::DEFAULT_SWITCH_ACTIVATION_RADIUS
+}
+
+fn snapshot_default_switch_prompt() -> String {
+    crate::DEFAULT_SWITCH_PROMPT.to_owned()
+}
+
+fn snapshot_default_switch_unavailable_presentation() -> String {
+    crate::DEFAULT_SWITCH_UNAVAILABLE_PRESENTATION.to_owned()
+}
+
+fn snapshot_default_switch_repeatable() -> bool {
+    crate::DEFAULT_SWITCH_REPEATABLE
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct FloorActionSnapshot {
+    pub entity: u64,
+    pub target_platform: u64,
+    pub state: SnapshotFloorActionState,
+    pub upper_translation: [f32; 3],
+    pub lowered_translation: [f32; 3],
+    #[serde(default = "snapshot_default_floor_action_motion_duration_ticks")]
+    pub motion_duration_ticks: u64,
+    #[serde(default)]
+    pub motion_elapsed_ticks: u64,
+    #[serde(default = "snapshot_default_floor_action_prompt")]
+    pub prompt: String,
+    #[serde(default = "snapshot_default_floor_action_presentation")]
+    pub presentation: String,
+    #[serde(default = "snapshot_default_floor_action_source")]
+    pub source: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotFloorActionState {
+    Armed,
+    Lowering,
+    Lowered,
+}
+
+fn snapshot_default_floor_action_motion_duration_ticks() -> u64 {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_MOTION_DURATION_TICKS
+}
+
+fn snapshot_default_floor_action_prompt() -> String {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_PROMPT.to_owned()
+}
+
+fn snapshot_default_floor_action_presentation() -> String {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_PRESENTATION.to_owned()
+}
+
+fn snapshot_default_floor_action_source() -> String {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_SOURCE.to_owned()
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct LiftSnapshot {
+    pub entity: u64,
+    pub target_platform: u64,
+    pub state: SnapshotLiftState,
+    pub raised_translation: [f32; 3],
+    pub lowered_translation: [f32; 3],
+    #[serde(default = "snapshot_default_lift_motion_duration_ticks")]
+    pub motion_duration_ticks: u64,
+    #[serde(default)]
+    pub motion_elapsed_ticks: u64,
+    #[serde(default = "snapshot_default_lift_wait_ticks")]
+    pub lowered_wait_ticks: u64,
+    #[serde(default)]
+    pub wait_elapsed_ticks: u64,
+    #[serde(default = "snapshot_default_lift_prompt")]
+    pub prompt: String,
+    #[serde(default = "snapshot_default_lift_presentation")]
+    pub presentation: String,
+    #[serde(default = "snapshot_default_lift_source")]
+    pub source: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotLiftState {
+    Raised,
+    Lowering,
+    Waiting,
+    Raising,
+}
+
+fn snapshot_default_lift_motion_duration_ticks() -> u64 {
+    crate::lift::DEFAULT_LIFT_MOTION_DURATION_TICKS
+}
+
+fn snapshot_default_lift_wait_ticks() -> u64 {
+    crate::lift::DEFAULT_LIFT_WAIT_TICKS
+}
+
+fn snapshot_default_lift_prompt() -> String {
+    crate::lift::DEFAULT_LIFT_PROMPT.to_owned()
+}
+
+fn snapshot_default_lift_presentation() -> String {
+    crate::lift::DEFAULT_LIFT_PRESENTATION.to_owned()
+}
+
+fn snapshot_default_lift_source() -> String {
+    crate::lift::DEFAULT_LIFT_SOURCE.to_owned()
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -662,6 +819,12 @@ pub enum GameSnapshotError {
     DuplicateSwitch {
         entity: u64,
     },
+    DuplicateFloorAction {
+        entity: u64,
+    },
+    DuplicateLift {
+        entity: u64,
+    },
     DuplicateExtractionBeacon {
         entity: u64,
     },
@@ -727,6 +890,8 @@ pub enum GameSnapshotError {
     FutureEnemyArchetypeStateInLegacySnapshot,
     InvalidProgressionState,
     InvalidSecretTriggerDefinitions,
+    InvalidFloorActionTriggerDefinitions,
+    InvalidLiftTriggerDefinitions,
     InvalidHazardConfig {
         entity: u64,
     },
@@ -748,6 +913,20 @@ pub enum GameSnapshotError {
     },
     UnknownSwitchEntity {
         entity: u64,
+    },
+    UnknownFloorActionEntity {
+        entity: u64,
+    },
+    UnknownFloorActionTarget {
+        action: u64,
+        target: u64,
+    },
+    UnknownLiftEntity {
+        entity: u64,
+    },
+    UnknownLiftTarget {
+        lift: u64,
+        target: u64,
     },
     UnknownExtractionBeaconEntity {
         entity: u64,
@@ -791,6 +970,32 @@ pub enum GameSnapshotError {
     },
     MissingDoorCapability {
         entity: u64,
+    },
+    MissingFloorActionCapability {
+        entity: u64,
+    },
+    MissingLiftCapability {
+        entity: u64,
+    },
+    InvalidDoorMotion {
+        entity: u64,
+    },
+    InvalidFloorActionMotion {
+        entity: u64,
+    },
+    InvalidLiftMotion {
+        entity: u64,
+    },
+    DuplicateMovingPlatformTarget {
+        target: u64,
+    },
+    InvalidFloorActionTarget {
+        action: u64,
+        target: u64,
+    },
+    InvalidLiftTarget {
+        lift: u64,
+        target: u64,
     },
     MissingExtractionBeaconCapability {
         entity: u64,
@@ -1008,10 +1213,14 @@ impl GameRuntime {
                     entity: entity.raw(),
                     state: match component.state {
                         DoorState::Closed => SnapshotDoorState::Closed,
+                        DoorState::Opening => SnapshotDoorState::Opening,
                         DoorState::Open => SnapshotDoorState::Open,
+                        DoorState::Closing => SnapshotDoorState::Closing,
                     },
                     closed_translation: component.config.closed_translation.to_array(),
                     open_translation: component.config.open_translation.to_array(),
+                    motion_duration_ticks: component.config.motion_duration.raw(),
+                    motion_elapsed_ticks: component.motion_elapsed.raw(),
                     auto_close_after_ticks: component.config.auto_close_after.map(TickDelta::raw),
                 })
                 .collect(),
@@ -1022,8 +1231,72 @@ impl GameRuntime {
                 .map(|(entity, component)| SwitchSnapshot {
                     entity: entity.raw(),
                     activation_count: component.activation_count,
+                    activation_radius: component.config.activation_radius,
+                    prompt: component.config.prompt.clone(),
+                    unavailable_presentation: component.config.unavailable_presentation.clone(),
+                    repeatable: component.config.repeatable,
+                    effects: component
+                        .config
+                        .effects
+                        .iter()
+                        .map(|effect| match effect {
+                            SwitchEffect::OpenDoor(door) => {
+                                SnapshotSwitchEffect::OpenDoor { door: door.raw() }
+                            }
+                            SwitchEffect::CloseDoor(door) => {
+                                SnapshotSwitchEffect::CloseDoor { door: door.raw() }
+                            }
+                        })
+                        .collect(),
                 })
                 .collect(),
+            floor_actions: self
+                .session
+                .floor_actions
+                .iter()
+                .map(|(entity, component)| FloorActionSnapshot {
+                    entity: entity.raw(),
+                    target_platform: component.config.target_platform.raw(),
+                    state: match component.state {
+                        FloorActionState::Armed => SnapshotFloorActionState::Armed,
+                        FloorActionState::Lowering => SnapshotFloorActionState::Lowering,
+                        FloorActionState::Lowered => SnapshotFloorActionState::Lowered,
+                    },
+                    upper_translation: component.config.upper_translation.to_array(),
+                    lowered_translation: component.config.lowered_translation.to_array(),
+                    motion_duration_ticks: component.config.motion_duration.raw(),
+                    motion_elapsed_ticks: component.motion_elapsed.raw(),
+                    prompt: component.config.prompt.clone(),
+                    presentation: component.config.presentation.clone(),
+                    source: component.config.source.clone(),
+                })
+                .collect(),
+            lifts: self
+                .session
+                .lifts
+                .iter()
+                .map(|(entity, component)| LiftSnapshot {
+                    entity: entity.raw(),
+                    target_platform: component.config.target_platform.raw(),
+                    state: match component.state {
+                        LiftState::Raised => SnapshotLiftState::Raised,
+                        LiftState::Lowering => SnapshotLiftState::Lowering,
+                        LiftState::Waiting => SnapshotLiftState::Waiting,
+                        LiftState::Raising => SnapshotLiftState::Raising,
+                    },
+                    raised_translation: component.config.raised_translation.to_array(),
+                    lowered_translation: component.config.lowered_translation.to_array(),
+                    motion_duration_ticks: component.config.motion_duration.raw(),
+                    motion_elapsed_ticks: component.motion_elapsed.raw(),
+                    lowered_wait_ticks: component.config.lowered_wait.raw(),
+                    wait_elapsed_ticks: component.wait_elapsed.raw(),
+                    prompt: component.config.prompt.clone(),
+                    presentation: component.config.presentation.clone(),
+                    source: component.config.source.clone(),
+                })
+                .collect(),
+            floor_action_triggers: Some(self.floor_action_triggers.snapshot()),
+            lift_triggers: Some(self.lift_triggers.snapshot()),
             extraction_beacons: self
                 .session
                 .extraction_beacons
@@ -1595,18 +1868,45 @@ impl GameRuntime {
                     entity: door.entity,
                 });
             }
+            let state = match door.state {
+                SnapshotDoorState::Closed => DoorState::Closed,
+                SnapshotDoorState::Opening => DoorState::Opening,
+                SnapshotDoorState::Open => DoorState::Open,
+                SnapshotDoorState::Closing => DoorState::Closing,
+            };
+            let motion_duration = door.motion_duration_ticks;
+            let motion_elapsed = if state == DoorState::Open && door.motion_elapsed_ticks == 0 {
+                motion_duration
+            } else {
+                door.motion_elapsed_ticks
+            };
+            let valid_elapsed = motion_duration > 0
+                && motion_elapsed <= motion_duration
+                && match state {
+                    DoorState::Closed => motion_elapsed == 0,
+                    DoorState::Opening | DoorState::Closing => motion_elapsed < motion_duration,
+                    DoorState::Open => motion_elapsed == motion_duration,
+                };
+            let collision_enabled = view
+                .collision
+                .expect("door collision capability was checked above")
+                .enabled;
+            if !valid_elapsed || collision_enabled == (state == DoorState::Open) {
+                return Err(GameSnapshotError::InvalidDoorMotion {
+                    entity: door.entity,
+                });
+            }
             doors.insert(
                 entity,
                 DoorComponent {
-                    config: DoorConfig {
-                        closed_translation: array_vec3(door.closed_translation),
-                        open_translation: array_vec3(door.open_translation),
-                        auto_close_after: door.auto_close_after_ticks.map(TickDelta::new),
-                    },
-                    state: match door.state {
-                        SnapshotDoorState::Closed => DoorState::Closed,
-                        SnapshotDoorState::Open => DoorState::Open,
-                    },
+                    config: DoorConfig::new(
+                        array_vec3(door.closed_translation),
+                        array_vec3(door.open_translation),
+                        door.auto_close_after_ticks.map(TickDelta::new),
+                    )
+                    .with_motion_duration(TickDelta::new(motion_duration)),
+                    state,
+                    motion_elapsed: TickDelta::new(motion_elapsed),
                 },
             );
         }
@@ -1625,10 +1925,220 @@ impl GameRuntime {
                     entity: switch.entity,
                 });
             }
-            switches.insert(
+            let config = if source_schema_version >= SWITCH_CONFIG_SNAPSHOT_SCHEMA_VERSION {
+                SwitchConfig::new(
+                    switch.activation_radius,
+                    switch.prompt,
+                    switch.unavailable_presentation,
+                    switch.repeatable,
+                    switch.effects.into_iter().map(|effect| match effect {
+                        SnapshotSwitchEffect::OpenDoor { door } => {
+                            SwitchEffect::OpenDoor(EntityId::new(door))
+                        }
+                        SnapshotSwitchEffect::CloseDoor { door } => {
+                            SwitchEffect::CloseDoor(EntityId::new(door))
+                        }
+                    }),
+                )
+            } else {
+                SwitchConfig::default()
+            };
+            let mut component = SwitchComponent::new(config);
+            component.activation_count = switch.activation_count;
+            switches.insert(entity, component);
+        }
+
+        let mut walk_trigger_entities = BTreeSet::new();
+        walk_trigger_entities.extend(snapshot.floor_actions.iter().map(|action| action.entity));
+        walk_trigger_entities.extend(snapshot.lifts.iter().map(|lift| lift.entity));
+        let mut moving_platform_targets = BTreeMap::new();
+
+        let mut floor_actions = BTreeMap::new();
+        let mut floor_action_ids = BTreeSet::new();
+        for action in snapshot.floor_actions {
+            if !floor_action_ids.insert(action.entity) {
+                return Err(GameSnapshotError::DuplicateFloorAction {
+                    entity: action.entity,
+                });
+            }
+            let entity = EntityId::new(action.entity);
+            let view =
+                entities
+                    .view(entity)
+                    .map_err(|_| GameSnapshotError::UnknownFloorActionEntity {
+                        entity: action.entity,
+                    })?;
+            if view.transform.is_none() || view.bounds.is_none() {
+                return Err(GameSnapshotError::MissingFloorActionCapability {
+                    entity: action.entity,
+                });
+            }
+            let target = EntityId::new(action.target_platform);
+            if !entities.contains(target) || walk_trigger_entities.contains(&action.target_platform)
+            {
+                return Err(GameSnapshotError::UnknownFloorActionTarget {
+                    action: action.entity,
+                    target: action.target_platform,
+                });
+            }
+            let target_view =
+                entities
+                    .view(target)
+                    .map_err(|_| GameSnapshotError::UnknownFloorActionTarget {
+                        action: action.entity,
+                        target: action.target_platform,
+                    })?;
+            if target_view.transform.is_none()
+                || target_view
+                    .collision
+                    .is_none_or(|collision| collision.static_collider)
+            {
+                return Err(GameSnapshotError::InvalidFloorActionTarget {
+                    action: action.entity,
+                    target: action.target_platform,
+                });
+            }
+            if moving_platform_targets
+                .insert(action.target_platform, action.entity)
+                .is_some()
+            {
+                return Err(GameSnapshotError::DuplicateMovingPlatformTarget {
+                    target: action.target_platform,
+                });
+            }
+            let config = FloorActionConfig::new(
+                target,
+                array_vec3(action.upper_translation),
+                array_vec3(action.lowered_translation),
+                TickDelta::new(action.motion_duration_ticks),
+                action.prompt,
+                action.presentation,
+                action.source,
+            );
+            if !config.is_valid() {
+                return Err(GameSnapshotError::InvalidFloorActionMotion {
+                    entity: action.entity,
+                });
+            }
+            let state = match action.state {
+                SnapshotFloorActionState::Armed => FloorActionState::Armed,
+                SnapshotFloorActionState::Lowering => FloorActionState::Lowering,
+                SnapshotFloorActionState::Lowered => FloorActionState::Lowered,
+            };
+            let duration = config.motion_duration.raw();
+            let elapsed = action.motion_elapsed_ticks;
+            if elapsed > duration
+                || match state {
+                    FloorActionState::Armed | FloorActionState::Lowered => elapsed != 0,
+                    FloorActionState::Lowering => elapsed >= duration,
+                }
+            {
+                return Err(GameSnapshotError::InvalidFloorActionMotion {
+                    entity: action.entity,
+                });
+            }
+            floor_actions.insert(
                 entity,
-                SwitchComponent {
-                    activation_count: switch.activation_count,
+                FloorActionComponent {
+                    config,
+                    state,
+                    motion_elapsed: TickDelta::new(elapsed),
+                },
+            );
+        }
+
+        let mut lifts = BTreeMap::new();
+        let mut lift_ids = BTreeSet::new();
+        for lift in snapshot.lifts {
+            if !lift_ids.insert(lift.entity) {
+                return Err(GameSnapshotError::DuplicateLift {
+                    entity: lift.entity,
+                });
+            }
+            let entity = EntityId::new(lift.entity);
+            let view = entities
+                .view(entity)
+                .map_err(|_| GameSnapshotError::UnknownLiftEntity {
+                    entity: lift.entity,
+                })?;
+            if view.transform.is_none() || view.bounds.is_none() {
+                return Err(GameSnapshotError::MissingLiftCapability {
+                    entity: lift.entity,
+                });
+            }
+            let target = EntityId::new(lift.target_platform);
+            if !entities.contains(target) || walk_trigger_entities.contains(&lift.target_platform) {
+                return Err(GameSnapshotError::UnknownLiftTarget {
+                    lift: lift.entity,
+                    target: lift.target_platform,
+                });
+            }
+            let target_view =
+                entities
+                    .view(target)
+                    .map_err(|_| GameSnapshotError::UnknownLiftTarget {
+                        lift: lift.entity,
+                        target: lift.target_platform,
+                    })?;
+            if target_view.transform.is_none()
+                || target_view
+                    .collision
+                    .is_none_or(|collision| collision.static_collider)
+            {
+                return Err(GameSnapshotError::InvalidLiftTarget {
+                    lift: lift.entity,
+                    target: lift.target_platform,
+                });
+            }
+            if moving_platform_targets
+                .insert(lift.target_platform, lift.entity)
+                .is_some()
+            {
+                return Err(GameSnapshotError::DuplicateMovingPlatformTarget {
+                    target: lift.target_platform,
+                });
+            }
+            let config = LiftConfig::new(
+                target,
+                array_vec3(lift.raised_translation),
+                array_vec3(lift.lowered_translation),
+                TickDelta::new(lift.motion_duration_ticks),
+                TickDelta::new(lift.lowered_wait_ticks),
+            )
+            .with_metadata(lift.prompt, lift.presentation, lift.source);
+            if !config.is_valid() {
+                return Err(GameSnapshotError::InvalidLiftMotion {
+                    entity: lift.entity,
+                });
+            }
+            let state = match lift.state {
+                SnapshotLiftState::Raised => LiftState::Raised,
+                SnapshotLiftState::Lowering => LiftState::Lowering,
+                SnapshotLiftState::Waiting => LiftState::Waiting,
+                SnapshotLiftState::Raising => LiftState::Raising,
+            };
+            let duration = config.motion_duration.raw();
+            let elapsed = lift.motion_elapsed_ticks;
+            let wait = lift.wait_elapsed_ticks;
+            if elapsed > duration
+                || wait > config.lowered_wait.raw()
+                || match state {
+                    LiftState::Raised => elapsed != 0 || wait != 0,
+                    LiftState::Lowering | LiftState::Raising => elapsed >= duration || wait != 0,
+                    LiftState::Waiting => elapsed != 0,
+                }
+            {
+                return Err(GameSnapshotError::InvalidLiftMotion {
+                    entity: lift.entity,
+                });
+            }
+            lifts.insert(
+                entity,
+                LiftComponent {
+                    config,
+                    state,
+                    motion_elapsed: TickDelta::new(elapsed),
+                    wait_elapsed: TickDelta::new(wait),
                 },
             );
         }
@@ -2775,6 +3285,63 @@ impl GameRuntime {
             return Err(GameSnapshotError::InvalidSecretTriggerDefinitions);
         }
 
+        let floor_action_triggers = match snapshot.floor_action_triggers.take() {
+            Some(trigger_snapshot) => TriggerVolumeSystem::from_snapshot(trigger_snapshot)
+                .map_err(GameSnapshotError::TriggerVolume)?,
+            None if floor_actions.is_empty() => TriggerVolumeSystem::default(),
+            None => return Err(GameSnapshotError::InvalidFloorActionTriggerDefinitions),
+        };
+        let expected_floor_action_entities = floor_actions.keys().copied().collect::<Vec<_>>();
+        let actual_floor_action_entities = floor_action_triggers
+            .definitions()
+            .map(|definition| {
+                let valid = definition.scope == FLOOR_ACTION_TRIGGER_SCOPE
+                    && definition.tags == ["floor-action".to_string()]
+                    && definition.geometry_source() == TriggerGeometrySource::EntityBounds;
+                (definition.trigger_id(), valid)
+            })
+            .collect::<Vec<_>>();
+        if actual_floor_action_entities.len() != expected_floor_action_entities.len()
+            || actual_floor_action_entities
+                .iter()
+                .zip(expected_floor_action_entities)
+                .any(|((actual, valid), expected)| !valid || *actual != expected)
+            || floor_action_triggers.active_overlaps().any(|pair| {
+                !floor_actions.contains_key(&pair.trigger_id())
+                    || !entities.contains(pair.subject_id())
+            })
+        {
+            return Err(GameSnapshotError::InvalidFloorActionTriggerDefinitions);
+        }
+
+        let lift_triggers = match snapshot.lift_triggers.take() {
+            Some(trigger_snapshot) => TriggerVolumeSystem::from_snapshot(trigger_snapshot)
+                .map_err(GameSnapshotError::TriggerVolume)?,
+            None if lifts.is_empty() => TriggerVolumeSystem::default(),
+            None => return Err(GameSnapshotError::InvalidLiftTriggerDefinitions),
+        };
+        let expected_lift_entities = lifts.keys().copied().collect::<Vec<_>>();
+        let actual_lift_entities = lift_triggers
+            .definitions()
+            .map(|definition| {
+                let valid = definition.scope == LIFT_TRIGGER_SCOPE
+                    && definition.tags == ["lift".to_string()]
+                    && definition.geometry_source() == TriggerGeometrySource::EntityBounds;
+                (definition.trigger_id(), valid)
+            })
+            .collect::<Vec<_>>();
+        if actual_lift_entities.len() != expected_lift_entities.len()
+            || actual_lift_entities
+                .iter()
+                .zip(expected_lift_entities)
+                .any(|((actual, valid), expected)| !valid || *actual != expected)
+            || lift_triggers.active_overlaps().any(|pair| {
+                !lifts.contains_key(&pair.trigger_id()) || !entities.contains(pair.subject_id())
+            })
+        {
+            return Err(GameSnapshotError::InvalidLiftTriggerDefinitions);
+        }
+
         let mut enemy_drops = BTreeMap::new();
         let mut drop_pickups = BTreeSet::new();
         for drop in snapshot.enemy_drops {
@@ -2941,6 +3508,8 @@ impl GameRuntime {
                 doors,
                 door_access,
                 switches,
+                floor_actions,
+                lifts,
                 controls,
                 loading_bay_interlocks,
                 enemies,
@@ -2967,6 +3536,8 @@ impl GameRuntime {
             pickup_triggers,
             hazard_triggers,
             secret_triggers,
+            floor_action_triggers,
+            lift_triggers,
             projectiles: crate::projectile::ProjectileService::default(),
         })
     }

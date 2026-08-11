@@ -27,7 +27,8 @@ fn equipped_item_definitions_own_cadence_damage_and_distinct_ammunition_pools() 
         .unwrap();
     enemy.remove("navigation");
     enemy.remove("enemyCombat");
-    entity_mut(&mut project, MAINTENANCE_BULKHEAD)["collision"]["enabled"] = false.into();
+    entity_mut(&mut project, MAINTENANCE_BULKHEAD)["translation"] =
+        serde_json::json!([100.0, 1.5, 100.0]);
     activate_encounter_immediately(&mut project);
     let mut uninterrupted = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     aim_at(&mut uninterrupted, ENEMY);

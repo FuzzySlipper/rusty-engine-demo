@@ -15,8 +15,16 @@ function kebab(name: string): string {
     .replace(/[^a-z0-9-]/g, "-");
 }
 
-function wadToWorld(x: number, y: number, floorHeight: number): [number, number, number] {
-  return [(x - MIN_X) / SCALE, (floorHeight - MIN_FLOOR) / SCALE + 0.5, (y - MIN_Y) / SCALE];
+function wadToWorld(
+  x: number,
+  y: number,
+  floorHeight: number,
+): [number, number, number] {
+  return [
+    (x - MIN_X) / SCALE,
+    (floorHeight - MIN_FLOOR) / SCALE + 0.5,
+    (y - MIN_Y) / SCALE,
+  ];
 }
 
 interface Intermediate {
@@ -80,7 +88,10 @@ function buildSectorEdges(inter: Intermediate) {
     arr.push(idx);
     sectorSidedefs.set(sd.sector, arr);
   });
-  const sectorEdges = new Map<number, { x1: number; y1: number; x2: number; y2: number }[]>();
+  const sectorEdges = new Map<
+    number,
+    { x1: number; y1: number; x2: number; y2: number }[]
+  >();
   for (let si = 0; si < inter.level.sectors.length; si += 1) {
     const sdi = sectorSidedefs.get(si) ?? [];
     const edges: { x1: number; y1: number; x2: number; y2: number }[] = [];
@@ -98,7 +109,15 @@ function buildSectorEdges(inter: Intermediate) {
   return sectorEdges;
 }
 
-function isInside(px: number, py: number, si: number, sectorEdges: Map<number, { x1: number; y1: number; x2: number; y2: number }[]>): boolean {
+function isInside(
+  px: number,
+  py: number,
+  si: number,
+  sectorEdges: Map<
+    number,
+    { x1: number; y1: number; x2: number; y2: number }[]
+  >,
+): boolean {
   const edges = sectorEdges.get(si) ?? [];
   if (edges.length === 0) return false;
   let inside = false;
@@ -111,15 +130,53 @@ function isInside(px: number, py: number, si: number, sectorEdges: Map<number, {
   return inside;
 }
 
-function findSectorForPoint(x: number, y: number, inter: Intermediate, sectorEdges: Map<number, any>): number {
+function findSectorForPoint(
+  x: number,
+  y: number,
+  inter: Intermediate,
+  sectorEdges: Map<number, any>,
+): number {
   for (let si = 0; si < inter.level.sectors.length; si += 1) {
     if (isInside(x, y, si, sectorEdges)) return si;
   }
   return -1;
 }
 
-export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL("../../../../content/doom-e1m1/e1m1.intermediate.json", import.meta.url)), manifestPath = fileURLToPath(new URL("../../../../content/doom-e1m1/textures/manifest.json", import.meta.url)), voxelPath = fileURLToPath(new URL("../../../../content/doom-e1m1/doom-e1m1.voxel.json", import.meta.url)), outPath = fileURLToPath(new URL("../../../../content/projects/doom-e1m1.project.json", import.meta.url)), loadingBayPath = fileURLToPath(new URL("../../../../content/projects/loading-bay.project.json", import.meta.url))): any {
-  const inter: Intermediate = JSON.parse(readFileSync(intermediatePath, "utf8"));
+export function buildDoomE1M1Project(
+  intermediatePath = fileURLToPath(
+    new URL(
+      "../../../../content/doom-e1m1/e1m1.intermediate.json",
+      import.meta.url,
+    ),
+  ),
+  manifestPath = fileURLToPath(
+    new URL(
+      "../../../../content/doom-e1m1/textures/manifest.json",
+      import.meta.url,
+    ),
+  ),
+  voxelPath = fileURLToPath(
+    new URL(
+      "../../../../content/doom-e1m1/doom-e1m1.voxel.json",
+      import.meta.url,
+    ),
+  ),
+  outPath = fileURLToPath(
+    new URL(
+      "../../../../content/projects/doom-e1m1.project.json",
+      import.meta.url,
+    ),
+  ),
+  loadingBayPath = fileURLToPath(
+    new URL(
+      "../../../../content/projects/loading-bay.project.json",
+      import.meta.url,
+    ),
+  ),
+): any {
+  const inter: Intermediate = JSON.parse(
+    readFileSync(intermediatePath, "utf8"),
+  );
   const manifest: Manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const voxel = JSON.parse(readFileSync(voxelPath, "utf8"));
   const loadingBay = JSON.parse(readFileSync(loadingBayPath, "utf8"));
@@ -139,7 +196,10 @@ export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL(".
     const k = kebab(entry.name);
     const matId = `material/doom-${entry.kind}-${k}`;
     const texId = `texture/doom-${entry.kind}-${k}`;
-    const tileScale: [number, number] = entry.tileScale ?? [entry.width / SCALE, entry.height / SCALE];
+    const tileScale: [number, number] = entry.tileScale ?? [
+      entry.width / SCALE,
+      entry.height / SCALE,
+    ];
     // texture asset
     assets.push({
       id: texId,
@@ -194,7 +254,10 @@ export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL(".
               tile_scale_cells: tileScale,
               tile_origin_cells: [0, 0],
             },
-            alphaMode: entry.kind === "wall" ? { kind: "mask", cutoff: 0.5 } : { kind: "opaque" },
+            alphaMode:
+              entry.kind === "wall"
+                ? { kind: "mask", cutoff: 0.5 }
+                : { kind: "opaque" },
           },
         },
       },
@@ -373,12 +436,20 @@ export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL(".
         { item: "supply/med-patch", quantity: 1 },
       ],
       initiallyEquippedWeapon: "weapon/arc-pistol",
-      weaponSlots: ["weapon/arc-pistol", "weapon/breach-scattergun", "weapon/rivet-carbine", "weapon/kinetic-launcher"],
+      weaponSlots: [
+        "weapon/arc-pistol",
+        "weapon/breach-scattergun",
+        "weapon/rivet-carbine",
+        "weapon/kinetic-launcher",
+      ],
     },
   });
 
   const enemyTypes = new Set([9, 3001, 3004]);
-  const pickupMap: Record<number, { item: string; quantity: number; mesh: string }> = {
+  const pickupMap: Record<
+    number,
+    { item: string; quantity: number; mesh: string }
+  > = {
     2001: {
       item: "weapon/breach-scattergun",
       quantity: 1,
@@ -443,7 +514,9 @@ export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL(".
     enemyIndex += 1;
     const pos = doomToWorldForThing(thing);
     const isRanged = thing.type === 9 || thing.type === 3001;
-    const mesh = isRanged ? "mesh-animation/arc-warden" : "mesh-animation/bay-rusher";
+    const mesh = isRanged
+      ? "mesh-animation/arc-warden"
+      : "mesh-animation/bay-rusher";
     const visualBinding = isRanged
       ? {
           version: 1,
@@ -638,27 +711,43 @@ export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL(".
     });
   }
 
-  // Doors — first up to 5 door linedefs (lineType 1)
-  const doorLines = inter.level.linedefs.filter((ld) => ld.lineType === 1).slice(0, 5);
-  for (let di = 0; di < doorLines.length; di += 1) {
-    const ld = doorLines[di]!;
-    const v1 = inter.level.vertices[ld.startVertex]!;
-    const v2 = inter.level.vertices[ld.endVertex]!;
-    const mx = (v1.x + v2.x) / 2;
-    const my = (v1.y + v2.y) / 2;
-    const si = findSectorForPoint(mx, my, inter, sectorEdges);
-    const floor = si >= 0 ? inter.level.sectors[si]!.floorHeight : 0;
-    const ceil = si >= 0 ? inter.level.sectors[si]!.ceilingHeight : 72;
-    const pos = wadToWorld(mx, my, floor);
-    const admittedCeiling = (ceil - MIN_FLOOR) / SCALE + 0.5;
-    const openPos: [number, number, number] = [pos[0], Math.max(admittedCeiling, pos[1] + 4), pos[2]];
+  // Four repeatable manual doors, grouped by their shared back-sidedef sector.
+  // The source identities are data, not runtime line-number behavior.
+  const manualDoors = [
+    { sector: 4, linedefs: [151, 152], texture: "BIGDOOR2" },
+    { sector: 68, linedefs: [247, 248], texture: "BROWN96" },
+    { sector: 81, linedefs: [324, 325], texture: "EXITDOOR" },
+    { sector: 76, linedefs: [340, 341], texture: "BIGDOOR4" },
+  ] as const;
+  for (const authoredDoor of manualDoors) {
+    const edges = sectorEdges.get(authoredDoor.sector) ?? [];
+    const xs = edges.flatMap((edge) => [edge.x1, edge.x2]);
+    const ys = edges.flatMap((edge) => [edge.y1, edge.y2]);
+    const mx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const my = (Math.min(...ys) + Math.max(...ys)) / 2;
+    const sector = inter.level.sectors[authoredDoor.sector]!;
+    const neighborCeilings = authoredDoor.linedefs.flatMap((linedefIndex) => {
+      const linedef = inter.level.linedefs[linedefIndex]!;
+      return [linedef.frontSidedef, linedef.backSidedef]
+        .filter((sidedefIndex) => sidedefIndex >= 0)
+        .map((sidedefIndex) => inter.level.sidedefs[sidedefIndex]!.sector)
+        .filter((sectorIndex) => sectorIndex !== authoredDoor.sector)
+        .map((sectorIndex) => inter.level.sectors[sectorIndex]!.ceilingHeight);
+    });
+    const destination = Math.min(...neighborCeilings) - 4;
+    const pos = wadToWorld(mx, my, sector.floorHeight);
+    const openPos: [number, number, number] = [
+      pos[0],
+      pos[1] + Math.max(0, destination - sector.ceilingHeight) / SCALE,
+      pos[2],
+    ];
     const id = nextId++;
     entities.push({
       id,
-      name: `doom-door-${di + 1}`,
+      name: `doom-manual-door-sector-${authoredDoor.sector}`,
       translation: pos,
       bounds: { min: [-0.8, -1.2, -0.2], max: [0.8, 1.2, 0.2] },
-      collision: { enabled: true, staticCollider: true },
+      collision: { enabled: true, staticCollider: false },
       renderable: {
         asset: "mesh/prop-kit/security-door",
         visible: true,
@@ -673,66 +762,138 @@ export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL(".
               emissionIntensity: 0.12,
             },
             {
+              state: "opening",
+              kind: "material",
+              textureTint: [1, 0.88, 0.58, 1],
+              emissionColor: [0.75, 0.42, 0.08],
+              emissionIntensity: 0.18,
+            },
+            {
               state: "open",
               kind: "material",
               textureTint: [0.62, 1, 0.82, 1],
               emissionColor: [0.12, 0.82, 0.52],
               emissionIntensity: 0.35,
             },
+            {
+              state: "closing",
+              kind: "material",
+              textureTint: [1, 0.88, 0.58, 1],
+              emissionColor: [0.75, 0.42, 0.08],
+              emissionIntensity: 0.18,
+            },
           ],
         },
       },
-      door: { openTranslation: openPos, autoCloseAfterTicks: null },
+      door: {
+        openTranslation: openPos,
+        // Doom's 150-tic wait converted once to this product's 60 Hz clock.
+        autoCloseAfterTicks: Math.round((150 / 35) * 60),
+        motionDurationTicks: Math.max(
+          1,
+          Math.round(((destination - sector.ceilingHeight) / 70) * 60),
+        ),
+        source: `doom1.wad:E1M1:linedefs:${authoredDoor.linedefs.join(",")}:type:1:sector:${authoredDoor.sector}:texture:${authoredDoor.texture}`,
+        openPresentation: `${authoredDoor.texture} door opening`,
+        closePresentation: `${authoredDoor.texture} door closing`,
+        openSound: "doom:DSDOROPN",
+        closeSound: "doom:DSDORCLS",
+      },
+      switch: {
+        controls: [],
+        activationRadius: 6,
+        prompt: `Open ${authoredDoor.texture} door`,
+        unavailablePresentation: `${authoredDoor.texture} door unavailable`,
+        effects: [{ kind: "openDoor", door: id }],
+      },
       kinematic: { halfExtents: [0.8, 1.2, 0.2], velocity: [0, 0, 0] },
     });
   }
 
-  // One switch that controls first door
-  const doorIds = entities.filter((e) => e.door).map((e) => e.id);
-  if (doorIds.length >= 2) {
-    const swPos = wadToWorld(1088, -3600, 0);
+  const sectorPlatform = (
+    sectorIndex: number,
+    name: string,
+    surfaceY: number,
+  ): { id: number; raised: [number, number, number] } => {
+    const edges = sectorEdges.get(sectorIndex) ?? [];
+    const xs = edges.flatMap((edge) => [edge.x1, edge.x2]);
+    const ys = edges.flatMap((edge) => [edge.y1, edge.y2]);
+    const minX = (Math.min(...xs) - MIN_X) / SCALE;
+    const maxX = (Math.max(...xs) - MIN_X) / SCALE;
+    const minZ = (Math.min(...ys) - MIN_Y) / SCALE;
+    const maxZ = (Math.max(...ys) - MIN_Y) / SCALE;
+    const raised: [number, number, number] = [
+      (minX + maxX) / 2,
+      surfaceY,
+      (minZ + maxZ) / 2,
+    ];
+    const halfX = (maxX - minX) / 2;
+    const halfZ = (maxZ - minZ) / 2;
     const id = nextId++;
     entities.push({
       id,
-      name: "doom-switch-1",
-      translation: swPos,
-      renderable: {
-        asset: "mesh/prop-kit/control-panel",
-        visible: true,
-        localTransform: {
-          translation: [0, -0.775, 0],
-          rotation: [0, 0, 0, 1],
-          scale: [1, 1, 1],
-        },
-        visualBinding: {
-          version: 1,
-          states: [
-            {
-              state: "inactive",
-              kind: "material",
-              textureTint: [1, 0.78, 0.48, 1],
-              emissionColor: [0.75, 0.28, 0.05],
-              emissionIntensity: 0.12,
-            },
-            {
-              state: "active",
-              kind: "material",
-              textureTint: [0.62, 1, 0.82, 1],
-              emissionColor: [0.12, 0.82, 0.52],
-              emissionIntensity: 0.35,
-            },
-          ],
-        },
-      },
-      switch: {
-        controls: doorIds,
-        loadingBayInterlock: {
-          closeDoor: doorIds[1]!,
-          openDoor: doorIds[0]!,
-        },
-      },
+      name,
+      translation: raised,
+      bounds: { min: [-halfX, -1, -halfZ], max: [halfX, 0, halfZ] },
+      collision: { enabled: true, staticCollider: false },
+      kinematic: { halfExtents: [halfX, 0.5, halfZ], velocity: [0, 0, 0] },
     });
-  }
+    return { id, raised };
+  };
+
+  const floorPlatform = sectorPlatform(59, "doom-floor-platform-sector-59", 15);
+  const floorTriggerLine = inter.level.linedefs[308]!;
+  const floorTriggerStart = inter.level.vertices[floorTriggerLine.startVertex]!;
+  const floorTriggerEnd = inter.level.vertices[floorTriggerLine.endVertex]!;
+  entities.push({
+    id: nextId++,
+    name: "doom-walk-floor-action-linedef-308",
+    translation: wadToWorld(
+      (floorTriggerStart.x + floorTriggerEnd.x) / 2,
+      (floorTriggerStart.y + floorTriggerEnd.y) / 2,
+      inter.level.sectors[73]!.floorHeight,
+    ),
+    bounds: { min: [-6, -1, -0.5], max: [6, 3, 0.5] },
+    floorAction: {
+      targetPlatform: floorPlatform.id,
+      upperTranslation: floorPlatform.raised,
+      loweredTranslation: [
+        floorPlatform.raised[0],
+        6.5,
+        floorPlatform.raised[2],
+      ],
+      motionDurationTicks: 59,
+      prompt: "Lower turbo floor",
+      presentation: "Sector 59 lowering",
+      source: "doom1.wad:E1M1:linedef:308:type:36:tag:1:sector:59:sound:stnmov",
+    },
+  });
+
+  const liftPlatform = sectorPlatform(70, "doom-lift-platform-sector-70", 15.5);
+  const liftTriggerLine = inter.level.linedefs[195]!;
+  const liftTriggerStart = inter.level.vertices[liftTriggerLine.startVertex]!;
+  const liftTriggerEnd = inter.level.vertices[liftTriggerLine.endVertex]!;
+  entities.push({
+    id: nextId++,
+    name: "doom-repeatable-lift-linedef-195",
+    translation: wadToWorld(
+      (liftTriggerStart.x + liftTriggerEnd.x) / 2,
+      (liftTriggerStart.y + liftTriggerEnd.y) / 2,
+      inter.level.sectors[60]!.floorHeight,
+    ),
+    bounds: { min: [-10, -1, -6], max: [10, 3, 6] },
+    lift: {
+      targetPlatform: liftPlatform.id,
+      raisedTranslation: liftPlatform.raised,
+      loweredTranslation: [liftPlatform.raised[0], 6, liftPlatform.raised[2]],
+      motionDurationTicks: 65,
+      loweredWaitTicks: 180,
+      prompt: "Activate secret lift",
+      presentation: "Sector 70 lift cycle",
+      source:
+        "doom1.wad:E1M1:linedef:195:type:88:tag:2:sector:70:sounds:pstart,pstop",
+    },
+  });
 
   // Exit — near the exit linedef type 11 midpoint
   const exitLd = inter.level.linedefs.find((ld) => ld.lineType === 11);
@@ -773,12 +934,18 @@ export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL(".
         ],
       },
     },
-    levelExit: { activationRadius: 4, presentation: "Doom E1M1 complete" },
+    levelExit: {
+      activationRadius: 4,
+      presentation: "Doom E1M1 complete",
+      source: "doom1.wad:E1M1:linedef:330:type:11:texture:SW1STRTN",
+    },
   });
 
-  // Secret — first secret sector (special 9) center
-  const secretSectorIdx = inter.level.sectors.findIndex((s) => s.special === 9);
-  if (secretSectorIdx >= 0) {
+  // Every authored E1M1 secret sector is independently discoverable once.
+  const secretSectorIndices = inter.level.sectors
+    .map((sector, index) => (sector.special === 9 ? index : -1))
+    .filter((index) => index >= 0);
+  for (const [secretIndex, secretSectorIdx] of secretSectorIndices.entries()) {
     const edges = sectorEdges.get(secretSectorIdx) ?? [];
     if (edges.length > 0) {
       const xs = edges.flatMap((e) => [e.x1, e.x2]);
@@ -789,10 +956,13 @@ export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL(".
       const pos = wadToWorld(cx, cy, sec.floorHeight);
       entities.push({
         id: nextId++,
-        name: "doom-secret-1",
+        name: `doom-secret-sector-${secretSectorIdx}`,
         translation: pos,
         bounds: { min: [-1.5, -0.8, -1.5], max: [1.5, 0.8, 1.5] },
-        secretRegion: { presentation: "Hangar secret discovered" },
+        secretRegion: {
+          presentation: `Secret ${secretIndex + 1} discovered`,
+          source: `doom1.wad:E1M1:sector:${secretSectorIdx}:special:9`,
+        },
       });
     }
   }
@@ -839,7 +1009,24 @@ export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL(".
 
   // Canonicalize via Rust project-store to guarantee byte equality
   const canonicalOut = `${outPath}.canon`;
-  const result = spawnSync("cargo", ["run", "--quiet", "--locked", "-p", "loading-bay-game", "--bin", "project-store", "--", "--input", outPath, "--output", canonicalOut], { encoding: "utf8" });
+  const result = spawnSync(
+    "cargo",
+    [
+      "run",
+      "--quiet",
+      "--locked",
+      "-p",
+      "loading-bay-game",
+      "--bin",
+      "project-store",
+      "--",
+      "--input",
+      outPath,
+      "--output",
+      canonicalOut,
+    ],
+    { encoding: "utf8" },
+  );
   if (result.status !== 0) {
     console.error(result.stderr, result.stdout);
     throw new Error(`project-store canonicalize failed for ${outPath}`);
@@ -849,10 +1036,15 @@ export function buildDoomE1M1Project(intermediatePath = fileURLToPath(new URL(".
   try {
     unlinkSync(canonicalOut);
   } catch {}
-  console.log(`Wrote ${outPath} entities=${entities.length} assets=${assets.length} bytes=${canonBytes.length}`);
+  console.log(
+    `Wrote ${outPath} entities=${entities.length} assets=${assets.length} bytes=${canonBytes.length}`,
+  );
   return project;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+if (
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === resolve(process.argv[1])
+) {
   buildDoomE1M1Project();
 }

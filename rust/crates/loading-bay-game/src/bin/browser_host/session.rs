@@ -1028,6 +1028,8 @@ fn fact_rejection_code(kind: &str) -> Option<RejectionCode> {
     match kind {
         "InputEdgeRejectedUnknownTarget" => Some(RejectionCode::UnknownTarget),
         "InputEdgeRejectedNotInteractable" => Some(RejectionCode::NotInteractable),
+        "InputEdgeRejectedSwitchOutOfRange" => Some(RejectionCode::NotInteractable),
+        "InputEdgeRejectedSwitchUnavailable" => Some(RejectionCode::NotInteractable),
         "InputEdgeRejectedPaused" => Some(RejectionCode::Paused),
         "InputEdgeRejectedPlayerDefeated" => Some(RejectionCode::PlayerDefeated),
         "InputEdgeRejectedItemNotOwned" => Some(RejectionCode::ItemNotOwned),

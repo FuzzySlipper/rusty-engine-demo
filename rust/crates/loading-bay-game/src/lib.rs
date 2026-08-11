@@ -16,10 +16,12 @@ mod encounter;
 mod enemy_combat;
 mod enemy_drop;
 mod extraction_beacon;
+mod floor_action;
 mod game_loop;
 mod hazard;
 mod interaction;
 mod inventory;
+mod lift;
 mod mechanics;
 mod navigation;
 mod pickup;
@@ -84,6 +86,14 @@ pub use extraction_beacon::{
     ExtractionBeaconReceipt, ExtractionBeaconState, ExtractionBeaconView,
     MAX_EXTRACTION_BEACON_ACTIVATION_RADIUS,
 };
+pub use floor_action::{
+    FloorActionActivation, FloorActionComponent, FloorActionConfig, FloorActionPhaseReceipt,
+    FloorActionRejection, FloorActionService, FloorActionState, FloorActionView,
+    DEFAULT_FLOOR_ACTION_MOTION_DURATION_TICKS, DEFAULT_FLOOR_ACTION_PRESENTATION,
+    DEFAULT_FLOOR_ACTION_PROMPT, DEFAULT_FLOOR_ACTION_SOURCE, FLOOR_ACTION_TRIGGER_SCOPE,
+    MAX_FLOOR_ACTION_MOTION_TICKS, MAX_FLOOR_ACTION_OVERLAP_SUBJECTS,
+    MAX_FLOOR_ACTION_PRESENTATION_BYTES, MAX_FLOOR_ACTION_SOURCE_BYTES,
+};
 pub use game_loop::{
     EdgeCommandRejection, GameLoopAdvanceReceipt, GameLoopEdgeCommand, GameLoopEdgeCommandKind,
     GameLoopFact, GameLoopPhase, GameLoopTickReceipt, GameRestartMode, InputCommandDisposition,
@@ -97,7 +107,11 @@ pub use hazard::{
     HazardComponent, HazardConfig, HazardFact, HazardPhaseReceipt, HazardRejection, HazardService,
     HazardView, HAZARD_TRIGGER_SCOPE, MAX_HAZARD_COOLDOWN_TICKS, MAX_HAZARD_OVERLAP_SUBJECTS,
 };
-pub use interaction::{SwitchComponent, SwitchView};
+pub use interaction::{
+    SwitchComponent, SwitchConfig, SwitchEffect, SwitchView, DEFAULT_SWITCH_ACTIVATION_RADIUS,
+    DEFAULT_SWITCH_PROMPT, DEFAULT_SWITCH_REPEATABLE, DEFAULT_SWITCH_UNAVAILABLE_PRESENTATION,
+    MAX_SWITCH_ACTIVATION_RADIUS, MAX_SWITCH_EFFECTS, MAX_SWITCH_PRESENTATION_BYTES,
+};
 pub use inventory::{
     InventoryAction, InventoryAdmissionError, InventoryCommand, InventoryConfig, InventoryFact,
     InventoryReceipt, InventoryRejection, InventoryService, InventoryStack, InventoryView,
@@ -106,6 +120,13 @@ pub use inventory::{
     MAX_ITEM_DEFINITION_ID_BYTES, MAX_ITEM_QUANTITY, MAX_PROJECTILE_GRAVITY_SCALE,
     MAX_PROJECTILE_IMPULSE, MAX_PROJECTILE_LIFETIME_TICKS, MAX_PROJECTILE_MASS,
     MAX_PROJECTILE_RADIUS, MAX_PROJECTILE_RESTITUTION,
+};
+pub use lift::{
+    LiftActivation, LiftComponent, LiftConfig, LiftPhaseReceipt, LiftRejection, LiftService,
+    LiftState, LiftView, DEFAULT_LIFT_MOTION_DURATION_TICKS, DEFAULT_LIFT_PROMPT,
+    DEFAULT_LIFT_SOURCE, DEFAULT_LIFT_WAIT_TICKS, LIFT_TRIGGER_SCOPE, MAX_LIFT_MOTION_TICKS,
+    MAX_LIFT_OVERLAP_SUBJECTS, MAX_LIFT_PRESENTATION_BYTES, MAX_LIFT_SOURCE_BYTES,
+    MAX_LIFT_WAIT_TICKS,
 };
 pub use navigation::{
     NavigationComponent, NavigationConfig, NavigationFact, NavigationFailure,
@@ -147,7 +168,9 @@ pub use project_store::{
     DEFAULT_MAX_PROJECT_FILE_BYTES,
 };
 pub use projectile::{ProjectileError, ProjectileFact, ProjectilePhaseReceipt};
-pub use runtime::{GameRuntime, RuntimeError, MAX_EVENT_WAVE, MAX_TICK_ADVANCE};
+pub use runtime::{
+    GameRuntime, RuntimeError, WalkTriggerPhaseReceipt, MAX_EVENT_WAVE, MAX_TICK_ADVANCE,
+};
 pub use runtime_records::{GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
 pub use rusty_engine::engine_spatial::{
     MaterialVoxel, VoxelEdit, VoxelEditApplyError, VoxelEditFact, VoxelEditReceipt,
@@ -163,12 +186,13 @@ pub use scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 pub use session::GameSession;
 pub use snapshot::{
     decode_game_snapshot, encode_game_snapshot, EncounterSnapshot, EnemyCombatSnapshot,
-    EnemyDropSnapshot, EnemySnapshot, ExtractionBeaconSnapshot, GameSnapshot, GameSnapshotError,
-    GeneratedRoomSnapshot, HazardSnapshot, HealthSnapshot, InventorySnapshot,
-    InventoryStackSnapshot, ItemDefinitionSnapshot, MaterialVoxelSnapshot, NavigationSnapshot,
-    PickupSnapshot, PlayerControllerSnapshot, PlayerInputBindingsSnapshot, SnapshotEncounterState,
-    SnapshotEnemyAttackKind, SnapshotEnemyCombatPosture, SnapshotEnemyDropState,
-    SnapshotEnemyState, SnapshotExtractionBeaconState, SnapshotItemKind, SnapshotNavigationState,
+    EnemyDropSnapshot, EnemySnapshot, ExtractionBeaconSnapshot, FloorActionSnapshot, GameSnapshot,
+    GameSnapshotError, GeneratedRoomSnapshot, HazardSnapshot, HealthSnapshot, InventorySnapshot,
+    InventoryStackSnapshot, ItemDefinitionSnapshot, LiftSnapshot, MaterialVoxelSnapshot,
+    NavigationSnapshot, PickupSnapshot, PlayerControllerSnapshot, PlayerInputBindingsSnapshot,
+    SnapshotEncounterState, SnapshotEnemyAttackKind, SnapshotEnemyCombatPosture,
+    SnapshotEnemyDropState, SnapshotEnemyState, SnapshotExtractionBeaconState,
+    SnapshotFloorActionState, SnapshotItemKind, SnapshotLiftState, SnapshotNavigationState,
     SnapshotPickupCollectionCause, SnapshotPickupState, SnapshotVitalityState,
     SnapshotWeaponAttackMode, VoxelCollisionSnapshot, WeaponCooldownSnapshot, WeaponEntitySnapshot,
     WeaponSnapshot, GAME_SNAPSHOT_SCHEMA_VERSION,
@@ -177,21 +201,21 @@ pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredAsset,
     StoredAssetCatalogMetadata, StoredAssetImport, StoredBounds, StoredCollision, StoredDoor,
     StoredDoorAccess, StoredEncounter, StoredEnemyAttack, StoredEnemyAttackKind, StoredEnemyCombat,
-    StoredEnemyDrop, StoredEntityDefinition, StoredExtractionBeacon,
+    StoredEnemyDrop, StoredEntityDefinition, StoredExtractionBeacon, StoredFloorAction,
     StoredGeneratedVoxelEnvironment, StoredHazard, StoredHealth, StoredImportSource,
     StoredInventory, StoredInventoryStack, StoredItemDefinition, StoredItemKind, StoredKinematic,
-    StoredLevelExit, StoredLight, StoredLoadingBayInterlock, StoredMaterialVoxel,
+    StoredLevelExit, StoredLift, StoredLight, StoredLoadingBayInterlock, StoredMaterialVoxel,
     StoredMaterialVoxelEnvironment, StoredNavigation, StoredPickup, StoredPlayerController,
     StoredPlayerInputBindings, StoredProject, StoredProjectError, StoredRenderable,
     StoredRenderableTransform, StoredRequiredKeyPolicy, StoredScene, StoredSecretRegion,
-    StoredSolidVoxelEnvironment, StoredSwitch, StoredVisualAnimationLoopMode, StoredVisualBinding,
-    StoredVisualBindingState, StoredVisualPresentation, StoredVisualState, StoredVoxelEnvironment,
-    StoredVoxelInstance, StoredVoxelObjectFrameSelection, StoredVoxelObjectInstance,
-    StoredVoxelObjectMaterialOverride, StoredVoxelObjectSurfaceMode, StoredWeapon,
-    StoredWeaponAttackMode, MAX_PROJECT_VOXEL_OBJECTS, MAX_PROJECT_VOXEL_OBJECT_FRAMES,
-    MAX_PROJECT_VOXEL_OBJECT_INSTANCES, MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK,
-    MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS, MAX_STORED_VISUAL_BINDING_STATES,
-    STORED_PROJECT_SCHEMA_VERSION, STORED_VISUAL_BINDING_VERSION,
+    StoredSolidVoxelEnvironment, StoredSwitch, StoredSwitchEffect, StoredVisualAnimationLoopMode,
+    StoredVisualBinding, StoredVisualBindingState, StoredVisualPresentation, StoredVisualState,
+    StoredVoxelEnvironment, StoredVoxelInstance, StoredVoxelObjectFrameSelection,
+    StoredVoxelObjectInstance, StoredVoxelObjectMaterialOverride, StoredVoxelObjectSurfaceMode,
+    StoredWeapon, StoredWeaponAttackMode, MAX_PROJECT_VOXEL_OBJECTS,
+    MAX_PROJECT_VOXEL_OBJECT_FRAMES, MAX_PROJECT_VOXEL_OBJECT_INSTANCES,
+    MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK, MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS,
+    MAX_STORED_VISUAL_BINDING_STATES, STORED_PROJECT_SCHEMA_VERSION, STORED_VISUAL_BINDING_VERSION,
 };
 pub use studio_adapter::{
     AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,

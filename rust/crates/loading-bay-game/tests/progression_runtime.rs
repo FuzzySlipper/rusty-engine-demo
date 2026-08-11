@@ -177,6 +177,7 @@ fn loading_bay_interlock_preserves_switch_consequences_and_scheduled_close() {
     for enemy in [5, 41, 42] {
         runtime.defeat_enemy(PLAYER, EntityId::new(enemy)).unwrap();
     }
+    runtime.advance_by(1).unwrap();
     assert_eq!(
         runtime.session().door(GENERATOR_DOOR).unwrap().state,
         DoorState::Open
@@ -210,7 +211,6 @@ fn loading_bay_interlock_preserves_switch_consequences_and_scheduled_close() {
             }
         ]
     ));
-
     runtime.advance_by(90).unwrap();
     assert_eq!(
         runtime.session().door(GENERATOR_DOOR).unwrap().state,

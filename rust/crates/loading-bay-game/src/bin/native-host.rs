@@ -10,7 +10,7 @@ use loading_bay_game::{
     decode_game_snapshot, decode_project_document, doom_texture_projection, encode_game_snapshot,
     externalize_frame_meshes, project_stored_voxel_volume, GameLoopEdgeCommand,
     GameLoopEdgeCommandKind, GameRuntime, LoadingBayGameLoop, PlayerInputCommand,
-    PlayerInputIntent, ResolvedPlayerAction,
+    PlayerInputIntent, ResolvedPlayerAction, RuntimeError,
 };
 use rusty_engine::{
     core_ids::EntityId,
@@ -602,7 +602,7 @@ impl NativeApplication {
                     .switch(INTERLOCK)
                     .context("authored generator interlock is missing")?
                     .activation_count;
-                self.runtime.runtime_mut().interact(PLAYER, INTERLOCK)?;
+                let interaction = self.runtime.runtime_mut().interact(PLAYER, INTERLOCK);
                 let after = self
                     .runtime
                     .runtime()
@@ -610,8 +610,15 @@ impl NativeApplication {
                     .switch(INTERLOCK)
                     .context("authored generator interlock disappeared")?
                     .activation_count;
-                self.proof.pick_authority = after == before.saturating_add(1)
-                    && self.runtime.runtime().readout().entity_revision > pending.revision_before;
+                self.proof.pick_authority = matches!(
+                    interaction,
+                    Err(RuntimeError::SwitchOutOfRange {
+                        actor: PLAYER,
+                        switch: INTERLOCK,
+                        ..
+                    })
+                ) && after == before
+                    && self.runtime.runtime().readout().entity_revision == pending.revision_before;
                 let saved = encode_game_snapshot(self.runtime.runtime())?;
                 let restored = decode_game_snapshot(&saved)?;
                 self.proof.save_round_trip = restored

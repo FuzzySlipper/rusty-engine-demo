@@ -2,13 +2,13 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
-use rusty_engine::core_time::Tick;
+use rusty_engine::core_time::{Tick, TickDelta};
 use rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS;
 use rusty_engine::entity_state::{EntityState, EntityView};
 
 use crate::combat::{EnemyComponent, EnemyState, EnemyView, WeaponState, WeaponView};
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
-use crate::door::{DoorComponent, DoorState, DoorView};
+use crate::door::{DoorComponent, DoorState, DoorView, DEFAULT_DOOR_MOTION_DURATION_TICKS};
 use crate::encounter::{
     EncounterComponent, EncounterState, EncounterView, MAX_ENCOUNTER_ACTIVATION_RADIUS,
 };
@@ -19,12 +19,14 @@ use crate::enemy_drop::{EnemyDropComponent, EnemyDropState, EnemyDropView};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconState, ExtractionBeaconView,
 };
+use crate::floor_action::{FloorActionComponent, FloorActionState, FloorActionView};
 use crate::hazard::{HazardComponent, HazardView};
-use crate::interaction::{SwitchComponent, SwitchView};
+use crate::interaction::{switch_is_available, SwitchComponent, SwitchEffect, SwitchView};
 use crate::inventory::{
     admit_item_definitions, inventory_from_config, inventory_view, InventoryView, ItemDefinition,
     ItemDefinitionId, ItemDefinitionView,
 };
+use crate::lift::{LiftComponent, LiftState, LiftView};
 use crate::mechanics::{self, InventoryRuntime, MechanicsRuntime};
 use crate::navigation::{
     NavigationComponent, NavigationState, NavigationView, MAX_NAVIGATION_QUERY_BUDGET,
@@ -45,6 +47,8 @@ pub struct GameSession {
     pub(crate) doors: BTreeMap<EntityId, DoorComponent>,
     pub(crate) door_access: BTreeMap<EntityId, DoorAccessConfig>,
     pub(crate) switches: BTreeMap<EntityId, SwitchComponent>,
+    pub(crate) floor_actions: BTreeMap<EntityId, FloorActionComponent>,
+    pub(crate) lifts: BTreeMap<EntityId, LiftComponent>,
     pub(crate) controls: BTreeMap<EntityId, Vec<EntityId>>,
     pub(crate) loading_bay_interlocks: BTreeMap<EntityId, LoadingBayInterlockConfig>,
     pub(crate) enemies: BTreeMap<EntityId, EnemyComponent>,
@@ -82,6 +86,8 @@ impl GameSession {
                 definition.pickup.is_some()
                     || definition.hazard.is_some()
                     || definition.secret_region.is_some()
+                    || definition.floor_action.is_some()
+                    || definition.lift.is_some()
             })
             .count();
         if trigger_count > MAX_TRIGGER_DEFINITIONS {
@@ -124,6 +130,8 @@ impl GameSession {
         let mut doors = BTreeMap::new();
         let mut door_access = BTreeMap::new();
         let mut switches = BTreeMap::new();
+        let mut floor_actions = BTreeMap::new();
+        let mut lifts = BTreeMap::new();
         let mut controls = BTreeMap::new();
         let mut loading_bay_interlocks = BTreeMap::new();
         let mut enemies = BTreeMap::new();
@@ -158,8 +166,13 @@ impl GameSession {
                 if view.transform.is_none() {
                     return Err(GameEntityDefinitionError::DoorMissingTransform { entity });
                 }
-                if view.collision.is_none() {
+                let Some(collision) = view.collision else {
                     return Err(GameEntityDefinitionError::DoorMissingCollision { entity });
+                };
+                if collision.static_collider
+                    && config.motion_duration.raw() != DEFAULT_DOOR_MOTION_DURATION_TICKS
+                {
+                    return Err(GameEntityDefinitionError::DoorMustBeMovable { entity });
                 }
                 if view.renderable.is_none() {
                     return Err(GameEntityDefinitionError::DoorMissingRenderable { entity });
@@ -169,6 +182,7 @@ impl GameSession {
                     DoorComponent {
                         config,
                         state: DoorState::Closed,
+                        motion_elapsed: TickDelta::ZERO,
                     },
                 );
             }
@@ -189,8 +203,66 @@ impl GameSession {
                 }
                 door_access.insert(entity, config.clone());
             }
+            if definition.switch_config.is_some() && !definition.switch {
+                return Err(GameEntityDefinitionError::SwitchConfigWithoutSwitch { entity });
+            }
             if definition.switch {
-                switches.insert(entity, SwitchComponent::default());
+                let config = definition.switch_config.clone().unwrap_or_default();
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidSwitchConfig { entity });
+                }
+                switches.insert(entity, SwitchComponent::new(config));
+            }
+            if let Some(config) = &definition.floor_action {
+                let view = entities.view(entity).expect("definition created entity");
+                if view.transform.is_none() {
+                    return Err(GameEntityDefinitionError::FloorActionMissingTransform { entity });
+                }
+                if view.bounds.is_none() {
+                    return Err(GameEntityDefinitionError::FloorActionMissingBounds { entity });
+                }
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidFloorActionConfig { entity });
+                }
+                if definition.lift.is_some() || conflicts_with_walk_trigger(definition) {
+                    return Err(
+                        GameEntityDefinitionError::FloorActionConflictsWithGameplayOwner { entity },
+                    );
+                }
+                floor_actions.insert(
+                    entity,
+                    FloorActionComponent {
+                        config: config.clone(),
+                        state: FloorActionState::Armed,
+                        motion_elapsed: TickDelta::ZERO,
+                    },
+                );
+            }
+            if let Some(config) = &definition.lift {
+                let view = entities.view(entity).expect("definition created entity");
+                if view.transform.is_none() {
+                    return Err(GameEntityDefinitionError::LiftMissingTransform { entity });
+                }
+                if view.bounds.is_none() {
+                    return Err(GameEntityDefinitionError::LiftMissingBounds { entity });
+                }
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidLiftConfig { entity });
+                }
+                if definition.floor_action.is_some() || conflicts_with_walk_trigger(definition) {
+                    return Err(GameEntityDefinitionError::LiftConflictsWithGameplayOwner {
+                        entity,
+                    });
+                }
+                lifts.insert(
+                    entity,
+                    LiftComponent {
+                        config: config.clone(),
+                        state: LiftState::Raised,
+                        motion_elapsed: TickDelta::ZERO,
+                        wait_elapsed: TickDelta::ZERO,
+                    },
+                );
             }
             if !definition.controls_targets.is_empty() {
                 if !definition.switch {
@@ -597,6 +669,32 @@ impl GameSession {
             }
         }
 
+        let mut target_owners = BTreeMap::new();
+        for (action, component) in &floor_actions {
+            let target_platform = component.config.target_platform;
+            validate_walk_trigger_target(
+                &entities,
+                &floor_actions,
+                &lifts,
+                &mut target_owners,
+                *action,
+                target_platform,
+                true,
+            )?;
+        }
+        for (lift, component) in &lifts {
+            let target_platform = component.config.target_platform;
+            validate_walk_trigger_target(
+                &entities,
+                &floor_actions,
+                &lifts,
+                &mut target_owners,
+                *lift,
+                target_platform,
+                false,
+            )?;
+        }
+
         for (switch, targets) in &controls {
             for target in targets {
                 if !entities.contains(*target) {
@@ -627,6 +725,56 @@ impl GameSession {
                     switch: *switch,
                     target: interlock.open_door,
                 });
+            }
+        }
+        for (switch, interlock) in &loading_bay_interlocks {
+            let component = switches
+                .get_mut(switch)
+                .expect("Loading Bay interlock switch was admitted");
+            component
+                .config
+                .push_effect_if_missing(SwitchEffect::CloseDoor(interlock.close_door));
+            component
+                .config
+                .push_effect_if_missing(SwitchEffect::OpenDoor(interlock.open_door));
+        }
+        for (switch, targets) in &controls {
+            let component = switches
+                .get_mut(switch)
+                .expect("control switch was admitted");
+            for target in targets {
+                component
+                    .config
+                    .push_effect_if_missing(SwitchEffect::OpenDoor(*target));
+            }
+        }
+        for (switch, component) in &switches {
+            if !component.config.is_valid() {
+                return Err(GameEntityDefinitionError::InvalidSwitchConfig { entity: *switch });
+            }
+        }
+        for (switch, component) in &switches {
+            let mut effects = BTreeSet::new();
+            for effect in &component.config.effects {
+                if !effects.insert(effect) {
+                    return Err(GameEntityDefinitionError::DuplicateSwitchEffect {
+                        switch: *switch,
+                        effect: effect.clone(),
+                    });
+                }
+                let target = effect.door();
+                if !entities.contains(target) {
+                    return Err(GameEntityDefinitionError::UnknownSwitchEffectTarget {
+                        switch: *switch,
+                        target,
+                    });
+                }
+                if !doors.contains_key(&target) {
+                    return Err(GameEntityDefinitionError::SwitchEffectTargetIsNotDoor {
+                        switch: *switch,
+                        target,
+                    });
+                }
             }
         }
 
@@ -715,6 +863,8 @@ impl GameSession {
             doors,
             door_access,
             switches,
+            floor_actions,
+            lifts,
             controls,
             loading_bay_interlocks,
             enemies,
@@ -752,6 +902,7 @@ impl GameSession {
             entity,
             config: component.config,
             state: component.state,
+            motion_elapsed: component.motion_elapsed,
             entity_view: self.entities.view(entity).ok()?,
         })
     }
@@ -776,8 +927,87 @@ impl GameSession {
         let component = self.switches.get(&entity)?;
         Some(SwitchView {
             entity,
+            config: component.config.clone(),
             activation_count: component.activation_count,
+            available: switch_is_available(self, entity),
             controls_targets: self.controls.get(&entity).cloned().unwrap_or_default(),
+            entity_view: self.entities.view(entity).ok()?,
+        })
+    }
+
+    pub fn switches(&self) -> impl ExactSizeIterator<Item = SwitchView> + '_ {
+        self.switches.iter().map(|(entity, component)| SwitchView {
+            entity: *entity,
+            config: component.config.clone(),
+            activation_count: component.activation_count,
+            available: switch_is_available(self, *entity),
+            controls_targets: self.controls.get(entity).cloned().unwrap_or_default(),
+            entity_view: self
+                .entities
+                .view(*entity)
+                .expect("admitted switch remains viewable"),
+        })
+    }
+
+    pub fn floor_action(&self, entity: EntityId) -> Option<FloorActionView> {
+        let component = self.floor_actions.get(&entity)?;
+        Some(FloorActionView {
+            entity,
+            config: component.config.clone(),
+            state: component.state,
+            motion_elapsed: component.motion_elapsed,
+            entity_view: self.entities.view(entity).ok()?,
+            target_platform_view: self.entities.view(component.config.target_platform).ok()?,
+        })
+    }
+
+    pub fn floor_actions(&self) -> impl ExactSizeIterator<Item = FloorActionView> + '_ {
+        self.floor_actions
+            .iter()
+            .map(|(entity, component)| FloorActionView {
+                entity: *entity,
+                config: component.config.clone(),
+                state: component.state,
+                motion_elapsed: component.motion_elapsed,
+                entity_view: self
+                    .entities
+                    .view(*entity)
+                    .expect("admitted floor action remains viewable"),
+                target_platform_view: self
+                    .entities
+                    .view(component.config.target_platform)
+                    .expect("admitted floor action target remains viewable"),
+            })
+    }
+
+    pub fn lift(&self, entity: EntityId) -> Option<LiftView> {
+        let component = self.lifts.get(&entity)?;
+        Some(LiftView {
+            entity,
+            config: component.config.clone(),
+            state: component.state,
+            motion_elapsed: component.motion_elapsed,
+            wait_elapsed: component.wait_elapsed,
+            entity_view: self.entities.view(entity).ok()?,
+            target_platform_view: self.entities.view(component.config.target_platform).ok()?,
+        })
+    }
+
+    pub fn lifts(&self) -> impl ExactSizeIterator<Item = LiftView> + '_ {
+        self.lifts.iter().map(|(entity, component)| LiftView {
+            entity: *entity,
+            config: component.config.clone(),
+            state: component.state,
+            motion_elapsed: component.motion_elapsed,
+            wait_elapsed: component.wait_elapsed,
+            entity_view: self
+                .entities
+                .view(*entity)
+                .expect("admitted lift remains viewable"),
+            target_platform_view: self
+                .entities
+                .view(component.config.target_platform)
+                .expect("admitted lift target remains viewable"),
         })
     }
 
@@ -1055,6 +1285,122 @@ impl GameSession {
             .iter()
             .find_map(|(item, entity)| (*entity == item_entity).then(|| item.clone()))
     }
+}
+
+fn conflicts_with_walk_trigger(definition: &GameEntityDefinition) -> bool {
+    definition.door.is_some()
+        || definition.door_access.is_some()
+        || definition.switch
+        || !definition.controls_targets.is_empty()
+        || definition.loading_bay_interlock.is_some()
+        || definition.enemy
+        || definition.enemy_combat.is_some()
+        || definition.enemy_drop.is_some()
+        || definition.health.is_some()
+        || definition.hazard.is_some()
+        || definition.encounter.is_some()
+        || definition.extraction_beacon.is_some()
+        || definition.navigation.is_some()
+        || definition.player_controller.is_some()
+        || definition.inventory.is_some()
+        || definition.pickup.is_some()
+        || definition.weapon.is_some()
+        || definition.secret_region.is_some()
+        || definition.level_exit.is_some()
+}
+
+fn validate_walk_trigger_target(
+    entities: &EntityState,
+    floor_actions: &BTreeMap<EntityId, FloorActionComponent>,
+    lifts: &BTreeMap<EntityId, LiftComponent>,
+    target_owners: &mut BTreeMap<EntityId, EntityId>,
+    owner: EntityId,
+    target_platform: EntityId,
+    is_floor_action: bool,
+) -> Result<(), GameEntityDefinitionError> {
+    let unknown_target = || {
+        if is_floor_action {
+            GameEntityDefinitionError::UnknownFloorActionTarget {
+                action: owner,
+                target_platform,
+            }
+        } else {
+            GameEntityDefinitionError::UnknownLiftTarget {
+                lift: owner,
+                target_platform,
+            }
+        }
+    };
+    let missing_transform = || {
+        if is_floor_action {
+            GameEntityDefinitionError::FloorActionTargetMissingTransform {
+                action: owner,
+                target_platform,
+            }
+        } else {
+            GameEntityDefinitionError::LiftTargetMissingTransform {
+                lift: owner,
+                target_platform,
+            }
+        }
+    };
+    let missing_collision = || {
+        if is_floor_action {
+            GameEntityDefinitionError::FloorActionTargetMissingCollision {
+                action: owner,
+                target_platform,
+            }
+        } else {
+            GameEntityDefinitionError::LiftTargetMissingCollision {
+                lift: owner,
+                target_platform,
+            }
+        }
+    };
+    let not_movable = || {
+        if is_floor_action {
+            GameEntityDefinitionError::FloorActionTargetMustBeMovable {
+                action: owner,
+                target_platform,
+            }
+        } else {
+            GameEntityDefinitionError::LiftTargetMustBeMovable {
+                lift: owner,
+                target_platform,
+            }
+        }
+    };
+
+    if !entities.contains(target_platform) {
+        return Err(unknown_target());
+    }
+    if floor_actions.contains_key(&target_platform) || lifts.contains_key(&target_platform) {
+        return Err(GameEntityDefinitionError::DuplicateMovingPlatformTarget {
+            target_platform,
+            first_owner: target_platform,
+            second_owner: owner,
+        });
+    }
+    let view = entities
+        .view(target_platform)
+        .expect("target existence was checked");
+    if view.transform.is_none() {
+        return Err(missing_transform());
+    }
+    let Some(collision) = view.collision else {
+        return Err(missing_collision());
+    };
+    if collision.static_collider {
+        return Err(not_movable());
+    }
+    if let Some(first_owner) = target_owners.insert(target_platform, owner) {
+        return Err(GameEntityDefinitionError::DuplicateMovingPlatformTarget {
+            target_platform,
+            first_owner,
+            second_owner: owner,
+        });
+    }
+    Ok(())
 }
 
 fn vec3_is_finite(value: Vec3) -> bool {

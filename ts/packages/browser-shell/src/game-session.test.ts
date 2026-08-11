@@ -118,6 +118,8 @@ const dynamic = {
   extractionBeacon: null,
   doorAccess: [],
   secretRegions: [],
+  floorActions: [],
+  lifts: [],
   levelExits: [],
   levelComplete: false,
   interaction: null,

@@ -153,6 +153,8 @@ pub enum EdgeCommandRejection {
     Paused,
     UnknownTarget,
     NotInteractable,
+    SwitchOutOfRange,
+    SwitchUnavailable,
     PickupRejected,
     InvalidWeaponSlot,
     WeaponNotOwned,
@@ -185,6 +187,8 @@ pub enum GameLoopFact {
     Inventory(InventoryFact),
     Vitality(VitalityFact),
     Hazard(HazardFact),
+    FloorAction(crate::FloorActionActivation),
+    Lift(crate::LiftActivation),
     Progression(crate::ProgressionFact),
     DoorAccessRejected {
         sequence: u64,
@@ -559,6 +563,8 @@ impl LoadingBayGameLoop {
         let simulation_advanced = !self.input.paused && !level_complete;
         if simulation_advanced {
             self.runtime.begin_fixed_tick();
+            self.runtime.run_door_motion_phase()?;
+            self.runtime.run_walk_trigger_motion_phase()?;
             self.run_player_motion_phase(&mut facts)?;
             self.run_enemy_phase(&mut facts)?;
             self.run_hazard_phase(&mut facts)?;
@@ -821,6 +827,21 @@ impl LoadingBayGameLoop {
             }
             return Ok(());
         }
+        let walk_triggers = self.runtime.run_walk_trigger_phase(self.player)?;
+        facts.extend(
+            walk_triggers
+                .floor_action
+                .activations
+                .into_iter()
+                .map(GameLoopFact::FloorAction),
+        );
+        facts.extend(
+            walk_triggers
+                .lift
+                .activations
+                .into_iter()
+                .map(GameLoopFact::Lift),
+        );
         let pickup_phase = self.runtime.run_pickup_phase(self.player)?;
         for receipt in pickup_phase.collected {
             extend_pickup_facts(receipt, facts);
@@ -1085,6 +1106,32 @@ impl LoadingBayGameLoop {
                     facts.push(GameLoopFact::EdgeCommandRejected {
                         sequence: command.sequence,
                         reason: EdgeCommandRejection::NotInteractable,
+                    });
+                }
+                Err(RuntimeError::SwitchOutOfRange { .. }) => {
+                    facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::SwitchOutOfRange,
+                    });
+                }
+                Err(RuntimeError::SwitchUnavailable { .. }) => {
+                    facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::SwitchUnavailable,
+                    });
+                }
+                Err(RuntimeError::SwitchActorMissingTransform { .. })
+                | Err(RuntimeError::SwitchMissingTransform { .. })
+                | Err(RuntimeError::InvalidSwitchActivationRadius { .. }) => {
+                    facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::NotInteractable,
+                    });
+                }
+                Err(RuntimeError::PlayerDefeated { .. }) => {
+                    facts.push(GameLoopFact::EdgeCommandRejected {
+                        sequence: command.sequence,
+                        reason: EdgeCommandRejection::PlayerDefeated,
                     });
                 }
                 Err(RuntimeError::UnknownDoor { .. })

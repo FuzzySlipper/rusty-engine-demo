@@ -192,6 +192,17 @@ export class GameSessionError extends Error {
   }
 }
 
+function factRejectionMessage(kind: string): string {
+  switch (kind) {
+    case "InputEdgeRejectedSwitchOutOfRange":
+      return "Move closer to use this switch.";
+    case "InputEdgeRejectedSwitchUnavailable":
+      return "This switch is unavailable; wait for its current action to finish.";
+    default:
+      return kind;
+  }
+}
+
 export interface AppliedServerUpdate {
   readonly baseline: SessionBaseline;
   readonly state: RuntimeBrowserState;
@@ -916,7 +927,10 @@ export class LoadingBayGameSession {
       if (fact.code === undefined) {
         continue;
       }
-      const error = new GameSessionError(fact.code, fact.kind);
+      const error = new GameSessionError(
+        fact.code,
+        factRejectionMessage(fact.kind),
+      );
       if (fact.commandSequence !== undefined) {
         const edge = this.#pendingEdges.get(fact.commandSequence);
         edge?.reject(error);
@@ -1455,7 +1469,9 @@ function isRuntimeDoorAccessState(value: unknown): boolean {
   return (
     isRecord(value) &&
     isFiniteNumber(value.id) &&
-    (value.state === "closed" || value.state === "open") &&
+    (["closed", "opening", "open", "closing"] as const).includes(
+      value.state as "closed" | "opening" | "open" | "closing",
+    ) &&
     typeof value.requiredKey === "string" &&
     (value.keyPolicy === "retain" || value.keyPolicy === "consume") &&
     isFiniteNumber(value.activationRadius) &&
@@ -1469,6 +1485,38 @@ function isRuntimeSecretRegionState(value: unknown): boolean {
     isFiniteNumber(value.id) &&
     (value.state === "undiscovered" || value.state === "discovered") &&
     typeof value.presentation === "string"
+  );
+}
+
+function isRuntimeFloorActionState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.id) &&
+    isFiniteNumber(value.targetPlatform) &&
+    (value.state === "armed" ||
+      value.state === "lowering" ||
+      value.state === "lowered") &&
+    isSafeNonNegativeInteger(value.motionElapsedTicks) &&
+    typeof value.prompt === "string" &&
+    typeof value.presentation === "string" &&
+    typeof value.source === "string"
+  );
+}
+
+function isRuntimeLiftState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.id) &&
+    isFiniteNumber(value.targetPlatform) &&
+    (value.state === "raised" ||
+      value.state === "lowering" ||
+      value.state === "waiting" ||
+      value.state === "raising") &&
+    isSafeNonNegativeInteger(value.motionElapsedTicks) &&
+    isSafeNonNegativeInteger(value.waitElapsedTicks) &&
+    typeof value.prompt === "string" &&
+    typeof value.presentation === "string" &&
+    typeof value.source === "string"
   );
 }
 
@@ -1563,6 +1611,10 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     value.doorAccess.every(isRuntimeDoorAccessState) &&
     Array.isArray(value.secretRegions) &&
     value.secretRegions.every(isRuntimeSecretRegionState) &&
+    Array.isArray(value.floorActions) &&
+    value.floorActions.every(isRuntimeFloorActionState) &&
+    Array.isArray(value.lifts) &&
+    value.lifts.every(isRuntimeLiftState) &&
     Array.isArray(value.levelExits) &&
     value.levelExits.every(isRuntimeLevelExitState) &&
     typeof value.levelComplete === "boolean" &&
@@ -1596,7 +1648,9 @@ function isRuntimeBoundVisualState(value: unknown): boolean {
     [
       "default",
       "open",
+      "opening",
       "closed",
+      "closing",
       "active",
       "inactive",
       "standby",

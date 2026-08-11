@@ -199,15 +199,14 @@ declare global {
         </div>
 
         @if (snapshot().interactionPrompt !== null && panel() === "game") {
-          <button
-            type="button"
+          <div
             class="interaction-prompt"
+            role="status"
+            aria-live="polite"
             [attr.inert]="modalActive() ? '' : null"
-            [disabled]="actionBusy()"
-            (click)="activateInteraction()"
           >
-            {{ snapshot().interactionPrompt }}
-          </button>
+            E · {{ snapshot().interactionPrompt }}
+          </div>
         }
 
         <p class="pointer-help">

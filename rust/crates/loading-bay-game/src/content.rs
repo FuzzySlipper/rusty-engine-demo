@@ -8,6 +8,8 @@ use serde::Deserialize;
 use crate::combat::WeaponConfig;
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::DoorConfig;
+use crate::floor_action::FloorActionConfig;
+use crate::lift::LiftConfig;
 use crate::navigation::NavigationConfig;
 use crate::player::{PlayerControllerConfig, PlayerInputBindings};
 use crate::session::GameSession;
@@ -36,10 +38,13 @@ struct AuthoredEntityDefinition {
     id: u64,
     name: String,
     translation: Option<[f32; 3]>,
+    bounds: Option<AuthoredBounds>,
     collision: Option<AuthoredCollision>,
     renderable: Option<AuthoredRenderable>,
     door: Option<AuthoredDoor>,
     switch: Option<AuthoredSwitch>,
+    floor_action: Option<AuthoredFloorAction>,
+    lift: Option<AuthoredLift>,
     #[serde(default)]
     enemy: bool,
     health: Option<AuthoredHealth>,
@@ -78,6 +83,13 @@ struct AuthoredCollision {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct AuthoredBounds {
+    min: [f32; 3],
+    max: [f32; 3],
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct AuthoredRenderable {
     asset: String,
     visible: bool,
@@ -94,6 +106,76 @@ struct AuthoredDoor {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct AuthoredSwitch {
     controls: Vec<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct AuthoredFloorAction {
+    target_platform: u64,
+    upper_translation: [f32; 3],
+    lowered_translation: [f32; 3],
+    #[serde(default = "default_floor_action_motion_duration_ticks")]
+    motion_duration_ticks: u64,
+    #[serde(default = "default_floor_action_prompt")]
+    prompt: String,
+    #[serde(default = "default_floor_action_presentation")]
+    presentation: String,
+    #[serde(default = "default_floor_action_source")]
+    source: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct AuthoredLift {
+    target_platform: u64,
+    raised_translation: [f32; 3],
+    lowered_translation: [f32; 3],
+    #[serde(default = "default_lift_motion_duration_ticks")]
+    motion_duration_ticks: u64,
+    #[serde(default = "default_lift_wait_ticks")]
+    lowered_wait_ticks: u64,
+    #[serde(default = "default_lift_prompt")]
+    prompt: String,
+    #[serde(default = "default_lift_presentation")]
+    presentation: String,
+    #[serde(default = "default_lift_source")]
+    source: String,
+}
+
+fn default_floor_action_motion_duration_ticks() -> u64 {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_MOTION_DURATION_TICKS
+}
+
+fn default_floor_action_prompt() -> String {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_PROMPT.to_owned()
+}
+
+fn default_floor_action_presentation() -> String {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_PRESENTATION.to_owned()
+}
+
+fn default_floor_action_source() -> String {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_SOURCE.to_owned()
+}
+
+fn default_lift_motion_duration_ticks() -> u64 {
+    crate::lift::DEFAULT_LIFT_MOTION_DURATION_TICKS
+}
+
+fn default_lift_wait_ticks() -> u64 {
+    crate::lift::DEFAULT_LIFT_WAIT_TICKS
+}
+
+fn default_lift_prompt() -> String {
+    crate::lift::DEFAULT_LIFT_PROMPT.to_owned()
+}
+
+fn default_lift_presentation() -> String {
+    crate::lift::DEFAULT_LIFT_PRESENTATION.to_owned()
+}
+
+fn default_lift_source() -> String {
+    crate::lift::DEFAULT_LIFT_SOURCE.to_owned()
 }
 
 #[derive(Debug, Deserialize)]
@@ -288,6 +370,10 @@ fn authored_definition(
         entity_definition =
             entity_definition.with_collision(collision.enabled, collision.static_collider);
     }
+    if let Some(bounds) = authored.bounds {
+        entity_definition =
+            entity_definition.with_bounds(array_vec3(bounds.min), array_vec3(bounds.max));
+    }
     if let Some(renderable) = authored.renderable {
         entity_definition = entity_definition.with_renderable(renderable.asset, renderable.visible);
     }
@@ -322,6 +408,29 @@ fn authored_definition(
         definition = definition
             .as_switch()
             .controls(switch.controls.into_iter().map(EntityId::new));
+    }
+    if let Some(floor_action) = authored.floor_action {
+        definition = definition.with_floor_action(FloorActionConfig::new(
+            EntityId::new(floor_action.target_platform),
+            array_vec3(floor_action.upper_translation),
+            array_vec3(floor_action.lowered_translation),
+            TickDelta::new(floor_action.motion_duration_ticks),
+            floor_action.prompt,
+            floor_action.presentation,
+            floor_action.source,
+        ));
+    }
+    if let Some(lift) = authored.lift {
+        definition = definition.with_lift(
+            LiftConfig::new(
+                EntityId::new(lift.target_platform),
+                array_vec3(lift.raised_translation),
+                array_vec3(lift.lowered_translation),
+                TickDelta::new(lift.motion_duration_ticks),
+                TickDelta::new(lift.lowered_wait_ticks),
+            )
+            .with_metadata(lift.prompt, lift.presentation, lift.source),
+        );
     }
     if authored.enemy {
         definition = definition.as_enemy();

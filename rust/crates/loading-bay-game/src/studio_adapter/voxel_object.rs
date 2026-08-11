@@ -821,6 +821,8 @@ fn voxel_object_owner(
         renderable: None,
         door: None,
         switch: None,
+        floor_action: None,
+        lift: None,
         enemy: false,
         enemy_combat: None,
         defeat_drop: None,

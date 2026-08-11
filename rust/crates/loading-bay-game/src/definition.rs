@@ -7,8 +7,11 @@ use crate::encounter::EncounterConfig;
 use crate::enemy_combat::EnemyCombatConfig;
 use crate::enemy_drop::EnemyDropConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
+use crate::floor_action::FloorActionConfig;
 use crate::hazard::HazardConfig;
+use crate::interaction::{SwitchConfig, SwitchEffect};
 use crate::inventory::{InventoryAdmissionError, InventoryConfig};
+use crate::lift::LiftConfig;
 use crate::navigation::NavigationConfig;
 use crate::pickup::PickupConfig;
 use crate::player::PlayerControllerConfig;
@@ -23,6 +26,9 @@ pub struct GameEntityDefinition {
     pub door: Option<DoorConfig>,
     pub door_access: Option<DoorAccessConfig>,
     pub switch: bool,
+    pub switch_config: Option<SwitchConfig>,
+    pub floor_action: Option<FloorActionConfig>,
+    pub lift: Option<LiftConfig>,
     pub controls_targets: Vec<EntityId>,
     pub loading_bay_interlock: Option<LoadingBayInterlockConfig>,
     pub enemy: bool,
@@ -48,6 +54,9 @@ impl GameEntityDefinition {
             door: None,
             door_access: None,
             switch: false,
+            switch_config: None,
+            floor_action: None,
+            lift: None,
             controls_targets: Vec::new(),
             loading_bay_interlock: None,
             enemy: false,
@@ -80,6 +89,30 @@ impl GameEntityDefinition {
     pub fn as_switch(mut self) -> Self {
         self.switch = true;
         self
+    }
+
+    pub fn with_switch_config(mut self, config: SwitchConfig) -> Self {
+        self.switch = true;
+        self.switch_config = Some(config);
+        self
+    }
+
+    pub fn as_floor_action(mut self, config: FloorActionConfig) -> Self {
+        self.floor_action = Some(config);
+        self
+    }
+
+    pub fn with_floor_action(self, config: FloorActionConfig) -> Self {
+        self.as_floor_action(config)
+    }
+
+    pub fn as_lift(mut self, config: LiftConfig) -> Self {
+        self.lift = Some(config);
+        self
+    }
+
+    pub fn with_lift(self, config: LiftConfig) -> Self {
+        self.as_lift(config)
     }
 
     pub fn controls(mut self, targets: impl IntoIterator<Item = EntityId>) -> Self {
@@ -200,10 +233,92 @@ pub enum GameEntityDefinitionError {
         switch: EntityId,
         target: EntityId,
     },
+    SwitchConfigWithoutSwitch {
+        entity: EntityId,
+    },
+    InvalidSwitchConfig {
+        entity: EntityId,
+    },
+    DuplicateSwitchEffect {
+        switch: EntityId,
+        effect: SwitchEffect,
+    },
+    UnknownSwitchEffectTarget {
+        switch: EntityId,
+        target: EntityId,
+    },
+    SwitchEffectTargetIsNotDoor {
+        switch: EntityId,
+        target: EntityId,
+    },
+    FloorActionMissingTransform {
+        entity: EntityId,
+    },
+    FloorActionMissingBounds {
+        entity: EntityId,
+    },
+    InvalidFloorActionConfig {
+        entity: EntityId,
+    },
+    FloorActionConflictsWithGameplayOwner {
+        entity: EntityId,
+    },
+    UnknownFloorActionTarget {
+        action: EntityId,
+        target_platform: EntityId,
+    },
+    FloorActionTargetMissingTransform {
+        action: EntityId,
+        target_platform: EntityId,
+    },
+    FloorActionTargetMissingCollision {
+        action: EntityId,
+        target_platform: EntityId,
+    },
+    FloorActionTargetMustBeMovable {
+        action: EntityId,
+        target_platform: EntityId,
+    },
+    LiftMissingTransform {
+        entity: EntityId,
+    },
+    LiftMissingBounds {
+        entity: EntityId,
+    },
+    InvalidLiftConfig {
+        entity: EntityId,
+    },
+    LiftConflictsWithGameplayOwner {
+        entity: EntityId,
+    },
+    UnknownLiftTarget {
+        lift: EntityId,
+        target_platform: EntityId,
+    },
+    LiftTargetMissingTransform {
+        lift: EntityId,
+        target_platform: EntityId,
+    },
+    LiftTargetMissingCollision {
+        lift: EntityId,
+        target_platform: EntityId,
+    },
+    LiftTargetMustBeMovable {
+        lift: EntityId,
+        target_platform: EntityId,
+    },
+    DuplicateMovingPlatformTarget {
+        target_platform: EntityId,
+        first_owner: EntityId,
+        second_owner: EntityId,
+    },
     DoorMissingTransform {
         entity: EntityId,
     },
     DoorMissingCollision {
+        entity: EntityId,
+    },
+    DoorMustBeMovable {
         entity: EntityId,
     },
     DoorMissingRenderable {

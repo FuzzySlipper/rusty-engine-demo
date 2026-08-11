@@ -113043,15 +113043,6 @@
         "start": [
           255,
           14,
-          85
-        ],
-        "length": 8,
-        "materialSlot": 10
-      },
-      {
-        "start": [
-          255,
-          14,
           113
         ],
         "length": 1,
@@ -115216,33 +115207,6 @@
         ],
         "length": 1,
         "materialSlot": 31
-      },
-      {
-        "start": [
-          256,
-          14,
-          83
-        ],
-        "length": 6,
-        "materialSlot": 10
-      },
-      {
-        "start": [
-          256,
-          14,
-          84
-        ],
-        "length": 7,
-        "materialSlot": 10
-      },
-      {
-        "start": [
-          256,
-          14,
-          86
-        ],
-        "length": 8,
-        "materialSlot": 10
       },
       {
         "start": [
@@ -116562,15 +116526,6 @@
         "start": [
           257,
           14,
-          82
-        ],
-        "length": 3,
-        "materialSlot": 10
-      },
-      {
-        "start": [
-          257,
-          14,
           110
         ],
         "length": 1,
@@ -117615,15 +117570,6 @@
         "start": [
           258,
           14,
-          87
-        ],
-        "length": 6,
-        "materialSlot": 10
-      },
-      {
-        "start": [
-          258,
-          14,
           109
         ],
         "length": 1,
@@ -118123,15 +118069,6 @@
         ],
         "length": 9,
         "materialSlot": 13
-      },
-      {
-        "start": [
-          259,
-          14,
-          88
-        ],
-        "length": 6,
-        "materialSlot": 10
       },
       {
         "start": [
@@ -124347,33 +124284,6 @@
         "start": [
           269,
           15,
-          61
-        ],
-        "length": 10,
-        "materialSlot": 10
-      },
-      {
-        "start": [
-          269,
-          15,
-          62
-        ],
-        "length": 10,
-        "materialSlot": 10
-      },
-      {
-        "start": [
-          269,
-          15,
-          63
-        ],
-        "length": 11,
-        "materialSlot": 10
-      },
-      {
-        "start": [
-          269,
-          15,
           64
         ],
         "length": 4,
@@ -125737,6 +125647,33 @@
         ],
         "length": 9,
         "materialSlot": 13
+      },
+      {
+        "start": [
+          272,
+          15,
+          61
+        ],
+        "length": 7,
+        "materialSlot": 10
+      },
+      {
+        "start": [
+          272,
+          15,
+          62
+        ],
+        "length": 7,
+        "materialSlot": 10
+      },
+      {
+        "start": [
+          272,
+          15,
+          63
+        ],
+        "length": 8,
+        "materialSlot": 10
       },
       {
         "start": [
@@ -130864,6 +130801,6 @@
     "converter": "doom-e1m1.voxelize.v1",
     "settingsSha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
   },
-  "voxelDataHash": "sha256:fad81c1c1d8b8ffe30b733817f70b494b26c1ca788e4c8a40a6fe16ffb6c756d",
-  "contentHash": "sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c"
+  "voxelDataHash": "sha256:321d385afd71fadd4e32e05ae9b58fd251cfcc34ca50113d5e7015b85d47135a",
+  "contentHash": "sha256:06b2cea963c98806b33bec61b9ac57f98ff2f2c9355483ccee9a1702c31b85df"
 }

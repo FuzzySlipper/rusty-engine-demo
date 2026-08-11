@@ -216,7 +216,6 @@ html.game-route-active .viewport-card {
   border: 1px solid var(--rusty-engine-accent);
   bottom: calc(50% - 4.5rem);
   color: var(--rusty-engine-accent);
-  cursor: pointer;
   font-size: 0.68rem;
   left: 50%;
   letter-spacing: 0.08em;

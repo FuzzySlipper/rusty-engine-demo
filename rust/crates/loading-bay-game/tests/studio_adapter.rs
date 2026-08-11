@@ -454,7 +454,10 @@ fn invalid_owner_operation_and_bad_downstream_semantics_preserve_project_bytes()
         .controls = vec![999];
     fs::write(
         root.project_file(),
-        encode_project_document(&downstream_invalid).unwrap(),
+        format!(
+            "{}\n",
+            serde_json::to_string_pretty(&downstream_invalid).unwrap()
+        ),
     )
     .unwrap();
     let invalid_bytes = fs::read(root.project_file()).unwrap();

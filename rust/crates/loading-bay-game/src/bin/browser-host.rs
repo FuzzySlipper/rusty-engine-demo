@@ -1229,6 +1229,12 @@ fn drain_game_loop_feedback(
                 facts.push((vitality_fact_name(&fact).to_owned(), None));
                 feedback.extend_vitality(std::slice::from_ref(&fact));
             }
+            GameLoopFact::FloorAction(_) => {
+                facts.push(("FloorActionActivated".to_owned(), None));
+            }
+            GameLoopFact::Lift(_) => {
+                facts.push(("LiftActivated".to_owned(), None));
+            }
             GameLoopFact::Progression(fact) => {
                 facts.push((
                     match fact {
@@ -1299,6 +1305,12 @@ fn drain_game_loop_feedback(
                     }
                     loading_bay_game::EdgeCommandRejection::NotInteractable => {
                         "InputEdgeRejectedNotInteractable"
+                    }
+                    loading_bay_game::EdgeCommandRejection::SwitchOutOfRange => {
+                        "InputEdgeRejectedSwitchOutOfRange"
+                    }
+                    loading_bay_game::EdgeCommandRejection::SwitchUnavailable => {
+                        "InputEdgeRejectedSwitchUnavailable"
                     }
                     loading_bay_game::EdgeCommandRejection::PickupRejected => {
                         "InputEdgeRejectedPickup"

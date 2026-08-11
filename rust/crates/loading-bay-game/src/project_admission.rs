@@ -21,11 +21,14 @@ use crate::enemy_combat::{
 };
 use crate::enemy_drop::EnemyDropConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
+use crate::floor_action::FloorActionConfig;
 use crate::hazard::HazardConfig;
+use crate::interaction::{SwitchConfig, SwitchEffect};
 use crate::inventory::{
     InventoryConfig, InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind, WeaponAttackMode,
     WeaponDefinition,
 };
+use crate::lift::LiftConfig;
 use crate::navigation::NavigationConfig;
 use crate::pickup::PickupConfig;
 use crate::player::{PlayerControllerConfig, PlayerInputBindings};
@@ -626,11 +629,17 @@ fn authored_definition(
             Some(ticks) => Some(TickDelta::new(ticks)),
             None => None,
         };
-        definition = definition.as_door(DoorConfig::new(
-            closed_translation,
-            open_translation,
-            auto_close_after,
-        ));
+        if door.motion_duration_ticks == 0 {
+            return Err(StoredProjectError::new(
+                diagnostic_code::INVALID_COMPONENT,
+                path("door.motionDurationTicks"),
+                "door motion duration must be greater than zero",
+            ));
+        }
+        definition = definition.as_door(
+            DoorConfig::new(closed_translation, open_translation, auto_close_after)
+                .with_motion_duration(TickDelta::new(door.motion_duration_ticks)),
+        );
         if let Some(access) = &door.access {
             definition = definition.with_door_access(DoorAccessConfig {
                 required_key: parse_item_id(
@@ -647,8 +656,27 @@ fn authored_definition(
         }
     }
     if let Some(switch) = &authored.switch {
+        let config = SwitchConfig {
+            activation_radius: switch.activation_radius,
+            prompt: switch.prompt.clone(),
+            unavailable_presentation: switch.unavailable_presentation.clone(),
+            repeatable: switch.repeatable,
+            effects: switch
+                .effects
+                .iter()
+                .map(|effect| match effect {
+                    crate::StoredSwitchEffect::OpenDoor { door } => {
+                        SwitchEffect::OpenDoor(EntityId::new(*door))
+                    }
+                    crate::StoredSwitchEffect::CloseDoor { door } => {
+                        SwitchEffect::CloseDoor(EntityId::new(*door))
+                    }
+                })
+                .collect(),
+        };
         definition = definition
             .as_switch()
+            .with_switch_config(config)
             .controls(switch.controls.iter().copied().map(EntityId::new));
         if let Some(interlock) = switch.loading_bay_interlock {
             definition = definition.with_loading_bay_interlock(LoadingBayInterlockConfig {
@@ -656,6 +684,33 @@ fn authored_definition(
                 open_door: EntityId::new(interlock.open_door),
             });
         }
+    }
+    if let Some(floor_action) = &authored.floor_action {
+        definition = definition.with_floor_action(FloorActionConfig::new(
+            EntityId::new(floor_action.target_platform),
+            array_vec3(floor_action.upper_translation),
+            array_vec3(floor_action.lowered_translation),
+            TickDelta::new(floor_action.motion_duration_ticks),
+            floor_action.prompt.clone(),
+            floor_action.presentation.clone(),
+            floor_action.source.clone(),
+        ));
+    }
+    if let Some(lift) = &authored.lift {
+        definition = definition.with_lift(
+            LiftConfig::new(
+                EntityId::new(lift.target_platform),
+                array_vec3(lift.raised_translation),
+                array_vec3(lift.lowered_translation),
+                TickDelta::new(lift.motion_duration_ticks),
+                TickDelta::new(lift.lowered_wait_ticks),
+            )
+            .with_metadata(
+                lift.prompt.clone(),
+                lift.presentation.clone(),
+                lift.source.clone(),
+            ),
+        );
     }
     if authored.enemy {
         definition = definition.as_enemy();
@@ -915,8 +970,51 @@ fn definition_error(
             diagnostic_code::INVALID_RELATIONSHIP,
             entity_path(scene_index, indexes, *entity, "switch"),
         ),
+        Error::SwitchConfigWithoutSwitch { entity } | Error::InvalidSwitchConfig { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "switch"),
+        ),
+        Error::DuplicateSwitchEffect { switch, .. }
+        | Error::UnknownSwitchEffectTarget { switch, .. }
+        | Error::SwitchEffectTargetIsNotDoor { switch, .. } => (
+            diagnostic_code::INVALID_RELATIONSHIP,
+            entity_path(scene_index, indexes, *switch, "switch.effects"),
+        ),
+        Error::FloorActionMissingTransform { entity }
+        | Error::FloorActionMissingBounds { entity }
+        | Error::InvalidFloorActionConfig { entity }
+        | Error::FloorActionConflictsWithGameplayOwner { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "floorAction"),
+        ),
+        Error::UnknownFloorActionTarget { action, .. }
+        | Error::FloorActionTargetMissingTransform { action, .. }
+        | Error::FloorActionTargetMissingCollision { action, .. }
+        | Error::FloorActionTargetMustBeMovable { action, .. } => (
+            diagnostic_code::INVALID_RELATIONSHIP,
+            entity_path(scene_index, indexes, *action, "floorAction.targetPlatform"),
+        ),
+        Error::LiftMissingTransform { entity }
+        | Error::LiftMissingBounds { entity }
+        | Error::InvalidLiftConfig { entity }
+        | Error::LiftConflictsWithGameplayOwner { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "lift"),
+        ),
+        Error::UnknownLiftTarget { lift, .. }
+        | Error::LiftTargetMissingTransform { lift, .. }
+        | Error::LiftTargetMissingCollision { lift, .. }
+        | Error::LiftTargetMustBeMovable { lift, .. } => (
+            diagnostic_code::INVALID_RELATIONSHIP,
+            entity_path(scene_index, indexes, *lift, "lift.targetPlatform"),
+        ),
+        Error::DuplicateMovingPlatformTarget { second_owner, .. } => (
+            diagnostic_code::INVALID_RELATIONSHIP,
+            entity_path(scene_index, indexes, *second_owner, "targetPlatform"),
+        ),
         Error::DoorMissingTransform { entity }
         | Error::DoorMissingCollision { entity }
+        | Error::DoorMustBeMovable { entity }
         | Error::DoorMissingRenderable { entity } => (
             diagnostic_code::INVALID_COMPONENT,
             entity_path(scene_index, indexes, *entity, "door"),

@@ -7,7 +7,6 @@ use rusty_engine::engine_spatial::{
 use rusty_engine::entity_state::EntityView;
 
 use crate::door::{DoorService, DoorState, DoorTransition};
-use crate::interaction::InteractionService;
 use crate::inventory::{
     InventoryAction, InventoryCommand, InventoryFact, InventoryReceipt, InventoryRejection,
     InventoryService, ItemDefinitionId,
@@ -225,40 +224,6 @@ pub enum SecretRejection {
 pub(crate) struct ProgressionService;
 
 impl ProgressionService {
-    pub(crate) fn activate_loading_bay_interlock(
-        session: &mut GameSession,
-        actor: EntityId,
-        switch: EntityId,
-    ) -> Result<crate::GameEvent, LoadingBayInterlockRejection> {
-        if DamageService::is_dead(session, actor) {
-            return Err(LoadingBayInterlockRejection::PlayerDefeated { actor });
-        }
-        let actor_translation = session
-            .entities
-            .view(actor)
-            .map_err(|_| LoadingBayInterlockRejection::UnknownActor { actor })?
-            .transform
-            .ok_or(LoadingBayInterlockRejection::ActorMissingTransform { actor })?
-            .translation;
-        if !session.loading_bay_interlocks.contains_key(&switch) {
-            return Err(LoadingBayInterlockRejection::UnknownInterlock { switch });
-        }
-        let switch_translation = session
-            .entities
-            .view(switch)
-            .expect("admitted Loading Bay interlock entity")
-            .transform
-            .ok_or(LoadingBayInterlockRejection::InterlockMissingTransform { switch })?
-            .translation;
-        if (actor_translation - switch_translation).length_squared()
-            > LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS * LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS
-        {
-            return Err(LoadingBayInterlockRejection::OutOfRange { actor, switch });
-        }
-        InteractionService::interact(session, actor, switch)
-            .map_err(|_| LoadingBayInterlockRejection::InteractionFailed { switch })
-    }
-
     pub(crate) fn secret_trigger_system(session: &GameSession) -> TriggerVolumeSystem {
         TriggerVolumeSystem::new(session.secret_regions.keys().copied().map(|secret| {
             KinematicTriggerDefinition::new(secret, SECRET_TRIGGER_SCOPE, ["secret"])

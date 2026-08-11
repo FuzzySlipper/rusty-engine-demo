@@ -18,20 +18,30 @@ const chromium = process.env.CHROMIUM_BIN ?? "/usr/bin/chromium";
 const updateEvidence = process.env.UPDATE_EVIDENCE === "1";
 const focused = process.env.RUSTY_DOOM_SMOKE_FOCUSED === "1";
 const traversalEvidence = process.env.RUSTY_DOOM_TRAVERSAL_EVIDENCE === "1";
+const retainedInteractionEvidence =
+  process.env.RUSTY_DOOM_INTERACTION_EVIDENCE === "1";
+const interactionEvidence =
+  retainedInteractionEvidence || (!focused && !traversalEvidence);
+const retainedEvidence = traversalEvidence || retainedInteractionEvidence;
 const traversalEvidenceDir = process.env.RUSTY_DOOM_EVIDENCE_DIR ?? null;
 const expectedEvidenceSha = process.env.RUSTY_DOOM_EXPECTED_SHA ?? null;
 
-if (focused && traversalEvidence) {
+if (traversalEvidence && retainedInteractionEvidence) {
+  throw new Error(
+    "traversal and interaction evidence modes are mutually exclusive",
+  );
+}
+if (focused && retainedEvidence) {
   throw new Error(
     "focused smoke and traversal evidence modes are mutually exclusive",
   );
 }
-if (traversalEvidence && traversalEvidenceDir === null) {
+if (retainedEvidence && traversalEvidenceDir === null) {
   throw new Error(
     "RUSTY_DOOM_EVIDENCE_DIR is required for traversal evidence mode",
   );
 }
-if (traversalEvidence && expectedEvidenceSha === null) {
+if (retainedEvidence && expectedEvidenceSha === null) {
   throw new Error(
     "RUSTY_DOOM_EXPECTED_SHA is required for traversal evidence mode",
   );
@@ -448,24 +458,6 @@ async function proveLandmarkTraversal(client, addr, canvasBounds, evidenceDir) {
     l1Screenshot,
   );
 
-  await moveToWorldPoint(client, addr, [115.4, 78.6], traversalSamples, {
-    singleHold: true,
-  });
-  await waitForAuthoritativeState(
-    addr,
-    "Doom start switch in interaction range",
-    (candidate) => candidate.interaction?.target === 88,
-  );
-  await holdKeys(client, ["KeyE"], 80);
-  await waitForAuthoritativeState(
-    addr,
-    "physical interact input opens the authored start door",
-    (candidate) =>
-      candidate.projection?.some(
-        (entry) => entry.id === 83 && entry.visualState === "open",
-      ),
-  );
-
   const l1ToL2Route = [
     [92, 102],
     [79, 102],
@@ -604,6 +596,191 @@ async function proveLandmarkTraversal(client, addr, canvasBounds, evidenceDir) {
   };
 }
 
+async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
+  const startedAtMs = Date.now();
+  if (evidenceDir !== null) {
+    mkdirSync(evidenceDir, { recursive: true });
+  }
+  const inputSurface = await focusGameplayCanvas(client);
+  const traversalSamples = [];
+  const screenshots = [];
+  const capture = async (name) => {
+    if (evidenceDir === null) return;
+    const path = join(evidenceDir, name);
+    const bytes = await captureCanvasEvidence(client, canvasBounds, path);
+    screenshots.push({ path, bytes });
+  };
+  const walk = async (waypoints) => {
+    for (const waypoint of waypoints) {
+      await moveToWorldPoint(client, addr, waypoint, traversalSamples, {
+        singleHold: true,
+        arrivalDistance: 1.8,
+      });
+    }
+  };
+  const openDoor = async (door, approach) => {
+    await moveToWorldPoint(client, addr, approach, traversalSamples, {
+      singleHold: true,
+      arrivalDistance: 0.7,
+    });
+    await waitForAuthoritativeState(
+      addr,
+      `manual door ${door} in use range`,
+      (candidate) => candidate.interaction?.target === door,
+    );
+    await holdKeys(client, ["KeyE"], 80);
+    await waitForAuthoritativeState(
+      addr,
+      `manual door ${door} reaches open endpoint`,
+      (candidate) =>
+        candidate.projection?.some(
+          (entry) => entry.id === door && entry.visualState === "open",
+        ),
+    );
+  };
+
+  await capture("interaction-start.png");
+  await walk([
+    [119, 78],
+    [119, 79],
+    [120, 79],
+    [120, 80],
+    [122, 80],
+    [122, 81],
+    [123, 81],
+    [123, 82],
+    [124, 82],
+    [124, 83],
+    [126, 83],
+    [126, 84],
+    [129, 84],
+    [130, 130],
+    [131, 130],
+    [131, 139],
+    [132, 139],
+    [132, 144],
+    [134, 144],
+    [134, 145],
+    [137, 145],
+    [137, 146],
+  ]);
+  await openDoor(83, [142, 147]);
+  await walk([
+    [178, 146],
+    [178, 140],
+    [224, 140],
+    [224, 139],
+    [226, 139],
+    [226, 138],
+    [228, 138],
+    [228, 137],
+    [230, 137],
+    [230, 136],
+    [231, 136],
+    [231, 135],
+    [232, 135],
+    [232, 132],
+    [233, 132],
+    [233, 130],
+    [234, 130],
+    [234, 127],
+    [235, 127],
+    [235, 123],
+  ]);
+  const liftActivated = await waitForAuthoritativeState(
+    addr,
+    "type-88 lift leaves its raised state",
+    (candidate) =>
+      candidate.lifts?.some(
+        (lift) => lift.id === 90 && lift.state !== "raised",
+      ),
+  );
+  await waitForAuthoritativeState(
+    addr,
+    "type-88 lift completes its cycle before traversal",
+    (candidate) =>
+      candidate.tick > liftActivated.tick &&
+      candidate.lifts?.some(
+        (lift) => lift.id === 90 && lift.state === "raised",
+      ),
+  );
+  await walk([
+    [230, 87],
+    [230, 80],
+    [234, 80],
+    [234, 74],
+    [234, 70],
+    [234, 68],
+  ]);
+  await openDoor(84, [233, 67]);
+  await walk([[231, 64]]);
+  const secret = await waitForAuthoritativeState(
+    addr,
+    "sector-68 secret is recorded",
+    (candidate) =>
+      candidate.secretRegions?.some(
+        (entry) => entry.id === 92 && entry.state === "discovered",
+      ),
+  );
+  await capture("interaction-secret.png");
+  await walk([[233, 61]]);
+  await openDoor(86, [236, 56]);
+  await walk([[236, 40]]);
+  const floorAction = await waitForAuthoritativeState(
+    addr,
+    "type-36 floor action activates once",
+    (candidate) =>
+      candidate.floorActions?.some(
+        (action) => action.id === 88 && action.state !== "armed",
+      ),
+  );
+  await openDoor(85, [236, 17]);
+  await walk([
+    [236, 10],
+    [232, 10],
+    [231.3, 7.1],
+  ]);
+  await waitForAuthoritativeState(
+    addr,
+    "type-11 exit switch in use range",
+    (candidate) => candidate.interaction?.target === 91,
+  );
+  await holdKeys(client, ["KeyE"], 80);
+  const completed = await waitForAuthoritativeState(
+    addr,
+    "type-11 exit completion",
+    (candidate) =>
+      candidate.levelComplete === true &&
+      candidate.levelExits?.some(
+        (entry) =>
+          entry.id === 91 &&
+          entry.state === "completed" &&
+          entry.completedBy === 1,
+      ),
+  );
+  await capture("interaction-exit-complete.png");
+  return {
+    status: "passed",
+    mode: "task-6803-interactions",
+    elapsedMs: Date.now() - startedAtMs,
+    inputSurface,
+    doors: [83, 84, 86, 85],
+    lift: {
+      id: 90,
+      observedState: liftActivated.lifts.find((lift) => lift.id === 90)?.state,
+    },
+    floorAction: {
+      id: 88,
+      observedState: floorAction.floorActions.find((action) => action.id === 88)
+        ?.state,
+    },
+    secret: secret.secretRegions.find((entry) => entry.id === 92),
+    exit: completed.levelExits.find((entry) => entry.id === 91),
+    traversalSampleCount: traversalSamples.length,
+    screenshots,
+  };
+}
+
 async function main() {
   const revision = {
     head: spawnSync("git", ["rev-parse", "HEAD"], {
@@ -617,11 +794,11 @@ async function main() {
       }).stdout.trim().length === 0,
   };
   if (
-    traversalEvidence &&
+    retainedEvidence &&
     (revision.head !== expectedEvidenceSha || !revision.clean)
   ) {
     throw new Error(
-      `traversal evidence requires exact clean head ${expectedEvidenceSha}; got ${JSON.stringify(revision)}`,
+      `retained evidence requires exact clean head ${expectedEvidenceSha}; got ${JSON.stringify(revision)}`,
     );
   }
   const port = await reservePort();
@@ -656,8 +833,8 @@ async function main() {
       `host projectId doom-e1m1, got ${state.projectId}`,
     );
     assert(
-      state.projection?.length === 89 || state.projection?.length === 90,
-      `projection 89/90, got ${state.projection?.length}`,
+      state.projection?.length === 87,
+      `projection 87, got ${state.projection?.length}`,
     );
     assert(
       state.enemies?.length === 29,
@@ -973,6 +1150,17 @@ async function main() {
         checks.push(
           `physical Space jump left ground at tick ${landmarkProof.jump.airborne.tick} and landed at tick ${landmarkProof.jump.landed.tick}`,
         );
+      } else if (interactionEvidence) {
+        const interactionProof = await proveInteractionRoute(
+          cdpClient,
+          addr,
+          canvasBounds,
+          traversalEvidenceDir,
+        );
+        headless.playthrough = interactionProof;
+        checks.push(
+          `physical E opened manual doors ${interactionProof.doors.join(", ")}, recorded secret ${interactionProof.secret.id}, and completed exit ${interactionProof.exit.id}`,
+        );
       } else if (focused) {
         const inputProof = await proveFocusedHeldMovement(cdpClient, addr);
         headless.playthrough = { status: "skipped", reason: "focused smoke" };
@@ -981,236 +1169,6 @@ async function main() {
           `single keydown sustained ${inputProof.heldDistance.toFixed(2)} world units without mouse motion and keyup stopped within ${inputProof.stoppedDistance.toFixed(2)} units`,
         );
         checks.push("full E1M1 traversal reserved for pnpm run certify:e1m1");
-      } else {
-        const traversalSamples = [];
-        await moveToWorldPoint(
-          cdpClient,
-          addr,
-          [115.4, 78.6],
-          traversalSamples,
-        );
-        const switchReady = await waitForAuthoritativeState(
-          addr,
-          "Doom switch in interaction range",
-          (candidate) => candidate.interaction?.target === 88,
-        );
-        console.log(
-          `switch ready tick=${switchReady.tick} position=${switchReady.player.position}`,
-        );
-        const promptDeadline = Date.now() + 5000;
-        let promptVisible = false;
-        while (Date.now() < promptDeadline) {
-          promptVisible = await cdpEvaluate(
-            cdpClient,
-            `document.body?.innerText.includes('Activate doom switch 1') ?? false`,
-          ).catch(() => false);
-          if (promptVisible) break;
-          await delay(100);
-        }
-        if (!promptVisible)
-          throw new Error("Doom switch prompt did not render");
-        const blockingModal = await cdpEvaluate(
-          cdpClient,
-          `document.querySelector('[data-active-modal]')?.textContent ?? null`,
-        );
-        if (blockingModal !== null) {
-          throw new Error(
-            `gameplay surface remained blocked after session replacement: ${String(blockingModal).slice(0, 500)}`,
-          );
-        }
-        for (let attempt = 0; attempt < 5; attempt += 1) {
-          await cdpEvaluate(
-            cdpClient,
-            `document.querySelector('button.interaction-prompt')?.click()`,
-          );
-          await delay(100);
-          const candidate = await fetchAuthoritativeState(addr);
-          const opened = candidate.projection?.some(
-            (entry) => entry.id === 83 && entry.visualState === "open",
-          );
-          console.log(
-            `switch key attempt=${attempt + 1} door83=${opened ? "open" : "closed"} input=${JSON.stringify(candidate.input)}`,
-          );
-          if (opened) break;
-          await delay(150);
-        }
-        const switchActivated = await waitForAuthoritativeState(
-          addr,
-          "switch activation opens the authored Doom doors",
-          (candidate) =>
-            candidate.projection?.some(
-              (entry) => entry.id === 83 && entry.visualState === "open",
-            ) &&
-            candidate.projection?.some(
-              (entry) => entry.id === 88 && entry.visualState === "active",
-            ),
-        );
-        checks.push(
-          `Chromium interaction control activated switch 88 and opened door at tick ${switchActivated.tick}`,
-        );
-
-        const ammoBefore = switchActivated.weapon.ammoRemaining;
-        const viewportPresent = await cdpEvaluate(
-          cdpClient,
-          `document.getElementById('viewport') instanceof HTMLElement`,
-        );
-        if (!viewportPresent) throw new Error("Doom viewport missing");
-        await cdpEvaluate(
-          cdpClient,
-          `window.dispatchEvent(new MouseEvent('mousedown', {
-          button: 0,
-          buttons: 1,
-          bubbles: true,
-          cancelable: true
-        }))`,
-        );
-        await delay(80);
-        await cdpEvaluate(
-          cdpClient,
-          `window.dispatchEvent(new MouseEvent('mouseup', {
-          button: 0,
-          buttons: 0,
-          bubbles: true,
-          cancelable: true
-        }))`,
-        );
-        const fired = await waitForAuthoritativeState(
-          addr,
-          "primary fire consumes authoritative ammunition",
-          (candidate) => candidate.weapon?.ammoRemaining < ammoBefore,
-        );
-        checks.push(
-          `Chromium Mouse0 fired ${fired.weapon.item} (${ammoBefore} -> ${fired.weapon.ammoRemaining})`,
-        );
-
-        // These points follow E1M1's admitted connected-sector corridor from
-        // the start room to the exit. Input remains ordinary WASD key events;
-        // the HTTP reads only certify the resulting Rust-owned state.
-        const exitRoute = [
-          [119, 78],
-          [119, 79],
-          [120, 79],
-          [120, 80],
-          [122, 80],
-          [122, 81],
-          [123, 81],
-          [123, 82],
-          [124, 82],
-          [124, 83],
-          [126, 83],
-          [126, 84],
-          [130, 84],
-          [130, 130],
-          [131, 130],
-          [131, 139],
-          [132, 139],
-          [132, 144],
-          [134, 144],
-          [134, 145],
-          [137, 145],
-          [137, 146],
-          [178, 146],
-          [178, 140],
-          [224, 140],
-          [224, 139],
-          [226, 139],
-          [226, 138],
-          [228, 138],
-          [228, 137],
-          [230, 137],
-          [230, 136],
-          [231, 136],
-          [231, 135],
-          [232, 135],
-          [232, 132],
-          [233, 132],
-          [233, 130],
-          [234, 130],
-          [234, 127],
-          [235, 127],
-          [235, 124],
-          [236, 124],
-          [236, 80],
-          [236, 40],
-          [236, 10],
-          [232, 10],
-        ];
-        for (const waypoint of exitRoute) {
-          const reached = await moveToWorldPoint(
-            cdpClient,
-            addr,
-            waypoint,
-            traversalSamples,
-          );
-          console.log(
-            `route ${waypoint.join(",")} -> ${reached.player.position.join(",")} tick=${reached.tick}`,
-          );
-        }
-        await moveToWorldPoint(cdpClient, addr, [231.3, 7.1], traversalSamples);
-        const exitReady = await waitForAuthoritativeState(
-          addr,
-          "Doom exit in interaction range",
-          (candidate) => candidate.interaction?.target === 89,
-        );
-        await cdpEvaluate(
-          cdpClient,
-          `document.querySelector('button.interaction-prompt')?.click()`,
-        );
-        const completed = await waitForAuthoritativeState(
-          addr,
-          "Doom exit completion",
-          (candidate) =>
-            candidate.levelComplete === true &&
-            candidate.levelExits?.some(
-              (entry) =>
-                entry.id === 89 &&
-                entry.state === "completed" &&
-                entry.completedBy === 1 &&
-                entry.completedAtTick !== null,
-            ),
-        );
-        const traversalHeights = traversalSamples.map(
-          (sample) => sample.position[1],
-        );
-        const minHeight = Math.min(...traversalHeights);
-        const maxHeight = Math.max(...traversalHeights);
-        const terrainContacts = traversalSamples
-          .map((sample) => sample.terrainContact)
-          .filter(Boolean);
-        const admittedFloorLevels = [
-          ...new Set(terrainContacts.map((contact) => contact.surfaceY)),
-        ].sort((left, right) => left - right);
-        if (terrainContacts.length !== traversalSamples.length) {
-          throw new Error(
-            `authoritative terrain contact missing from ${traversalSamples.length - terrainContacts.length} traversal samples`,
-          );
-        }
-        if (admittedFloorLevels.length < 2) {
-          throw new Error(
-            `route did not traverse distinct admitted floor levels: ${JSON.stringify(admittedFloorLevels)}`,
-          );
-        }
-        checks.push(
-          `Rust terrain-contact readback proved ${admittedFloorLevels.length} admitted E1M1 floor levels (${admittedFloorLevels.join(", ")})`,
-        );
-        checks.push(
-          `Chromium interaction control completed exit 89 at tick ${completed.levelExits.find((entry) => entry.id === 89).completedAtTick}`,
-        );
-        headless.playthrough = {
-          initialPosition: state.player.position,
-          switchPosition: switchReady.player.position,
-          firedAmmo: {
-            before: ammoBefore,
-            after: fired.weapon.ammoRemaining,
-          },
-          traversalSampleCount: traversalSamples.length,
-          traversalHeightRange: [minHeight, maxHeight],
-          admittedFloorLevels,
-          terrainContacts,
-          authoredFloorHeights: [0, -8, -16, -24],
-          finalPosition: completed.player.position,
-          completedExit: completed.levelExits.find((entry) => entry.id === 89),
-        };
       }
       if (finalLc !== "mounted" || !webglDiag.startsWith("has-gl renderer=")) {
         headless.error = `unexpected browser renderer surface lifecycle=${finalLc} webgl=${webglDiag}`;
@@ -1242,7 +1200,7 @@ async function main() {
         } catch {}
     }
 
-    if (traversalEvidence && headless.playthrough) {
+    if (retainedEvidence && headless.playthrough) {
       headless.playthrough.cleanup = {
         browserClosed: chromiumProc?.exitCode !== null,
         profileRemoved,
@@ -1275,7 +1233,7 @@ async function main() {
       host: {
         projectId: "doom-e1m1",
         assets: 150,
-        entities: 90,
+        entities: 94,
         address: addr,
         health: "ok",
         stateTick: state.tick,
@@ -1297,7 +1255,7 @@ async function main() {
       writeFileSync(outPath, JSON.stringify(evidence, null, 2) + "\n", "utf8");
       console.log(`wrote ${outPath}`);
     }
-    if (traversalEvidence) {
+    if (retainedEvidence) {
       const outPath = resolve(traversalEvidenceDir, "playtest-index.json");
       writeFileSync(outPath, JSON.stringify(evidence, null, 2) + "\n", "utf8");
       persistedEvidence = evidence;
@@ -1320,7 +1278,7 @@ async function main() {
       await delay(50);
     }
     rmSync(saveRoot, { recursive: true, force: true });
-    if (traversalEvidence && persistedEvidence !== null) {
+    if (retainedEvidence && persistedEvidence !== null) {
       persistedEvidence.headless.playthrough.cleanup.hostClosed =
         host.exitCode !== null || host.signalCode !== null;
       persistedEvidence.headless.playthrough.cleanup.saveRootRemoved =

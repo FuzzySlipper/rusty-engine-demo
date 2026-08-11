@@ -101,7 +101,7 @@ fn create_new_and_replace_existing_are_explicit() {
 }
 
 #[test]
-fn loaded_project_uses_the_existing_semantic_admission_diagnostics() {
+fn loaded_project_uses_the_existing_semantic_relationship_diagnostics() {
     let directory = TestDirectory::new();
     let target = directory.path().join("invalid.project.json");
     let mut invalid = decode_project_document(CURRENT_PROJECT).unwrap().project;
@@ -110,10 +110,15 @@ fn loaded_project_uses_the_existing_semantic_admission_diagnostics() {
         .as_mut()
         .unwrap()
         .controls = vec![999];
-    fs::write(&target, encode_project_document(&invalid).unwrap()).unwrap();
+    fs::write(
+        &target,
+        format!("{}\n", serde_json::to_string_pretty(&invalid).unwrap()),
+    )
+    .unwrap();
 
-    let loaded = ProjectStore::default().load(&target).unwrap();
-    let error = admit_stored_project_with_document(loaded.project).unwrap_err();
+    let ProjectStoreError::Codec(error) = ProjectStore::default().load(&target).unwrap_err() else {
+        panic!("invalid relationship must fail through the project codec");
+    };
     assert_eq!(
         error.diagnostic().code,
         loading_bay_game::diagnostic_code::INVALID_RELATIONSHIP

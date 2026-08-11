@@ -638,7 +638,7 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
     if legacy.entities.iter().any(|entity| {
         entity.inventory.is_some()
             || entity.pickup.is_some()
-            || entity.bounds.is_some()
+            || entity.bounds.is_some() && entity.floor_action.is_none() && entity.lift.is_none()
             || entity.hazard.is_some()
             || entity
                 .door
@@ -657,7 +657,7 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
         return Err(StoredProjectError::new(
             diagnostic_code::MIGRATION,
             "entities",
-            "schema 6 cannot declare inventory, pickup, or entity bounds",
+            "schema 6 cannot declare inventory, pickup, or unrelated entity bounds",
         ));
     }
     let voxel_environment = match (
@@ -1160,6 +1160,8 @@ fn canonicalize(mut document: StoredProject) -> Result<StoredProject, StoredProj
             if let Some(component) = &mut entity.switch {
                 component.controls.sort_unstable();
                 component.controls.dedup();
+                component.effects.sort();
+                component.effects.dedup();
             }
             if let Some(component) = &mut entity.encounter {
                 component.members.sort_unstable();
@@ -1216,6 +1218,26 @@ fn normalize_numbers(document: &mut StoredProject) -> Result<(), StoredProjectEr
                         format!("{root}.door.access.activationRadius"),
                     )?;
                 }
+            }
+            if let Some(component) = &mut entity.floor_action {
+                normalize_vec3(
+                    &mut component.upper_translation,
+                    format!("{root}.floorAction.upperTranslation"),
+                )?;
+                normalize_vec3(
+                    &mut component.lowered_translation,
+                    format!("{root}.floorAction.loweredTranslation"),
+                )?;
+            }
+            if let Some(component) = &mut entity.lift {
+                normalize_vec3(
+                    &mut component.raised_translation,
+                    format!("{root}.lift.raisedTranslation"),
+                )?;
+                normalize_vec3(
+                    &mut component.lowered_translation,
+                    format!("{root}.lift.loweredTranslation"),
+                )?;
             }
             if let Some(component) = &mut entity.health {
                 normalize_vec3(

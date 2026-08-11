@@ -9,6 +9,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use rusty_engine::asset_catalog::{StoredAssetReference, StoredMaterialDefinition};
 use rusty_engine::content_store::is_safe_relative_path;
 use rusty_engine::core_assets::{AssetId, AssetKind};
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_math::Vec3;
+use rusty_engine::core_time::TickDelta;
 use rusty_engine::engine_spatial::{
     decode_voxel_edit_history, MaterialVoxel, VoxelEditHistoryLimits,
 };
@@ -24,11 +27,14 @@ use crate::combat::{
     MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_PELLETS,
     MAX_WEAPON_RANGE, MAX_WEAPON_SPREAD_DEGREES,
 };
+use crate::floor_action::FloorActionConfig;
+use crate::interaction::{SwitchConfig, SwitchEffect};
 use crate::inventory::{
     ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY, MAX_PROJECTILE_GRAVITY_SCALE,
     MAX_PROJECTILE_IMPULSE, MAX_PROJECTILE_LIFETIME_TICKS, MAX_PROJECTILE_MASS,
     MAX_PROJECTILE_RADIUS, MAX_PROJECTILE_RESTITUTION,
 };
+use crate::lift::LiftConfig;
 
 pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 24;
 pub const STORED_VISUAL_BINDING_VERSION: u32 = 1;
@@ -199,7 +205,7 @@ pub struct StoredAssetImport {
     pub generated_asset_ids: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(
     tag = "scope",
     rename_all = "camelCase",
@@ -398,6 +404,10 @@ pub struct StoredEntityDefinition {
     pub door: Option<StoredDoor>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub switch: Option<StoredSwitch>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub floor_action: Option<StoredFloorAction>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lift: Option<StoredLift>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub enemy: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -551,7 +561,9 @@ pub struct StoredVisualBindingState {
 pub enum StoredVisualState {
     Default,
     Open,
+    Opening,
     Closed,
+    Closing,
     Active,
     Inactive,
     Standby,
@@ -601,8 +613,31 @@ pub enum StoredVisualAnimationLoopMode {
 pub struct StoredDoor {
     pub open_translation: [f32; 3],
     pub auto_close_after_ticks: Option<u64>,
+    #[serde(
+        default = "default_door_motion_duration_ticks",
+        skip_serializing_if = "door_motion_duration_is_default"
+    )]
+    pub motion_duration_ticks: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub open_presentation: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub close_presentation: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub open_sound: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub close_sound: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub access: Option<StoredDoorAccess>,
+}
+
+fn default_door_motion_duration_ticks() -> u64 {
+    crate::door::DEFAULT_DOOR_MOTION_DURATION_TICKS
+}
+
+fn door_motion_duration_is_default(value: &u64) -> bool {
+    *value == default_door_motion_duration_ticks()
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -621,12 +656,157 @@ pub enum StoredRequiredKeyPolicy {
     Consume,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredSwitch {
+    #[serde(default)]
     pub controls: Vec<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub loading_bay_interlock: Option<StoredLoadingBayInterlock>,
+    #[serde(
+        default = "default_switch_activation_radius",
+        skip_serializing_if = "switch_activation_radius_is_default"
+    )]
+    pub activation_radius: f32,
+    #[serde(
+        default = "default_switch_prompt",
+        skip_serializing_if = "switch_prompt_is_default"
+    )]
+    pub prompt: String,
+    #[serde(
+        default = "default_switch_unavailable_presentation",
+        skip_serializing_if = "switch_unavailable_presentation_is_default"
+    )]
+    pub unavailable_presentation: String,
+    #[serde(
+        default = "default_switch_repeatable",
+        skip_serializing_if = "switch_repeatable_is_default"
+    )]
+    pub repeatable: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub effects: Vec<StoredSwitchEffect>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredFloorAction {
+    pub target_platform: u64,
+    pub upper_translation: [f32; 3],
+    pub lowered_translation: [f32; 3],
+    #[serde(default = "default_floor_action_motion_duration_ticks")]
+    pub motion_duration_ticks: u64,
+    #[serde(default = "default_floor_action_prompt")]
+    pub prompt: String,
+    #[serde(default = "default_floor_action_presentation")]
+    pub presentation: String,
+    #[serde(default = "default_floor_action_source")]
+    pub source: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredLift {
+    pub target_platform: u64,
+    pub raised_translation: [f32; 3],
+    pub lowered_translation: [f32; 3],
+    #[serde(default = "default_lift_motion_duration_ticks")]
+    pub motion_duration_ticks: u64,
+    #[serde(default = "default_lift_wait_ticks")]
+    pub lowered_wait_ticks: u64,
+    #[serde(default = "default_lift_prompt")]
+    pub prompt: String,
+    #[serde(default = "default_lift_presentation")]
+    pub presentation: String,
+    #[serde(default = "default_lift_source")]
+    pub source: String,
+}
+
+fn default_floor_action_motion_duration_ticks() -> u64 {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_MOTION_DURATION_TICKS
+}
+
+fn default_floor_action_prompt() -> String {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_PROMPT.to_owned()
+}
+
+fn default_floor_action_presentation() -> String {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_PRESENTATION.to_owned()
+}
+
+fn default_floor_action_source() -> String {
+    crate::floor_action::DEFAULT_FLOOR_ACTION_SOURCE.to_owned()
+}
+
+fn default_lift_motion_duration_ticks() -> u64 {
+    crate::lift::DEFAULT_LIFT_MOTION_DURATION_TICKS
+}
+
+fn default_lift_wait_ticks() -> u64 {
+    crate::lift::DEFAULT_LIFT_WAIT_TICKS
+}
+
+fn default_lift_prompt() -> String {
+    crate::lift::DEFAULT_LIFT_PROMPT.to_owned()
+}
+
+fn default_lift_presentation() -> String {
+    crate::lift::DEFAULT_LIFT_PRESENTATION.to_owned()
+}
+
+fn default_lift_source() -> String {
+    crate::lift::DEFAULT_LIFT_SOURCE.to_owned()
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum StoredSwitchEffect {
+    OpenDoor { door: u64 },
+    CloseDoor { door: u64 },
+}
+
+impl StoredSwitchEffect {
+    fn door(&self) -> u64 {
+        match self {
+            Self::OpenDoor { door } | Self::CloseDoor { door } => *door,
+        }
+    }
+}
+
+fn default_switch_activation_radius() -> f32 {
+    crate::interaction::DEFAULT_SWITCH_ACTIVATION_RADIUS
+}
+
+fn default_switch_prompt() -> String {
+    crate::interaction::DEFAULT_SWITCH_PROMPT.to_owned()
+}
+
+fn default_switch_unavailable_presentation() -> String {
+    crate::interaction::DEFAULT_SWITCH_UNAVAILABLE_PRESENTATION.to_owned()
+}
+
+fn default_switch_repeatable() -> bool {
+    crate::interaction::DEFAULT_SWITCH_REPEATABLE
+}
+
+fn switch_activation_radius_is_default(value: &f32) -> bool {
+    *value == default_switch_activation_radius()
+}
+
+fn switch_prompt_is_default(value: &String) -> bool {
+    value == &default_switch_prompt()
+}
+
+fn switch_unavailable_presentation_is_default(value: &String) -> bool {
+    value == &default_switch_unavailable_presentation()
+}
+
+fn switch_repeatable_is_default(value: &bool) -> bool {
+    *value == default_switch_repeatable()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -640,6 +820,8 @@ pub struct StoredLoadingBayInterlock {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredSecretRegion {
     pub presentation: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -647,6 +829,8 @@ pub struct StoredSecretRegion {
 pub struct StoredLevelExit {
     pub activation_radius: f32,
     pub presentation: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1732,14 +1916,16 @@ fn required_visual_states(entity: &StoredEntityDefinition) -> &'static [StoredVi
 
 fn visual_state_name(state: StoredVisualState) -> &'static str {
     use StoredVisualState::{
-        Active, Alert, Attacking, Available, Closed, Collected, Completed, Cooling, Default,
-        Defeated, Dormant, Hit, Idle, Inactive, Moving, Open, Standby,
+        Active, Alert, Attacking, Available, Closed, Closing, Collected, Completed, Cooling,
+        Default, Defeated, Dormant, Hit, Idle, Inactive, Moving, Open, Opening, Standby,
     };
 
     match state {
         Default => "default",
         Open => "open",
+        Opening => "opening",
         Closed => "closed",
+        Closing => "closing",
         Active => "active",
         Inactive => "inactive",
         Standby => "standby",
@@ -1791,6 +1977,15 @@ fn validate_scene_entities(
             ));
         }
         validate_entity_transform(entity, &root)?;
+        if let Some(door) = &entity.door {
+            if door.motion_duration_ticks == 0 {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.door.motionDurationTicks"),
+                    "door motion duration must be greater than zero",
+                ));
+            }
+        }
         if let Some(bounds) = entity.bounds {
             let valid = bounds.min.into_iter().chain(bounds.max).all(|value| {
                 value.is_finite() && value.abs() <= rusty_engine::entity_state::MAX_ABS_TRANSLATION
@@ -2093,6 +2288,174 @@ fn validate_scene_entities(
                 ));
             }
         }
+        if let Some(floor_action) = &entity.floor_action {
+            if entity.translation.is_none() || entity.bounds.is_none() {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.floorAction"),
+                    "floor action triggers require an authored translation and bounds",
+                ));
+            }
+            if entity.collision.is_some() || entity.kinematic.is_some() {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.floorAction"),
+                    "floor action trigger bounds must remain non-solid and non-kinematic",
+                ));
+            }
+            let config = FloorActionConfig::new(
+                EntityId::new(floor_action.target_platform),
+                array_vec3(floor_action.upper_translation),
+                array_vec3(floor_action.lowered_translation),
+                TickDelta::new(floor_action.motion_duration_ticks),
+                floor_action.prompt.clone(),
+                floor_action.presentation.clone(),
+                floor_action.source.clone(),
+            );
+            if !config.is_valid() {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.floorAction"),
+                    "floor action configuration is outside the admitted range",
+                ));
+            }
+            if entity.lift.is_some() || has_walk_trigger_gameplay_owner(entity) {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.floorAction"),
+                    "floor action cannot also own another gameplay behavior",
+                ));
+            }
+        }
+        if let Some(lift) = &entity.lift {
+            if entity.translation.is_none() || entity.bounds.is_none() {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.lift"),
+                    "lift triggers require an authored translation and bounds",
+                ));
+            }
+            if entity.collision.is_some() || entity.kinematic.is_some() {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.lift"),
+                    "lift trigger bounds must remain non-solid and non-kinematic",
+                ));
+            }
+            let config = LiftConfig::new(
+                EntityId::new(lift.target_platform),
+                array_vec3(lift.raised_translation),
+                array_vec3(lift.lowered_translation),
+                TickDelta::new(lift.motion_duration_ticks),
+                TickDelta::new(lift.lowered_wait_ticks),
+            )
+            .with_metadata(
+                lift.prompt.clone(),
+                lift.presentation.clone(),
+                lift.source.clone(),
+            );
+            if !config.is_valid() {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.lift"),
+                    "lift configuration is outside the admitted range",
+                ));
+            }
+            if entity.floor_action.is_some() || has_walk_trigger_gameplay_owner(entity) {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.lift"),
+                    "lift cannot also own another gameplay behavior",
+                ));
+            }
+        }
+    }
+
+    let mut moving_platform_owners = BTreeMap::new();
+    for (entity_index, entity) in scene.entities.iter().enumerate() {
+        let root = format!("scenes[{scene_index}].entities[{entity_index}]");
+        if let Some(floor_action) = &entity.floor_action {
+            validate_walk_trigger_target(
+                scene,
+                &entities,
+                &mut moving_platform_owners,
+                entity.id,
+                floor_action.target_platform,
+                &format!("{root}.floorAction.targetPlatform"),
+            )?;
+        }
+        if let Some(lift) = &entity.lift {
+            validate_walk_trigger_target(
+                scene,
+                &entities,
+                &mut moving_platform_owners,
+                entity.id,
+                lift.target_platform,
+                &format!("{root}.lift.targetPlatform"),
+            )?;
+        }
+    }
+
+    for (entity_index, entity) in scene.entities.iter().enumerate() {
+        let Some(switch) = &entity.switch else {
+            continue;
+        };
+        let switch_path = format!("scenes[{scene_index}].entities[{entity_index}].switch");
+        let config = SwitchConfig {
+            activation_radius: switch.activation_radius,
+            prompt: switch.prompt.clone(),
+            unavailable_presentation: switch.unavailable_presentation.clone(),
+            repeatable: switch.repeatable,
+            effects: switch
+                .effects
+                .iter()
+                .map(|effect| match effect {
+                    StoredSwitchEffect::OpenDoor { door } => {
+                        SwitchEffect::OpenDoor(EntityId::new(*door))
+                    }
+                    StoredSwitchEffect::CloseDoor { door } => {
+                        SwitchEffect::CloseDoor(EntityId::new(*door))
+                    }
+                })
+                .collect(),
+        };
+        if !config.is_valid() {
+            return Err(failure(
+                diagnostic_code::INVALID_COMPONENT,
+                switch_path.clone(),
+                "switch configuration is outside the admitted range",
+            ));
+        }
+        for (effect_index, effect) in switch.effects.iter().enumerate() {
+            validate_switch_target(
+                scene,
+                &entities,
+                effect.door(),
+                &format!("{switch_path}.effects[{effect_index}].door"),
+            )?;
+        }
+        for target in &switch.controls {
+            validate_switch_target(
+                scene,
+                &entities,
+                *target,
+                &format!("{switch_path}.controls"),
+            )?;
+        }
+        if let Some(interlock) = switch.loading_bay_interlock {
+            validate_switch_target(
+                scene,
+                &entities,
+                interlock.close_door,
+                &format!("{switch_path}.loadingBayInterlock.closeDoor"),
+            )?;
+            validate_switch_target(
+                scene,
+                &entities,
+                interlock.open_door,
+                &format!("{switch_path}.loadingBayInterlock.openDoor"),
+            )?;
+        }
     }
 
     for (entity_index, entity) in scene.entities.iter().enumerate() {
@@ -2117,6 +2480,104 @@ fn validate_scene_entities(
             }
             cursor = scene.entities[entities[&parent]].parent;
         }
+    }
+    Ok(())
+}
+
+fn validate_switch_target(
+    scene: &StoredScene,
+    entities: &BTreeMap<u64, usize>,
+    target: u64,
+    path: &str,
+) -> Result<(), StoredProjectError> {
+    let Some(index) = entities.get(&target).copied() else {
+        return Err(failure(
+            diagnostic_code::INVALID_RELATIONSHIP,
+            path,
+            format!("switch effect target {target} does not exist in this scene"),
+        ));
+    };
+    if scene.entities[index].door.is_none() {
+        return Err(failure(
+            diagnostic_code::INVALID_RELATIONSHIP,
+            path,
+            format!("switch effect target {target} must be a door"),
+        ));
+    }
+    Ok(())
+}
+
+fn has_walk_trigger_gameplay_owner(entity: &StoredEntityDefinition) -> bool {
+    entity.door.is_some()
+        || entity.switch.is_some()
+        || entity.enemy
+        || entity.enemy_combat.is_some()
+        || entity.defeat_drop.is_some()
+        || entity.health.is_some()
+        || entity.hazard.is_some()
+        || entity.encounter.is_some()
+        || entity.extraction_beacon.is_some()
+        || entity.navigation.is_some()
+        || entity.player_controller.is_some()
+        || entity.inventory.is_some()
+        || entity.pickup.is_some()
+        || entity.weapon.is_some()
+        || entity.secret_region.is_some()
+        || entity.level_exit.is_some()
+}
+
+fn validate_walk_trigger_target(
+    scene: &StoredScene,
+    entities: &BTreeMap<u64, usize>,
+    moving_platform_owners: &mut BTreeMap<u64, u64>,
+    owner: u64,
+    target: u64,
+    path: &str,
+) -> Result<(), StoredProjectError> {
+    let Some(target_index) = entities.get(&target).copied() else {
+        return Err(failure(
+            diagnostic_code::INVALID_RELATIONSHIP,
+            path,
+            format!("moving platform target {target} does not exist in this scene"),
+        ));
+    };
+    let target_entity = &scene.entities[target_index];
+    if target_entity.floor_action.is_some() || target_entity.lift.is_some() {
+        return Err(failure(
+            diagnostic_code::INVALID_RELATIONSHIP,
+            path,
+            format!("moving platform target {target} cannot also be a walk trigger"),
+        ));
+    }
+    if target_entity.translation.is_none() {
+        return Err(failure(
+            diagnostic_code::INVALID_RELATIONSHIP,
+            path,
+            format!("moving platform target {target} requires a translation"),
+        ));
+    }
+    let Some(collision) = target_entity.collision else {
+        return Err(failure(
+            diagnostic_code::INVALID_RELATIONSHIP,
+            path,
+            format!("moving platform target {target} requires collision"),
+        ));
+    };
+    if collision.static_collider {
+        return Err(failure(
+            diagnostic_code::INVALID_RELATIONSHIP,
+            path,
+            format!("moving platform target {target} must be movable"),
+        ));
+    }
+    if let Some(first_owner) = moving_platform_owners.insert(target, owner) {
+        return Err(failure(
+            diagnostic_code::INVALID_RELATIONSHIP,
+            path,
+            format!(
+                "moving platform target {target} is already owned by walk trigger {first_owner}"
+            ),
+        ));
     }
     Ok(())
 }
@@ -2153,6 +2614,10 @@ fn validate_entity_transform(
         ));
     }
     Ok(())
+}
+
+fn array_vec3(value: [f32; 3]) -> Vec3 {
+    Vec3::new(value[0], value[1], value[2])
 }
 
 fn validate_stored_light(

@@ -52,7 +52,7 @@ export interface LoadingBayPresentationSnapshot {
   readonly armor: number;
   readonly bindings: LoadingBayInputBindings;
   readonly connected: boolean;
-  readonly doorState: "closed" | "open";
+  readonly doorState: "closed" | "opening" | "open" | "closing";
   readonly equippedWeapon: string | null;
   readonly encounterState: string;
   readonly events: readonly string[];

@@ -22,7 +22,9 @@ export interface RenderableDefinition {
 export type VisualStateDefinition =
   | "default"
   | "open"
+  | "opening"
   | "closed"
+  | "closing"
   | "active"
   | "inactive"
   | "standby"
@@ -63,6 +65,12 @@ export type VisualBindingStateDefinition =
 export interface DoorDefinition {
   readonly openTranslation: Vec3;
   readonly autoCloseAfterTicks: number | null;
+  readonly motionDurationTicks?: number;
+  readonly source?: string;
+  readonly openPresentation?: string;
+  readonly closePresentation?: string;
+  readonly openSound?: string;
+  readonly closeSound?: string;
   readonly access?: DoorAccessDefinition;
 }
 
@@ -75,6 +83,14 @@ export interface DoorAccessDefinition {
 
 export interface SwitchDefinition {
   readonly controls: readonly number[];
+  readonly activationRadius?: number;
+  readonly prompt?: string;
+  readonly unavailablePresentation?: string;
+  readonly repeatable?: boolean;
+  readonly effects?: readonly (
+    | { readonly kind: "openDoor"; readonly door: number }
+    | { readonly kind: "closeDoor"; readonly door: number }
+  )[];
   readonly loadingBayInterlock?: {
     readonly closeDoor: number;
     readonly openDoor: number;
@@ -83,11 +99,34 @@ export interface SwitchDefinition {
 
 export interface SecretRegionDefinition {
   readonly presentation: string;
+  readonly source?: string;
+}
+
+export interface FloorActionDefinition {
+  readonly targetPlatform: number;
+  readonly upperTranslation: Vec3;
+  readonly loweredTranslation: Vec3;
+  readonly motionDurationTicks?: number;
+  readonly prompt?: string;
+  readonly presentation?: string;
+  readonly source?: string;
+}
+
+export interface LiftDefinition {
+  readonly targetPlatform: number;
+  readonly raisedTranslation: Vec3;
+  readonly loweredTranslation: Vec3;
+  readonly motionDurationTicks?: number;
+  readonly loweredWaitTicks?: number;
+  readonly prompt?: string;
+  readonly presentation?: string;
+  readonly source?: string;
 }
 
 export interface LevelExitDefinition {
   readonly activationRadius: number;
   readonly presentation: string;
+  readonly source?: string;
 }
 
 export interface EncounterDefinition {
@@ -298,6 +337,8 @@ export interface EntityDefinition {
   readonly renderable?: RenderableDefinition;
   readonly door?: DoorDefinition;
   readonly switch?: SwitchDefinition;
+  readonly floorAction?: FloorActionDefinition;
+  readonly lift?: LiftDefinition;
   readonly enemy?: true;
   readonly enemyCombat?: EnemyCombatDefinition;
   readonly defeatDrop?: EnemyDropDefinition;

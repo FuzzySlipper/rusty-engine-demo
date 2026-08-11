@@ -869,6 +869,8 @@ pub fn create_scene_object(
                     renderable,
                     door: None,
                     switch: None,
+                    floor_action: None,
+                    lift: None,
                     enemy: false,
                     enemy_combat: None,
                     defeat_drop: None,
@@ -2532,15 +2534,12 @@ const fn render_asset_kind(kind: RenderAssetKind) -> &'static str {
 
 fn project_store_rejection(error: crate::ProjectStoreError) -> AdapterRejection {
     if let crate::ProjectStoreError::Codec(codec) = &error {
-        if codec.diagnostic().code == crate::diagnostic_code::VOXEL_OBJECT_AGGREGATE_LIMIT {
-            return stored_project_rejection(codec.clone());
-        }
+        return stored_project_rejection(codec.clone());
     }
     let code = match error {
         crate::ProjectStoreError::StaleSource { .. } => "project.staleHash",
         crate::ProjectStoreError::TooLarge { .. } => "project.tooLarge",
         crate::ProjectStoreError::InvalidUtf8 { .. } => "project.invalidUtf8",
-        crate::ProjectStoreError::Codec(_) => "project.decodeRejected",
         _ => "project.storageRejected",
     };
     reject(code, error.to_string())

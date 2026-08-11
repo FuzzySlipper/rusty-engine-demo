@@ -2,10 +2,10 @@
 
 use loading_bay_game::{
     DoorState, EncounterState, EnemyAttackKind, EnemyCombatPosture, EnemyState,
-    ExtractionBeaconState, GameRuntime, ItemKind, LevelExitState, NavigationState,
-    PickupCollectionCause, PickupState, PlayerInputSessionView, RequiredKeyPolicy,
+    ExtractionBeaconState, FloorActionState, GameRuntime, ItemKind, LevelExitState, LiftState,
+    NavigationState, PickupCollectionCause, PickupState, PlayerInputSessionView, RequiredKeyPolicy,
     SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretRegionState, StoredLight,
-    StoredVisualBinding, VitalityState, LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS,
+    StoredVisualBinding, VitalityState,
 };
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
@@ -190,6 +190,31 @@ struct BrowserSecretRegionState {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct BrowserFloorActionState {
+    id: u64,
+    target_platform: u64,
+    state: &'static str,
+    motion_elapsed_ticks: u64,
+    prompt: String,
+    presentation: String,
+    source: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserLiftState {
+    id: u64,
+    target_platform: u64,
+    state: &'static str,
+    motion_elapsed_ticks: u64,
+    wait_elapsed_ticks: u64,
+    prompt: String,
+    presentation: String,
+    source: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct BrowserLevelExitState {
     id: u64,
     state: &'static str,
@@ -294,6 +319,8 @@ pub(super) struct BrowserDynamicState {
     extraction_beacon: Option<BrowserExtractionBeaconState>,
     door_access: Vec<BrowserDoorAccessState>,
     secret_regions: Vec<BrowserSecretRegionState>,
+    floor_actions: Vec<BrowserFloorActionState>,
+    lifts: Vec<BrowserLiftState>,
     level_exits: Vec<BrowserLevelExitState>,
     level_complete: bool,
     interaction: Option<BrowserInteractionState>,
@@ -590,7 +617,9 @@ pub(super) fn browser_dynamic_state(
                 id: access.door.raw(),
                 state: match door.state {
                     DoorState::Closed => "closed",
+                    DoorState::Opening => "opening",
                     DoorState::Open => "open",
+                    DoorState::Closing => "closing",
                 },
                 required_key: access.config.required_key.as_str().to_owned(),
                 key_policy: match access.config.key_policy {
@@ -612,6 +641,42 @@ pub(super) fn browser_dynamic_state(
                 SecretRegionState::Discovered { .. } => "discovered",
             },
             presentation: secret.config.presentation,
+        })
+        .collect::<Vec<_>>();
+    let floor_actions = runtime
+        .session()
+        .floor_actions()
+        .map(|action| BrowserFloorActionState {
+            id: action.entity.raw(),
+            target_platform: action.config.target_platform.raw(),
+            state: match action.state {
+                FloorActionState::Armed => "armed",
+                FloorActionState::Lowering => "lowering",
+                FloorActionState::Lowered => "lowered",
+            },
+            motion_elapsed_ticks: action.motion_elapsed.raw(),
+            prompt: action.config.prompt,
+            presentation: action.config.presentation,
+            source: action.config.source,
+        })
+        .collect::<Vec<_>>();
+    let lifts = runtime
+        .session()
+        .lifts()
+        .map(|lift| BrowserLiftState {
+            id: lift.entity.raw(),
+            target_platform: lift.config.target_platform.raw(),
+            state: match lift.state {
+                LiftState::Raised => "raised",
+                LiftState::Lowering => "lowering",
+                LiftState::Waiting => "waiting",
+                LiftState::Raising => "raising",
+            },
+            motion_elapsed_ticks: lift.motion_elapsed.raw(),
+            wait_elapsed_ticks: lift.wait_elapsed.raw(),
+            prompt: lift.config.prompt,
+            presentation: lift.config.presentation,
+            source: lift.config.source,
         })
         .collect::<Vec<_>>();
     let level_exits = runtime
@@ -720,7 +785,9 @@ pub(super) fn browser_dynamic_state(
             .door(EXIT)
             .map(|door| match door.state {
                 DoorState::Closed => "closed",
+                DoorState::Opening => "opening",
                 DoorState::Open => "open",
+                DoorState::Closing => "closing",
             })
             .unwrap_or("closed"),
         encounter_state: runtime
@@ -796,6 +863,8 @@ pub(super) fn browser_dynamic_state(
         extraction_beacon,
         door_access,
         secret_regions,
+        floor_actions,
+        lifts,
         level_exits,
         level_complete: runtime.is_level_complete(),
         interaction,
@@ -847,20 +916,24 @@ fn available_interaction(
             },
         ));
     }
-    for interlock in runtime.session().loading_bay_interlocks() {
-        let translation = interlock
+    for switch in runtime.session().switches() {
+        let Some(translation) = switch
             .entity_view
             .transform
-            .expect("admitted Loading Bay interlock transform")
-            .translation;
+            .map(|transform| transform.translation)
+        else {
+            continue;
+        };
         let distance_squared = (player_position - translation).length_squared();
-        if distance_squared
-            <= LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS * LOADING_BAY_INTERLOCK_ACTIVATION_RADIUS
-        {
+        if distance_squared <= switch.config.activation_radius * switch.config.activation_radius {
             candidates.push((
                 distance_squared,
-                interlock.switch,
-                format!("Activate {}", interlock.entity_view.name.replace('-', " ")),
+                switch.entity,
+                if switch.is_available() {
+                    switch.config.prompt
+                } else {
+                    switch.config.unavailable_presentation
+                },
             ));
         }
     }
@@ -1080,7 +1153,9 @@ fn projection_visual_state(runtime: &GameRuntime, entity: EntityId) -> &'static 
     if let Some(door) = runtime.session().door(entity) {
         return match door.state {
             DoorState::Closed => "closed",
+            DoorState::Opening => "opening",
             DoorState::Open => "open",
+            DoorState::Closing => "closing",
         };
     }
     if let Some(switch) = runtime.session().switch(entity) {
