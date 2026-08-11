@@ -1192,6 +1192,7 @@ async function proveRepresentativeEncounter(
     const healthBefore = latest.enemies.find(
       (entry) => entry.id === enemyId,
     )?.currentHealth;
+    const ammoBefore = latest.weapon?.ammoRemaining;
     await client.send("Input.dispatchMouseEvent", {
       type: "mousePressed",
       ...canvasCenter,
@@ -1202,17 +1203,8 @@ async function proveRepresentativeEncounter(
     try {
       latest = await waitForAuthoritativeState(
         addr,
-        `physical Mouse0 damages canonical enemy ${enemyId}`,
-        (candidate) => {
-          const enemy = candidate.enemies?.find(
-            (entry) => entry.id === enemyId,
-          );
-          return (
-            enemy?.state === "defeated" ||
-            (Number.isFinite(healthBefore) &&
-              enemy?.currentHealth < healthBefore)
-          );
-        },
+        `physical Mouse0 fires at canonical enemy ${enemyId}`,
+        (candidate) => candidate.weapon?.ammoRemaining < ammoBefore,
       );
     } finally {
       await client.send("Input.dispatchMouseEvent", {
@@ -1224,9 +1216,18 @@ async function proveRepresentativeEncounter(
       });
     }
     shots += 1;
+    const targetAfterShot = latest.enemies.find(
+      (entry) => entry.id === enemyId,
+    );
     if (
-      latest.enemies.find((entry) => entry.id === enemyId)?.state !== "defeated"
+      targetAfterShot?.state !== "defeated" &&
+      targetAfterShot?.currentHealth >= healthBefore
     ) {
+      throw new Error(
+        `physical encounter shot missed target ${enemyId}: ${JSON.stringify({ player: latest.player, target: targetAfterShot, combatState: latest.combatState, lastEvents: latest.lastEvents, cues: latest.presentation?.cues })}`,
+      );
+    }
+    if (targetAfterShot?.state !== "defeated") {
       await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
     }
   }
