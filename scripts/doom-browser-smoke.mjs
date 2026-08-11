@@ -625,7 +625,7 @@ async function moveToWorldPoint(
   addr,
   target,
   traversalSamples,
-  { singleHold = false, arrivalDistance = 0.7 } = {},
+  { singleHold = false, arrivalDistance = 0.7, stopWhen = null } = {},
 ) {
   const deadline = Date.now() + 30000;
   let previousDistance = Number.POSITIVE_INFINITY;
@@ -643,6 +643,7 @@ async function moveToWorldPoint(
       position: [x, y, z],
       terrainContact: state.player.terrainContact,
     });
+    if (stopWhen?.(state) === true) return state;
     const dx = target[0] - x;
     const dz = target[1] - z;
     const distance = Math.hypot(dx, dz);
@@ -1137,6 +1138,9 @@ async function proveRepresentativeEncounter(
   await moveToWorldPoint(client, addr, [160, 146], traversalSamples, {
     singleHold: true,
     arrivalDistance: 0.7,
+    stopWhen: (candidate) =>
+      candidate.enemies?.find((entry) => entry.id === enemyId)
+        ?.combatPosture !== "sleeping",
   });
   const encounterState = await fetchAuthoritativeState(addr);
   const enemyBefore = encounterState.enemies.find(
