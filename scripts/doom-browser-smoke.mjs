@@ -962,9 +962,16 @@ async function proveRepresentativeEncounter(
   enemyId,
   dropId,
 ) {
-  await moveToWorldPoint(client, addr, [161, 146], traversalSamples, {
+  const canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
+  const aim = await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
+  if (aim.physicalLookDegrees < 1) {
+    throw new Error(
+      `representative encounter did not require observable physical look: ${JSON.stringify(aim)}`,
+    );
+  }
+  await moveToWorldPoint(client, addr, [159.3, 146], traversalSamples, {
     singleHold: true,
-    arrivalDistance: 0.8,
+    arrivalDistance: 0.2,
   });
   const encounterState = await fetchAuthoritativeState(addr);
   const enemyBefore = encounterState.enemies.find(
@@ -975,13 +982,7 @@ async function proveRepresentativeEncounter(
       `canonical representative enemy ${enemyId} was not live: ${JSON.stringify(enemyBefore)}`,
     );
   }
-  const canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
-  const aim = await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
-  if (aim.physicalLookDegrees < 1) {
-    throw new Error(
-      `representative encounter did not require observable physical look: ${JSON.stringify(aim)}`,
-    );
-  }
+  await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
   let latest = await fetchAuthoritativeState(addr);
   let shots = 0;
   while (
