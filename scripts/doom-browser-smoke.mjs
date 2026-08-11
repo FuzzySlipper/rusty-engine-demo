@@ -1038,9 +1038,9 @@ async function physicallyAimAtEnemy(
   const before = await fetchAuthoritativeState(addr);
   const enemy = before.enemies.find((candidate) => candidate.id === enemyId);
   if (!enemy) throw new Error(`missing representative enemy ${enemyId}`);
-  const dx = enemy.position[0] - before.player.position[0];
-  const dz = enemy.position[2] - before.player.position[2];
-  const desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
+  let dx = enemy.position[0] - before.player.position[0];
+  let dz = enemy.position[2] - before.player.position[2];
+  let desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
   const startingYaw = before.player.yawDegrees;
   let state = before;
   for (let attempt = 0; attempt < 120; attempt += 1) {
@@ -1061,6 +1061,14 @@ async function physicallyAimAtEnemy(
     });
     await delay(80);
     state = await fetchAuthoritativeState(addr);
+    const currentEnemy = state.enemies.find(
+      (candidate) => candidate.id === enemyId,
+    );
+    if (currentEnemy?.state === "alive") {
+      dx = currentEnemy.position[0] - state.player.position[0];
+      dz = currentEnemy.position[2] - state.player.position[2];
+      desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
+    }
   }
   const finalError = normalizeDegrees(desiredYaw - state.player.yawDegrees);
   const physicalLookDegrees = Math.abs(
