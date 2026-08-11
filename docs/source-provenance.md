@@ -640,7 +640,7 @@ Exact PNG bytes and hashes are closed by `content/doom-e1m1/textures/manifest.js
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
 `voxelDataHash sha256:fad81c1c1d8b8ffe30b733817f70b494b26c1ca788e4c8a40a6fe16ffb6c756d`
 `contentHash sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c`
-`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:57778b06c0c98347ec23a17f356eb25d530951d416180d67ed23b18cb54ad7bd`.
+`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:4de587643efa86cbc8014886d12f66f145f34a90e78204ff095a1c4745aa1adc`.
 
 ### Authored project
 
@@ -667,8 +667,9 @@ Task #6805 reads E1M1's single-player health and armor Things from the same
 hashed intermediate: one stimpack grants 10 and three medikits grant 25 through
 the ordinary 100-health ceiling; thirteen health bonuses grant one through 200;
 twenty-five armor bonuses grant one through 200 while preserving an active armor
-class; green armor raises armor to 100 with one-third absorption; blue armor
-raises armor to 200 with one-half absorption. Four sector-special-7 regions are
+class; health and armor bonuses are still consumed at cap after an atomic no-op;
+green armor raises armor to 100 with exact integer `damage / 3` absorption; blue
+armor raises armor to 200 with exact integer `damage / 2` absorption. Four sector-special-7 regions are
 authored as ordinary hazard objects applying five damage every 55 Demo fixed
 ticks, the nearest integral 60 Hz conversion of 32 source tics. Rust owns atomic
 eligibility, effect application, rejection-without-removal, damage ordering,

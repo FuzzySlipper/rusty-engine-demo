@@ -1856,6 +1856,24 @@ mod tests {
         for inventory in defeated_snapshot["inventories"].as_array_mut().unwrap() {
             inventory.as_object_mut().unwrap().remove("weaponEntities");
         }
+        for definition in defeated_snapshot["itemDefinitions"].as_array_mut().unwrap() {
+            let kind = definition["kind"].as_object_mut().unwrap();
+            for field in [
+                "maximumHealth",
+                "automaticUse",
+                "consumeAtCap",
+                "maximumArmor",
+                "absorptionPercent",
+                "absorptionDivisor",
+                "grantMode",
+                "transition",
+            ] {
+                kind.remove(field);
+            }
+        }
+        for health in defeated_snapshot["health"].as_array_mut().unwrap() {
+            health.as_object_mut().unwrap().remove("starting");
+        }
         let player_health = defeated_snapshot["health"]
             .as_array_mut()
             .unwrap()

@@ -151,6 +151,8 @@ pub enum StoredItemKind {
         maximum_health: Option<u32>,
         #[serde(default, skip_serializing_if = "is_false")]
         automatic_use: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        consume_at_cap: bool,
     },
     Armor {
         protection: u32,
@@ -158,10 +160,14 @@ pub enum StoredItemKind {
         maximum_armor: Option<u32>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         absorption_percent: Option<u8>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        absorption_divisor: Option<u8>,
         #[serde(default, skip_serializing_if = "is_default_armor_grant_mode")]
         grant_mode: StoredArmorGrantMode,
         #[serde(default, skip_serializing_if = "is_default_armor_transition")]
         transition: StoredArmorTransition,
+        #[serde(default, skip_serializing_if = "is_false")]
+        consume_at_cap: bool,
     },
 }
 
@@ -1157,6 +1163,17 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     ..
                 } | StoredItemKind::Armor {
                     absorption_percent: Some(0 | 101..),
+                    ..
+                } | StoredItemKind::Armor {
+                    absorption_divisor: Some(0),
+                    ..
+                }
+            )
+            || matches!(
+                definition.kind,
+                StoredItemKind::Armor {
+                    absorption_percent: Some(_),
+                    absorption_divisor: Some(_),
                     ..
                 }
             )

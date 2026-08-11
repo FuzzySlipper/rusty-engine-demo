@@ -275,6 +275,9 @@ fn schema_eleven_rejects_future_pickup_state_but_migrates_when_fields_are_absent
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     snapshot["schemaVersion"] = 11.into();
     support::strip_future_gameplay_mechanics_state(&mut snapshot);
+    for health in snapshot["health"].as_array_mut().unwrap() {
+        health.as_object_mut().unwrap().remove("starting");
+    }
     assert!(matches!(
         decode_game_snapshot(&snapshot.to_string()).unwrap_err(),
         loading_bay_game::GameSnapshotError::FuturePickupStateInLegacySnapshot
@@ -392,6 +395,7 @@ fn strip_snapshot_vitality_fields(snapshot: &mut serde_json::Value) {
     for health in snapshot["health"].as_array_mut().unwrap() {
         let health = health.as_object_mut().unwrap();
         health.remove("maxArmor");
+        health.remove("starting");
         health.remove("armorAbsorptionPercent");
         health.remove("armor");
         health.remove("armorItem");

@@ -201541,7 +201541,7 @@
         "kind": "armor",
         "protection": 200,
         "maximumArmor": 200,
-        "absorptionPercent": 50,
+        "absorptionDivisor": 2,
         "grantMode": "setMinimum",
         "transition": "replace"
       }
@@ -201553,8 +201553,9 @@
         "kind": "armor",
         "protection": 1,
         "maximumArmor": 200,
-        "absorptionPercent": 33,
-        "transition": "preserve"
+        "absorptionDivisor": 3,
+        "transition": "preserve",
+        "consumeAtCap": true
       }
     },
     {
@@ -201564,7 +201565,7 @@
         "kind": "armor",
         "protection": 100,
         "maximumArmor": 200,
-        "absorptionPercent": 33,
+        "absorptionDivisor": 3,
         "grantMode": "setMinimum",
         "transition": "replace"
       }
@@ -201576,7 +201577,8 @@
         "kind": "healthSupply",
         "restoreHealth": 1,
         "maximumHealth": 200,
-        "automaticUse": true
+        "automaticUse": true,
+        "consumeAtCap": true
       }
     },
     {

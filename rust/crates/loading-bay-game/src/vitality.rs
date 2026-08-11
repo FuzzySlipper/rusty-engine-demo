@@ -246,20 +246,29 @@ impl DamageService {
             });
         }
 
-        let armor_absorption_percent = before
+        let armor_absorption = before
             .armor_item
             .as_ref()
             .and_then(|item| session.item_definitions.get(item))
             .and_then(|definition| match definition.kind {
                 ItemKind::Armor {
-                    absorption_percent, ..
-                } => absorption_percent,
+                    absorption_percent,
+                    absorption_divisor,
+                    ..
+                } => Some((absorption_percent, absorption_divisor)),
                 _ => None,
-            })
-            .unwrap_or(before.config.armor_absorption_percent);
-        let armor_eligible =
-            u32::try_from(u64::from(command.amount) * u64::from(armor_absorption_percent) / 100)
-                .expect("bounded damage and percentage fit u32");
+            });
+        let armor_eligible = match armor_absorption {
+            Some((_, Some(divisor))) => command.amount / u32::from(divisor),
+            Some((Some(percent), None)) => {
+                u32::try_from(u64::from(command.amount) * u64::from(percent) / 100)
+                    .expect("bounded damage and percentage fit u32")
+            }
+            _ => u32::try_from(
+                u64::from(command.amount) * u64::from(before.config.armor_absorption_percent) / 100,
+            )
+            .expect("bounded damage and percentage fit u32"),
+        };
         let mut candidate = session.clone();
         let operation = operation_id("damage", source.raw(), command.target.raw())?;
         let _receipt = MechanicsDamageService::apply(
@@ -429,8 +438,10 @@ impl DamageService {
             protection,
             maximum_armor,
             absorption_percent: _,
+            absorption_divisor: _,
             grant_mode,
             transition,
+            consume_at_cap,
         } = definition.kind
         else {
             return Err(VitalityRejection::IncompatibleItem { item });
@@ -442,7 +453,7 @@ impl DamageService {
             ArmorGrantMode::Add => before.armor.saturating_add(protection).min(maximum_armor),
             ArmorGrantMode::SetMinimum => before.armor.max(protection).min(maximum_armor),
         };
-        if target_armor <= before.armor {
+        if target_armor <= before.armor && !consume_at_cap {
             return Err(VitalityRejection::ArmorFull { player });
         }
         let effect_item = match (&before.armor_item, transition) {
@@ -476,47 +487,51 @@ impl DamageService {
             },
             other => VitalityRejection::Inventory(other),
         })?;
-        let operation = operation_id("grant-armor", player.raw(), sequence)?;
-        let track = TrackService::restore(
-            &mut candidate.entities,
-            &candidate.mechanics.catalog,
-            TrackMutationRequest {
-                operation: operation.clone(),
-                source: request_source(operation.clone(), "armor")?,
-                entity: player,
-                track: crate::mechanics::armor_track(),
-                amount: crate::mechanics::scalar(target_armor - before.armor)
-                    .map_err(|reason| VitalityRejection::Mechanics { reason })?,
-                kind: rusty_engine::gameplay_mechanics::TrackAdjustmentKind::Restore,
-                expected_revision: None,
-            },
-        )
-        .map_err(mechanics_rejection)?;
-        let binding = candidate
-            .mechanics
-            .armor
-            .get(&effect_item)
-            .cloned()
-            .ok_or_else(|| VitalityRejection::Mechanics {
-                reason: format!("missing admitted armor effect for {effect_item}"),
-            })?;
-        EffectService::replace(
-            &mut candidate.entities,
-            &candidate.mechanics.catalog,
-            EffectReplaceRequest {
-                operation: operation.clone(),
-                entity: player,
-                instance: crate::mechanics::armor_effect_instance(),
-                definition: binding.effect,
-                provenance: request_source(operation, "armor-effect")?,
-                stacks: 1,
-                expected_revision: None,
-            },
-        )
-        .map_err(mechanics_rejection)?;
-        let after = u32::try_from(track.after.get()).map_err(|_| VitalityRejection::Mechanics {
-            reason: "armor track exceeds product representation".to_string(),
-        })?;
+        let after = if target_armor > before.armor {
+            let operation = operation_id("grant-armor", player.raw(), sequence)?;
+            let track = TrackService::restore(
+                &mut candidate.entities,
+                &candidate.mechanics.catalog,
+                TrackMutationRequest {
+                    operation: operation.clone(),
+                    source: request_source(operation.clone(), "armor")?,
+                    entity: player,
+                    track: crate::mechanics::armor_track(),
+                    amount: crate::mechanics::scalar(target_armor - before.armor)
+                        .map_err(|reason| VitalityRejection::Mechanics { reason })?,
+                    kind: rusty_engine::gameplay_mechanics::TrackAdjustmentKind::Restore,
+                    expected_revision: None,
+                },
+            )
+            .map_err(mechanics_rejection)?;
+            let binding = candidate
+                .mechanics
+                .armor
+                .get(&effect_item)
+                .cloned()
+                .ok_or_else(|| VitalityRejection::Mechanics {
+                    reason: format!("missing admitted armor effect for {effect_item}"),
+                })?;
+            EffectService::replace(
+                &mut candidate.entities,
+                &candidate.mechanics.catalog,
+                EffectReplaceRequest {
+                    operation: operation.clone(),
+                    entity: player,
+                    instance: crate::mechanics::armor_effect_instance(),
+                    definition: binding.effect,
+                    provenance: request_source(operation, "armor-effect")?,
+                    stacks: 1,
+                    expected_revision: None,
+                },
+            )
+            .map_err(mechanics_rejection)?;
+            u32::try_from(track.after.get()).map_err(|_| VitalityRejection::Mechanics {
+                reason: "armor track exceeds product representation".to_string(),
+            })?
+        } else {
+            before.armor
+        };
         *session = candidate;
         Ok(VitalityReceipt {
             disposition: DamageDisposition::Applied,
@@ -551,6 +566,7 @@ impl DamageService {
         let ItemKind::HealthSupply {
             restore_health,
             maximum_health,
+            consume_at_cap,
             ..
         } = definition.kind
         else {
@@ -559,10 +575,10 @@ impl DamageService {
         let maximum_health = maximum_health
             .unwrap_or(before.config.max)
             .min(before.config.max);
-        if before.current >= maximum_health {
+        if before.current >= maximum_health && !consume_at_cap {
             return Err(VitalityRejection::HealthFull { player });
         }
-        let restored = restore_health.min(maximum_health - before.current);
+        let restored = restore_health.min(maximum_health.saturating_sub(before.current));
         let mut candidate = session.clone();
         let sequence = next_inventory_sequence(&candidate, player)?;
         let inventory = InventoryService::apply(
@@ -577,25 +593,29 @@ impl DamageService {
             },
         )
         .map_err(VitalityRejection::Inventory)?;
-        let operation = operation_id("restore-health", player.raw(), sequence)?;
-        let track = TrackService::restore(
-            &mut candidate.entities,
-            &candidate.mechanics.catalog,
-            TrackMutationRequest {
-                operation: operation.clone(),
-                source: request_source(operation, "health")?,
-                entity: player,
-                track: crate::mechanics::health_track(),
-                amount: crate::mechanics::scalar(restored)
-                    .map_err(|reason| VitalityRejection::Mechanics { reason })?,
-                kind: rusty_engine::gameplay_mechanics::TrackAdjustmentKind::Restore,
-                expected_revision: None,
-            },
-        )
-        .map_err(mechanics_rejection)?;
-        let after = u32::try_from(track.after.get()).map_err(|_| VitalityRejection::Mechanics {
-            reason: "health track exceeds product representation".to_string(),
-        })?;
+        let after = if restored > 0 {
+            let operation = operation_id("restore-health", player.raw(), sequence)?;
+            let track = TrackService::restore(
+                &mut candidate.entities,
+                &candidate.mechanics.catalog,
+                TrackMutationRequest {
+                    operation: operation.clone(),
+                    source: request_source(operation, "health")?,
+                    entity: player,
+                    track: crate::mechanics::health_track(),
+                    amount: crate::mechanics::scalar(restored)
+                        .map_err(|reason| VitalityRejection::Mechanics { reason })?,
+                    kind: rusty_engine::gameplay_mechanics::TrackAdjustmentKind::Restore,
+                    expected_revision: None,
+                },
+            )
+            .map_err(mechanics_rejection)?;
+            u32::try_from(track.after.get()).map_err(|_| VitalityRejection::Mechanics {
+                reason: "health track exceeds product representation".to_string(),
+            })?
+        } else {
+            before.current
+        };
         *session = candidate;
         Ok(VitalityReceipt {
             disposition: DamageDisposition::Applied,

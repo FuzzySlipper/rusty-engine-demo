@@ -191,13 +191,16 @@ pub enum ItemKind {
         restore_health: u32,
         maximum_health: Option<u32>,
         automatic_use: bool,
+        consume_at_cap: bool,
     },
     Armor {
         protection: u32,
         maximum_armor: Option<u32>,
         absorption_percent: Option<u8>,
+        absorption_divisor: Option<u8>,
         grant_mode: ArmorGrantMode,
         transition: ArmorTransition,
+        consume_at_cap: bool,
     },
 }
 
@@ -571,6 +574,17 @@ pub(crate) fn admit_item_definitions(
                     ..
                 } | ItemKind::Armor {
                     absorption_percent: Some(0 | 101..),
+                    ..
+                } | ItemKind::Armor {
+                    absorption_divisor: Some(0),
+                    ..
+                }
+            )
+            || matches!(
+                definition.kind,
+                ItemKind::Armor {
+                    absorption_percent: Some(_),
+                    absorption_divisor: Some(_),
                     ..
                 }
             )

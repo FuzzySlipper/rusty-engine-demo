@@ -1070,8 +1070,21 @@ async function main() {
     }
     // Keep the canonical authored transactions while bounding this smoke to
     // weapon/vitality behavior instead of requiring an unrelated traversal.
+    // Place the fixture along the physical W route so an authored restart
+    // returns to a safe spawn where reset pickups remain observable.
+    const focusedPoint = [
+      player.translation[0],
+      player.translation[1],
+      player.translation[2] + 2,
+    ];
     for (const entity of [shotgun, healthBonus, greenArmor, ...nukage]) {
-      entity.translation = [...player.translation];
+      entity.translation = [...focusedPoint];
+    }
+    for (const hazard of nukage) {
+      hazard.bounds = {
+        min: [-0.75, -0.6, -0.75],
+        max: [0.75, 0.6, 0.75],
+      };
     }
     projectPath = join(saveRoot, "doom-e1m1-focused.project.json");
     writeFileSync(projectPath, JSON.stringify(project), "utf8");
@@ -1105,8 +1118,8 @@ async function main() {
       `host projectId doom-e1m1, got ${state.projectId}`,
     );
     assert(
-      state.projection?.length === (focused ? 89 : 92),
-      `projection ${focused ? 89 : 92}, got ${state.projection?.length}`,
+      state.projection?.length === 92,
+      `projection 92, got ${state.projection?.length}`,
     );
     assert(
       state.enemies?.length === 29,

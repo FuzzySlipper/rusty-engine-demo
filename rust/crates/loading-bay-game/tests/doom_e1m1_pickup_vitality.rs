@@ -31,6 +31,7 @@ fn authored_e1m1_vitality_vocabulary_and_incidence_are_exact() {
             restore_health: 10,
             maximum_health: Some(100),
             automatic_use: true,
+            consume_at_cap: false,
         }
     );
     assert_eq!(
@@ -39,6 +40,7 @@ fn authored_e1m1_vitality_vocabulary_and_incidence_are_exact() {
             restore_health: 25,
             maximum_health: Some(100),
             automatic_use: true,
+            consume_at_cap: false,
         }
     );
     assert_eq!(
@@ -47,6 +49,7 @@ fn authored_e1m1_vitality_vocabulary_and_incidence_are_exact() {
             restore_health: 1,
             maximum_health: Some(200),
             automatic_use: true,
+            consume_at_cap: true,
         }
     );
     assert_eq!(
@@ -54,9 +57,11 @@ fn authored_e1m1_vitality_vocabulary_and_incidence_are_exact() {
         ItemKind::Armor {
             protection: 1,
             maximum_armor: Some(200),
-            absorption_percent: Some(33),
+            absorption_percent: None,
+            absorption_divisor: Some(3),
             grant_mode: ArmorGrantMode::Add,
             transition: ArmorTransition::Preserve,
+            consume_at_cap: true,
         }
     );
     assert_eq!(
@@ -64,9 +69,11 @@ fn authored_e1m1_vitality_vocabulary_and_incidence_are_exact() {
         ItemKind::Armor {
             protection: 100,
             maximum_armor: Some(200),
-            absorption_percent: Some(33),
+            absorption_percent: None,
+            absorption_divisor: Some(3),
             grant_mode: ArmorGrantMode::SetMinimum,
             transition: ArmorTransition::Replace,
+            consume_at_cap: false,
         }
     );
     assert_eq!(
@@ -74,9 +81,11 @@ fn authored_e1m1_vitality_vocabulary_and_incidence_are_exact() {
         ItemKind::Armor {
             protection: 200,
             maximum_armor: Some(200),
-            absorption_percent: Some(50),
+            absorption_percent: None,
+            absorption_divisor: Some(2),
             grant_mode: ArmorGrantMode::SetMinimum,
             transition: ArmorTransition::Replace,
+            consume_at_cap: false,
         }
     );
 
@@ -153,15 +162,28 @@ fn snapshot_schema_twenty_one_rejects_future_vitality_item_policy() {
         for field in [
             "maximumHealth",
             "automaticUse",
+            "consumeAtCap",
             "maximumArmor",
             "absorptionPercent",
+            "absorptionDivisor",
             "grantMode",
             "transition",
         ] {
             kind.remove(field);
         }
     }
-    decode_game_snapshot(&legacy.to_string()).unwrap();
+    assert!(matches!(
+        decode_game_snapshot(&legacy.to_string()).unwrap_err(),
+        GameSnapshotError::FutureVitalityStateInLegacySnapshot
+    ));
+    for health in legacy["health"].as_array_mut().unwrap() {
+        health.as_object_mut().unwrap().remove("starting");
+    }
+    let migrated = decode_game_snapshot(&legacy.to_string()).unwrap();
+    assert_eq!(
+        migrated.session().health(PLAYER).unwrap().config.starting,
+        200
+    );
 }
 
 #[test]
@@ -226,6 +248,56 @@ fn walk_over_health_pickups_apply_atomically_and_rejections_leave_the_world_inta
 }
 
 #[test]
+fn authored_bonuses_are_consumed_at_cap_while_ordinary_pickups_still_reject() {
+    let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    let player = project["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity["id"] == PLAYER.raw())
+        .unwrap();
+    player["health"]["startingHealth"] = 200.into();
+    let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+
+    let health_bonus = pickup(&runtime, "supply/health-bonus");
+    runtime = with_overlap(runtime, health_bonus);
+    let health_receipt = runtime.collect_pickup(PLAYER, health_bonus, 1, 1).unwrap();
+    assert!(health_receipt
+        .vitality_facts
+        .contains(&VitalityFact::HealthRestored {
+            entity: PLAYER,
+            item: item("supply/health-bonus"),
+            amount: 0,
+            before: 200,
+            after: 200,
+        }));
+    assert!(matches!(
+        runtime.session().pickup(health_bonus).unwrap().state,
+        PickupState::Collected { .. }
+    ));
+
+    let blue = pickup(&runtime, "armor/blue");
+    runtime = with_overlap(runtime, blue);
+    runtime.collect_pickup(PLAYER, blue, 1, 2).unwrap();
+    let armor_bonus = pickup(&runtime, "armor/bonus");
+    runtime = with_overlap(runtime, armor_bonus);
+    let armor_receipt = runtime.collect_pickup(PLAYER, armor_bonus, 1, 3).unwrap();
+    assert!(armor_receipt
+        .vitality_facts
+        .contains(&VitalityFact::ArmorGranted {
+            entity: PLAYER,
+            item: item("armor/blue"),
+            amount: 0,
+            before: 200,
+            after: 200,
+        }));
+    assert!(matches!(
+        runtime.session().pickup(armor_bonus).unwrap().state,
+        PickupState::Collected { .. }
+    ));
+}
+
+#[test]
 fn armor_classes_order_damage_and_survive_snapshot_while_death_and_restart_are_clean() {
     let mut runtime = bounded_runtime();
     let green = pickup(&runtime, "armor/green");
@@ -243,6 +315,30 @@ fn armor_classes_order_damage_and_survive_snapshot_while_death_and_restart_are_c
         "armor/green"
     );
 
+    let mut representative = runtime.session().clone();
+    let representative_damage = DamageService::apply(
+        &mut representative,
+        DamageCommand {
+            source: DamageSource::Direct { actor: PLAYER },
+            target: PLAYER,
+            amount: 15,
+        },
+    )
+    .unwrap();
+    assert!(representative_damage
+        .facts
+        .contains(&VitalityFact::DamageApplied {
+            source: DamageSource::Direct { actor: PLAYER },
+            target: PLAYER,
+            incoming: 15,
+            armor_absorbed: 5,
+            health_damage: 10,
+            health_before: 100,
+            health_after: 90,
+            armor_before: 100,
+            armor_after: 95,
+        }));
+
     let mut session = runtime.session().clone();
     let green_damage = DamageService::apply(
         &mut session,
@@ -257,12 +353,12 @@ fn armor_classes_order_damage_and_survive_snapshot_while_death_and_restart_are_c
         source: DamageSource::Direct { actor: PLAYER },
         target: PLAYER,
         incoming: 30,
-        armor_absorbed: 9,
-        health_damage: 21,
+        armor_absorbed: 10,
+        health_damage: 20,
         health_before: 100,
-        health_after: 79,
+        health_after: 80,
         armor_before: 100,
-        armor_after: 91,
+        armor_after: 90,
     }));
 
     runtime = with_session(session);
@@ -270,7 +366,7 @@ fn armor_classes_order_damage_and_survive_snapshot_while_death_and_restart_are_c
     runtime = with_overlap(runtime, bonus);
     runtime.collect_pickup(PLAYER, bonus, 1, 2).unwrap();
     let after_bonus = runtime.session().health(PLAYER).unwrap();
-    assert_eq!(after_bonus.armor, 92);
+    assert_eq!(after_bonus.armor, 91);
     assert_eq!(after_bonus.armor_item.unwrap().as_str(), "armor/green");
 
     let blue = pickup(&runtime, "armor/blue");
@@ -304,8 +400,8 @@ fn armor_classes_order_damage_and_survive_snapshot_while_death_and_restart_are_c
         incoming: 30,
         armor_absorbed: 15,
         health_damage: 15,
-        health_before: 79,
-        health_after: 64,
+        health_before: 80,
+        health_after: 65,
         armor_before: 200,
         armor_after: 185,
     }));
@@ -314,7 +410,11 @@ fn armor_classes_order_damage_and_survive_snapshot_while_death_and_restart_are_c
     let encoded = encode_game_snapshot(&runtime).unwrap();
     let reopened = decode_game_snapshot(&encoded).unwrap();
     assert_eq!(encode_game_snapshot(&reopened).unwrap(), encoded);
-    assert_eq!(reopened.session().health(PLAYER).unwrap().current, 64);
+    assert_eq!(reopened.session().health(PLAYER).unwrap().current, 65);
+    assert_eq!(
+        reopened.session().health(PLAYER).unwrap().config.starting,
+        100
+    );
     assert_eq!(reopened.session().health(PLAYER).unwrap().armor, 185);
     assert_eq!(
         reopened
@@ -350,7 +450,7 @@ fn armor_classes_order_damage_and_survive_snapshot_while_death_and_restart_are_c
     );
 
     let mut lethal_session = reopened.session().clone();
-    DamageService::apply(
+    let lethal = DamageService::apply(
         &mut lethal_session,
         DamageCommand {
             source: DamageSource::Direct { actor: PLAYER },
@@ -359,6 +459,17 @@ fn armor_classes_order_damage_and_survive_snapshot_while_death_and_restart_are_c
         },
     )
     .unwrap();
+    assert!(lethal.facts.contains(&VitalityFact::DamageApplied {
+        source: DamageSource::Direct { actor: PLAYER },
+        target: PLAYER,
+        incoming: 500,
+        armor_absorbed: 185,
+        health_damage: 65,
+        health_before: 65,
+        health_after: 0,
+        armor_before: 185,
+        armor_after: 0,
+    }));
     assert_eq!(
         lethal_session.health(PLAYER).unwrap().state,
         VitalityState::Dead

@@ -235,21 +235,26 @@ fn authored_item_definition(
             restore_health,
             maximum_health,
             automatic_use,
+            consume_at_cap,
         } => ItemKind::HealthSupply {
             restore_health: *restore_health,
             maximum_health: *maximum_health,
             automatic_use: *automatic_use,
+            consume_at_cap: *consume_at_cap,
         },
         StoredItemKind::Armor {
             protection,
             maximum_armor,
             absorption_percent,
+            absorption_divisor,
             grant_mode,
             transition,
+            consume_at_cap,
         } => ItemKind::Armor {
             protection: *protection,
             maximum_armor: *maximum_armor,
             absorption_percent: *absorption_percent,
+            absorption_divisor: *absorption_divisor,
             grant_mode: match grant_mode {
                 crate::StoredArmorGrantMode::Add => ArmorGrantMode::Add,
                 crate::StoredArmorGrantMode::SetMinimum => ArmorGrantMode::SetMinimum,
@@ -259,6 +264,7 @@ fn authored_item_definition(
                 crate::StoredArmorTransition::Preserve => ArmorTransition::Preserve,
                 crate::StoredArmorTransition::Replace => ArmorTransition::Replace,
             },
+            consume_at_cap: *consume_at_cap,
         },
     };
     Ok(ItemDefinition::new(id, kind, authored.max_quantity))

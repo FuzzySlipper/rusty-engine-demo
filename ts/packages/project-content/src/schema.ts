@@ -278,14 +278,17 @@ export type ItemKindDefinition =
       readonly restoreHealth: number;
       readonly maximumHealth?: number;
       readonly automaticUse?: boolean;
+      readonly consumeAtCap?: boolean;
     }
   | {
       readonly kind: "armor";
       readonly protection: number;
       readonly maximumArmor?: number;
       readonly absorptionPercent?: number;
+      readonly absorptionDivisor?: number;
       readonly grantMode?: "add" | "setMinimum";
       readonly transition?: "rejectDifferent" | "preserve" | "replace";
+      readonly consumeAtCap?: boolean;
     };
 
 export interface ItemDefinition {

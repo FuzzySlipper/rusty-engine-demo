@@ -186,6 +186,8 @@ pub enum SnapshotItemKind {
         maximum_health: Option<u32>,
         #[serde(default, skip_serializing_if = "is_false")]
         automatic_use: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        consume_at_cap: bool,
     },
     Armor {
         protection: u32,
@@ -193,10 +195,14 @@ pub enum SnapshotItemKind {
         maximum_armor: Option<u32>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         absorption_percent: Option<u8>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        absorption_divisor: Option<u8>,
         #[serde(default, skip_serializing_if = "is_default_snapshot_armor_grant_mode")]
         grant_mode: SnapshotArmorGrantMode,
         #[serde(default, skip_serializing_if = "is_default_snapshot_armor_transition")]
         transition: SnapshotArmorTransition,
+        #[serde(default, skip_serializing_if = "is_false")]
+        consume_at_cap: bool,
     },
 }
 
@@ -597,6 +603,8 @@ pub struct HealthSnapshot {
     pub entity: u64,
     pub current: u32,
     pub max: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub starting: Option<u32>,
     pub hitbox_half_extents: [f32; 3],
     #[serde(default)]
     pub max_armor: u32,
@@ -1212,21 +1220,26 @@ impl GameRuntime {
                             restore_health,
                             maximum_health,
                             automatic_use,
+                            consume_at_cap,
                         } => SnapshotItemKind::HealthSupply {
                             restore_health: *restore_health,
                             maximum_health: *maximum_health,
                             automatic_use: *automatic_use,
+                            consume_at_cap: *consume_at_cap,
                         },
                         ItemKind::Armor {
                             protection,
                             maximum_armor,
                             absorption_percent,
+                            absorption_divisor,
                             grant_mode,
                             transition,
+                            consume_at_cap,
                         } => SnapshotItemKind::Armor {
                             protection: *protection,
                             maximum_armor: *maximum_armor,
                             absorption_percent: *absorption_percent,
+                            absorption_divisor: *absorption_divisor,
                             grant_mode: match grant_mode {
                                 ArmorGrantMode::Add => SnapshotArmorGrantMode::Add,
                                 ArmorGrantMode::SetMinimum => SnapshotArmorGrantMode::SetMinimum,
@@ -1238,6 +1251,7 @@ impl GameRuntime {
                                 ArmorTransition::Preserve => SnapshotArmorTransition::Preserve,
                                 ArmorTransition::Replace => SnapshotArmorTransition::Replace,
                             },
+                            consume_at_cap: *consume_at_cap,
                         },
                     },
                 })
@@ -1462,6 +1476,7 @@ impl GameRuntime {
                         entity: entity.raw(),
                         current: vitality.current,
                         max: config.max,
+                        starting: (config.starting != config.max).then_some(config.starting),
                         hitbox_half_extents: config.hitbox_half_extents.to_array(),
                         max_armor: config.max_armor,
                         armor_absorption_percent: config.armor_absorption_percent,
@@ -1755,25 +1770,38 @@ impl GameRuntime {
         let source_schema_version = snapshot.schema_version;
         if source_schema_version < VITALITY_ITEM_SNAPSHOT_SCHEMA_VERSION
             && snapshot
+                .health
+                .iter()
+                .any(|health| health.starting.is_some())
+        {
+            return Err(GameSnapshotError::FutureVitalityStateInLegacySnapshot);
+        }
+        if source_schema_version < VITALITY_ITEM_SNAPSHOT_SCHEMA_VERSION
+            && snapshot
                 .item_definitions
                 .iter()
                 .any(|definition| match definition.kind {
                     SnapshotItemKind::HealthSupply {
                         maximum_health,
                         automatic_use,
+                        consume_at_cap,
                         ..
-                    } => maximum_health.is_some() || automatic_use,
+                    } => maximum_health.is_some() || automatic_use || consume_at_cap,
                     SnapshotItemKind::Armor {
                         maximum_armor,
                         absorption_percent,
+                        absorption_divisor,
                         grant_mode,
                         transition,
+                        consume_at_cap,
                         ..
                     } => {
                         maximum_armor.is_some()
                             || absorption_percent.is_some()
+                            || absorption_divisor.is_some()
                             || grant_mode != SnapshotArmorGrantMode::default()
                             || transition != SnapshotArmorTransition::default()
+                            || consume_at_cap
                     }
                     _ => false,
                 })
@@ -2519,7 +2547,7 @@ impl GameRuntime {
             }
             let config = HealthConfig {
                 max: health_snapshot.max,
-                starting: health_snapshot.max,
+                starting: health_snapshot.starting.unwrap_or(health_snapshot.max),
                 hitbox_half_extents: array_vec3(health_snapshot.hitbox_half_extents),
                 max_armor: health_snapshot.max_armor,
                 armor_absorption_percent: health_snapshot.armor_absorption_percent,
@@ -3644,7 +3672,29 @@ pub fn encode_game_snapshot(runtime: &GameRuntime) -> Result<String, GameSnapsho
 }
 
 pub fn decode_game_snapshot(input: &str) -> Result<GameRuntime, GameSnapshotError> {
-    let snapshot: GameSnapshot = serde_json::from_str(input).map_err(GameSnapshotError::Decode)?;
+    let value: serde_json::Value =
+        serde_json::from_str(input).map_err(GameSnapshotError::Decode)?;
+    let source_schema_version = value
+        .get("schemaVersion")
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|version| u32::try_from(version).ok());
+    if source_schema_version.is_some_and(|version| {
+        version < VITALITY_ITEM_SNAPSHOT_SCHEMA_VERSION
+            && value
+                .get("health")
+                .and_then(serde_json::Value::as_array)
+                .is_some_and(|health| {
+                    health.iter().any(|entry| {
+                        entry
+                            .as_object()
+                            .is_some_and(|health| health.contains_key("starting"))
+                    })
+                })
+    }) {
+        return Err(GameSnapshotError::FutureVitalityStateInLegacySnapshot);
+    }
+    let snapshot: GameSnapshot =
+        serde_json::from_value(value).map_err(GameSnapshotError::Decode)?;
     GameRuntime::from_snapshot(snapshot)
 }
 
@@ -3792,21 +3842,26 @@ fn snapshot_item_definition(
             restore_health,
             maximum_health,
             automatic_use,
+            consume_at_cap,
         } => ItemKind::HealthSupply {
             restore_health,
             maximum_health,
             automatic_use,
+            consume_at_cap,
         },
         SnapshotItemKind::Armor {
             protection,
             maximum_armor,
             absorption_percent,
+            absorption_divisor,
             grant_mode,
             transition,
+            consume_at_cap,
         } => ItemKind::Armor {
             protection,
             maximum_armor,
             absorption_percent,
+            absorption_divisor,
             grant_mode: match grant_mode {
                 SnapshotArmorGrantMode::Add => ArmorGrantMode::Add,
                 SnapshotArmorGrantMode::SetMinimum => ArmorGrantMode::SetMinimum,
@@ -3816,6 +3871,7 @@ fn snapshot_item_definition(
                 SnapshotArmorTransition::Preserve => ArmorTransition::Preserve,
                 SnapshotArmorTransition::Replace => ArmorTransition::Replace,
             },
+            consume_at_cap,
         },
     };
     Ok(ItemDefinition::new(id, kind, snapshot.max_quantity))

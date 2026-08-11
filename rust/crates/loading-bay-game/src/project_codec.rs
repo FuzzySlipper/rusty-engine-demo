@@ -291,8 +291,10 @@ fn reject_schema_twenty_four_vitality_item_fields(input: &str) -> Result<(), Sto
         for field in [
             "maximumHealth",
             "automaticUse",
+            "consumeAtCap",
             "maximumArmor",
             "absorptionPercent",
+            "absorptionDivisor",
             "grantMode",
             "transition",
         ] {
