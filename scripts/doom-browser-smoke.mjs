@@ -972,7 +972,7 @@ async function proveRepresentativeEncounter(
   }
   await moveToWorldPoint(client, addr, [160, 146], traversalSamples, {
     singleHold: true,
-    arrivalDistance: 0.5,
+    arrivalDistance: 0.7,
   });
   const encounterState = await fetchAuthoritativeState(addr);
   const enemyBefore = encounterState.enemies.find(
