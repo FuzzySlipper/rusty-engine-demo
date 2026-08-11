@@ -970,9 +970,9 @@ async function proveRepresentativeEncounter(
       `representative encounter did not require observable physical look: ${JSON.stringify(aim)}`,
     );
   }
-  await moveToWorldPoint(client, addr, [159.3, 146], traversalSamples, {
+  await moveToWorldPoint(client, addr, [160, 146], traversalSamples, {
     singleHold: true,
-    arrivalDistance: 0.2,
+    arrivalDistance: 0.5,
   });
   const encounterState = await fetchAuthoritativeState(addr);
   const enemyBefore = encounterState.enemies.find(
