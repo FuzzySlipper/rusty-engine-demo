@@ -1308,7 +1308,7 @@ async function main() {
         debugPort,
         chromiumProc,
         () => cerr,
-        15000,
+        45000,
       );
       console.log(`debugger ws ${wsUrl}`);
       cdpClient = await createCdpClient(wsUrl);
