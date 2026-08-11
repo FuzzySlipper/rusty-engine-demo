@@ -1435,12 +1435,12 @@ async function main() {
       debugPort = await reservePort();
       profileDir = mkdtempSync(join(tmpdir(), "doom-chromium-"));
       console.log(
-        `launching chromium headless SwiftShader debugPort ${debugPort}`,
+        `launching chromium ${retainedCombatEvidence ? "headed" : "headless"} SwiftShader debugPort ${debugPort}`,
       );
       chromiumProc = spawn(
         chromium,
         [
-          "--headless=new",
+          ...(retainedCombatEvidence ? [] : ["--headless=new"]),
           "--no-sandbox",
           "--disable-dev-shm-usage",
           "--disable-background-timer-throttling",
