@@ -1190,7 +1190,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             && max_distance
                 .is_some_and(|value| value.is_finite() && value > 0.0 && value <= MAX_WEAPON_RANGE)
             && cooldown_ticks.is_some_and(|value| value <= MAX_WEAPON_COOLDOWN_TICKS)
-            && ammunition_cost.is_some_and(|value| value > 0 && value <= MAX_ITEM_QUANTITY)
+            && ammunition_cost.is_some_and(|value| value <= MAX_ITEM_QUANTITY)
             && muzzle_offset.is_some_and(|value| {
                 value
                     .into_iter()

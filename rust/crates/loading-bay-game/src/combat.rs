@@ -275,30 +275,35 @@ impl CombatService {
         let ammo_after = ammo_before - weapon.ammunition_cost;
         let ready_at_tick = tick.advance(TickDelta::new(weapon.cooldown_ticks));
         let mut candidate_session = session.clone();
-        let inventory_sequence = candidate_session
-            .inventories
-            .get(&attacker)
-            .and_then(|inventory| inventory.last_applied_command_sequence)
-            .map_or(Some(1), |sequence| sequence.checked_add(1))
-            .ok_or(RuntimeError::InventorySequenceOverflow { owner: attacker })?;
-        let ammunition_receipt = InventoryService::apply(
-            &mut candidate_session,
-            attacker,
-            InventoryCommand {
-                sequence: inventory_sequence,
-                action: InventoryAction::Consume {
-                    item: weapon.ammunition.clone(),
-                    quantity: weapon.ammunition_cost,
+        let ammunition_facts = if weapon.ammunition_cost == 0 {
+            Vec::new()
+        } else {
+            let inventory_sequence = candidate_session
+                .inventories
+                .get(&attacker)
+                .and_then(|inventory| inventory.last_applied_command_sequence)
+                .map_or(Some(1), |sequence| sequence.checked_add(1))
+                .ok_or(RuntimeError::InventorySequenceOverflow { owner: attacker })?;
+            InventoryService::apply(
+                &mut candidate_session,
+                attacker,
+                InventoryCommand {
+                    sequence: inventory_sequence,
+                    action: InventoryAction::Consume {
+                        item: weapon.ammunition.clone(),
+                        quantity: weapon.ammunition_cost,
+                    },
                 },
-            },
-        )
-        .map_err(|rejection| match rejection {
-            InventoryRejection::QuantityUnderflow { .. } => RuntimeError::CombatRejected {
-                entity: attacker,
-                reason: CombatRejectionReason::NoAmmo,
-            },
-            other => RuntimeError::Inventory(other),
-        })?;
+            )
+            .map_err(|rejection| match rejection {
+                InventoryRejection::QuantityUnderflow { .. } => RuntimeError::CombatRejected {
+                    entity: attacker,
+                    reason: CombatRejectionReason::NoAmmo,
+                },
+                other => RuntimeError::Inventory(other),
+            })?
+            .facts
+        };
         let mut facts = vec![CombatFact::AttackFired {
             attacker,
             weapon: weapon_item.clone(),
@@ -313,12 +318,7 @@ impl CombatService {
             ammo_after,
             ready_at_tick,
         }];
-        facts.extend(
-            ammunition_receipt
-                .facts
-                .into_iter()
-                .map(CombatFact::Inventory),
-        );
+        facts.extend(ammunition_facts.into_iter().map(CombatFact::Inventory));
         let mut events = Vec::new();
         if let WeaponAttackMode::Projectile = weapon.attack_mode {
             let projectile = weapon

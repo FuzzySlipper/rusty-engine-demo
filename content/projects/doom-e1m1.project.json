@@ -201565,6 +201565,27 @@
       }
     },
     {
+      "id": "weapon/fist",
+      "maxQuantity": 1,
+      "kind": {
+        "kind": "weapon",
+        "ammunition": "ammo/bullets",
+        "repeatWhileHeld": true,
+        "damageRolls": 10,
+        "attackMode": "hitscan",
+        "damage": 2,
+        "maxDistance": 4.0,
+        "cooldownTicks": 38,
+        "ammunitionCost": 0,
+        "muzzleOffset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "presentation": "fist"
+      }
+    },
+    {
       "id": "weapon/pistol",
       "maxQuantity": 1,
       "kind": {
@@ -201720,13 +201741,18 @@
               "jump": "Space",
               "selectWeapon": [
                 "Digit1",
-                "Digit2"
+                "Digit2",
+                "Digit3"
               ]
             }
           },
           "inventory": {
             "capacitySlots": 10,
             "startingStacks": [
+              {
+                "item": "weapon/fist",
+                "quantity": 1
+              },
               {
                 "item": "weapon/pistol",
                 "quantity": 1
@@ -201739,7 +201765,8 @@
             "initiallyEquippedWeapon": "weapon/pistol",
             "weaponSlots": [
               "weapon/pistol",
-              "weapon/shotgun"
+              "weapon/shotgun",
+              "weapon/fist"
             ]
           }
         },

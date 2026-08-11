@@ -172,7 +172,6 @@ impl WeaponDefinition {
             && self.max_distance > 0.0
             && self.max_distance <= MAX_WEAPON_RANGE
             && self.cooldown_ticks <= MAX_WEAPON_COOLDOWN_TICKS
-            && self.ammunition_cost > 0
             && self.ammunition_cost <= MAX_ITEM_QUANTITY
             && vec3_is_finite(self.muzzle_offset)
             && self.muzzle_offset.x.abs() <= MAX_WEAPON_MUZZLE_OFFSET

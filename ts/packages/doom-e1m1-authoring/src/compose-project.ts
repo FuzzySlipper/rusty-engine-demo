@@ -299,6 +299,25 @@ export function buildDoomE1M1Project(
       kind: { kind: "healthSupply", restoreHealth: 25 },
     },
     {
+      id: "weapon/fist",
+      maxQuantity: 1,
+      kind: {
+        kind: "weapon",
+        // The closed weapon schema retains an ammunition identity for every
+        // attack, while zero cost makes this portable melee action resource-free.
+        ammunition: "ammo/bullets",
+        attackMode: "hitscan",
+        repeatWhileHeld: true,
+        damage: 2,
+        damageRolls: 10,
+        maxDistance: 4,
+        cooldownTicks: 38,
+        ammunitionCost: 0,
+        muzzleOffset: [0, 0, 0],
+        presentation: "fist",
+      },
+    },
+    {
       id: "weapon/pistol",
       maxQuantity: 1,
       kind: {
@@ -393,17 +412,18 @@ export function buildDoomE1M1Project(
         mouseLook: "pointer",
         primaryFire: "Mouse0",
         jump: "Space",
-        selectWeapon: ["Digit1", "Digit2"],
+        selectWeapon: ["Digit1", "Digit2", "Digit3"],
       },
     },
     inventory: {
       capacitySlots: 10,
       startingStacks: [
+        { item: "weapon/fist", quantity: 1 },
         { item: "weapon/pistol", quantity: 1 },
         { item: "ammo/bullets", quantity: 50 },
       ],
       initiallyEquippedWeapon: "weapon/pistol",
-      weaponSlots: ["weapon/pistol", "weapon/shotgun"],
+      weaponSlots: ["weapon/pistol", "weapon/shotgun", "weapon/fist"],
     },
   });
 

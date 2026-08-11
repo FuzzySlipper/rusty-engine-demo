@@ -197,6 +197,12 @@ export async function mountLoadingBayGame(
     globalThis.addEventListener("mouseup", onMouseUp, {
       signal: controller.signal,
     });
+    globalThis.addEventListener("blur", onInputLoss, {
+      signal: controller.signal,
+    });
+    document.addEventListener("pointerlockchange", onPointerLockChange, {
+      signal: controller.signal,
+    });
   } catch (cause) {
     controller.abort();
     session.neutralizeInput();
@@ -337,7 +343,7 @@ export async function mountLoadingBayGame(
     }
     if (action?.kind === "selectWeaponSlot") {
       void session
-        .sendEdge({ kind: "selectWeaponSlot", slot: action.slot + 1 })
+        .sendEdge({ kind: "selectWeaponSlot", slot: action.slot })
         .catch(record);
     }
   }
@@ -403,6 +409,16 @@ export async function mountLoadingBayGame(
         primaryFireHeld,
       })
       .catch(record);
+  }
+
+  function onInputLoss(): void {
+    heldMovement.clear(false);
+    stopPrimaryFire();
+    session.neutralizeInput();
+  }
+
+  function onPointerLockChange(): void {
+    if (document.pointerLockElement === null) onInputLoss();
   }
 
   function stopPrimaryFire(): void {

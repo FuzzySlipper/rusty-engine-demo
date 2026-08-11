@@ -265,6 +265,9 @@ const keyIdentity = {
   KeyS: { key: "s", virtualKeyCode: 83 },
   KeyD: { key: "d", virtualKeyCode: 68 },
   KeyE: { key: "e", virtualKeyCode: 69 },
+  Digit1: { key: "1", virtualKeyCode: 49 },
+  Digit2: { key: "2", virtualKeyCode: 50 },
+  Digit3: { key: "3", virtualKeyCode: 51 },
   Space: { key: " ", virtualKeyCode: 32 },
 };
 
@@ -405,6 +408,76 @@ async function proveFocusedHeldPistolFire(client, addr) {
     shots: before.weapon.ammoRemaining - after.weapon.ammoRemaining,
     ammoBefore: before.weapon.ammoRemaining,
     ammoAfter: after.weapon.ammoRemaining,
+  };
+}
+
+async function proveFocusedWeaponSelection(client, addr) {
+  await dispatchKey(client, "keyDown", "Digit3");
+  await dispatchKey(client, "keyUp", "Digit3");
+  const fist = await waitForAuthoritativeState(
+    addr,
+    "physical Digit3 selects the owned fist slot",
+    (candidate) =>
+      candidate.weapon?.item === "weapon/fist" &&
+      candidate.weapon.ammoRemaining === 0 &&
+      candidate.weapon.ammoCapacity === 0,
+  );
+  await dispatchKey(client, "keyDown", "Digit1");
+  await dispatchKey(client, "keyUp", "Digit1");
+  const pistol = await waitForAuthoritativeState(
+    addr,
+    "physical Digit1 selects the pistol slot",
+    (candidate) => candidate.weapon?.item === "weapon/pistol",
+  );
+  return { fistTick: fist.tick, pistolTick: pistol.tick };
+}
+
+async function proveFocusedFireStopsOnBlur(client, addr) {
+  await delay(500);
+  const before = await fetchAuthoritativeState(addr);
+  const canvas = await cdpEvaluate(
+    client,
+    `(() => {
+      const canvas = document.querySelector('canvas');
+      if (!canvas) return null;
+      const bounds = canvas.getBoundingClientRect();
+      return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+    })()`,
+  );
+  if (canvas === null) throw new Error("Engine canvas is unavailable for blur proof");
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    x: canvas.x,
+    y: canvas.y,
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+  });
+  const fired = await waitForAuthoritativeState(
+    addr,
+    "Mouse0 fires once before focus loss",
+    (candidate) => candidate.weapon.ammoRemaining === before.weapon.ammoRemaining - 1,
+  );
+  await cdpEvaluate(client, `globalThis.dispatchEvent(new Event('blur'))`);
+  await delay(750);
+  const stopped = await fetchAuthoritativeState(addr);
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    x: canvas.x,
+    y: canvas.y,
+    button: "left",
+    buttons: 0,
+    clickCount: 1,
+  });
+  if (stopped.weapon.ammoRemaining !== fired.weapon.ammoRemaining) {
+    throw new Error(
+      `pistol kept firing after blur without MouseUp: ${JSON.stringify({ before: before.weapon.ammoRemaining, fired: fired.weapon.ammoRemaining, stopped: stopped.weapon.ammoRemaining })}`,
+    );
+  }
+  return {
+    ammoBefore: before.weapon.ammoRemaining,
+    ammoAfterShot: fired.weapon.ammoRemaining,
+    ammoAfterBlur: stopped.weapon.ammoRemaining,
   };
 }
 
@@ -1231,15 +1304,25 @@ async function main() {
         );
       } else if (focused) {
         const inputProof = await proveFocusedHeldMovement(cdpClient, addr);
+        const selectionProof = await proveFocusedWeaponSelection(cdpClient, addr);
         const fireProof = await proveFocusedHeldPistolFire(cdpClient, addr);
+        const blurProof = await proveFocusedFireStopsOnBlur(cdpClient, addr);
         headless.playthrough = { status: "skipped", reason: "focused smoke" };
         headless.input = inputProof;
+        headless.selection = selectionProof;
         headless.fire = fireProof;
+        headless.blur = blurProof;
         checks.push(
           `single keydown sustained ${inputProof.heldDistance.toFixed(2)} world units without mouse motion and keyup stopped within ${inputProof.stoppedDistance.toFixed(2)} units`,
         );
         checks.push(
           `held Mouse0 fired pistol ${fireProof.shots} times and reduced authoritative bullets ${fireProof.ammoBefore}->${fireProof.ammoAfter}`,
+        );
+        checks.push(
+          `physical Digit3 selected fist at tick ${selectionProof.fistTick} and Digit1 restored pistol at tick ${selectionProof.pistolTick}`,
+        );
+        checks.push(
+          `blur without MouseUp stopped held fire after bullets ${blurProof.ammoBefore}->${blurProof.ammoAfterShot}->${blurProof.ammoAfterBlur}`,
         );
         checks.push("full E1M1 traversal reserved for pnpm run certify:e1m1");
       }

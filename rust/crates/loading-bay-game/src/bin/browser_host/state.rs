@@ -545,21 +545,29 @@ pub(super) fn browser_dynamic_state(
         damage: weapon.definition.damage,
         ammunition: weapon.definition.ammunition.as_str().to_owned(),
         ammunition_cost: weapon.definition.ammunition_cost,
-        ammo_remaining: runtime
-            .session()
-            .inventory(ACTOR)
-            .and_then(|inventory| {
-                inventory
-                    .stacks
-                    .into_iter()
-                    .find(|stack| stack.item == weapon.definition.ammunition)
-                    .map(|stack| stack.quantity)
-            })
-            .unwrap_or(0),
-        ammo_capacity: runtime
-            .session()
-            .item_definition(&weapon.definition.ammunition)
-            .map_or(0, |definition| definition.max_quantity),
+        ammo_remaining: if weapon.definition.ammunition_cost == 0 {
+            0
+        } else {
+            runtime
+                .session()
+                .inventory(ACTOR)
+                .and_then(|inventory| {
+                    inventory
+                        .stacks
+                        .into_iter()
+                        .find(|stack| stack.item == weapon.definition.ammunition)
+                        .map(|stack| stack.quantity)
+                })
+                .unwrap_or(0)
+        },
+        ammo_capacity: if weapon.definition.ammunition_cost == 0 {
+            0
+        } else {
+            runtime
+                .session()
+                .item_definition(&weapon.definition.ammunition)
+                .map_or(0, |definition| definition.max_quantity)
+        },
         ready_at_tick: weapon.state.ready_at_tick.raw(),
     };
     let inventory_state =
@@ -596,11 +604,15 @@ pub(super) fn browser_dynamic_state(
                             owned: inventory.stacks.iter().any(|stack| stack.item == *item),
                             selected: inventory.equipped_weapon.as_ref() == Some(item),
                             ammunition: weapon.ammunition.as_str().to_owned(),
-                            ammunition_quantity: inventory
-                                .stacks
-                                .iter()
-                                .find(|stack| stack.item == weapon.ammunition)
-                                .map_or(0, |stack| stack.quantity),
+                            ammunition_quantity: if weapon.ammunition_cost == 0 {
+                                0
+                            } else {
+                                inventory
+                                    .stacks
+                                    .iter()
+                                    .find(|stack| stack.item == weapon.ammunition)
+                                    .map_or(0, |stack| stack.quantity)
+                            },
                         })
                     })
                     .collect(),

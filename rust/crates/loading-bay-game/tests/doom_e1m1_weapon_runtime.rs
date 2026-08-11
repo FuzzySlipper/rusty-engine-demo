@@ -24,26 +24,33 @@ fn authored_e1m1_has_only_the_single_player_pistol_shotgun_and_ammunition_ledger
             .iter()
             .map(|(id, _)| id.as_str())
             .collect::<Vec<_>>(),
-        ["weapon/pistol", "weapon/shotgun"]
+        ["weapon/fist", "weapon/pistol", "weapon/shotgun"]
     );
-    assert_eq!(weapons[0].1.ammunition.as_str(), "ammo/bullets");
+    assert_eq!(weapons[0].1.ammunition_cost, 0);
     assert_eq!(weapons[0].1.attack_mode, WeaponAttackMode::Hitscan);
     assert!(weapons[0].1.repeat_while_held);
-    assert_eq!(weapons[0].1.damage, 5);
-    assert_eq!(weapons[0].1.damage_rolls, 3);
-    assert_eq!(weapons[0].1.cooldown_ticks, 24);
-    assert_eq!(weapons[1].1.ammunition.as_str(), "ammo/shells");
+    assert_eq!(weapons[0].1.damage, 2);
+    assert_eq!(weapons[0].1.damage_rolls, 10);
+    assert_eq!(weapons[0].1.max_distance, 4.0);
+    assert_eq!(weapons[0].1.cooldown_ticks, 38);
+    assert_eq!(weapons[1].1.ammunition.as_str(), "ammo/bullets");
+    assert_eq!(weapons[1].1.attack_mode, WeaponAttackMode::Hitscan);
+    assert!(weapons[1].1.repeat_while_held);
+    assert_eq!(weapons[1].1.damage, 5);
+    assert_eq!(weapons[1].1.damage_rolls, 3);
+    assert_eq!(weapons[1].1.cooldown_ticks, 24);
+    assert_eq!(weapons[2].1.ammunition.as_str(), "ammo/shells");
     assert_eq!(
-        weapons[1].1.attack_mode,
+        weapons[2].1.attack_mode,
         WeaponAttackMode::Spread {
             pellet_count: 7,
             spread_degrees: 5.625,
         }
     );
-    assert!(weapons[1].1.repeat_while_held);
-    assert_eq!(weapons[1].1.damage, 5);
-    assert_eq!(weapons[1].1.damage_rolls, 3);
-    assert_eq!(weapons[1].1.cooldown_ticks, 63);
+    assert!(weapons[2].1.repeat_while_held);
+    assert_eq!(weapons[2].1.damage, 5);
+    assert_eq!(weapons[2].1.damage_rolls, 3);
+    assert_eq!(weapons[2].1.cooldown_ticks, 63);
 
     let inventory = session.inventory(PLAYER).expect("player inventory");
     assert_eq!(
@@ -52,7 +59,11 @@ fn authored_e1m1_has_only_the_single_player_pistol_shotgun_and_ammunition_ledger
             .iter()
             .map(|stack| (stack.item.as_str(), stack.quantity))
             .collect::<Vec<_>>(),
-        [("weapon/pistol", 1), ("ammo/bullets", 50)]
+        [
+            ("weapon/fist", 1),
+            ("weapon/pistol", 1),
+            ("ammo/bullets", 50)
+        ]
     );
     assert_eq!(
         inventory
@@ -60,7 +71,11 @@ fn authored_e1m1_has_only_the_single_player_pistol_shotgun_and_ammunition_ledger
             .iter()
             .map(ItemDefinitionId::as_str)
             .collect::<Vec<_>>(),
-        ["weapon/pistol", "weapon/shotgun"]
+        ["weapon/pistol", "weapon/shotgun", "weapon/fist"]
+    );
+    assert_eq!(
+        session.weapon(PLAYER).unwrap().item.as_str(),
+        "weapon/pistol"
     );
 
     let pickups = session.pickups().collect::<Vec<_>>();
@@ -91,6 +106,64 @@ fn authored_e1m1_has_only_the_single_player_pistol_shotgun_and_ammunition_ledger
         pickup.config.item.as_str(),
         "weapon/rivet-carbine" | "weapon/kinetic-launcher"
     )));
+}
+
+#[test]
+fn authored_fist_is_selectable_and_damages_at_zero_ammunition_cost() {
+    let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
+    for entity in entities.iter_mut() {
+        entity.as_object_mut().unwrap().remove("enemyCombat");
+        entity.as_object_mut().unwrap().remove("navigation");
+    }
+    entities
+        .iter_mut()
+        .find(|entity| entity["id"] == 2)
+        .unwrap()["translation"] = serde_json::json!([114.0, 9.25, 80.0]);
+
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
+    let generation = game_loop.start_connection().connection_generation;
+    game_loop
+        .submit_edge_command(GameLoopEdgeCommand {
+            connection_generation: generation,
+            sequence: 1,
+            command: GameLoopEdgeCommandKind::SelectWeaponSlot { slot: 2 },
+        })
+        .unwrap();
+    game_loop.run_fixed_tick().unwrap();
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .weapon(PLAYER)
+            .unwrap()
+            .item
+            .as_str(),
+        "weapon/fist"
+    );
+
+    game_loop.submit_input(input(generation, 2, true)).unwrap();
+    let tick = game_loop.run_fixed_tick().unwrap();
+    assert!(
+        tick.facts.iter().any(|fact| matches!(
+            fact,
+            GameLoopFact::Combat(CombatFact::AttackHit { target, .. })
+                if *target == EntityId::new(2)
+        )),
+        "fist facts: {:#?}",
+        tick.facts
+    );
+    assert!(
+        game_loop
+            .runtime()
+            .session()
+            .health(EntityId::new(2))
+            .unwrap()
+            .current
+            < 60
+    );
+    assert_eq!(quantity(&game_loop, "ammo/bullets"), 50);
 }
 
 #[test]
@@ -126,7 +199,12 @@ fn held_semantic_fire_obeys_e1m1_cadence_and_dry_fire_without_extra_mutation() {
         .iter_mut()
         .find(|entity| entity["id"] == PLAYER.raw())
         .unwrap();
-    player["inventory"]["startingStacks"][1]["quantity"] = 1.into();
+    player["inventory"]["startingStacks"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|stack| stack["item"] == "ammo/bullets")
+        .unwrap()["quantity"] = 1.into();
     let mut dry = LoadingBayGameLoop::new(
         GameRuntime::from_stored_project(&dry_project.to_string()).unwrap(),
         PLAYER,
