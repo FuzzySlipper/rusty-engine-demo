@@ -14,6 +14,7 @@ use rusty_engine::core_ids::EntityId;
 
 const PLAYER: EntityId = EntityId::new(1);
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
+const DOOM_PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 
 fn game_loop() -> LoadingBayGameLoop {
     LoadingBayGameLoop::new(
@@ -60,6 +61,111 @@ fn edge(generation: u64, sequence: u64, command: GameLoopEdgeCommandKind) -> Gam
         sequence,
         command,
     }
+}
+
+#[test]
+fn authored_jump_edge_is_consumed_once_before_fixed_player_motion() {
+    let mut game_loop = LoadingBayGameLoop::new(
+        GameRuntime::from_stored_project(DOOM_PROJECT).expect("admit Doom traversal project"),
+        PLAYER,
+    )
+    .unwrap();
+    let generation = game_loop.start_connection().connection_generation;
+    game_loop
+        .submit_edge_command(edge(generation, 1, GameLoopEdgeCommandKind::Jump))
+        .unwrap();
+
+    let tick = game_loop
+        .advance_elapsed(FIXED_STEP_DURATION)
+        .unwrap()
+        .fixed_ticks
+        .into_iter()
+        .next()
+        .expect("one fixed tick");
+
+    assert!(tick.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::PlayerControl(loading_bay_game::PlayerControlFact::Jumped { .. })
+    )));
+    let state = game_loop
+        .runtime()
+        .session()
+        .player_controller(PLAYER)
+        .unwrap()
+        .state;
+    assert!(
+        !state.grounded,
+        "jump ended grounded at position {:?} with state {:?}",
+        player_position(&game_loop),
+        state
+    );
+    assert!(state.vertical_velocity > 0.0);
+
+    let mut paused = LoadingBayGameLoop::new(
+        GameRuntime::from_stored_project(DOOM_PROJECT).unwrap(),
+        PLAYER,
+    )
+    .unwrap();
+    let generation = paused.start_connection().connection_generation;
+    paused
+        .submit_edge_command(edge(
+            generation,
+            1,
+            GameLoopEdgeCommandKind::SetPaused { paused: true },
+        ))
+        .unwrap();
+    paused
+        .submit_edge_command(edge(generation, 2, GameLoopEdgeCommandKind::Jump))
+        .unwrap();
+    let paused_tick = paused
+        .advance_elapsed(FIXED_STEP_DURATION)
+        .unwrap()
+        .fixed_ticks
+        .into_iter()
+        .next()
+        .unwrap();
+    assert!(!paused_tick.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::PlayerControl(loading_bay_game::PlayerControlFact::Jumped { .. })
+    )));
+    assert_eq!(
+        paused
+            .runtime()
+            .session()
+            .player_controller(PLAYER)
+            .unwrap()
+            .state
+            .vertical_velocity,
+        0.0
+    );
+
+    let mut jump_then_pause = LoadingBayGameLoop::new(
+        GameRuntime::from_stored_project(DOOM_PROJECT).unwrap(),
+        PLAYER,
+    )
+    .unwrap();
+    let generation = jump_then_pause.start_connection().connection_generation;
+    jump_then_pause
+        .submit_edge_command(edge(generation, 1, GameLoopEdgeCommandKind::Jump))
+        .unwrap();
+    jump_then_pause
+        .submit_edge_command(edge(
+            generation,
+            2,
+            GameLoopEdgeCommandKind::SetPaused { paused: true },
+        ))
+        .unwrap();
+    let reverse_tick = jump_then_pause
+        .advance_elapsed(FIXED_STEP_DURATION)
+        .unwrap()
+        .fixed_ticks
+        .into_iter()
+        .next()
+        .unwrap();
+    assert!(!reverse_tick.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::PlayerControl(loading_bay_game::PlayerControlFact::Jumped { .. })
+    )));
 }
 
 #[test]

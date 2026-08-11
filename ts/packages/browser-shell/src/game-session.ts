@@ -1,6 +1,6 @@
 import type { RuntimeBrowserState } from "./projection.js";
 
-export const LOADING_BAY_PROTOCOL_VERSION = 1;
+export const LOADING_BAY_PROTOCOL_VERSION = 2;
 export const MAX_PENDING_EDGE_COMMANDS = 32;
 export const MAX_WEBSOCKET_BUFFERED_BYTES = 64 * 1024;
 export const INPUT_SEND_INTERVAL_MILLISECONDS = 1_000 / 60;
@@ -135,6 +135,7 @@ type ClientGameCommand =
       readonly kind: "setInputIntent";
     } & SessionInputIntent)
   | { readonly kind: "interact"; readonly target: number }
+  | { readonly kind: "jump" }
   | { readonly kind: "selectWeaponSlot"; readonly slot: number }
   | { readonly kind: "useItem"; readonly item: string }
   | { readonly kind: "setPaused"; readonly paused: boolean }
@@ -1343,9 +1344,7 @@ function isRuntimeApplicationContent(value: unknown): boolean {
     if (
       !isRecord(resource) ||
       typeof resource.identity !== "string" ||
-      !/^(mesh|texture)-resource\/[0-9a-f]{64}$/u.test(
-        resource.identity,
-      ) ||
+      !/^(mesh|texture)-resource\/[0-9a-f]{64}$/u.test(resource.identity) ||
       identities.has(resource.identity) ||
       typeof resource.contentHash !== "string" ||
       !/^sha256:[0-9a-f]{64}$/u.test(resource.contentHash) ||
@@ -1375,6 +1374,10 @@ function isRuntimePlayerState(value: unknown): boolean {
     isFiniteNumber(value.pitchDegrees) &&
     isFiniteNumber(value.moveStepSeconds) &&
     isFiniteNumber(value.lookDegreesPerUnit) &&
+    (value.grounded === undefined || typeof value.grounded === "boolean") &&
+    (value.verticalVelocity === undefined ||
+      isFiniteNumber(value.verticalVelocity)) &&
+    (value.eyeHeight === undefined || isFiniteNumber(value.eyeHeight)) &&
     isFiniteNumber(value.currentHealth) &&
     isFiniteNumber(value.maxHealth) &&
     isFiniteNumber(value.armor) &&
@@ -1388,6 +1391,9 @@ function isRuntimePlayerState(value: unknown): boolean {
       "mouseLook",
       "primaryFire",
     ].every((key) => typeof bindings[key] === "string") &&
+    (bindings.jump === undefined ||
+      bindings.jump === null ||
+      typeof bindings.jump === "string") &&
     Array.isArray(bindings.selectWeapon) &&
     bindings.selectWeapon.every((binding) => typeof binding === "string")
   );

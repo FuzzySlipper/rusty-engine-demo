@@ -1456,6 +1456,9 @@ fn player_fact_name(fact: &PlayerControlFact) -> &'static str {
     match fact {
         PlayerControlFact::Moved { .. } => "PlayerMoved",
         PlayerControlFact::Blocked { .. } => "PlayerBlocked",
+        PlayerControlFact::Stepped { .. } => "PlayerStepped",
+        PlayerControlFact::Jumped { .. } => "PlayerJumped",
+        PlayerControlFact::Landed { .. } => "PlayerLanded",
         PlayerControlFact::LookChanged { .. } => "PlayerLookChanged",
     }
 }

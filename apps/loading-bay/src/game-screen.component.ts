@@ -55,6 +55,7 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
     moveRight: "KeyD",
     mouseLook: "pointer",
     primaryFire: "Mouse0",
+    jump: "Space",
     selectWeapon: ["Digit1", "Digit2", "Digit3"],
   },
   connected: false,
@@ -697,6 +698,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       { action: "Strafe right", binding: bindings.moveRight },
       { action: "Look", binding: bindings.mouseLook },
       { action: "Primary fire", binding: bindings.primaryFire },
+      ...(bindings.jump ? [{ action: "Jump", binding: bindings.jump }] : []),
       ...bindings.selectWeapon.map((binding, index) => ({
         action: `Weapon slot ${String(index + 1)}`,
         binding,

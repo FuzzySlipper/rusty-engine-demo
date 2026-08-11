@@ -40,6 +40,7 @@ use crate::pickup::{
 };
 use crate::player::{
     PlayerControllerComponent, PlayerControllerConfig, PlayerControllerState, PlayerInputBindings,
+    PlayerTraversalConfig,
 };
 use crate::progression::{
     DoorAccessConfig, LevelExitComponent, LevelExitConfig, LevelExitState,
@@ -51,7 +52,7 @@ use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::{HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 19;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 20;
 const GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION: u32 = 19;
 const INVENTORY_WEAPON_SNAPSHOT_SCHEMA_VERSION: u32 = 13;
 const VITALITY_SNAPSHOT_SCHEMA_VERSION: u32 = 14;
@@ -472,9 +473,45 @@ pub struct PlayerControllerSnapshot {
     pub look_degrees_per_unit: f32,
     pub initial_yaw_degrees: f32,
     pub initial_pitch_degrees: f32,
+    #[serde(default)]
+    pub traversal: PlayerTraversalSnapshot,
     pub yaw_degrees: f32,
     pub pitch_degrees: f32,
+    #[serde(default)]
+    pub vertical_velocity: f32,
+    #[serde(default)]
+    pub grounded: bool,
+    #[serde(default)]
+    pub remaining_air_jumps: u8,
     pub bindings: PlayerInputBindingsSnapshot,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct PlayerTraversalSnapshot {
+    pub max_step_height: f32,
+    pub gravity_units_per_second_squared: f32,
+    pub jump_impulse_units_per_second: f32,
+    pub ground_probe_distance: f32,
+    pub eye_height: f32,
+    pub manual_jump_enabled: bool,
+    #[serde(default)]
+    pub max_air_jumps: u8,
+}
+
+impl Default for PlayerTraversalSnapshot {
+    fn default() -> Self {
+        let defaults = PlayerTraversalConfig::default();
+        Self {
+            max_step_height: defaults.max_step_height,
+            gravity_units_per_second_squared: defaults.gravity_units_per_second_squared,
+            jump_impulse_units_per_second: defaults.jump_impulse_units_per_second,
+            ground_probe_distance: defaults.ground_probe_distance,
+            eye_height: defaults.eye_height,
+            manual_jump_enabled: defaults.manual_jump_enabled,
+            max_air_jumps: defaults.max_air_jumps,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -486,6 +523,8 @@ pub struct PlayerInputBindingsSnapshot {
     pub move_right: String,
     pub mouse_look: String,
     pub primary_fire: String,
+    #[serde(default)]
+    pub jump: Option<String>,
     #[serde(default)]
     pub select_weapon: Vec<String>,
 }
@@ -1157,8 +1196,26 @@ impl GameRuntime {
                     look_degrees_per_unit: component.config.look_degrees_per_unit,
                     initial_yaw_degrees: component.config.initial_yaw_degrees,
                     initial_pitch_degrees: component.config.initial_pitch_degrees,
+                    traversal: PlayerTraversalSnapshot {
+                        max_step_height: component.config.traversal.max_step_height,
+                        gravity_units_per_second_squared: component
+                            .config
+                            .traversal
+                            .gravity_units_per_second_squared,
+                        jump_impulse_units_per_second: component
+                            .config
+                            .traversal
+                            .jump_impulse_units_per_second,
+                        ground_probe_distance: component.config.traversal.ground_probe_distance,
+                        eye_height: component.config.traversal.eye_height,
+                        manual_jump_enabled: component.config.traversal.manual_jump_enabled,
+                        max_air_jumps: component.config.traversal.max_air_jumps,
+                    },
                     yaw_degrees: component.state.yaw_degrees,
                     pitch_degrees: component.state.pitch_degrees,
+                    vertical_velocity: component.state.vertical_velocity,
+                    grounded: component.state.grounded,
+                    remaining_air_jumps: component.state.remaining_air_jumps,
                     bindings: PlayerInputBindingsSnapshot {
                         move_forward: component.config.bindings.move_forward.clone(),
                         move_backward: component.config.bindings.move_backward.clone(),
@@ -1166,6 +1223,7 @@ impl GameRuntime {
                         move_right: component.config.bindings.move_right.clone(),
                         mouse_look: component.config.bindings.mouse_look.clone(),
                         primary_fire: component.config.bindings.primary_fire.clone(),
+                        jump: component.config.bindings.jump.clone(),
                         select_weapon: component.config.bindings.select_weapon.clone(),
                     },
                 })
@@ -2185,15 +2243,32 @@ impl GameRuntime {
                 look_degrees_per_unit: controller.look_degrees_per_unit,
                 initial_yaw_degrees: controller.initial_yaw_degrees,
                 initial_pitch_degrees: controller.initial_pitch_degrees,
-                bindings: PlayerInputBindings::new(
-                    controller.bindings.move_forward,
-                    controller.bindings.move_backward,
-                    controller.bindings.move_left,
-                    controller.bindings.move_right,
-                    controller.bindings.mouse_look,
-                    controller.bindings.primary_fire,
-                    controller.bindings.select_weapon,
-                ),
+                traversal: PlayerTraversalConfig {
+                    max_step_height: controller.traversal.max_step_height,
+                    gravity_units_per_second_squared: controller
+                        .traversal
+                        .gravity_units_per_second_squared,
+                    jump_impulse_units_per_second: controller
+                        .traversal
+                        .jump_impulse_units_per_second,
+                    ground_probe_distance: controller.traversal.ground_probe_distance,
+                    eye_height: controller.traversal.eye_height,
+                    manual_jump_enabled: controller.traversal.manual_jump_enabled,
+                    max_air_jumps: controller.traversal.max_air_jumps,
+                },
+                bindings: {
+                    let mut bindings = PlayerInputBindings::new(
+                        controller.bindings.move_forward,
+                        controller.bindings.move_backward,
+                        controller.bindings.move_left,
+                        controller.bindings.move_right,
+                        controller.bindings.mouse_look,
+                        controller.bindings.primary_fire,
+                        controller.bindings.select_weapon,
+                    );
+                    bindings.jump = controller.bindings.jump;
+                    bindings
+                },
             };
             if !config.is_valid()
                 || !controller.yaw_degrees.is_finite()
@@ -2211,6 +2286,9 @@ impl GameRuntime {
                     state: PlayerControllerState {
                         yaw_degrees: controller.yaw_degrees,
                         pitch_degrees: controller.pitch_degrees,
+                        vertical_velocity: controller.vertical_velocity,
+                        grounded: controller.grounded,
+                        remaining_air_jumps: controller.remaining_air_jumps,
                     },
                 },
             );

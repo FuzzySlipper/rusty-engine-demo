@@ -393,6 +393,9 @@ impl GameSession {
                         state: PlayerControllerState {
                             yaw_degrees: config.initial_yaw_degrees,
                             pitch_degrees: config.initial_pitch_degrees,
+                            vertical_velocity: 0.0,
+                            grounded: false,
+                            remaining_air_jumps: config.traversal.max_air_jumps,
                         },
                     },
                 );

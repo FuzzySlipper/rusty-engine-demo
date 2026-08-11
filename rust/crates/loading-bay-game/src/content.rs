@@ -133,7 +133,37 @@ struct AuthoredPlayerController {
     look_degrees_per_unit: f32,
     initial_yaw_degrees: f32,
     initial_pitch_degrees: f32,
+    #[serde(default)]
+    traversal: AuthoredPlayerTraversal,
     bindings: AuthoredPlayerInputBindings,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct AuthoredPlayerTraversal {
+    max_step_height: f32,
+    gravity_units_per_second_squared: f32,
+    jump_impulse_units_per_second: f32,
+    ground_probe_distance: f32,
+    eye_height: f32,
+    manual_jump_enabled: bool,
+    #[serde(default)]
+    max_air_jumps: u8,
+}
+
+impl Default for AuthoredPlayerTraversal {
+    fn default() -> Self {
+        let defaults = crate::PlayerTraversalConfig::default();
+        Self {
+            max_step_height: defaults.max_step_height,
+            gravity_units_per_second_squared: defaults.gravity_units_per_second_squared,
+            jump_impulse_units_per_second: defaults.jump_impulse_units_per_second,
+            ground_probe_distance: defaults.ground_probe_distance,
+            eye_height: defaults.eye_height,
+            manual_jump_enabled: defaults.manual_jump_enabled,
+            max_air_jumps: defaults.max_air_jumps,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -155,6 +185,8 @@ struct AuthoredPlayerInputBindings {
     move_right: String,
     mouse_look: String,
     primary_fire: String,
+    #[serde(default)]
+    jump: Option<String>,
 }
 
 #[derive(Debug)]
@@ -322,15 +354,30 @@ fn authored_definition(
             look_degrees_per_unit: controller.look_degrees_per_unit,
             initial_yaw_degrees: controller.initial_yaw_degrees,
             initial_pitch_degrees: controller.initial_pitch_degrees,
-            bindings: PlayerInputBindings::new(
-                controller.bindings.move_forward,
-                controller.bindings.move_backward,
-                controller.bindings.move_left,
-                controller.bindings.move_right,
-                controller.bindings.mouse_look,
-                controller.bindings.primary_fire,
-                [],
-            ),
+            traversal: crate::PlayerTraversalConfig {
+                max_step_height: controller.traversal.max_step_height,
+                gravity_units_per_second_squared: controller
+                    .traversal
+                    .gravity_units_per_second_squared,
+                jump_impulse_units_per_second: controller.traversal.jump_impulse_units_per_second,
+                ground_probe_distance: controller.traversal.ground_probe_distance,
+                eye_height: controller.traversal.eye_height,
+                manual_jump_enabled: controller.traversal.manual_jump_enabled,
+                max_air_jumps: controller.traversal.max_air_jumps,
+            },
+            bindings: {
+                let mut bindings = PlayerInputBindings::new(
+                    controller.bindings.move_forward,
+                    controller.bindings.move_backward,
+                    controller.bindings.move_left,
+                    controller.bindings.move_right,
+                    controller.bindings.mouse_look,
+                    controller.bindings.primary_fire,
+                    [],
+                );
+                bindings.jump = controller.bindings.jump;
+                bindings
+            },
         });
     }
     if let Some(weapon) = authored.weapon {

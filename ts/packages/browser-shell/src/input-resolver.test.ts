@@ -14,6 +14,7 @@ const bindings: RuntimePlayerBindings = {
   moveLeft: "KeyA",
   moveRight: "KeyD",
   primaryFire: "Mouse0",
+  jump: "Space",
   selectWeapon: ["Digit1", "Digit2", "Digit3"],
 };
 
@@ -32,6 +33,10 @@ void test("authored movement bindings resolve without UI-owned movement policy",
     slot: 2,
   });
   assert.equal(resolveKeyboardAction("Digit4", bindings), null);
+});
+
+test("keyboard resolver emits the authored semantic jump action", () => {
+  assert.deepEqual(resolveKeyboardAction("Space", bindings), { kind: "jump" });
 });
 
 void test("pointer deltas preserve the corrected first-person look directions", () => {

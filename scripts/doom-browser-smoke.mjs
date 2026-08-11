@@ -461,7 +461,7 @@ async function main() {
         "-H",
         "Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==",
         "-H",
-        "Sec-WebSocket-Protocol: loading-bay.v1",
+        "Sec-WebSocket-Protocol: loading-bay.v2",
         `http://${addr}/api/session`,
       ],
       { timeout: 5000 },
@@ -470,7 +470,7 @@ async function main() {
     if (!curlOut.includes("101 Switching Protocols")) {
       throw new Error(`websocket 101 failed: ${curlOut.slice(0, 500)}`);
     }
-    checks.push("websocket upgraded with loading-bay.v1");
+    checks.push("websocket upgraded with loading-bay.v2");
     if (!curlOut.includes("sha256:") && !curlOut.includes("doom-e1m1")) {
       throw new Error(
         `websocket bootstrap omitted Doom revision: ${curlOut.slice(0, 2000)}`,

@@ -168,7 +168,7 @@ const metrics = {
 
 test("full session bootstrap composes dynamic state with immutable resources", () => {
   const envelope: ServerUpdateEnvelope = {
-    protocolVersion: 1,
+    protocolVersion: 2,
     sessionId: "loading-bay-1",
     connectionGeneration: 1,
     serverTick: 1,
@@ -189,7 +189,7 @@ test("full session bootstrap composes dynamic state with immutable resources", (
 
 test("legacy projects preserve an absent Rust inventory through browser composition", () => {
   const envelope: ServerUpdateEnvelope = {
-    protocolVersion: 1,
+    protocolVersion: 2,
     sessionId: "legacy-project-1",
     connectionGeneration: 1,
     serverTick: 1,
@@ -221,7 +221,7 @@ test("dynamic projection rejects malformed hazard authority at the browser bound
   assert.throws(
     () =>
       applyServerUpdate(null, {
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 1,
@@ -240,7 +240,7 @@ test("dynamic projection rejects malformed hazard authority at the browser bound
 
 test("dynamic deltas retain cold resources and reject a sequence gap", () => {
   const full: ServerUpdateEnvelope = {
-    protocolVersion: 1,
+    protocolVersion: 2,
     sessionId: "loading-bay-1",
     connectionGeneration: 1,
     serverTick: 1,
@@ -254,7 +254,7 @@ test("dynamic deltas retain cold resources and reject a sequence gap", () => {
   };
   const initial = applyServerUpdate(null, full);
   const delta: ServerUpdateEnvelope = {
-    protocolVersion: 1,
+    protocolVersion: 2,
     sessionId: "loading-bay-1",
     connectionGeneration: 1,
     serverTick: 2,
@@ -332,7 +332,7 @@ test("dynamic deltas patch only changed keyed collection members", () => {
     },
   ];
   const initial = applyServerUpdate(null, {
-    protocolVersion: 1,
+    protocolVersion: 2,
     sessionId: "loading-bay-1",
     connectionGeneration: 1,
     serverTick: 1,
@@ -349,7 +349,7 @@ test("dynamic deltas patch only changed keyed collection members", () => {
   });
 
   const applied = applyServerUpdate(initial.baseline, {
-    protocolVersion: 1,
+    protocolVersion: 2,
     sessionId: "loading-bay-1",
     connectionGeneration: 1,
     serverTick: 2,
@@ -383,7 +383,7 @@ test("dynamic deltas patch only changed keyed collection members", () => {
   assert.throws(
     () =>
       applyServerUpdate(initial.baseline, {
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 2,
@@ -412,7 +412,7 @@ test("dynamic deltas patch only changed keyed collection members", () => {
 
 test("resource revision changes require a matching full resource payload", () => {
   const full: ServerUpdateEnvelope = {
-    protocolVersion: 1,
+    protocolVersion: 2,
     sessionId: "loading-bay-1",
     connectionGeneration: 1,
     serverTick: 1,
@@ -429,7 +429,7 @@ test("resource revision changes require a matching full resource payload", () =>
   assert.throws(
     () =>
       applyServerUpdate(initial.baseline, {
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 2,
@@ -453,7 +453,7 @@ test("resource revision changes require a matching full resource payload", () =>
 
 test("a replacement session reuses resources with the same static revision", () => {
   const initial = applyServerUpdate(null, {
-    protocolVersion: 1,
+    protocolVersion: 2,
     sessionId: "loading-bay-1",
     connectionGeneration: 1,
     serverTick: 1,
@@ -467,7 +467,7 @@ test("a replacement session reuses resources with the same static revision", () 
   });
 
   const replacement = applyServerUpdate(initial.baseline, {
-    protocolVersion: 1,
+    protocolVersion: 2,
     sessionId: "loading-bay-2",
     connectionGeneration: 2,
     serverTick: 0,
@@ -932,7 +932,7 @@ class HeldCloseSocket extends EventTarget {
       this.dispatchEvent(
         new MessageEvent("message", {
           data: JSON.stringify({
-            protocolVersion: 1,
+            protocolVersion: 2,
             sessionId: "loading-bay-held-close",
             connectionGeneration: 1,
             serverTick: 1,
@@ -968,7 +968,7 @@ class SelectionSocket extends EventTarget {
     super();
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 1,
@@ -994,7 +994,7 @@ class SelectionSocket extends EventTarget {
     });
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 2,
@@ -1073,7 +1073,7 @@ class HealthFullRejectionSocket extends EventTarget {
     super();
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 1,
@@ -1099,7 +1099,7 @@ class HealthFullRejectionSocket extends EventTarget {
     });
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 2,
@@ -1154,7 +1154,7 @@ class InputDiscardSocket extends EventTarget {
       this.dispatchEvent(
         new MessageEvent("message", {
           data: JSON.stringify({
-            protocolVersion: 1,
+            protocolVersion: 2,
             sessionId: "loading-bay-1",
             connectionGeneration: 1,
             serverTick: 1,
@@ -1198,7 +1198,7 @@ class ResyncRecoverySocket extends EventTarget {
     super();
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 1,
@@ -1223,7 +1223,7 @@ class ResyncRecoverySocket extends EventTarget {
     if (envelope.command.kind === "setInputIntent") {
       queueMicrotask(() => {
         this.#emit({
-          protocolVersion: 1,
+          protocolVersion: 2,
           sessionId: "loading-bay-1",
           connectionGeneration: 1,
           serverTick: 3,
@@ -1252,7 +1252,7 @@ class ResyncRecoverySocket extends EventTarget {
       assert.equal(envelope.requestFullState, true);
       queueMicrotask(() => {
         this.#emit({
-          protocolVersion: 1,
+          protocolVersion: 2,
           sessionId: "loading-bay-1",
           connectionGeneration: 1,
           serverTick: 4,
@@ -1281,7 +1281,7 @@ class ResyncRecoverySocket extends EventTarget {
     assert.equal(envelope.command.kind, "setPaused");
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 5,
@@ -1329,7 +1329,7 @@ class RestartRejectionSocket extends EventTarget {
     super();
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 1,
@@ -1355,7 +1355,7 @@ class RestartRejectionSocket extends EventTarget {
     if (this.sentRestartCount === 1) {
       queueMicrotask(() => {
         this.#emit({
-          protocolVersion: 1,
+          protocolVersion: 2,
           sessionId: "loading-bay-1",
           connectionGeneration: 1,
           serverTick: 2,
@@ -1390,7 +1390,7 @@ class RestartRejectionSocket extends EventTarget {
 
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-2",
         connectionGeneration: 2,
         serverTick: 0,
@@ -1413,7 +1413,7 @@ class RestartRejectionSocket extends EventTarget {
       });
       queueMicrotask(() => {
         this.#emit({
-          protocolVersion: 1,
+          protocolVersion: 2,
           sessionId: "loading-bay-2",
           commandSequence: command.sequence + 1,
           acknowledgedCommandSequence: 0,
@@ -1446,7 +1446,7 @@ class LoadReplacementSocket extends EventTarget {
     super();
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 1,
@@ -1477,7 +1477,7 @@ class LoadReplacementSocket extends EventTarget {
     });
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-2",
         connectionGeneration: 2,
         serverTick: 37,
@@ -1524,7 +1524,7 @@ class SaveRejectionSocket extends EventTarget {
     super();
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 1,
@@ -1556,7 +1556,7 @@ class SaveRejectionSocket extends EventTarget {
       assert.equal(envelope.command.kind, "loadGame");
       queueMicrotask(() => {
         this.#emit({
-          protocolVersion: 1,
+          protocolVersion: 2,
           sessionId: "loading-bay-1",
           commandSequence: envelope.sequence,
           acknowledgedCommandSequence: 0,
@@ -1573,7 +1573,7 @@ class SaveRejectionSocket extends EventTarget {
       assert.equal(envelope.command.kind, "saveGame");
       queueMicrotask(() => {
         this.#emit({
-          protocolVersion: 1,
+          protocolVersion: 2,
           sessionId: "loading-bay-1",
           connectionGeneration: 1,
           serverTick: 2,
@@ -1608,7 +1608,7 @@ class SaveRejectionSocket extends EventTarget {
     assert.equal(envelope.command.kind, "setPaused");
     queueMicrotask(() => {
       this.#emit({
-        protocolVersion: 1,
+        protocolVersion: 2,
         sessionId: "loading-bay-1",
         connectionGeneration: 1,
         serverTick: 3,

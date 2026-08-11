@@ -28,7 +28,7 @@ trade dress.
 | Renderer             | Loading Bay Rust projects renderer-neutral content, runtime state, camera, and presentation through the complete Engine facade. The Engine application host owns the retained surface, concrete backend, resource realization, lifecycle, and only render scheduler; its bounded camera-relative `viewmodel` layer composes after world depth.                                                                                                                                                                                                                                                                                                | No private renderer substitute exists; later work may add assets through the same renderer-neutral retained mechanisms. |
 | Browser presentation | The Angular/Nx shell provides a working main menu, session-bound Continue flow, authoritative HUD/hotbar, live inventory, Rust pause, save/load, host settings, visible typed rejections, and responsive UI inside the Engine-owned application surface. Three original primitive weapon silhouettes, bob, recoil, and muzzle flash are disposable descriptor state derived from accepted Rust projection/facts. Its diagnostic drawer reports renderer cadence and backend submission separately.                                                                                                                                            | Presentation can add disposable polish through typed projection, but cannot retain live gameplay authority.             |
 | Content              | TypeScript composes immutable schema-19 project JSON for the complete original Loading Bay route and Relay Annex variation. Responsible objects own vitality, hazards, weapons, keys/doors/switches/secrets/exits, concrete melee/ranged enemy combat configuration, bounded encounter activation, and defeat-drop relationships. Rust alone owns all live quantities, progression, combat, damage, death, drops, and mutation facts. Legacy schemas reject future behavior fields before migration.                                                                                                                                          | New level arrangements stay in immutable composition unless they require a genuinely new game-owned semantic.           |
-| Live persistence     | `GameSnapshot` schema 19 round-trips the Engine component store for canonical mechanics plus collision, doors, switches, enemy combat posture/memory/cooldowns, encounter activation, defeat-drop state, hazards, navigation, controllers, explicit weapon policy/cooldowns, item definitions, checked health/inventory projections, pickups, progression, schedules, and tick. Schema 10–18 saves are migrated into the canonical component store; schema-19 projections must exactly agree with it. The bounded save store persists compatible snapshots and metadata; `ProjectStore` separately persists authored project content.         | Connections, derived routes/queries, static render resources, and presentation state are deliberately not persisted.    |
+| Live persistence     | `GameSnapshot` schema 20 round-trips the Engine component store for canonical mechanics plus collision, doors, switches, enemy combat posture/memory/cooldowns, encounter activation, defeat-drop state, hazards, navigation, controllers, grounded traversal policy/state, explicit weapon policy/cooldowns, item definitions, checked health/inventory projections, pickups, progression, schedules, and tick. Schema 10–19 saves are migrated into the canonical component store; schema-20 projections must exactly agree with it. The bounded save store persists compatible snapshots and metadata; `ProjectStore` separately persists authored project content. | Connections, derived routes/queries, static render resources, and presentation state are deliberately not persisted. |
 | Verification         | Focused Rust integration tests cover each current owner. TypeScript tests cover composition, queueing, projection, and feedback. `pnpm run verify` adds boundary audits, exact dependency checks, build, full Rust checks, and a real Chromium/WebGL product smoke.                                                                                                                                                                                                                                                                                                                                                                           | Every campaign task adds focused proof. #6233 certifies a complete fresh-process playthrough and performance budgets.   |
 | Known limitations    | Den document `rusty-engine-demo/known-limitations` owns active limitations.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Update the same entry when each limitation is resolved; a task thread or code comment alone is insufficient.            |
 
@@ -113,9 +113,9 @@ No component callback, browser timer, renderer callback, or plugin scheduler can
 3. The game projection submits changed descriptors to the retained shared renderer.
 4. The renderer owns frame submission and reports its latest timing sample.
 5. Presentation consumes facts once for audio, particles, recoil, damage flash, and messages.
-6. Normal gameplay derives a first-person camera at the accepted player X/Z and exactly 1.2 world
-   units above the accepted player Y. It has no horizontal follow/trailing offset, so camera and
-   collision cannot straddle a wall or doorway boundary.
+6. Normal gameplay derives a first-person camera at the accepted player X/Z and the Rust-authored
+   controller eye height above the accepted player Y. It has no horizontal follow/trailing offset,
+   so camera and collision cannot straddle a wall or doorway boundary.
 7. Any pending-look camera offset is bounded, disposable, reconciled on acknowledgement, and
    cleared on rejection, reconnect, pause, death, pointer-lock loss, or route disposal. Rust pose
    remains the only aim and firing authority.
@@ -134,14 +134,14 @@ No component callback, browser timer, renderer callback, or plugin scheduler can
 
 The wire format is versioned and game-specific. Rust types are canonical; generated or
 structurally checked TypeScript types may encode/decode them. These stable shapes guide #6217,
-#6218, and later feature tasks. The implemented version-1 lifecycle, bounds, cancellation rules,
+#6218, and later feature tasks. The implemented version-2 lifecycle, bounds, cancellation rules,
 and live measurement proof are recorded in [`game-session-protocol.md`](game-session-protocol.md).
 
 ### Client command envelope
 
 ```text
 ClientCommandEnvelope {
-  protocolVersion: 1
+  protocolVersion: 2
   sessionId: string
   sequence: u64
   observedSnapshotSequence?: u64
@@ -157,6 +157,7 @@ rejected as stale. A reconnect creates a new connection generation and begins wi
 `GameCommand` is a closed tagged union:
 
 - `setInputIntent { movement: [f32; 2], lookDelta: [f32; 2], primaryFireHeld: bool }`
+- `jump`
 - `selectWeaponSlot { slot: u8 }`
 - `useItem { item: ItemDefinitionId }`
 - `interact { target?: EntityId }`
@@ -174,7 +175,7 @@ it has a named Rust owner; there is no generic method, payload, or behavior brid
 
 ```text
 ServerUpdateEnvelope {
-  protocolVersion: 1
+  protocolVersion: 2
   sessionId: string
   serverTick: u64
   snapshotSequence: u64
@@ -196,7 +197,7 @@ ordering. Cues are disposable and may be dropped without changing gameplay.
 
 ```text
 CommandRejection {
-  protocolVersion: 1
+  protocolVersion: 2
   sessionId?: string
   commandSequence?: u64
   acknowledgedCommandSequence: u64

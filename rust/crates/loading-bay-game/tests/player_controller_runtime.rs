@@ -195,6 +195,299 @@ fn snapshot_reopen_preserves_player_pose_and_controller_but_derives_no_camera_st
     );
 }
 
+#[test]
+fn grounded_traversal_steps_up_to_the_authored_limit_and_rejects_taller_walls() {
+    let floor = (-1..=4).map(|x| [x, 0, 0]);
+    let mut shallow = traversal_runtime(floor.clone().chain([[1, 1, 0]]).collect(), true, 0);
+    let stepped = shallow
+        .apply_player_action(
+            PLAYER,
+            ResolvedPlayerAction::Move {
+                forward: 1.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
+    let shallow_position = player_position(&shallow);
+    assert!(shallow_position.x > 0.5 && shallow_position.y > 2.2);
+    assert!(stepped
+        .facts
+        .iter()
+        .any(|fact| matches!(fact, PlayerControlFact::Stepped { .. })));
+
+    let floor = (-1..=4).map(|x| [x, 0, 0]);
+    let mut tall = traversal_runtime(floor.chain([[1, 1, 0], [1, 2, 0]]).collect(), true, 0);
+    let blocked = tall
+        .apply_player_action(
+            PLAYER,
+            ResolvedPlayerAction::Move {
+                forward: 1.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
+    assert_eq!(player_position(&tall).x, 0.5);
+    assert!(blocked
+        .facts
+        .iter()
+        .any(|fact| matches!(fact, PlayerControlFact::Blocked { .. })));
+}
+
+#[test]
+fn jump_is_grounded_deterministic_and_stops_at_head_collision() {
+    let floor = || (-1..=1).map(|x| [x, 0, 0]).collect();
+    let mut first = traversal_runtime(floor(), true, 0);
+    let mut second = traversal_runtime(floor(), true, 0);
+
+    let jumped = first
+        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
+        .unwrap();
+    second
+        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
+        .unwrap();
+    assert!(jumped
+        .facts
+        .iter()
+        .any(|fact| matches!(fact, PlayerControlFact::Jumped { .. })));
+    assert!(first
+        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
+        .unwrap()
+        .facts
+        .is_empty());
+    let airborne_snapshot = encode_game_snapshot(&first).unwrap();
+    let reopened_airborne = decode_game_snapshot(&airborne_snapshot).unwrap();
+    assert_eq!(
+        first.session().player_controller(PLAYER),
+        reopened_airborne.session().player_controller(PLAYER),
+        "snapshot must retain grounded eligibility and the live jump velocity"
+    );
+    for _ in 0..12 {
+        first
+            .apply_player_action(
+                PLAYER,
+                ResolvedPlayerAction::Move {
+                    forward: 0.0,
+                    right: 0.0,
+                },
+            )
+            .unwrap();
+        second
+            .apply_player_action(
+                PLAYER,
+                ResolvedPlayerAction::Move {
+                    forward: 0.0,
+                    right: 0.0,
+                },
+            )
+            .unwrap();
+    }
+    assert_eq!(player_position(&first), player_position(&second));
+    assert!(
+        first
+            .session()
+            .player_controller(PLAYER)
+            .unwrap()
+            .state
+            .grounded,
+        "trajectory ended at {:?} with {:?}",
+        player_position(&first),
+        first.session().player_controller(PLAYER).unwrap().state
+    );
+
+    let mut ceiling = traversal_runtime(vec![[0, 0, 0], [0, 2, 0]], true, 0);
+    ceiling
+        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
+        .unwrap();
+    ceiling
+        .apply_player_action(
+            PLAYER,
+            ResolvedPlayerAction::Move {
+                forward: 0.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
+    assert_eq!(player_position(&ceiling).y, 1.251);
+    assert_eq!(
+        ceiling
+            .session()
+            .player_controller(PLAYER)
+            .unwrap()
+            .state
+            .vertical_velocity,
+        0.0
+    );
+
+    let mut air_jump = traversal_runtime(vec![[0, 0, 0]], true, 1);
+    air_jump
+        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
+        .unwrap();
+    air_jump
+        .apply_player_action(
+            PLAYER,
+            ResolvedPlayerAction::Move {
+                forward: 0.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
+    assert!(air_jump
+        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
+        .unwrap()
+        .facts
+        .iter()
+        .any(|fact| matches!(fact, PlayerControlFact::Jumped { .. })));
+    assert!(air_jump
+        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
+        .unwrap()
+        .facts
+        .is_empty());
+}
+
+#[test]
+fn ground_probe_snaps_to_contact_and_ledge_departure_clears_grounded_state() {
+    let mut runtime = traversal_runtime(vec![[0, 0, 0]], true, 0);
+    runtime
+        .apply_player_action(
+            PLAYER,
+            ResolvedPlayerAction::Move {
+                forward: 0.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
+    assert!((player_position(&runtime).y - 1.2501).abs() < 0.000_1);
+    assert!(
+        runtime
+            .session()
+            .player_controller(PLAYER)
+            .unwrap()
+            .state
+            .grounded
+    );
+
+    for _ in 0..2 {
+        runtime
+            .apply_player_action(
+                PLAYER,
+                ResolvedPlayerAction::Move {
+                    forward: 1.0,
+                    right: 0.0,
+                },
+            )
+            .unwrap();
+    }
+    assert!(
+        !runtime
+            .session()
+            .player_controller(PLAYER)
+            .unwrap()
+            .state
+            .grounded
+    );
+    let ledge_y = player_position(&runtime).y;
+    runtime
+        .apply_player_action(
+            PLAYER,
+            ResolvedPlayerAction::Move {
+                forward: 0.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
+    assert!(player_position(&runtime).y < ledge_y);
+}
+
+#[test]
+fn downward_contact_never_snaps_through_a_dynamic_blocker() {
+    let mut project = traversal_project(vec![[0, 0, 0]], true, 0);
+    project["entities"][0]["translation"] = json!([0.5, 3.0, 0.5]);
+    project["entities"][0]["playerController"]["traversal"]["gravityUnitsPerSecondSquared"] =
+        json!(200);
+    project["entities"].as_array_mut().unwrap().push(json!({
+        "id": 2,
+        "name": "dynamic-platform",
+        "translation": [0.5, 1.6, 0.5],
+        "collision": { "enabled": true, "staticCollider": false },
+        "renderable": { "asset": "primitive/platform", "visible": true },
+        "kinematic": { "halfExtents": [0.25, 0.25, 0.25], "velocity": [0, 0, 0] }
+    }));
+    let mut runtime = GameRuntime::from_project_content(&project.to_string()).unwrap();
+
+    runtime
+        .apply_player_action(
+            PLAYER,
+            ResolvedPlayerAction::Move {
+                forward: 0.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
+
+    assert_eq!(player_position(&runtime).y, 3.0);
+    assert!(
+        !runtime
+            .session()
+            .player_controller(PLAYER)
+            .unwrap()
+            .state
+            .grounded
+    );
+}
+
+fn traversal_runtime(
+    solid_voxels: Vec<[i64; 3]>,
+    jump_enabled: bool,
+    max_air_jumps: u8,
+) -> GameRuntime {
+    let project = traversal_project(solid_voxels, jump_enabled, max_air_jumps);
+    GameRuntime::from_project_content(&project.to_string()).unwrap()
+}
+
+fn traversal_project(solid_voxels: Vec<[i64; 3]>, jump_enabled: bool, max_air_jumps: u8) -> Value {
+    json!({
+        "schemaVersion": 6,
+        "entities": [{
+            "id": 1,
+            "name": "player",
+            "translation": [0.5, 1.251, 0.5],
+            "collision": { "enabled": true, "staticCollider": false },
+            "renderable": { "asset": "primitive/player-marker", "visible": true },
+            "kinematic": { "halfExtents": [0.25, 0.25, 0.25], "velocity": [0, 0, 0] },
+            "playerController": {
+                "moveSpeedUnitsPerSecond": 4,
+                "moveStepSeconds": 0.1,
+                "lookDegreesPerUnit": 12,
+                "initialYawDegrees": -90,
+                "initialPitchDegrees": 0,
+                "traversal": {
+                    "maxStepHeight": 1,
+                    "gravityUnitsPerSecondSquared": 24,
+                    "jumpImpulseUnitsPerSecond": 8,
+                    "groundProbeDistance": 0.05,
+                    "eyeHeight": 1.2,
+                    "manualJumpEnabled": jump_enabled,
+                    "maxAirJumps": max_air_jumps
+                },
+                "bindings": {
+                    "moveForward": "KeyW",
+                    "moveBackward": "KeyS",
+                    "moveLeft": "KeyA",
+                    "moveRight": "KeyD",
+                    "mouseLook": "pointer",
+                    "primaryFire": "Mouse0",
+                    "jump": "Space"
+                }
+            }
+        }],
+        "voxelCollision": {
+            "voxelSize": 1,
+            "chunkSize": 8,
+            "solidVoxels": solid_voxels
+        }
+    })
+}
+
 fn player_position(runtime: &GameRuntime) -> rusty_engine::core_math::Vec3 {
     runtime
         .session()

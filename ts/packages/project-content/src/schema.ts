@@ -147,7 +147,18 @@ export interface PlayerInputBindingsDefinition {
   readonly moveRight: string;
   readonly mouseLook: string;
   readonly primaryFire: string;
+  readonly jump?: string;
   readonly selectWeapon?: readonly string[];
+}
+
+export interface PlayerTraversalDefinition {
+  readonly maxStepHeight: number;
+  readonly gravityUnitsPerSecondSquared: number;
+  readonly jumpImpulseUnitsPerSecond: number;
+  readonly groundProbeDistance: number;
+  readonly eyeHeight: number;
+  readonly manualJumpEnabled: boolean;
+  readonly maxAirJumps?: number;
 }
 
 export interface PlayerControllerDefinition {
@@ -156,6 +167,7 @@ export interface PlayerControllerDefinition {
   readonly lookDegreesPerUnit: number;
   readonly initialYawDegrees: number;
   readonly initialPitchDegrees: number;
+  readonly traversal?: PlayerTraversalDefinition;
   readonly bindings: PlayerInputBindingsDefinition;
 }
 

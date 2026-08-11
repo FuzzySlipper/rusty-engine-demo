@@ -25,7 +25,7 @@ use super::{
     ACTOR,
 };
 
-const PROTOCOL_VERSION: u16 = 1;
+const PROTOCOL_VERSION: u16 = 2;
 const SESSION_READ_TIMEOUT: Duration = Duration::from_millis(1);
 const SESSION_WRITE_TIMEOUT: Duration = Duration::from_millis(2000);
 const MAX_COMMAND_BYTES: usize = 16 * 1024;
@@ -54,6 +54,7 @@ struct ClientCommandEnvelope {
 )]
 enum BrowserGameCommand {
     RequestFullState,
+    Jump,
     SetInputIntent {
         movement: [f32; 2],
         look_delta: [f32; 2],
@@ -318,20 +319,20 @@ fn select_protocol(
         .is_some_and(|value| {
             value
                 .split(',')
-                .any(|candidate| candidate.trim() == "loading-bay.v1")
+                .any(|candidate| candidate.trim() == "loading-bay.v2")
         });
     if !protocol_supported {
         return Err(tungstenite::http::Response::builder()
             .status(StatusCode::UPGRADE_REQUIRED)
-            .header(SEC_WEBSOCKET_PROTOCOL, "loading-bay.v1")
+            .header(SEC_WEBSOCKET_PROTOCOL, "loading-bay.v2")
             .body(Some(
-                "Loading Bay requires the loading-bay.v1 WebSocket subprotocol".to_owned(),
+                "Loading Bay requires the loading-bay.v2 WebSocket subprotocol".to_owned(),
             ))
             .expect("valid protocol rejection"));
     }
     response.headers_mut().insert(
         SEC_WEBSOCKET_PROTOCOL,
-        HeaderValue::from_static("loading-bay.v1"),
+        HeaderValue::from_static("loading-bay.v2"),
     );
     Ok(response)
 }
@@ -525,6 +526,11 @@ fn process_command(
             BrowserGameCommand::RequestFullState => {
                 unreachable!("full-state control returned before gameplay dispatch")
             }
+            BrowserGameCommand::Jump => host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                connection_generation: context.connection_generation,
+                sequence: envelope.sequence,
+                command: GameLoopEdgeCommandKind::Jump,
+            }),
             BrowserGameCommand::SetInputIntent {
                 movement,
                 look_delta,

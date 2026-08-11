@@ -164,7 +164,10 @@ impl BrowserFeedbackProjection {
                     after,
                 } => self.push_movement(*entity, before.to_array(), after.to_array()),
                 PlayerControlFact::Blocked { entity, .. } => self.push_blocked(*entity),
-                PlayerControlFact::LookChanged { .. } => {}
+                PlayerControlFact::Stepped { .. }
+                | PlayerControlFact::Jumped { .. }
+                | PlayerControlFact::Landed { .. }
+                | PlayerControlFact::LookChanged { .. } => {}
             }
         }
     }

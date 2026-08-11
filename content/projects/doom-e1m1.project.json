@@ -201811,6 +201811,15 @@
             "lookDegreesPerUnit": 12.0,
             "initialYawDegrees": 180.0,
             "initialPitchDegrees": -6.0,
+            "traversal": {
+              "maxStepHeight": 1.5,
+              "gravityUnitsPerSecondSquared": 24.0,
+              "jumpImpulseUnitsPerSecond": 8.0,
+              "groundProbeDistance": 0.3,
+              "eyeHeight": 2.0625,
+              "manualJumpEnabled": true,
+              "maxAirJumps": 0
+            },
             "bindings": {
               "moveForward": "KeyW",
               "moveBackward": "KeyS",
@@ -201818,6 +201827,7 @@
               "moveRight": "KeyD",
               "mouseLook": "pointer",
               "primaryFire": "Mouse0",
+              "jump": "Space",
               "selectWeapon": [
                 "Digit1",
                 "Digit2",

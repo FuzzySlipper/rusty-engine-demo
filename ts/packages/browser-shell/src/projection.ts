@@ -103,6 +103,7 @@ export interface RuntimePlayerBindings {
   readonly moveRight: string;
   readonly mouseLook: string;
   readonly primaryFire: string;
+  readonly jump?: string | null;
   readonly selectWeapon: readonly string[];
 }
 
@@ -113,6 +114,9 @@ export interface RuntimePlayerState {
   readonly pitchDegrees: number;
   readonly moveStepSeconds: number;
   readonly lookDegreesPerUnit: number;
+  readonly grounded?: boolean;
+  readonly verticalVelocity?: number;
+  readonly eyeHeight?: number;
   readonly bindings: RuntimePlayerBindings;
   readonly currentHealth: number;
   readonly maxHealth: number;
@@ -541,13 +545,13 @@ export interface RuntimeVoxelEditReceipt {
   readonly persistedToProject: boolean;
 }
 
-/** Gameplay eye height above the accepted Rust player origin. */
+/** Legacy gameplay eye height above the accepted Rust player origin. */
 export const GAMEPLAY_CAMERA_EYE_HEIGHT = 1.2;
 
 /** Presentation-only first-person camera rebuilt from the accepted Rust player pose. */
 export function derivePlayerCameraPose(
   player: RuntimePlayerState,
-  eyeHeight = GAMEPLAY_CAMERA_EYE_HEIGHT,
+  eyeHeight = player.eyeHeight ?? GAMEPLAY_CAMERA_EYE_HEIGHT,
 ): DerivedCameraPose {
   return {
     position: [

@@ -57,6 +57,7 @@ struct BrowserPlayerBindings {
     move_right: String,
     mouse_look: String,
     primary_fire: String,
+    jump: Option<String>,
     select_weapon: Vec<String>,
 }
 
@@ -69,6 +70,9 @@ struct BrowserPlayerState {
     pitch_degrees: f32,
     move_step_seconds: f32,
     look_degrees_per_unit: f32,
+    grounded: bool,
+    vertical_velocity: f32,
+    eye_height: f32,
     bindings: BrowserPlayerBindings,
     current_health: u32,
     max_health: u32,
@@ -484,6 +488,9 @@ pub(super) fn browser_dynamic_state(
         pitch_degrees: player.state.pitch_degrees,
         move_step_seconds: player.config.move_step_seconds,
         look_degrees_per_unit: player.config.look_degrees_per_unit,
+        grounded: player.state.grounded,
+        vertical_velocity: player.state.vertical_velocity,
+        eye_height: player.config.traversal.eye_height,
         bindings: BrowserPlayerBindings {
             move_forward: bindings.move_forward.clone(),
             move_backward: bindings.move_backward.clone(),
@@ -491,6 +498,7 @@ pub(super) fn browser_dynamic_state(
             move_right: bindings.move_right.clone(),
             mouse_look: bindings.mouse_look.clone(),
             primary_fire: bindings.primary_fire.clone(),
+            jump: bindings.jump.clone(),
             select_weapon: bindings.select_weapon.clone(),
         },
         current_health,

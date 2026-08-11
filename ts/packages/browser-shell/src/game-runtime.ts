@@ -1,5 +1,6 @@
 import { GameSessionError, LoadingBayGameSession } from "./game-session.js";
 import { HeldMovementInput } from "./held-movement.js";
+import { resolveKeyboardAction } from "./input-resolver.js";
 import { resolvePointerLook } from "./pointer-look.js";
 import type {
   RuntimeApplicationContent,
@@ -41,6 +42,7 @@ export interface LoadingBayInputBindings {
   readonly moveRight: string;
   readonly mouseLook: string;
   readonly primaryFire: string;
+  readonly jump?: string | null;
   readonly selectWeapon: readonly string[];
 }
 
@@ -322,10 +324,13 @@ export async function mountLoadingBayGame(
     )
       return;
     heldMovement.press(event.code);
-    const slot = current.player.bindings.selectWeapon.indexOf(event.code);
-    if (slot >= 0) {
+    const action = resolveKeyboardAction(event.code, current.player.bindings);
+    if (action?.kind === "jump") {
+      void session.sendEdge({ kind: "jump" }).catch(record);
+    }
+    if (action?.kind === "selectWeaponSlot") {
       void session
-        .sendEdge({ kind: "selectWeaponSlot", slot: slot + 1 })
+        .sendEdge({ kind: "selectWeaponSlot", slot: action.slot + 1 })
         .catch(record);
     }
   }

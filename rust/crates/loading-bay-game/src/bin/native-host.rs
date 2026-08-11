@@ -8,8 +8,9 @@ use std::{
 use anyhow::{bail, Context, Result};
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, doom_texture_projection, encode_game_snapshot,
-    externalize_frame_meshes, project_stored_voxel_volume, GameRuntime, LoadingBayGameLoop,
-    PlayerInputCommand, PlayerInputIntent, ResolvedPlayerAction,
+    externalize_frame_meshes, project_stored_voxel_volume, GameLoopEdgeCommand,
+    GameLoopEdgeCommandKind, GameRuntime, LoadingBayGameLoop, PlayerInputCommand,
+    PlayerInputIntent, ResolvedPlayerAction,
 };
 use rusty_engine::{
     core_ids::EntityId,
@@ -401,8 +402,19 @@ impl NativeApplication {
             self.request_pick(PickKind::Miss)?;
         }
         if self.options.doom_e1m1 {
-            let forward = f32::from(pressed.contains("KeyW")) - f32::from(pressed.contains("KeyS"));
-            let right = f32::from(pressed.contains("KeyD")) - f32::from(pressed.contains("KeyA"));
+            let bindings = self
+                .runtime
+                .runtime()
+                .session()
+                .player_controller(PLAYER)
+                .context("Doom player controller is missing")?
+                .config
+                .bindings
+                .clone();
+            let forward = f32::from(pressed.contains(&bindings.move_forward))
+                - f32::from(pressed.contains(&bindings.move_backward));
+            let right = f32::from(pressed.contains(&bindings.move_right))
+                - f32::from(pressed.contains(&bindings.move_left));
             let yaw_delta = f32::from(pressed.contains("ArrowRight"))
                 - f32::from(pressed.contains("ArrowLeft"));
             let pitch_delta =
@@ -419,6 +431,20 @@ impl NativeApplication {
                     },
                 })
                 .map_err(|error| anyhow::anyhow!("submit native semantic input: {error}"))?;
+            if bindings
+                .jump
+                .as_ref()
+                .is_some_and(|jump| pressed.contains(jump) && !self.pressed_codes.contains(jump))
+            {
+                self.input_sequence = self.input_sequence.saturating_add(1);
+                self.runtime
+                    .submit_edge_command(GameLoopEdgeCommand {
+                        connection_generation: self.runtime.input_session().connection_generation,
+                        sequence: self.input_sequence,
+                        command: GameLoopEdgeCommandKind::Jump,
+                    })
+                    .map_err(|error| anyhow::anyhow!("submit native jump input: {error}"))?;
+            }
         } else if let Some(code) = pressed.difference(&self.pressed_codes).next() {
             let revision_before = self.runtime.runtime().readout().entity_revision;
             if code == "Enter" {
@@ -495,7 +521,7 @@ impl NativeApplication {
         Ok(RendererCameraPose {
             position: [
                 f64::from(position.x),
-                f64::from(position.y + 1.5),
+                f64::from(position.y + player.config.traversal.eye_height),
                 f64::from(position.z),
             ],
             pitch_degrees: f64::from(player.state.pitch_degrees),

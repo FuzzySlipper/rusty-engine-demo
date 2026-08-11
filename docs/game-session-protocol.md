@@ -3,7 +3,7 @@
 Status: protocol version 1, implemented by Den task #6218
 
 Loading Bay play uses one game-specific WebSocket at `/api/session` with the
-`loading-bay.v1` subprotocol. Rust owns the accepted session, command validation, fixed-tick
+`loading-bay.v2` subprotocol. Rust owns the accepted session, command validation, fixed-tick
 consumption, gameplay mutation, full/delta projection, and facts. TypeScript owns browser device
 capture, bounded coalescing, structural decoding, immutable projection composition, and
 disposable presentation.
@@ -40,10 +40,11 @@ full authoritative state arrives.
 
 ## Commands and bounds
 
-Version 1 accepts this closed game-specific command family:
+Version 2 accepts this closed game-specific command family:
 
 - `requestFullState` (internal recovery control; no gameplay mutation)
 - `setInputIntent { movement, lookDelta, primaryFireHeld }`
+- `jump`
 - `interact { target }`
 - `selectWeaponSlot { slot }`
 - `useItem { item }`

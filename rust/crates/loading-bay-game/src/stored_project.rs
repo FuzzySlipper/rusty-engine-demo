@@ -737,7 +737,45 @@ pub struct StoredPlayerController {
     pub look_degrees_per_unit: f32,
     pub initial_yaw_degrees: f32,
     pub initial_pitch_degrees: f32,
+    #[serde(
+        default,
+        skip_serializing_if = "StoredPlayerTraversal::is_legacy_default"
+    )]
+    pub traversal: StoredPlayerTraversal,
     pub bindings: StoredPlayerInputBindings,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredPlayerTraversal {
+    pub max_step_height: f32,
+    pub gravity_units_per_second_squared: f32,
+    pub jump_impulse_units_per_second: f32,
+    pub ground_probe_distance: f32,
+    pub eye_height: f32,
+    pub manual_jump_enabled: bool,
+    #[serde(default)]
+    pub max_air_jumps: u8,
+}
+
+impl Default for StoredPlayerTraversal {
+    fn default() -> Self {
+        Self {
+            max_step_height: 0.0,
+            gravity_units_per_second_squared: 0.0,
+            jump_impulse_units_per_second: 8.0,
+            ground_probe_distance: 0.05,
+            eye_height: 1.2,
+            manual_jump_enabled: false,
+            max_air_jumps: 0,
+        }
+    }
+}
+
+impl StoredPlayerTraversal {
+    fn is_legacy_default(&self) -> bool {
+        *self == Self::default()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -749,6 +787,8 @@ pub struct StoredPlayerInputBindings {
     pub move_right: String,
     pub mouse_look: String,
     pub primary_fire: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub jump: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub select_weapon: Vec<String>,
 }

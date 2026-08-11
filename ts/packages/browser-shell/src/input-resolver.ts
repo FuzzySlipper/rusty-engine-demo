@@ -6,7 +6,8 @@ export type ResolvedPlayerAction =
       readonly pitchDelta: number;
       readonly yawDelta: number;
     }
-  | { readonly kind: "move"; readonly forward: number; readonly right: number };
+  | { readonly kind: "move"; readonly forward: number; readonly right: number }
+  | { readonly kind: "jump" };
 export type ResolvedAttackAction = { readonly kind: "attack" };
 export type ResolvedWeaponSelectionAction = {
   readonly kind: "selectWeaponSlot";
@@ -35,6 +36,9 @@ export function resolveKeyboardAction(
   }
   if (code === bindings.primaryFire) {
     return { kind: "attack" };
+  }
+  if (code === bindings.jump) {
+    return { kind: "jump" };
   }
   const weaponSlot = bindings.selectWeapon.indexOf(code);
   if (weaponSlot >= 0) {

@@ -86,6 +86,7 @@ pub struct PlayerInputCommand {
     deny_unknown_fields
 )]
 pub enum GameLoopEdgeCommandKind {
+    Jump,
     Interact { target: u64 },
     SelectWeaponSlot { slot: u8 },
     UseItem { item: String },
@@ -625,9 +626,24 @@ impl LoadingBayGameLoop {
             facts.push(GameLoopFact::InputExpired { sequence });
         }
 
+        let tick_will_be_paused = self.input.edge_commands.iter().fold(
+            self.input.paused,
+            |paused, command| match command.command {
+                GameLoopEdgeCommandKind::SetPaused { paused } => paused,
+                _ => paused,
+            },
+        );
         while let Some(command) = self.input.edge_commands.pop_front() {
             self.input.consumed_sequence = self.input.consumed_sequence.max(command.sequence);
             match &command.command {
+                GameLoopEdgeCommandKind::Jump => {
+                    if !tick_will_be_paused && !self.runtime.is_level_complete() {
+                        let receipt = self
+                            .runtime
+                            .apply_player_action(self.player, crate::ResolvedPlayerAction::Jump)?;
+                        facts.extend(receipt.facts.into_iter().map(GameLoopFact::PlayerControl));
+                    }
+                }
                 GameLoopEdgeCommandKind::SetPaused { paused } => {
                     self.input.paused = *paused;
                     self.input.clear_intent();
@@ -671,11 +687,21 @@ impl LoadingBayGameLoop {
         &mut self,
         facts: &mut Vec<GameLoopFact>,
     ) -> Result<(), RuntimeError> {
-        if !self.input.connected {
+        if !self.input.connected || DamageService::is_dead(self.runtime.session(), self.player) {
             return Ok(());
         }
         let [forward, right] = self.input.movement;
-        if forward == 0.0 && right == 0.0 {
+        if forward == 0.0
+            && right == 0.0
+            && self
+                .runtime
+                .session()
+                .player_controller(self.player)
+                .is_some_and(|controller| {
+                    controller.state.grounded
+                        || controller.config.traversal.gravity_units_per_second_squared == 0.0
+                })
+        {
             return Ok(());
         }
         let receipt = self.runtime.integrate_player_motion(

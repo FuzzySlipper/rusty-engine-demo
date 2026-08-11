@@ -723,15 +723,30 @@ fn authored_definition(
             look_degrees_per_unit: controller.look_degrees_per_unit,
             initial_yaw_degrees: controller.initial_yaw_degrees,
             initial_pitch_degrees: controller.initial_pitch_degrees,
-            bindings: PlayerInputBindings::new(
-                controller.bindings.move_forward.clone(),
-                controller.bindings.move_backward.clone(),
-                controller.bindings.move_left.clone(),
-                controller.bindings.move_right.clone(),
-                controller.bindings.mouse_look.clone(),
-                controller.bindings.primary_fire.clone(),
-                controller.bindings.select_weapon.clone(),
-            ),
+            traversal: crate::PlayerTraversalConfig {
+                max_step_height: controller.traversal.max_step_height,
+                gravity_units_per_second_squared: controller
+                    .traversal
+                    .gravity_units_per_second_squared,
+                jump_impulse_units_per_second: controller.traversal.jump_impulse_units_per_second,
+                ground_probe_distance: controller.traversal.ground_probe_distance,
+                eye_height: controller.traversal.eye_height,
+                manual_jump_enabled: controller.traversal.manual_jump_enabled,
+                max_air_jumps: controller.traversal.max_air_jumps,
+            },
+            bindings: {
+                let mut bindings = PlayerInputBindings::new(
+                    controller.bindings.move_forward.clone(),
+                    controller.bindings.move_backward.clone(),
+                    controller.bindings.move_left.clone(),
+                    controller.bindings.move_right.clone(),
+                    controller.bindings.mouse_look.clone(),
+                    controller.bindings.primary_fire.clone(),
+                    controller.bindings.select_weapon.clone(),
+                );
+                bindings.jump = controller.bindings.jump.clone();
+                bindings
+            },
         });
     }
     if let Some(inventory) = &authored.inventory {
