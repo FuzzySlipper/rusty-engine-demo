@@ -1376,8 +1376,8 @@ async function proveInteractionRoute(
     [126, 83],
   ]);
   for (const waypoint of [
-    [126, 85],
-    [129, 85],
+    [124, 86],
+    [129, 86],
   ]) {
     await moveToWorldPoint(client, addr, waypoint, traversalSamples, {
       singleHold: true,
