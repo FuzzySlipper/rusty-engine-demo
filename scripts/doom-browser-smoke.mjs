@@ -1545,7 +1545,7 @@ async function main() {
         const selectionProof = await proveFocusedWeaponSelection(cdpClient, addr);
         const fireProof = await proveFocusedHeldPistolFire(cdpClient, addr);
         const blurProof = await proveFocusedFireStopsOnBlur(cdpClient, addr);
-        await holdKeys(cdpClient, ["KeyW"], 400);
+        await proveFocusedHeldMovement(cdpClient, addr);
         const vitalityProof = await proveFocusedVitality(addr);
         const restartProof = await proveFocusedDeathAndRestart(cdpClient, addr);
         headless.playthrough = { status: "skipped", reason: "focused smoke" };
