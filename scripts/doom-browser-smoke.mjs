@@ -873,8 +873,8 @@ function resolveInteractionOwners(projectPath) {
     lift: owner("doom-repeatable-lift-linedef-195", "lift"),
     secret: owner("doom-secret-sector-68", "secretRegion"),
     exit: owner("doom-exit", "levelExit"),
-    representativeEnemy: owner("doom-shotgun-guy-20", "enemyCombat"),
-    representativeDrop: owner("doom-drop-shotgun-guy-20", "pickup"),
+    representativeEnemy: owner("doom-shotgun-guy-14", "enemyCombat"),
+    representativeDrop: owner("doom-drop-shotgun-guy-14", "pickup"),
   };
 }
 
@@ -1041,17 +1041,36 @@ async function physicallyAimAtEnemy(
   let dx = enemy.position[0] - before.player.position[0];
   let dz = enemy.position[2] - before.player.position[2];
   let desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
+  let desiredPitch =
+    (Math.atan2(
+      enemy.position[1] - (before.player.position[1] + before.player.eyeHeight),
+      Math.hypot(dx, dz),
+    ) *
+      180) /
+    Math.PI;
   const startingYaw = before.player.yawDegrees;
+  const startingPitch = before.player.pitchDegrees;
   let state = before;
   for (let attempt = 0; attempt < 120; attempt += 1) {
-    const error = normalizeDegrees(desiredYaw - state.player.yawDegrees);
-    if (Math.abs(error) <= toleranceDegrees) break;
+    const yawError = normalizeDegrees(desiredYaw - state.player.yawDegrees);
+    const pitchError = desiredPitch - state.player.pitchDegrees;
+    if (
+      Math.abs(yawError) <= toleranceDegrees &&
+      Math.abs(pitchError) <= toleranceDegrees
+    ) {
+      break;
+    }
     const degreesPerPointerUnit = encounterExitEvidence ? 0.24 : 0.12;
     const movementX = Math.max(
       -80,
-      Math.min(80, -error / degreesPerPointerUnit),
+      Math.min(80, -yawError / degreesPerPointerUnit),
+    );
+    const movementY = Math.max(
+      -80,
+      Math.min(80, -pitchError / degreesPerPointerUnit),
     );
     canvasCenter.x += movementX;
+    canvasCenter.y += movementY;
     await client.send("Input.dispatchMouseEvent", {
       type: "mouseMoved",
       x: canvasCenter.x,
@@ -1068,21 +1087,36 @@ async function physicallyAimAtEnemy(
       dx = currentEnemy.position[0] - state.player.position[0];
       dz = currentEnemy.position[2] - state.player.position[2];
       desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
+      desiredPitch =
+        (Math.atan2(
+          currentEnemy.position[1] -
+            (state.player.position[1] + state.player.eyeHeight),
+          Math.hypot(dx, dz),
+        ) *
+          180) /
+        Math.PI;
     }
   }
-  const finalError = normalizeDegrees(desiredYaw - state.player.yawDegrees);
-  const physicalLookDegrees = Math.abs(
-    normalizeDegrees(state.player.yawDegrees - startingYaw),
-  );
-  if (Math.abs(finalError) > toleranceDegrees) {
+  const finalYawError = normalizeDegrees(desiredYaw - state.player.yawDegrees);
+  const finalPitchError = desiredPitch - state.player.pitchDegrees;
+  const physicalLookDegrees =
+    Math.abs(normalizeDegrees(state.player.yawDegrees - startingYaw)) +
+    Math.abs(state.player.pitchDegrees - startingPitch);
+  if (
+    Math.abs(finalYawError) > toleranceDegrees ||
+    Math.abs(finalPitchError) > toleranceDegrees
+  ) {
     throw new Error(
-      `physical pointer look did not aim at enemy ${enemyId}: ${JSON.stringify({ startingYaw, desiredYaw, finalYaw: state.player.yawDegrees, finalError })}`,
+      `physical pointer look did not aim at enemy ${enemyId}: ${JSON.stringify({ startingYaw, startingPitch, desiredYaw, desiredPitch, finalYaw: state.player.yawDegrees, finalPitch: state.player.pitchDegrees, finalYawError, finalPitchError })}`,
     );
   }
   return {
     startingYaw,
+    startingPitch,
     desiredYaw,
+    desiredPitch,
     finalYaw: state.player.yawDegrees,
+    finalPitch: state.player.pitchDegrees,
     physicalLookDegrees,
   };
 }
