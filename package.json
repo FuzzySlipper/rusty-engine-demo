@@ -13,6 +13,7 @@
     "certify:e1m1": "node scripts/doom-browser-smoke.mjs",
     "evidence:e1m1-traversal": "RUSTY_DOOM_TRAVERSAL_EVIDENCE=1 node scripts/doom-browser-smoke.mjs",
     "evidence:e1m1-interactions": "RUSTY_DOOM_INTERACTION_EVIDENCE=1 node scripts/doom-browser-smoke.mjs",
+    "evidence:e1m1-combat": "RUSTY_DOOM_COMBAT_EVIDENCE=1 node scripts/doom-browser-smoke.mjs",
     "certify:performance": "node scripts/certify-headed-performance.mjs",
     "certify:tauri-deploy": "node scripts/certify-tauri-deployment.mjs",
     "check:content": "pnpm --filter @rusty-engine-demo/project-content check && node scripts/check-canonical-projects.mjs && node scripts/check-brush-kit.mjs && node scripts/check-brush-level.mjs && node scripts/check-wall-proxy-alignment.mjs && node scripts/check-prop-kit.mjs && node scripts/check-actor-kit.mjs && node scripts/check-visual-bindings.mjs && node scripts/check-renderable-grounding.mjs",

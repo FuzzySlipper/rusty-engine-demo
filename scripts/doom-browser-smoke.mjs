@@ -21,9 +21,14 @@ const focused = process.env.RUSTY_DOOM_SMOKE_FOCUSED === "1";
 const traversalEvidence = process.env.RUSTY_DOOM_TRAVERSAL_EVIDENCE === "1";
 const retainedInteractionEvidence =
   process.env.RUSTY_DOOM_INTERACTION_EVIDENCE === "1";
+const retainedCombatEvidence =
+  process.env.RUSTY_DOOM_COMBAT_EVIDENCE === "1";
 const interactionEvidence =
-  retainedInteractionEvidence || (!focused && !traversalEvidence);
-const retainedEvidence = traversalEvidence || retainedInteractionEvidence;
+  retainedInteractionEvidence ||
+  retainedCombatEvidence ||
+  (!focused && !traversalEvidence);
+const retainedEvidence =
+  traversalEvidence || retainedInteractionEvidence || retainedCombatEvidence;
 const traversalEvidenceDir = process.env.RUSTY_DOOM_EVIDENCE_DIR ?? null;
 const expectedEvidenceSha = process.env.RUSTY_DOOM_EXPECTED_SHA ?? null;
 
@@ -673,6 +678,122 @@ async function captureCanvasEvidence(client, canvasBounds, path) {
   return bytes.length;
 }
 
+function normalizeDegrees(value) {
+  return ((value + 180) % 360 + 360) % 360 - 180;
+}
+
+async function faceWorldPoint(client, addr, canvasBounds, target) {
+  let mouseX = canvasBounds.x + canvasBounds.width / 2;
+  const mouseY = canvasBounds.y + canvasBounds.height / 2;
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseMoved",
+    x: mouseX,
+    y: mouseY,
+    button: "none",
+    buttons: 0,
+  });
+  let previousError = Number.POSITIVE_INFINITY;
+  for (let attempt = 0; attempt < 48; attempt += 1) {
+    const state = await fetchAuthoritativeState(addr);
+    const dx = target[0] - state.player.position[0];
+    const dz = target[2] - state.player.position[2];
+    const desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
+    const error = normalizeDegrees(desiredYaw - state.player.yawDegrees);
+    if (Math.abs(error) <= 2) return state;
+    const movementX = Math.sign(error) * -20;
+    mouseX += movementX;
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      x: mouseX,
+      y: mouseY,
+      button: "none",
+      buttons: 0,
+    });
+    await delay(80);
+    if (attempt > 8 && Math.abs(error) >= previousError - 0.1) {
+      throw new Error(
+        `physical pointer look stalled facing ${JSON.stringify(target)} at yaw ${state.player.yawDegrees}`,
+      );
+    }
+    previousError = Math.abs(error);
+  }
+  throw new Error(`physical pointer look timed out facing ${JSON.stringify(target)}`);
+}
+
+async function defeatRepresentativeEnemy(
+  client,
+  addr,
+  canvasBounds,
+  enemyId,
+  dropId,
+) {
+  const before = await fetchAuthoritativeState(addr);
+  const initialEnemy = before.enemies?.find((enemy) => enemy.id === enemyId);
+  if (!initialEnemy || initialEnemy.state === "dead") {
+    throw new Error(`representative enemy ${enemyId} is not alive`);
+  }
+  let pain = null;
+  for (let shot = 0; shot < 8; shot += 1) {
+    const current = await fetchAuthoritativeState(addr);
+    const enemy = current.enemies?.find((candidate) => candidate.id === enemyId);
+    if (enemy?.state === "dead") break;
+    await faceWorldPoint(client, addr, canvasBounds, enemy.position);
+    const center = {
+      x: canvasBounds.x + canvasBounds.width / 2,
+      y: canvasBounds.y + canvasBounds.height / 2,
+    };
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mousePressed",
+      ...center,
+      button: "left",
+      buttons: 1,
+      clickCount: 1,
+    });
+    await delay(180);
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mouseReleased",
+      ...center,
+      button: "left",
+      buttons: 0,
+      clickCount: 1,
+    });
+    const settled = await waitForAuthoritativeState(
+      addr,
+      `physical Mouse0 damages representative enemy ${enemyId}`,
+      (candidate) => {
+        const next = candidate.enemies?.find((entry) => entry.id === enemyId);
+        return (
+          next?.state === "dead" ||
+          (next?.currentHealth ?? enemy.currentHealth) < enemy.currentHealth
+        );
+      },
+    );
+    const settledEnemy = settled.enemies.find((entry) => entry.id === enemyId);
+    if (settledEnemy.combatPosture === "pain") pain = settledEnemy;
+    await delay(700);
+  }
+  const defeated = await waitForAuthoritativeState(
+    addr,
+    `representative enemy ${enemyId} dies and exposes its drop`,
+    (candidate) =>
+      candidate.enemies?.some(
+        (enemy) => enemy.id === enemyId && enemy.state === "dead",
+      ) &&
+      candidate.pickups?.some(
+        (pickup) => pickup.id === dropId && pickup.state === "available",
+      ),
+  );
+  return {
+    enemyId,
+    dropId,
+    healthBefore: initialEnemy.currentHealth,
+    healthAfter: defeated.enemies.find((enemy) => enemy.id === enemyId)
+      ?.currentHealth,
+    painObserved: pain !== null,
+    defeatedTick: defeated.tick,
+  };
+}
+
 async function proveLandmarkTraversal(client, addr, canvasBounds, evidenceDir) {
   const startedAtMs = Date.now();
   mkdirSync(evidenceDir, { recursive: true });
@@ -853,6 +974,8 @@ function resolveInteractionOwners(projectPath) {
     lift: owner("doom-repeatable-lift-linedef-195", "lift"),
     secret: owner("doom-secret-sector-68", "secretRegion"),
     exit: owner("doom-exit", "levelExit"),
+    representativeEnemy: owner("doom-shotgun-guy-20", "enemyCombat"),
+    representativeDrop: owner("doom-drop-shotgun-guy-20", "pickup"),
   };
 }
 
@@ -862,6 +985,7 @@ async function proveInteractionRoute(
   canvasBounds,
   evidenceDir,
   owners,
+  combatEvidence = false,
 ) {
   const startedAtMs = Date.now();
   if (evidenceDir !== null) {
@@ -940,6 +1064,18 @@ async function proveInteractionRoute(
     [137, 146],
   ]);
   await openDoor(owners.startDoor, [142, 147]);
+  let combat = null;
+  if (combatEvidence) {
+    await capture("combat-before.png");
+    combat = await defeatRepresentativeEnemy(
+      client,
+      addr,
+      canvasBounds,
+      owners.representativeEnemy,
+      owners.representativeDrop,
+    );
+    await capture("combat-after-drop.png");
+  }
   await walk([
     [178, 146],
     [178, 140],
@@ -1072,6 +1208,7 @@ async function proveInteractionRoute(
       )?.state,
     },
     secret: secret.secretRegions.find((entry) => entry.id === owners.secret),
+    combat,
     exit: completed.levelExits.find((entry) => entry.id === owners.exit),
     traversalSampleCount: traversalSamples.length,
     screenshots,
@@ -1505,11 +1642,17 @@ async function main() {
           canvasBounds,
           traversalEvidenceDir,
           interactionOwners,
+          retainedCombatEvidence,
         );
         headless.playthrough = interactionProof;
         checks.push(
           `physical E opened manual doors ${interactionProof.doors.join(", ")}, recorded secret ${interactionProof.secret.id}, and completed exit ${interactionProof.exit.id}`,
         );
+        if (interactionProof.combat !== null) {
+          checks.push(
+            `physical pointer look and Mouse0 defeated enemy ${interactionProof.combat.enemyId} and exposed drop ${interactionProof.combat.dropId}`,
+          );
+        }
       } else if (focused) {
         const inputProof = await proveFocusedHeldMovement(cdpClient, addr);
         const vitalityProof = await proveFocusedVitality(addr);
