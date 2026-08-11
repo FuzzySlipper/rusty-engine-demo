@@ -4,6 +4,9 @@ The default gate should answer whether a change preserves repository boundaries,
 gameplay authority, the Engine renderer integration, and the desktop host. Release packaging and
 long playthrough certification are separate operations, not per-commit CI.
 
+Rusty Crew reads [`.rusty-crew-review.json`](../.rusty-crew-review.json) and gates managed reviews
+on the automatic `verify` check only. Tauri verification is intentionally relevance-triggered.
+
 ## Default push and pull-request gates
 
 | Check                                                             | Why it remains                                                                                                                                                                                                           |
@@ -12,13 +15,13 @@ long playthrough certification are separate operations, not per-commit CI.
 | `./scripts/verify-rust.sh`                                        | Formats, tests, and lints the downstream gameplay crate against the adjacent Engine facade.                                                                                                                              |
 | `./scripts/verify-native-host.sh`                                 | Proves the game-owned native host can mount the Engine Rust adapter and apply game consequences.                                                                                                                         |
 | `pnpm run smoke:e1m1`                                             | Starts the Doom host, selects E1M1 from the real menu, mounts one Engine canvas, checks complete Rust-authored render content, and rejects blank output by sampling rendered pixels. It stops before gameplay traversal. |
-| `pnpm run verify:tauri`                                           | Proves the directly built desktop shell, sidecar, package layout, and process lifecycle once.                                                                                                                            |
 
 ## Explicit certification
 
 | Command or workflow                      | When to use it                                                                                                  |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `pnpm run certify:e1m1`                  | Before claiming the complete E1M1 switch, combat, traversal, terrain, and exit route works.                     |
+| `verify Tauri` GitHub workflow           | For desktop, sidecar, package-layout, or Tauri process-lifecycle changes. Runs `pnpm run verify:tauri`.         |
 | `pnpm run test:studio-scene-integration` | When changing Studio scene-object hierarchy, lights, transforms, or capability editing.                         |
 | `certify Tauri release` GitHub workflow  | When producing a Linux release artifact. It builds, installs, certifies, fingerprints, and uploads the package. |
 | Performance and capture commands         | When changing performance-sensitive code or refreshing named visual evidence.                                   |

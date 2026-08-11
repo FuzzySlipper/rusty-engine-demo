@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "repository": "FuzzySlipper/rusty-engine-demo",
+  "requiredChecks": ["verify"],
+  "localVerification": [
+    "pnpm run verify",
+    "pnpm run verify:tauri (for Tauri-relevant changes)"
+  ],
+  "notes": "Automatic managed reviews require the complete downstream verify job. Tauri verification is an explicit manual workflow for desktop-relevant changes."
+}
