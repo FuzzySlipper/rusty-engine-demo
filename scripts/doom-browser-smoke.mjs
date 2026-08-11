@@ -929,7 +929,7 @@ async function physicallyAimAtEnemy(
   const desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
   const startingYaw = before.player.yawDegrees;
   let state = before;
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     const error = normalizeDegrees(desiredYaw - state.player.yawDegrees);
     if (Math.abs(error) <= toleranceDegrees) break;
     const movementX = Math.max(-80, Math.min(80, -error / 0.12));
