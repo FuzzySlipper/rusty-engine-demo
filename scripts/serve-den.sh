@@ -4,7 +4,7 @@ set -euo pipefail
 DEMO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEMO_BIND_HOST=""
 DEMO_BIND_PORT=""
-DEMO_PROJECT="${RUSTY_ENGINE_DEMO_PROJECT:-content/projects/loading-bay.project.json}"
+DEMO_PROJECT="${RUSTY_ENGINE_DEMO_PROJECT:-content/projects/doom-e1m1.project.json}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

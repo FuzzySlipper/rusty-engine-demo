@@ -72,9 +72,11 @@ den-serve up rusty-engine-demo -repo /absolute/path/to/rusty-engine-demo
 ```
 
 The launcher builds the browser shell, starts the Rust host on the broker-selected LAN bind and
-port, and reports the local and LAN URLs. Set `RUSTY_ENGINE_DEMO_PROJECT` to another project path
-before `den-serve up` when needed. The process group remains owned by `den-serve`; use its `status`,
-`logs`, and `stop` commands with the same project and repository arguments.
+port, and reports the local and LAN URLs. The managed launch defaults to
+`content/projects/doom-e1m1.project.json`, which keeps the E1M1 card enabled on the menu. Set
+`RUSTY_ENGINE_DEMO_PROJECT` to another project path before `den-serve up` when needed. The process
+group remains owned by `den-serve`; use its `status`, `logs`, and `stop` commands with the same
+project and repository arguments.
 
 The complete product gate is:
 
