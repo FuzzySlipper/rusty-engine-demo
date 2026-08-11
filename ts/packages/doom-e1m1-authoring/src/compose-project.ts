@@ -185,10 +185,15 @@ export function buildDoomE1M1Project(
 
   // Build material assets (54 materials + 54 textures =108) to match Rust helper
   const assets: any[] = [];
-  // Include required mesh assets from loading-bay (player marker, prop-kit, animated meshes) so
-  // Doom renderables resolve. We copy them verbatim to keep the one-way pin and avoid a second catalog.
+  // Include the required mesh assets and their authored materials from
+  // loading-bay so Doom renderables resolve as a complete application-content
+  // closure. We copy them verbatim to keep the one-way pin and avoid a second
+  // catalog.
   for (const asset of loadingBay.assets as any[]) {
-    if (typeof asset.id === "string" && asset.id.startsWith("mesh")) {
+    if (
+      typeof asset.id === "string" &&
+      (asset.id.startsWith("mesh") || asset.material !== undefined)
+    ) {
       assets.push(asset);
     }
   }
@@ -480,7 +485,70 @@ export function buildDoomE1M1Project(
     },
   });
 
-  const enemyTypes = new Set([9, 3001, 3004]);
+  const enemyArchetypes = {
+    9: {
+      name: "shotgun-guy",
+      health: 30,
+      painDurationTicks: Math.round((6 / 35) * 60),
+      mesh: "mesh-animation/arc-warden",
+      attack: {
+        kind: "rangedHitscan",
+        damage: 27,
+        range: 128,
+        cooldownTicks: Math.round((30 / 35) * 60),
+        originOffset: [0, 0.25, 0],
+        presentation: "doom-shotgun-guy-blast",
+      },
+      drop: {
+        item: "weapon/shotgun",
+        quantity: 1,
+        mesh: "mesh/prop-kit/breach-scattergun",
+        starterAmmunition: { item: "ammo/shells", quantity: 4 },
+      },
+    },
+    3001: {
+      name: "imp",
+      health: 60,
+      painDurationTicks: Math.round((4 / 35) * 60),
+      mesh: "mesh-animation/arc-warden",
+      attack: {
+        kind: "projectile",
+        damage: 12,
+        range: 128,
+        cooldownTicks: Math.round((22 / 35) * 60),
+        originOffset: [0, 0.25, 0],
+        presentation: "doom-imp-fireball",
+        projectile: {
+          mass: 0.2,
+          radius: 0.375,
+          impulse: 4.375,
+          gravityScale: 0,
+          lifetimeTicks: 360,
+          restitution: 0,
+        },
+      },
+      drop: null,
+    },
+    3004: {
+      name: "zombieman",
+      health: 20,
+      painDurationTicks: Math.round((6 / 35) * 60),
+      mesh: "mesh-animation/bay-rusher",
+      attack: {
+        kind: "rangedHitscan",
+        damage: 9,
+        range: 128,
+        cooldownTicks: Math.round((26 / 35) * 60),
+        originOffset: [0, 0.25, 0],
+        presentation: "doom-zombieman-shot",
+      },
+      drop: {
+        item: "ammo/bullets",
+        quantity: 5,
+        mesh: "mesh/prop-kit/energy-cell",
+      },
+    },
+  } as const;
   const pickupMap: Record<
     number,
     {
@@ -548,134 +616,95 @@ export function buildDoomE1M1Project(
     },
   };
 
-  // Enemies
+  // E1M1 UV enemies. The archetype records above are immutable authored
+  // calibration; every placement resolves to ordinary reusable Rust owners.
+  const encounterMembers = new Map<string, number[]>();
+  const encounterPositions = new Map<string, [number, number, number][]>();
+  const encounterNameFor = (thing: { x: number; y: number }): string => {
+    if (thing.y <= -3900) return "exit-annex";
+    if (thing.x < 1000) return "west-court";
+    if (thing.x < 2600) return "central-stairs";
+    return "east-lift";
+  };
+  const sourceYaw = (angle: number): [number, number, number, number] => {
+    const radians = (-angle * Math.PI) / 180;
+    return [0, Math.sin(radians / 2), 0, Math.cos(radians / 2)];
+  };
   let enemyIndex = 0;
   for (const thing of inter.level.things) {
-    if (!enemyTypes.has(thing.type)) continue;
+    const archetype =
+      enemyArchetypes[thing.type as keyof typeof enemyArchetypes];
+    if (!archetype || (thing.options & 4) === 0 || (thing.options & 16) !== 0) {
+      continue;
+    }
     enemyIndex += 1;
     const pos = doomToWorldForThing(thing);
-    const isRanged = thing.type === 9 || thing.type === 3001;
-    const mesh = isRanged
-      ? "mesh-animation/arc-warden"
-      : "mesh-animation/bay-rusher";
-    const visualBinding = isRanged
-      ? {
-          version: 1,
-          states: [
-            {
-              state: "idle",
-              kind: "animation",
-              clip: "idle",
-              loopMode: "repeat",
-              speed: 1,
-              fadeSeconds: 0.12,
-            },
-            {
-              state: "moving",
-              kind: "animation",
-              clip: "run",
-              loopMode: "repeat",
-              speed: 1,
-              fadeSeconds: 0.1,
-            },
-            {
-              state: "alert",
-              kind: "animation",
-              clip: "idle",
-              loopMode: "repeat",
-              speed: 1,
-              fadeSeconds: 0.08,
-            },
-            {
-              state: "attacking",
-              kind: "animation",
-              clip: "attack",
-              loopMode: "repeat",
-              speed: 1,
-              fadeSeconds: 0.06,
-            },
-            {
-              state: "hit",
-              kind: "animation",
-              clip: "hit",
-              loopMode: "once",
-              speed: 1,
-              fadeSeconds: 0.04,
-            },
-            {
-              state: "defeated",
-              kind: "animation",
-              clip: "death",
-              loopMode: "once",
-              speed: 1,
-              fadeSeconds: 0.08,
-            },
-          ],
-        }
-      : {
-          version: 1,
-          states: [
-            {
-              state: "idle",
-              kind: "animation",
-              clip: "idle",
-              loopMode: "repeat",
-              speed: 1,
-              fadeSeconds: 0.12,
-            },
-            {
-              state: "moving",
-              kind: "animation",
-              clip: "run",
-              loopMode: "repeat",
-              speed: 1,
-              fadeSeconds: 0.1,
-            },
-            {
-              state: "alert",
-              kind: "animation",
-              clip: "idle",
-              loopMode: "repeat",
-              speed: 1,
-              fadeSeconds: 0.08,
-            },
-            {
-              state: "attacking",
-              kind: "animation",
-              clip: "attack",
-              loopMode: "repeat",
-              speed: 1,
-              fadeSeconds: 0.06,
-            },
-            {
-              state: "hit",
-              kind: "animation",
-              clip: "hit",
-              loopMode: "once",
-              speed: 1,
-              fadeSeconds: 0.04,
-            },
-            {
-              state: "defeated",
-              kind: "animation",
-              clip: "death",
-              loopMode: "once",
-              speed: 1,
-              fadeSeconds: 0.08,
-            },
-          ],
-        };
+    pos[1] += 1.25;
+    const visualBinding = {
+      version: 1,
+      states: [
+        {
+          state: "idle",
+          kind: "animation",
+          clip: "idle",
+          loopMode: "repeat",
+          speed: 1,
+          fadeSeconds: 0.12,
+        },
+        {
+          state: "moving",
+          kind: "animation",
+          clip: "run",
+          loopMode: "repeat",
+          speed: 1,
+          fadeSeconds: 0.1,
+        },
+        {
+          state: "alert",
+          kind: "animation",
+          clip: "idle",
+          loopMode: "repeat",
+          speed: 1,
+          fadeSeconds: 0.08,
+        },
+        {
+          state: "attacking",
+          kind: "animation",
+          clip: "attack",
+          loopMode: "repeat",
+          speed: 1,
+          fadeSeconds: 0.06,
+        },
+        {
+          state: "hit",
+          kind: "animation",
+          clip: "hit",
+          loopMode: "once",
+          speed: 1,
+          fadeSeconds: 0.04,
+        },
+        {
+          state: "defeated",
+          kind: "animation",
+          clip: "death",
+          loopMode: "once",
+          speed: 1,
+          fadeSeconds: 0.08,
+        },
+      ],
+    };
     const id = nextId++;
-    entities.push({
+    const enemy: any = {
       id,
-      name: `doom-enemy-${thing.type}-${enemyIndex}`,
+      name: `doom-${archetype.name}-${enemyIndex}`,
       translation: pos,
+      rotation: sourceYaw(thing.angle),
       collision: { enabled: true, staticCollider: false },
       renderable: {
-        asset: mesh,
+        asset: archetype.mesh,
         visible: true,
         localTransform: {
-          translation: [0, -0.9, 0],
+          translation: [0, -1.75, 0],
           rotation: [0, 0, 0, 1],
           scale: [1, 1, 1],
         },
@@ -684,23 +713,98 @@ export function buildDoomE1M1Project(
       },
       enemy: true,
       enemyCombat: {
-        sightRange: isRanged ? 12 : 9,
-        hearingRange: 5,
-        attack: {
-          kind: isRanged ? "rangedHitscan" : "melee",
-          damage: isRanged ? 6 : 10,
-          range: isRanged ? 14 : 1.4,
-          cooldownTicks: isRanged ? 90 : 110,
-          originOffset: [0, 0.25, 0],
-          presentation: isRanged ? "sentry-pulse" : "sentry-strike",
-        },
+        sightRange: 64,
+        hearingRange: (thing.options & 8) !== 0 ? 0 : 12,
+        painDurationTicks: archetype.painDurationTicks,
+        attack: archetype.attack,
       },
-      health: { max: isRanged ? 60 : 40, hitboxHalfExtents: [0.35, 0.7, 0.35] },
-      kinematic: { halfExtents: [0.3, 0.4, 0.3], velocity: [0, 0, 0] },
+      health: {
+        max: archetype.health,
+        hitboxHalfExtents: [1.25, 1.75, 1.25],
+      },
+      kinematic: { halfExtents: [1.25, 1.75, 1.25], velocity: [0, 0, 0] },
       navigation: {
         goal: pos,
-        speedUnitsPerSecond: isRanged ? 3.2 : 4.2,
+        speedUnitsPerSecond: 8,
         maxVisited: 64,
+      },
+    };
+    if (archetype.drop !== null) {
+      const dropId = nextId++;
+      enemy.defeatDrop = { pickup: dropId };
+      entities.push(enemy, {
+        id: dropId,
+        name: `doom-drop-${archetype.name}-${enemyIndex}`,
+        translation: pos,
+        bounds: { min: [-0.3, -0.3, -0.3], max: [0.3, 0.3, 0.3] },
+        renderable: {
+          asset: archetype.drop.mesh,
+          visible: false,
+        },
+        pickup: {
+          item: archetype.drop.item,
+          quantity: archetype.drop.quantity,
+          ...("starterAmmunition" in archetype.drop
+            ? { starterAmmunition: archetype.drop.starterAmmunition }
+            : {}),
+        },
+      });
+    } else {
+      entities.push(enemy);
+    }
+    const encounterName = encounterNameFor(thing);
+    const members = encounterMembers.get(encounterName) ?? [];
+    members.push(id);
+    encounterMembers.set(encounterName, members);
+    const positions = encounterPositions.get(encounterName) ?? [];
+    positions.push(pos);
+    encounterPositions.set(encounterName, positions);
+  }
+  for (const [name, members] of encounterMembers) {
+    const positions = encounterPositions.get(name)!;
+    const translation: [number, number, number] = [0, 0, 0];
+    for (const position of positions) {
+      translation[0] += position[0] / positions.length;
+      translation[1] += position[1] / positions.length;
+      translation[2] += position[2] / positions.length;
+    }
+    entities.push({
+      id: nextId++,
+      name: `doom-encounter-${name}`,
+      translation,
+      encounter: {
+        members,
+        activationRadius: name === "central-stairs" ? 24 : 18,
+      },
+    });
+  }
+
+  // The six E1M1 type-2035 barrels remain ordinary damageable world objects.
+  // Rust's named explosive-prop owner supplies their live chain consequences.
+  let barrelIndex = 0;
+  for (const thing of inter.level.things) {
+    if (thing.type !== 2035 || (thing.options & 4) === 0) continue;
+    barrelIndex += 1;
+    const pos = doomToWorldForThing(thing);
+    pos[1] += 0.8125;
+    entities.push({
+      id: nextId++,
+      name: `doom-explosive-barrel-${barrelIndex}`,
+      translation: pos,
+      rotation: sourceYaw(thing.angle),
+      collision: { enabled: true, staticCollider: false },
+      renderable: {
+        asset: "mesh/prop-kit/hazard-marker",
+        visible: true,
+      },
+      health: { max: 20, hitboxHalfExtents: [0.625, 1.3125, 0.625] },
+      kinematic: {
+        halfExtents: [0.625, 1.3125, 0.625],
+        velocity: [0, 0, 0],
+      },
+      explosiveProp: {
+        damage: 128,
+        radius: 8,
       },
     });
   }

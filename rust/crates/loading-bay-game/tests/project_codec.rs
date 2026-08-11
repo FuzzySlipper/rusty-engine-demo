@@ -33,6 +33,44 @@ fn canonical_encode_is_a_byte_stable_fixed_point() {
 }
 
 #[test]
+fn current_schema_encounter_without_exit_stays_optional_without_migration() {
+    let mut previous: serde_json::Value = serde_json::from_str(CURRENT_PROJECT).unwrap();
+    previous["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity.get("encounter").is_some())
+        .and_then(|entity| entity.get_mut("encounter"))
+        .and_then(serde_json::Value::as_object_mut)
+        .expect("encounter")
+        .remove("exit");
+
+    let decoded = decode_project_document(&previous.to_string()).unwrap();
+    assert_eq!(decoded.source_schema_version, STORED_PROJECT_SCHEMA_VERSION);
+    assert!(!decoded.was_migrated());
+
+    let project = decoded.project;
+    let encounter = project.scenes[0]
+        .entities
+        .iter()
+        .find_map(|entity| entity.encounter.as_ref())
+        .expect("encounter");
+    assert_eq!(encounter.exit, None);
+
+    let encoded = encode_project_document(&project).unwrap();
+    let encoded: serde_json::Value = serde_json::from_str(&encoded).unwrap();
+    let encoded_encounter = encoded["scenes"][0]["entities"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find_map(|entity| entity.get("encounter"))
+        .expect("encoded encounter");
+    assert!(encoded_encounter.get("exit").is_none());
+
+    admit_stored_project(project).expect("optional encounter exit admits");
+}
+
+#[test]
 fn real_schema_six_project_migrates_into_the_current_admitted_shape() {
     let decoded = decode_project_document(LEGACY_PROJECT).unwrap();
 

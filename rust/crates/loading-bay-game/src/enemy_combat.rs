@@ -10,7 +10,9 @@ use rusty_engine::entity_state::EntityState;
 
 use crate::combat::EnemyState;
 use crate::encounter::EncounterService;
+use crate::inventory::ProjectileDefinition;
 use crate::navigation::NavigationPhaseReceipt;
+use crate::projectile::{EnemyProjectileSpawn, ProjectileService};
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
@@ -26,6 +28,7 @@ pub const MAX_ENEMY_PRESENTATION_BYTES: usize = 96;
 pub enum EnemyAttackKind {
     Melee,
     RangedHitscan,
+    Projectile,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -42,11 +45,13 @@ pub struct EnemyAttackConfig {
     pub cooldown_ticks: u64,
     pub origin_offset: Vec3,
     pub presentation: String,
+    pub projectile: Option<ProjectileDefinition>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct EnemyCombatConfig {
     pub perception: EnemyPerceptionConfig,
+    pub pain_duration_ticks: u64,
     pub attack: EnemyAttackConfig,
 }
 
@@ -55,6 +60,7 @@ impl EnemyCombatConfig {
         finite_positive_bounded(self.perception.sight_range, MAX_ENEMY_PERCEPTION_RANGE)
             && self.perception.hearing_range.is_finite()
             && (0.0..=MAX_ENEMY_PERCEPTION_RANGE).contains(&self.perception.hearing_range)
+            && self.pain_duration_ticks <= MAX_ENEMY_ATTACK_COOLDOWN_TICKS
             && (1..=MAX_ENEMY_ATTACK_DAMAGE).contains(&self.attack.damage)
             && finite_positive_bounded(self.attack.range, MAX_ENEMY_ATTACK_RANGE)
             && self.attack.cooldown_ticks <= MAX_ENEMY_ATTACK_COOLDOWN_TICKS
@@ -62,6 +68,15 @@ impl EnemyCombatConfig {
             && self.attack.origin_offset.x.abs() <= MAX_ENEMY_ATTACK_RANGE
             && self.attack.origin_offset.y.abs() <= MAX_ENEMY_ATTACK_RANGE
             && self.attack.origin_offset.z.abs() <= MAX_ENEMY_ATTACK_RANGE
+            && match self.attack.kind {
+                EnemyAttackKind::Projectile => self
+                    .attack
+                    .projectile
+                    .is_some_and(ProjectileDefinition::is_valid),
+                EnemyAttackKind::Melee | EnemyAttackKind::RangedHitscan => {
+                    self.attack.projectile.is_none()
+                }
+            }
             && !self.attack.presentation.is_empty()
             && self.attack.presentation.len() <= MAX_ENEMY_PRESENTATION_BYTES
     }
@@ -81,6 +96,7 @@ pub struct EnemyCombatState {
     pub posture: EnemyCombatPosture,
     pub ready_at_tick: Tick,
     pub last_known_target_position: Option<Vec3>,
+    pub pain_ticks_remaining: u64,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -130,6 +146,14 @@ pub enum EnemyCombatFact {
         target_position: Vec3,
         distance: f32,
         ready_at_tick: Tick,
+    },
+    ProjectileSpawned {
+        enemy: EntityId,
+        target: EntityId,
+        projectile: EntityId,
+        origin: Vec3,
+        impulse: Vec3,
+        expires_at: Tick,
     },
     AttackHit {
         enemy: EntityId,
@@ -186,6 +210,10 @@ impl EnemyCombatService {
         let mut navigation_goals = BTreeMap::new();
 
         for enemy in enemies {
+            if let Some(component) = session.enemy_combat.get_mut(&enemy) {
+                component.state.pain_ticks_remaining =
+                    component.state.pain_ticks_remaining.saturating_sub(1);
+            }
             if !EncounterService::enemy_is_active(session, enemy) {
                 continue;
             }
@@ -287,6 +315,7 @@ impl EnemyCombatService {
         scene: &VoxelCollisionScene,
         tick: Tick,
         player: EntityId,
+        projectiles: &mut ProjectileService,
     ) -> Result<EnemyAttackPhaseReceipt, RuntimeError> {
         let enemies: Vec<EntityId> = session.enemy_combat.keys().copied().collect();
         let mut facts = Vec::new();
@@ -364,6 +393,38 @@ impl EnemyCombatService {
                 distance,
                 ready_at_tick,
             });
+
+            if kind == EnemyAttackKind::Projectile {
+                let definition = component
+                    .config
+                    .attack
+                    .projectile
+                    .expect("validated projectile enemy attack carries its definition");
+                let direction = player_position - origin;
+                let (projectile, impulse, expires_at) = projectiles
+                    .spawn_enemy(
+                        session,
+                        EnemyProjectileSpawn {
+                            owner: enemy,
+                            target: player,
+                            definition,
+                            damage: component.config.attack.damage,
+                            origin,
+                            direction,
+                            tick,
+                        },
+                    )
+                    .map_err(RuntimeError::Projectile)?;
+                facts.push(EnemyCombatFact::ProjectileSpawned {
+                    enemy,
+                    target: player,
+                    projectile,
+                    origin,
+                    impulse,
+                    expires_at,
+                });
+                continue;
+            }
 
             if !line_of_sight(
                 scene,

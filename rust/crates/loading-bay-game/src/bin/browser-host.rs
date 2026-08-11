@@ -11,11 +11,12 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use loading_bay_game::{
     admit_stored_project_with_document, encode_project_document, materialize_stored_project_voxels,
     project_doom_e1m1_application_content, project_stored_voxel_objects, AdmittedStoredProject,
-    CombatFact, CombatMissReason, GameEvent, GameLoopFact, GameRuntime, LoadingBayGameLoop,
-    NavigationFact, PlayerControlFact, ProjectSaveMode, ProjectStore, ProjectedApplicationContent,
-    SaveGameError, SaveGameStore, SaveProjectIdentity, SaveSlotId, SaveSlotSummary,
-    SaveWriteRequest, StoredAsset, StoredImportSource, StoredProject, VoxelEdit,
-    VoxelEditTransaction, VoxelSourceRevision, MAX_PENDING_GAME_LOOP_FACTS,
+    CombatFact, CombatMissReason, GameEvent, GameLoopFact, GameRuntime,
+    GameplayApplicationProjector, LoadingBayGameLoop, NavigationFact, PlayerControlFact,
+    ProjectSaveMode, ProjectStore, ProjectedApplicationContent, SaveGameError, SaveGameStore,
+    SaveProjectIdentity, SaveSlotId, SaveSlotSummary, SaveWriteRequest, StoredAsset,
+    StoredImportSource, StoredProject, VoxelEdit, VoxelEditTransaction, VoxelSourceRevision,
+    MAX_PENDING_GAME_LOOP_FACTS,
 };
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::engine_spatial::VoxelCollisionScene;
@@ -62,6 +63,7 @@ struct BrowserRuntime {
     authored: AdmittedStoredProject,
     voxel_object_frame: RenderFrameDiff,
     application_content: Option<ProjectedApplicationContent>,
+    gameplay_projector: Option<GameplayApplicationProjector>,
     voxel_environment_role: &'static str,
     project_path: PathBuf,
     project: BrowserProjectSummary,
@@ -147,6 +149,16 @@ impl BrowserRuntime {
             });
         let runtime = LoadingBayGameLoop::new(GameRuntime::from_admitted_project(admitted), ACTOR)
             .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?;
+        let mut gameplay_projector = (project.project_id == "doom-e1m1")
+            .then(|| GameplayApplicationProjector::new(authored.document()));
+        let initial_gameplay_frame = gameplay_projector
+            .as_mut()
+            .map(|projector| projector.project(runtime.runtime()))
+            .transpose()
+            .map_err(|error| format!("project initial gameplay frame: {error}"))?
+            .unwrap_or_else(|| {
+                RenderFrameDiff::try_from_ops(Vec::new()).expect("empty frame is valid")
+            });
         let application_content = if project.project_id == "doom-e1m1" {
             let admitted_scene = runtime
                 .runtime()
@@ -163,6 +175,7 @@ impl BrowserRuntime {
                     authored.document(),
                     &rendered_scene,
                     &voxel_object_frame,
+                    &initial_gameplay_frame,
                 )
                 .map_err(|error| format!("project Doom E1M1 application content: {error}"))?,
             )
@@ -179,6 +192,7 @@ impl BrowserRuntime {
             authored,
             voxel_object_frame,
             application_content,
+            gameplay_projector,
             voxel_environment_role,
             project_path,
             project,
@@ -365,6 +379,7 @@ impl BrowserRuntime {
             authored: self.authored.clone(),
             voxel_object_frame: self.voxel_object_frame.clone(),
             application_content: self.application_content.clone(),
+            gameplay_projector: self.gameplay_projector.clone(),
             voxel_environment_role: self.voxel_environment_role,
             project_path: self.project_path.clone(),
             project: self.project.clone(),
@@ -1387,6 +1402,7 @@ fn enemy_combat_fact_name(fact: &loading_bay_game::EnemyCombatFact) -> &'static 
         loading_bay_game::EnemyCombatFact::AttackFired { .. } => "EnemyAttackFired",
         loading_bay_game::EnemyCombatFact::AttackHit { .. } => "EnemyAttackHit",
         loading_bay_game::EnemyCombatFact::AttackMissed { .. } => "EnemyAttackMissed",
+        loading_bay_game::EnemyCombatFact::ProjectileSpawned { .. } => "EnemyProjectileSpawned",
         loading_bay_game::EnemyCombatFact::Vitality(fact) => vitality_fact_name(fact),
     }
 }
@@ -1440,9 +1456,20 @@ fn combat_fact_name(fact: &CombatFact) -> &'static str {
         }
         CombatFact::EnemyDefeated { .. } => "CombatEnemyDefeated",
         CombatFact::EnemyDrop(_) => "EnemyDropMaterialized",
+        CombatFact::ExplosiveProp(fact) => explosive_prop_fact_name(fact),
         CombatFact::ProjectileSpawned { .. } => "ProjectileSpawned",
         CombatFact::ProjectileImpacted { .. } => "ProjectileImpacted",
         CombatFact::ProjectileExpired { .. } => "ProjectileExpired",
+    }
+}
+
+fn explosive_prop_fact_name(fact: &loading_bay_game::ExplosivePropFact) -> &'static str {
+    match fact {
+        loading_bay_game::ExplosivePropFact::Triggered { .. } => "ExplosivePropTriggered",
+        loading_bay_game::ExplosivePropFact::ExplosionStarted { .. } => "ExplosionStarted",
+        loading_bay_game::ExplosivePropFact::TargetOccluded { .. } => "ExplosionTargetOccluded",
+        loading_bay_game::ExplosivePropFact::TargetDamaged { .. } => "ExplosionTargetDamaged",
+        loading_bay_game::ExplosivePropFact::ExplosionResolved { .. } => "ExplosionResolved",
     }
 }
 
@@ -1566,6 +1593,17 @@ fn write_response(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn no_exit_encounter_clear_keeps_the_browser_hud_fact_name() {
+        assert_eq!(
+            event_name(&GameEvent::EncounterCleared {
+                encounter: EntityId::new(2),
+                exit: None,
+            }),
+            "EncounterCleared"
+        );
+    }
 
     #[test]
     fn desktop_arguments_require_loopback_and_absolute_readiness() {

@@ -7,7 +7,7 @@ use rusty_engine::engine_spatial::{
 use rusty_engine::entity_state::EntityView;
 use serde::{Deserialize, Serialize};
 
-use crate::encounter::EncounterService;
+use crate::explosive_prop::ExplosivePropFact;
 use crate::inventory::{
     InventoryAction, InventoryCommand, InventoryFact, InventoryRejection, InventoryService,
     ItemDefinitionId, ItemKind, WeaponAttackMode, WeaponDefinition,
@@ -121,6 +121,7 @@ pub enum CombatFact {
         reason: CombatMissReason,
     },
     Vitality(VitalityFact),
+    ExplosiveProp(ExplosivePropFact),
     EnemyDrop(EnemyDropFact),
     EnemyDefeated {
         attacker: EntityId,
@@ -416,6 +417,12 @@ impl CombatService {
                     )
                     .map_err(RuntimeError::Vitality)?;
                     facts.extend(damage.facts.into_iter().map(CombatFact::Vitality));
+                    facts.extend(
+                        damage
+                            .explosive_props
+                            .into_iter()
+                            .map(CombatFact::ExplosiveProp),
+                    );
                     facts.extend(damage.enemy_drops.into_iter().map(CombatFact::EnemyDrop));
                     facts.extend(
                         damage
@@ -586,20 +593,17 @@ fn nearest_combat_target(
     max_distance: f32,
 ) -> Option<CombatTargetHit> {
     let mut best = None;
-    for (entity, enemy) in &session.enemies {
-        if *entity == attacker
-            || enemy.state != EnemyState::Alive
-            || !EncounterService::enemy_is_active(session, *entity)
-        {
+    for entity in session.health.keys().copied() {
+        if entity == attacker || !session.is_player_attack_target(entity) {
             continue;
         }
-        let Some(health) = session.health(*entity) else {
+        let Some(health) = session.health(entity) else {
             continue;
         };
         if health.current == 0 {
             continue;
         }
-        let Ok(view) = session.entities.view(*entity) else {
+        let Ok(view) = session.entities.view(entity) else {
             continue;
         };
         if !view.collision.is_some_and(|collision| collision.enabled) {
@@ -617,10 +621,7 @@ fn nearest_combat_target(
             continue;
         }
         if best.is_none_or(|hit: CombatTargetHit| distance < hit.distance) {
-            best = Some(CombatTargetHit {
-                entity: *entity,
-                distance,
-            });
+            best = Some(CombatTargetHit { entity, distance });
         }
     }
     best

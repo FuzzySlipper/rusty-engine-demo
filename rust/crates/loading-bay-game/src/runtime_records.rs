@@ -35,7 +35,7 @@ pub enum GameEvent {
     },
     EncounterCleared {
         encounter: EntityId,
-        exit: EntityId,
+        exit: Option<EntityId>,
     },
 }
 

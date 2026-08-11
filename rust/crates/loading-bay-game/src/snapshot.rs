@@ -20,6 +20,7 @@ use crate::enemy_combat::{
     EnemyCombatPosture, EnemyCombatState, EnemyPerceptionConfig,
 };
 use crate::enemy_drop::{EnemyDropComponent, EnemyDropConfig, EnemyDropState};
+use crate::explosive_prop::{ExplosivePropComponent, ExplosivePropConfig, ExplosivePropState};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconState,
 };
@@ -33,7 +34,7 @@ use crate::interaction::{SwitchComponent, SwitchConfig, SwitchEffect};
 use crate::inventory::{
     admit_item_definitions, inventory_from_config, ArmorGrantMode, ArmorTransition,
     InventoryAdmissionError, InventoryConfig, InventoryStack, ItemDefinition, ItemDefinitionId,
-    ItemKind, WeaponAttackMode, WeaponDefinition,
+    ItemKind, ProjectileDefinition, WeaponAttackMode, WeaponDefinition,
 };
 use crate::lift::{LiftComponent, LiftConfig, LiftState, LIFT_TRIGGER_SCOPE};
 use crate::navigation::{
@@ -94,6 +95,8 @@ pub struct GameSnapshot {
     #[serde(default)]
     pub enemy_drops: Vec<EnemyDropSnapshot>,
     pub health: Vec<HealthSnapshot>,
+    #[serde(default)]
+    pub explosive_props: Vec<ExplosivePropSnapshot>,
     #[serde(default)]
     pub hazards: Vec<HazardSnapshot>,
     pub encounters: Vec<EncounterSnapshot>,
@@ -553,16 +556,26 @@ pub struct EnemyCombatSnapshot {
     pub entity: u64,
     pub sight_range: f32,
     pub hearing_range: f32,
+    #[serde(default = "snapshot_default_enemy_pain_duration_ticks")]
+    pub pain_duration_ticks: u64,
     pub attack_kind: SnapshotEnemyAttackKind,
     pub damage: u32,
     pub range: f32,
     pub cooldown_ticks: u64,
     pub origin_offset: [f32; 3],
     pub presentation: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projectile: Option<SnapshotEnemyProjectile>,
     pub posture: SnapshotEnemyCombatPosture,
     pub ready_at_tick: u64,
+    #[serde(default)]
+    pub pain_ticks_remaining: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_known_target_position: Option<[f32; 3]>,
+}
+
+fn snapshot_default_enemy_pain_duration_ticks() -> u64 {
+    6
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -570,6 +583,18 @@ pub struct EnemyCombatSnapshot {
 pub enum SnapshotEnemyAttackKind {
     Melee,
     RangedHitscan,
+    Projectile,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct SnapshotEnemyProjectile {
+    pub mass: f32,
+    pub radius: f32,
+    pub impulse: f32,
+    pub gravity_scale: f32,
+    pub lifetime_ticks: u64,
+    pub restitution: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -618,6 +643,24 @@ pub struct HealthSnapshot {
     pub state: Option<SnapshotVitalityState>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct ExplosivePropSnapshot {
+    pub entity: u64,
+    pub damage: u32,
+    pub radius: f32,
+    pub state: SnapshotExplosivePropState,
+    #[serde(default)]
+    pub pending: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotExplosivePropState {
+    Armed,
+    Exploded,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum SnapshotVitalityState {
@@ -640,7 +683,8 @@ pub struct EncounterSnapshot {
     pub entity: u64,
     pub state: SnapshotEncounterState,
     pub members: Vec<u64>,
-    pub exit: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exit: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activation_radius: Option<f32>,
 }
@@ -1427,15 +1471,27 @@ impl GameRuntime {
                     entity: entity.raw(),
                     sight_range: component.config.perception.sight_range,
                     hearing_range: component.config.perception.hearing_range,
+                    pain_duration_ticks: component.config.pain_duration_ticks,
                     attack_kind: match component.config.attack.kind {
                         EnemyAttackKind::Melee => SnapshotEnemyAttackKind::Melee,
                         EnemyAttackKind::RangedHitscan => SnapshotEnemyAttackKind::RangedHitscan,
+                        EnemyAttackKind::Projectile => SnapshotEnemyAttackKind::Projectile,
                     },
                     damage: component.config.attack.damage,
                     range: component.config.attack.range,
                     cooldown_ticks: component.config.attack.cooldown_ticks,
                     origin_offset: component.config.attack.origin_offset.to_array(),
                     presentation: component.config.attack.presentation.clone(),
+                    projectile: component.config.attack.projectile.map(|projectile| {
+                        SnapshotEnemyProjectile {
+                            mass: projectile.mass,
+                            radius: projectile.radius,
+                            impulse: projectile.impulse,
+                            gravity_scale: projectile.gravity_scale,
+                            lifetime_ticks: projectile.lifetime_ticks,
+                            restitution: projectile.restitution,
+                        }
+                    }),
                     posture: match component.state.posture {
                         EnemyCombatPosture::Sleeping => SnapshotEnemyCombatPosture::Sleeping,
                         EnemyCombatPosture::Alert => SnapshotEnemyCombatPosture::Alert,
@@ -1444,6 +1500,7 @@ impl GameRuntime {
                         EnemyCombatPosture::Dead => SnapshotEnemyCombatPosture::Dead,
                     },
                     ready_at_tick: component.state.ready_at_tick.raw(),
+                    pain_ticks_remaining: component.state.pain_ticks_remaining,
                     last_known_target_position: component
                         .state
                         .last_known_target_position
@@ -1492,6 +1549,21 @@ impl GameRuntime {
                     }
                 })
                 .collect(),
+            explosive_props: self
+                .session
+                .explosive_props
+                .iter()
+                .map(|(entity, component)| ExplosivePropSnapshot {
+                    entity: entity.raw(),
+                    damage: component.config.damage,
+                    radius: component.config.radius,
+                    state: match component.state {
+                        ExplosivePropState::Armed => SnapshotExplosivePropState::Armed,
+                        ExplosivePropState::Exploded => SnapshotExplosivePropState::Exploded,
+                    },
+                    pending: component.pending,
+                })
+                .collect(),
             hazards: self
                 .session
                 .hazards
@@ -1520,7 +1592,7 @@ impl GameRuntime {
                         .iter()
                         .map(|member| member.raw())
                         .collect(),
-                    exit: component.config.exit.raw(),
+                    exit: component.config.exit.map(EntityId::raw),
                     activation_radius: component.config.activation_radius,
                 })
                 .collect(),
@@ -2652,6 +2724,53 @@ impl GameRuntime {
             }
         }
 
+        let mut explosive_props = BTreeMap::new();
+        let mut explosive_prop_ids = BTreeSet::new();
+        for prop in snapshot.explosive_props {
+            if !explosive_prop_ids.insert(prop.entity) {
+                return Err(GameSnapshotError::InvalidHealthConfig {
+                    entity: prop.entity,
+                });
+            }
+            let entity = EntityId::new(prop.entity);
+            if !health.contains_key(&entity) {
+                return Err(GameSnapshotError::InvalidHealthConfig {
+                    entity: prop.entity,
+                });
+            }
+            let config = ExplosivePropConfig {
+                damage: prop.damage,
+                radius: prop.radius,
+            };
+            let state = match prop.state {
+                SnapshotExplosivePropState::Armed => ExplosivePropState::Armed,
+                SnapshotExplosivePropState::Exploded => ExplosivePropState::Exploded,
+            };
+            let current = entities
+                .component::<rusty_engine::gameplay_mechanics::TracksComponent>(entity)
+                .ok()
+                .flatten()
+                .and_then(|tracks| tracks.current(&crate::mechanics::health_track()))
+                .and_then(|value| u32::try_from(value.get()).ok())
+                .unwrap_or(0);
+            if !config.is_valid()
+                || matches!(state, ExplosivePropState::Armed) != (current > 0)
+                || (prop.pending && state != ExplosivePropState::Exploded)
+            {
+                return Err(GameSnapshotError::InvalidHealthConfig {
+                    entity: prop.entity,
+                });
+            }
+            explosive_props.insert(
+                entity,
+                ExplosivePropComponent {
+                    config,
+                    state,
+                    pending: prop.pending,
+                },
+            );
+        }
+
         let mut hazards = BTreeMap::new();
         let mut hazard_ids = BTreeSet::new();
         for hazard in snapshot.hazards {
@@ -2780,16 +2899,26 @@ impl GameRuntime {
                     sight_range: combat.sight_range,
                     hearing_range: combat.hearing_range,
                 },
+                pain_duration_ticks: combat.pain_duration_ticks,
                 attack: EnemyAttackConfig {
                     kind: match combat.attack_kind {
                         SnapshotEnemyAttackKind::Melee => EnemyAttackKind::Melee,
                         SnapshotEnemyAttackKind::RangedHitscan => EnemyAttackKind::RangedHitscan,
+                        SnapshotEnemyAttackKind::Projectile => EnemyAttackKind::Projectile,
                     },
                     damage: combat.damage,
                     range: combat.range,
                     cooldown_ticks: combat.cooldown_ticks,
                     origin_offset: array_vec3(combat.origin_offset),
                     presentation: combat.presentation,
+                    projectile: combat.projectile.map(|projectile| ProjectileDefinition {
+                        mass: projectile.mass,
+                        radius: projectile.radius,
+                        impulse: projectile.impulse,
+                        gravity_scale: projectile.gravity_scale,
+                        lifetime_ticks: projectile.lifetime_ticks,
+                        restitution: projectile.restitution,
+                    }),
                 },
             };
             let posture = match combat.posture {
@@ -2823,6 +2952,8 @@ impl GameRuntime {
             if !config.is_valid()
                 || !position_state_valid
                 || !enemy_state_valid
+                || (posture == EnemyCombatPosture::Dead && combat.pain_ticks_remaining != 0)
+                || combat.pain_ticks_remaining > config.pain_duration_ticks
                 || last_known_target_position.is_some_and(|position| !vec3_is_finite(position))
                 || combat.ready_at_tick > snapshot.tick.saturating_add(config.attack.cooldown_ticks)
             {
@@ -2838,6 +2969,7 @@ impl GameRuntime {
                         posture,
                         ready_at_tick: Tick::new(combat.ready_at_tick),
                         last_known_target_position,
+                        pain_ticks_remaining: combat.pain_ticks_remaining,
                     },
                 },
             );
@@ -3557,11 +3689,13 @@ impl GameRuntime {
                     encounter: encounter.entity,
                 });
             }
-            if !doors.contains_key(&EntityId::new(encounter.exit)) {
-                return Err(GameSnapshotError::UnknownEncounterExit {
-                    encounter: encounter.entity,
-                    exit: encounter.exit,
-                });
+            if let Some(exit) = encounter.exit {
+                if !doors.contains_key(&EntityId::new(exit)) {
+                    return Err(GameSnapshotError::UnknownEncounterExit {
+                        encounter: encounter.entity,
+                        exit,
+                    });
+                }
             }
             let mut unique = BTreeSet::new();
             let mut members = Vec::with_capacity(encounter.members.len());
@@ -3592,7 +3726,7 @@ impl GameRuntime {
                 EncounterComponent {
                     config: EncounterConfig {
                         members,
-                        exit: EntityId::new(encounter.exit),
+                        exit: encounter.exit.map(EntityId::new),
                         activation_radius: encounter.activation_radius,
                     },
                     state: match encounter.state {
@@ -3640,6 +3774,7 @@ impl GameRuntime {
                 enemy_combat,
                 enemy_drops,
                 health,
+                explosive_props,
                 hazards,
                 encounters,
                 extraction_beacons,

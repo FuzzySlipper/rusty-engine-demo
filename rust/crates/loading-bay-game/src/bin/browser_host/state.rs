@@ -301,6 +301,7 @@ pub(super) struct BrowserState {
 pub(super) struct BrowserDynamicState {
     tick: u64,
     entity_revision: u64,
+    gameplay_frame: RenderFrameDiff,
     projection: Vec<BrowserProjectionNode>,
     door_state: &'static str,
     encounter_state: &'static str,
@@ -386,6 +387,17 @@ pub(super) fn browser_dynamic_state(
     feedback: BrowserFeedbackProjection,
 ) -> BrowserDynamicState {
     let runtime: &GameRuntime = host.runtime.runtime();
+    let gameplay_frame = host
+        .gameplay_projector
+        .as_ref()
+        .map(|projector| {
+            projector
+                .project_current(runtime)
+                .expect("admitted gameplay projection")
+        })
+        .unwrap_or_else(|| {
+            RenderFrameDiff::try_from_ops(Vec::new()).expect("empty frame is valid")
+        });
     let readout = runtime.readout();
     let projection = readout
         .projection
@@ -458,6 +470,7 @@ pub(super) fn browser_dynamic_state(
                     .map(|combat| match combat.config.attack.kind {
                         EnemyAttackKind::Melee => "melee",
                         EnemyAttackKind::RangedHitscan => "rangedHitscan",
+                        EnemyAttackKind::Projectile => "projectile",
                     }),
             }
         })
@@ -791,6 +804,7 @@ pub(super) fn browser_dynamic_state(
     BrowserDynamicState {
         tick: readout.tick.raw(),
         entity_revision: readout.entity_revision,
+        gameplay_frame,
         projection,
         door_state: runtime
             .session()
@@ -1162,6 +1176,23 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
 }
 
 fn projection_visual_state(runtime: &GameRuntime, entity: EntityId) -> &'static str {
+    if let Some(enemy) = runtime.session().enemy(entity) {
+        if enemy.state == EnemyState::Defeated {
+            return "defeated";
+        }
+        if let Some(combat) = runtime.session().enemy_combat(entity) {
+            if combat.state.pain_ticks_remaining > 0 {
+                return "hit";
+            }
+            return match combat.state.posture {
+                EnemyCombatPosture::Sleeping => "idle",
+                EnemyCombatPosture::Alert => "alert",
+                EnemyCombatPosture::Pursuing => "moving",
+                EnemyCombatPosture::Attacking => "attacking",
+                EnemyCombatPosture::Dead => "defeated",
+            };
+        }
+    }
     if let Some(door) = runtime.session().door(entity) {
         return match door.state {
             DoorState::Closed => "closed",

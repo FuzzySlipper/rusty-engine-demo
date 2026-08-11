@@ -17,6 +17,7 @@ use crate::encounter::EncounterService;
 use crate::enemy_combat::{
     EnemyAttackPhaseReceipt, EnemyCombatService, EnemyIntentAndMotionReceipt,
 };
+use crate::explosive_prop::{ExplosivePropError, ExplosivePropPhaseReceipt, ExplosivePropService};
 use crate::extraction_beacon::{ExtractionBeaconReceipt, ExtractionBeaconService};
 use crate::floor_action::{FloorActionPhaseReceipt, FloorActionRejection, FloorActionService};
 use crate::hazard::{HazardPhaseReceipt, HazardRejection, HazardService};
@@ -161,6 +162,7 @@ pub enum RuntimeError {
     LevelExit(LevelExitRejection),
     Secret(SecretRejection),
     Projectile(ProjectileError),
+    ExplosiveProp(ExplosivePropError),
 }
 
 impl std::fmt::Display for RuntimeError {
@@ -253,6 +255,11 @@ impl GameRuntime {
 
     pub fn session(&self) -> &GameSession {
         &self.session
+    }
+
+    #[cfg(test)]
+    pub(crate) fn session_mut(&mut self) -> &mut GameSession {
+        &mut self.session
     }
 
     pub fn readout(&self) -> RuntimeReadout {
@@ -459,7 +466,13 @@ impl GameRuntime {
             .as_ref()
             .ok_or(RuntimeError::MissingCollisionScene)?;
         let mut candidate = self.session.clone();
-        let mut receipt = EnemyCombatService::attack(&mut candidate, scene, self.tick, player)?;
+        let mut receipt = EnemyCombatService::attack(
+            &mut candidate,
+            scene,
+            self.tick,
+            player,
+            &mut self.projectiles,
+        )?;
         self.session = candidate;
         for event in receipt.events.drain(..) {
             self.events.push_back(event);
@@ -664,6 +677,18 @@ impl GameRuntime {
         Ok(receipt)
     }
 
+    pub fn run_explosive_prop_phase(&mut self) -> Result<ExplosivePropPhaseReceipt, RuntimeError> {
+        let scene = self
+            .collision_scene
+            .as_ref()
+            .ok_or(RuntimeError::MissingCollisionScene)?;
+        let mut receipt = ExplosivePropService::run(&mut self.session, scene)
+            .map_err(RuntimeError::ExplosiveProp)?;
+        self.events.extend(receipt.events.drain(..));
+        receipt.events = self.drain_events()?;
+        Ok(receipt)
+    }
+
     pub fn advance_by(&mut self, ticks: u64) -> Result<RuntimeReceipt, RuntimeError> {
         if ticks > MAX_TICK_ADVANCE {
             return Err(RuntimeError::TickAdvanceLimit {
@@ -752,8 +777,10 @@ impl GameRuntime {
                     ));
                 }
                 GameEvent::EncounterCleared { exit, .. } => {
-                    if let Some(transition) = DoorService::open(&mut self.session, *exit)? {
-                        self.queue_door_transition(*exit, transition);
+                    if let Some(exit) = *exit {
+                        if let Some(transition) = DoorService::open(&mut self.session, exit)? {
+                            self.queue_door_transition(exit, transition);
+                        }
                     }
                 }
                 GameEvent::DoorOpened { .. }

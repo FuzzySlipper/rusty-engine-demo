@@ -5,6 +5,375 @@
   "entryScene": "scene/doom-e1m1",
   "assets": [
     {
+      "id": "material/brush-kit/ceiling-strip",
+      "catalog": {
+        "version": 1,
+        "hash": "9b2ae6c5e77c444d9ff43685f3b061840bba28d8bf8c6176bc1240f6788b8ba6",
+        "sourcePath": null,
+        "label": "ceiling-strip"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/brush-kit/column",
+      "catalog": {
+        "version": 1,
+        "hash": "f807133b12cc544b2e4d80af33ee862c47ef1201cd7d7e85d5f8f2c8f12ed845",
+        "sourcePath": null,
+        "label": "column"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/brush-kit/corner",
+      "catalog": {
+        "version": 1,
+        "hash": "2a7d351cf02a44aec92a2ea8a518c11e58dc39165fc490d7ec8f807a4d9083a1",
+        "sourcePath": null,
+        "label": "corner"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/brush-kit/doorway",
+      "catalog": {
+        "version": 1,
+        "hash": "e01ce599f4ac9f5141fd361aac8e3b08895e3658a97c9ff2993bb0cc5d7eb40c",
+        "sourcePath": null,
+        "label": "doorway"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/brush-kit/floor-strip",
+      "catalog": {
+        "version": 1,
+        "hash": "021002fa700dab11d48809e58550125fc784a2f93aa9c450cd6b56f35ef6de77",
+        "sourcePath": null,
+        "label": "floor-strip"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/brush-kit/landmark-relay",
+      "catalog": {
+        "version": 1,
+        "hash": "73a0cd5425c11232749f44e571b4e73a8e51a06dd55f899881c7ed8ce8203119",
+        "sourcePath": null,
+        "label": "landmark-relay"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/brush-kit/vent-panel",
+      "catalog": {
+        "version": 1,
+        "hash": "14f50a829167a8fd54bcf645d4d6287acd93bb58b378f651d6617289365137e3",
+        "sourcePath": null,
+        "label": "vent-panel"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/brush-kit/wall-conservative",
+      "catalog": {
+        "version": 1,
+        "hash": "464bda56364746da5dd896121341f156609f8ab0a2e17be743a9436403596829",
+        "sourcePath": null,
+        "label": "wall-conservative"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/brush-kit/wall-dense",
+      "catalog": {
+        "version": 1,
+        "hash": "d7e01255994dfa5515967aa4c121c8264c8a4223902466425ff09eadd430a546",
+        "sourcePath": null,
+        "label": "wall-dense"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.31,
+            0.38,
+            0.43,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
       "id": "material/doom-flat-ceil3-5",
       "catalog": {
         "version": 1,
@@ -4137,6 +4506,1236 @@
               "cutoff": 0.5
             }
           }
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/arc-pistol-accent",
+      "catalog": {
+        "version": 1,
+        "hash": "fd78f3f507f94ff8458be1837f2d72c596bef3c6db1e1fdf66d08c2f995be65c",
+        "sourcePath": null,
+        "label": "arc-pistol-accent"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.16,
+            0.76,
+            0.94,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.16,
+            0.76,
+            0.94,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/arc-pistol-grip",
+      "catalog": {
+        "version": 1,
+        "hash": "c16b64dc75c1bcd1608ed68f0d98bb31404132d577499b364e1b60286de2ba86",
+        "sourcePath": null,
+        "label": "arc-pistol-grip"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.08,
+            0.12,
+            0.16,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.08,
+            0.12,
+            0.16,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/arc-pistol-receiver",
+      "catalog": {
+        "version": 1,
+        "hash": "68ec9a6801a7efa89c78d7ff41639c7d125101e6d0690bd30a9cd5da39279d2a",
+        "sourcePath": null,
+        "label": "arc-pistol-receiver"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.12,
+            0.28,
+            0.34,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.12,
+            0.28,
+            0.34,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/breach-scattergun-accent",
+      "catalog": {
+        "version": 1,
+        "hash": "e1bf3431b7accc59f74169accdbda2acb61f64e8e2ac7da532a51e3c3e6f8a44",
+        "sourcePath": null,
+        "label": "breach-scattergun-accent"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.62,
+            0.56,
+            0.46,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.62,
+            0.56,
+            0.46,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/breach-scattergun-grip",
+      "catalog": {
+        "version": 1,
+        "hash": "a53a0cfb7b1aa160a54f3f8b0dbc8ec6a1130d5ee6a3341922307206cac27191",
+        "sourcePath": null,
+        "label": "breach-scattergun-grip"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.7,
+            0.32,
+            0.1,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.7,
+            0.32,
+            0.1,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/breach-scattergun-receiver",
+      "catalog": {
+        "version": 1,
+        "hash": "f64dd251a6e830b7adc497cdf5ac416a3d08d6c26f7d9de1e864f1fd59bff1cb",
+        "sourcePath": null,
+        "label": "breach-scattergun-receiver"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.24,
+            0.19,
+            0.13,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.24,
+            0.19,
+            0.13,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/control-panel-surface",
+      "catalog": {
+        "version": 1,
+        "hash": "62caf455f3260f81ee5f8395a6cd5eb702ecbaba719f3d8120fd88755c833497",
+        "sourcePath": null,
+        "label": "control-panel-surface"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.16,
+            0.42,
+            0.48,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.16,
+            0.42,
+            0.48,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/energy-cell-charge",
+      "catalog": {
+        "version": 1,
+        "hash": "855bea9b07e2d6db37370c4db636d043a20c1114e947a4218ce8d2f4e1e611ac",
+        "sourcePath": null,
+        "label": "energy-cell-charge"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.15,
+            0.86,
+            0.94,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.15,
+            0.86,
+            0.94,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/energy-cell-shell",
+      "catalog": {
+        "version": 1,
+        "hash": "f2bddb17ceed9ac46f3a60b4ff3e19e7884d2e420bff07e0ac91ed9164531101",
+        "sourcePath": null,
+        "label": "energy-cell-shell"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.12,
+            0.24,
+            0.28,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.12,
+            0.24,
+            0.28,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/extraction-beacon-surface",
+      "catalog": {
+        "version": 1,
+        "hash": "a6f2008ccdb5353816c19d32bfd4be49e5f0d595a62df1fdd3e5b955f25fc289",
+        "sourcePath": null,
+        "label": "extraction-beacon-surface"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.12,
+            0.68,
+            0.58,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.12,
+            0.68,
+            0.58,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/hazard-marker-surface",
+      "catalog": {
+        "version": 1,
+        "hash": "27288c97957ab842d5adc7b0a0cb929a8dccac562ca02fa948aa8d1956fca8ad",
+        "sourcePath": null,
+        "label": "hazard-marker-surface"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.94,
+            0.38,
+            0.08,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.94,
+            0.38,
+            0.08,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/impact-vest-armor",
+      "catalog": {
+        "version": 1,
+        "hash": "70971020b85f17f1fb2a96cbaf6732111af9938dd27295cf5835c181731b017b",
+        "sourcePath": null,
+        "label": "impact-vest-armor"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.16,
+            0.47,
+            0.82,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.16,
+            0.47,
+            0.82,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/impact-vest-trim",
+      "catalog": {
+        "version": 1,
+        "hash": "ab0f61db431cb52f0fb32542b5cb73eed31725edbebb6e4029d5acb9222423d7",
+        "sourcePath": null,
+        "label": "impact-vest-trim"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.07,
+            0.14,
+            0.2,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.07,
+            0.14,
+            0.2,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/landmark-crane-surface",
+      "catalog": {
+        "version": 1,
+        "hash": "7b6a92c33b02e7a4fa8bb6800677f706d06edf4a39f51b84dd1861d008cdc89e",
+        "sourcePath": null,
+        "label": "landmark-crane-surface"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.72,
+            0.36,
+            0.09,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.72,
+            0.36,
+            0.09,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/landmark-tank-surface",
+      "catalog": {
+        "version": 1,
+        "hash": "24ae1449638b10cb96a1ce8642dbfe7a81da382e86da1a51caa59ea3b4575d42",
+        "sourcePath": null,
+        "label": "landmark-tank-surface"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.24,
+            0.36,
+            0.4,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.24,
+            0.36,
+            0.4,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/level-exit-surface",
+      "catalog": {
+        "version": 1,
+        "hash": "f243f162d8ee75b344931144a7e94a7c78b448af490d1dca34e4e6ad6397d8a2",
+        "sourcePath": null,
+        "label": "level-exit-surface"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.18,
+            0.78,
+            0.55,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.18,
+            0.78,
+            0.55,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/maintenance-pass-card",
+      "catalog": {
+        "version": 1,
+        "hash": "3d0c9bb50dd9dfc6d973f7f36353b0cfd3aee6c6336261fde46fa7e436a79f6f",
+        "sourcePath": null,
+        "label": "maintenance-pass-card"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.72,
+            0.18,
+            0.76,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.72,
+            0.18,
+            0.76,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/maintenance-pass-loop",
+      "catalog": {
+        "version": 1,
+        "hash": "643d42fbb0e13aeae89f5eba5deb660ba8a599c59eaf48a05ab4e9f9ab4a05c1",
+        "sourcePath": null,
+        "label": "maintenance-pass-loop"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.18,
+            0.22,
+            0.26,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.18,
+            0.22,
+            0.26,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/maintenance-pass-stripe",
+      "catalog": {
+        "version": 1,
+        "hash": "085322c101f47382ef0aa8650ac3f218a1486ce6b1cb5ea5a98fa66572085b69",
+        "sourcePath": null,
+        "label": "maintenance-pass-stripe"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.95,
+            0.74,
+            0.18,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.95,
+            0.74,
+            0.18,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/med-patch-case",
+      "catalog": {
+        "version": 1,
+        "hash": "9135837387ac91a942cb22b6dc862ccf5fa91402b47c8edf896e584977f68010",
+        "sourcePath": null,
+        "label": "med-patch-case"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.84,
+            0.88,
+            0.84,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.84,
+            0.88,
+            0.84,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/med-patch-cross",
+      "catalog": {
+        "version": 1,
+        "hash": "940841b4cbee4874e305c21dc115fa6e279c3c0ad49c7580c571cf76dcbe84b5",
+        "sourcePath": null,
+        "label": "med-patch-cross"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.12,
+            0.82,
+            0.35,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.12,
+            0.82,
+            0.35,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/muzzle-flash-flare",
+      "catalog": {
+        "version": 1,
+        "hash": "258b938fad23300549aa37602834d355aa2470ac2335310ace998a7c9cfe4806",
+        "sourcePath": null,
+        "label": "muzzle-flash-flare"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            1.0,
+            0.76,
+            0.14,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            1.0,
+            0.76,
+            0.14,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/rivet-carbine-accent",
+      "catalog": {
+        "version": 1,
+        "hash": "e3daaa087ef30263ef3caaf41b9e837c7f824327d99874723d71d0d6003efa95",
+        "sourcePath": null,
+        "label": "rivet-carbine-accent"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.3,
+            0.65,
+            0.67,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.3,
+            0.65,
+            0.67,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/rivet-carbine-grip",
+      "catalog": {
+        "version": 1,
+        "hash": "6b23d5a45008d1155f4e66441e855b2d2034cbddeca3d1d6989ed938e368c4bb",
+        "sourcePath": null,
+        "label": "rivet-carbine-grip"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.84,
+            0.39,
+            0.12,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.84,
+            0.39,
+            0.12,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/rivet-carbine-receiver",
+      "catalog": {
+        "version": 1,
+        "hash": "bd159dd459556c6255c2c19740f153a2097c9de68fd39318dd890045f30f7abd",
+        "sourcePath": null,
+        "label": "rivet-carbine-receiver"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.1,
+            0.27,
+            0.3,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.1,
+            0.27,
+            0.3,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/scatter-shells-brass",
+      "catalog": {
+        "version": 1,
+        "hash": "80b6eeed25685bd8796d21034c164e5729051c281fe096d17c00730c41310e23",
+        "sourcePath": null,
+        "label": "scatter-shells-brass"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.82,
+            0.63,
+            0.2,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.82,
+            0.63,
+            0.2,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/scatter-shells-rack",
+      "catalog": {
+        "version": 1,
+        "hash": "9993a865e0071f077e788102d63f13e8e6b684cd2e756dc695d0f7e8ebc76172",
+        "sourcePath": null,
+        "label": "scatter-shells-rack"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.2,
+            0.15,
+            0.1,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.2,
+            0.15,
+            0.1,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/scatter-shells-shell",
+      "catalog": {
+        "version": 1,
+        "hash": "e4692f74fe7be81453bd552512f76c46d40115e9cc6e3c8a095c20ce60c9977d",
+        "sourcePath": null,
+        "label": "scatter-shells-shell"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.85,
+            0.25,
+            0.08,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.85,
+            0.25,
+            0.08,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/security-door-surface",
+      "catalog": {
+        "version": 1,
+        "hash": "b67d05afcd78b98fc26279e8573beaac2ddbabf3e0e714a645af919d06f69707",
+        "sourcePath": null,
+        "label": "security-door-surface"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.78,
+            0.43,
+            0.12,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.78,
+            0.43,
+            0.12,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
+        }
+      }
+    },
+    {
+      "id": "material/prop-kit/status-runner-surface",
+      "catalog": {
+        "version": 1,
+        "hash": "7574b6b4aa55fe6c7dd0873d172b1f2f95f24dd5e497ea68b0be956fcfcf9fae",
+        "sourcePath": null,
+        "label": "status-runner-surface"
+      },
+      "material": {
+        "authority": {
+          "solid": false,
+          "collidable": false,
+          "occludes": false,
+          "structuralClass": "decorative"
+        },
+        "style": {
+          "color": [
+            0.18,
+            0.72,
+            0.76,
+            1.0
+          ],
+          "texture": null,
+          "textureTint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissionColor": [
+            0.18,
+            0.72,
+            0.76,
+            1.0
+          ],
+          "roughness": 1.0,
+          "emissive": 0.0,
+          "uvStrategy": "flat"
         }
       }
     },
@@ -201810,11 +203409,17 @@
         },
         {
           "id": 2,
-          "name": "doom-enemy-3001-1",
+          "name": "doom-imp-1",
           "translation": [
             263.0,
-            15.0,
+            16.25,
             87.0
+          ],
+          "rotation": [
+            0.0,
+            -0.9238795,
+            0.0,
+            0.38268343
           ],
           "collision": {
             "enabled": true,
@@ -201826,7 +203431,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -201898,34 +203503,43 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 7,
             "attack": {
-              "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "kind": "projectile",
+              "damage": 12,
+              "range": 128.0,
+              "cooldownTicks": 38,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-imp-fireball",
+              "projectile": {
+                "mass": 0.2,
+                "radius": 0.375,
+                "impulse": 4.375,
+                "gravityScale": 0.0,
+                "lifetimeTicks": 360,
+                "restitution": 0.0
+              }
             }
           },
           "health": {
             "max": 60,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -201936,20 +203550,26 @@
           "navigation": {
             "goal": [
               263.0,
-              15.0,
+              16.25,
               87.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
           "id": 3,
-          "name": "doom-enemy-3001-2",
+          "name": "doom-imp-2",
           "translation": [
             258.0,
-            15.0,
+            16.25,
             85.0
+          ],
+          "rotation": [
+            0.0,
+            -0.9238795,
+            0.0,
+            0.38268343
           ],
           "collision": {
             "enabled": true,
@@ -201961,7 +203581,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -202033,34 +203653,43 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 7,
             "attack": {
-              "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "kind": "projectile",
+              "damage": 12,
+              "range": 128.0,
+              "cooldownTicks": 38,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-imp-fireball",
+              "projectile": {
+                "mass": 0.2,
+                "radius": 0.375,
+                "impulse": 4.375,
+                "gravityScale": 0.0,
+                "lifetimeTicks": 360,
+                "restitution": 0.0
+              }
             }
           },
           "health": {
             "max": 60,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -202071,20 +203700,26 @@
           "navigation": {
             "goal": [
               258.0,
-              15.0,
+              16.25,
               85.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
           "id": 4,
-          "name": "doom-enemy-3004-3",
+          "name": "doom-zombieman-3",
           "translation": [
             230.0,
-            7.5,
+            8.75,
             128.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
           ],
           "collision": {
             "enabled": true,
@@ -202096,7 +203731,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -202168,34 +203803,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 9.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
-              "kind": "melee",
-              "damage": 10,
-              "range": 1.4,
-              "cooldownTicks": 110,
+              "kind": "rangedHitscan",
+              "damage": 9,
+              "range": 128.0,
+              "cooldownTicks": 45,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-strike"
+              "presentation": "doom-zombieman-shot"
             }
           },
+          "defeatDrop": {
+            "pickup": 5
+          },
           "health": {
-            "max": 40,
+            "max": 20,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -202206,20 +203845,55 @@
           "navigation": {
             "goal": [
               230.0,
-              7.5,
+              8.75,
               128.0
             ],
-            "speedUnitsPerSecond": 4.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
           "id": 5,
-          "name": "doom-enemy-3004-4",
+          "name": "doom-drop-zombieman-3",
+          "translation": [
+            230.0,
+            8.75,
+            128.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/energy-cell",
+            "visible": false
+          },
+          "pickup": {
+            "item": "ammo/bullets",
+            "quantity": 5
+          }
+        },
+        {
+          "id": 6,
+          "name": "doom-zombieman-4",
           "translation": [
             239.0,
-            7.5,
+            8.75,
             80.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
           ],
           "collision": {
             "enabled": true,
@@ -202231,7 +203905,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -202303,34 +203977,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 9.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
-              "kind": "melee",
-              "damage": 10,
-              "range": 1.4,
-              "cooldownTicks": 110,
+              "kind": "rangedHitscan",
+              "damage": 9,
+              "range": 128.0,
+              "cooldownTicks": 45,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-strike"
+              "presentation": "doom-zombieman-shot"
             }
           },
+          "defeatDrop": {
+            "pickup": 7
+          },
           "health": {
-            "max": 40,
+            "max": 20,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -202341,20 +204019,55 @@
           "navigation": {
             "goal": [
               239.0,
-              7.5,
+              8.75,
               80.0
             ],
-            "speedUnitsPerSecond": 4.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 6,
-          "name": "doom-enemy-3004-5",
+          "id": 7,
+          "name": "doom-drop-zombieman-4",
+          "translation": [
+            239.0,
+            8.75,
+            80.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/energy-cell",
+            "visible": false
+          },
+          "pickup": {
+            "item": "ammo/bullets",
+            "quantity": 5
+          }
+        },
+        {
+          "id": 8,
+          "name": "doom-zombieman-5",
           "translation": [
             244.0,
-            7.5,
+            8.75,
             91.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
           ],
           "collision": {
             "enabled": true,
@@ -202366,7 +204079,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -202438,34 +204151,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 9.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
-              "kind": "melee",
-              "damage": 10,
-              "range": 1.4,
-              "cooldownTicks": 110,
+              "kind": "rangedHitscan",
+              "damage": 9,
+              "range": 128.0,
+              "cooldownTicks": 45,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-strike"
+              "presentation": "doom-zombieman-shot"
             }
           },
+          "defeatDrop": {
+            "pickup": 9
+          },
           "health": {
-            "max": 40,
+            "max": 20,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -202476,560 +204193,49 @@
           "navigation": {
             "goal": [
               244.0,
-              7.5,
+              8.75,
               91.0
             ],
-            "speedUnitsPerSecond": 4.2,
-            "maxVisited": 64
-          }
-        },
-        {
-          "id": 7,
-          "name": "doom-enemy-3004-6",
-          "translation": [
-            219.0,
-            7.5,
-            38.0
-          ],
-          "collision": {
-            "enabled": true,
-            "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh-animation/bay-rusher",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -0.9,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            "initialClip": "idle",
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "idle",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.12
-                },
-                {
-                  "state": "moving",
-                  "kind": "animation",
-                  "clip": "run",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.1
-                },
-                {
-                  "state": "alert",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                },
-                {
-                  "state": "attacking",
-                  "kind": "animation",
-                  "clip": "attack",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.06
-                },
-                {
-                  "state": "hit",
-                  "kind": "animation",
-                  "clip": "hit",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.04
-                },
-                {
-                  "state": "defeated",
-                  "kind": "animation",
-                  "clip": "death",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                }
-              ]
-            }
-          },
-          "enemy": true,
-          "enemyCombat": {
-            "sightRange": 9.0,
-            "hearingRange": 5.0,
-            "attack": {
-              "kind": "melee",
-              "damage": 10,
-              "range": 1.4,
-              "cooldownTicks": 110,
-              "originOffset": [
-                0.0,
-                0.25,
-                0.0
-              ],
-              "presentation": "sentry-strike"
-            }
-          },
-          "health": {
-            "max": 40,
-            "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
-            ]
-          },
-          "kinematic": {
-            "halfExtents": [
-              0.3,
-              0.4,
-              0.3
-            ],
-            "velocity": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "navigation": {
-            "goal": [
-              219.0,
-              7.5,
-              38.0
-            ],
-            "speedUnitsPerSecond": 4.2,
-            "maxVisited": 64
-          }
-        },
-        {
-          "id": 8,
-          "name": "doom-enemy-3004-7",
-          "translation": [
-            253.0,
-            7.5,
-            38.0
-          ],
-          "collision": {
-            "enabled": true,
-            "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh-animation/bay-rusher",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -0.9,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            "initialClip": "idle",
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "idle",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.12
-                },
-                {
-                  "state": "moving",
-                  "kind": "animation",
-                  "clip": "run",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.1
-                },
-                {
-                  "state": "alert",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                },
-                {
-                  "state": "attacking",
-                  "kind": "animation",
-                  "clip": "attack",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.06
-                },
-                {
-                  "state": "hit",
-                  "kind": "animation",
-                  "clip": "hit",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.04
-                },
-                {
-                  "state": "defeated",
-                  "kind": "animation",
-                  "clip": "death",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                }
-              ]
-            }
-          },
-          "enemy": true,
-          "enemyCombat": {
-            "sightRange": 9.0,
-            "hearingRange": 5.0,
-            "attack": {
-              "kind": "melee",
-              "damage": 10,
-              "range": 1.4,
-              "cooldownTicks": 110,
-              "originOffset": [
-                0.0,
-                0.25,
-                0.0
-              ],
-              "presentation": "sentry-strike"
-            }
-          },
-          "health": {
-            "max": 40,
-            "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
-            ]
-          },
-          "kinematic": {
-            "halfExtents": [
-              0.3,
-              0.4,
-              0.3
-            ],
-            "velocity": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "navigation": {
-            "goal": [
-              253.0,
-              7.5,
-              38.0
-            ],
-            "speedUnitsPerSecond": 4.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
           "id": 9,
-          "name": "doom-enemy-3001-8",
+          "name": "doom-drop-zombieman-5",
           "translation": [
-            236.0,
-            7.5,
-            28.0
+            244.0,
+            8.75,
+            91.0
           ],
-          "collision": {
-            "enabled": true,
-            "staticCollider": false
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
           },
           "renderable": {
-            "asset": "mesh-animation/arc-warden",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -0.9,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            "initialClip": "idle",
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "idle",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.12
-                },
-                {
-                  "state": "moving",
-                  "kind": "animation",
-                  "clip": "run",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.1
-                },
-                {
-                  "state": "alert",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                },
-                {
-                  "state": "attacking",
-                  "kind": "animation",
-                  "clip": "attack",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.06
-                },
-                {
-                  "state": "hit",
-                  "kind": "animation",
-                  "clip": "hit",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.04
-                },
-                {
-                  "state": "defeated",
-                  "kind": "animation",
-                  "clip": "death",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                }
-              ]
-            }
+            "asset": "mesh/prop-kit/energy-cell",
+            "visible": false
           },
-          "enemy": true,
-          "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
-            "attack": {
-              "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
-              "originOffset": [
-                0.0,
-                0.25,
-                0.0
-              ],
-              "presentation": "sentry-pulse"
-            }
-          },
-          "health": {
-            "max": 60,
-            "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
-            ]
-          },
-          "kinematic": {
-            "halfExtents": [
-              0.3,
-              0.4,
-              0.3
-            ],
-            "velocity": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "navigation": {
-            "goal": [
-              236.0,
-              7.5,
-              28.0
-            ],
-            "speedUnitsPerSecond": 3.2,
-            "maxVisited": 64
+          "pickup": {
+            "item": "ammo/bullets",
+            "quantity": 5
           }
         },
         {
           "id": 10,
-          "name": "doom-enemy-3004-9",
-          "translation": [
-            253.0,
-            7.5,
-            35.0
-          ],
-          "collision": {
-            "enabled": true,
-            "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh-animation/bay-rusher",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -0.9,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            "initialClip": "idle",
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "idle",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.12
-                },
-                {
-                  "state": "moving",
-                  "kind": "animation",
-                  "clip": "run",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.1
-                },
-                {
-                  "state": "alert",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                },
-                {
-                  "state": "attacking",
-                  "kind": "animation",
-                  "clip": "attack",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.06
-                },
-                {
-                  "state": "hit",
-                  "kind": "animation",
-                  "clip": "hit",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.04
-                },
-                {
-                  "state": "defeated",
-                  "kind": "animation",
-                  "clip": "death",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                }
-              ]
-            }
-          },
-          "enemy": true,
-          "enemyCombat": {
-            "sightRange": 9.0,
-            "hearingRange": 5.0,
-            "attack": {
-              "kind": "melee",
-              "damage": 10,
-              "range": 1.4,
-              "cooldownTicks": 110,
-              "originOffset": [
-                0.0,
-                0.25,
-                0.0
-              ],
-              "presentation": "sentry-strike"
-            }
-          },
-          "health": {
-            "max": 40,
-            "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
-            ]
-          },
-          "kinematic": {
-            "halfExtents": [
-              0.3,
-              0.4,
-              0.3
-            ],
-            "velocity": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "navigation": {
-            "goal": [
-              253.0,
-              7.5,
-              35.0
-            ],
-            "speedUnitsPerSecond": 4.2,
-            "maxVisited": 64
-          }
-        },
-        {
-          "id": 11,
-          "name": "doom-enemy-3004-10",
+          "name": "doom-zombieman-6",
           "translation": [
             219.0,
-            7.5,
-            35.0
+            8.75,
+            38.0
           ],
           "collision": {
             "enabled": true,
@@ -203041,7 +204247,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -203113,34 +204319,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 9.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
-              "kind": "melee",
-              "damage": 10,
-              "range": 1.4,
-              "cooldownTicks": 110,
+              "kind": "rangedHitscan",
+              "damage": 9,
+              "range": 128.0,
+              "cooldownTicks": 45,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-strike"
+              "presentation": "doom-zombieman-shot"
             }
           },
+          "defeatDrop": {
+            "pickup": 11
+          },
           "health": {
-            "max": 40,
+            "max": 20,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -203151,32 +204361,67 @@
           "navigation": {
             "goal": [
               219.0,
-              7.5,
-              35.0
+              8.75,
+              38.0
             ],
-            "speedUnitsPerSecond": 4.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 12,
-          "name": "doom-enemy-3001-11",
+          "id": 11,
+          "name": "doom-drop-zombieman-6",
           "translation": [
-            236.0,
-            7.5,
-            3.0
+            219.0,
+            8.75,
+            38.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/energy-cell",
+            "visible": false
+          },
+          "pickup": {
+            "item": "ammo/bullets",
+            "quantity": 5
+          }
+        },
+        {
+          "id": 12,
+          "name": "doom-zombieman-7",
+          "translation": [
+            253.0,
+            8.75,
+            38.0
+          ],
+          "rotation": [
+            0.0,
+            -1.0,
+            0.0,
+            6.123234e-17
           ],
           "collision": {
             "enabled": true,
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh-animation/arc-warden",
+            "asset": "mesh-animation/bay-rusher",
             "visible": true,
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -203248,34 +204493,217 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 9,
+              "range": 128.0,
+              "cooldownTicks": 45,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-zombieman-shot"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 13
+          },
+          "health": {
+            "max": 20,
+            "hitboxHalfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ]
+          },
+          "kinematic": {
+            "halfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "navigation": {
+            "goal": [
+              253.0,
+              8.75,
+              38.0
+            ],
+            "speedUnitsPerSecond": 8.0,
+            "maxVisited": 64
+          }
+        },
+        {
+          "id": 13,
+          "name": "doom-drop-zombieman-7",
+          "translation": [
+            253.0,
+            8.75,
+            38.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/energy-cell",
+            "visible": false
+          },
+          "pickup": {
+            "item": "ammo/bullets",
+            "quantity": 5
+          }
+        },
+        {
+          "id": 14,
+          "name": "doom-imp-8",
+          "translation": [
+            236.0,
+            8.75,
+            28.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh-animation/arc-warden",
+            "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.75,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
+          },
+          "enemy": true,
+          "enemyCombat": {
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 7,
+            "attack": {
+              "kind": "projectile",
+              "damage": 12,
+              "range": 128.0,
+              "cooldownTicks": 38,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "doom-imp-fireball",
+              "projectile": {
+                "mass": 0.2,
+                "radius": 0.375,
+                "impulse": 4.375,
+                "gravityScale": 0.0,
+                "lifetimeTicks": 360,
+                "restitution": 0.0
+              }
             }
           },
           "health": {
             "max": 60,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -203286,302 +204714,38 @@
           "navigation": {
             "goal": [
               236.0,
-              7.5,
-              3.0
+              8.75,
+              28.0
             ],
-            "speedUnitsPerSecond": 3.2,
-            "maxVisited": 64
-          }
-        },
-        {
-          "id": 13,
-          "name": "doom-enemy-3004-12",
-          "translation": [
-            190.0,
-            10.5,
-            152.0
-          ],
-          "collision": {
-            "enabled": true,
-            "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh-animation/bay-rusher",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -0.9,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            "initialClip": "idle",
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "idle",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.12
-                },
-                {
-                  "state": "moving",
-                  "kind": "animation",
-                  "clip": "run",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.1
-                },
-                {
-                  "state": "alert",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                },
-                {
-                  "state": "attacking",
-                  "kind": "animation",
-                  "clip": "attack",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.06
-                },
-                {
-                  "state": "hit",
-                  "kind": "animation",
-                  "clip": "hit",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.04
-                },
-                {
-                  "state": "defeated",
-                  "kind": "animation",
-                  "clip": "death",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                }
-              ]
-            }
-          },
-          "enemy": true,
-          "enemyCombat": {
-            "sightRange": 9.0,
-            "hearingRange": 5.0,
-            "attack": {
-              "kind": "melee",
-              "damage": 10,
-              "range": 1.4,
-              "cooldownTicks": 110,
-              "originOffset": [
-                0.0,
-                0.25,
-                0.0
-              ],
-              "presentation": "sentry-strike"
-            }
-          },
-          "health": {
-            "max": 40,
-            "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
-            ]
-          },
-          "kinematic": {
-            "halfExtents": [
-              0.3,
-              0.4,
-              0.3
-            ],
-            "velocity": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "navigation": {
-            "goal": [
-              190.0,
-              10.5,
-              152.0
-            ],
-            "speedUnitsPerSecond": 4.2,
-            "maxVisited": 64
-          }
-        },
-        {
-          "id": 14,
-          "name": "doom-enemy-3004-13",
-          "translation": [
-            190.0,
-            10.5,
-            157.0
-          ],
-          "collision": {
-            "enabled": true,
-            "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh-animation/bay-rusher",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -0.9,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            "initialClip": "idle",
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "idle",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.12
-                },
-                {
-                  "state": "moving",
-                  "kind": "animation",
-                  "clip": "run",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.1
-                },
-                {
-                  "state": "alert",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                },
-                {
-                  "state": "attacking",
-                  "kind": "animation",
-                  "clip": "attack",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.06
-                },
-                {
-                  "state": "hit",
-                  "kind": "animation",
-                  "clip": "hit",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.04
-                },
-                {
-                  "state": "defeated",
-                  "kind": "animation",
-                  "clip": "death",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                }
-              ]
-            }
-          },
-          "enemy": true,
-          "enemyCombat": {
-            "sightRange": 9.0,
-            "hearingRange": 5.0,
-            "attack": {
-              "kind": "melee",
-              "damage": 10,
-              "range": 1.4,
-              "cooldownTicks": 110,
-              "originOffset": [
-                0.0,
-                0.25,
-                0.0
-              ],
-              "presentation": "sentry-strike"
-            }
-          },
-          "health": {
-            "max": 40,
-            "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
-            ]
-          },
-          "kinematic": {
-            "halfExtents": [
-              0.3,
-              0.4,
-              0.3
-            ],
-            "velocity": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "navigation": {
-            "goal": [
-              190.0,
-              10.5,
-              157.0
-            ],
-            "speedUnitsPerSecond": 4.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
           "id": 15,
-          "name": "doom-enemy-9-14",
+          "name": "doom-zombieman-9",
           "translation": [
-            190.0,
-            10.5,
-            147.0
+            253.0,
+            8.75,
+            35.0
+          ],
+          "rotation": [
+            0.0,
+            -1.0,
+            0.0,
+            6.123234e-17
           ],
           "collision": {
             "enabled": true,
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh-animation/arc-warden",
+            "asset": "mesh-animation/bay-rusher",
             "visible": true,
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -203653,34 +204817,530 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 9,
+              "range": 128.0,
+              "cooldownTicks": 45,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-zombieman-shot"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 16
+          },
+          "health": {
+            "max": 20,
+            "hitboxHalfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ]
+          },
+          "kinematic": {
+            "halfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "navigation": {
+            "goal": [
+              253.0,
+              8.75,
+              35.0
+            ],
+            "speedUnitsPerSecond": 8.0,
+            "maxVisited": 64
+          }
+        },
+        {
+          "id": 16,
+          "name": "doom-drop-zombieman-9",
+          "translation": [
+            253.0,
+            8.75,
+            35.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/energy-cell",
+            "visible": false
+          },
+          "pickup": {
+            "item": "ammo/bullets",
+            "quantity": 5
+          }
+        },
+        {
+          "id": 17,
+          "name": "doom-zombieman-10",
+          "translation": [
+            219.0,
+            8.75,
+            35.0
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh-animation/bay-rusher",
+            "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.75,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
+          },
+          "enemy": true,
+          "enemyCombat": {
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
+            "attack": {
+              "kind": "rangedHitscan",
+              "damage": 9,
+              "range": 128.0,
+              "cooldownTicks": 45,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "doom-zombieman-shot"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 18
+          },
+          "health": {
+            "max": 20,
+            "hitboxHalfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ]
+          },
+          "kinematic": {
+            "halfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "navigation": {
+            "goal": [
+              219.0,
+              8.75,
+              35.0
+            ],
+            "speedUnitsPerSecond": 8.0,
+            "maxVisited": 64
+          }
+        },
+        {
+          "id": 18,
+          "name": "doom-drop-zombieman-10",
+          "translation": [
+            219.0,
+            8.75,
+            35.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/energy-cell",
+            "visible": false
+          },
+          "pickup": {
+            "item": "ammo/bullets",
+            "quantity": 5
+          }
+        },
+        {
+          "id": 19,
+          "name": "doom-imp-11",
+          "translation": [
+            236.0,
+            8.75,
+            3.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh-animation/arc-warden",
+            "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.75,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
+          },
+          "enemy": true,
+          "enemyCombat": {
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 7,
+            "attack": {
+              "kind": "projectile",
+              "damage": 12,
+              "range": 128.0,
+              "cooldownTicks": 38,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "doom-imp-fireball",
+              "projectile": {
+                "mass": 0.2,
+                "radius": 0.375,
+                "impulse": 4.375,
+                "gravityScale": 0.0,
+                "lifetimeTicks": 360,
+                "restitution": 0.0
+              }
             }
           },
           "health": {
             "max": 60,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "navigation": {
+            "goal": [
+              236.0,
+              8.75,
+              3.0
+            ],
+            "speedUnitsPerSecond": 8.0,
+            "maxVisited": 64
+          }
+        },
+        {
+          "id": 20,
+          "name": "doom-zombieman-12",
+          "translation": [
+            190.0,
+            11.75,
+            152.0
+          ],
+          "rotation": [
+            0.0,
+            -1.0,
+            0.0,
+            6.123234e-17
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh-animation/bay-rusher",
+            "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.75,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
+          },
+          "enemy": true,
+          "enemyCombat": {
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
+            "attack": {
+              "kind": "rangedHitscan",
+              "damage": 9,
+              "range": 128.0,
+              "cooldownTicks": 45,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "doom-zombieman-shot"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 21
+          },
+          "health": {
+            "max": 20,
+            "hitboxHalfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ]
+          },
+          "kinematic": {
+            "halfExtents": [
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -203691,32 +205351,67 @@
           "navigation": {
             "goal": [
               190.0,
-              10.5,
-              147.0
+              11.75,
+              152.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 16,
-          "name": "doom-enemy-9-15",
+          "id": 21,
+          "name": "doom-drop-zombieman-12",
           "translation": [
-            202.0,
-            9.0,
+            190.0,
+            11.75,
             152.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/energy-cell",
+            "visible": false
+          },
+          "pickup": {
+            "item": "ammo/bullets",
+            "quantity": 5
+          }
+        },
+        {
+          "id": 22,
+          "name": "doom-zombieman-13",
+          "translation": [
+            190.0,
+            11.75,
+            157.0
+          ],
+          "rotation": [
+            0.0,
+            -1.0,
+            0.0,
+            6.123234e-17
           ],
           "collision": {
             "enabled": true,
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh-animation/arc-warden",
+            "asset": "mesh-animation/bay-rusher",
             "visible": true,
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -203788,34 +205483,390 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 9,
+              "range": 128.0,
+              "cooldownTicks": 45,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-zombieman-shot"
             }
           },
+          "defeatDrop": {
+            "pickup": 23
+          },
           "health": {
-            "max": 60,
+            "max": 20,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "navigation": {
+            "goal": [
+              190.0,
+              11.75,
+              157.0
+            ],
+            "speedUnitsPerSecond": 8.0,
+            "maxVisited": 64
+          }
+        },
+        {
+          "id": 23,
+          "name": "doom-drop-zombieman-13",
+          "translation": [
+            190.0,
+            11.75,
+            157.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
               0.3,
-              0.4,
+              0.3,
               0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/energy-cell",
+            "visible": false
+          },
+          "pickup": {
+            "item": "ammo/bullets",
+            "quantity": 5
+          }
+        },
+        {
+          "id": 24,
+          "name": "doom-shotgun-guy-14",
+          "translation": [
+            190.0,
+            11.75,
+            147.0
+          ],
+          "rotation": [
+            0.0,
+            -1.0,
+            0.0,
+            6.123234e-17
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh-animation/arc-warden",
+            "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.75,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
+          },
+          "enemy": true,
+          "enemyCombat": {
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
+            "attack": {
+              "kind": "rangedHitscan",
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "doom-shotgun-guy-blast"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 25
+          },
+          "health": {
+            "max": 30,
+            "hitboxHalfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ]
+          },
+          "kinematic": {
+            "halfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "navigation": {
+            "goal": [
+              190.0,
+              11.75,
+              147.0
+            ],
+            "speedUnitsPerSecond": 8.0,
+            "maxVisited": 64
+          }
+        },
+        {
+          "id": 25,
+          "name": "doom-drop-shotgun-guy-14",
+          "translation": [
+            190.0,
+            11.75,
+            147.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 26,
+          "name": "doom-shotgun-guy-15",
+          "translation": [
+            202.0,
+            10.25,
+            152.0
+          ],
+          "rotation": [
+            0.0,
+            -1.0,
+            0.0,
+            6.123234e-17
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh-animation/arc-warden",
+            "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.75,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
+          },
+          "enemy": true,
+          "enemyCombat": {
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
+            "attack": {
+              "kind": "rangedHitscan",
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "doom-shotgun-guy-blast"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 27
+          },
+          "health": {
+            "max": 30,
+            "hitboxHalfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ]
+          },
+          "kinematic": {
+            "halfExtents": [
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -203826,19 +205877,52 @@
           "navigation": {
             "goal": [
               202.0,
-              9.0,
+              10.25,
               152.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 17,
-          "name": "doom-enemy-9-16",
+          "id": 27,
+          "name": "doom-drop-shotgun-guy-15",
+          "translation": [
+            202.0,
+            10.25,
+            152.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 28,
+          "name": "doom-shotgun-guy-16",
           "translation": [
             249.0,
-            6.0,
+            7.25,
             61.0
           ],
           "collision": {
@@ -203851,7 +205935,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -203923,34 +206007,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 29
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -203961,19 +206049,52 @@
           "navigation": {
             "goal": [
               249.0,
-              6.0,
+              7.25,
               61.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 18,
-          "name": "doom-enemy-9-17",
+          "id": 29,
+          "name": "doom-drop-shotgun-guy-16",
+          "translation": [
+            249.0,
+            7.25,
+            61.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 30,
+          "name": "doom-shotgun-guy-17",
           "translation": [
             38.0,
-            15.5,
+            16.75,
             102.0
           ],
           "collision": {
@@ -203986,7 +206107,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -204058,34 +206179,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 31
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -204096,21 +206221,60 @@
           "navigation": {
             "goal": [
               38.0,
-              15.5,
+              16.75,
               102.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 19,
-          "name": "doom-enemy-9-18",
+          "id": 31,
+          "name": "doom-drop-shotgun-guy-17",
+          "translation": [
+            38.0,
+            16.75,
+            102.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 32,
+          "name": "doom-shotgun-guy-18",
           "translation": [
             63.0,
-            8.5,
+            9.75,
             93.0
           ],
+          "rotation": [
+            0.0,
+            -0.9238795,
+            0.0,
+            0.38268343
+          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
@@ -204121,7 +206285,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -204193,34 +206357,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 33
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -204231,20 +206399,59 @@
           "navigation": {
             "goal": [
               63.0,
-              8.5,
+              9.75,
               93.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 20,
-          "name": "doom-enemy-9-19",
+          "id": 33,
+          "name": "doom-drop-shotgun-guy-18",
           "translation": [
             63.0,
-            8.5,
+            9.75,
+            93.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 34,
+          "name": "doom-shotgun-guy-19",
+          "translation": [
+            63.0,
+            9.75,
             111.0
+          ],
+          "rotation": [
+            0.0,
+            -0.9238795,
+            0.0,
+            -0.38268343
           ],
           "collision": {
             "enabled": true,
@@ -204256,7 +206463,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -204328,34 +206535,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 35
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -204366,20 +206577,59 @@
           "navigation": {
             "goal": [
               63.0,
-              8.5,
+              9.75,
               111.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 21,
-          "name": "doom-enemy-9-20",
+          "id": 35,
+          "name": "doom-drop-shotgun-guy-19",
+          "translation": [
+            63.0,
+            9.75,
+            111.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 36,
+          "name": "doom-shotgun-guy-20",
           "translation": [
             154.0,
-            9.0,
+            10.25,
             136.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
           ],
           "collision": {
             "enabled": true,
@@ -204391,7 +206641,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -204463,34 +206713,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 37
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -204501,20 +206755,59 @@
           "navigation": {
             "goal": [
               154.0,
-              9.0,
+              10.25,
               136.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 22,
-          "name": "doom-enemy-9-21",
+          "id": 37,
+          "name": "doom-drop-shotgun-guy-20",
+          "translation": [
+            154.0,
+            10.25,
+            136.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 38,
+          "name": "doom-shotgun-guy-21",
           "translation": [
             168.0,
-            9.0,
+            10.25,
             168.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            -0.70710677
           ],
           "collision": {
             "enabled": true,
@@ -204526,7 +206819,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -204598,34 +206891,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 39
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -204636,20 +206933,59 @@
           "navigation": {
             "goal": [
               168.0,
-              9.0,
+              10.25,
               168.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 23,
-          "name": "doom-enemy-9-22",
+          "id": 39,
+          "name": "doom-drop-shotgun-guy-21",
+          "translation": [
+            168.0,
+            10.25,
+            168.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 40,
+          "name": "doom-shotgun-guy-22",
           "translation": [
             234.0,
-            7.5,
+            8.75,
             100.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
           ],
           "collision": {
             "enabled": true,
@@ -204661,7 +206997,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -204733,34 +207069,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 41
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -204771,155 +207111,59 @@
           "navigation": {
             "goal": [
               234.0,
-              7.5,
+              8.75,
               100.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 24,
-          "name": "doom-enemy-9-23",
+          "id": 41,
+          "name": "doom-drop-shotgun-guy-22",
+          "translation": [
+            234.0,
+            8.75,
+            100.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 42,
+          "name": "doom-shotgun-guy-23",
           "translation": [
             236.0,
-            7.5,
+            8.75,
             84.0
           ],
-          "collision": {
-            "enabled": true,
-            "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh-animation/arc-warden",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -0.9,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            "initialClip": "idle",
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "idle",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.12
-                },
-                {
-                  "state": "moving",
-                  "kind": "animation",
-                  "clip": "run",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.1
-                },
-                {
-                  "state": "alert",
-                  "kind": "animation",
-                  "clip": "idle",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                },
-                {
-                  "state": "attacking",
-                  "kind": "animation",
-                  "clip": "attack",
-                  "loopMode": "repeat",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.06
-                },
-                {
-                  "state": "hit",
-                  "kind": "animation",
-                  "clip": "hit",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.04
-                },
-                {
-                  "state": "defeated",
-                  "kind": "animation",
-                  "clip": "death",
-                  "loopMode": "once",
-                  "speed": 1.0,
-                  "fadeSeconds": 0.08
-                }
-              ]
-            }
-          },
-          "enemy": true,
-          "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
-            "attack": {
-              "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
-              "originOffset": [
-                0.0,
-                0.25,
-                0.0
-              ],
-              "presentation": "sentry-pulse"
-            }
-          },
-          "health": {
-            "max": 60,
-            "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
-            ]
-          },
-          "kinematic": {
-            "halfExtents": [
-              0.3,
-              0.4,
-              0.3
-            ],
-            "velocity": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "navigation": {
-            "goal": [
-              236.0,
-              7.5,
-              84.0
-            ],
-            "speedUnitsPerSecond": 3.2,
-            "maxVisited": 64
-          }
-        },
-        {
-          "id": 25,
-          "name": "doom-enemy-9-24",
-          "translation": [
-            236.0,
-            7.5,
-            112.0
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
           ],
           "collision": {
             "enabled": true,
@@ -204931,7 +207175,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -205003,34 +207247,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 43
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -205041,19 +207289,230 @@
           "navigation": {
             "goal": [
               236.0,
-              7.5,
-              112.0
+              8.75,
+              84.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 26,
-          "name": "doom-enemy-9-25",
+          "id": 43,
+          "name": "doom-drop-shotgun-guy-23",
+          "translation": [
+            236.0,
+            8.75,
+            84.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 44,
+          "name": "doom-shotgun-guy-24",
+          "translation": [
+            236.0,
+            8.75,
+            112.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh-animation/arc-warden",
+            "visible": true,
+            "localTransform": {
+              "translation": [
+                0.0,
+                -1.75,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "initialClip": "idle",
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "idle",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.12
+                },
+                {
+                  "state": "moving",
+                  "kind": "animation",
+                  "clip": "run",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.1
+                },
+                {
+                  "state": "alert",
+                  "kind": "animation",
+                  "clip": "idle",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                },
+                {
+                  "state": "attacking",
+                  "kind": "animation",
+                  "clip": "attack",
+                  "loopMode": "repeat",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.06
+                },
+                {
+                  "state": "hit",
+                  "kind": "animation",
+                  "clip": "hit",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.04
+                },
+                {
+                  "state": "defeated",
+                  "kind": "animation",
+                  "clip": "death",
+                  "loopMode": "once",
+                  "speed": 1.0,
+                  "fadeSeconds": 0.08
+                }
+              ]
+            }
+          },
+          "enemy": true,
+          "enemyCombat": {
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
+            "attack": {
+              "kind": "rangedHitscan",
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
+              "originOffset": [
+                0.0,
+                0.25,
+                0.0
+              ],
+              "presentation": "doom-shotgun-guy-blast"
+            }
+          },
+          "defeatDrop": {
+            "pickup": 45
+          },
+          "health": {
+            "max": 30,
+            "hitboxHalfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ]
+          },
+          "kinematic": {
+            "halfExtents": [
+              1.25,
+              1.75,
+              1.25
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "navigation": {
+            "goal": [
+              236.0,
+              8.75,
+              112.0
+            ],
+            "speedUnitsPerSecond": 8.0,
+            "maxVisited": 64
+          }
+        },
+        {
+          "id": 45,
+          "name": "doom-drop-shotgun-guy-24",
+          "translation": [
+            236.0,
+            8.75,
+            112.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 46,
+          "name": "doom-shotgun-guy-25",
           "translation": [
             224.0,
-            8.0,
+            9.25,
             136.0
           ],
           "collision": {
@@ -205066,7 +207525,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -205138,34 +207597,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 47
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -205176,19 +207639,52 @@
           "navigation": {
             "goal": [
               224.0,
-              8.0,
+              9.25,
               136.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 27,
-          "name": "doom-enemy-9-26",
+          "id": 47,
+          "name": "doom-drop-shotgun-guy-25",
+          "translation": [
+            224.0,
+            9.25,
+            136.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 48,
+          "name": "doom-shotgun-guy-26",
           "translation": [
             204.0,
-            0.5,
+            1.75,
             56.0
           ],
           "collision": {
@@ -205201,7 +207697,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -205273,34 +207769,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 49
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -205311,19 +207811,52 @@
           "navigation": {
             "goal": [
               204.0,
-              0.5,
+              1.75,
               56.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 28,
-          "name": "doom-enemy-9-27",
+          "id": 49,
+          "name": "doom-drop-shotgun-guy-26",
+          "translation": [
+            204.0,
+            1.75,
+            56.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 50,
+          "name": "doom-shotgun-guy-27",
           "translation": [
             189.0,
-            0.5,
+            1.75,
             50.0
           ],
           "collision": {
@@ -205336,7 +207869,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -205408,34 +207941,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 12.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 51
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -205446,20 +207983,59 @@
           "navigation": {
             "goal": [
               189.0,
-              0.5,
+              1.75,
               50.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 29,
-          "name": "doom-enemy-9-28",
+          "id": 51,
+          "name": "doom-drop-shotgun-guy-27",
+          "translation": [
+            189.0,
+            1.75,
+            50.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 52,
+          "name": "doom-shotgun-guy-28",
           "translation": [
             240.0,
-            7.5,
+            8.75,
             38.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
           ],
           "collision": {
             "enabled": true,
@@ -205471,7 +208047,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -205543,34 +208119,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 53
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -205581,19 +208161,52 @@
           "navigation": {
             "goal": [
               240.0,
-              7.5,
+              8.75,
               38.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 30,
-          "name": "doom-enemy-9-29",
+          "id": 53,
+          "name": "doom-drop-shotgun-guy-28",
+          "translation": [
+            240.0,
+            8.75,
+            38.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 54,
+          "name": "doom-shotgun-guy-29",
           "translation": [
             36.0,
-            15.5,
+            16.75,
             98.0
           ],
           "collision": {
@@ -205606,7 +208219,7 @@
             "localTransform": {
               "translation": [
                 0.0,
-                -0.9,
+                -1.75,
                 0.0
               ],
               "rotation": [
@@ -205678,34 +208291,38 @@
           },
           "enemy": true,
           "enemyCombat": {
-            "sightRange": 12.0,
-            "hearingRange": 5.0,
+            "sightRange": 64.0,
+            "hearingRange": 0.0,
+            "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 6,
-              "range": 14.0,
-              "cooldownTicks": 90,
+              "damage": 27,
+              "range": 128.0,
+              "cooldownTicks": 51,
               "originOffset": [
                 0.0,
                 0.25,
                 0.0
               ],
-              "presentation": "sentry-pulse"
+              "presentation": "doom-shotgun-guy-blast"
             }
           },
+          "defeatDrop": {
+            "pickup": 55
+          },
           "health": {
-            "max": 60,
+            "max": 30,
             "hitboxHalfExtents": [
-              0.35,
-              0.7,
-              0.35
+              1.25,
+              1.75,
+              1.25
             ]
           },
           "kinematic": {
             "halfExtents": [
-              0.3,
-              0.4,
-              0.3
+              1.25,
+              1.75,
+              1.25
             ],
             "velocity": [
               0.0,
@@ -205716,15 +208333,415 @@
           "navigation": {
             "goal": [
               36.0,
-              15.5,
+              16.75,
               98.0
             ],
-            "speedUnitsPerSecond": 3.2,
+            "speedUnitsPerSecond": 8.0,
             "maxVisited": 64
           }
         },
         {
-          "id": 31,
+          "id": 55,
+          "name": "doom-drop-shotgun-guy-29",
+          "translation": [
+            36.0,
+            16.75,
+            98.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/breach-scattergun",
+            "visible": false
+          },
+          "pickup": {
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 4
+            }
+          }
+        },
+        {
+          "id": 56,
+          "name": "doom-encounter-east-lift",
+          "translation": [
+            241.3,
+            10.15,
+            96.4
+          ],
+          "encounter": {
+            "members": [
+              2,
+              3,
+              4,
+              6,
+              8,
+              28,
+              40,
+              42,
+              44,
+              46
+            ],
+            "activationRadius": 18.0
+          }
+        },
+        {
+          "id": 57,
+          "name": "doom-encounter-exit-annex",
+          "translation": [
+            227.66667,
+            7.1944447,
+            35.666668
+          ],
+          "encounter": {
+            "members": [
+              10,
+              12,
+              14,
+              15,
+              17,
+              19,
+              48,
+              50,
+              52
+            ],
+            "activationRadius": 18.0
+          }
+        },
+        {
+          "id": 58,
+          "name": "doom-encounter-central-stairs",
+          "translation": [
+            182.33333,
+            11.0,
+            152.0
+          ],
+          "encounter": {
+            "members": [
+              20,
+              22,
+              24,
+              26,
+              36,
+              38
+            ],
+            "activationRadius": 24.0
+          }
+        },
+        {
+          "id": 59,
+          "name": "doom-encounter-west-court",
+          "translation": [
+            50.0,
+            13.25,
+            101.0
+          ],
+          "encounter": {
+            "members": [
+              30,
+              32,
+              34,
+              54
+            ],
+            "activationRadius": 18.0
+          }
+        },
+        {
+          "id": 60,
+          "name": "doom-explosive-barrel-1",
+          "translation": [
+            130.0,
+            8.8125,
+            100.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/hazard-marker",
+            "visible": true
+          },
+          "health": {
+            "max": 20,
+            "hitboxHalfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ]
+          },
+          "explosiveProp": {
+            "damage": 128,
+            "radius": 8.0
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        {
+          "id": 61,
+          "name": "doom-explosive-barrel-2",
+          "translation": [
+            120.0,
+            9.8125,
+            122.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/hazard-marker",
+            "visible": true
+          },
+          "health": {
+            "max": 20,
+            "hitboxHalfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ]
+          },
+          "explosiveProp": {
+            "damage": 128,
+            "radius": 8.0
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        {
+          "id": 62,
+          "name": "doom-explosive-barrel-3",
+          "translation": [
+            102.0,
+            9.8125,
+            96.0
+          ],
+          "rotation": [
+            0.0,
+            -0.70710677,
+            0.0,
+            0.70710677
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/hazard-marker",
+            "visible": true
+          },
+          "health": {
+            "max": 20,
+            "hitboxHalfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ]
+          },
+          "explosiveProp": {
+            "damage": 128,
+            "radius": 8.0
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        {
+          "id": 63,
+          "name": "doom-explosive-barrel-4",
+          "translation": [
+            232.0,
+            8.3125,
+            34.0
+          ],
+          "rotation": [
+            0.0,
+            -1.0,
+            0.0,
+            6.123234e-17
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/hazard-marker",
+            "visible": true
+          },
+          "health": {
+            "max": 20,
+            "hitboxHalfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ]
+          },
+          "explosiveProp": {
+            "damage": 128,
+            "radius": 8.0
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        {
+          "id": 64,
+          "name": "doom-explosive-barrel-5",
+          "translation": [
+            247.0,
+            8.3125,
+            40.0
+          ],
+          "rotation": [
+            0.0,
+            -1.0,
+            0.0,
+            6.123234e-17
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/hazard-marker",
+            "visible": true
+          },
+          "health": {
+            "max": 20,
+            "hitboxHalfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ]
+          },
+          "explosiveProp": {
+            "damage": 128,
+            "radius": 8.0
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        {
+          "id": 65,
+          "name": "doom-explosive-barrel-6",
+          "translation": [
+            225.0,
+            8.3125,
+            39.0
+          ],
+          "rotation": [
+            0.0,
+            -1.0,
+            0.0,
+            6.123234e-17
+          ],
+          "collision": {
+            "enabled": true,
+            "staticCollider": false
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/hazard-marker",
+            "visible": true
+          },
+          "health": {
+            "max": 20,
+            "hitboxHalfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ]
+          },
+          "explosiveProp": {
+            "damage": 128,
+            "radius": 8.0
+          },
+          "kinematic": {
+            "halfExtents": [
+              0.625,
+              1.3125,
+              0.625
+            ],
+            "velocity": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        {
+          "id": 66,
           "name": "doom-pickup-2019-1",
           "translation": [
             162.0,
@@ -205806,7 +208823,7 @@
           }
         },
         {
-          "id": 32,
+          "id": 67,
           "name": "doom-pickup-2012-2",
           "translation": [
             228.0,
@@ -205888,7 +208905,7 @@
           }
         },
         {
-          "id": 33,
+          "id": 68,
           "name": "doom-pickup-2007-3",
           "translation": [
             219.0,
@@ -205970,7 +208987,7 @@
           }
         },
         {
-          "id": 34,
+          "id": 69,
           "name": "doom-pickup-2007-4",
           "translation": [
             253.0,
@@ -206052,7 +209069,7 @@
           }
         },
         {
-          "id": 35,
+          "id": 70,
           "name": "doom-pickup-2014-5",
           "translation": [
             57.0,
@@ -206134,7 +209151,7 @@
           }
         },
         {
-          "id": 36,
+          "id": 71,
           "name": "doom-pickup-2014-6",
           "translation": [
             57.0,
@@ -206216,7 +209233,7 @@
           }
         },
         {
-          "id": 37,
+          "id": 72,
           "name": "doom-pickup-2014-7",
           "translation": [
             54.0,
@@ -206298,7 +209315,7 @@
           }
         },
         {
-          "id": 38,
+          "id": 73,
           "name": "doom-pickup-2014-8",
           "translation": [
             54.0,
@@ -206380,7 +209397,7 @@
           }
         },
         {
-          "id": 39,
+          "id": 74,
           "name": "doom-pickup-2015-9",
           "translation": [
             75.0,
@@ -206462,7 +209479,7 @@
           }
         },
         {
-          "id": 40,
+          "id": 75,
           "name": "doom-pickup-2015-10",
           "translation": [
             75.0,
@@ -206544,7 +209561,7 @@
           }
         },
         {
-          "id": 41,
+          "id": 76,
           "name": "doom-pickup-2015-11",
           "translation": [
             50.0,
@@ -206626,7 +209643,7 @@
           }
         },
         {
-          "id": 42,
+          "id": 77,
           "name": "doom-pickup-2015-12",
           "translation": [
             46.0,
@@ -206708,7 +209725,7 @@
           }
         },
         {
-          "id": 43,
+          "id": 78,
           "name": "doom-pickup-2014-13",
           "translation": [
             130.0,
@@ -206790,7 +209807,7 @@
           }
         },
         {
-          "id": 44,
+          "id": 79,
           "name": "doom-pickup-2014-14",
           "translation": [
             94.0,
@@ -206872,7 +209889,7 @@
           }
         },
         {
-          "id": 45,
+          "id": 80,
           "name": "doom-pickup-2015-15",
           "translation": [
             94.0,
@@ -206954,7 +209971,7 @@
           }
         },
         {
-          "id": 46,
+          "id": 81,
           "name": "doom-pickup-2015-16",
           "translation": [
             109.0,
@@ -207036,7 +210053,7 @@
           }
         },
         {
-          "id": 47,
+          "id": 82,
           "name": "doom-pickup-2014-17",
           "translation": [
             215.0,
@@ -207118,7 +210135,7 @@
           }
         },
         {
-          "id": 48,
+          "id": 83,
           "name": "doom-pickup-2014-18",
           "translation": [
             220.0,
@@ -207200,7 +210217,7 @@
           }
         },
         {
-          "id": 49,
+          "id": 84,
           "name": "doom-pickup-2008-19",
           "translation": [
             226.0,
@@ -207282,7 +210299,7 @@
           }
         },
         {
-          "id": 50,
+          "id": 85,
           "name": "doom-pickup-2008-20",
           "translation": [
             236.0,
@@ -207364,7 +210381,7 @@
           }
         },
         {
-          "id": 51,
+          "id": 86,
           "name": "doom-pickup-2014-21",
           "translation": [
             247.0,
@@ -207446,7 +210463,7 @@
           }
         },
         {
-          "id": 52,
+          "id": 87,
           "name": "doom-pickup-2014-22",
           "translation": [
             225.0,
@@ -207528,7 +210545,7 @@
           }
         },
         {
-          "id": 53,
+          "id": 88,
           "name": "doom-pickup-2014-23",
           "translation": [
             219.0,
@@ -207610,7 +210627,7 @@
           }
         },
         {
-          "id": 54,
+          "id": 89,
           "name": "doom-pickup-2014-24",
           "translation": [
             253.0,
@@ -207692,7 +210709,7 @@
           }
         },
         {
-          "id": 55,
+          "id": 90,
           "name": "doom-pickup-2014-25",
           "translation": [
             253.0,
@@ -207774,7 +210791,7 @@
           }
         },
         {
-          "id": 56,
+          "id": 91,
           "name": "doom-pickup-2015-26",
           "translation": [
             219.0,
@@ -207856,7 +210873,7 @@
           }
         },
         {
-          "id": 57,
+          "id": 92,
           "name": "doom-pickup-2015-27",
           "translation": [
             240.0,
@@ -207938,7 +210955,7 @@
           }
         },
         {
-          "id": 58,
+          "id": 93,
           "name": "doom-pickup-2015-28",
           "translation": [
             232.0,
@@ -208020,7 +211037,7 @@
           }
         },
         {
-          "id": 59,
+          "id": 94,
           "name": "doom-pickup-2015-29",
           "translation": [
             240.0,
@@ -208102,7 +211119,7 @@
           }
         },
         {
-          "id": 60,
+          "id": 95,
           "name": "doom-pickup-2015-30",
           "translation": [
             232.0,
@@ -208184,7 +211201,7 @@
           }
         },
         {
-          "id": 61,
+          "id": 96,
           "name": "doom-pickup-2011-31",
           "translation": [
             240.0,
@@ -208266,7 +211283,7 @@
           }
         },
         {
-          "id": 62,
+          "id": 97,
           "name": "doom-pickup-2012-32",
           "translation": [
             192.0,
@@ -208348,7 +211365,7 @@
           }
         },
         {
-          "id": 63,
+          "id": 98,
           "name": "doom-pickup-2049-33",
           "translation": [
             184.0,
@@ -208430,7 +211447,7 @@
           }
         },
         {
-          "id": 64,
+          "id": 99,
           "name": "doom-pickup-2048-34",
           "translation": [
             200.0,
@@ -208512,7 +211529,7 @@
           }
         },
         {
-          "id": 65,
+          "id": 100,
           "name": "doom-pickup-2018-35",
           "translation": [
             34.0,
@@ -208594,7 +211611,7 @@
           }
         },
         {
-          "id": 66,
+          "id": 101,
           "name": "doom-pickup-2015-36",
           "translation": [
             187.0,
@@ -208676,7 +211693,7 @@
           }
         },
         {
-          "id": 67,
+          "id": 102,
           "name": "doom-pickup-2015-37",
           "translation": [
             187.0,
@@ -208758,7 +211775,7 @@
           }
         },
         {
-          "id": 68,
+          "id": 103,
           "name": "doom-pickup-2015-38",
           "translation": [
             191.0,
@@ -208840,7 +211857,7 @@
           }
         },
         {
-          "id": 69,
+          "id": 104,
           "name": "doom-pickup-2015-39",
           "translation": [
             191.0,
@@ -208922,7 +211939,7 @@
           }
         },
         {
-          "id": 70,
+          "id": 105,
           "name": "doom-pickup-2015-40",
           "translation": [
             155.0,
@@ -209004,7 +212021,7 @@
           }
         },
         {
-          "id": 71,
+          "id": 106,
           "name": "doom-pickup-2015-41",
           "translation": [
             188.0,
@@ -209086,7 +212103,7 @@
           }
         },
         {
-          "id": 72,
+          "id": 107,
           "name": "doom-pickup-2049-42",
           "translation": [
             252.0,
@@ -209168,7 +212185,7 @@
           }
         },
         {
-          "id": 73,
+          "id": 108,
           "name": "doom-pickup-2001-43",
           "translation": [
             252.0,
@@ -209254,7 +212271,7 @@
           }
         },
         {
-          "id": 74,
+          "id": 109,
           "name": "doom-pickup-2012-44",
           "translation": [
             250.0,
@@ -209336,7 +212353,7 @@
           }
         },
         {
-          "id": 75,
+          "id": 110,
           "name": "doom-pickup-2049-45",
           "translation": [
             276.0,
@@ -209418,7 +212435,7 @@
           }
         },
         {
-          "id": 76,
+          "id": 111,
           "name": "doom-pickup-2015-46",
           "translation": [
             274.0,
@@ -209500,7 +212517,7 @@
           }
         },
         {
-          "id": 77,
+          "id": 112,
           "name": "doom-pickup-2015-47",
           "translation": [
             280.0,
@@ -209582,7 +212599,7 @@
           }
         },
         {
-          "id": 78,
+          "id": 113,
           "name": "doom-pickup-2015-48",
           "translation": [
             265.0,
@@ -209664,7 +212681,7 @@
           }
         },
         {
-          "id": 79,
+          "id": 114,
           "name": "doom-pickup-2015-49",
           "translation": [
             259.0,
@@ -209746,7 +212763,7 @@
           }
         },
         {
-          "id": 80,
+          "id": 115,
           "name": "doom-pickup-2015-50",
           "translation": [
             271.0,
@@ -209828,7 +212845,7 @@
           }
         },
         {
-          "id": 81,
+          "id": 116,
           "name": "doom-pickup-2015-51",
           "translation": [
             274.0,
@@ -209910,7 +212927,7 @@
           }
         },
         {
-          "id": 82,
+          "id": 117,
           "name": "doom-pickup-2015-52",
           "translation": [
             277.0,
@@ -209992,7 +213009,7 @@
           }
         },
         {
-          "id": 83,
+          "id": 118,
           "name": "doom-pickup-2015-53",
           "translation": [
             276.0,
@@ -210074,7 +213091,7 @@
           }
         },
         {
-          "id": 84,
+          "id": 119,
           "name": "doom-damaging-sector-13",
           "translation": [
             162.0,
@@ -210103,7 +213120,7 @@
           }
         },
         {
-          "id": 85,
+          "id": 120,
           "name": "doom-damaging-sector-55",
           "translation": [
             226.0,
@@ -210132,7 +213149,7 @@
           }
         },
         {
-          "id": 86,
+          "id": 121,
           "name": "doom-damaging-sector-57",
           "translation": [
             249.75,
@@ -210161,7 +213178,7 @@
           }
         },
         {
-          "id": 87,
+          "id": 122,
           "name": "doom-damaging-sector-61",
           "translation": [
             231.25,
@@ -210190,7 +213207,7 @@
           }
         },
         {
-          "id": 88,
+          "id": 123,
           "name": "doom-manual-door-sector-4",
           "translation": [
             144.5,
@@ -210308,7 +213325,7 @@
             "effects": [
               {
                 "kind": "openDoor",
-                "door": 88
+                "door": 123
               }
             ]
           },
@@ -210326,7 +213343,7 @@
           }
         },
         {
-          "id": 89,
+          "id": 124,
           "name": "doom-manual-door-sector-68",
           "translation": [
             231.0,
@@ -210444,7 +213461,7 @@
             "effects": [
               {
                 "kind": "openDoor",
-                "door": 89
+                "door": 124
               }
             ]
           },
@@ -210462,7 +213479,7 @@
           }
         },
         {
-          "id": 90,
+          "id": 125,
           "name": "doom-manual-door-sector-81",
           "translation": [
             236.0,
@@ -210580,7 +213597,7 @@
             "effects": [
               {
                 "kind": "openDoor",
-                "door": 90
+                "door": 125
               }
             ]
           },
@@ -210598,7 +213615,7 @@
           }
         },
         {
-          "id": 91,
+          "id": 126,
           "name": "doom-manual-door-sector-76",
           "translation": [
             236.0,
@@ -210716,7 +213733,7 @@
             "effects": [
               {
                 "kind": "openDoor",
-                "door": 91
+                "door": 126
               }
             ]
           },
@@ -210734,7 +213751,7 @@
           }
         },
         {
-          "id": 92,
+          "id": 127,
           "name": "doom-floor-platform-sector-59",
           "translation": [
             260.0,
@@ -210771,7 +213788,7 @@
           }
         },
         {
-          "id": 93,
+          "id": 128,
           "name": "doom-walk-floor-action-linedef-308",
           "translation": [
             236.0,
@@ -210791,7 +213808,7 @@
             ]
           },
           "floorAction": {
-            "targetPlatform": 92,
+            "targetPlatform": 127,
             "upperTranslation": [
               260.0,
               15.0,
@@ -210809,7 +213826,7 @@
           }
         },
         {
-          "id": 94,
+          "id": 129,
           "name": "doom-lift-platform-sector-70",
           "translation": [
             270.0,
@@ -210846,7 +213863,7 @@
           }
         },
         {
-          "id": 95,
+          "id": 130,
           "name": "doom-repeatable-lift-linedef-195",
           "translation": [
             229.25,
@@ -210866,7 +213883,7 @@
             ]
           },
           "lift": {
-            "targetPlatform": 94,
+            "targetPlatform": 129,
             "raisedTranslation": [
               270.0,
               15.5,
@@ -210885,7 +213902,7 @@
           }
         },
         {
-          "id": 96,
+          "id": 131,
           "name": "doom-exit",
           "translation": [
             230.0,
@@ -210940,7 +213957,7 @@
           }
         },
         {
-          "id": 97,
+          "id": 132,
           "name": "doom-secret-sector-68",
           "translation": [
             231.0,
@@ -210965,7 +213982,7 @@
           }
         },
         {
-          "id": 98,
+          "id": 133,
           "name": "doom-secret-sector-69",
           "translation": [
             252.0,
@@ -210990,7 +214007,7 @@
           }
         },
         {
-          "id": 99,
+          "id": 134,
           "name": "doom-secret-sector-70",
           "translation": [
             270.0,

@@ -12,6 +12,7 @@ import {
 const dynamic = {
   tick: 1,
   entityRevision: 1,
+  gameplayFrame: { schemaVersion: 1, ops: [] },
   projection: [],
   doorState: "closed",
   encounterState: "active",

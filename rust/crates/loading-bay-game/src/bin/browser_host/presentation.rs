@@ -249,6 +249,7 @@ impl BrowserFeedbackProjection {
                 }
                 CombatFact::Inventory(_)
                 | CombatFact::Vitality(_)
+                | CombatFact::ExplosiveProp(_)
                 | CombatFact::ProjectileSpawned { .. }
                 | CombatFact::ProjectileImpacted { .. }
                 | CombatFact::ProjectileExpired { .. } => {}
@@ -285,6 +286,7 @@ impl BrowserFeedbackProjection {
                     attack_kind: match kind {
                         loading_bay_game::EnemyAttackKind::Melee => "melee",
                         loading_bay_game::EnemyAttackKind::RangedHitscan => "rangedHitscan",
+                        loading_bay_game::EnemyAttackKind::Projectile => "projectile",
                     },
                     presentation: presentation.clone(),
                     origin: origin.to_array(),
@@ -306,6 +308,7 @@ impl BrowserFeedbackProjection {
                         loading_bay_game::EnemyAttackMissReason::TargetDead => "targetDead",
                     },
                 }),
+                EnemyCombatFact::ProjectileSpawned { .. } => {}
                 EnemyCombatFact::Vitality(VitalityFact::DamageApplied {
                     source,
                     target,

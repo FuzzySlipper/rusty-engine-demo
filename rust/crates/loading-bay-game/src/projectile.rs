@@ -12,7 +12,7 @@ use rusty_engine::entity_state::{
     RigidBodyComponent, RigidBodyShape,
 };
 
-use crate::combat::{CombatFact, EnemyState};
+use crate::combat::CombatFact;
 use crate::inventory::{ItemDefinitionId, ProjectileDefinition};
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
@@ -81,11 +81,22 @@ pub struct ProjectilePhaseReceipt {
 #[derive(Debug, Clone, PartialEq)]
 struct ActiveProjectile {
     owner: EntityId,
-    weapon: ItemDefinitionId,
+    weapon: Option<ItemDefinitionId>,
+    target: Option<EntityId>,
     definition: ProjectileDefinition,
     damage: u32,
     expires_at: Tick,
     pending_impulse: Vec3,
+}
+
+pub(crate) struct EnemyProjectileSpawn {
+    pub owner: EntityId,
+    pub target: EntityId,
+    pub definition: ProjectileDefinition,
+    pub damage: u32,
+    pub origin: Vec3,
+    pub direction: Vec3,
+    pub tick: Tick,
 }
 
 pub(crate) struct ProjectileSpawnRequest {
@@ -161,7 +172,8 @@ impl ProjectileService {
             entity,
             ActiveProjectile {
                 owner,
-                weapon: weapon.clone(),
+                weapon: Some(weapon.clone()),
+                target: None,
                 definition,
                 damage,
                 expires_at,
@@ -179,6 +191,72 @@ impl ProjectileService {
                 expires_at,
             },
         ))
+    }
+
+    pub(crate) fn spawn_enemy(
+        &mut self,
+        session: &mut GameSession,
+        request: EnemyProjectileSpawn,
+    ) -> Result<(EntityId, Vec3, Tick), ProjectileError> {
+        let EnemyProjectileSpawn {
+            owner,
+            target,
+            definition,
+            damage,
+            origin,
+            direction,
+            tick,
+        } = request;
+        if self.active.len() >= MAX_PROJECTILE_ENTITIES {
+            return Err(ProjectileError::EntityLimit {
+                limit: MAX_PROJECTILE_ENTITIES,
+            });
+        }
+        let entity = self.allocate_entity(session)?;
+        let radius = definition.radius;
+        let definition_entity = EntityDefinition::new(entity, "enemy projectile")
+            .with_full_transform(EntityTransform::at(origin))
+            .with_bounds(
+                Vec3::new(-radius, -radius, -radius),
+                Vec3::new(radius, radius, radius),
+            )
+            .with_collision(true, false)
+            .with_renderable(PROJECTILE_ASSET, true);
+        let authoring = EntityAuthoringService;
+        let entity_revision = session.entities.revision();
+        authoring
+            .admit(&mut session.entities, entity_revision, [definition_entity])
+            .map_err(ProjectileError::EntityAuthoring)?;
+        let body = RigidBodyComponent {
+            gravity_scale: definition.gravity_scale,
+            restitution: definition.restitution,
+            continuous_collision: true,
+            ..RigidBodyComponent::dynamic(RigidBodyShape::Sphere { radius }, definition.mass)
+        };
+        let component_revision = session
+            .entities
+            .component_revision::<RigidBodyComponent>(entity)
+            .expect("rigid-body component is registered by mechanics registry");
+        authoring
+            .attach_component(&mut session.entities, component_revision, entity, body)
+            .map_err(ProjectileError::EntityAuthoring)?;
+        let impulse = normalize(direction) * definition.impulse;
+        let expires_at = tick.advance(rusty_engine::core_time::TickDelta::new(
+            definition.lifetime_ticks,
+        ));
+        self.active.insert(
+            entity,
+            ActiveProjectile {
+                owner,
+                weapon: None,
+                target: Some(target),
+                definition,
+                damage,
+                expires_at,
+                pending_impulse: impulse,
+            },
+        );
+        Ok((entity, impulse, expires_at))
     }
 
     pub(crate) fn step(
@@ -239,6 +317,7 @@ impl ProjectileService {
             let target = nearest_target(
                 &candidate_session,
                 projectile.owner,
+                projectile.target,
                 position,
                 projectile.definition.radius,
             );
@@ -248,10 +327,15 @@ impl ProjectileService {
                     let damage = DamageService::apply(
                         &mut candidate_session,
                         DamageCommand {
-                            source: DamageSource::Weapon {
-                                attacker: projectile.owner,
-                                weapon: projectile.weapon.clone(),
-                            },
+                            source: projectile.weapon.as_ref().map_or(
+                                DamageSource::EnemyAttack {
+                                    attacker: projectile.owner,
+                                },
+                                |weapon| DamageSource::Weapon {
+                                    attacker: projectile.owner,
+                                    weapon: weapon.clone(),
+                                },
+                            ),
                             target,
                             amount: projectile.damage,
                         },
@@ -358,25 +442,35 @@ impl ProjectileService {
 fn nearest_target(
     session: &GameSession,
     owner: EntityId,
+    explicit_target: Option<EntityId>,
     position: Vec3,
     radius: f32,
 ) -> Option<EntityId> {
+    if let Some(target) = explicit_target {
+        let health = session.health(target)?;
+        if health.current == 0 {
+            return None;
+        }
+        let transform = session.entities.transform(target)?;
+        let delta = position - transform.translation;
+        return (delta.x.abs() <= health.config.hitbox_half_extents.x + radius
+            && delta.y.abs() <= health.config.hitbox_half_extents.y + radius
+            && delta.z.abs() <= health.config.hitbox_half_extents.z + radius)
+            .then_some(target);
+    }
     session
-        .enemies
-        .iter()
-        .filter(|(entity, enemy)| {
-            **entity != owner
-                && enemy.state == EnemyState::Alive
-                && crate::encounter::EncounterService::enemy_is_active(session, **entity)
-        })
-        .filter_map(|(entity, _)| {
-            let health = session.health(*entity)?;
-            let transform = session.entities.transform(*entity)?;
+        .health
+        .keys()
+        .copied()
+        .filter(|entity| *entity != owner && session.is_player_attack_target(*entity))
+        .filter_map(|entity| {
+            let health = session.health(entity)?;
+            let transform = session.entities.transform(entity)?;
             let delta = position - transform.translation;
             (delta.x.abs() <= health.config.hitbox_half_extents.x + radius
                 && delta.y.abs() <= health.config.hitbox_half_extents.y + radius
                 && delta.z.abs() <= health.config.hitbox_half_extents.z + radius)
-                .then_some((*entity, delta.length_squared()))
+                .then_some((entity, delta.length_squared()))
         })
         .min_by(|left, right| {
             left.1

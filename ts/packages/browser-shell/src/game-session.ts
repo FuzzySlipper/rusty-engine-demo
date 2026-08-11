@@ -1557,7 +1557,8 @@ function isRuntimeEnemyState(value: unknown): boolean {
       value.combatPosture === "dead") &&
     (value.attackKind === null ||
       value.attackKind === "melee" ||
-      value.attackKind === "rangedHitscan")
+      value.attackKind === "rangedHitscan" ||
+      value.attackKind === "projectile")
   );
 }
 
@@ -1586,6 +1587,7 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     isRecord(value) &&
     isFiniteNumber(value.tick) &&
     isFiniteNumber(value.entityRevision) &&
+    isRecord(value.gameplayFrame) &&
     Array.isArray(value.projection) &&
     value.projection.every(isRuntimeProjectionNode) &&
     typeof value.doorState === "string" &&

@@ -827,6 +827,7 @@ fn voxel_object_owner(
         enemy_combat: None,
         defeat_drop: None,
         health: None,
+        explosive_prop: None,
         hazard: None,
         encounter: None,
         extraction_beacon: None,

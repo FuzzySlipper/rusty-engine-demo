@@ -95,7 +95,7 @@ export interface RuntimeEnemyState {
     | "attacking"
     | "dead"
     | null;
-  readonly attackKind: "melee" | "rangedHitscan" | null;
+  readonly attackKind: "melee" | "rangedHitscan" | "projectile" | null;
 }
 
 export interface RuntimePlayerBindings {
@@ -391,7 +391,7 @@ export type RuntimeFeedbackCue =
       readonly kind: "enemyAttack";
       readonly attacker: number;
       readonly target: number;
-      readonly attackKind: "melee" | "rangedHitscan";
+      readonly attackKind: "melee" | "rangedHitscan" | "projectile";
       readonly presentation: string;
       readonly origin: readonly [number, number, number];
       readonly targetPosition: readonly [number, number, number];
@@ -518,6 +518,7 @@ export interface RuntimeBrowserState {
   readonly projectId: string;
   readonly tick: number;
   readonly entityRevision: number;
+  readonly gameplayFrame: RenderFrameDiff;
   readonly voxelRevision: number;
   readonly voxelAuthorityHash: string;
   readonly voxelSolidCount: number;

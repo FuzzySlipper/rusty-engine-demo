@@ -254,30 +254,55 @@ impl PickupService {
             .ok_or(PickupRejection::InventorySequenceOverflow {
                 actor: command.actor,
             })?;
-        let mut inventory = vec![InventoryService::apply(
-            &mut candidate_session,
-            command.actor,
-            InventoryCommand {
-                sequence: inventory_sequence,
-                action: InventoryAction::Grant {
-                    item: component.config.item.clone(),
-                    quantity: component.config.quantity,
-                },
-            },
-        )
-        .map_err(PickupRejection::Inventory)?];
-        if let Some(starter) = &component.config.starter_ammunition {
-            let sequence = inventory_sequence.checked_add(1).ok_or(
-                PickupRejection::InventorySequenceOverflow {
-                    actor: command.actor,
-                },
-            )?;
+        let duplicate_weapon_with_ammunition = component
+            .config
+            .starter_ammunition
+            .as_ref()
+            .is_some_and(|_| {
+                candidate_session
+                    .item_definitions
+                    .get(&component.config.item)
+                    .is_some_and(|definition| matches!(definition.kind, crate::ItemKind::Weapon(_)))
+                    && candidate_session
+                        .inventory(command.actor)
+                        .is_some_and(|inventory| {
+                            inventory
+                                .stacks
+                                .iter()
+                                .any(|stack| stack.item == component.config.item)
+                        })
+            });
+        let mut inventory = Vec::new();
+        let mut next_sequence = inventory_sequence;
+        if !duplicate_weapon_with_ammunition {
             inventory.push(
                 InventoryService::apply(
                     &mut candidate_session,
                     command.actor,
                     InventoryCommand {
-                        sequence,
+                        sequence: next_sequence,
+                        action: InventoryAction::Grant {
+                            item: component.config.item.clone(),
+                            quantity: component.config.quantity,
+                        },
+                    },
+                )
+                .map_err(PickupRejection::Inventory)?,
+            );
+            next_sequence =
+                next_sequence
+                    .checked_add(1)
+                    .ok_or(PickupRejection::InventorySequenceOverflow {
+                        actor: command.actor,
+                    })?;
+        }
+        if let Some(starter) = &component.config.starter_ammunition {
+            inventory.push(
+                InventoryService::apply(
+                    &mut candidate_session,
+                    command.actor,
+                    InventoryCommand {
+                        sequence: next_sequence,
                         action: InventoryAction::Grant {
                             item: starter.item.clone(),
                             quantity: starter.quantity,

@@ -131,7 +131,7 @@ export interface LevelExitDefinition {
 
 export interface EncounterDefinition {
   readonly members: readonly number[];
-  readonly exit: number;
+  readonly exit?: number;
   readonly activationRadius?: number;
 }
 
@@ -151,16 +151,30 @@ export interface HealthDefinition {
   readonly armorAbsorptionPercent?: number;
 }
 
+export interface ExplosivePropDefinition {
+  readonly damage: number;
+  readonly radius: number;
+}
+
 export interface EnemyCombatDefinition {
   readonly sightRange: number;
   readonly hearingRange: number;
+  readonly painDurationTicks?: number;
   readonly attack: {
-    readonly kind: "melee" | "rangedHitscan";
+    readonly kind: "melee" | "rangedHitscan" | "projectile";
     readonly damage: number;
     readonly range: number;
     readonly cooldownTicks: number;
     readonly originOffset: Vec3;
     readonly presentation: string;
+    readonly projectile?: {
+      readonly mass: number;
+      readonly radius: number;
+      readonly impulse: number;
+      readonly gravityScale: number;
+      readonly lifetimeTicks: number;
+      readonly restitution: number;
+    };
   };
 }
 
@@ -365,6 +379,7 @@ export interface EntityDefinition {
   readonly enemyCombat?: EnemyCombatDefinition;
   readonly defeatDrop?: EnemyDropDefinition;
   readonly health?: HealthDefinition;
+  readonly explosiveProp?: ExplosivePropDefinition;
   readonly hazard?: HazardDefinition;
   readonly encounter?: EncounterDefinition;
   readonly extractionBeacon?: ExtractionBeaconDefinition;

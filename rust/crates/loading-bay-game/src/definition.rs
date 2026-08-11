@@ -6,6 +6,7 @@ use crate::door::DoorConfig;
 use crate::encounter::EncounterConfig;
 use crate::enemy_combat::EnemyCombatConfig;
 use crate::enemy_drop::EnemyDropConfig;
+use crate::explosive_prop::ExplosivePropConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::floor_action::FloorActionConfig;
 use crate::hazard::HazardConfig;
@@ -35,6 +36,7 @@ pub struct GameEntityDefinition {
     pub enemy_combat: Option<EnemyCombatConfig>,
     pub enemy_drop: Option<EnemyDropConfig>,
     pub health: Option<HealthConfig>,
+    pub explosive_prop: Option<ExplosivePropConfig>,
     pub hazard: Option<HazardConfig>,
     pub encounter: Option<EncounterConfig>,
     pub extraction_beacon: Option<ExtractionBeaconConfig>,
@@ -63,6 +65,7 @@ impl GameEntityDefinition {
             enemy_combat: None,
             enemy_drop: None,
             health: None,
+            explosive_prop: None,
             hazard: None,
             encounter: None,
             extraction_beacon: None,
@@ -145,6 +148,11 @@ impl GameEntityDefinition {
         self
     }
 
+    pub fn with_explosive_prop(mut self, config: ExplosivePropConfig) -> Self {
+        self.explosive_prop = Some(config);
+        self
+    }
+
     pub fn as_hazard(mut self, config: HazardConfig) -> Self {
         self.hazard = Some(config);
         self
@@ -153,7 +161,7 @@ impl GameEntityDefinition {
     pub fn as_encounter(
         mut self,
         members: impl IntoIterator<Item = EntityId>,
-        exit: EntityId,
+        exit: Option<EntityId>,
     ) -> Self {
         self.encounter = Some(EncounterConfig {
             members: members.into_iter().collect(),
@@ -371,6 +379,24 @@ pub enum GameEntityDefinitionError {
         entity: EntityId,
     },
     InvalidHealthConfig {
+        entity: EntityId,
+    },
+    ExplosivePropOnEnemy {
+        entity: EntityId,
+    },
+    ExplosivePropMissingTransform {
+        entity: EntityId,
+    },
+    ExplosivePropMissingCollision {
+        entity: EntityId,
+    },
+    ExplosivePropMissingRenderable {
+        entity: EntityId,
+    },
+    ExplosivePropMissingHealth {
+        entity: EntityId,
+    },
+    InvalidExplosivePropConfig {
         entity: EntityId,
     },
     HazardMissingTransform {

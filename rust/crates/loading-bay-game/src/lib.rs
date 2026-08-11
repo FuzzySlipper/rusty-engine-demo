@@ -15,6 +15,7 @@ mod door;
 mod encounter;
 mod enemy_combat;
 mod enemy_drop;
+mod explosive_prop;
 mod extraction_beacon;
 mod floor_action;
 mod game_loop;
@@ -46,7 +47,7 @@ mod weapon_authoring;
 
 pub use application_content_projection::{
     doom_texture_projection, externalize_frame_meshes, project_doom_e1m1_application_content,
-    ProjectedApplicationContent,
+    GameplayApplicationProjector, ProjectedApplicationContent,
 };
 pub use combat::{
     CombatFact, CombatMissReason, CombatReceipt, CombatRejectionReason, EnemyComponent, EnemyState,
@@ -80,6 +81,10 @@ pub use enemy_combat::{
 pub use enemy_drop::{
     EnemyDropComponent, EnemyDropConfig, EnemyDropFact, EnemyDropRejection, EnemyDropState,
     EnemyDropView,
+};
+pub use explosive_prop::{
+    ExplosivePropComponent, ExplosivePropConfig, ExplosivePropError, ExplosivePropFact,
+    ExplosivePropPhaseReceipt, ExplosivePropState, ExplosivePropView, MAX_EXPLOSION_RADIUS,
 };
 pub use extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconFact,
@@ -202,7 +207,7 @@ pub use stored_project::{
     StoredArmorTransition, StoredAsset, StoredAssetCatalogMetadata, StoredAssetImport,
     StoredBounds, StoredCollision, StoredDoor, StoredDoorAccess, StoredEncounter,
     StoredEnemyAttack, StoredEnemyAttackKind, StoredEnemyCombat, StoredEnemyDrop,
-    StoredEntityDefinition, StoredExtractionBeacon, StoredFloorAction,
+    StoredEntityDefinition, StoredExplosiveProp, StoredExtractionBeacon, StoredFloorAction,
     StoredGeneratedVoxelEnvironment, StoredHazard, StoredHealth, StoredImportSource,
     StoredInventory, StoredInventoryStack, StoredItemDefinition, StoredItemKind, StoredKinematic,
     StoredLevelExit, StoredLift, StoredLight, StoredLoadingBayInterlock, StoredMaterialVoxel,

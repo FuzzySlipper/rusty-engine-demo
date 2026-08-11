@@ -464,6 +464,8 @@ pub struct StoredEntityDefinition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub health: Option<StoredHealth>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub explosive_prop: Option<StoredExplosiveProp>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hazard: Option<StoredHazard>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub encounter: Option<StoredEncounter>,
@@ -884,7 +886,8 @@ pub struct StoredLevelExit {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredEncounter {
     pub members: Vec<u64>,
-    pub exit: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exit: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activation_radius: Option<f32>,
 }
@@ -914,12 +917,32 @@ pub struct StoredHealth {
     pub armor_absorption_percent: u8,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredExplosiveProp {
+    pub damage: u32,
+    pub radius: f32,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredEnemyCombat {
     pub sight_range: f32,
     pub hearing_range: f32,
+    #[serde(
+        default = "default_enemy_pain_duration_ticks",
+        skip_serializing_if = "enemy_pain_duration_ticks_is_default"
+    )]
+    pub pain_duration_ticks: u64,
     pub attack: StoredEnemyAttack,
+}
+
+fn default_enemy_pain_duration_ticks() -> u64 {
+    6
+}
+
+fn enemy_pain_duration_ticks_is_default(value: &u64) -> bool {
+    *value == default_enemy_pain_duration_ticks()
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -931,6 +954,8 @@ pub struct StoredEnemyAttack {
     pub cooldown_ticks: u64,
     pub origin_offset: [f32; 3],
     pub presentation: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projectile: Option<StoredEnemyProjectile>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -938,6 +963,18 @@ pub struct StoredEnemyAttack {
 pub enum StoredEnemyAttackKind {
     Melee,
     RangedHitscan,
+    Projectile,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredEnemyProjectile {
+    pub mass: f32,
+    pub radius: f32,
+    pub impulse: f32,
+    pub gravity_scale: f32,
+    pub lifetime_ticks: u64,
+    pub restitution: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

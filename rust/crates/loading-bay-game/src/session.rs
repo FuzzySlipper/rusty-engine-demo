@@ -10,12 +10,14 @@ use crate::combat::{EnemyComponent, EnemyState, EnemyView, WeaponState, WeaponVi
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::{DoorComponent, DoorState, DoorView, DEFAULT_DOOR_MOTION_DURATION_TICKS};
 use crate::encounter::{
-    EncounterComponent, EncounterState, EncounterView, MAX_ENCOUNTER_ACTIVATION_RADIUS,
+    EncounterComponent, EncounterService, EncounterState, EncounterView,
+    MAX_ENCOUNTER_ACTIVATION_RADIUS,
 };
 use crate::enemy_combat::{
     EnemyCombatComponent, EnemyCombatPosture, EnemyCombatState, EnemyCombatView,
 };
 use crate::enemy_drop::{EnemyDropComponent, EnemyDropState, EnemyDropView};
+use crate::explosive_prop::{ExplosivePropComponent, ExplosivePropState, ExplosivePropView};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconState, ExtractionBeaconView,
 };
@@ -55,6 +57,7 @@ pub struct GameSession {
     pub(crate) enemy_combat: BTreeMap<EntityId, EnemyCombatComponent>,
     pub(crate) enemy_drops: BTreeMap<EntityId, EnemyDropComponent>,
     pub(crate) health: BTreeMap<EntityId, HealthConfig>,
+    pub(crate) explosive_props: BTreeMap<EntityId, ExplosivePropComponent>,
     pub(crate) hazards: BTreeMap<EntityId, HazardComponent>,
     pub(crate) encounters: BTreeMap<EntityId, EncounterComponent>,
     pub(crate) extraction_beacons: BTreeMap<EntityId, ExtractionBeaconComponent>,
@@ -138,6 +141,7 @@ impl GameSession {
         let mut enemy_combat = BTreeMap::new();
         let mut enemy_drops = BTreeMap::new();
         let mut health = BTreeMap::new();
+        let mut explosive_props = BTreeMap::new();
         let mut hazards = BTreeMap::new();
         let mut encounters = BTreeMap::new();
         let mut extraction_beacons = BTreeMap::new();
@@ -327,6 +331,7 @@ impl GameSession {
                             posture: EnemyCombatPosture::Sleeping,
                             ready_at_tick: Tick::ZERO,
                             last_known_target_position: None,
+                            pain_ticks_remaining: 0,
                         },
                     },
                 );
@@ -357,6 +362,41 @@ impl GameSession {
                 mechanics::attach_health(&mut entities, entity, config)
                     .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
                 health.insert(entity, config);
+            }
+            if let Some(config) = definition.explosive_prop {
+                if definition.enemy {
+                    return Err(GameEntityDefinitionError::ExplosivePropOnEnemy { entity });
+                }
+                let view = entities.view(entity).expect("definition created entity");
+                if view.transform.is_none() {
+                    return Err(GameEntityDefinitionError::ExplosivePropMissingTransform {
+                        entity,
+                    });
+                }
+                if view.collision.is_none() {
+                    return Err(GameEntityDefinitionError::ExplosivePropMissingCollision {
+                        entity,
+                    });
+                }
+                if view.renderable.is_none() {
+                    return Err(GameEntityDefinitionError::ExplosivePropMissingRenderable {
+                        entity,
+                    });
+                }
+                if definition.health.is_none() {
+                    return Err(GameEntityDefinitionError::ExplosivePropMissingHealth { entity });
+                }
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidExplosivePropConfig { entity });
+                }
+                explosive_props.insert(
+                    entity,
+                    ExplosivePropComponent {
+                        config,
+                        state: ExplosivePropState::Armed,
+                        pending: false,
+                    },
+                );
             }
             if let Some(config) = definition.hazard {
                 let view = entities.view(entity).expect("definition created entity");
@@ -780,17 +820,19 @@ impl GameSession {
 
         let mut encounter_by_enemy = BTreeMap::new();
         for (encounter, component) in &encounters {
-            if !entities.contains(component.config.exit) {
-                return Err(GameEntityDefinitionError::UnknownEncounterExit {
-                    encounter: *encounter,
-                    exit: component.config.exit,
-                });
-            }
-            if !doors.contains_key(&component.config.exit) {
-                return Err(GameEntityDefinitionError::EncounterExitIsNotDoor {
-                    encounter: *encounter,
-                    exit: component.config.exit,
-                });
+            if let Some(exit) = component.config.exit {
+                if !entities.contains(exit) {
+                    return Err(GameEntityDefinitionError::UnknownEncounterExit {
+                        encounter: *encounter,
+                        exit,
+                    });
+                }
+                if !doors.contains_key(&exit) {
+                    return Err(GameEntityDefinitionError::EncounterExitIsNotDoor {
+                        encounter: *encounter,
+                        exit,
+                    });
+                }
             }
             for member in &component.config.members {
                 if !entities.contains(*member) {
@@ -871,6 +913,7 @@ impl GameSession {
             enemy_combat,
             enemy_drops,
             health,
+            explosive_props,
             hazards,
             encounters,
             extraction_beacons,
@@ -1103,6 +1146,41 @@ impl GameSession {
                 VitalityState::Alive
             },
         })
+    }
+
+    pub fn explosive_prop(&self, entity: EntityId) -> Option<ExplosivePropView> {
+        let component = self.explosive_props.get(&entity)?;
+        Some(ExplosivePropView {
+            entity,
+            config: component.config,
+            state: component.state,
+            pending: component.pending,
+        })
+    }
+
+    pub(crate) fn is_player_attack_target(&self, entity: EntityId) -> bool {
+        let Some(health) = self.health(entity) else {
+            return false;
+        };
+        if health.state != VitalityState::Alive {
+            return false;
+        }
+        let Ok(view) = self.entities.view(entity) else {
+            return false;
+        };
+        if !view.collision.is_some_and(|collision| collision.enabled)
+            || !view.renderable.is_some_and(|renderable| renderable.visible)
+        {
+            return false;
+        }
+        if self.enemies.contains_key(&entity) {
+            self.enemies
+                .get(&entity)
+                .is_some_and(|enemy| enemy.state == EnemyState::Alive)
+                && EncounterService::enemy_is_active(self, entity)
+        } else {
+            self.explosive_props.contains_key(&entity)
+        }
     }
 
     pub fn hazard(&self, entity: EntityId) -> Option<HazardView> {

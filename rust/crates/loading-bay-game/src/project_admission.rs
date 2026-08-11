@@ -20,13 +20,14 @@ use crate::enemy_combat::{
     EnemyAttackConfig, EnemyAttackKind, EnemyCombatConfig, EnemyPerceptionConfig,
 };
 use crate::enemy_drop::EnemyDropConfig;
+use crate::explosive_prop::ExplosivePropConfig;
 use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::floor_action::FloorActionConfig;
 use crate::hazard::HazardConfig;
 use crate::interaction::{SwitchConfig, SwitchEffect};
 use crate::inventory::{
     ArmorGrantMode, ArmorTransition, InventoryConfig, InventoryStack, ItemDefinition,
-    ItemDefinitionId, ItemKind, WeaponAttackMode, WeaponDefinition,
+    ItemDefinitionId, ItemKind, ProjectileDefinition, WeaponAttackMode, WeaponDefinition,
 };
 use crate::lift::LiftConfig;
 use crate::navigation::NavigationConfig;
@@ -754,16 +755,29 @@ fn authored_definition(
                 sight_range: combat.sight_range,
                 hearing_range: combat.hearing_range,
             },
+            pain_duration_ticks: combat.pain_duration_ticks,
             attack: EnemyAttackConfig {
                 kind: match combat.attack.kind {
                     crate::StoredEnemyAttackKind::Melee => EnemyAttackKind::Melee,
                     crate::StoredEnemyAttackKind::RangedHitscan => EnemyAttackKind::RangedHitscan,
+                    crate::StoredEnemyAttackKind::Projectile => EnemyAttackKind::Projectile,
                 },
                 damage: combat.attack.damage,
                 range: combat.attack.range,
                 cooldown_ticks: combat.attack.cooldown_ticks,
                 origin_offset: array_vec3(combat.attack.origin_offset),
                 presentation: combat.attack.presentation.clone(),
+                projectile: combat
+                    .attack
+                    .projectile
+                    .map(|projectile| ProjectileDefinition {
+                        mass: projectile.mass,
+                        radius: projectile.radius,
+                        impulse: projectile.impulse,
+                        gravity_scale: projectile.gravity_scale,
+                        lifetime_ticks: projectile.lifetime_ticks,
+                        restitution: projectile.restitution,
+                    }),
             },
         });
     }
@@ -781,6 +795,12 @@ fn authored_definition(
             armor_absorption_percent: health.armor_absorption_percent,
         });
     }
+    if let Some(explosive_prop) = authored.explosive_prop {
+        definition = definition.with_explosive_prop(ExplosivePropConfig {
+            damage: explosive_prop.damage,
+            radius: explosive_prop.radius,
+        });
+    }
     if let Some(hazard) = authored.hazard {
         definition = definition.as_hazard(HazardConfig {
             damage: hazard.damage,
@@ -790,7 +810,7 @@ fn authored_definition(
     if let Some(encounter) = &authored.encounter {
         definition = definition.as_encounter(
             encounter.members.iter().copied().map(EntityId::new),
-            EntityId::new(encounter.exit),
+            encounter.exit.map(EntityId::new),
         );
         definition = definition.with_encounter_activation_radius(encounter.activation_radius);
     }
@@ -1085,6 +1105,15 @@ fn definition_error(
         | Error::InvalidHealthConfig { entity } => (
             diagnostic_code::INVALID_COMPONENT,
             entity_path(scene_index, indexes, *entity, "health"),
+        ),
+        Error::ExplosivePropOnEnemy { entity }
+        | Error::ExplosivePropMissingTransform { entity }
+        | Error::ExplosivePropMissingCollision { entity }
+        | Error::ExplosivePropMissingRenderable { entity }
+        | Error::ExplosivePropMissingHealth { entity }
+        | Error::InvalidExplosivePropConfig { entity } => (
+            diagnostic_code::INVALID_COMPONENT,
+            entity_path(scene_index, indexes, *entity, "explosiveProp"),
         ),
         Error::HazardMissingTransform { entity }
         | Error::HazardMissingBounds { entity }

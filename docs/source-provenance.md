@@ -640,7 +640,7 @@ Exact PNG bytes and hashes are closed by `content/doom-e1m1/textures/manifest.js
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
 `voxelDataHash sha256:fad81c1c1d8b8ffe30b733817f70b494b26c1ca788e4c8a40a6fe16ffb6c756d`
 `contentHash sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c`
-`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:4de587643efa86cbc8014886d12f66f145f34a90e78204ff095a1c4745aa1adc`.
+`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:6c1e792f4238c6540a08ab42fbf0d506691a60670a38e962d1dd2145a8f8defe`.
 
 ### Authored project
 
@@ -675,5 +675,21 @@ ticks, the nearest integral 60 Hz conversion of 32 source tics. Rust owns atomic
 eligibility, effect application, rejection-without-removal, damage ordering,
 death, restart, facts, and snapshots. Item names, caps, transition policies,
 absorption, region bounds, and timing remain authored data.
+
+Task #6807 reads the UV enemy and explosive-prop roster from the same hashed
+intermediate: 16 type-9 shotgun guys, four type-3001 imps, nine type-3004
+zombiemen, and six type-2035 barrels, preserving each source position and
+rotation. The reading reference at `/home/research/doom.ts` HEAD
+`0d88ba912f7b084a05b776a19801d45f383cef20` uses
+`src/doom/doom/info/{mobj-infos.ts,states.ts}` for archetype health, dimensions,
+pain/death cadence, and drops and `src/doom/play/{enemy.ts,map.ts}` for hitscan,
+projectile, explosion, and radius-attack behavior. The project authors those
+facts as portable archetype and prop configuration: 30/60/20 enemy health,
+distinct hitscan or projectile attacks, six- and four-source-tic pain windows,
+shotgun-plus-four-shell and five-bullet drops, and 20-health barrels with a
+128-damage, 128-Doom-unit-radius explosion. Rust owns perception, chase, attack,
+pain, death, collision, drop transactions, line-of-sight falloff, stable
+exactly-once chain reactions, facts, and snapshots; TypeScript only composes the
+immutable roster and transports projected presentation state.
 
 No `doom1.wad` is read at runtime; the browser receives only the immutable `RuntimeProjection` and typed facts. The offline forge is deterministic: `node dist/cli.js --check`, `node dist/texture-cli.js --check`, and `cargo run -p loading-bay-game --bin doom-voxel-hash -- doom-e1m1.voxel.json` are the re-producers.

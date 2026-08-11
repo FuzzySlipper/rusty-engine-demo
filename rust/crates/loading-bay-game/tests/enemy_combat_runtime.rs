@@ -90,6 +90,120 @@ fn ranged_enemy_alerts_then_attacks_on_authoritative_ticks_with_cooldown() {
 }
 
 #[test]
+fn projectile_enemy_reuses_the_transient_engine_projectile_owner() {
+    let mut project = single_enemy_project(RANGED);
+    entity_mut(&mut project, RANGED)["translation"] = serde_json::json!([1.5, 1.5, 5.5]);
+    entity_mut(&mut project, RANGED)["enemyCombat"]["attack"] = serde_json::json!({
+        "kind": "projectile",
+        "damage": 7,
+        "range": 14,
+        "cooldownTicks": 60,
+        "originOffset": [0, 0.25, 0],
+        "presentation": "fixture-orb",
+        "projectile": {
+            "mass": 0.2,
+            "radius": 0.12,
+            "impulse": 10,
+            "gravityScale": 0,
+            "lifetimeTicks": 120,
+            "restitution": 0
+        }
+    });
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    assert_eq!(
+        runtime
+            .session()
+            .enemy_combat(RANGED)
+            .unwrap()
+            .config
+            .attack
+            .kind,
+        EnemyAttackKind::Projectile
+    );
+    let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
+
+    let alert = game_loop.run_fixed_tick().unwrap();
+    assert!(alert.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::EnemyCombat(EnemyCombatFact::Alerted {
+            enemy: RANGED,
+            target: PLAYER,
+            ..
+        })
+    )));
+    let fired = game_loop.run_fixed_tick().unwrap();
+    assert!(fired.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::EnemyCombat(EnemyCombatFact::ProjectileSpawned {
+            enemy: RANGED,
+            target: PLAYER,
+            ..
+        })
+    )));
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .health(PLAYER)
+            .unwrap()
+            .current,
+        100
+    );
+
+    let mut hit = false;
+    for _ in 0..120 {
+        let receipt = game_loop.run_fixed_tick().unwrap();
+        hit |= receipt.facts.iter().any(|fact| {
+            matches!(
+                fact,
+                GameLoopFact::Combat(loading_bay_game::CombatFact::Vitality(
+                    VitalityFact::DamageApplied {
+                        source: loading_bay_game::DamageSource::EnemyAttack { attacker },
+                        target: PLAYER,
+                        health_damage: 7,
+                        ..
+                    }
+                )) if *attacker == RANGED
+            )
+        });
+        if hit {
+            break;
+        }
+    }
+    assert!(
+        hit,
+        "enemy projectile reaches the selected player exactly once"
+    );
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .health(PLAYER)
+            .unwrap()
+            .current,
+        93
+    );
+
+    let snapshot = encode_game_snapshot(game_loop.runtime()).unwrap();
+    let reopened = decode_game_snapshot(&snapshot).unwrap();
+    assert!(!reopened
+        .readout()
+        .projection
+        .iter()
+        .any(|node| node.asset == "mesh/physics-projectile"));
+    assert_eq!(
+        reopened
+            .session()
+            .enemy_combat(RANGED)
+            .unwrap()
+            .config
+            .attack
+            .kind,
+        EnemyAttackKind::Projectile
+    );
+}
+
+#[test]
 fn canonical_voxel_wall_blocks_sight_and_ranged_damage() {
     let mut project = single_enemy_project(RANGED);
     entity_mut(&mut project, PLAYER)["translation"] = serde_json::json!([4.5, 1.5, 7.5]);

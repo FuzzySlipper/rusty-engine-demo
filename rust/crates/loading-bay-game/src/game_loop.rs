@@ -755,6 +755,7 @@ impl LoadingBayGameLoop {
         );
         facts.extend(projectiles.combat.into_iter().map(GameLoopFact::Combat));
         facts.extend(projectiles.events.into_iter().map(GameLoopFact::Event));
+        self.run_explosive_props(facts)?;
         if DamageService::is_dead(self.runtime.session(), self.player) {
             self.input.clear_intent();
             return Ok(());
@@ -785,6 +786,7 @@ impl LoadingBayGameLoop {
             Ok(receipt) => {
                 facts.extend(receipt.facts.into_iter().map(GameLoopFact::Combat));
                 facts.extend(receipt.events.into_iter().map(GameLoopFact::Event));
+                self.run_explosive_props(facts)?;
                 Ok(())
             }
             Err(RuntimeError::CombatRejected {
@@ -801,6 +803,32 @@ impl LoadingBayGameLoop {
             }
             Err(error) => Err(error),
         }
+    }
+
+    fn run_explosive_props(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
+        let receipt = self.runtime.run_explosive_prop_phase()?;
+        facts.extend(
+            receipt
+                .facts
+                .into_iter()
+                .map(|fact| GameLoopFact::Combat(CombatFact::ExplosiveProp(fact))),
+        );
+        for damage in receipt.damage {
+            facts.extend(
+                damage
+                    .facts
+                    .into_iter()
+                    .map(|fact| GameLoopFact::Combat(CombatFact::Vitality(fact))),
+            );
+            facts.extend(
+                damage
+                    .enemy_drops
+                    .into_iter()
+                    .map(|fact| GameLoopFact::Combat(CombatFact::EnemyDrop(fact))),
+            );
+        }
+        facts.extend(receipt.events.into_iter().map(GameLoopFact::Event));
+        Ok(())
     }
 
     fn run_hazard_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {

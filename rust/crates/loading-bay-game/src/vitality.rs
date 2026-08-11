@@ -9,6 +9,7 @@ use rusty_engine::gameplay_mechanics::{
 
 use crate::combat::EnemyState;
 use crate::enemy_drop::{EnemyDropFact, EnemyDropRejection, EnemyDropService};
+use crate::explosive_prop::{ExplosivePropFact, ExplosivePropState};
 use crate::inventory::{
     ArmorGrantMode, ArmorTransition, InventoryAction, InventoryCommand, InventoryReceipt,
     InventoryRejection, InventoryService, ItemDefinitionId, ItemKind,
@@ -87,6 +88,9 @@ pub enum DamageSource {
     EnemyAttack {
         attacker: EntityId,
     },
+    Explosion {
+        source: EntityId,
+    },
     Direct {
         actor: EntityId,
     },
@@ -98,6 +102,7 @@ impl DamageSource {
             Self::Weapon { attacker, .. } => *attacker,
             Self::Hazard { hazard } => *hazard,
             Self::EnemyAttack { attacker } => *attacker,
+            Self::Explosion { source } => *source,
             Self::Direct { actor } => *actor,
         }
     }
@@ -154,6 +159,7 @@ pub struct VitalityReceipt {
     pub disposition: DamageDisposition,
     pub facts: Vec<VitalityFact>,
     pub enemy_drops: Vec<EnemyDropFact>,
+    pub explosive_props: Vec<ExplosivePropFact>,
     pub inventory: Vec<InventoryReceipt>,
     pub event: Option<GameEvent>,
 }
@@ -241,6 +247,7 @@ impl DamageService {
                 disposition: DamageDisposition::AlreadyDead,
                 facts: Vec::new(),
                 enemy_drops: Vec::new(),
+                explosive_props: Vec::new(),
                 inventory: Vec::new(),
                 event: None,
             });
@@ -329,6 +336,14 @@ impl DamageService {
 
         let mut event = None;
         let mut enemy_drops = Vec::new();
+        let mut explosive_props = Vec::new();
+        if let Some(combat) = candidate.enemy_combat.get_mut(&command.target) {
+            combat.state.pain_ticks_remaining = if died {
+                0
+            } else {
+                combat.config.pain_duration_ticks
+            };
+        }
         if died {
             let mut commands = Vec::new();
             let view = candidate
@@ -346,10 +361,6 @@ impl DamageService {
                     entity: command.target,
                     enabled: false,
                 });
-                commands.push(EntityCommand::SetVisible {
-                    entity: command.target,
-                    visible: false,
-                });
                 if let Some(fact) = EnemyDropService::stage_materialization(
                     &mut candidate,
                     command.target,
@@ -358,6 +369,24 @@ impl DamageService {
                 .map_err(VitalityRejection::EnemyDrop)?
                 {
                     enemy_drops.push(fact);
+                }
+            }
+            if let Some(prop) = candidate.explosive_props.get_mut(&command.target) {
+                if prop.state == ExplosivePropState::Armed {
+                    prop.state = ExplosivePropState::Exploded;
+                    prop.pending = true;
+                    commands.push(EntityCommand::SetCollisionEnabled {
+                        entity: command.target,
+                        enabled: false,
+                    });
+                    commands.push(EntityCommand::SetVisible {
+                        entity: command.target,
+                        visible: false,
+                    });
+                    explosive_props.push(ExplosivePropFact::Triggered {
+                        prop: command.target,
+                        source: command.source.clone(),
+                    });
                 }
             }
             let entity_facts = if commands.is_empty() {
@@ -411,6 +440,7 @@ impl DamageService {
             disposition: DamageDisposition::Applied,
             facts,
             enemy_drops,
+            explosive_props,
             inventory: Vec::new(),
             event,
         })
@@ -543,6 +573,7 @@ impl DamageService {
                 after,
             }],
             enemy_drops: Vec::new(),
+            explosive_props: Vec::new(),
             inventory: vec![inventory],
             event: None,
         })
@@ -627,6 +658,7 @@ impl DamageService {
                 after,
             }],
             enemy_drops: Vec::new(),
+            explosive_props: Vec::new(),
             inventory: vec![inventory],
             event: None,
         })

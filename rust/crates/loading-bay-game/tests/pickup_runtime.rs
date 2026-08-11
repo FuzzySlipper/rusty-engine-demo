@@ -225,7 +225,7 @@ fn every_pickup_family_round_trips_and_authored_restart_restores_availability() 
 }
 
 #[test]
-fn weapon_pickup_grants_starter_ammunition_atomically_and_duplicates_grant_neither() {
+fn weapon_pickup_grants_starter_ammunition_and_duplicates_grant_only_ammunition() {
     let mut runtime = with_overlap(
         GameRuntime::from_stored_project(PROJECT).unwrap(),
         EntityId::new(23),
@@ -251,21 +251,16 @@ fn weapon_pickup_grants_starter_ammunition_atomically_and_duplicates_grant_neith
         )
         .unwrap();
     let mut duplicate = with_overlap(duplicate, EntityId::new(23));
-    let before = encode_game_snapshot(&duplicate).unwrap();
+    let receipt = duplicate
+        .collect_pickup(PLAYER, EntityId::new(23), 1, 1)
+        .unwrap();
+    assert_eq!(receipt.inventory.len(), 1);
+    assert_eq!(quantity(&duplicate, "weapon/breach-scattergun"), 1);
+    assert_eq!(quantity(&duplicate, "ammo/scatter-shell"), 8);
     assert!(matches!(
-        duplicate
-            .collect_pickup(PLAYER, EntityId::new(23), 1, 1)
-            .unwrap_err(),
-        RuntimeError::Pickup(PickupRejection::Inventory(
-            InventoryRejection::QuantityOverflow { .. }
-        ))
-    ));
-    assert_eq!(encode_game_snapshot(&duplicate).unwrap(), before);
-    assert_eq!(quantity(&duplicate, "ammo/scatter-shell"), 0);
-    assert_eq!(
         duplicate.session().pickup(EntityId::new(23)).unwrap().state,
-        PickupState::Available
-    );
+        PickupState::Collected { actor: PLAYER, .. }
+    ));
 }
 
 #[test]

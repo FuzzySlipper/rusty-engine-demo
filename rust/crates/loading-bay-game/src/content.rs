@@ -182,7 +182,7 @@ fn default_lift_source() -> String {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct AuthoredEncounter {
     members: Vec<u64>,
-    exit: u64,
+    exit: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -447,7 +447,7 @@ fn authored_definition(
     if let Some(encounter) = authored.encounter {
         definition = definition.as_encounter(
             encounter.members.into_iter().map(EntityId::new),
-            EntityId::new(encounter.exit),
+            encounter.exit.map(EntityId::new),
         );
     }
     if let Some(navigation) = authored.navigation {

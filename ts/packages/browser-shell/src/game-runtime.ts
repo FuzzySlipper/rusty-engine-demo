@@ -273,11 +273,12 @@ export async function mountLoadingBayGame(
         ? await loadApplicationContent(descriptor)
         : null;
     const replaceFrame =
-      content === null && lastRenderFrame !== state.voxelObjectFrame;
+      descriptor === null && content === null && lastRenderFrame !== state.voxelObjectFrame;
+    const frame = descriptor === null ? state.voxelObjectFrame : state.gameplayFrame;
     await options.onRenderProjection?.({
       camera: derivePlayerCameraPose(state.player),
       content,
-      frame: state.voxelObjectFrame,
+      frame,
       replaceFrame,
     });
     if (content !== null) {

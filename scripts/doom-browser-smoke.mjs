@@ -1107,7 +1107,9 @@ async function main() {
     const entities = project.scenes[0].entities;
     const player = entities.find((entity) => entity.id === 1);
     const shotgun = entities.find(
-      (entity) => entity.pickup?.item === "weapon/shotgun",
+      (entity) =>
+        entity.pickup?.item === "weapon/shotgun" &&
+        entity.renderable?.visible !== false,
     );
     const healthBonus = entities.find(
       (entity) => entity.pickup?.item === "supply/health-bonus",
@@ -1172,8 +1174,8 @@ async function main() {
       `host projectId doom-e1m1, got ${state.projectId}`,
     );
     assert(
-      state.projection?.length === 92,
-      `projection 92, got ${state.projection?.length}`,
+      state.projection?.length === 123,
+      `projection 123, got ${state.projection?.length}`,
     );
     assert(
       state.enemies?.length === 29,
@@ -1380,8 +1382,12 @@ async function main() {
       headless.lifecycle = finalLc;
       console.log(`final lifecycle ${finalLc} webgl=${webglDiag}`);
       if (finalLc !== "mounted" || !webglDiag.startsWith("has-gl renderer=")) {
+        const runtimeError = await cdpEvaluate(
+          cdpClient,
+          `document.body?.dataset.runtimeError ?? 'no-runtime-error'`,
+        ).catch(() => "runtime-error-eval-failed");
         throw new Error(
-          `Engine application host failed before playthrough lifecycle=${finalLc} webgl=${webglDiag}`,
+          `Engine application host failed before playthrough lifecycle=${finalLc} webgl=${webglDiag} runtimeError=${String(runtimeError).slice(0, 1200)}`,
         );
       }
       const content = await cdpEvaluate(
@@ -1600,8 +1606,8 @@ async function main() {
       },
       host: {
         projectId: "doom-e1m1",
-        assets: 150,
-        entities: 94,
+        assets: 189,
+        entities: 134,
         address: addr,
         health: "ok",
         stateTick: state.tick,

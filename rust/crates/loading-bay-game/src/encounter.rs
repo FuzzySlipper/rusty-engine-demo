@@ -9,7 +9,7 @@ pub const MAX_ENCOUNTER_ACTIVATION_RADIUS: f32 = 100_000.0;
 #[derive(Debug, Clone, PartialEq)]
 pub struct EncounterConfig {
     pub members: Vec<EntityId>,
-    pub exit: EntityId,
+    pub exit: Option<EntityId>,
     pub activation_radius: Option<f32>,
 }
 
@@ -30,7 +30,7 @@ pub struct EncounterComponent {
 pub struct EncounterView {
     pub entity: EntityId,
     pub members: Vec<EntityId>,
-    pub exit: EntityId,
+    pub exit: Option<EntityId>,
     pub activation_radius: Option<f32>,
     pub state: EncounterState,
 }

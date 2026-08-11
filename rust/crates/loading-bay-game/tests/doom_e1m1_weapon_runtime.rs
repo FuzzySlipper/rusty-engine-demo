@@ -1,6 +1,6 @@
 use loading_bay_game::{
     CombatFact, CombatRejectionReason, GameLoopEdgeCommand, GameLoopEdgeCommandKind, GameLoopFact,
-    GameRuntime, ItemDefinitionId, ItemKind, LoadingBayGameLoop, PlayerInputCommand,
+    GameRuntime, ItemDefinitionId, ItemKind, LoadingBayGameLoop, PickupState, PlayerInputCommand,
     PlayerInputIntent, WeaponAttackMode,
 };
 use rusty_engine::core_ids::EntityId;
@@ -82,7 +82,9 @@ fn authored_e1m1_has_only_the_single_player_pistol_shotgun_and_ammunition_ledger
     let quantities = |item: &str| {
         let mut quantities = pickups
             .iter()
-            .filter(|pickup| pickup.config.item.as_str() == item)
+            .filter(|pickup| {
+                pickup.config.item.as_str() == item && pickup.state == PickupState::Available
+            })
             .map(|pickup| pickup.config.quantity)
             .collect::<Vec<_>>();
         quantities.sort_unstable();
@@ -92,7 +94,10 @@ fn authored_e1m1_has_only_the_single_player_pistol_shotgun_and_ammunition_ledger
     assert_eq!(quantities("ammo/shells"), [4, 4, 20, 20, 20]);
     let shotgun = pickups
         .iter()
-        .find(|pickup| pickup.config.item.as_str() == "weapon/shotgun")
+        .find(|pickup| {
+            pickup.config.item.as_str() == "weapon/shotgun"
+                && pickup.state == PickupState::Available
+        })
         .expect("single-player shotgun pickup");
     assert_eq!(
         shotgun
@@ -112,13 +117,22 @@ fn authored_e1m1_has_only_the_single_player_pistol_shotgun_and_ammunition_ledger
 fn authored_fist_is_selectable_and_damages_at_zero_ammunition_cost() {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
     let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
+    let target_id = EntityId::new(
+        entities
+            .iter()
+            .find(|entity| entity["enemy"] == true)
+            .unwrap()["id"]
+            .as_u64()
+            .unwrap(),
+    );
     for entity in entities.iter_mut() {
         entity.as_object_mut().unwrap().remove("enemyCombat");
         entity.as_object_mut().unwrap().remove("navigation");
+        entity.as_object_mut().unwrap().remove("encounter");
     }
     entities
         .iter_mut()
-        .find(|entity| entity["id"] == 2)
+        .find(|entity| entity["id"] == target_id.raw())
         .unwrap()["translation"] = serde_json::json!([114.0, 9.25, 80.0]);
 
     let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
@@ -149,7 +163,7 @@ fn authored_fist_is_selectable_and_damages_at_zero_ammunition_cost() {
         tick.facts.iter().any(|fact| matches!(
             fact,
             GameLoopFact::Combat(CombatFact::AttackHit { target, .. })
-                if *target == EntityId::new(2)
+                if *target == target_id
         )),
         "fist facts: {:#?}",
         tick.facts
@@ -158,7 +172,7 @@ fn authored_fist_is_selectable_and_damages_at_zero_ammunition_cost() {
         game_loop
             .runtime()
             .session()
-            .health(EntityId::new(2))
+            .health(target_id)
             .unwrap()
             .current
             < 60
@@ -237,7 +251,11 @@ fn overlapping_the_authored_shotgun_grants_shells_and_numeric_selection_equips_i
     let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
     let shotgun_position = entities
         .iter()
-        .find(|entity| entity["pickup"]["item"] == "weapon/shotgun")
+        .find(|entity| {
+            entity["name"]
+                .as_str()
+                .is_some_and(|name| name.starts_with("doom-pickup-2001-"))
+        })
         .unwrap()["translation"]
         .clone();
     let player = entities
