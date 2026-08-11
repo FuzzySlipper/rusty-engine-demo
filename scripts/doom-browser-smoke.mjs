@@ -962,10 +962,6 @@ async function proveRepresentativeEncounter(
   enemyId,
   dropId,
 ) {
-  await moveToWorldPoint(client, addr, [146, 145], traversalSamples, {
-    singleHold: true,
-    arrivalDistance: 0.8,
-  });
   const alerted = await waitForAuthoritativeState(
     addr,
     `canonical enemy ${enemyId} enters live combat`,
@@ -1159,7 +1155,6 @@ async function proveInteractionRoute(
     [137, 145],
     [137, 146],
   ]);
-  await openDoor(owners.startDoor, [142, 147]);
   const representativeEncounter = encounterExitEvidence
     ? await proveRepresentativeEncounter(
         client,
@@ -1173,6 +1168,7 @@ async function proveInteractionRoute(
   if (representativeEncounter !== null) {
     await capture("encounter-defeat-drop.png");
   }
+  await openDoor(owners.startDoor, [142, 147]);
   await walk([
     [178, 146],
     [178, 140],
@@ -1526,7 +1522,7 @@ async function main() {
       debugPort = await reservePort();
       profileDir = mkdtempSync(join(tmpdir(), "doom-chromium-"));
       console.log(
-        `launching chromium ${encounterExitEvidence ? "headed Wayland" : "headless SwiftShader"} debugPort ${debugPort}`,
+        `launching chromium ${encounterExitEvidence ? `headed ${headedOzonePlatform}` : "headless SwiftShader"} debugPort ${debugPort}`,
       );
       const chromiumArguments = encounterExitEvidence
         ? [
