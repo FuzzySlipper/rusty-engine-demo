@@ -915,17 +915,22 @@ async function acquirePhysicalPointerLock(client, canvasBounds) {
 }
 
 async function clickVisibleButton(client, label) {
-  const point = await cdpEvaluate(
-    client,
-    `(() => {
-      const button = [...document.querySelectorAll('button')].find(
-        (candidate) => candidate.textContent.trim() === ${JSON.stringify(label)},
-      );
-      if (!button || button.disabled) return null;
-      const bounds = button.getBoundingClientRect();
-      return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-    })()`,
-  );
+  const deadline = Date.now() + 10_000;
+  let point = null;
+  while (Date.now() < deadline && point === null) {
+    point = await cdpEvaluate(
+      client,
+      `(() => {
+        const button = [...document.querySelectorAll('button')].find(
+          (candidate) => candidate.textContent.trim() === ${JSON.stringify(label)},
+        );
+        if (!button || button.disabled) return null;
+        const bounds = button.getBoundingClientRect();
+        return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+      })()`,
+    );
+    if (point === null) await delay(100);
+  }
   if (point === null)
     throw new Error(`visible ${label} button was unavailable`);
   await client.send("Input.dispatchMouseEvent", {
