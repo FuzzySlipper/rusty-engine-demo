@@ -914,29 +914,6 @@ async function acquirePhysicalPointerLock(client, canvasBounds) {
   throw new Error("physical canvas click did not acquire pointer lock");
 }
 
-async function resetPhysicalPointerLock(client, canvasBounds, canvasCenter) {
-  await client.send("Input.dispatchKeyEvent", {
-    type: "keyDown",
-    code: "Escape",
-    key: "Escape",
-    windowsVirtualKeyCode: 27,
-    nativeVirtualKeyCode: 27,
-  });
-  await client.send("Input.dispatchKeyEvent", {
-    type: "keyUp",
-    code: "Escape",
-    key: "Escape",
-    windowsVirtualKeyCode: 27,
-    nativeVirtualKeyCode: 27,
-  });
-  // Chromium briefly suppresses a new pointer-lock request after Escape.
-  // Wait for that browser-owned release window before the next physical click.
-  await delay(1_200);
-  const reset = await acquirePhysicalPointerLock(client, canvasBounds);
-  canvasCenter.x = reset.x;
-  canvasCenter.y = reset.y;
-}
-
 async function physicallyAimAtEnemy(
   client,
   addr,
@@ -993,18 +970,6 @@ async function proveRepresentativeEncounter(
   dropId,
 ) {
   const canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
-  const aim = await physicallyAimAtEnemy(
-    client,
-    addr,
-    canvasCenter,
-    enemyId,
-    5,
-  );
-  if (aim.physicalLookDegrees < 1) {
-    throw new Error(
-      `representative encounter did not require observable physical look: ${JSON.stringify(aim)}`,
-    );
-  }
   await moveToWorldPoint(client, addr, [160, 146], traversalSamples, {
     singleHold: true,
     arrivalDistance: 0.7,
@@ -1018,8 +983,12 @@ async function proveRepresentativeEncounter(
       `canonical representative enemy ${enemyId} was not live: ${JSON.stringify(enemyBefore)}`,
     );
   }
-  await resetPhysicalPointerLock(client, canvasBounds, canvasCenter);
-  await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
+  const aim = await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
+  if (aim.physicalLookDegrees < 1) {
+    throw new Error(
+      `representative encounter did not require observable physical look: ${JSON.stringify(aim)}`,
+    );
+  }
   let latest = await fetchAuthoritativeState(addr);
   let shots = 0;
   while (
