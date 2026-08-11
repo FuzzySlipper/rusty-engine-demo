@@ -873,8 +873,8 @@ function resolveInteractionOwners(projectPath) {
     lift: owner("doom-repeatable-lift-linedef-195", "lift"),
     secret: owner("doom-secret-sector-68", "secretRegion"),
     exit: owner("doom-exit", "levelExit"),
-    representativeEnemy: owner("doom-shotgun-guy-20", "enemyCombat"),
-    representativeDrop: owner("doom-drop-shotgun-guy-20", "pickup"),
+    representativeEnemy: owner("doom-shotgun-guy-14", "enemyCombat"),
+    representativeDrop: owner("doom-drop-shotgun-guy-14", "pickup"),
   };
 }
 
