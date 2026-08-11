@@ -1318,13 +1318,13 @@ async function proveInteractionRoute(
     [124, 83],
     [126, 83],
   ]);
-  for (const waypoint of [
+  for (const [waypointIndex, waypoint] of [
     [126, 84],
     [129, 84],
-  ]) {
+  ].entries()) {
     await moveToWorldPoint(client, addr, waypoint, traversalSamples, {
       singleHold: true,
-      arrivalDistance: 0.7,
+      arrivalDistance: waypointIndex === 0 ? 2 : 0.7,
     });
   }
   await walk([
