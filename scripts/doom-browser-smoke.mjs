@@ -914,6 +914,100 @@ async function acquirePhysicalPointerLock(client, canvasBounds) {
   throw new Error("physical canvas click did not acquire pointer lock");
 }
 
+async function clickVisibleButton(client, label) {
+  const point = await cdpEvaluate(
+    client,
+    `(() => {
+      const button = [...document.querySelectorAll('button')].find(
+        (candidate) => candidate.textContent.trim() === ${JSON.stringify(label)},
+      );
+      if (!button || button.disabled) return null;
+      const bounds = button.getBoundingClientRect();
+      return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+    })()`,
+  );
+  if (point === null)
+    throw new Error(`visible ${label} button was unavailable`);
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    ...point,
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+  });
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    ...point,
+    button: "left",
+    buttons: 0,
+    clickCount: 1,
+  });
+  await delay(150);
+}
+
+async function setMaximumPhysicalMouseSensitivity(client, addr) {
+  await client.send("Input.dispatchKeyEvent", {
+    type: "keyDown",
+    code: "Escape",
+    key: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  });
+  await client.send("Input.dispatchKeyEvent", {
+    type: "keyUp",
+    code: "Escape",
+    key: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  });
+  await waitForAuthoritativeState(
+    addr,
+    "physical Escape opens the pause panel",
+    (candidate) => candidate.input?.paused === true,
+  );
+  await clickVisibleButton(client, "Settings");
+  const slider = await cdpEvaluate(
+    client,
+    `(() => {
+      const input = document.querySelector('input[type="range"]');
+      if (!input) return null;
+      const bounds = input.getBoundingClientRect();
+      return { x: bounds.right - 1, y: bounds.y + bounds.height / 2 };
+    })()`,
+  );
+  if (slider === null)
+    throw new Error("mouse sensitivity slider was unavailable");
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    ...slider,
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+  });
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    ...slider,
+    button: "left",
+    buttons: 0,
+    clickCount: 1,
+  });
+  const sensitivity = await cdpEvaluate(
+    client,
+    `Number(document.querySelector('input[type="range"]')?.value ?? 0)`,
+  );
+  if (sensitivity !== 2) {
+    throw new Error(`physical sensitivity selection settled at ${sensitivity}`);
+  }
+  await clickVisibleButton(client, "Done");
+  await clickVisibleButton(client, "Resume");
+  await waitForAuthoritativeState(
+    addr,
+    "visible Resume returns to live simulation",
+    (candidate) => candidate.input?.paused === false,
+  );
+  return sensitivity;
+}
+
 async function physicallyAimAtEnemy(
   client,
   addr,
@@ -932,7 +1026,11 @@ async function physicallyAimAtEnemy(
   for (let attempt = 0; attempt < 120; attempt += 1) {
     const error = normalizeDegrees(desiredYaw - state.player.yawDegrees);
     if (Math.abs(error) <= toleranceDegrees) break;
-    const movementX = Math.max(-80, Math.min(80, -error / 0.12));
+    const degreesPerPointerUnit = encounterExitEvidence ? 0.24 : 0.12;
+    const movementX = Math.max(
+      -80,
+      Math.min(80, -error / degreesPerPointerUnit),
+    );
     if (encounterExitEvidence && headedOzonePlatform === "x11") {
       const physicalMove = spawnSync(
         "python3",
@@ -986,6 +1084,10 @@ async function proveRepresentativeEncounter(
   enemyId,
   dropId,
 ) {
+  const mouseSensitivity = await setMaximumPhysicalMouseSensitivity(
+    client,
+    addr,
+  );
   const canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
   await moveToWorldPoint(client, addr, [160, 146], traversalSamples, {
     singleHold: true,
@@ -1073,6 +1175,7 @@ async function proveRepresentativeEncounter(
     healthAfter: enemyAfter.currentHealth,
     shots,
     aim,
+    mouseSensitivity,
     dropState: drop.state,
   };
 }
