@@ -685,6 +685,41 @@ function normalizeDegrees(value) {
 async function faceWorldPoint(client, addr, canvasBounds, target) {
   let mouseX = canvasBounds.x + canvasBounds.width / 2;
   const mouseY = canvasBounds.y + canvasBounds.height / 2;
+  const pointerLocked = await cdpEvaluate(
+    client,
+    `document.pointerLockElement === document.querySelector('canvas')`,
+  );
+  if (!pointerLocked) {
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mousePressed",
+      x: mouseX,
+      y: mouseY,
+      button: "left",
+      buttons: 1,
+      clickCount: 1,
+    });
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mouseReleased",
+      x: mouseX,
+      y: mouseY,
+      button: "left",
+      buttons: 0,
+      clickCount: 1,
+    });
+    const lockDeadline = Date.now() + 5_000;
+    let acquiredPointerLock = false;
+    while (Date.now() < lockDeadline) {
+      acquiredPointerLock = await cdpEvaluate(
+        client,
+        `document.pointerLockElement === document.querySelector('canvas')`,
+      );
+      if (acquiredPointerLock) break;
+      await delay(50);
+    }
+    if (!acquiredPointerLock) {
+      throw new Error("physical canvas click did not acquire pointer lock");
+    }
+  }
   await client.send("Input.dispatchMouseEvent", {
     type: "mouseMoved",
     x: mouseX,
