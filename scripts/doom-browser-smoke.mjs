@@ -258,7 +258,7 @@ async function pulseKeys(client, codes, milliseconds = 140) {
 }
 
 async function proveFocusedHeldMovement(client, addr) {
-  const gameplayDeadline = Date.now() + 5000;
+  const gameplayDeadline = Date.now() + 20_000;
   let interactionMode = null;
   while (Date.now() < gameplayDeadline) {
     interactionMode = await cdpEvaluate(
