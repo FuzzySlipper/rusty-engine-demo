@@ -929,7 +929,24 @@ async function resetPhysicalPointerLock(client, canvasBounds, canvasCenter) {
     windowsVirtualKeyCode: 27,
     nativeVirtualKeyCode: 27,
   });
-  await delay(100);
+  await delay(150);
+  // The product deliberately opens its pause panel when Escape releases
+  // pointer lock. A second physical Escape resumes before the next click.
+  await client.send("Input.dispatchKeyEvent", {
+    type: "keyDown",
+    code: "Escape",
+    key: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  });
+  await client.send("Input.dispatchKeyEvent", {
+    type: "keyUp",
+    code: "Escape",
+    key: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  });
+  await delay(300);
   const reset = await acquirePhysicalPointerLock(client, canvasBounds);
   canvasCenter.x = reset.x;
   canvasCenter.y = reset.y;
