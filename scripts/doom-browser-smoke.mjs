@@ -480,13 +480,16 @@ async function proveLandmarkTraversal(client, addr, canvasBounds, evidenceDir) {
     [34, 100],
     [34, 102],
   ];
-  for (const waypoint of l1ToL2Route) {
+  for (const [waypointIndex, waypoint] of l1ToL2Route.entries()) {
     const reached = await moveToWorldPoint(
       client,
       addr,
       waypoint,
       traversalSamples,
-      { singleHold: true, arrivalDistance: 1.5 },
+      {
+        singleHold: true,
+        arrivalDistance: waypointIndex === l1ToL2Route.length - 1 ? 0.7 : 1.5,
+      },
     );
     console.log(
       `landmark route ${waypoint.join(",")} -> ${reached.player.position.join(",")} tick=${reached.tick}`,
