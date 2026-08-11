@@ -1312,6 +1312,13 @@ async function main() {
     host.kill("SIGTERM");
     await delay(500);
     if (host.exitCode === null) host.kill("SIGKILL");
+    for (
+      let attempt = 0;
+      attempt < 10 && host.exitCode === null;
+      attempt += 1
+    ) {
+      await delay(50);
+    }
     rmSync(saveRoot, { recursive: true, force: true });
     if (traversalEvidence && persistedEvidence !== null) {
       persistedEvidence.headless.playthrough.cleanup.hostClosed =
