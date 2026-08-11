@@ -163,6 +163,9 @@ controls are available, record one short fresh session through L1-L5 with:
 - time between landmarks and interaction response time; and
 - a clearly labelled human/agent observation separated from measurements and WAD facts.
 
+That paired pass is deferred calibration evidence for later playtest work, not a prerequisite for
+the task #6801 objective/source baseline.
+
 Do not add a broad pass/fail grade. A finding enters #6806 only when it names the landmark,
 reproduction, owning layer, and concrete product impact. Current uncertainties are the unrecorded
 paired observation column, exact feel/timing values, and whether sky presentation is materially
