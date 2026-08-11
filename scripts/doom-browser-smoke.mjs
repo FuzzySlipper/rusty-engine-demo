@@ -1237,7 +1237,7 @@ async function proveRepresentativeEncounter(
       targetAfterShot?.currentHealth >= healthBefore
     ) {
       throw new Error(
-        `physical encounter shot missed target ${enemyId}: ${JSON.stringify({ player: latest.player, target: targetAfterShot, combatState: latest.combatState, lastEvents: latest.lastEvents, cues: latest.presentation?.cues })}`,
+        `physical encounter shot missed target ${enemyId}: ${JSON.stringify({ combatState: latest.combatState, lastEvents: latest.lastEvents, cues: latest.presentation?.cues, player: { position: latest.player.position, yawDegrees: latest.player.yawDegrees, pitchDegrees: latest.player.pitchDegrees }, target: { position: targetAfterShot?.position, currentHealth: targetAfterShot?.currentHealth, combatPosture: targetAfterShot?.combatPosture } })}`,
       );
     }
     if (targetAfterShot?.state !== "defeated") {
