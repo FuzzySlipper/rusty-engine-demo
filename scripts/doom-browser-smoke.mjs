@@ -1322,7 +1322,7 @@ async function main() {
     rmSync(saveRoot, { recursive: true, force: true });
     if (traversalEvidence && persistedEvidence !== null) {
       persistedEvidence.headless.playthrough.cleanup.hostClosed =
-        host.exitCode !== null;
+        host.exitCode !== null || host.signalCode !== null;
       persistedEvidence.headless.playthrough.cleanup.saveRootRemoved =
         !existsSync(saveRoot);
       persistedEvidence.headless.playthrough.cleanup.evidenceDirectoryRetained =
