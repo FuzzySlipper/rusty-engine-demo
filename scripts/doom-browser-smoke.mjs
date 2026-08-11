@@ -830,7 +830,39 @@ async function proveLandmarkTraversal(client, addr, canvasBounds, evidenceDir) {
   };
 }
 
-async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
+function resolveInteractionOwners(projectPath) {
+  const project = JSON.parse(readFileSync(projectPath, "utf8"));
+  const entities = project.scenes[0].entities;
+  const owner = (name, component) => {
+    const entity = entities.find(
+      (candidate) => candidate.name === name && candidate[component] != null,
+    );
+    if (!entity) {
+      throw new Error(
+        `interaction evidence could not resolve ${name}.${component}`,
+      );
+    }
+    return entity.id;
+  };
+  return {
+    startDoor: owner("doom-manual-door-sector-4", "door"),
+    secretDoor: owner("doom-manual-door-sector-68", "door"),
+    annexDoor: owner("doom-manual-door-sector-76", "door"),
+    exitDoor: owner("doom-manual-door-sector-81", "door"),
+    floorAction: owner("doom-walk-floor-action-linedef-308", "floorAction"),
+    lift: owner("doom-repeatable-lift-linedef-195", "lift"),
+    secret: owner("doom-secret-sector-68", "secretRegion"),
+    exit: owner("doom-exit", "levelExit"),
+  };
+}
+
+async function proveInteractionRoute(
+  client,
+  addr,
+  canvasBounds,
+  evidenceDir,
+  owners,
+) {
   const startedAtMs = Date.now();
   if (evidenceDir !== null) {
     mkdirSync(evidenceDir, { recursive: true });
@@ -907,7 +939,7 @@ async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
     [137, 145],
     [137, 146],
   ]);
-  await openDoor(83, [142, 147]);
+  await openDoor(owners.startDoor, [142, 147]);
   await walk([
     [178, 146],
     [178, 140],
@@ -935,7 +967,7 @@ async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
     "type-88 lift leaves its raised state",
     (candidate) =>
       candidate.lifts?.some(
-        (lift) => lift.id === 90 && lift.state !== "raised",
+        (lift) => lift.id === owners.lift && lift.state !== "raised",
       ),
   );
   await walk([[234, 119]]);
@@ -946,7 +978,7 @@ async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
       candidate.tick > liftActivated.tick &&
       horizontalDistance(candidate.player.position, liftActivated.player.position) > 2 &&
       candidate.lifts?.some(
-        (lift) => lift.id === 90 && lift.state !== "raised",
+        (lift) => lift.id === owners.lift && lift.state !== "raised",
       ),
   );
   await capture("interaction-lift-moving.png");
@@ -965,29 +997,30 @@ async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
     [234, 70],
     [234, 68],
   ]);
-  await openDoor(84, [233, 67]);
+  await openDoor(owners.secretDoor, [233, 67]);
   await walk([[231, 64]]);
   const secret = await waitForAuthoritativeState(
     addr,
     "sector-68 secret is recorded",
     (candidate) =>
       candidate.secretRegions?.some(
-        (entry) => entry.id === 92 && entry.state === "discovered",
+        (entry) => entry.id === owners.secret && entry.state === "discovered",
       ),
   );
   await capture("interaction-secret.png");
   await walk([[233, 61]]);
-  await openDoor(86, [236, 56]);
+  await openDoor(owners.annexDoor, [236, 56]);
   await walk([[236, 40]]);
   const floorAction = await waitForAuthoritativeState(
     addr,
     "type-36 floor action activates once",
     (candidate) =>
       candidate.floorActions?.some(
-        (action) => action.id === 88 && action.state !== "armed",
+        (action) =>
+          action.id === owners.floorAction && action.state !== "armed",
       ),
   );
-  await openDoor(85, [236, 17]);
+  await openDoor(owners.exitDoor, [236, 17]);
   await walk([
     [236, 10],
     [232, 10],
@@ -996,7 +1029,7 @@ async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
   await waitForAuthoritativeState(
     addr,
     "type-11 exit switch in use range",
-    (candidate) => candidate.interaction?.target === 91,
+    (candidate) => candidate.interaction?.target === owners.exit,
   );
   await holdKeys(client, ["KeyE"], 80);
   const completed = await waitForAuthoritativeState(
@@ -1006,7 +1039,7 @@ async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
       candidate.levelComplete === true &&
       candidate.levelExits?.some(
         (entry) =>
-          entry.id === 91 &&
+          entry.id === owners.exit &&
           entry.state === "completed" &&
           entry.completedBy === 1,
       ),
@@ -1017,21 +1050,29 @@ async function proveInteractionRoute(client, addr, canvasBounds, evidenceDir) {
     mode: "task-6803-interactions",
     elapsedMs: Date.now() - startedAtMs,
     inputSurface,
-    doors: [83, 84, 86, 85],
+    doors: [
+      owners.startDoor,
+      owners.secretDoor,
+      owners.annexDoor,
+      owners.exitDoor,
+    ],
     lift: {
-      id: 90,
-      observedState: liftActivated.lifts.find((lift) => lift.id === 90)?.state,
-      traversingState: liftWhileTraversing.lifts.find((lift) => lift.id === 90)
+      id: owners.lift,
+      observedState: liftActivated.lifts.find((lift) => lift.id === owners.lift)
         ?.state,
+      traversingState: liftWhileTraversing.lifts.find(
+        (lift) => lift.id === owners.lift,
+      )?.state,
       traversingPlayerPosition: liftWhileTraversing.player.position,
     },
     floorAction: {
-      id: 88,
-      observedState: floorAction.floorActions.find((action) => action.id === 88)
-        ?.state,
+      id: owners.floorAction,
+      observedState: floorAction.floorActions.find(
+        (action) => action.id === owners.floorAction,
+      )?.state,
     },
-    secret: secret.secretRegions.find((entry) => entry.id === 92),
-    exit: completed.levelExits.find((entry) => entry.id === 91),
+    secret: secret.secretRegions.find((entry) => entry.id === owners.secret),
+    exit: completed.levelExits.find((entry) => entry.id === owners.exit),
     traversalSampleCount: traversalSamples.length,
     screenshots,
   };
@@ -1099,6 +1140,9 @@ async function main() {
     projectPath = join(saveRoot, "doom-e1m1-focused.project.json");
     writeFileSync(projectPath, JSON.stringify(project), "utf8");
   }
+  const interactionOwners = interactionEvidence
+    ? resolveInteractionOwners(projectPath)
+    : null;
   console.log(`DOOM SMOKE host ${addr} save ${saveRoot}`);
   const { host, getOut } = launchHost(addr, saveRoot, projectPath);
   let chromiumProc = null;
@@ -1446,11 +1490,15 @@ async function main() {
           `physical Space jump left ground at tick ${landmarkProof.jump.airborne.tick} and landed at tick ${landmarkProof.jump.landed.tick}`,
         );
       } else if (interactionEvidence) {
+        if (interactionOwners === null) {
+          throw new Error("interaction owners were not resolved");
+        }
         const interactionProof = await proveInteractionRoute(
           cdpClient,
           addr,
           canvasBounds,
           traversalEvidenceDir,
+          interactionOwners,
         );
         headless.playthrough = interactionProof;
         checks.push(
