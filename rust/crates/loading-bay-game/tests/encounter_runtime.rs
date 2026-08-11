@@ -285,7 +285,7 @@ fn encounter_activation_spreads_first_attacks_over_authored_enemy_cadence() {
             .ready_at_tick
             .raw()
     });
-    assert_eq!(ready_at, [41, 81, 121]);
+    assert_eq!(ready_at, [121, 241, 361]);
 }
 
 #[test]

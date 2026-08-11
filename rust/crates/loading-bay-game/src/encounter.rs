@@ -84,7 +84,6 @@ impl EncounterService {
                     .expect("activation candidate remains attached");
                 component.state = EncounterState::Active;
                 let members = component.config.members.clone();
-                let member_count = members.len() as u64;
                 for (index, member) in members.into_iter().enumerate() {
                     let Some(combat) = session.enemy_combat.get_mut(&member) else {
                         continue;
@@ -97,7 +96,6 @@ impl EncounterService {
                         .attack
                         .cooldown_ticks
                         .saturating_mul(index as u64 + 1)
-                        .div_ceil(member_count)
                         .max(1);
                     let ready_at = tick.advance(TickDelta::new(delay));
                     if combat.state.ready_at_tick.raw() < ready_at.raw() {

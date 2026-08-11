@@ -873,8 +873,8 @@ function resolveInteractionOwners(projectPath) {
     lift: owner("doom-repeatable-lift-linedef-195", "lift"),
     secret: owner("doom-secret-sector-68", "secretRegion"),
     exit: owner("doom-exit", "levelExit"),
-    representativeEnemy: owner("doom-shotgun-guy-14", "enemyCombat"),
-    representativeDrop: owner("doom-drop-shotgun-guy-14", "pickup"),
+    representativeEnemy: owner("doom-shotgun-guy-21", "enemyCombat"),
+    representativeDrop: owner("doom-drop-shotgun-guy-21", "pickup"),
   };
 }
 
@@ -959,6 +959,7 @@ async function proveRepresentativeEncounter(
   client,
   addr,
   canvasBounds,
+  traversalSamples,
   enemyId,
   dropId,
 ) {
@@ -969,6 +970,10 @@ async function proveRepresentativeEncounter(
       `representative encounter did not require observable physical look: ${JSON.stringify(aim)}`,
     );
   }
+  await moveToWorldPoint(client, addr, [160, 146], traversalSamples, {
+    singleHold: true,
+    arrivalDistance: 0.5,
+  });
   const encounterState = await fetchAuthoritativeState(addr);
   const enemyBefore = encounterState.enemies.find(
     (entry) => entry.id === enemyId,
@@ -1142,6 +1147,7 @@ async function proveInteractionRoute(
         client,
         addr,
         canvasBounds,
+        traversalSamples,
         owners.representativeEnemy,
         owners.representativeDrop,
       )
