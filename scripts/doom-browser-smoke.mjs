@@ -914,6 +914,27 @@ async function acquirePhysicalPointerLock(client, canvasBounds) {
   throw new Error("physical canvas click did not acquire pointer lock");
 }
 
+async function resetPhysicalPointerLock(client, canvasBounds, canvasCenter) {
+  await client.send("Input.dispatchKeyEvent", {
+    type: "keyDown",
+    code: "Escape",
+    key: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  });
+  await client.send("Input.dispatchKeyEvent", {
+    type: "keyUp",
+    code: "Escape",
+    key: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  });
+  await delay(100);
+  const reset = await acquirePhysicalPointerLock(client, canvasBounds);
+  canvasCenter.x = reset.x;
+  canvasCenter.y = reset.y;
+}
+
 async function physicallyAimAtEnemy(
   client,
   addr,
@@ -995,6 +1016,7 @@ async function proveRepresentativeEncounter(
       `canonical representative enemy ${enemyId} was not live: ${JSON.stringify(enemyBefore)}`,
     );
   }
+  await resetPhysicalPointerLock(client, canvasBounds, canvasCenter);
   await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
   let latest = await fetchAuthoritativeState(addr);
   let shots = 0;
