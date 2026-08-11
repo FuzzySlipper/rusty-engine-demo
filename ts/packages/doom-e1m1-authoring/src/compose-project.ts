@@ -277,11 +277,11 @@ export function buildDoomE1M1Project(
     voxelVolume: voxel,
   });
 
-  // Item definitions — copy from loading-bay
+  // E1M1's single-player weapon vocabulary. Rust owns the reusable firing
+  // state machines; these identities and values are authored map calibration.
   const itemDefinitions = [
-    { id: "ammo/energy-cell", maxQuantity: 200, kind: { kind: "ammunition" } },
-    { id: "ammo/kinetic-slug", maxQuantity: 32, kind: { kind: "ammunition" } },
-    { id: "ammo/scatter-shell", maxQuantity: 50, kind: { kind: "ammunition" } },
+    { id: "ammo/bullets", maxQuantity: 200, kind: { kind: "ammunition" } },
+    { id: "ammo/shells", maxQuantity: 50, kind: { kind: "ammunition" } },
     {
       id: "armor/impact-vest",
       maxQuantity: 1,
@@ -299,71 +299,39 @@ export function buildDoomE1M1Project(
       kind: { kind: "healthSupply", restoreHealth: 25 },
     },
     {
-      id: "weapon/arc-pistol",
+      id: "weapon/pistol",
       maxQuantity: 1,
       kind: {
         kind: "weapon",
-        ammunition: "ammo/energy-cell",
+        ammunition: "ammo/bullets",
         attackMode: "hitscan",
-        damage: 60,
-        maxDistance: 20,
-        cooldownTicks: 2,
+        repeatWhileHeld: true,
+        damage: 5,
+        damageRolls: 3,
+        maxDistance: 128,
+        cooldownTicks: 24,
         ammunitionCost: 1,
         muzzleOffset: [0, 0, 0],
-        presentation: "arc-pistol",
+        presentation: "pistol",
       },
     },
     {
-      id: "weapon/breach-scattergun",
+      id: "weapon/shotgun",
       maxQuantity: 1,
       kind: {
         kind: "weapon",
-        ammunition: "ammo/scatter-shell",
+        ammunition: "ammo/shells",
         attackMode: "spread",
+        repeatWhileHeld: true,
         pelletCount: 7,
-        spreadDegrees: 7,
-        damage: 14,
-        maxDistance: 12,
-        cooldownTicks: 36,
+        spreadDegrees: 5.625,
+        damage: 5,
+        damageRolls: 3,
+        maxDistance: 128,
+        cooldownTicks: 63,
         ammunitionCost: 1,
         muzzleOffset: [0, 0, 0],
-        presentation: "breach-scattergun",
-      },
-    },
-    {
-      id: "weapon/kinetic-launcher",
-      maxQuantity: 1,
-      kind: {
-        kind: "weapon",
-        ammunition: "ammo/kinetic-slug",
-        attackMode: "projectile",
-        damage: 45,
-        maxDistance: 60,
-        cooldownTicks: 18,
-        ammunitionCost: 1,
-        muzzleOffset: [0, 0, -0.35],
-        presentation: "kinetic-launcher",
-        projectileMass: 0.25,
-        projectileRadius: 0.12,
-        projectileImpulse: 18,
-        projectileGravityScale: 0.8,
-        projectileLifetimeTicks: 180,
-        projectileRestitution: 0.1,
-      },
-    },
-    {
-      id: "weapon/rivet-carbine",
-      maxQuantity: 1,
-      kind: {
-        kind: "weapon",
-        ammunition: "ammo/energy-cell",
-        attackMode: "automatic",
-        damage: 18,
-        maxDistance: 25,
-        cooldownTicks: 4,
-        ammunitionCost: 1,
-        muzzleOffset: [0, 0, 0],
-        presentation: "rivet-carbine",
+        presentation: "shotgun",
       },
     },
   ];
@@ -425,54 +393,54 @@ export function buildDoomE1M1Project(
         mouseLook: "pointer",
         primaryFire: "Mouse0",
         jump: "Space",
-        selectWeapon: ["Digit1", "Digit2", "Digit3", "Digit4"],
+        selectWeapon: ["Digit1", "Digit2"],
       },
     },
     inventory: {
       capacitySlots: 10,
       startingStacks: [
-        { item: "weapon/arc-pistol", quantity: 1 },
-        { item: "ammo/energy-cell", quantity: 30 },
-        { item: "supply/med-patch", quantity: 1 },
+        { item: "weapon/pistol", quantity: 1 },
+        { item: "ammo/bullets", quantity: 50 },
       ],
-      initiallyEquippedWeapon: "weapon/arc-pistol",
-      weaponSlots: [
-        "weapon/arc-pistol",
-        "weapon/breach-scattergun",
-        "weapon/rivet-carbine",
-        "weapon/kinetic-launcher",
-      ],
+      initiallyEquippedWeapon: "weapon/pistol",
+      weaponSlots: ["weapon/pistol", "weapon/shotgun"],
     },
   });
 
   const enemyTypes = new Set([9, 3001, 3004]);
   const pickupMap: Record<
     number,
-    { item: string; quantity: number; mesh: string }
+    {
+      item: string;
+      quantity: number;
+      mesh: string;
+      starterAmmunition?: { item: string; quantity: number };
+    }
   > = {
     2001: {
-      item: "weapon/breach-scattergun",
+      item: "weapon/shotgun",
       quantity: 1,
       mesh: "mesh/prop-kit/breach-scattergun",
-    },
-    2002: {
-      item: "weapon/rivet-carbine",
-      quantity: 1,
-      mesh: "mesh/prop-kit/rivet-carbine",
-    },
-    2003: {
-      item: "weapon/kinetic-launcher",
-      quantity: 1,
-      mesh: "mesh/prop-kit/security-door",
+      starterAmmunition: { item: "ammo/shells", quantity: 8 },
     },
     2007: {
-      item: "ammo/energy-cell",
-      quantity: 12,
+      item: "ammo/bullets",
+      quantity: 10,
       mesh: "mesh/prop-kit/energy-cell",
     },
     2008: {
-      item: "ammo/scatter-shell",
-      quantity: 8,
+      item: "ammo/shells",
+      quantity: 4,
+      mesh: "mesh/prop-kit/scatter-shells",
+    },
+    2048: {
+      item: "ammo/bullets",
+      quantity: 50,
+      mesh: "mesh/prop-kit/energy-cell",
+    },
+    2049: {
+      item: "ammo/shells",
+      quantity: 20,
       mesh: "mesh/prop-kit/scatter-shells",
     },
     2011: {
@@ -668,7 +636,7 @@ export function buildDoomE1M1Project(
   let pickupIndex = 0;
   for (const thing of inter.level.things) {
     const mapping = pickupMap[thing.type];
-    if (!mapping) continue;
+    if (!mapping || (thing.options & 16) !== 0) continue;
     pickupIndex += 1;
     const pos = doomToWorldForThing(thing);
     const id = nextId++;
@@ -707,7 +675,13 @@ export function buildDoomE1M1Project(
           ],
         },
       },
-      pickup: { item: mapping.item, quantity: mapping.quantity },
+      pickup: {
+        item: mapping.item,
+        quantity: mapping.quantity,
+        ...(mapping.starterAmmunition
+          ? { starterAmmunition: mapping.starterAmmunition }
+          : {}),
+      },
     });
   }
 

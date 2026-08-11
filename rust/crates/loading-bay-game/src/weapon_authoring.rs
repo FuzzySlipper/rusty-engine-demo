@@ -79,6 +79,10 @@ pub enum LoadingBayWeaponAuthoringResponse {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct LoadingBayWeaponAuthoringCandidate {
     pub attack_mode: LoadingBayWeaponAuthoringAttackMode,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub repeat_while_held: bool,
+    #[serde(default = "default_damage_rolls", skip_serializing_if = "is_one_u8")]
+    pub damage_rolls: u8,
     pub damage: u32,
     pub max_distance: f32,
     pub cooldown_ticks: u64,
@@ -506,6 +510,8 @@ impl LoadingBayWeaponAuthoringCandidate {
         let projectile = self.projectile;
         StoredItemKind::Weapon {
             ammunition: self.ammunition_item_id,
+            repeat_while_held: self.repeat_while_held,
+            damage_rolls: self.damage_rolls,
             attack_mode: Some(attack_mode),
             pellet_count,
             spread_degrees,
@@ -639,6 +645,8 @@ fn candidate_from_definition(
 ) -> Option<LoadingBayWeaponAuthoringCandidate> {
     let StoredItemKind::Weapon {
         ammunition,
+        repeat_while_held,
+        damage_rolls,
         attack_mode,
         pellet_count,
         spread_degrees,
@@ -669,6 +677,8 @@ fn candidate_from_definition(
     };
     Some(LoadingBayWeaponAuthoringCandidate {
         attack_mode,
+        repeat_while_held: *repeat_while_held,
+        damage_rolls: *damage_rolls,
         damage: (*damage)?,
         max_distance: (*max_distance)?,
         cooldown_ticks: (*cooldown_ticks)?,
@@ -761,6 +771,18 @@ fn json_path(path: &str) -> String {
     } else {
         format!("$.{path}")
     }
+}
+
+fn default_damage_rolls() -> u8 {
+    1
+}
+
+fn is_one_u8(value: &u8) -> bool {
+    *value == 1
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 const _: () =

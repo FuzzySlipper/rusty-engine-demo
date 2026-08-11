@@ -141,6 +141,10 @@ pub struct ItemDefinitionSnapshot {
 pub enum SnapshotItemKind {
     Weapon {
         ammunition: String,
+        #[serde(default, skip_serializing_if = "is_false")]
+        repeat_while_held: bool,
+        #[serde(default = "default_damage_rolls", skip_serializing_if = "is_one_u8")]
+        damage_rolls: u8,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         attack_mode: Option<SnapshotWeaponAttackMode>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1116,6 +1120,8 @@ impl GameRuntime {
                     kind: match &definition.kind {
                         ItemKind::Weapon(weapon) => SnapshotItemKind::Weapon {
                             ammunition: weapon.ammunition.as_str().to_string(),
+                            repeat_while_held: weapon.repeat_while_held,
+                            damage_rolls: weapon.damage_rolls,
                             attack_mode: Some(match weapon.attack_mode {
                                 WeaponAttackMode::Hitscan => SnapshotWeaponAttackMode::Hitscan,
                                 WeaponAttackMode::Spread { .. } => SnapshotWeaponAttackMode::Spread,
@@ -3567,6 +3573,8 @@ fn snapshot_item_definition(
     let kind = match snapshot.kind {
         SnapshotItemKind::Weapon {
             ammunition,
+            repeat_while_held,
+            damage_rolls,
             attack_mode,
             pellet_count,
             spread_degrees,
@@ -3621,6 +3629,8 @@ fn snapshot_item_definition(
                     });
                 }
             },
+            repeat_while_held,
+            damage_rolls,
             damage: damage.ok_or_else(|| GameSnapshotError::InvalidItemDefinitionId {
                 value: format!("{}:missing-damage", id.as_str()),
             })?,
@@ -3917,6 +3927,8 @@ fn legacy_snapshot_weapon_kind(
 ) -> SnapshotItemKind {
     SnapshotItemKind::Weapon {
         ammunition,
+        repeat_while_held: false,
+        damage_rolls: 1,
         attack_mode: Some(SnapshotWeaponAttackMode::Hitscan),
         pellet_count: None,
         spread_degrees: None,
@@ -3933,6 +3945,18 @@ fn legacy_snapshot_weapon_kind(
         projectile_lifetime_ticks: None,
         projectile_restitution: None,
     }
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
+fn default_damage_rolls() -> u8 {
+    1
+}
+
+fn is_one_u8(value: &u8) -> bool {
+    *value == 1
 }
 
 fn parse_snapshot_item_id(value: String) -> Result<ItemDefinitionId, GameSnapshotError> {

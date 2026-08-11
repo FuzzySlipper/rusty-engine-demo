@@ -1019,6 +1019,8 @@ fn legacy_weapon_item_kind(
 ) -> StoredItemKind {
     StoredItemKind::Weapon {
         ammunition,
+        repeat_while_held: false,
+        damage_rolls: 1,
         attack_mode: Some(StoredWeaponAttackMode::Hitscan),
         pellet_count: None,
         spread_degrees: None,

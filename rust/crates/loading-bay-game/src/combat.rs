@@ -331,7 +331,7 @@ impl CombatService {
                         owner: attacker,
                         weapon: weapon_item.clone(),
                         definition: projectile,
-                        damage: weapon.damage,
+                        damage: rolled_damage(weapon.damage, weapon.damage_rolls, spread_seed, 0),
                         origin,
                         direction,
                         tick,
@@ -362,6 +362,8 @@ impl CombatService {
                 break;
             }
             let ray_index = ray_index as u8;
+            let ray_damage =
+                rolled_damage(weapon.damage, weapon.damage_rolls, spread_seed, ray_index);
             let target = nearest_combat_target(
                 &candidate_session,
                 attacker,
@@ -399,7 +401,7 @@ impl CombatService {
                         ray_index,
                         direction,
                         distance: hit.distance,
-                        damage: weapon.damage,
+                        damage: ray_damage,
                     });
                     let damage = DamageService::apply(
                         &mut candidate_session,
@@ -409,7 +411,7 @@ impl CombatService {
                                 weapon: weapon_item.clone(),
                             },
                             target: hit.entity,
-                            amount: weapon.damage,
+                            amount: ray_damage,
                         },
                     )
                     .map_err(RuntimeError::Vitality)?;
@@ -558,6 +560,17 @@ fn seed_unit(seed: u64) -> f32 {
     ((seed >> 40) as f32) / ((1u32 << 24) - 1) as f32
 }
 
+fn rolled_damage(base: u32, rolls: u8, seed: u64, ray_index: u8) -> u32 {
+    let mut mixed = seed ^ (u64::from(ray_index) + 1).wrapping_mul(0x9e37_79b9_7f4a_7c15);
+    mixed ^= mixed >> 30;
+    mixed = mixed.wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    mixed ^= mixed >> 27;
+    mixed = mixed.wrapping_mul(0x94d0_49bb_1331_11eb);
+    mixed ^= mixed >> 31;
+    let multiplier = (mixed % u64::from(rolls)) as u32 + 1;
+    base * multiplier
+}
+
 fn local_aim_offset(offset: Vec3, yaw_degrees: f32) -> Vec3 {
     let yaw = yaw_degrees.to_radians();
     let right = Vec3::new(yaw.cos(), 0.0, -yaw.sin());
@@ -646,4 +659,23 @@ fn ray_aabb_distance(origin: Vec3, direction: Vec3, min: Vec3, max: Vec3) -> Opt
 
 fn vec3_is_finite(value: Vec3) -> bool {
     value.x.is_finite() && value.y.is_finite() && value.z.is_finite()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::rolled_damage;
+
+    #[test]
+    fn bounded_damage_multiples_are_deterministic_per_shot_and_ray() {
+        let first = (0..7)
+            .map(|ray| rolled_damage(5, 3, 0x1234_5678_9abc_def0, ray))
+            .collect::<Vec<_>>();
+        let replay = (0..7)
+            .map(|ray| rolled_damage(5, 3, 0x1234_5678_9abc_def0, ray))
+            .collect::<Vec<_>>();
+        assert_eq!(first, replay);
+        assert!(first.iter().all(|damage| matches!(damage, 5 | 10 | 15)));
+        assert!(first.windows(2).any(|pair| pair[0] != pair[1]));
+        assert_eq!(rolled_damage(35, 1, 77, 0), 35);
+    }
 }

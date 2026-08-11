@@ -98,6 +98,12 @@ impl WeaponAttackMode {
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeaponDefinition {
     pub attack_mode: WeaponAttackMode,
+    /// Whether a held semantic fire intent may start another attack as soon as
+    /// this weapon's authoritative cooldown expires.
+    pub repeat_while_held: bool,
+    /// Number of positive, equally weighted damage multiples. A value of one
+    /// is fixed damage; three produces `damage`, `2 * damage`, or `3 * damage`.
+    pub damage_rolls: u8,
     pub damage: u32,
     pub max_distance: f32,
     pub cooldown_ticks: u64,
@@ -157,7 +163,11 @@ impl WeaponDefinition {
                 .is_some_and(|projectile| projectile.is_valid()),
         };
         valid_attack_mode
-            && (1..=MAX_WEAPON_DAMAGE).contains(&self.damage)
+            && self.damage_rolls > 0
+            && self
+                .damage
+                .checked_mul(u32::from(self.damage_rolls))
+                .is_some_and(|maximum| maximum <= MAX_WEAPON_DAMAGE)
             && self.max_distance.is_finite()
             && self.max_distance > 0.0
             && self.max_distance <= MAX_WEAPON_RANGE

@@ -362,6 +362,52 @@ async function proveFocusedHeldMovement(client, addr) {
   return { heldDistance, stoppedDistance };
 }
 
+async function proveFocusedHeldPistolFire(client, addr) {
+  const before = await fetchAuthoritativeState(addr);
+  if (before.weapon?.item !== "weapon/pistol") {
+    throw new Error(`expected equipped pistol, got ${before.weapon?.item}`);
+  }
+  const canvas = await cdpEvaluate(
+    client,
+    `(() => {
+      const canvas = document.querySelector('canvas');
+      if (!canvas) return null;
+      const bounds = canvas.getBoundingClientRect();
+      return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+    })()`,
+  );
+  if (canvas === null) throw new Error("Engine canvas is unavailable for Mouse0");
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    x: canvas.x,
+    y: canvas.y,
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+  });
+  await delay(550);
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    x: canvas.x,
+    y: canvas.y,
+    button: "left",
+    buttons: 0,
+    clickCount: 1,
+  });
+  const after = await waitForAuthoritativeState(
+    addr,
+    "held Mouse0 fires the equipped pistol at authored cadence",
+    (candidate) =>
+      candidate.weapon?.item === "weapon/pistol" &&
+      candidate.weapon.ammoRemaining <= before.weapon.ammoRemaining - 2,
+  );
+  return {
+    shots: before.weapon.ammoRemaining - after.weapon.ammoRemaining,
+    ammoBefore: before.weapon.ammoRemaining,
+    ammoAfter: after.weapon.ammoRemaining,
+  };
+}
+
 function horizontalDistance(left, right) {
   return Math.hypot(right[0] - left[0], right[2] - left[2]);
 }
@@ -855,8 +901,8 @@ async function main() {
       `host projectId doom-e1m1, got ${state.projectId}`,
     );
     assert(
-      state.projection?.length === 87,
-      `projection 87, got ${state.projection?.length}`,
+      state.projection?.length === 88,
+      `projection 88, got ${state.projection?.length}`,
     );
     assert(
       state.enemies?.length === 29,
@@ -1185,10 +1231,15 @@ async function main() {
         );
       } else if (focused) {
         const inputProof = await proveFocusedHeldMovement(cdpClient, addr);
+        const fireProof = await proveFocusedHeldPistolFire(cdpClient, addr);
         headless.playthrough = { status: "skipped", reason: "focused smoke" };
         headless.input = inputProof;
+        headless.fire = fireProof;
         checks.push(
           `single keydown sustained ${inputProof.heldDistance.toFixed(2)} world units without mouse motion and keyup stopped within ${inputProof.stoppedDistance.toFixed(2)} units`,
+        );
+        checks.push(
+          `held Mouse0 fired pistol ${fireProof.shots} times and reduced authoritative bullets ${fireProof.ammoBefore}->${fireProof.ammoAfter}`,
         );
         checks.push("full E1M1 traversal reserved for pnpm run certify:e1m1");
       }

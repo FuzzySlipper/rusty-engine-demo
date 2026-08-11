@@ -146,6 +146,8 @@ export async function mountLoadingBayGame(
   let disposed = false;
   const session = await LoadingBayGameSession.connect();
   let current = session.state;
+  let primaryFireHeld = false;
+  let primaryFireDriver: ReturnType<typeof globalThis.setInterval> | null = null;
   const heldMovement = new HeldMovementInput({
     bindings: () => current.player.bindings,
     intervalMilliseconds: () => 16,
@@ -153,7 +155,7 @@ export async function mountLoadingBayGame(
       session.queueInput({
         movement: [action.forward, action.right],
         lookDelta: [0, 0],
-        primaryFireHeld: false,
+        primaryFireHeld,
       });
     },
   });
@@ -192,6 +194,9 @@ export async function mountLoadingBayGame(
     globalThis.addEventListener("mousedown", onMouseDown, {
       signal: controller.signal,
     });
+    globalThis.addEventListener("mouseup", onMouseUp, {
+      signal: controller.signal,
+    });
   } catch (cause) {
     controller.abort();
     session.neutralizeInput();
@@ -210,6 +215,7 @@ export async function mountLoadingBayGame(
       disposed = true;
       controller.abort();
       heldMovement.clear(false);
+      stopPrimaryFire();
       session.neutralizeInput();
       await projectionQueue.catch(() => undefined);
       await session.close();
@@ -226,6 +232,7 @@ export async function mountLoadingBayGame(
     },
     releaseInput: () => {
       heldMovement.clear(false);
+      stopPrimaryFire();
       session.neutralizeInput();
     },
     restart: async () => {
@@ -338,6 +345,7 @@ export async function mountLoadingBayGame(
   function onKeyUp(event: KeyboardEvent): void {
     heldMovement.release(event.code);
     if (options.inputEnabled?.(event) === false) {
+      stopPrimaryFire();
       session.neutralizeInput();
     }
   }
@@ -356,7 +364,7 @@ export async function mountLoadingBayGame(
     session.queueInput({
       movement: movement(),
       lookDelta,
-      primaryFireHeld: false,
+      primaryFireHeld,
     });
   }
 
@@ -367,22 +375,41 @@ export async function mountLoadingBayGame(
       options.inputEnabled?.(event) === false
     )
       return;
+    if (primaryFireHeld) return;
+    primaryFireHeld = true;
+    primaryFireDriver = globalThis.setInterval(() => {
+      session.queueInput({
+        movement: movement(),
+        lookDelta: [0, 0],
+        primaryFireHeld,
+      });
+    }, 16);
     void session
       .sendInput({
         movement: movement(),
         lookDelta: [0, 0],
-        primaryFireHeld: true,
+        primaryFireHeld,
       })
-      .then(() => queueMovement())
       .catch(record);
   }
 
-  function queueMovement(): void {
-    session.queueInput({
-      movement: movement(),
-      lookDelta: [0, 0],
-      primaryFireHeld: false,
-    });
+  function onMouseUp(event: MouseEvent): void {
+    if (event.button !== 0 || !primaryFireHeld) return;
+    stopPrimaryFire();
+    void session
+      .sendInput({
+        movement: movement(),
+        lookDelta: [0, 0],
+        primaryFireHeld,
+      })
+      .catch(record);
+  }
+
+  function stopPrimaryFire(): void {
+    primaryFireHeld = false;
+    if (primaryFireDriver === null) return;
+    globalThis.clearInterval(primaryFireDriver);
+    primaryFireDriver = null;
   }
 
   function movement(): readonly [number, number] {

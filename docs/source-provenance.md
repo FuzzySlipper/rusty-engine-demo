@@ -541,10 +541,10 @@ authority for source bytes, license boundaries, and derived assets.
 Doom E1M1 “Hangar” is the durable textured-voxel proving ground. The
 original WAD bytes are an **offline source** for an offline Node TS
 forge; no `doom1.wad` is read at runtime, no TS gameplay authority is
-added, and no generic bridge is introduced. Geometry incidence (vertex
-bounds, sector extrusion, wall incidence) and texture incidence (flat and
-wall patch incidence) are the only ported concepts; no Doom code, map
-bytes, sprites, sounds, music, names, or trade dress are shipped.
+added, and no generic bridge is introduced. Geometry, texture, Thing placement,
+and the bounded E1M1 gameplay semantics documented below are ported; no Doom
+code, runtime map bytes, sprites, sounds, music, story text, or trade dress are
+shipped.
 
 ### Source
 
@@ -640,10 +640,26 @@ Exact PNG bytes and hashes are closed by `content/doom-e1m1/textures/manifest.js
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
 `voxelDataHash sha256:fad81c1c1d8b8ffe30b733817f70b494b26c1ca788e4c8a40a6fe16ffb6c756d`
 `contentHash sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c`
-`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:f0b0ef955a9d24e90d6dd48d335c473566f8f31639917849659bc05f6c044c22`.
+`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:29ef9b937ac0fbae1f68daa184cbd213be483a1a402c43edf407906a22620f7e`.
 
 ### Authored project
 
 `content/projects/doom-e1m1.project.json` schema 24 `scene/doom-e1m1` embeds the voxel volume (`voxel-volume/doom-e1m1` at identity, plus `voxelEnvironment` material proxy referencing same asset) and 54 VTX6 materials (`material/doom-*` with `voxelSurface` repeat), 54 textures (`texture/doom-*`), and 41 mesh resources copied from `loading-bay` (`mesh/player-marker`, `mesh/prop-kit/*`, `mesh-animation/*`). One `StoredMaterialDefinition` per texture with `tileScaleCells`/`tileOriginCells` straight-alpha Nearest/Repeat. Project admits via `ProjectStore` canonical round-trip (4.6 MiB <8 MiB) and is listed in `libs/project-content` alongside `loading-bay`/`relay-annex`.
+
+Task #6804 ports only E1M1's single-player weapon subset: the starting pistol,
+the one placed shotgun, bullets, and shells. Thing types 2001, 2007, 2008,
+2048, and 2049 and their single-player option bit are read from the hashed WAD;
+multiplayer-only type-2002 and type-2003 placements are excluded. The reading
+reference at `/home/research/doom.ts/src/doom/{game/game.ts,play/inter.ts,play/p-sprite.ts,play/local.ts,doom/items.ts,doom/info/states.ts}` establishes the
+50-bullet start, 200/50 ammo bounds, 10/50 bullet grants, 4/20 shell grants,
+eight shells with a found shotgun, one-ammo attacks, seven shotgun rays,
+5/10/15 damage multiples, 2,048-Doom-unit range, held refire, and source state
+cadence. The authored 60 Hz cooldowns are the nearest integral fixed-tick
+calibration of those 35 Hz state intervals. Rust implements reusable held-fire,
+cooldown, deterministic damage-roll, spread, hit, occlusion, ammo, vitality,
+death, drop, fact, and snapshot owners; TypeScript only composes these values
+and disposable presentation identities. Existing original Loading Bay prop
+meshes remain temporary visual substitutes and are not represented as Doom
+sprites or weapon art.
 
 No `doom1.wad` is read at runtime; the browser receives only the immutable `RuntimeProjection` and typed facts. The offline forge is deterministic: `node dist/cli.js --check`, `node dist/texture-cli.js --check`, and `cargo run -p loading-bay-game --bin doom-voxel-hash -- doom-e1m1.voxel.json` are the re-producers.

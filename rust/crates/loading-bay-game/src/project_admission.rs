@@ -175,6 +175,8 @@ fn authored_item_definition(
     let kind = match &authored.kind {
         StoredItemKind::Weapon {
             ammunition,
+            repeat_while_held,
+            damage_rolls,
             attack_mode,
             pellet_count,
             spread_degrees,
@@ -200,6 +202,8 @@ fn authored_item_definition(
                 crate::StoredWeaponAttackMode::Automatic => WeaponAttackMode::Automatic,
                 crate::StoredWeaponAttackMode::Projectile => WeaponAttackMode::Projectile,
             },
+            repeat_while_held: *repeat_while_held,
+            damage_rolls: *damage_rolls,
             damage: damage.expect("validated current weapon damage"),
             max_distance: max_distance.expect("validated current weapon range"),
             cooldown_ticks: cooldown_ticks.expect("validated current weapon cadence"),

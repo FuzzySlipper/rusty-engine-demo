@@ -201521,21 +201521,14 @@
   ],
   "itemDefinitions": [
     {
-      "id": "ammo/energy-cell",
+      "id": "ammo/bullets",
       "maxQuantity": 200,
       "kind": {
         "kind": "ammunition"
       }
     },
     {
-      "id": "ammo/kinetic-slug",
-      "maxQuantity": 32,
-      "kind": {
-        "kind": "ammunition"
-      }
-    },
-    {
-      "id": "ammo/scatter-shell",
+      "id": "ammo/shells",
       "maxQuantity": 50,
       "kind": {
         "kind": "ammunition"
@@ -201572,87 +201565,47 @@
       }
     },
     {
-      "id": "weapon/arc-pistol",
+      "id": "weapon/pistol",
       "maxQuantity": 1,
       "kind": {
         "kind": "weapon",
-        "ammunition": "ammo/energy-cell",
+        "ammunition": "ammo/bullets",
+        "repeatWhileHeld": true,
+        "damageRolls": 3,
         "attackMode": "hitscan",
-        "damage": 60,
-        "maxDistance": 20.0,
-        "cooldownTicks": 2,
+        "damage": 5,
+        "maxDistance": 128.0,
+        "cooldownTicks": 24,
         "ammunitionCost": 1,
         "muzzleOffset": [
           0.0,
           0.0,
           0.0
         ],
-        "presentation": "arc-pistol"
+        "presentation": "pistol"
       }
     },
     {
-      "id": "weapon/breach-scattergun",
+      "id": "weapon/shotgun",
       "maxQuantity": 1,
       "kind": {
         "kind": "weapon",
-        "ammunition": "ammo/scatter-shell",
+        "ammunition": "ammo/shells",
+        "repeatWhileHeld": true,
+        "damageRolls": 3,
         "attackMode": "spread",
         "pelletCount": 7,
-        "spreadDegrees": 7.0,
-        "damage": 14,
-        "maxDistance": 12.0,
-        "cooldownTicks": 36,
+        "spreadDegrees": 5.625,
+        "damage": 5,
+        "maxDistance": 128.0,
+        "cooldownTicks": 63,
         "ammunitionCost": 1,
         "muzzleOffset": [
           0.0,
           0.0,
           0.0
         ],
-        "presentation": "breach-scattergun"
-      }
-    },
-    {
-      "id": "weapon/kinetic-launcher",
-      "maxQuantity": 1,
-      "kind": {
-        "kind": "weapon",
-        "ammunition": "ammo/kinetic-slug",
-        "attackMode": "projectile",
-        "damage": 45,
-        "maxDistance": 60.0,
-        "cooldownTicks": 18,
-        "ammunitionCost": 1,
-        "muzzleOffset": [
-          0.0,
-          0.0,
-          -0.35
-        ],
-        "presentation": "kinetic-launcher",
-        "projectileMass": 0.25,
-        "projectileRadius": 0.12,
-        "projectileImpulse": 18.0,
-        "projectileGravityScale": 0.8,
-        "projectileLifetimeTicks": 180,
-        "projectileRestitution": 0.1
-      }
-    },
-    {
-      "id": "weapon/rivet-carbine",
-      "maxQuantity": 1,
-      "kind": {
-        "kind": "weapon",
-        "ammunition": "ammo/energy-cell",
-        "attackMode": "automatic",
-        "damage": 18,
-        "maxDistance": 25.0,
-        "cooldownTicks": 4,
-        "ammunitionCost": 1,
-        "muzzleOffset": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "presentation": "rivet-carbine"
+        "presentation": "shotgun"
       }
     }
   ],
@@ -201767,9 +201720,7 @@
               "jump": "Space",
               "selectWeapon": [
                 "Digit1",
-                "Digit2",
-                "Digit3",
-                "Digit4"
+                "Digit2"
               ]
             }
           },
@@ -201777,24 +201728,18 @@
             "capacitySlots": 10,
             "startingStacks": [
               {
-                "item": "weapon/arc-pistol",
+                "item": "weapon/pistol",
                 "quantity": 1
               },
               {
-                "item": "ammo/energy-cell",
-                "quantity": 30
-              },
-              {
-                "item": "supply/med-patch",
-                "quantity": 1
+                "item": "ammo/bullets",
+                "quantity": 50
               }
             ],
-            "initiallyEquippedWeapon": "weapon/arc-pistol",
+            "initiallyEquippedWeapon": "weapon/pistol",
             "weaponSlots": [
-              "weapon/arc-pistol",
-              "weapon/breach-scattergun",
-              "weapon/rivet-carbine",
-              "weapon/kinetic-launcher"
+              "weapon/pistol",
+              "weapon/shotgun"
             ]
           }
         },
@@ -205955,8 +205900,8 @@
             }
           },
           "pickup": {
-            "item": "ammo/energy-cell",
-            "quantity": 12
+            "item": "ammo/bullets",
+            "quantity": 10
           }
         },
         {
@@ -206037,95 +205982,13 @@
             }
           },
           "pickup": {
-            "item": "ammo/energy-cell",
-            "quantity": 12
+            "item": "ammo/bullets",
+            "quantity": 10
           }
         },
         {
           "id": 35,
-          "name": "doom-pickup-2008-5",
-          "translation": [
-            222.0,
-            7.5,
-            120.0
-          ],
-          "bounds": {
-            "min": [
-              -0.3,
-              -0.3,
-              -0.3
-            ],
-            "max": [
-              0.3,
-              0.3,
-              0.3
-            ]
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/scatter-shells",
-            "visible": true,
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "dormant",
-                  "kind": "material",
-                  "textureTint": [
-                    0.58,
-                    0.62,
-                    0.68,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.14,
-                    0.18
-                  ],
-                  "emissionIntensity": 0.04
-                },
-                {
-                  "state": "available",
-                  "kind": "material",
-                  "textureTint": [
-                    0.62,
-                    1.0,
-                    0.82,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.82,
-                    0.52
-                  ],
-                  "emissionIntensity": 0.35
-                },
-                {
-                  "state": "collected",
-                  "kind": "material",
-                  "textureTint": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.0,
-                    0.0,
-                    0.0
-                  ],
-                  "emissionIntensity": 0.0
-                }
-              ]
-            }
-          },
-          "pickup": {
-            "item": "ammo/scatter-shell",
-            "quantity": 8
-          }
-        },
-        {
-          "id": 36,
-          "name": "doom-pickup-2014-6",
+          "name": "doom-pickup-2014-5",
           "translation": [
             57.0,
             8.5,
@@ -206206,12 +206069,94 @@
           }
         },
         {
-          "id": 37,
-          "name": "doom-pickup-2014-7",
+          "id": 36,
+          "name": "doom-pickup-2014-6",
           "translation": [
             57.0,
             8.5,
             96.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/med-patch",
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
+          },
+          "pickup": {
+            "item": "supply/med-patch",
+            "quantity": 1
+          }
+        },
+        {
+          "id": 37,
+          "name": "doom-pickup-2014-7",
+          "translation": [
+            54.0,
+            8.5,
+            92.0
           ],
           "bounds": {
             "min": [
@@ -206293,88 +206238,6 @@
           "translation": [
             54.0,
             8.5,
-            92.0
-          ],
-          "bounds": {
-            "min": [
-              -0.3,
-              -0.3,
-              -0.3
-            ],
-            "max": [
-              0.3,
-              0.3,
-              0.3
-            ]
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/med-patch",
-            "visible": true,
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "dormant",
-                  "kind": "material",
-                  "textureTint": [
-                    0.58,
-                    0.62,
-                    0.68,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.14,
-                    0.18
-                  ],
-                  "emissionIntensity": 0.04
-                },
-                {
-                  "state": "available",
-                  "kind": "material",
-                  "textureTint": [
-                    0.62,
-                    1.0,
-                    0.82,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.82,
-                    0.52
-                  ],
-                  "emissionIntensity": 0.35
-                },
-                {
-                  "state": "collected",
-                  "kind": "material",
-                  "textureTint": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.0,
-                    0.0,
-                    0.0
-                  ],
-                  "emissionIntensity": 0.0
-                }
-              ]
-            }
-          },
-          "pickup": {
-            "item": "supply/med-patch",
-            "quantity": 1
-          }
-        },
-        {
-          "id": 39,
-          "name": "doom-pickup-2014-9",
-          "translation": [
-            54.0,
-            8.5,
             112.0
           ],
           "bounds": {
@@ -206452,8 +206315,8 @@
           }
         },
         {
-          "id": 40,
-          "name": "doom-pickup-2015-10",
+          "id": 39,
+          "name": "doom-pickup-2015-9",
           "translation": [
             75.0,
             8.5,
@@ -206534,8 +206397,8 @@
           }
         },
         {
-          "id": 41,
-          "name": "doom-pickup-2015-11",
+          "id": 40,
+          "name": "doom-pickup-2015-10",
           "translation": [
             75.0,
             8.5,
@@ -206616,8 +206479,8 @@
           }
         },
         {
-          "id": 42,
-          "name": "doom-pickup-2015-12",
+          "id": 41,
+          "name": "doom-pickup-2015-11",
           "translation": [
             50.0,
             15.5,
@@ -206698,8 +206561,8 @@
           }
         },
         {
-          "id": 43,
-          "name": "doom-pickup-2015-13",
+          "id": 42,
+          "name": "doom-pickup-2015-12",
           "translation": [
             46.0,
             15.5,
@@ -206780,8 +206643,8 @@
           }
         },
         {
-          "id": 44,
-          "name": "doom-pickup-2014-14",
+          "id": 43,
+          "name": "doom-pickup-2014-13",
           "translation": [
             130.0,
             9.0,
@@ -206862,8 +206725,8 @@
           }
         },
         {
-          "id": 45,
-          "name": "doom-pickup-2014-15",
+          "id": 44,
+          "name": "doom-pickup-2014-14",
           "translation": [
             94.0,
             9.0,
@@ -206944,8 +206807,8 @@
           }
         },
         {
-          "id": 46,
-          "name": "doom-pickup-2015-16",
+          "id": 45,
+          "name": "doom-pickup-2015-15",
           "translation": [
             94.0,
             9.0,
@@ -207026,8 +206889,8 @@
           }
         },
         {
-          "id": 47,
-          "name": "doom-pickup-2015-17",
+          "id": 46,
+          "name": "doom-pickup-2015-16",
           "translation": [
             109.0,
             9.0,
@@ -207108,8 +206971,8 @@
           }
         },
         {
-          "id": 48,
-          "name": "doom-pickup-2014-18",
+          "id": 47,
+          "name": "doom-pickup-2014-17",
           "translation": [
             215.0,
             8.0,
@@ -207190,8 +207053,8 @@
           }
         },
         {
-          "id": 49,
-          "name": "doom-pickup-2014-19",
+          "id": 48,
+          "name": "doom-pickup-2014-18",
           "translation": [
             220.0,
             8.0,
@@ -207272,8 +207135,8 @@
           }
         },
         {
-          "id": 50,
-          "name": "doom-pickup-2008-20",
+          "id": 49,
+          "name": "doom-pickup-2008-19",
           "translation": [
             226.0,
             7.5,
@@ -207349,13 +207212,13 @@
             }
           },
           "pickup": {
-            "item": "ammo/scatter-shell",
-            "quantity": 8
+            "item": "ammo/shells",
+            "quantity": 4
           }
         },
         {
-          "id": 51,
-          "name": "doom-pickup-2008-21",
+          "id": 50,
+          "name": "doom-pickup-2008-20",
           "translation": [
             236.0,
             7.5,
@@ -207431,15 +207294,97 @@
             }
           },
           "pickup": {
-            "item": "ammo/scatter-shell",
-            "quantity": 8
+            "item": "ammo/shells",
+            "quantity": 4
+          }
+        },
+        {
+          "id": 51,
+          "name": "doom-pickup-2014-21",
+          "translation": [
+            247.0,
+            7.5,
+            43.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/med-patch",
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
+          },
+          "pickup": {
+            "item": "supply/med-patch",
+            "quantity": 1
           }
         },
         {
           "id": 52,
           "name": "doom-pickup-2014-22",
           "translation": [
-            247.0,
+            225.0,
             7.5,
             43.0
           ],
@@ -207521,9 +207466,9 @@
           "id": 53,
           "name": "doom-pickup-2014-23",
           "translation": [
-            225.0,
+            219.0,
             7.5,
-            43.0
+            42.0
           ],
           "bounds": {
             "min": [
@@ -207603,7 +207548,7 @@
           "id": 54,
           "name": "doom-pickup-2014-24",
           "translation": [
-            219.0,
+            253.0,
             7.5,
             42.0
           ],
@@ -207687,88 +207632,6 @@
           "translation": [
             253.0,
             7.5,
-            42.0
-          ],
-          "bounds": {
-            "min": [
-              -0.3,
-              -0.3,
-              -0.3
-            ],
-            "max": [
-              0.3,
-              0.3,
-              0.3
-            ]
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/med-patch",
-            "visible": true,
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "dormant",
-                  "kind": "material",
-                  "textureTint": [
-                    0.58,
-                    0.62,
-                    0.68,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.14,
-                    0.18
-                  ],
-                  "emissionIntensity": 0.04
-                },
-                {
-                  "state": "available",
-                  "kind": "material",
-                  "textureTint": [
-                    0.62,
-                    1.0,
-                    0.82,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.82,
-                    0.52
-                  ],
-                  "emissionIntensity": 0.35
-                },
-                {
-                  "state": "collected",
-                  "kind": "material",
-                  "textureTint": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.0,
-                    0.0,
-                    0.0
-                  ],
-                  "emissionIntensity": 0.0
-                }
-              ]
-            }
-          },
-          "pickup": {
-            "item": "supply/med-patch",
-            "quantity": 1
-          }
-        },
-        {
-          "id": 56,
-          "name": "doom-pickup-2014-26",
-          "translation": [
-            253.0,
-            7.5,
             26.0
           ],
           "bounds": {
@@ -207846,8 +207709,8 @@
           }
         },
         {
-          "id": 57,
-          "name": "doom-pickup-2015-27",
+          "id": 56,
+          "name": "doom-pickup-2015-26",
           "translation": [
             219.0,
             7.5,
@@ -207928,10 +207791,92 @@
           }
         },
         {
+          "id": 57,
+          "name": "doom-pickup-2015-27",
+          "translation": [
+            240.0,
+            7.5,
+            2.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/impact-vest",
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
+          },
+          "pickup": {
+            "item": "armor/impact-vest",
+            "quantity": 1
+          }
+        },
+        {
           "id": 58,
           "name": "doom-pickup-2015-28",
           "translation": [
-            240.0,
+            232.0,
             7.5,
             2.0
           ],
@@ -208013,88 +207958,6 @@
           "id": 59,
           "name": "doom-pickup-2015-29",
           "translation": [
-            232.0,
-            7.5,
-            2.0
-          ],
-          "bounds": {
-            "min": [
-              -0.3,
-              -0.3,
-              -0.3
-            ],
-            "max": [
-              0.3,
-              0.3,
-              0.3
-            ]
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/impact-vest",
-            "visible": true,
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "dormant",
-                  "kind": "material",
-                  "textureTint": [
-                    0.58,
-                    0.62,
-                    0.68,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.14,
-                    0.18
-                  ],
-                  "emissionIntensity": 0.04
-                },
-                {
-                  "state": "available",
-                  "kind": "material",
-                  "textureTint": [
-                    0.62,
-                    1.0,
-                    0.82,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.82,
-                    0.52
-                  ],
-                  "emissionIntensity": 0.35
-                },
-                {
-                  "state": "collected",
-                  "kind": "material",
-                  "textureTint": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.0,
-                    0.0,
-                    0.0
-                  ],
-                  "emissionIntensity": 0.0
-                }
-              ]
-            }
-          },
-          "pickup": {
-            "item": "armor/impact-vest",
-            "quantity": 1
-          }
-        },
-        {
-          "id": 60,
-          "name": "doom-pickup-2015-30",
-          "translation": [
             240.0,
             7.5,
             10.0
@@ -208174,8 +208037,8 @@
           }
         },
         {
-          "id": 61,
-          "name": "doom-pickup-2015-31",
+          "id": 60,
+          "name": "doom-pickup-2015-30",
           "translation": [
             232.0,
             7.5,
@@ -208256,8 +208119,8 @@
           }
         },
         {
-          "id": 62,
-          "name": "doom-pickup-2011-32",
+          "id": 61,
+          "name": "doom-pickup-2011-31",
           "translation": [
             240.0,
             7.5,
@@ -208338,8 +208201,8 @@
           }
         },
         {
-          "id": 63,
-          "name": "doom-pickup-2012-33",
+          "id": 62,
+          "name": "doom-pickup-2012-32",
           "translation": [
             192.0,
             0.5,
@@ -208420,8 +208283,172 @@
           }
         },
         {
+          "id": 63,
+          "name": "doom-pickup-2049-33",
+          "translation": [
+            184.0,
+            0.5,
+            54.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/scatter-shells",
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
+          },
+          "pickup": {
+            "item": "ammo/shells",
+            "quantity": 20
+          }
+        },
+        {
           "id": 64,
-          "name": "doom-pickup-2018-34",
+          "name": "doom-pickup-2048-34",
+          "translation": [
+            200.0,
+            0.5,
+            54.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/energy-cell",
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
+          },
+          "pickup": {
+            "item": "ammo/bullets",
+            "quantity": 50
+          }
+        },
+        {
+          "id": 65,
+          "name": "doom-pickup-2018-35",
           "translation": [
             34.0,
             17.0,
@@ -208502,172 +208529,8 @@
           }
         },
         {
-          "id": 65,
-          "name": "doom-pickup-2003-35",
-          "translation": [
-            155.0,
-            4.0,
-            100.0
-          ],
-          "bounds": {
-            "min": [
-              -0.3,
-              -0.3,
-              -0.3
-            ],
-            "max": [
-              0.3,
-              0.3,
-              0.3
-            ]
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/security-door",
-            "visible": true,
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "dormant",
-                  "kind": "material",
-                  "textureTint": [
-                    0.58,
-                    0.62,
-                    0.68,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.14,
-                    0.18
-                  ],
-                  "emissionIntensity": 0.04
-                },
-                {
-                  "state": "available",
-                  "kind": "material",
-                  "textureTint": [
-                    0.62,
-                    1.0,
-                    0.82,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.82,
-                    0.52
-                  ],
-                  "emissionIntensity": 0.35
-                },
-                {
-                  "state": "collected",
-                  "kind": "material",
-                  "textureTint": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.0,
-                    0.0,
-                    0.0
-                  ],
-                  "emissionIntensity": 0.0
-                }
-              ]
-            }
-          },
-          "pickup": {
-            "item": "weapon/kinetic-launcher",
-            "quantity": 1
-          }
-        },
-        {
           "id": 66,
-          "name": "doom-pickup-2002-36",
-          "translation": [
-            250.0,
-            7.5,
-            44.0
-          ],
-          "bounds": {
-            "min": [
-              -0.3,
-              -0.3,
-              -0.3
-            ],
-            "max": [
-              0.3,
-              0.3,
-              0.3
-            ]
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/rivet-carbine",
-            "visible": true,
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "dormant",
-                  "kind": "material",
-                  "textureTint": [
-                    0.58,
-                    0.62,
-                    0.68,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.14,
-                    0.18
-                  ],
-                  "emissionIntensity": 0.04
-                },
-                {
-                  "state": "available",
-                  "kind": "material",
-                  "textureTint": [
-                    0.62,
-                    1.0,
-                    0.82,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.82,
-                    0.52
-                  ],
-                  "emissionIntensity": 0.35
-                },
-                {
-                  "state": "collected",
-                  "kind": "material",
-                  "textureTint": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.0,
-                    0.0,
-                    0.0
-                  ],
-                  "emissionIntensity": 0.0
-                }
-              ]
-            }
-          },
-          "pickup": {
-            "item": "weapon/rivet-carbine",
-            "quantity": 1
-          }
-        },
-        {
-          "id": 67,
-          "name": "doom-pickup-2015-37",
+          "name": "doom-pickup-2015-36",
           "translation": [
             187.0,
             10.5,
@@ -208748,10 +208611,92 @@
           }
         },
         {
+          "id": 67,
+          "name": "doom-pickup-2015-37",
+          "translation": [
+            187.0,
+            10.5,
+            145.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/impact-vest",
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
+          },
+          "pickup": {
+            "item": "armor/impact-vest",
+            "quantity": 1
+          }
+        },
+        {
           "id": 68,
           "name": "doom-pickup-2015-38",
           "translation": [
-            187.0,
+            191.0,
             10.5,
             145.0
           ],
@@ -208835,7 +208780,7 @@
           "translation": [
             191.0,
             10.5,
-            145.0
+            159.0
           ],
           "bounds": {
             "min": [
@@ -208914,88 +208859,6 @@
         {
           "id": 70,
           "name": "doom-pickup-2015-40",
-          "translation": [
-            191.0,
-            10.5,
-            159.0
-          ],
-          "bounds": {
-            "min": [
-              -0.3,
-              -0.3,
-              -0.3
-            ],
-            "max": [
-              0.3,
-              0.3,
-              0.3
-            ]
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/impact-vest",
-            "visible": true,
-            "visualBinding": {
-              "version": 1,
-              "states": [
-                {
-                  "state": "dormant",
-                  "kind": "material",
-                  "textureTint": [
-                    0.58,
-                    0.62,
-                    0.68,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.14,
-                    0.18
-                  ],
-                  "emissionIntensity": 0.04
-                },
-                {
-                  "state": "available",
-                  "kind": "material",
-                  "textureTint": [
-                    0.62,
-                    1.0,
-                    0.82,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.12,
-                    0.82,
-                    0.52
-                  ],
-                  "emissionIntensity": 0.35
-                },
-                {
-                  "state": "collected",
-                  "kind": "material",
-                  "textureTint": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ],
-                  "emissionColor": [
-                    0.0,
-                    0.0,
-                    0.0
-                  ],
-                  "emissionIntensity": 0.0
-                }
-              ]
-            }
-          },
-          "pickup": {
-            "item": "armor/impact-vest",
-            "quantity": 1
-          }
-        },
-        {
-          "id": 71,
-          "name": "doom-pickup-2015-41",
           "translation": [
             155.0,
             9.0,
@@ -209076,8 +208939,8 @@
           }
         },
         {
-          "id": 72,
-          "name": "doom-pickup-2015-42",
+          "id": 71,
+          "name": "doom-pickup-2015-41",
           "translation": [
             188.0,
             9.0,
@@ -209158,6 +209021,88 @@
           }
         },
         {
+          "id": 72,
+          "name": "doom-pickup-2049-42",
+          "translation": [
+            252.0,
+            6.0,
+            63.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/scatter-shells",
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
+          },
+          "pickup": {
+            "item": "ammo/shells",
+            "quantity": 20
+          }
+        },
+        {
           "id": 73,
           "name": "doom-pickup-2001-43",
           "translation": [
@@ -209235,8 +209180,12 @@
             }
           },
           "pickup": {
-            "item": "weapon/breach-scattergun",
-            "quantity": 1
+            "item": "weapon/shotgun",
+            "quantity": 1,
+            "starterAmmunition": {
+              "item": "ammo/shells",
+              "quantity": 8
+            }
           }
         },
         {
@@ -209323,7 +209272,89 @@
         },
         {
           "id": 75,
-          "name": "doom-pickup-2015-45",
+          "name": "doom-pickup-2049-45",
+          "translation": [
+            276.0,
+            15.5,
+            76.0
+          ],
+          "bounds": {
+            "min": [
+              -0.3,
+              -0.3,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "renderable": {
+            "asset": "mesh/prop-kit/scatter-shells",
+            "visible": true,
+            "visualBinding": {
+              "version": 1,
+              "states": [
+                {
+                  "state": "dormant",
+                  "kind": "material",
+                  "textureTint": [
+                    0.58,
+                    0.62,
+                    0.68,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.14,
+                    0.18
+                  ],
+                  "emissionIntensity": 0.04
+                },
+                {
+                  "state": "available",
+                  "kind": "material",
+                  "textureTint": [
+                    0.62,
+                    1.0,
+                    0.82,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.12,
+                    0.82,
+                    0.52
+                  ],
+                  "emissionIntensity": 0.35
+                },
+                {
+                  "state": "collected",
+                  "kind": "material",
+                  "textureTint": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  "emissionColor": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "emissionIntensity": 0.0
+                }
+              ]
+            }
+          },
+          "pickup": {
+            "item": "ammo/shells",
+            "quantity": 20
+          }
+        },
+        {
+          "id": 76,
+          "name": "doom-pickup-2015-46",
           "translation": [
             274.0,
             15.5,
@@ -209404,8 +209435,8 @@
           }
         },
         {
-          "id": 76,
-          "name": "doom-pickup-2015-46",
+          "id": 77,
+          "name": "doom-pickup-2015-47",
           "translation": [
             280.0,
             15.5,
@@ -209486,8 +209517,8 @@
           }
         },
         {
-          "id": 77,
-          "name": "doom-pickup-2015-47",
+          "id": 78,
+          "name": "doom-pickup-2015-48",
           "translation": [
             265.0,
             15.5,
@@ -209568,8 +209599,8 @@
           }
         },
         {
-          "id": 78,
-          "name": "doom-pickup-2015-48",
+          "id": 79,
+          "name": "doom-pickup-2015-49",
           "translation": [
             259.0,
             15.5,
@@ -209650,8 +209681,8 @@
           }
         },
         {
-          "id": 79,
-          "name": "doom-pickup-2015-49",
+          "id": 80,
+          "name": "doom-pickup-2015-50",
           "translation": [
             271.0,
             15.5,
@@ -209732,8 +209763,8 @@
           }
         },
         {
-          "id": 80,
-          "name": "doom-pickup-2015-50",
+          "id": 81,
+          "name": "doom-pickup-2015-51",
           "translation": [
             274.0,
             15.5,
@@ -209814,8 +209845,8 @@
           }
         },
         {
-          "id": 81,
-          "name": "doom-pickup-2015-51",
+          "id": 82,
+          "name": "doom-pickup-2015-52",
           "translation": [
             277.0,
             15.5,
@@ -209896,8 +209927,8 @@
           }
         },
         {
-          "id": 82,
-          "name": "doom-pickup-2015-52",
+          "id": 83,
+          "name": "doom-pickup-2015-53",
           "translation": [
             276.0,
             15.5,
@@ -209978,7 +210009,7 @@
           }
         },
         {
-          "id": 83,
+          "id": 84,
           "name": "doom-manual-door-sector-4",
           "translation": [
             144.5,
@@ -210096,7 +210127,7 @@
             "effects": [
               {
                 "kind": "openDoor",
-                "door": 83
+                "door": 84
               }
             ]
           },
@@ -210114,7 +210145,7 @@
           }
         },
         {
-          "id": 84,
+          "id": 85,
           "name": "doom-manual-door-sector-68",
           "translation": [
             231.0,
@@ -210232,7 +210263,7 @@
             "effects": [
               {
                 "kind": "openDoor",
-                "door": 84
+                "door": 85
               }
             ]
           },
@@ -210250,7 +210281,7 @@
           }
         },
         {
-          "id": 85,
+          "id": 86,
           "name": "doom-manual-door-sector-81",
           "translation": [
             236.0,
@@ -210368,7 +210399,7 @@
             "effects": [
               {
                 "kind": "openDoor",
-                "door": 85
+                "door": 86
               }
             ]
           },
@@ -210386,7 +210417,7 @@
           }
         },
         {
-          "id": 86,
+          "id": 87,
           "name": "doom-manual-door-sector-76",
           "translation": [
             236.0,
@@ -210504,7 +210535,7 @@
             "effects": [
               {
                 "kind": "openDoor",
-                "door": 86
+                "door": 87
               }
             ]
           },
@@ -210522,7 +210553,7 @@
           }
         },
         {
-          "id": 87,
+          "id": 88,
           "name": "doom-floor-platform-sector-59",
           "translation": [
             260.0,
@@ -210559,7 +210590,7 @@
           }
         },
         {
-          "id": 88,
+          "id": 89,
           "name": "doom-walk-floor-action-linedef-308",
           "translation": [
             236.0,
@@ -210579,7 +210610,7 @@
             ]
           },
           "floorAction": {
-            "targetPlatform": 87,
+            "targetPlatform": 88,
             "upperTranslation": [
               260.0,
               15.0,
@@ -210597,7 +210628,7 @@
           }
         },
         {
-          "id": 89,
+          "id": 90,
           "name": "doom-lift-platform-sector-70",
           "translation": [
             270.0,
@@ -210634,7 +210665,7 @@
           }
         },
         {
-          "id": 90,
+          "id": 91,
           "name": "doom-repeatable-lift-linedef-195",
           "translation": [
             229.25,
@@ -210654,7 +210685,7 @@
             ]
           },
           "lift": {
-            "targetPlatform": 89,
+            "targetPlatform": 90,
             "raisedTranslation": [
               270.0,
               15.5,
@@ -210673,7 +210704,7 @@
           }
         },
         {
-          "id": 91,
+          "id": 92,
           "name": "doom-exit",
           "translation": [
             230.0,
@@ -210728,7 +210759,7 @@
           }
         },
         {
-          "id": 92,
+          "id": 93,
           "name": "doom-secret-sector-68",
           "translation": [
             231.0,
@@ -210753,7 +210784,7 @@
           }
         },
         {
-          "id": 93,
+          "id": 94,
           "name": "doom-secret-sector-69",
           "translation": [
             252.0,
@@ -210778,7 +210809,7 @@
           }
         },
         {
-          "id": 94,
+          "id": 95,
           "name": "doom-secret-sector-70",
           "translation": [
             270.0,

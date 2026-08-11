@@ -222,6 +222,8 @@ export type ItemKindDefinition =
   | {
       readonly kind: "weapon";
       readonly attackMode: "hitscan" | "automatic";
+      readonly repeatWhileHeld?: boolean;
+      readonly damageRolls?: number;
       readonly pelletCount?: never;
       readonly spreadDegrees?: never;
       readonly damage: number;
@@ -235,6 +237,8 @@ export type ItemKindDefinition =
   | {
       readonly kind: "weapon";
       readonly attackMode: "spread";
+      readonly repeatWhileHeld?: boolean;
+      readonly damageRolls?: number;
       readonly pelletCount: number;
       readonly spreadDegrees: number;
       readonly damage: number;
@@ -248,6 +252,8 @@ export type ItemKindDefinition =
   | {
       readonly kind: "weapon";
       readonly attackMode: "projectile";
+      readonly repeatWhileHeld?: boolean;
+      readonly damageRolls?: number;
       readonly pelletCount?: never;
       readonly spreadDegrees?: never;
       readonly damage: number;

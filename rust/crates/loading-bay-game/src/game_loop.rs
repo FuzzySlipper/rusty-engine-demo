@@ -763,13 +763,16 @@ impl LoadingBayGameLoop {
         if !self.input.connected || DamageService::is_dead(self.runtime.session(), self.player) {
             return Ok(());
         }
-        let automatic_held = self.input.primary_fire_held
+        let repeating_held = self.input.primary_fire_held
             && self
                 .runtime
                 .session()
                 .weapon(self.player)
-                .is_some_and(|weapon| weapon.definition.attack_mode.is_automatic());
-        if !primary_fire_pressed && !automatic_held {
+                .is_some_and(|weapon| {
+                    weapon.definition.repeat_while_held
+                        || weapon.definition.attack_mode.is_automatic()
+                });
+        if !primary_fire_pressed && !repeating_held {
             return Ok(());
         }
         let equipped = self.runtime.session().weapon(self.player);

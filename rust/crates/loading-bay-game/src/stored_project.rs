@@ -108,6 +108,10 @@ pub struct StoredItemDefinition {
 pub enum StoredItemKind {
     Weapon {
         ammunition: String,
+        #[serde(default, skip_serializing_if = "is_false")]
+        repeat_while_held: bool,
+        #[serde(default = "default_damage_rolls", skip_serializing_if = "is_one_u8")]
+        damage_rolls: u8,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         attack_mode: Option<StoredWeaponAttackMode>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1122,6 +1126,8 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
     for (index, definition) in document.item_definitions.iter().enumerate() {
         let StoredItemKind::Weapon {
             ammunition,
+            repeat_while_held: _,
+            damage_rolls,
             attack_mode,
             pellet_count,
             spread_degrees,
@@ -1175,7 +1181,12 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             None => false,
         };
         let valid_weapon = valid_attack_mode
-            && damage.is_some_and(|value| (1..=MAX_WEAPON_DAMAGE).contains(&value))
+            && damage.is_some_and(|value| {
+                *damage_rolls > 0
+                    && value
+                        .checked_mul(u32::from(*damage_rolls))
+                        .is_some_and(|maximum| maximum <= MAX_WEAPON_DAMAGE)
+            })
             && max_distance
                 .is_some_and(|value| value.is_finite() && value > 0.0 && value <= MAX_WEAPON_RANGE)
             && cooldown_ticks.is_some_and(|value| value <= MAX_WEAPON_COOLDOWN_TICKS)
@@ -3006,6 +3017,14 @@ fn json_path(path: &str) -> String {
 
 fn is_false(value: &bool) -> bool {
     !value
+}
+
+fn default_damage_rolls() -> u8 {
+    1
+}
+
+fn is_one_u8(value: &u8) -> bool {
+    *value == 1
 }
 
 fn is_zero_u32(value: &u32) -> bool {

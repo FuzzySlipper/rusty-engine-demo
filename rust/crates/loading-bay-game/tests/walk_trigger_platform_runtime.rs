@@ -405,6 +405,17 @@ fn differently_named_lift_carries_its_rider_across_mid_raise_snapshot_reopen() {
 
 #[test]
 fn exact_e1m1_lift_carries_a_supported_rider_during_the_fixed_raise_phase() {
+    let project: serde_json::Value = serde_json::from_str(DOOM_PROJECT).unwrap();
+    let entities = project["scenes"][0]["entities"].as_array().unwrap();
+    let authored_id = |name: &str| {
+        entities
+            .iter()
+            .find(|entity| entity["name"] == name)
+            .and_then(|entity| entity["id"].as_u64())
+            .unwrap()
+    };
+    let platform = EntityId::new(authored_id("doom-lift-platform-sector-70"));
+    let lift_entity = EntityId::new(authored_id("doom-repeatable-lift-linedef-195"));
     let runtime = GameRuntime::from_stored_project(DOOM_PROJECT).unwrap();
     let mut snapshot = runtime.snapshot();
     snapshot
@@ -421,7 +432,7 @@ fn exact_e1m1_lift_carries_a_supported_rider_during_the_fixed_raise_phase() {
         .entities
         .entities
         .iter_mut()
-        .find(|entity| entity.id == 89)
+        .find(|entity| entity.id == platform.raw())
         .unwrap()
         .transform
         .as_mut()
@@ -437,7 +448,7 @@ fn exact_e1m1_lift_carries_a_supported_rider_during_the_fixed_raise_phase() {
     let lift = snapshot
         .lifts
         .iter_mut()
-        .find(|lift| lift.entity == 90)
+        .find(|lift| lift.entity == lift_entity.raw())
         .unwrap();
     lift.state = SnapshotLiftState::Raising;
     lift.motion_elapsed_ticks = 0;
@@ -449,7 +460,7 @@ fn exact_e1m1_lift_carries_a_supported_rider_during_the_fixed_raise_phase() {
     let platform_y = game_loop
         .runtime()
         .session()
-        .lift(EntityId::new(90))
+        .lift(lift_entity)
         .unwrap()
         .target_platform_view
         .transform
