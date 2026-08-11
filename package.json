@@ -10,6 +10,7 @@
     "build:tauri:binary": "tauri build --no-bundle",
     "capture:final": "node scripts/capture-final-product.mjs",
     "capture:camera-boundaries": "node scripts/capture-camera-boundary-evidence.mjs",
+    "certify:e1m1": "node scripts/doom-browser-smoke.mjs",
     "certify:performance": "node scripts/certify-headed-performance.mjs",
     "certify:tauri-deploy": "node scripts/certify-tauri-deployment.mjs",
     "check:content": "pnpm --filter @rusty-engine-demo/project-content check && node scripts/check-canonical-projects.mjs && node scripts/check-brush-kit.mjs && node scripts/check-brush-level.mjs && node scripts/check-wall-proxy-alignment.mjs && node scripts/check-prop-kit.mjs && node scripts/check-actor-kit.mjs && node scripts/check-visual-bindings.mjs && node scripts/check-renderable-grounding.mjs",
@@ -29,6 +30,7 @@
     "smoke:tauri": "node scripts/tauri-smoke.mjs",
     "prepare:brush-reproduction": "node scripts/prepare-brush-reproduction-project.mjs",
     "serve:den": "bash scripts/serve-den.sh",
+    "smoke:e1m1": "RUSTY_DOOM_SMOKE_FOCUSED=1 node scripts/doom-browser-smoke.mjs",
     "test:boundaries": "node scripts/test-boundaries.mjs",
     "test:performance-tools": "node --test scripts/profile-browser-build.test.mjs",
     "test:platform": "node --test libs/platform/src/*.test.ts",
@@ -37,7 +39,6 @@
     "test:tauri-deploy": "node --test scripts/deploy-tauri.test.mjs",
     "verify:tauri": "pnpm run test:tauri && pnpm run build:tauri:binary && pnpm run inspect:tauri && pnpm run smoke:tauri",
     "verify:native": "./scripts/verify-native-host.sh",
-    "test:browser": "RUSTY_BROWSER_CONTROL_ONLY=1 node scripts/browser-smoke.mjs",
     "test:ts": "pnpm --filter @rusty-engine-demo/project-content test",
     "typecheck": "tsc --build ts/tsconfig.json && pnpm --filter @rusty-engine-demo/browser-shell typecheck && nx run-many -t typecheck --all",
     "verify": "bash scripts/verify.sh"

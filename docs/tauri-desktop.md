@@ -158,7 +158,9 @@ a nonzero plugin-cleanup status after successful delegation.
 When the smoke owns an Xvfb session, it publishes that exact display for both the driver-owned primary
 and the directly spawned secondary shell; a secondary that cannot initialize the native display is
 therefore not mistaken for successful single-instance delegation.
-Set `--skip-campaign` only for focused iteration; the compatibility flag skips the installed browser
-control proof, is explicitly recorded as skipped, and is not release certification. The
-`verify-tauri` GitHub job performs the exact install and complete
-certification after building the Debian package, and uploads the receipts and screenshots.
+Installed certification runs the Tauri/WebDriver product proof once. Browser-only control campaigns
+are not part of package certification; use focused shell tests, `pnpm run smoke:e1m1`, or
+`pnpm run certify:e1m1` for their respective claims. The manual `certify Tauri release` GitHub
+workflow builds and installs the Debian package, certifies it, and uploads its receipts and
+screenshots. Routine `verify-tauri` checks the direct desktop build without producing release
+artifacts.

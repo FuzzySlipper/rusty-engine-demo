@@ -53,8 +53,5 @@ export class DiagnosticsScreenComponent {
       document.body.dataset.rendererLifecycle = "application-host-idle";
     }
     document.body.dataset.routeDisposal = disposed ? "pass" : "fail";
-    if (new URLSearchParams(location.search).has("lifecycle-smoke")) {
-      document.body.dataset.smokeStatus = disposed ? "pass" : "fail";
-    }
   }
 }

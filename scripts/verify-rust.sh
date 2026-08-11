@@ -15,10 +15,5 @@ fi
 grep -F 'rusty-engine = { path = "../rusty-engine/rust/crates/rusty-engine" }' Cargo.toml >/dev/null
 
 cargo metadata --format-version 1 --locked --no-deps > /dev/null
-cargo test --workspace --locked
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo run -q --locked -p loading-bay-game --bin headless-door > /dev/null
-cargo run -q --locked -p loading-bay-game --bin headless-encounter > /dev/null
-cargo run -q --locked -p loading-bay-game --bin headless-beacon > /dev/null
-cargo run -q --locked -p loading-bay-game --bin headless-beacon -- \
-  --project content/projects/relay-annex.project.json > /dev/null
+cargo test --locked -p loading-bay-game
+cargo clippy --locked -p loading-bay-game --all-targets -- -D warnings

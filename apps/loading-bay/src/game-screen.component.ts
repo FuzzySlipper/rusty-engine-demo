@@ -602,7 +602,6 @@ Awaiting session telemetry</pre
         <span id="renderer-status"
           >World rendering: Engine application host</span
         >
-        <span id="smoke-result" data-status="idle">Product proof idle</span>
       </footer>
     </main>
   `,
@@ -1192,9 +1191,6 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
         this.restoreModalFocus();
       }
       document.body.dataset.rendererLifecycle = "mounted";
-      if (new URLSearchParams(location.search).has("lifecycle-smoke")) {
-        await this.router.navigateByUrl("/diagnostics");
-      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.connectionState.set("unavailable");

@@ -112,10 +112,12 @@ Gameplay or policy rejection does not masquerade as transport loss.
 
 ## Product proof and measurement
 
-`pnpm run test:browser` drives realistic mouse look, held movement, weapon pickup and numeric
-selection, combat, interaction, restart, resource revision changes, reload, and disposal through a
-real Chromium/WebGL product. The page publishes session metrics in `data-session-*` attributes, and
-the proof requires:
+The former monolithic browser campaign drove realistic mouse look, held movement, weapon pickup,
+combat, restart, reload, and disposal through one Chromium run. That campaign was retired after its
+claims were split between focused browser-shell tests, Rust integration tests,
+`pnpm run verify:native`, `pnpm run smoke:e1m1`, and the desktop-host smoke. Session metrics remain
+available in `data-session-*` attributes for targeted diagnosis and performance certification. The
+historical campaign required:
 
 - held movement advances and then stops without starvation;
 - client input never exceeds one in-flight plus one pending frame;

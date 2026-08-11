@@ -42,8 +42,9 @@ mechanics authority is required.
 | `content/generated`                       | `content/generated`     | Copied unchanged for migration, encounter, controller, navigation, and workload tests.                                         |
 | `content/assets/kenney-wall-a.voxel.json` | same path               | Copied as the canonical converted-asset test input; later re-encoded through the current Engine voxel owner as recorded below. |
 
-Reusable Rust crates are not copied. Cargo consumes their packages directly from the exact Engine
-Git revision recorded in `Cargo.toml` and `Cargo.lock`.
+Reusable Rust crates are not copied. Cargo consumes the complete `rusty-engine` facade directly
+from the adjacent `/home/dev/rusty-engine` checkout through one unconditional path dependency. The
+downstream repository does not own an Engine version, pin, SHA, freshness check, or update helper.
 
 The original Engine repository contains the historical Asha donor provenance for low-level code.
 This repository records its immediate Engine source and does not recreate the old donor hierarchy or
@@ -51,14 +52,14 @@ runtime claims.
 
 ## M10B browser transfer
 
-| Local surface                                 | Source path | Treatment                                                                                                                                                             |
-| --------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ts/packages/project-content`                 | same path   | Copied as the immutable fixture composer and schema/assertion package, then narrowed under #6353 so it cannot reproduce or overwrite canonical Studio project scenes. |
-| `ts/packages/browser-shell`                   | same path   | Copied as the product-owned input, projection, feedback, and browser shell; imports renamed to the demo package scope.                                                |
-| `ts/packages/render-contracts`                | same path   | Initially copied into the demo; removed under #6162 after its complete successor became a shared exact-revision Engine package.                                       |
-| `ts/packages/renderer-three`                  | same path   | Initially copied into the demo; removed under #6162 after the retained Three/WebGL backend and browser surface moved behind shared Engine packages.                   |
-| `scripts/browser-smoke.mjs`                   | same path   | Copied as the end-to-end product proof; the Rust package invocation changed from the source product name to `loading-bay-game`.                                       |
-| Root pnpm, TypeScript, and Vite configuration | same paths  | Copied and narrowed to the demo-owned package identities and verification gate.                                                                                       |
+| Local surface                                 | Source path | Treatment                                                                                                                                                                  |
+| --------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ts/packages/project-content`                 | same path   | Copied as the immutable fixture composer and schema/assertion package, then narrowed under #6353 so it cannot reproduce or overwrite canonical Studio project scenes.      |
+| `ts/packages/browser-shell`                   | same path   | Copied as the product-owned input, projection, feedback, and browser shell; imports renamed to the demo package scope.                                                     |
+| `ts/packages/render-contracts`                | same path   | Initially copied into the demo; removed under #6162 after its complete successor became a shared exact-revision Engine package.                                            |
+| `ts/packages/renderer-three`                  | same path   | Initially copied into the demo; removed under #6162 after the retained Three/WebGL backend and browser surface moved behind shared Engine packages.                        |
+| `scripts/browser-smoke.mjs`                   | same path   | Initially copied as an end-to-end product proof; retired after focused shell, native-host, E1M1 renderer, and desktop-host checks took ownership of its useful assertions. |
+| Root pnpm, TypeScript, and Vite configuration | same paths  | Copied and narrowed to the demo-owned package identities and verification gate.                                                                                            |
 
 The browser packages initially moved together because all four served one product at extraction
 time. That intermediate direct renderer-package arrangement ended under task #6703. Only the

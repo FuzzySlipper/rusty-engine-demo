@@ -10,6 +10,7 @@ const actualRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const doomProject = join(actualRoot, "content/projects/doom-e1m1.project.json");
 const chromium = process.env.CHROMIUM_BIN ?? "/usr/bin/chromium";
 const updateEvidence = process.env.UPDATE_EVIDENCE === "1";
+const focused = process.env.RUSTY_DOOM_SMOKE_FOCUSED === "1";
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -645,229 +646,240 @@ async function main() {
         `Engine admitted ${content.frameOps} Rust frame ops with ${content.resourceCount} resources and rendered ${worldPixels.uniqueColors} sampled colors`,
       );
 
-      const traversalSamples = [];
-      await moveToWorldPoint(cdpClient, addr, [115.4, 78.6], traversalSamples);
-      const switchReady = await waitForAuthoritativeState(
-        addr,
-        "Doom switch in interaction range",
-        (candidate) => candidate.interaction?.target === 88,
-      );
-      console.log(
-        `switch ready tick=${switchReady.tick} position=${switchReady.player.position}`,
-      );
-      const promptDeadline = Date.now() + 5000;
-      let promptVisible = false;
-      while (Date.now() < promptDeadline) {
-        promptVisible = await cdpEvaluate(
+      if (focused) {
+        headless.playthrough = { status: "skipped", reason: "focused smoke" };
+        checks.push("full E1M1 traversal reserved for pnpm run certify:e1m1");
+      } else {
+        const traversalSamples = [];
+        await moveToWorldPoint(
           cdpClient,
-          `document.body?.innerText.includes('Activate doom switch 1') ?? false`,
-        ).catch(() => false);
-        if (promptVisible) break;
-        await delay(100);
-      }
-      if (!promptVisible) throw new Error("Doom switch prompt did not render");
-      const blockingModal = await cdpEvaluate(
-        cdpClient,
-        `document.querySelector('[data-active-modal]')?.textContent ?? null`,
-      );
-      if (blockingModal !== null) {
-        throw new Error(
-          `gameplay surface remained blocked after session replacement: ${String(blockingModal).slice(0, 500)}`,
+          addr,
+          [115.4, 78.6],
+          traversalSamples,
         );
-      }
-      for (let attempt = 0; attempt < 5; attempt += 1) {
-        await cdpEvaluate(
-          cdpClient,
-          `document.querySelector('button.interaction-prompt')?.click()`,
-        );
-        await delay(100);
-        const candidate = await fetchAuthoritativeState(addr);
-        const opened = candidate.projection?.some(
-          (entry) => entry.id === 83 && entry.visualState === "open",
+        const switchReady = await waitForAuthoritativeState(
+          addr,
+          "Doom switch in interaction range",
+          (candidate) => candidate.interaction?.target === 88,
         );
         console.log(
-          `switch key attempt=${attempt + 1} door83=${opened ? "open" : "closed"} input=${JSON.stringify(candidate.input)}`,
+          `switch ready tick=${switchReady.tick} position=${switchReady.player.position}`,
         );
-        if (opened) break;
-        await delay(150);
-      }
-      const switchActivated = await waitForAuthoritativeState(
-        addr,
-        "switch activation opens the authored Doom doors",
-        (candidate) =>
-          candidate.projection?.some(
+        const promptDeadline = Date.now() + 5000;
+        let promptVisible = false;
+        while (Date.now() < promptDeadline) {
+          promptVisible = await cdpEvaluate(
+            cdpClient,
+            `document.body?.innerText.includes('Activate doom switch 1') ?? false`,
+          ).catch(() => false);
+          if (promptVisible) break;
+          await delay(100);
+        }
+        if (!promptVisible)
+          throw new Error("Doom switch prompt did not render");
+        const blockingModal = await cdpEvaluate(
+          cdpClient,
+          `document.querySelector('[data-active-modal]')?.textContent ?? null`,
+        );
+        if (blockingModal !== null) {
+          throw new Error(
+            `gameplay surface remained blocked after session replacement: ${String(blockingModal).slice(0, 500)}`,
+          );
+        }
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          await cdpEvaluate(
+            cdpClient,
+            `document.querySelector('button.interaction-prompt')?.click()`,
+          );
+          await delay(100);
+          const candidate = await fetchAuthoritativeState(addr);
+          const opened = candidate.projection?.some(
             (entry) => entry.id === 83 && entry.visualState === "open",
-          ) &&
-          candidate.projection?.some(
-            (entry) => entry.id === 88 && entry.visualState === "active",
-          ),
-      );
-      checks.push(
-        `Chromium interaction control activated switch 88 and opened door at tick ${switchActivated.tick}`,
-      );
+          );
+          console.log(
+            `switch key attempt=${attempt + 1} door83=${opened ? "open" : "closed"} input=${JSON.stringify(candidate.input)}`,
+          );
+          if (opened) break;
+          await delay(150);
+        }
+        const switchActivated = await waitForAuthoritativeState(
+          addr,
+          "switch activation opens the authored Doom doors",
+          (candidate) =>
+            candidate.projection?.some(
+              (entry) => entry.id === 83 && entry.visualState === "open",
+            ) &&
+            candidate.projection?.some(
+              (entry) => entry.id === 88 && entry.visualState === "active",
+            ),
+        );
+        checks.push(
+          `Chromium interaction control activated switch 88 and opened door at tick ${switchActivated.tick}`,
+        );
 
-      const ammoBefore = switchActivated.weapon.ammoRemaining;
-      const viewportPresent = await cdpEvaluate(
-        cdpClient,
-        `document.getElementById('viewport') instanceof HTMLElement`,
-      );
-      if (!viewportPresent) throw new Error("Doom viewport missing");
-      await cdpEvaluate(
-        cdpClient,
-        `window.dispatchEvent(new MouseEvent('mousedown', {
+        const ammoBefore = switchActivated.weapon.ammoRemaining;
+        const viewportPresent = await cdpEvaluate(
+          cdpClient,
+          `document.getElementById('viewport') instanceof HTMLElement`,
+        );
+        if (!viewportPresent) throw new Error("Doom viewport missing");
+        await cdpEvaluate(
+          cdpClient,
+          `window.dispatchEvent(new MouseEvent('mousedown', {
           button: 0,
           buttons: 1,
           bubbles: true,
           cancelable: true
         }))`,
-      );
-      await delay(80);
-      await cdpEvaluate(
-        cdpClient,
-        `window.dispatchEvent(new MouseEvent('mouseup', {
+        );
+        await delay(80);
+        await cdpEvaluate(
+          cdpClient,
+          `window.dispatchEvent(new MouseEvent('mouseup', {
           button: 0,
           buttons: 0,
           bubbles: true,
           cancelable: true
         }))`,
-      );
-      const fired = await waitForAuthoritativeState(
-        addr,
-        "primary fire consumes authoritative ammunition",
-        (candidate) => candidate.weapon?.ammoRemaining < ammoBefore,
-      );
-      checks.push(
-        `Chromium Mouse0 fired ${fired.weapon.item} (${ammoBefore} -> ${fired.weapon.ammoRemaining})`,
-      );
-
-      // These points follow E1M1's admitted connected-sector corridor from
-      // the start room to the exit. Input remains ordinary WASD key events;
-      // the HTTP reads only certify the resulting Rust-owned state.
-      const exitRoute = [
-        [119, 78],
-        [119, 79],
-        [120, 79],
-        [120, 80],
-        [122, 80],
-        [122, 81],
-        [123, 81],
-        [123, 82],
-        [124, 82],
-        [124, 83],
-        [126, 83],
-        [126, 84],
-        [130, 84],
-        [130, 130],
-        [131, 130],
-        [131, 139],
-        [132, 139],
-        [132, 144],
-        [134, 144],
-        [134, 145],
-        [137, 145],
-        [137, 146],
-        [178, 146],
-        [178, 140],
-        [224, 140],
-        [224, 139],
-        [226, 139],
-        [226, 138],
-        [228, 138],
-        [228, 137],
-        [230, 137],
-        [230, 136],
-        [231, 136],
-        [231, 135],
-        [232, 135],
-        [232, 132],
-        [233, 132],
-        [233, 130],
-        [234, 130],
-        [234, 127],
-        [235, 127],
-        [235, 124],
-        [236, 124],
-        [236, 80],
-        [236, 40],
-        [236, 10],
-        [232, 10],
-      ];
-      for (const waypoint of exitRoute) {
-        const reached = await moveToWorldPoint(
-          cdpClient,
+        );
+        const fired = await waitForAuthoritativeState(
           addr,
-          waypoint,
-          traversalSamples,
+          "primary fire consumes authoritative ammunition",
+          (candidate) => candidate.weapon?.ammoRemaining < ammoBefore,
         );
-        console.log(
-          `route ${waypoint.join(",")} -> ${reached.player.position.join(",")} tick=${reached.tick}`,
+        checks.push(
+          `Chromium Mouse0 fired ${fired.weapon.item} (${ammoBefore} -> ${fired.weapon.ammoRemaining})`,
         );
+
+        // These points follow E1M1's admitted connected-sector corridor from
+        // the start room to the exit. Input remains ordinary WASD key events;
+        // the HTTP reads only certify the resulting Rust-owned state.
+        const exitRoute = [
+          [119, 78],
+          [119, 79],
+          [120, 79],
+          [120, 80],
+          [122, 80],
+          [122, 81],
+          [123, 81],
+          [123, 82],
+          [124, 82],
+          [124, 83],
+          [126, 83],
+          [126, 84],
+          [130, 84],
+          [130, 130],
+          [131, 130],
+          [131, 139],
+          [132, 139],
+          [132, 144],
+          [134, 144],
+          [134, 145],
+          [137, 145],
+          [137, 146],
+          [178, 146],
+          [178, 140],
+          [224, 140],
+          [224, 139],
+          [226, 139],
+          [226, 138],
+          [228, 138],
+          [228, 137],
+          [230, 137],
+          [230, 136],
+          [231, 136],
+          [231, 135],
+          [232, 135],
+          [232, 132],
+          [233, 132],
+          [233, 130],
+          [234, 130],
+          [234, 127],
+          [235, 127],
+          [235, 124],
+          [236, 124],
+          [236, 80],
+          [236, 40],
+          [236, 10],
+          [232, 10],
+        ];
+        for (const waypoint of exitRoute) {
+          const reached = await moveToWorldPoint(
+            cdpClient,
+            addr,
+            waypoint,
+            traversalSamples,
+          );
+          console.log(
+            `route ${waypoint.join(",")} -> ${reached.player.position.join(",")} tick=${reached.tick}`,
+          );
+        }
+        await moveToWorldPoint(cdpClient, addr, [231.3, 7.1], traversalSamples);
+        const exitReady = await waitForAuthoritativeState(
+          addr,
+          "Doom exit in interaction range",
+          (candidate) => candidate.interaction?.target === 89,
+        );
+        await cdpEvaluate(
+          cdpClient,
+          `document.querySelector('button.interaction-prompt')?.click()`,
+        );
+        const completed = await waitForAuthoritativeState(
+          addr,
+          "Doom exit completion",
+          (candidate) =>
+            candidate.levelComplete === true &&
+            candidate.levelExits?.some(
+              (entry) =>
+                entry.id === 89 &&
+                entry.state === "completed" &&
+                entry.completedBy === 1 &&
+                entry.completedAtTick !== null,
+            ),
+        );
+        const traversalHeights = traversalSamples.map(
+          (sample) => sample.position[1],
+        );
+        const minHeight = Math.min(...traversalHeights);
+        const maxHeight = Math.max(...traversalHeights);
+        const terrainContacts = traversalSamples
+          .map((sample) => sample.terrainContact)
+          .filter(Boolean);
+        const admittedFloorLevels = [
+          ...new Set(terrainContacts.map((contact) => contact.surfaceY)),
+        ].sort((left, right) => left - right);
+        if (terrainContacts.length !== traversalSamples.length) {
+          throw new Error(
+            `authoritative terrain contact missing from ${traversalSamples.length - terrainContacts.length} traversal samples`,
+          );
+        }
+        if (admittedFloorLevels.length < 2) {
+          throw new Error(
+            `route did not traverse distinct admitted floor levels: ${JSON.stringify(admittedFloorLevels)}`,
+          );
+        }
+        checks.push(
+          `Rust terrain-contact readback proved ${admittedFloorLevels.length} admitted E1M1 floor levels (${admittedFloorLevels.join(", ")})`,
+        );
+        checks.push(
+          `Chromium interaction control completed exit 89 at tick ${completed.levelExits.find((entry) => entry.id === 89).completedAtTick}`,
+        );
+        headless.playthrough = {
+          initialPosition: state.player.position,
+          switchPosition: switchReady.player.position,
+          firedAmmo: {
+            before: ammoBefore,
+            after: fired.weapon.ammoRemaining,
+          },
+          traversalSampleCount: traversalSamples.length,
+          traversalHeightRange: [minHeight, maxHeight],
+          admittedFloorLevels,
+          terrainContacts,
+          authoredFloorHeights: [0, -8, -16, -24],
+          finalPosition: completed.player.position,
+          completedExit: completed.levelExits.find((entry) => entry.id === 89),
+        };
       }
-      await moveToWorldPoint(cdpClient, addr, [231.3, 7.1], traversalSamples);
-      const exitReady = await waitForAuthoritativeState(
-        addr,
-        "Doom exit in interaction range",
-        (candidate) => candidate.interaction?.target === 89,
-      );
-      await cdpEvaluate(
-        cdpClient,
-        `document.querySelector('button.interaction-prompt')?.click()`,
-      );
-      const completed = await waitForAuthoritativeState(
-        addr,
-        "Doom exit completion",
-        (candidate) =>
-          candidate.levelComplete === true &&
-          candidate.levelExits?.some(
-            (entry) =>
-              entry.id === 89 &&
-              entry.state === "completed" &&
-              entry.completedBy === 1 &&
-              entry.completedAtTick !== null,
-          ),
-      );
-      const traversalHeights = traversalSamples.map(
-        (sample) => sample.position[1],
-      );
-      const minHeight = Math.min(...traversalHeights);
-      const maxHeight = Math.max(...traversalHeights);
-      const terrainContacts = traversalSamples
-        .map((sample) => sample.terrainContact)
-        .filter(Boolean);
-      const admittedFloorLevels = [
-        ...new Set(terrainContacts.map((contact) => contact.surfaceY)),
-      ].sort((left, right) => left - right);
-      if (terrainContacts.length !== traversalSamples.length) {
-        throw new Error(
-          `authoritative terrain contact missing from ${traversalSamples.length - terrainContacts.length} traversal samples`,
-        );
-      }
-      if (admittedFloorLevels.length < 2) {
-        throw new Error(
-          `route did not traverse distinct admitted floor levels: ${JSON.stringify(admittedFloorLevels)}`,
-        );
-      }
-      checks.push(
-        `Rust terrain-contact readback proved ${admittedFloorLevels.length} admitted E1M1 floor levels (${admittedFloorLevels.join(", ")})`,
-      );
-      checks.push(
-        `Chromium interaction control completed exit 89 at tick ${completed.levelExits.find((entry) => entry.id === 89).completedAtTick}`,
-      );
-      headless.playthrough = {
-        initialPosition: state.player.position,
-        switchPosition: switchReady.player.position,
-        firedAmmo: {
-          before: ammoBefore,
-          after: fired.weapon.ammoRemaining,
-        },
-        traversalSampleCount: traversalSamples.length,
-        traversalHeightRange: [minHeight, maxHeight],
-        admittedFloorLevels,
-        terrainContacts,
-        authoredFloorHeights: [0, -8, -16, -24],
-        finalPosition: completed.player.position,
-        completedExit: completed.levelExits.find((entry) => entry.id === 89),
-      };
       if (finalLc !== "mounted" || !webglDiag.startsWith("has-gl renderer=")) {
         headless.error = `unexpected browser renderer surface lifecycle=${finalLc} webgl=${webglDiag}`;
         console.log(headless.error);

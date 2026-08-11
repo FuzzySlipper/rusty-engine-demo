@@ -675,7 +675,7 @@ From a clean checkout at the exact revision:
 pnpm install --frozen-lockfile
 pnpm run check:content
 pnpm run build:shell
-pnpm run test:browser
+pnpm run verify:native
 pnpm run profile:desktop
 RUSTY_ENGINE_DEMO_URL=http://192.168.1.22:37300/ pnpm run certify:performance
 wayland-info

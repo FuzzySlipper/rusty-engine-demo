@@ -46,8 +46,9 @@ inert item whose existing `ItemKind` already expresses its meaning.
 4. Update the semantic artifact assertions in `encounter-project.test.ts` and the Rust
    pickup/inventory tests in `rust/crates/loading-bay-game/tests/` when the shipped baseline
    changes.
-5. For visible content, update `docs/source-provenance.md` and make
-   `pnpm run test:browser` walk through the accepted Rust pickup.
+5. For visible content, update `docs/source-provenance.md` and run the focused Rust test plus
+   `pnpm run verify:native`; add a product smoke only when the native boundary cannot prove the new
+   behavior.
 
 Rust admission is in `stored_project.rs` and `project_admission.rs`; Loading Bay item identities,
 kinds, definitions, slot/cooldown policy, and command translation are in `inventory.rs`.
@@ -284,8 +285,9 @@ cadence, presentation identity, encounter membership, or deterministic drop is e
    fallback for shipped content.
 4. Cover activation, tactical configuration, exact-once drop, reset, and snapshot reopen in
    `enemy_archetype_runtime.rs` and `enemy_combat_runtime.rs`.
-5. Exercise the variant in `test:browser`; update `docs/source-provenance.md` for the original or
-   permissively licensed source of every new visual/audio asset.
+5. Exercise the variant in its focused Rust integration test and `pnpm run verify:native`; update
+   `docs/source-provenance.md` for the original or permissively licensed source of every new
+   visual/audio asset.
 
 Bay Rusher, Arc Warden, and the Relay Annex health/navigation tuning use this path. They share the
 same named Rust phases and services; there is no enemy subclass registry.
@@ -407,7 +409,6 @@ pnpm run test:boundaries
 pnpm run lint
 pnpm run typecheck
 pnpm run build:shell
-pnpm run test:browser
 pnpm run audit:boundary
 pnpm run verify
 ```

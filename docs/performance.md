@@ -337,8 +337,8 @@ Storage, and the locked door, then expired at the unchanged 300-second campaign 
 but one input remained pending and the later campaign, save, fresh-host, and lifecycle evidence was
 never reached.
 
-A matching four-core local run (`taskset -c 0-3 pnpm run test:browser`) on the compaction-only
-provider completed gameplay, progression, checkpoint, and save but failed the unchanged transport
+A matching four-core local run of the now-retired browser campaign on the compaction-only provider
+completed gameplay, progression, checkpoint, and save but failed the unchanged transport
 budget at 2,755.9 ms maximum RTT. During that run the SwiftShader GPU process consumed approximately
 304% CPU, the Chromium renderer 51%, and the Rust host 38%, saturating the four assigned cores. A
 later mutation-demand provider reduced the failure to 2,479.3 ms but still could not observe when
@@ -604,6 +604,6 @@ shell-crash orphan cleanup, and full/narrow screenshots. Certification also runs
 HUD/control shell against the installed sidecar and installed Web assets, reads authoritative Rust
 state, and proves that the browser owns neither a canvas nor renderer/input authority. Native input,
 picking, resize, reset, remount, resource rendering, save round-trip, and disposal remain certified
-by the Engine-owned native host. The exact-revision `verify-tauri` artifact
-`tauri-deployment-evidence.json` is the final release evidence; a focused run with
-`--skip-campaign` is explicitly non-certifying.
+by the Engine-owned native host. `tauri-deployment-evidence.json` is the final installed-release
+evidence. Its Tauri/WebDriver run owns the packaged product claim; it does not repeat a browser-only
+control campaign.

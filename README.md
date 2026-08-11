@@ -85,8 +85,10 @@ pnpm run verify
 ```
 
 It checks package and repository boundaries, TypeScript content and browser-shell tests, the
-adjacent Engine facade and bundled application host, the complete Rust suite and Clippy, the
-Engine-owned native adapter proof, and retained browser/Tauri product flows.
+adjacent Engine facade and bundled application host, the downstream gameplay crate and Clippy, the
+Engine-owned native adapter proof, and a focused E1M1 mount/content/pixel smoke. Desktop verification
+is a separate CI job; long E1M1 traversal and installed-package certification are explicit release
+operations. See [docs/ci-smoke-inventory.md](docs/ci-smoke-inventory.md).
 For Rust-only iteration, `./scripts/verify-rust.sh` remains available.
 
 For focused diagnosis:
@@ -94,7 +96,8 @@ For focused diagnosis:
 ```bash
 pnpm run check:content       # generated fixtures match; canonical projects Rust-admit and round-trip
 pnpm run test:shell          # protocol, projection, input, and presentation units
-pnpm run test:browser        # real Chromium campaign and lifecycle proof
+pnpm run smoke:e1m1          # menu selection, Engine mount, Rust content, and visible canvas pixels
+pnpm run certify:e1m1        # explicit full switch/combat/traversal/exit certification
 pnpm run audit:boundary      # adjacent facades and forbidden downstream shortcuts
 ```
 

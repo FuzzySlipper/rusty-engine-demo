@@ -23,8 +23,6 @@ const narrowScreenshotPath = resolve(
   process.env.TAURI_SMOKE_NARROW_SCREENSHOT ??
     "target/tauri-installed-smoke-narrow.png",
 );
-const skipBrowserControl = process.argv.includes("--skip-campaign");
-
 const status = JSON.parse(
   await runCapture(process.execPath, ["scripts/deploy-tauri.mjs", "status"]),
 );
@@ -39,24 +37,6 @@ if (release?.sourceRevision === undefined) {
 }
 const currentRoot = resolve(status.installRoot, "current");
 const application = resolve(currentRoot, "usr/bin/loading-bay-desktop");
-const sidecar = resolve(currentRoot, "usr/bin/loading-bay-browser-host");
-
-let browserControlOutput = "";
-if (!skipBrowserControl) {
-  await run(
-    process.execPath,
-    ["scripts/browser-smoke.mjs"],
-    {
-      ...process.env,
-      RUSTY_ENGINE_DEMO_HOST_BINARY: sidecar,
-      RUSTY_BROWSER_CONTROL_ONLY: "1",
-    },
-    (chunk) => {
-      browserControlOutput += chunk;
-      process.stdout.write(chunk);
-    },
-  );
-}
 await run(process.execPath, ["scripts/tauri-smoke.mjs"], {
   ...process.env,
   TAURI_APPLICATION: application,
@@ -67,7 +47,7 @@ await run(process.execPath, ["scripts/tauri-smoke.mjs"], {
 
 const smoke = JSON.parse(readFileSync(smokeEvidencePath, "utf8"));
 const evidence = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   certifiedAt: new Date().toISOString(),
   sourceRevision: release.sourceRevision,
   activeRelease: status.active,
@@ -87,15 +67,6 @@ const evidence = {
   },
   native: smoke,
   desktopEntry,
-  browserControl: skipBrowserControl
-    ? { status: "skipped", reason: "--skip-campaign" }
-    : {
-        status: "passed",
-        hostBinary: sidecar,
-        authority:
-          "HUD and control shell served by the exact installed sidecar and package resources; rendering remains in the native Engine host",
-        proof: proofFromOutput(browserControlOutput, "browser-control proof"),
-      },
 };
 mkdirSync(dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, `${JSON.stringify(evidence, null, 2)}\n`);
@@ -108,21 +79,6 @@ function directoryBytes(path) {
     throw new Error(`could not measure installed bytes for ${path}`);
   }
   return bytes;
-}
-
-function proofFromOutput(output, prefix) {
-  const line = output
-    .split("\n")
-    .find((candidate) => candidate.startsWith(`${prefix} `));
-  if (line === undefined) throw new Error(`campaign did not emit ${prefix}`);
-  const start = line.indexOf("{");
-  let depth = 0;
-  for (let index = start; index < line.length; index += 1) {
-    if (line[index] === "{") depth += 1;
-    if (line[index] === "}") depth -= 1;
-    if (depth === 0) return JSON.parse(line.slice(start, index + 1));
-  }
-  throw new Error(`campaign emitted malformed ${prefix}`);
 }
 
 function runSync(command, args) {

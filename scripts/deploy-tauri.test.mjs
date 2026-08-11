@@ -38,6 +38,7 @@ function fixture(root, revision, label) {
     join(packageRoot, "DEBIAN/control"),
     `Package: loading-bay-${label}\nVersion: 0.1.0\nArchitecture: amd64\nMaintainer: test\nDescription: deployment fixture\n`,
   );
+  chmodSync(join(packageRoot, "DEBIAN"), 0o755);
   write(application, `desktop-${label}`, 0o755);
   write(sidecar, `sidecar-${label}`, 0o755);
   write(web, `<title>${label}</title>`);

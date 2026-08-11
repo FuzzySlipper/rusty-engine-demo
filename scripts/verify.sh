@@ -14,5 +14,4 @@ pnpm run test:performance-tools
 pnpm run build:shell
 ./scripts/verify-rust.sh
 ./scripts/verify-native-host.sh
-node scripts/doom-browser-smoke.mjs
-pnpm run test:browser
+pnpm run smoke:e1m1
