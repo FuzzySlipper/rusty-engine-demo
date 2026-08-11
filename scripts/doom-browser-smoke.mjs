@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -11,6 +11,19 @@ const doomProject = join(actualRoot, "content/projects/doom-e1m1.project.json");
 const chromium = process.env.CHROMIUM_BIN ?? "/usr/bin/chromium";
 const updateEvidence = process.env.UPDATE_EVIDENCE === "1";
 const focused = process.env.RUSTY_DOOM_SMOKE_FOCUSED === "1";
+const traversalEvidence = process.env.RUSTY_DOOM_TRAVERSAL_EVIDENCE === "1";
+const traversalEvidenceDir = process.env.RUSTY_DOOM_EVIDENCE_DIR ?? null;
+
+if (focused && traversalEvidence) {
+  throw new Error(
+    "focused smoke and traversal evidence modes are mutually exclusive",
+  );
+}
+if (traversalEvidence && traversalEvidenceDir === null) {
+  throw new Error(
+    "RUSTY_DOOM_EVIDENCE_DIR is required for traversal evidence mode",
+  );
+}
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -230,6 +243,7 @@ const keyIdentity = {
   KeyS: { key: "s", virtualKeyCode: 83 },
   KeyD: { key: "d", virtualKeyCode: 68 },
   KeyE: { key: "e", virtualKeyCode: 69 },
+  Space: { key: " ", virtualKeyCode: 32 },
 };
 
 async function dispatchKey(client, type, code) {
@@ -257,7 +271,15 @@ async function pulseKeys(client, codes, milliseconds = 140) {
   await delay(60);
 }
 
-async function proveFocusedHeldMovement(client, addr) {
+async function holdKeys(client, codes, milliseconds) {
+  for (const code of codes) await dispatchKey(client, "keyDown", code);
+  await delay(milliseconds);
+  for (const code of [...codes].reverse())
+    await dispatchKey(client, "keyUp", code);
+  await delay(60);
+}
+
+async function focusGameplayCanvas(client) {
   const gameplayDeadline = Date.now() + 20_000;
   let interactionMode = null;
   while (Date.now() < gameplayDeadline) {
@@ -277,7 +299,7 @@ async function proveFocusedHeldMovement(client, addr) {
     client,
     `document.querySelector('canvas')?.focus({ preventScroll: true })`,
   );
-  const inputSurface = await cdpEvaluate(
+  return cdpEvaluate(
     client,
     `(() => {
       const canvas = document.querySelector('canvas');
@@ -289,6 +311,10 @@ async function proveFocusedHeldMovement(client, addr) {
       };
     })()`,
   );
+}
+
+async function proveFocusedHeldMovement(client, addr) {
+  const inputSurface = await focusGameplayCanvas(client);
   const beforeHold = await fetchAuthoritativeState(addr);
   await dispatchKey(client, "keyDown", "KeyW");
   await delay(450);
@@ -318,7 +344,13 @@ function horizontalDistance(left, right) {
   return Math.hypot(right[0] - left[0], right[2] - left[2]);
 }
 
-async function moveToWorldPoint(client, addr, target, traversalSamples) {
+async function moveToWorldPoint(
+  client,
+  addr,
+  target,
+  traversalSamples,
+  { singleHold = false, arrivalDistance = 0.7 } = {},
+) {
   const deadline = Date.now() + 30000;
   let previousDistance = Number.POSITIVE_INFINITY;
   let stalledPulses = 0;
@@ -338,7 +370,7 @@ async function moveToWorldPoint(client, addr, target, traversalSamples) {
     const dx = target[0] - x;
     const dz = target[1] - z;
     const distance = Math.hypot(dx, dz);
-    if (distance <= 0.7) return state;
+    if (distance <= arrivalDistance) return state;
 
     // Resolve the world-space route into the admitted Rust player heading.
     // This keeps the smoke valid when the Doom-to-Engine angle conversion is
@@ -355,7 +387,12 @@ async function moveToWorldPoint(client, addr, target, traversalSamples) {
     } else if (Math.abs(localRight) > 0.45) {
       codes.push(localRight > 0 ? "KeyD" : "KeyA");
     }
-    await pulseKeys(client, codes, distance < 2 ? 80 : 500);
+    const holdMilliseconds =
+      distance < 2
+        ? 80
+        : Math.min(2_000, Math.max(500, (distance / 6) * 1_000));
+    if (singleHold) await holdKeys(client, codes, holdMilliseconds);
+    else await pulseKeys(client, codes, distance < 2 ? 80 : 500);
 
     stalledPulses = distance >= previousDistance - 0.03 ? stalledPulses + 1 : 0;
     previousDistance = distance;
@@ -370,6 +407,172 @@ async function moveToWorldPoint(client, addr, target, traversalSamples) {
   );
 }
 
+async function captureCanvasEvidence(client, canvasBounds, path) {
+  const shot = await client.send("Page.captureScreenshot", {
+    format: "png",
+    clip: { ...canvasBounds, scale: 1 },
+  });
+  const bytes = Buffer.from(shot.data, "base64");
+  writeFileSync(path, bytes);
+  return bytes.length;
+}
+
+async function proveLandmarkTraversal(client, addr, canvasBounds, evidenceDir) {
+  mkdirSync(evidenceDir, { recursive: true });
+  const inputSurface = await focusGameplayCanvas(client);
+  const traversalSamples = [];
+  const l1 = await fetchAuthoritativeState(addr);
+  if (
+    horizontalDistance(l1.player.position, [114, l1.player.position[1], 78]) >
+    0.8
+  ) {
+    throw new Error(`L1 start mismatch: ${JSON.stringify(l1.player.position)}`);
+  }
+  const l1Screenshot = join(evidenceDir, "l1-start-room.png");
+  const l1ScreenshotBytes = await captureCanvasEvidence(
+    client,
+    canvasBounds,
+    l1Screenshot,
+  );
+
+  await moveToWorldPoint(client, addr, [115.4, 78.6], traversalSamples, {
+    singleHold: true,
+  });
+  await waitForAuthoritativeState(
+    addr,
+    "Doom start switch in interaction range",
+    (candidate) => candidate.interaction?.target === 88,
+  );
+  await holdKeys(client, ["KeyE"], 80);
+  await waitForAuthoritativeState(
+    addr,
+    "physical interact input opens the authored start door",
+    (candidate) =>
+      candidate.projection?.some(
+        (entry) => entry.id === 83 && entry.visualState === "open",
+      ),
+  );
+
+  const l1ToL2Route = [
+    [92, 102],
+    [79, 102],
+    [67, 100],
+    [66, 102],
+    [64, 102],
+    [62, 102],
+    [60, 102],
+    [58, 102],
+    [56, 102],
+    [44, 102],
+    [34, 100],
+    [34, 102],
+  ];
+  for (const waypoint of l1ToL2Route) {
+    const reached = await moveToWorldPoint(
+      client,
+      addr,
+      waypoint,
+      traversalSamples,
+      { singleHold: true, arrivalDistance: 1.5 },
+    );
+    console.log(
+      `landmark route ${waypoint.join(",")} -> ${reached.player.position.join(",")} tick=${reached.tick}`,
+    );
+  }
+  const l2 = await fetchAuthoritativeState(addr);
+  if (
+    horizontalDistance(l2.player.position, [34, l2.player.position[1], 102]) >
+    0.8
+  ) {
+    throw new Error(
+      `L2 arrival mismatch: ${JSON.stringify(l2.player.position)}`,
+    );
+  }
+  const l2Screenshot = join(evidenceDir, "l2-green-armor-court.png");
+  const l2ScreenshotBytes = await captureCanvasEvidence(
+    client,
+    canvasBounds,
+    l2Screenshot,
+  );
+
+  await holdKeys(client, ["Space"], 80);
+  const airborne = await waitForAuthoritativeState(
+    addr,
+    "physical Space input starts an authored jump",
+    (candidate) =>
+      candidate.player?.grounded === false &&
+      candidate.player?.verticalVelocity > 0,
+  );
+  const landed = await waitForAuthoritativeState(
+    addr,
+    "jump lands at L2",
+    (candidate) =>
+      candidate.tick > airborne.tick &&
+      candidate.player?.grounded === true &&
+      Math.abs(candidate.player?.verticalVelocity ?? Number.POSITIVE_INFINITY) <
+        0.001,
+  );
+  const landedScreenshot = join(evidenceDir, "l2-after-jump-landing.png");
+  const landedScreenshotBytes = await captureCanvasEvidence(
+    client,
+    canvasBounds,
+    landedScreenshot,
+  );
+
+  const terrainContacts = traversalSamples
+    .map((sample) => sample.terrainContact)
+    .filter(Boolean);
+  const admittedFloorLevels = [
+    ...new Set(terrainContacts.map((contact) => contact.surfaceY)),
+  ].sort((left, right) => left - right);
+  if (terrainContacts.length !== traversalSamples.length) {
+    throw new Error(
+      "authoritative terrain contact was absent during landmark traversal",
+    );
+  }
+  if (admittedFloorLevels.length < 2) {
+    throw new Error(
+      `L1-L2 route did not traverse distinct admitted floor levels: ${JSON.stringify(admittedFloorLevels)}`,
+    );
+  }
+  return {
+    inputSurface,
+    landmarks: {
+      L1: {
+        position: l1.player.position,
+        terrainContact: l1.player.terrainContact,
+      },
+      L2: {
+        position: l2.player.position,
+        terrainContact: l2.player.terrainContact,
+      },
+    },
+    route: l1ToL2Route,
+    traversalSampleCount: traversalSamples.length,
+    admittedFloorLevels,
+    jump: {
+      airborne: {
+        tick: airborne.tick,
+        position: airborne.player.position,
+        verticalVelocity: airborne.player.verticalVelocity,
+      },
+      landed: {
+        tick: landed.tick,
+        position: landed.player.position,
+        verticalVelocity: landed.player.verticalVelocity,
+      },
+    },
+    artifacts: {
+      l1Screenshot: { path: l1Screenshot, bytes: l1ScreenshotBytes },
+      l2Screenshot: { path: l2Screenshot, bytes: l2ScreenshotBytes },
+      landedScreenshot: {
+        path: landedScreenshot,
+        bytes: landedScreenshotBytes,
+      },
+    },
+  };
+}
+
 async function main() {
   const port = await reservePort();
   const addr = `127.0.0.1:${port}`;
@@ -380,6 +583,7 @@ async function main() {
   let cdpClient = null;
   let debugPort = null;
   let profileDir = null;
+  let profileRemoved = false;
   try {
     await waitForHealth(`http://${addr}/health`, host, getOut);
     console.log(`health ok ${getOut().slice(-400)}`);
@@ -704,7 +908,21 @@ async function main() {
         `Engine admitted ${content.frameOps} Rust frame ops with ${content.resourceCount} resources and rendered ${worldPixels.uniqueColors} sampled colors`,
       );
 
-      if (focused) {
+      if (traversalEvidence) {
+        const landmarkProof = await proveLandmarkTraversal(
+          cdpClient,
+          addr,
+          canvasBounds,
+          traversalEvidenceDir,
+        );
+        headless.playthrough = landmarkProof;
+        checks.push(
+          `physical controls traversed L1 ${landmarkProof.landmarks.L1.position.join(",")} to L2 ${landmarkProof.landmarks.L2.position.join(",")} across admitted floor levels ${landmarkProof.admittedFloorLevels.join(", ")}`,
+        );
+        checks.push(
+          `physical Space jump left ground at tick ${landmarkProof.jump.airborne.tick} and landed at tick ${landmarkProof.jump.landed.tick}`,
+        );
+      } else if (focused) {
         const inputProof = await proveFocusedHeldMovement(cdpClient, addr);
         headless.playthrough = { status: "skipped", reason: "focused smoke" };
         headless.input = inputProof;
@@ -969,7 +1187,15 @@ async function main() {
       if (profileDir)
         try {
           rmSync(profileDir, { recursive: true, force: true });
+          profileRemoved = true;
         } catch {}
+    }
+
+    if (traversalEvidence && headless.playthrough) {
+      headless.playthrough.cleanup = {
+        browserClosed: chromiumProc?.exitCode !== null,
+        profileRemoved,
+      };
     }
 
     if (
@@ -989,6 +1215,17 @@ async function main() {
     const evidence = {
       kind: "doom-browser-smoke.v1",
       generatedAt: new Date().toISOString(),
+      revision: {
+        head: spawnSync("git", ["rev-parse", "HEAD"], {
+          cwd: actualRoot,
+          encoding: "utf8",
+        }).stdout.trim(),
+        clean:
+          spawnSync("git", ["status", "--porcelain"], {
+            cwd: actualRoot,
+            encoding: "utf8",
+          }).stdout.trim().length === 0,
+      },
       host: {
         projectId: "doom-e1m1",
         assets: 150,
@@ -1011,6 +1248,11 @@ async function main() {
         actualRoot,
         "docs/evidence/doom-e1m1-browser-smoke.json",
       );
+      writeFileSync(outPath, JSON.stringify(evidence, null, 2) + "\n", "utf8");
+      console.log(`wrote ${outPath}`);
+    }
+    if (traversalEvidence) {
+      const outPath = resolve(traversalEvidenceDir, "playtest-index.json");
       writeFileSync(outPath, JSON.stringify(evidence, null, 2) + "\n", "utf8");
       console.log(`wrote ${outPath}`);
     }
