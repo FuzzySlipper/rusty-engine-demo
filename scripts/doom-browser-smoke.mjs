@@ -1094,7 +1094,32 @@ async function physicallyAimAtEnemy(
       Math.abs(yawError) <= toleranceDegrees &&
       Math.abs(pitchError) <= toleranceDegrees
     ) {
-      break;
+      await delay(250);
+      const settled = await fetchAuthoritativeState(addr);
+      const settledEnemy = settled.enemies.find(
+        (candidate) => candidate.id === enemyId,
+      );
+      if (settledEnemy?.state === "alive") {
+        dx = settledEnemy.position[0] - settled.player.position[0];
+        dz = settledEnemy.position[2] - settled.player.position[2];
+        desiredYaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
+        desiredPitch =
+          (Math.atan2(
+            settledEnemy.position[1] - settled.player.position[1],
+            Math.hypot(dx, dz),
+          ) *
+            180) /
+          Math.PI;
+      }
+      state = settled;
+      if (
+        Math.abs(normalizeDegrees(desiredYaw - state.player.yawDegrees)) <=
+          toleranceDegrees &&
+        Math.abs(desiredPitch - state.player.pitchDegrees) <= toleranceDegrees
+      ) {
+        break;
+      }
+      continue;
     }
     const degreesPerPointerUnit = encounterExitEvidence ? 0.24 : 0.12;
     const movementX = Math.max(
