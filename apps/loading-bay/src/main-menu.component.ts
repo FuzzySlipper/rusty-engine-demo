@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   signal,
 } from "@angular/core";
@@ -24,11 +25,8 @@ import {
       <section class="main-menu-card" aria-labelledby="game-title">
         <header>
           <p class="eyebrow">Rusty Engine downstream reference game</p>
-          <h1 id="game-title">LOADING BAY</h1>
-          <p>
-            Clear the security encounter, recover field equipment, and bring the
-            extraction beacon online.
-          </p>
+          <h1 id="game-title">{{ projectPresentation().title }}</h1>
+          <p>{{ projectPresentation().summary }}</p>
         </header>
 
         <nav aria-label="Main menu">
@@ -108,9 +106,9 @@ import {
             >. A scene card is enabled only when the host is already serving
             that project (host identity verified through
             <code>/api/menu-state</code>); the card then navigates to
-            <code>/game?project=&lt;name&gt;</code> as a Rust-session HUD/control
-            shell. Launch <code>pnpm run native</code> for the Engine-owned
-            rendered product. Current host project:
+            <code>/game?project=&lt;name&gt;</code> as a Rust-session
+            HUD/control shell. Launch <code>pnpm run native</code> for the
+            Engine-owned rendered product. Current host project:
             <code>{{ hostProjectId() || "unavailable" }}</code>
           </p>
         </section>
@@ -124,7 +122,7 @@ import {
       </section>
       <footer>
         <span>WASD + mouse</span>
-        <span>Three authored weapons</span>
+        <span>{{ projectPresentation().footer }}</span>
         <span>Deterministic fixed simulation</span>
       </footer>
     </main>
@@ -137,6 +135,9 @@ export class MainMenuComponent {
   );
   protected readonly continueReadiness = signal<ContinueReadiness>("checking");
   protected readonly hostProjectId = signal<string>("");
+  protected readonly projectPresentation = computed(() =>
+    menuPresentationFor(this.hostProjectId()),
+  );
 
   private readonly documentEffects = browserDocumentEffects();
   private readonly repository = browserHostUserSettingsRepository();
@@ -144,7 +145,7 @@ export class MainMenuComponent {
   private readonly continueTarget = signal<ContinueTarget | null>(null);
 
   constructor() {
-    this.documentEffects.setTitle("Loading Bay — Main menu");
+    this.documentEffects.setTitle("Rusty Engine Demo — Main menu");
     void this.resolveContinueAvailability();
   }
 
@@ -210,13 +211,16 @@ export class MainMenuComponent {
         throw new Error(`host state returned ${String(response.status)}`);
       }
       const value: unknown = await response.json();
-      this.hostProjectId.set(
+      const projectId =
         typeof value === "object" &&
-          value !== null &&
-          "projectId" in value &&
-          typeof value.projectId === "string"
+        value !== null &&
+        "projectId" in value &&
+        typeof value.projectId === "string"
           ? value.projectId
-          : "",
+          : "";
+      this.hostProjectId.set(projectId);
+      this.documentEffects.setTitle(
+        `${menuPresentationFor(projectId).title} — Main menu`,
       );
       const hostSessionId =
         typeof value === "object" &&
@@ -264,6 +268,37 @@ export class MainMenuComponent {
       );
     }
   }
+}
+
+interface MenuPresentation {
+  readonly title: string;
+  readonly summary: string;
+  readonly footer: string;
+}
+
+function menuPresentationFor(projectId: string): MenuPresentation {
+  if (projectId === "doom-e1m1") {
+    return {
+      title: "DOOM E1M1",
+      summary:
+        "Enter the Hangar with authored E1M1 traversal, interactions, weapons, pickups, and Rust-owned consequences.",
+      footer: "Fist, pistol, and shotgun",
+    };
+  }
+  if (projectId === "relay-annex") {
+    return {
+      title: "RELAY ANNEX",
+      summary:
+        "Play the data-only Loading Bay variation through the same Rust-owned services and product shell.",
+      footer: "Alternate authored route",
+    };
+  }
+  return {
+    title: "LOADING BAY",
+    summary:
+      "Clear the security encounter, recover field equipment, and bring the extraction beacon online.",
+    footer: "Three authored weapons",
+  };
 }
 
 type ContinueReadiness =

@@ -92,6 +92,44 @@ type ConnectionState =
   | "reconnecting"
   | "unavailable";
 
+interface GamePresentation {
+  readonly missionLabel: string;
+  readonly levelCaption: string;
+  readonly restartLabel: string;
+  readonly completionTitle: string;
+  readonly completionFallback: string;
+  readonly panelLabel: string;
+  readonly documentTitle: string;
+  readonly viewportLabel: string;
+  readonly showsAccessKeys: boolean;
+}
+
+const LOADING_BAY_PRESENTATION: GamePresentation = {
+  missionLabel: "Loading Bay 03",
+  levelCaption: "EXIT / NORTH BULKHEAD",
+  restartLabel: "Restart loading bay",
+  completionTitle: "LOADING BAY COMPLETE",
+  completionFallback: "The authored exit has been secured.",
+  panelLabel: "Loading Bay",
+  documentTitle: "Rusty Engine — Loading Bay",
+  viewportLabel:
+    "Loading Bay Engine-rendered input surface. Click to capture the pointer.",
+  showsAccessKeys: true,
+};
+
+const DOOM_E1M1_PRESENTATION: GamePresentation = {
+  missionLabel: "DOOM E1M1",
+  levelCaption: "EXIT / HANGAR",
+  restartLabel: "Restart E1M1",
+  completionTitle: "DOOM E1M1 COMPLETE",
+  completionFallback: "The E1M1 exit has been secured.",
+  panelLabel: "DOOM E1M1",
+  documentTitle: "Rusty Engine — DOOM E1M1",
+  viewportLabel:
+    "Doom E1M1 Engine-rendered input surface. Click to capture the pointer.",
+  showsAccessKeys: false,
+};
+
 declare global {
   interface Window {
     __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
@@ -123,7 +161,7 @@ declare global {
           tabindex="0"
           [attr.inert]="modalActive() ? '' : null"
           role="application"
-          aria-label="Loading Bay Engine-rendered input surface. Click to capture the pointer."
+          [attr.aria-label]="projectPresentation().viewportLabel"
         ></div>
         <div
           id="feedback-layer"
@@ -135,9 +173,9 @@ declare global {
 
         <header class="hud-top" [attr.inert]="modalActive() ? '' : null">
           <div class="mission">
-            <p>Loading Bay 03</p>
-            <strong id="encounter-state">LOADING</strong>
-            <span id="revision">REV —</span>
+            <p>{{ projectPresentation().missionLabel }}</p>
+            <strong id="encounter-state">{{ sessionStatus() }}</strong>
+            <span id="revision">{{ projectIdentityLabel() }}</span>
           </div>
           <red-compass [headingDegrees]="snapshot().headingDegrees" />
           <nav class="hud-actions" aria-label="Game screens">
@@ -168,22 +206,24 @@ declare global {
             >
           </div>
           <div class="scene-caption">
-            <span>EXIT / NORTH BULKHEAD</span>
-            <strong id="door-caption">LOCKED</strong>
+            <span>{{ projectPresentation().levelCaption }}</span>
+            <strong id="door-caption">{{ levelStatus() }}</strong>
           </div>
           <div class="ammo" aria-label="Primary weapon ammunition">
             <strong>{{ snapshot().ammoRemaining }}</strong>
             <span>/ {{ snapshot().ammoCapacity }}</span>
           </div>
-          <div class="key-ring" aria-label="Carried access keys">
-            @if (carriedKeys().length === 0) {
-              <span>NO ACCESS KEYS</span>
-            } @else {
-              @for (key of carriedKeys(); track key) {
-                <span>{{ itemLabel(key) }}</span>
+          @if (projectPresentation().showsAccessKeys) {
+            <div class="key-ring" aria-label="Carried access keys">
+              @if (carriedKeys().length === 0) {
+                <span>NO ACCESS KEYS</span>
+              } @else {
+                @for (key of carriedKeys(); track key) {
+                  <span>{{ itemLabel(key) }}</span>
+                }
               }
-            }
-          </div>
+            </div>
+          }
         </div>
 
         <div class="hud-hotbar" [attr.inert]="modalActive() ? '' : null">
@@ -214,11 +254,11 @@ declare global {
           · E INTERACT · ESC PAUSE
         </p>
         <div
-          id="feedback-audio-status"
+          id="feedback-session-status"
           class="feedback-audio-status"
-          data-state="inactive"
+          [attr.data-state]="snapshot().connected ? 'connected' : 'inactive'"
         >
-          AUDIO WAITING
+          {{ connectionFeedback() }}
         </div>
 
         @if (connectionState() !== "connected") {
@@ -271,7 +311,7 @@ declare global {
               [disabled]="actionBusy() || !snapshot().restartAvailable"
               (click)="restartGame()"
             >
-              Restart loading bay
+              {{ projectPresentation().restartLabel }}
             </button>
             <button type="button" class="quiet" (click)="returnToMenu()">
               Main menu
@@ -292,11 +332,11 @@ declare global {
             data-active-modal
           >
             <p class="section-label">Rust-owned level result</p>
-            <h1>LOADING BAY COMPLETE</h1>
+            <h1>{{ projectPresentation().completionTitle }}</h1>
             <p>
               {{
                 snapshot().levelCompletionPresentation ??
-                  "The authored exit has been secured."
+                  projectPresentation().completionFallback
               }}
             </p>
             <button
@@ -304,7 +344,7 @@ declare global {
               [disabled]="actionBusy() || !snapshot().restartAvailable"
               (click)="restartGame()"
             >
-              Restart loading bay
+              {{ projectPresentation().restartLabel }}
             </button>
             <button
               type="button"
@@ -344,7 +384,9 @@ declare global {
             <article class="game-panel">
               <header>
                 <div>
-                  <p class="section-label">Loading Bay</p>
+                  <p class="section-label">
+                    {{ projectPresentation().panelLabel }}
+                  </p>
                   <h2>{{ panelTitle() }}</h2>
                 </div>
                 <span class="simulation-state">{{
@@ -376,7 +418,7 @@ declare global {
                     [disabled]="actionBusy() || !snapshot().restartAvailable"
                     (click)="restartGame()"
                   >
-                    Restart loading bay
+                    {{ projectPresentation().restartLabel }}
                   </button>
                   <button type="button" class="quiet" (click)="returnToMenu()">
                     Main menu
@@ -608,6 +650,9 @@ Awaiting session telemetry</pre
 })
 export class GameScreenComponent implements AfterViewInit, OnDestroy {
   protected readonly snapshot = signal(INITIAL_SNAPSHOT);
+  protected readonly projectPresentation = computed(() =>
+    gamePresentationFor(this.snapshot().projectId),
+  );
   protected readonly settingsRepository = browserHostUserSettingsRepository();
   protected readonly settings = signal(this.settingsRepository.read());
   protected readonly panel = signal<GamePanel>("game");
@@ -620,10 +665,40 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   protected readonly connectionMessage = signal(
     "Connecting to the Rust-owned fixed simulation…",
   );
+  protected readonly sessionStatus = computed(() => {
+    const snapshot = this.snapshot();
+    if (snapshot.connected) {
+      return snapshot.encounterState.toUpperCase();
+    }
+    const state = this.connectionState();
+    return state === "connected" ? "DISCONNECTED" : state.toUpperCase();
+  });
+  protected readonly projectIdentityLabel = computed(() => {
+    const projectId = this.snapshot().projectId;
+    return `PROJECT ${projectId || "—"}`;
+  });
+  protected readonly levelStatus = computed(() => {
+    const snapshot = this.snapshot();
+    if (snapshot.levelComplete) {
+      return "COMPLETE";
+    }
+    return snapshot.projectId === "doom-e1m1"
+      ? "IN PROGRESS"
+      : snapshot.doorState.toUpperCase();
+  });
+  protected readonly connectionFeedback = computed(() => {
+    if (this.snapshot().connected) {
+      return "RUST SESSION CONNECTED";
+    }
+    return this.connectionState() === "unavailable"
+      ? "RUST SESSION UNAVAILABLE"
+      : "RUST SESSION CONNECTING";
+  });
   protected readonly combatEntries = computed<readonly CombatLogEntryView[]>(
     () =>
       this.snapshot()
-        .events.slice(-7)
+        .events.filter(isPlayerFacingEvent)
+        .slice(-7)
         .map((event, index) => ({
           id: index,
           severity: severityFor(event),
@@ -713,6 +788,9 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   );
 
   private readonly documentEffects = browserDocumentEffects();
+  private readonly projectTitleEffect = effect(() => {
+    this.documentEffects.setTitle(this.projectPresentation().documentTitle);
+  });
   private readonly engineApplication = inject(ENGINE_APPLICATION);
   private readonly rendererRoute = claimEngineRendererRoute(
     this.engineApplication,
@@ -729,7 +807,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   });
 
   ngAfterViewInit(): void {
-    this.documentEffects.setTitle("Rusty Engine — Loading Bay");
+    this.documentEffects.setTitle(this.projectPresentation().documentTitle);
     this.documentEffects.setRootClass("game-route-active", true);
     this.scheduleModalFocus();
     void this.mountRuntime();
@@ -1316,6 +1394,16 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function gamePresentationFor(projectId: string): GamePresentation {
+  return projectId === "doom-e1m1"
+    ? DOOM_E1M1_PRESENTATION
+    : LOADING_BAY_PRESENTATION;
+}
+
+function isPlayerFacingEvent(event: string): boolean {
+  return !event.startsWith("Navigation") && event !== "EnemyPostureChanged";
+}
 
 function severityFor(event: string): CombatLogEntryView["severity"] {
   if (event.includes("Rejected") || event.includes("Blocked")) {
