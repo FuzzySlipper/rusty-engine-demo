@@ -1130,10 +1130,15 @@ async function main() {
       player.translation[1],
       player.translation[2] + 2,
     ];
-    for (const entity of [shotgun, healthBonus, greenArmor, ...nukage]) {
+    for (const entity of [shotgun, healthBonus, greenArmor]) {
       entity.translation = [...focusedPoint];
     }
     for (const hazard of nukage) {
+      hazard.translation = [
+        focusedPoint[0],
+        focusedPoint[1],
+        focusedPoint[2] + 2,
+      ];
       hazard.bounds = {
         min: [-0.75, -0.6, -0.75],
         max: [0.75, 0.6, 0.75],
@@ -1528,6 +1533,7 @@ async function main() {
         const selectionProof = await proveFocusedWeaponSelection(cdpClient, addr);
         const fireProof = await proveFocusedHeldPistolFire(cdpClient, addr);
         const blurProof = await proveFocusedFireStopsOnBlur(cdpClient, addr);
+        await holdKeys(cdpClient, ["KeyW"], 400);
         const vitalityProof = await proveFocusedVitality(addr);
         const restartProof = await proveFocusedDeathAndRestart(cdpClient, addr);
         headless.playthrough = { status: "skipped", reason: "focused smoke" };
