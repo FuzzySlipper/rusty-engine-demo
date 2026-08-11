@@ -933,14 +933,31 @@ async function physicallyAimAtEnemy(
     const error = normalizeDegrees(desiredYaw - state.player.yawDegrees);
     if (Math.abs(error) <= toleranceDegrees) break;
     const movementX = Math.max(-80, Math.min(80, -error / 0.12));
-    canvasCenter.x += movementX;
-    await client.send("Input.dispatchMouseEvent", {
-      type: "mouseMoved",
-      x: canvasCenter.x,
-      y: canvasCenter.y,
-      button: "none",
-      buttons: 0,
-    });
+    if (encounterExitEvidence && headedOzonePlatform === "x11") {
+      const physicalMove = spawnSync(
+        "python3",
+        [
+          join(actualRoot, "scripts/x11-send-relative-look.py"),
+          String(Math.round(movementX)),
+          "0",
+        ],
+        { encoding: "utf8" },
+      );
+      if (physicalMove.status !== 0) {
+        throw new Error(
+          `X11 physical pointer movement failed: ${physicalMove.stderr || physicalMove.stdout}`,
+        );
+      }
+    } else {
+      canvasCenter.x += movementX;
+      await client.send("Input.dispatchMouseEvent", {
+        type: "mouseMoved",
+        x: canvasCenter.x,
+        y: canvasCenter.y,
+        button: "none",
+        buttons: 0,
+      });
+    }
     await delay(80);
     state = await fetchAuthoritativeState(addr);
   }
