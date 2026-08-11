@@ -873,8 +873,8 @@ function resolveInteractionOwners(projectPath) {
     lift: owner("doom-repeatable-lift-linedef-195", "lift"),
     secret: owner("doom-secret-sector-68", "secretRegion"),
     exit: owner("doom-exit", "levelExit"),
-    representativeEnemy: owner("doom-shotgun-guy-20", "enemyCombat"),
-    representativeDrop: owner("doom-drop-shotgun-guy-20", "pickup"),
+    representativeEnemy: owner("doom-shotgun-guy-21", "enemyCombat"),
+    representativeDrop: owner("doom-drop-shotgun-guy-21", "pickup"),
   };
 }
 
@@ -927,9 +927,10 @@ async function physicallyAimAtEnemy(client, addr, canvasCenter, enemyId) {
     const error = normalizeDegrees(desiredYaw - state.player.yawDegrees);
     if (Math.abs(error) <= 2) break;
     const movementX = Math.max(-80, Math.min(80, -error / 0.12));
+    canvasCenter.x += movementX;
     await client.send("Input.dispatchMouseEvent", {
       type: "mouseMoved",
-      x: canvasCenter.x + movementX,
+      x: canvasCenter.x,
       y: canvasCenter.y,
       button: "none",
       buttons: 0,
