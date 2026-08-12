@@ -1498,6 +1498,7 @@ async function defeatCanonicalThreat(
     shots,
     damagingShots,
     dropState: drop.state,
+    dropPosition: enemyAfter.position,
   };
 }
 
@@ -1604,22 +1605,66 @@ async function proveInteractionRoute(
   }
   const corridorThreats = [];
   if (encounterExitEvidence) {
-    for (const [enemy, drop] of owners.corridorThreats) {
-      corridorThreats.push(
-        await defeatCanonicalThreat(client, addr, canvasBounds, enemy, drop),
-      );
-    }
-    await capture("encounter-corridor-cleared.png");
-  }
-  const shotgunUpgrade = encounterExitEvidence
-    ? await defeatCanonicalThreat(
+    const [shotgunEnemy, shotgunDrop] = owners.corridorThreats[0];
+    const shotgunThreat = await defeatCanonicalThreat(
+      client,
+      addr,
+      canvasBounds,
+      shotgunEnemy,
+      shotgunDrop,
+    );
+    corridorThreats.push(shotgunThreat);
+    await moveToWorldPoint(
+      client,
+      addr,
+      [shotgunThreat.dropPosition[0], shotgunThreat.dropPosition[2]],
+      traversalSamples,
+      {
+        singleHold: true,
+        arrivalDistance: 0.4,
+        stopWhen: (candidate) =>
+          candidate.pickups?.find((entry) => entry.id === shotgunDrop)
+            ?.state === "collected",
+      },
+    );
+    await waitForAuthoritativeState(
+      addr,
+      "first canonical shotgun drop is physically collected",
+      (candidate) =>
+        candidate.pickups?.find((entry) => entry.id === shotgunDrop)?.state ===
+          "collected" &&
+        candidate.inventory?.weapons?.some(
+          (weapon) => weapon.item === "weapon/shotgun" && weapon.owned === true,
+        ),
+    );
+    await holdKeys(client, ["Digit2"], 80);
+    await waitForAuthoritativeState(
+      addr,
+      "physical Digit2 equips the first canonical shotgun drop",
+      (candidate) => candidate.weapon?.item === "weapon/shotgun",
+    );
+    await capture("encounter-shotgun-collected.png");
+    const [zombieman, bulletDrop] = owners.corridorThreats[1];
+    corridorThreats.push(
+      await defeatCanonicalThreat(
         client,
         addr,
         canvasBounds,
-        owners.shotgunUpgrade[0],
-        owners.shotgunUpgrade[1],
-      )
-    : null;
+        zombieman,
+        bulletDrop,
+      ),
+    );
+    await capture("encounter-corridor-cleared.png");
+  }
+  if (encounterExitEvidence) {
+    await defeatCanonicalThreat(
+      client,
+      addr,
+      canvasBounds,
+      owners.shotgunUpgrade[0],
+      owners.shotgunUpgrade[1],
+    );
+  }
   const flankThreat = encounterExitEvidence
     ? await defeatCanonicalThreat(
         client,
@@ -1640,34 +1685,6 @@ async function proveInteractionRoute(
     : null;
   if (flankThreat !== null && innerThreat !== null) {
     await capture("encounter-all-threats-cleared.png");
-  }
-  if (shotgunUpgrade !== null) {
-    await moveToWorldPoint(client, addr, [154, 136], traversalSamples, {
-      singleHold: true,
-      arrivalDistance: 0.4,
-      stopWhen: (candidate) =>
-        candidate.pickups?.find(
-          (entry) => entry.id === owners.shotgunUpgrade[1],
-        )?.state === "collected",
-    });
-    await waitForAuthoritativeState(
-      addr,
-      "canonical shotgun drop is physically collected",
-      (candidate) =>
-        candidate.pickups?.find(
-          (entry) => entry.id === owners.shotgunUpgrade[1],
-        )?.state === "collected" &&
-        candidate.inventory?.weapons?.some(
-          (weapon) => weapon.item === "weapon/shotgun" && weapon.owned === true,
-        ),
-    );
-    await holdKeys(client, ["Digit2"], 80);
-    await waitForAuthoritativeState(
-      addr,
-      "physical Digit2 equips the canonical shotgun drop",
-      (candidate) => candidate.weapon?.item === "weapon/shotgun",
-    );
-    await capture("encounter-shotgun-collected.png");
   }
   await walk([[178, 146]]);
   await walk([
