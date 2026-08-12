@@ -1272,6 +1272,10 @@ async function proveRepresentativeEncounter(
       candidate.enemies?.find((entry) => entry.id === enemyId)
         ?.combatPosture !== "sleeping",
   });
+  await moveToWorldPoint(client, addr, [175, 146], traversalSamples, {
+    singleHold: true,
+    arrivalDistance: 0.7,
+  });
   const encounterState = await fetchAuthoritativeState(addr);
   const enemyBefore = encounterState.enemies.find(
     (entry) => entry.id === enemyId,
