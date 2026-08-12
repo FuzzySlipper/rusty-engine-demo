@@ -264,8 +264,9 @@ impl CombatService {
             .expect("player controller admission requires a transform")
             .translation;
         let direction = aim_direction(controller.state.yaw_degrees, controller.state.pitch_degrees);
-        let origin =
-            transform + local_aim_offset(weapon.muzzle_offset, controller.state.yaw_degrees);
+        let origin = transform
+            + Vec3::new(0.0, controller.config.traversal.eye_height, 0.0)
+            + local_aim_offset(weapon.muzzle_offset, controller.state.yaw_degrees);
         let spread_seed = shot_seed(tick, attacker, &weapon_item);
         let directions = attack_directions(
             direction,

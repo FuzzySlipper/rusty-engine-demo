@@ -69,6 +69,30 @@ fn canonical_voxel_geometry_occludes_a_target_behind_it() {
 }
 
 #[test]
+fn authored_eye_height_raises_the_player_hitscan_origin_above_low_geometry() {
+    let mut project = combat_project(-90.0, 35, 0, vec![[1, 0, 0]]);
+    entity_mut(&mut project, PLAYER.raw())["playerController"]["traversal"] = json!({
+        "maxStepHeight": 0.6,
+        "gravityUnitsPerSecondSquared": 18,
+        "jumpImpulseUnitsPerSecond": 6,
+        "groundProbeDistance": 0.2,
+        "eyeHeight": 2.0,
+        "manualJumpEnabled": false,
+        "maxAirJumps": 0
+    });
+    entity_mut(&mut project, ENEMY.raw())["translation"] = json!([3.5, 2.5, 0.5]);
+    let mut runtime = runtime(project);
+
+    let receipt = attack(&mut runtime);
+
+    assert_eq!(runtime.session().health(ENEMY).unwrap().current, 65);
+    assert!(receipt.facts.iter().any(|fact| matches!(
+        fact,
+        CombatFact::AttackHit { target, .. } if *target == ENEMY
+    )));
+}
+
+#[test]
 fn cooldown_rejects_atomically_until_authoritative_tick_is_ready() {
     let mut runtime = runtime(combat_project(-90.0, 30, 2, vec![[7, 7, 7]]));
     attack(&mut runtime);
@@ -308,6 +332,15 @@ fn combat_project(
                     "lookDegreesPerUnit": 12,
                     "initialYawDegrees": initial_yaw_degrees,
                     "initialPitchDegrees": 0,
+                    "traversal": {
+                        "maxStepHeight": 0.6,
+                        "gravityUnitsPerSecondSquared": 18,
+                        "jumpImpulseUnitsPerSecond": 6,
+                        "groundProbeDistance": 0.2,
+                        "eyeHeight": 0.0001,
+                        "manualJumpEnabled": false,
+                        "maxAirJumps": 0
+                    },
                     "bindings": {
                         "moveForward": "KeyW",
                         "moveBackward": "KeyS",
