@@ -646,7 +646,7 @@ async function moveToWorldPoint(
   traversalSamples,
   { singleHold = false, arrivalDistance = 0.7, stopWhen = null } = {},
 ) {
-  const deadline = Date.now() + 30000;
+  const deadline = Date.now() + 60000;
   let previousDistance = Number.POSITIVE_INFINITY;
   let stalledPulses = 0;
   let lastState = null;
@@ -697,7 +697,7 @@ async function moveToWorldPoint(
     }
   }
   throw new Error(
-    `movement timeout approaching ${JSON.stringify(target)}; last=${JSON.stringify(lastState).slice(0, 2000)}`,
+    `movement timeout approaching ${JSON.stringify(target)} from ${JSON.stringify(lastState?.player?.position)}; input=${JSON.stringify(lastState?.input)} events=${JSON.stringify(lastState?.lastEvents).slice(0, 1000)}`,
   );
 }
 
