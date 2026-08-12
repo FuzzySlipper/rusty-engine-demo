@@ -663,6 +663,16 @@ the configured imp fireball on the Rust-owned projectile entity, and emits the
 three-frame blood effect when authoritative enemy health decreases. The old
 `arc-warden` and `bay-rusher` animated meshes are absent from the E1M1 project.
 
+`content/projects/doom-sprite-scale-room.project.json` is the independently
+runnable scale clean room for task 6882. Its generator consumes manifest schema
+2 directly, emits only the front idle frame of POSS/SPOS/TROO at the declared
+28:1 presentation ratio, and converts each source pivot into an explicit
+entity translation so the Doom object origin lies on the room floor. Each
+sprite stands beside a retained `mesh/column` whose authored bounds are exactly
+two Engine units high. The room has no E1M1 voxel asset, enemies, combat, or
+map placements; `pnpm run serve:sprite-scale-room -- --host HOST --port PORT`
+launches it through the ordinary Rust browser host and Engine renderer.
+
 ### Derived voxel asset (single sparse-run volume, gameplay truth)
 
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with

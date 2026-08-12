@@ -130,6 +130,18 @@ const DOOM_E1M1_PRESENTATION: GamePresentation = {
   showsAccessKeys: false,
 };
 
+const DOOM_SPRITE_SCALE_PRESENTATION: GamePresentation = {
+  missionLabel: "DOOM SPRITE SCALE ROOM",
+  levelCaption: "2 ENGINE UNIT REFERENCES",
+  restartLabel: "Reset fixed camera",
+  completionTitle: "CALIBRATION COMPLETE",
+  completionFallback: "The scale lineup remains visible.",
+  panelLabel: "Sprite Scale Room",
+  documentTitle: "Rusty Engine — Doom Sprite Scale Room",
+  viewportLabel: "Fixed Doom sprite scale calibration renderer surface.",
+  showsAccessKeys: false,
+};
+
 declare global {
   interface Window {
     __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
@@ -170,6 +182,14 @@ declare global {
         ></div>
         <div class="viewport-vignette" aria-hidden="true"></div>
         <div class="reticle" aria-hidden="true"></div>
+        @if (snapshot().projectId === "doom-sprite-scale-room") {
+          <aside class="calibration-legend" aria-label="Sprite scale calibration labels">
+            <strong>ZOMBIEMAN</strong><strong>SHOTGUN GUY</strong><strong>IMP</strong>
+            <span>Each sprite: 56 Doom units = 2 Engine units</span>
+            <span>Each gray column: exactly 2 Engine units tall</span>
+            <span>Source origin anchored to the floor</span>
+          </aside>
+        }
 
         <header class="hud-top" [attr.inert]="modalActive() ? '' : null">
           <div class="mission">
@@ -1211,7 +1231,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       const requestedProject = this.route.snapshot.queryParamMap.get("project");
       if (
         requestedProject !== null &&
-        !["loading-bay", "relay-annex", "doom-e1m1"].includes(requestedProject)
+        !["loading-bay", "relay-annex", "doom-e1m1", "doom-sprite-scale-room"].includes(requestedProject)
       ) {
         throw new Error(`Unknown project ${requestedProject}`);
       }
@@ -1401,6 +1421,9 @@ const FOCUSABLE_SELECTOR =
   'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function gamePresentationFor(projectId: string): GamePresentation {
+  if (projectId === "doom-sprite-scale-room") {
+    return DOOM_SPRITE_SCALE_PRESENTATION;
+  }
   return projectId === "doom-e1m1"
     ? DOOM_E1M1_PRESENTATION
     : LOADING_BAY_PRESENTATION;

@@ -149,7 +149,11 @@ impl BrowserRuntime {
             });
         let runtime = LoadingBayGameLoop::new(GameRuntime::from_admitted_project(admitted), ACTOR)
             .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?;
-        let mut gameplay_projector = (project.project_id == "doom-e1m1")
+        let uses_doom_application_content = matches!(
+            project.project_id.as_str(),
+            "doom-e1m1" | "doom-sprite-scale-room"
+        );
+        let mut gameplay_projector = uses_doom_application_content
             .then(|| GameplayApplicationProjector::new(authored.document()));
         let initial_gameplay_frame = gameplay_projector
             .as_mut()
@@ -159,7 +163,7 @@ impl BrowserRuntime {
             .unwrap_or_else(|| {
                 RenderFrameDiff::try_from_ops(Vec::new()).expect("empty frame is valid")
             });
-        let application_content = if project.project_id == "doom-e1m1" {
+        let application_content = if uses_doom_application_content {
             let admitted_scene = runtime
                 .runtime()
                 .collision_scene()

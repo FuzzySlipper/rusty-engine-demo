@@ -323,8 +323,15 @@ pub fn project_doom_e1m1_application_content(
     object_frame: &RenderFrameDiff,
     entity_frame: &RenderFrameDiff,
 ) -> anyhow::Result<ProjectedApplicationContent> {
-    let volume_frame = project_stored_voxel_volume(project, scene)?;
-    let (volume_frame, mut resources) = externalize_frame_meshes(volume_frame)?;
+    let (volume_frame, mut resources) = if project.project_id == "doom-sprite-scale-room" {
+        (
+            RenderFrameDiff::try_from_ops(Vec::new())
+                .expect("an empty calibration-room volume frame is valid"),
+            Vec::new(),
+        )
+    } else {
+        externalize_frame_meshes(project_stored_voxel_volume(project, scene)?)?
+    };
     let (texture_resources, texture_ops) = doom_texture_projection(project)?;
     if texture_resources.len() != 54 {
         anyhow::bail!(
