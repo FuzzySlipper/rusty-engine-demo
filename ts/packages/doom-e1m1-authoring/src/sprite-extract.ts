@@ -376,13 +376,15 @@ function buildFrameManifest(
   atlasHeight: number,
 ): SpriteFrameManifest {
   const { family, entry, decoded } = placement.selected;
+  // Atlas rows are packed in top-origin PNG space. The Engine renderer uploads
+  // decoded rows with flipY=false and consumes bottom-origin sprite UVs.
   const uvMin: readonly [number, number] = [
     placement.x / atlas.width,
-    placement.y / atlasHeight,
+    1 - (placement.y + decoded.height) / atlasHeight,
   ];
   const uvMax: readonly [number, number] = [
     (placement.x + decoded.width) / atlas.width,
-    (placement.y + decoded.height) / atlasHeight,
+    1 - placement.y / atlasHeight,
   ];
   return {
     id: frameId,

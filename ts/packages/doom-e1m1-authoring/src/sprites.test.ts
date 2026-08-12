@@ -229,9 +229,10 @@ test("atlas manifest has exact source/output provenance and normalized frame UVs
   assert.deepEqual(frame.origin, [18, 50]);
   assert.equal(frame.uv.min[0], frame.atlasRect[0] / actors.width);
   assert.equal(
-    frame.uv.max[1],
-    (frame.atlasRect[1] + frame.atlasRect[3]) / actors.height,
+    frame.uv.min[1],
+    1 - (frame.atlasRect[1] + frame.atlasRect[3]) / actors.height,
   );
+  assert.equal(frame.uv.max[1], 1 - frame.atlasRect[1] / actors.height);
   assert.match(actors.pngSha256, /^[0-9a-f]{64}$/);
   assert.ok(actors.pngByteLength > 0);
   const actorFile = rendered.files.find(
