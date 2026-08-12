@@ -16,8 +16,9 @@ use rusty_engine::render_projection::EntityRenderProjector;
 use rusty_engine::renderer_webview_host::RendererResource;
 
 use crate::{
-    project_stored_voxel_volume, EnemyCombatPosture, EnemyState, GameRuntime, StoredProject,
-    StoredVisualAnimationLoopMode, StoredVisualPresentation, StoredVisualState,
+    project_stored_voxel_volume, EnemyCombatPosture, EnemyState, GameRuntime,
+    StoredDirectionalSpriteView, StoredProject, StoredVisualAnimationLoopMode,
+    StoredVisualPresentation, StoredVisualState,
 };
 
 #[derive(Debug, Clone)]
@@ -37,8 +38,11 @@ pub struct GameplayApplicationProjector {
     entities: EntityRenderProjector,
     assets: BTreeMap<String, ResolvedRenderAsset>,
     bindings: BTreeMap<u64, BTreeMap<StoredVisualState, StoredVisualPresentation>>,
+    camera_entity: Option<u64>,
     visual_states: BTreeMap<u64, StoredVisualState>,
     visual_frames: BTreeMap<u64, u32>,
+    visual_mirrors: BTreeMap<u64, bool>,
+    visual_offsets: BTreeMap<u64, [f32; 2]>,
     visual_state_started_at: BTreeMap<u64, u64>,
     health: BTreeMap<u64, u32>,
     hit_effects: BTreeMap<u64, HitEffectProjection>,
@@ -87,12 +91,21 @@ impl GameplayApplicationProjector {
                 ))
             })
             .collect();
+        let camera_entity = project
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .find(|entity| entity.player_controller.is_some())
+            .map(|entity| entity.id);
         Self {
             entities: EntityRenderProjector::new(),
             assets,
             bindings,
+            camera_entity,
             visual_states: BTreeMap::new(),
             visual_frames: BTreeMap::new(),
+            visual_mirrors: BTreeMap::new(),
+            visual_offsets: BTreeMap::new(),
             visual_state_started_at: BTreeMap::new(),
             health: BTreeMap::new(),
             hit_effects: BTreeMap::new(),
@@ -107,41 +120,45 @@ impl GameplayApplicationProjector {
         let mut operations = projected.frame.ops;
         for (entity, states) in &self.bindings {
             let id = rusty_engine::core_ids::EntityId::new(*entity);
-            let Some(combat) = runtime.session().enemy_combat(id) else {
-                continue;
-            };
-            if let Some(health) = runtime.session().health(id) {
-                if self
-                    .health
-                    .get(entity)
-                    .is_some_and(|previous| *previous > health.current)
-                {
-                    self.hit_effects
-                        .entry(*entity)
-                        .and_modify(|effect| effect.started_at = runtime.tick().raw())
-                        .or_insert(HitEffectProjection {
-                            started_at: runtime.tick().raw(),
-                            created: false,
-                        });
+            let combat = runtime.session().enemy_combat(id);
+            if combat.is_some() {
+                if let Some(health) = runtime.session().health(id) {
+                    if self
+                        .health
+                        .get(entity)
+                        .is_some_and(|previous| *previous > health.current)
+                    {
+                        self.hit_effects
+                            .entry(*entity)
+                            .and_modify(|effect| effect.started_at = runtime.tick().raw())
+                            .or_insert(HitEffectProjection {
+                                started_at: runtime.tick().raw(),
+                                created: false,
+                            });
+                    }
+                    self.health.insert(*entity, health.current);
                 }
-                self.health.insert(*entity, health.current);
             }
-            let mut desired = if runtime
-                .session()
-                .enemy(id)
-                .is_some_and(|enemy| enemy.state == EnemyState::Defeated)
-            {
-                StoredVisualState::Defeated
-            } else if combat.state.pain_ticks_remaining > 0 {
-                StoredVisualState::Hit
-            } else {
-                match combat.state.posture {
-                    EnemyCombatPosture::Sleeping => StoredVisualState::Idle,
-                    EnemyCombatPosture::Alert => StoredVisualState::Alert,
-                    EnemyCombatPosture::Pursuing => StoredVisualState::Moving,
-                    EnemyCombatPosture::Attacking => StoredVisualState::Attacking,
-                    EnemyCombatPosture::Dead => StoredVisualState::Defeated,
+            let mut desired = if let Some(combat) = combat {
+                if runtime
+                    .session()
+                    .enemy(id)
+                    .is_some_and(|enemy| enemy.state == EnemyState::Defeated)
+                {
+                    StoredVisualState::Defeated
+                } else if combat.state.pain_ticks_remaining > 0 {
+                    StoredVisualState::Hit
+                } else {
+                    match combat.state.posture {
+                        EnemyCombatPosture::Sleeping => StoredVisualState::Idle,
+                        EnemyCombatPosture::Alert => StoredVisualState::Alert,
+                        EnemyCombatPosture::Pursuing => StoredVisualState::Moving,
+                        EnemyCombatPosture::Attacking => StoredVisualState::Attacking,
+                        EnemyCombatPosture::Dead => StoredVisualState::Defeated,
+                    }
                 }
+            } else {
+                StoredVisualState::Default
             };
             if !matches!(
                 desired,
@@ -198,6 +215,7 @@ impl GameplayApplicationProjector {
                     frames,
                     ticks_per_frame,
                     loop_mode,
+                    directional_views,
                 } => {
                     if self.visual_states.get(entity) != Some(&desired) {
                         self.visual_state_started_at
@@ -215,7 +233,52 @@ impl GameplayApplicationProjector {
                             (elapsed as usize).min(frames.len() - 1)
                         }
                     };
-                    let frame = frames[index];
+                    let (frame, mirrored, source_origin_offset) = if directional_views.is_empty() {
+                        (frames[index], false, [0.0, 0.0])
+                    } else {
+                        let camera = self
+                            .camera_entity
+                            .and_then(|entity| {
+                                runtime
+                                    .session()
+                                    .entity(rusty_engine::core_ids::EntityId::new(entity))
+                                    .ok()?
+                                    .world_transform
+                            })
+                            .ok_or_else(|| {
+                                anyhow::anyhow!(
+                                    "directional sprite entity {id} has no live player camera"
+                                )
+                            })?;
+                        let actor = runtime
+                            .session()
+                            .entity(id)
+                            .map_err(|error| {
+                                anyhow::anyhow!("read directional sprite entity {id}: {error}")
+                            })?
+                            .world_transform
+                            .ok_or_else(|| {
+                                anyhow::anyhow!(
+                                    "directional sprite entity {id} has no world transform"
+                                )
+                            })?;
+                        let selected = select_directional_sprite_view(
+                            directional_views,
+                            index,
+                            camera,
+                            actor,
+                        )
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "directional sprite entity {id} has no view for animation frame {index}"
+                            )
+                        })?;
+                        (
+                            selected.frames[index],
+                            selected.mirrored,
+                            selected.source_origin_offsets[index],
+                        )
+                    };
                     if self.visual_frames.get(entity) != Some(&frame) {
                         operations.push(RenderDiff::UpdateSprite {
                             handle,
@@ -225,6 +288,88 @@ impl GameplayApplicationProjector {
                             visible: None,
                         });
                         self.visual_frames.insert(*entity, frame);
+                    }
+                    let authored_transform_changed =
+                        operations.iter().any(|operation| match operation {
+                            RenderDiff::CreateSprite {
+                                handle: operation_handle,
+                                ..
+                            } => *operation_handle == handle,
+                            RenderDiff::Update {
+                                handle: operation_handle,
+                                transform: Some(_),
+                                ..
+                            } => *operation_handle == handle,
+                            _ => false,
+                        });
+                    if self.visual_mirrors.get(entity) != Some(&mirrored)
+                        || self.visual_offsets.get(entity) != Some(&source_origin_offset)
+                        || mirrored && authored_transform_changed
+                    {
+                        let view = runtime.session().entity(id).map_err(|error| {
+                            anyhow::anyhow!("read directional sprite entity {id}: {error}")
+                        })?;
+                        let world = view
+                            .world_transform
+                            .unwrap_or(rusty_engine::entity_state::EntityTransform::IDENTITY);
+                        let composed = world.compose(
+                            view.renderable
+                                .map(|renderable| renderable.local_transform)
+                                .unwrap_or(rusty_engine::entity_state::EntityTransform::IDENTITY),
+                        );
+                        let camera = self
+                            .camera_entity
+                            .and_then(|entity| {
+                                runtime
+                                    .session()
+                                    .entity(rusty_engine::core_ids::EntityId::new(entity))
+                                    .ok()?
+                                    .world_transform
+                            })
+                            .ok_or_else(|| {
+                                anyhow::anyhow!(
+                                    "directional sprite entity {id} has no live player camera"
+                                )
+                            })?;
+                        let to_camera_x = camera.translation.x - world.translation.x;
+                        let to_camera_z = camera.translation.z - world.translation.z;
+                        let camera_distance = to_camera_x.hypot(to_camera_z);
+                        let (right_x, right_z) = if camera_distance <= f32::EPSILON {
+                            (1.0, 0.0)
+                        } else {
+                            (
+                                to_camera_z / camera_distance,
+                                -to_camera_x / camera_distance,
+                            )
+                        };
+                        let horizontal_offset =
+                            source_origin_offset[0] * if mirrored { -1.0 } else { 1.0 };
+                        operations.push(RenderDiff::Update {
+                            handle,
+                            transform: Some(Transform {
+                                translation: [
+                                    composed.translation.x + right_x * horizontal_offset,
+                                    composed.translation.y + source_origin_offset[1],
+                                    composed.translation.z + right_z * horizontal_offset,
+                                ],
+                                rotation: [
+                                    composed.rotation.x,
+                                    composed.rotation.y,
+                                    composed.rotation.z,
+                                    composed.rotation.w,
+                                ],
+                                scale: [
+                                    composed.scale.x.abs() * if mirrored { -1.0 } else { 1.0 },
+                                    composed.scale.y,
+                                    composed.scale.z,
+                                ],
+                            }),
+                            material: None,
+                            visible: None,
+                            metadata: None,
+                        });
+                        self.visual_mirrors.insert(*entity, mirrored);
+                        self.visual_offsets.insert(*entity, source_origin_offset);
                     }
                     self.visual_states.insert(*entity, desired);
                 }
@@ -300,8 +445,48 @@ impl GameplayApplicationProjector {
         let mut current = self.clone();
         current.visual_states.clear();
         current.visual_frames.clear();
+        current.visual_mirrors.clear();
+        current.visual_offsets.clear();
         current.visual_state_started_at.clear();
         current.project(runtime)
+    }
+}
+
+fn select_directional_sprite_view(
+    views: &[StoredDirectionalSpriteView],
+    animation_index: usize,
+    camera: rusty_engine::entity_state::EntityTransform,
+    actor: rusty_engine::entity_state::EntityTransform,
+) -> Option<&StoredDirectionalSpriteView> {
+    let to_camera_x = camera.translation.x - actor.translation.x;
+    let to_camera_z = camera.translation.z - actor.translation.z;
+    let distance = to_camera_x.hypot(to_camera_z);
+    let rotation = if distance <= f32::EPSILON {
+        1
+    } else {
+        let [forward_x, forward_z] = horizontal_forward(actor.rotation);
+        let camera_x = to_camera_x / distance;
+        let camera_z = to_camera_z / distance;
+        let dot = forward_x * camera_x + forward_z * camera_z;
+        let cross_y = forward_z * camera_x - forward_x * camera_z;
+        let sector = (cross_y.atan2(dot) / std::f32::consts::FRAC_PI_4).round() as i32;
+        sector.rem_euclid(8) as u8 + 1
+    };
+    views
+        .iter()
+        .find(|view| view.rotation == rotation && animation_index < view.frames.len())
+}
+
+fn horizontal_forward(rotation: rusty_engine::entity_state::Quat) -> [f32; 2] {
+    // Rotate local Doom forward (negative Z) by the entity quaternion, then
+    // normalize only the horizontal plane used by the camera-sector contract.
+    let x = -2.0 * (rotation.x * rotation.z + rotation.w * rotation.y);
+    let z = -1.0 + 2.0 * (rotation.x * rotation.x + rotation.y * rotation.y);
+    let length = x.hypot(z);
+    if length <= f32::EPSILON {
+        [0.0, -1.0]
+    } else {
+        [x / length, z / length]
     }
 }
 
@@ -323,7 +508,10 @@ pub fn project_doom_e1m1_application_content(
     object_frame: &RenderFrameDiff,
     entity_frame: &RenderFrameDiff,
 ) -> anyhow::Result<ProjectedApplicationContent> {
-    let (volume_frame, mut resources) = if project.project_id == "doom-sprite-scale-room" {
+    let (volume_frame, mut resources) = if matches!(
+        project.project_id.as_str(),
+        "doom-sprite-scale-room" | "doom-sprite-orbit-room"
+    ) {
         (
             RenderFrameDiff::try_from_ops(Vec::new())
                 .expect("an empty calibration-room volume frame is valid"),
@@ -577,15 +765,86 @@ fn repository_root() -> PathBuf {
 
 #[cfg(test)]
 mod tests {
+    use rusty_engine::core_math::Vec3;
     use rusty_engine::engine_spatial::VoxelCollisionScene;
+    use rusty_engine::entity_state::{EntityTransform, Quat};
+    use rusty_engine::render_model::RenderDiff;
 
     use crate::{
         decode_project_document, project_stored_voxel_objects, DamageCommand, DamageService,
-        DamageSource, GameRuntime,
+        DamageSource, GameRuntime, StoredDirectionalSpriteView,
     };
-    use rusty_engine::render_model::RenderDiff;
 
-    use super::{project_doom_e1m1_application_content, GameplayApplicationProjector};
+    use super::{
+        project_doom_e1m1_application_content, select_directional_sprite_view,
+        GameplayApplicationProjector,
+    };
+
+    #[test]
+    fn directional_sprite_selector_maps_one_orbit_to_eight_views_and_mirrors() {
+        let views = (1_u8..=8)
+            .map(|rotation| StoredDirectionalSpriteView {
+                rotation,
+                frames: vec![100 + u32::from(rotation)],
+                mirrored: rotation >= 6,
+                source_origin_offsets: vec![[0.0, 0.0]],
+            })
+            .collect::<Vec<_>>();
+        let actor = EntityTransform::IDENTITY;
+        let orbit = [
+            ([0.0, 0.0, -8.0], 1, false),
+            ([-8.0, 0.0, -8.0], 2, false),
+            ([-8.0, 0.0, 0.0], 3, false),
+            ([-8.0, 0.0, 8.0], 4, false),
+            ([0.0, 0.0, 8.0], 5, false),
+            ([8.0, 0.0, 8.0], 6, true),
+            ([8.0, 0.0, 0.0], 7, true),
+            ([8.0, 0.0, -8.0], 8, true),
+        ];
+
+        for (translation, expected_rotation, expected_mirror) in orbit {
+            let camera =
+                EntityTransform::at(Vec3::new(translation[0], translation[1], translation[2]));
+            let selected = select_directional_sprite_view(&views, 0, camera, actor).unwrap();
+            assert_eq!(selected.rotation, expected_rotation);
+            assert_eq!(selected.frames, [100 + u32::from(expected_rotation)]);
+            assert_eq!(selected.mirrored, expected_mirror);
+        }
+    }
+
+    #[test]
+    fn directional_sprite_selector_respects_actor_yaw_for_front_and_rear() {
+        let views = (1_u8..=8)
+            .map(|rotation| StoredDirectionalSpriteView {
+                rotation,
+                frames: vec![u32::from(rotation)],
+                mirrored: false,
+                source_origin_offsets: vec![[0.0, 0.0]],
+            })
+            .collect::<Vec<_>>();
+        let actor = EntityTransform {
+            rotation: Quat::new(0.0, 1.0, 0.0, 0.0),
+            ..EntityTransform::IDENTITY
+        };
+
+        let front = select_directional_sprite_view(
+            &views,
+            0,
+            EntityTransform::at(Vec3::new(0.0, 0.0, 8.0)),
+            actor,
+        )
+        .unwrap();
+        let rear = select_directional_sprite_view(
+            &views,
+            0,
+            EntityTransform::at(Vec3::new(0.0, 0.0, -8.0)),
+            actor,
+        )
+        .unwrap();
+
+        assert_eq!(front.rotation, 1);
+        assert_eq!(rear.rotation, 5);
+    }
 
     #[test]
     fn e1m1_application_content_is_complete() {

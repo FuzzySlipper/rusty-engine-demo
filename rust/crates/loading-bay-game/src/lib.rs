@@ -205,8 +205,8 @@ pub use snapshot::{
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredArmorGrantMode,
     StoredArmorTransition, StoredAsset, StoredAssetCatalogMetadata, StoredAssetImport,
-    StoredBounds, StoredCollision, StoredDoor, StoredDoorAccess, StoredEncounter,
-    StoredEnemyAttack, StoredEnemyAttackKind, StoredEnemyCombat, StoredEnemyDrop,
+    StoredBounds, StoredCollision, StoredDirectionalSpriteView, StoredDoor, StoredDoorAccess,
+    StoredEncounter, StoredEnemyAttack, StoredEnemyAttackKind, StoredEnemyCombat, StoredEnemyDrop,
     StoredEntityDefinition, StoredExplosiveProp, StoredExtractionBeacon, StoredFloorAction,
     StoredGeneratedVoxelEnvironment, StoredHazard, StoredHealth, StoredImportSource,
     StoredInventory, StoredInventoryStack, StoredItemDefinition, StoredItemKind, StoredKinematic,

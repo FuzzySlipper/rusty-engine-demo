@@ -15,6 +15,8 @@ use rusty_engine::core_ids::EntityId;
 const PLAYER: EntityId = EntityId::new(1);
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const DOOM_PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
+const DOOM_SPRITE_ORBIT_ROOM_PROJECT: &str =
+    include_str!("../../../../content/projects/doom-sprite-orbit-room.project.json");
 
 fn game_loop() -> LoadingBayGameLoop {
     LoadingBayGameLoop::new(
@@ -204,6 +206,37 @@ fn fixed_tick_integrates_velocity_instead_of_applying_an_authored_request_step()
         .facts
         .iter()
         .any(|fact| matches!(fact, GameLoopFact::PlayerControl(_))));
+}
+
+#[test]
+fn doom_sprite_orbit_room_floor_supports_a_real_movement_tick() {
+    let mut game_loop = LoadingBayGameLoop::new(
+        GameRuntime::from_stored_project(DOOM_SPRITE_ORBIT_ROOM_PROJECT)
+            .expect("admit Doom directional-sprite orbit room"),
+        PLAYER,
+    )
+    .unwrap();
+    let generation = game_loop.start_connection().connection_generation;
+    game_loop
+        .submit_input(input(generation, 1, [1.0, 0.0], [0.0, 0.0], false))
+        .unwrap();
+
+    for _ in 0..600 {
+        game_loop.run_fixed_tick().unwrap();
+    }
+
+    let position = player_position(&game_loop);
+    let controller = game_loop
+        .runtime()
+        .session()
+        .player_controller(PLAYER)
+        .unwrap();
+    assert!(controller.state.grounded, "player state: {controller:#?}");
+    assert!((position[1] - 0.5).abs() < 0.001, "{position:?}");
+    assert!(
+        position[2] < 11.75,
+        "orbit-room player escaped its authored perimeter: {position:?}"
+    );
 }
 
 #[test]

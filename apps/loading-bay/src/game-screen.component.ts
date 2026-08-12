@@ -142,6 +142,19 @@ const DOOM_SPRITE_SCALE_PRESENTATION: GamePresentation = {
   showsAccessKeys: false,
 };
 
+const DOOM_SPRITE_ORBIT_PRESENTATION: GamePresentation = {
+  missionLabel: "DOOM DIRECTIONAL SPRITE ROOM",
+  levelCaption: "LIVE CAMERA-RELATIVE VIEWS",
+  restartLabel: "Reset orbit room",
+  completionTitle: "ORBIT COMPLETE",
+  completionFallback: "The directional sprite remains visible.",
+  panelLabel: "Sprite Orbit Room",
+  documentTitle: "Rusty Engine — Doom Directional Sprite Room",
+  viewportLabel:
+    "Live Doom directional sprite room. Click to capture the pointer, then walk around the stationary Imp.",
+  showsAccessKeys: false,
+};
+
 declare global {
   interface Window {
     __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
@@ -183,11 +196,29 @@ declare global {
         <div class="viewport-vignette" aria-hidden="true"></div>
         <div class="reticle" aria-hidden="true"></div>
         @if (snapshot().projectId === "doom-sprite-scale-room") {
-          <aside class="calibration-legend" aria-label="Sprite scale calibration labels">
-            <strong>ZOMBIEMAN</strong><strong>SHOTGUN GUY</strong><strong>IMP</strong>
+          <aside
+            class="calibration-legend"
+            aria-label="Sprite scale calibration labels"
+          >
+            <strong>ZOMBIEMAN</strong><strong>SHOTGUN GUY</strong
+            ><strong>IMP</strong>
             <span>Each sprite: 56 Doom units = 2 Engine units</span>
             <span>Each gray column: exactly 2 Engine units tall</span>
             <span>Source origin anchored to the floor</span>
+          </aside>
+        }
+        @if (snapshot().projectId === "doom-sprite-orbit-room") {
+          <aside
+            class="calibration-legend"
+            aria-label="Directional sprite orbit labels"
+          >
+            <strong>ONE STATIONARY IMP</strong
+            ><strong>LIVE RUST SELECTION</strong>
+            <span>Spawn / south marker: front view</span>
+            <span>Walk the ring: front · diagonal · side · rear</span>
+            <span
+              >WASD move · mouse look · numbered markers orient the orbit</span
+            >
           </aside>
         }
 
@@ -1231,7 +1262,13 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       const requestedProject = this.route.snapshot.queryParamMap.get("project");
       if (
         requestedProject !== null &&
-        !["loading-bay", "relay-annex", "doom-e1m1", "doom-sprite-scale-room"].includes(requestedProject)
+        ![
+          "loading-bay",
+          "relay-annex",
+          "doom-e1m1",
+          "doom-sprite-scale-room",
+          "doom-sprite-orbit-room",
+        ].includes(requestedProject)
       ) {
         throw new Error(`Unknown project ${requestedProject}`);
       }
@@ -1423,6 +1460,9 @@ const FOCUSABLE_SELECTOR =
 function gamePresentationFor(projectId: string): GamePresentation {
   if (projectId === "doom-sprite-scale-room") {
     return DOOM_SPRITE_SCALE_PRESENTATION;
+  }
+  if (projectId === "doom-sprite-orbit-room") {
+    return DOOM_SPRITE_ORBIT_PRESENTATION;
   }
   return projectId === "doom-e1m1"
     ? DOOM_E1M1_PRESENTATION

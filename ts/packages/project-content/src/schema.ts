@@ -41,7 +41,7 @@ export type VisualStateDefinition =
   | "defeated";
 
 export interface VisualBindingDefinition {
-  readonly version: 1;
+  readonly version: 1 | 2;
   readonly states: readonly VisualBindingStateDefinition[];
 }
 
@@ -67,7 +67,15 @@ export type VisualBindingStateDefinition =
       readonly frames: readonly number[];
       readonly ticksPerFrame: number;
       readonly loopMode: "once" | "repeat";
+      readonly directionalViews?: readonly DirectionalSpriteViewDefinition[];
     };
+
+export interface DirectionalSpriteViewDefinition {
+  readonly rotation: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  readonly frames: readonly number[];
+  readonly mirrored: boolean;
+  readonly sourceOriginOffsets: readonly (readonly [number, number])[];
+}
 
 export interface DoorDefinition {
   readonly openTranslation: Vec3;

@@ -37,7 +37,8 @@ use crate::inventory::{
 use crate::lift::LiftConfig;
 
 pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 25;
-pub const STORED_VISUAL_BINDING_VERSION: u32 = 1;
+pub const STORED_VISUAL_BINDING_VERSION: u32 = 2;
+const MIN_STORED_VISUAL_BINDING_VERSION: u32 = 1;
 pub const MAX_STORED_VISUAL_BINDING_STATES: usize = 16;
 pub const MAX_PROJECT_VOXEL_OBJECTS: u64 = 256;
 pub const MAX_PROJECT_VOXEL_OBJECT_FRAMES: u64 = 8_193;
@@ -317,7 +318,7 @@ pub struct StoredVoxelObjectInstance {
     pub material_overrides: Vec<StoredVoxelObjectMaterialOverride>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
@@ -654,7 +655,18 @@ pub enum StoredVisualPresentation {
         frames: Vec<u32>,
         ticks_per_frame: u64,
         loop_mode: StoredVisualAnimationLoopMode,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        directional_views: Vec<StoredDirectionalSpriteView>,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredDirectionalSpriteView {
+    pub rotation: u8,
+    pub frames: Vec<u32>,
+    pub mirrored: bool,
+    pub source_origin_offsets: Vec<[f32; 2]>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -1947,13 +1959,15 @@ fn validate_visual_binding(
     entity: &StoredEntityDefinition,
     path: &str,
 ) -> Result<(), StoredProjectError> {
-    if binding.version != STORED_VISUAL_BINDING_VERSION {
+    if !(MIN_STORED_VISUAL_BINDING_VERSION..=STORED_VISUAL_BINDING_VERSION)
+        .contains(&binding.version)
+    {
         return Err(failure(
             diagnostic_code::INVALID_COMPONENT,
             format!("{path}.version"),
             format!(
-                "visual binding version must be {}, found {}",
-                STORED_VISUAL_BINDING_VERSION, binding.version
+                "visual binding version must be within {}..={}, found {}",
+                MIN_STORED_VISUAL_BINDING_VERSION, STORED_VISUAL_BINDING_VERSION, binding.version
             ),
         ));
     }
@@ -2043,6 +2057,7 @@ fn validate_visual_binding(
                 StoredVisualPresentation::SpriteFrames {
                     frames,
                     ticks_per_frame,
+                    directional_views,
                     ..
                 },
                 None,
@@ -2060,6 +2075,42 @@ fn validate_visual_binding(
                         state_path,
                         "sprite visual states require existing frames and a positive frame duration",
                     ));
+                }
+                if !directional_views.is_empty() {
+                    if binding.version < STORED_VISUAL_BINDING_VERSION {
+                        return Err(failure(
+                            diagnostic_code::INVALID_COMPONENT,
+                            format!("{state_path}.directionalViews"),
+                            format!(
+                                "directional sprite views require visual binding version {}",
+                                STORED_VISUAL_BINDING_VERSION
+                            ),
+                        ));
+                    }
+                    let mut rotations = BTreeSet::new();
+                    let complete = directional_views.len() == 8
+                        && directional_views.iter().all(|view| {
+                            (1..=8).contains(&view.rotation)
+                                && rotations.insert(view.rotation)
+                                && view.frames.len() == frames.len()
+                                && view.source_origin_offsets.len() == frames.len()
+                                && view
+                                    .source_origin_offsets
+                                    .iter()
+                                    .flatten()
+                                    .all(|offset| offset.is_finite() && offset.abs() <= 128.0)
+                                && view
+                                    .frames
+                                    .iter()
+                                    .all(|frame| atlas.frame_rect(*frame).is_some())
+                        });
+                    if !complete {
+                        return Err(failure(
+                            diagnostic_code::INVALID_COMPONENT,
+                            format!("{state_path}.directionalViews"),
+                            "directional sprite states require rotations 1..=8 exactly once, with one existing view frame and finite source-origin offset per animation frame",
+                        ));
+                    }
                 }
             }
             (StoredVisualPresentation::Animation { .. }, _, _, _) => {

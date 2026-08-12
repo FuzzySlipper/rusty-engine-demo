@@ -151,7 +151,7 @@ impl BrowserRuntime {
             .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?;
         let uses_doom_application_content = matches!(
             project.project_id.as_str(),
-            "doom-e1m1" | "doom-sprite-scale-room"
+            "doom-e1m1" | "doom-sprite-scale-room" | "doom-sprite-orbit-room"
         );
         let mut gameplay_projector = uses_doom_application_content
             .then(|| GameplayApplicationProjector::new(authored.document()));
