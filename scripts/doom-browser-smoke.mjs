@@ -675,24 +675,10 @@ async function moveToWorldPoint(
     const localForward = -Math.sin(yaw) * dx - Math.cos(yaw) * dz;
     const localRight = Math.cos(yaw) * dx - Math.sin(yaw) * dz;
     const codes = [];
-    const forwardDominates =
-      Math.abs(localForward) >= Math.abs(localRight) &&
-      Math.abs(localForward) > 0.45;
-    if (
-      stalledPulses >= 2 &&
-      forwardDominates &&
-      Math.abs(localRight) > 0.2
-    ) {
-      codes.push(localRight > 0 ? "KeyD" : "KeyA");
-    } else if (
-      stalledPulses >= 2 &&
-      !forwardDominates &&
-      Math.abs(localForward) > 0.2
-    ) {
+    if (Math.abs(localForward) > 0.45) {
       codes.push(localForward > 0 ? "KeyW" : "KeyS");
-    } else if (forwardDominates) {
-      codes.push(localForward > 0 ? "KeyW" : "KeyS");
-    } else if (Math.abs(localRight) > 0.45) {
+    }
+    if (Math.abs(localRight) > 0.45) {
       codes.push(localRight > 0 ? "KeyD" : "KeyA");
     }
     const holdMilliseconds =
