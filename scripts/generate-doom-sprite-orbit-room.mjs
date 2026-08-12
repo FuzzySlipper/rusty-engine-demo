@@ -99,7 +99,7 @@ const entities = [
     playerController: {
       moveSpeedUnitsPerSecond: 3,
       moveStepSeconds: 0.1,
-      lookDegreesPerUnit: 0.14,
+      lookDegreesPerUnit: 12,
       initialYawDegrees: 180,
       initialPitchDegrees: -4,
       traversal: {

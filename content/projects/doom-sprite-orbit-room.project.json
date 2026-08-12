@@ -246136,7 +246136,7 @@
           "playerController": {
             "moveSpeedUnitsPerSecond": 3.0,
             "moveStepSeconds": 0.1,
-            "lookDegreesPerUnit": 0.14,
+            "lookDegreesPerUnit": 12.0,
             "initialYawDegrees": 180.0,
             "initialPitchDegrees": -4.0,
             "traversal": {

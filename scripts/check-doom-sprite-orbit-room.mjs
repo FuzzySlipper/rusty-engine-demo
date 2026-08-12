@@ -163,6 +163,10 @@ invariant(
   "player must be able to orbit",
 );
 invariant(
+  players[0].playerController.lookDegreesPerUnit === 12,
+  "orbit-room mouselook must use the standard playable-project sensitivity",
+);
+invariant(
   scene.entities.filter((entity) => entity.name.startsWith("orbit-marker-"))
     .length === 8,
   "orbit room must have eight physical orientation markers",
