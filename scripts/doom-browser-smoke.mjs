@@ -907,6 +907,11 @@ function resolveInteractionOwners(projectPath) {
     exit: owner("doom-exit", "levelExit"),
     representativeEnemy: owner("doom-zombieman-12", "enemyCombat"),
     representativeDrop: owner("doom-drop-zombieman-12", "pickup"),
+    corridorThreats: [
+      [owner("doom-shotgun-guy-14", "enemyCombat"), owner("doom-drop-shotgun-guy-14", "pickup")],
+      [owner("doom-zombieman-13", "enemyCombat"), owner("doom-drop-zombieman-13", "pickup")],
+      [owner("doom-shotgun-guy-15", "enemyCombat"), owner("doom-drop-shotgun-guy-15", "pickup")],
+    ],
   };
 }
 
@@ -1402,6 +1407,78 @@ async function proveRepresentativeEncounter(
   };
 }
 
+async function defeatCanonicalThreat(client, addr, canvasBounds, enemyId, dropId) {
+  let canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
+  let latest = await fetchAuthoritativeState(addr);
+  const healthBefore = latest.enemies.find((entry) => entry.id === enemyId)?.currentHealth;
+  let shots = 0;
+  let damagingShots = 0;
+  while (
+    latest.enemies.find((entry) => entry.id === enemyId)?.state !== "defeated" &&
+    shots < 12
+  ) {
+    if (latest.player?.vitalityState !== "alive") {
+      throw new Error(`player was defeated while clearing corridor threat ${enemyId}`);
+    }
+    await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
+    const targetBefore = latest.enemies.find((entry) => entry.id === enemyId);
+    const ammoBefore = latest.weapon?.ammoRemaining;
+    let pointerLocked = await cdpEvaluate(
+      client,
+      `document.pointerLockElement === document.querySelector('canvas')`,
+    );
+    if (!pointerLocked) {
+      canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
+      pointerLocked = await cdpEvaluate(
+        client,
+        `document.pointerLockElement === document.querySelector('canvas')`,
+      );
+    }
+    if (!pointerLocked) {
+      throw new Error(`could not restore pointer lock for corridor threat ${enemyId}`);
+    }
+    await setPhysicalPrimaryFire(client, canvasCenter, true);
+    try {
+      latest = await waitForAuthoritativeState(
+        addr,
+        `physical Mouse0 fires at corridor threat ${enemyId}`,
+        (candidate) => candidate.weapon?.ammoRemaining < ammoBefore,
+      );
+    } finally {
+      await setPhysicalPrimaryFire(client, canvasCenter, false);
+    }
+    shots += 1;
+    const targetAfter = latest.enemies.find((entry) => entry.id === enemyId);
+    if (
+      targetAfter?.state === "defeated" ||
+      targetAfter?.currentHealth < targetBefore?.currentHealth
+    ) {
+      damagingShots += 1;
+    }
+  }
+  const enemyAfter = latest.enemies.find((entry) => entry.id === enemyId);
+  const drop = latest.pickups?.find((entry) => entry.id === dropId);
+  if (
+    enemyAfter?.state !== "defeated" ||
+    enemyAfter.currentHealth !== 0 ||
+    damagingShots === 0 ||
+    drop?.state !== "available"
+  ) {
+    throw new Error(
+      `corridor threat did not settle defeat/drop: ${JSON.stringify({ enemyAfter, drop, shots, damagingShots })}`,
+    );
+  }
+  return {
+    enemy: enemyId,
+    drop: dropId,
+    healthBefore,
+    healthAfter: enemyAfter.currentHealth,
+    shots,
+    damagingShots,
+    dropState: drop.state,
+  };
+}
+
 async function proveInteractionRoute(
   client,
   addr,
@@ -1500,6 +1577,15 @@ async function proveInteractionRoute(
     : null;
   if (representativeEncounter !== null) {
     await capture("encounter-defeat-drop.png");
+  }
+  const corridorThreats = [];
+  if (encounterExitEvidence) {
+    for (const [enemy, drop] of owners.corridorThreats) {
+      corridorThreats.push(
+        await defeatCanonicalThreat(client, addr, canvasBounds, enemy, drop),
+      );
+    }
+    await capture("encounter-corridor-cleared.png");
   }
   await walk([
     [178, 146],
@@ -1640,6 +1726,7 @@ async function proveInteractionRoute(
     secret: secret.secretRegions.find((entry) => entry.id === owners.secret),
     exit: completed.levelExits.find((entry) => entry.id === owners.exit),
     representativeEncounter,
+    corridorThreats,
     traversalSampleCount: traversalSamples.length,
     screenshots,
   };
