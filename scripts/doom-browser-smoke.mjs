@@ -1215,6 +1215,23 @@ async function proveRepresentativeEncounter(
     addr,
   );
   const canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
+  await moveToWorldPoint(client, addr, [156, 146], traversalSamples, {
+    singleHold: true,
+    arrivalDistance: 0.7,
+  });
+  const stagedState = await fetchAuthoritativeState(addr);
+  const stagedEnemy = stagedState.enemies.find((entry) => entry.id === enemyId);
+  if (stagedEnemy?.combatPosture !== "sleeping") {
+    throw new Error(
+      `canonical enemy ${enemyId} woke before the authored encounter threshold: ${JSON.stringify(stagedEnemy)}`,
+    );
+  }
+  const approachAim = await physicallyAimAtEnemy(
+    client,
+    addr,
+    canvasCenter,
+    enemyId,
+  );
   await moveToWorldPoint(client, addr, [160, 146], traversalSamples, {
     singleHold: true,
     arrivalDistance: 0.7,
@@ -1231,7 +1248,18 @@ async function proveRepresentativeEncounter(
       `canonical representative enemy ${enemyId} was not live: ${JSON.stringify(enemyBefore)}`,
     );
   }
-  const aim = await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
+  const engagedAim = await physicallyAimAtEnemy(
+    client,
+    addr,
+    canvasCenter,
+    enemyId,
+  );
+  const aim = {
+    approach: approachAim,
+    engaged: engagedAim,
+    physicalLookDegrees:
+      approachAim.physicalLookDegrees + engagedAim.physicalLookDegrees,
+  };
   if (aim.physicalLookDegrees < 1) {
     throw new Error(
       `representative encounter did not require observable physical look: ${JSON.stringify(aim)}`,
