@@ -88,6 +88,25 @@ interface SpriteManifestFrame {
   pixelSize: [number, number];
 }
 
+interface SpriteContractClip {
+  id: string;
+  loopMode: "once" | "repeat";
+  steps: { frame: string; tics: number | null }[];
+}
+
+interface SpriteContractFamily {
+  prefix: string;
+  directionalFrames: {
+    frame: string;
+    rotations: {
+      rotation: number;
+      sourceLump: string;
+      mirrored: boolean;
+    }[];
+  }[];
+  clips: SpriteContractClip[];
+}
+
 interface SpriteManifestAtlas {
   textureId: string;
   file: string;
@@ -100,6 +119,40 @@ interface SpriteManifest {
   wadSha256: string;
   wadByteLength: number;
   atlases: SpriteManifestAtlas[];
+  contract: {
+    tickRateHz: number;
+    families: SpriteContractFamily[];
+  };
+}
+
+function authoredSpriteFrames(
+  family: SpriteContractFamily,
+  clipId: string,
+  frameIds: ReadonlyMap<string, number>,
+): number[] {
+  const clip = family.clips.find((candidate) => candidate.id === clipId);
+  if (!clip) throw new Error(`missing Doom ${family.prefix} clip ${clipId}`);
+  const frames: number[] = [];
+  let sourceTics = 0;
+  let runtimeTicks = 0;
+  for (const step of clip.steps) {
+    const direction = family.directionalFrames
+      .find((candidate) => candidate.frame === step.frame)
+      ?.rotations.find((candidate) => candidate.rotation === 1 || candidate.rotation === 0);
+    if (!direction) throw new Error(`missing Doom ${family.prefix}${step.frame} front frame`);
+    const frame = frameIds.get(direction.sourceLump);
+    if (frame === undefined) throw new Error(`missing authored Doom frame ${direction.sourceLump}`);
+    if (step.tics === null) {
+      frames.push(frame);
+      continue;
+    }
+    sourceTics += step.tics;
+    const nextRuntimeTicks = Math.round((sourceTics * 60) / 35);
+    const duration = Math.max(1, nextRuntimeTicks - runtimeTicks);
+    for (let tick = 0; tick < duration; tick += 1) frames.push(frame);
+    runtimeTicks = nextRuntimeTicks;
+  }
+  return frames;
 }
 
 function buildSectorEdges(inter: Intermediate) {
@@ -583,7 +636,6 @@ export function buildDoomE1M1Project(
       painDurationTicks: Math.round((6 / 35) * 60),
       mesh: "sprite/doom-shotgun-guy",
       spriteScale: [3.5, 3.5, 1],
-      spriteAttackTicks: 14,
       attack: {
         kind: "rangedHitscan",
         // The runtime hitscan is authoritative and cannot reproduce Doom's
@@ -609,7 +661,6 @@ export function buildDoomE1M1Project(
       painDurationTicks: Math.round((4 / 35) * 60),
       mesh: "sprite/doom-imp",
       spriteScale: [3.75, 3.75, 1],
-      spriteAttackTicks: 12,
       attack: {
         kind: "projectile",
         damage: 12,
@@ -636,7 +687,6 @@ export function buildDoomE1M1Project(
       painDurationTicks: Math.round((6 / 35) * 60),
       mesh: "sprite/doom-zombieman",
       spriteScale: [3.5, 3.5, 1],
-      spriteAttackTicks: 14,
       attack: {
         kind: "rangedHitscan",
         damage: 9,
@@ -746,79 +796,56 @@ export function buildDoomE1M1Project(
     const familyFrames = spriteFrames.get(archetype.spriteFamily);
     if (!familyFrames)
       throw new Error(`missing frames for ${archetype.spriteFamily}`);
-    const frame = (name: string): number => {
-      const value = familyFrames.get(name);
-      if (value === undefined)
-        throw new Error(`missing authored Doom frame ${name}`);
-      return value;
-    };
-    const visualNames =
-      archetype.spriteFamily === "poss"
-        ? {
-            idle: ["POSSA1", "POSSB1"],
-            moving: ["POSSA1", "POSSB1", "POSSC1", "POSSD1"],
-            attacking: ["POSSE1", "POSSF1", "POSSE1"],
-            hit: ["POSSG1"],
-            defeated: ["POSSH0", "POSSI0", "POSSJ0", "POSSK0", "POSSL0"],
-          }
-        : archetype.spriteFamily === "spos"
-          ? {
-              idle: ["SPOSA1", "SPOSB1"],
-              moving: ["SPOSA1", "SPOSB1", "SPOSC1", "SPOSD1"],
-              attacking: ["SPOSE1", "SPOSF1", "SPOSE1"],
-              hit: ["SPOSG1"],
-              defeated: ["SPOSH0", "SPOSI0", "SPOSJ0", "SPOSK0", "SPOSL0"],
-            }
-          : {
-              idle: ["TROOA1", "TROOB1"],
-              moving: ["TROOA1", "TROOB1", "TROOC1", "TROOD1"],
-              attacking: ["TROOE1", "TROOF1", "TROOG1"],
-              hit: ["TROOH1"],
-              defeated: ["TROOI0", "TROOJ0", "TROOK0", "TROOL0", "TROOM0"],
-            };
+    const familyContract = spriteManifest.contract.families.find(
+      (candidate) => candidate.prefix.toLowerCase() === archetype.spriteFamily,
+    );
+    if (!familyContract)
+      throw new Error(`missing Doom sprite contract ${archetype.spriteFamily}`);
+    const clipFrames = (clip: string) =>
+      authoredSpriteFrames(familyContract, clip, familyFrames);
     const visualBinding = {
       version: 1,
       states: [
         {
           state: "idle",
           kind: "spriteFrames",
-          frames: visualNames.idle.map(frame),
-          ticksPerFrame: 17,
+          frames: clipFrames("idle"),
+          ticksPerFrame: 1,
           loopMode: "repeat",
         },
         {
           state: "moving",
           kind: "spriteFrames",
-          frames: visualNames.moving.map(frame),
-          ticksPerFrame: 6,
+          frames: clipFrames("walk"),
+          ticksPerFrame: 1,
           loopMode: "repeat",
         },
         {
           state: "alert",
           kind: "spriteFrames",
-          frames: visualNames.idle.map(frame),
-          ticksPerFrame: 12,
+          frames: clipFrames("idle"),
+          ticksPerFrame: 1,
           loopMode: "repeat",
         },
         {
           state: "attacking",
           kind: "spriteFrames",
-          frames: visualNames.attacking.map(frame),
-          ticksPerFrame: archetype.spriteAttackTicks,
+          frames: clipFrames("attack"),
+          ticksPerFrame: 1,
           loopMode: "once",
         },
         {
           state: "hit",
           kind: "spriteFrames",
-          frames: visualNames.hit.map(frame),
-          ticksPerFrame: 4,
+          frames: clipFrames("pain"),
+          ticksPerFrame: 1,
           loopMode: "once",
         },
         {
           state: "defeated",
           kind: "spriteFrames",
-          frames: visualNames.defeated.map(frame),
-          ticksPerFrame: 8,
+          frames: clipFrames("death"),
+          ticksPerFrame: 1,
           loopMode: "once",
         },
       ],

@@ -15,6 +15,7 @@ import {
   renderSpriteArtifacts,
   selectCanonicalSpriteLumps,
 } from "./sprite-extract.js";
+import { parseSpriteLumpAssignments } from "./sprite-contract.js";
 
 const WAD_PATH = "/home/research/doom.ts/public/doom1.wad";
 const WAD_SHA256 =
@@ -124,6 +125,65 @@ test("known canonical lumps retain exact source bytes and patch dimensions", () 
       },
     );
   }
+});
+
+test("Doom lump suffixes preserve directional coverage and mirror flags", () => {
+  assert.deepEqual(parseSpriteLumpAssignments("POSS", "POSSA1"), [
+    { frame: "A", rotation: 1, mirrored: false },
+  ]);
+  assert.deepEqual(parseSpriteLumpAssignments("POSS", "POSSA2A8"), [
+    { frame: "A", rotation: 2, mirrored: false },
+    { frame: "A", rotation: 8, mirrored: true },
+  ]);
+  assert.deepEqual(parseSpriteLumpAssignments("BAL1", "BAL1A0"), [
+    { frame: "A", rotation: 0, mirrored: false },
+  ]);
+});
+
+test("generated sprite contract keeps clips, timing, directions, dimensions, and pivots exact", () => {
+  const manifest = renderSpriteArtifacts(WAD_PATH).manifest;
+  assert.equal(manifest.schemaVersion, 2);
+  assert.equal(manifest.contract.tickRateHz, 35);
+  assert.deepEqual(manifest.contract.scale, {
+    mapDoomUnitsPerEngineUnit: 16,
+    actorReferenceHeightDoomUnits: 56,
+    actorReferenceHeightEngineUnits: 2,
+    presentationDoomUnitsPerEngineUnit: 28,
+  });
+
+  const family = (prefix: string) =>
+    manifest.contract.families.find((candidate) => candidate.prefix === prefix)!;
+  const clip = (prefix: string, id: string) =>
+    family(prefix).clips.find((candidate) => candidate.id === id)!;
+
+  assert.deepEqual(
+    clip("POSS", "attack").steps.map(({ frame, tics }) => [frame, tics]),
+    [["E", 10], ["F", 8], ["E", 8]],
+  );
+  assert.deepEqual(
+    clip("SPOS", "pain").steps.map(({ frame, tics }) => [frame, tics]),
+    [["G", 3], ["G", 3]],
+  );
+  assert.deepEqual(
+    clip("TROO", "death").steps.map(({ frame, tics }) => [frame, tics]),
+    [["I", 8], ["J", 8], ["K", 6], ["L", 6], ["M", null]],
+  );
+  assert.deepEqual(
+    clip("BLUD", "hit").steps.map(({ frame, tics }) => [frame, tics]),
+    [["C", 8], ["B", 8], ["A", 8]],
+  );
+  assert.deepEqual(family("POSS").dimensionsDoomUnits, { radius: 20, height: 56 });
+  assert.deepEqual(family("BAL1").dimensionsDoomUnits, { radius: 6, height: 8 });
+
+  const possA = family("POSS").directionalFrames.find((frame) => frame.frame === "A")!;
+  assert.deepEqual(possA.rotations.map(({ rotation }) => rotation), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(possA.rotations.map(({ mirrored }) => mirrored), [false, false, false, false, false, true, true, true]);
+  const possH = family("POSS").directionalFrames.find((frame) => frame.frame === "H")!;
+  assert.deepEqual(possH.rotations.map(({ rotation }) => rotation), [0]);
+
+  const sourceFrame = manifest.atlases[0]!.frames.find((frame) => frame.name === "POSSA1")!;
+  assert.deepEqual(sourceFrame.pivot, [18 / 41, 5 / 55]);
+  assert.deepEqual(sourceFrame.boundsFromOrigin, { left: -18, right: 23, top: 50, bottom: -5 });
 });
 
 test("sprite posts decode as transparent RGBA without treating palette index 255 as transparent", () => {

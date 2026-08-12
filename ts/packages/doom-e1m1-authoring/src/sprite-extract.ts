@@ -11,6 +11,13 @@ import {
   wadLumpBytes,
 } from "./textures.js";
 import { encodePngRgba8, sha256Hex } from "./png.js";
+import {
+  DOOM_SPRITE_CONTRACT_SOURCES,
+  DOOM_SPRITE_FAMILY_DEFINITIONS,
+  DOOM_SPRITE_TICK_RATE_HZ,
+  parseSpriteLumpAssignments,
+  type DoomSpriteClipDefinition,
+} from "./sprite-contract.js";
 import type { DoomWadDirectoryEntry, DoomWadInfo } from "./types.js";
 
 export const DEFAULT_SPRITE_WAD = "/home/research/doom.ts/public/doom1.wad";
@@ -87,7 +94,36 @@ export interface SpriteFrameManifest {
   };
   readonly pixelSize: readonly [number, number];
   readonly origin: readonly [number, number];
+  readonly pivot: readonly [number, number];
+  readonly boundsFromOrigin: {
+    readonly left: number;
+    readonly right: number;
+    readonly top: number;
+    readonly bottom: number;
+  };
   readonly opaquePixelCount: number;
+}
+
+export interface SpriteDirectionalFrameManifest {
+  readonly frame: string;
+  readonly rotations: readonly {
+    readonly rotation: number;
+    readonly sourceLump: string;
+    readonly atlasFrame: number;
+    readonly mirrored: boolean;
+  }[];
+}
+
+export interface SpriteFamilyContractManifest {
+  readonly prefix: string;
+  readonly role: "actor" | "projectile" | "effect";
+  readonly thingType: number | null;
+  readonly dimensionsDoomUnits: {
+    readonly radius: number;
+    readonly height: number;
+  } | null;
+  readonly directionalFrames: readonly SpriteDirectionalFrameManifest[];
+  readonly clips: readonly DoomSpriteClipDefinition[];
 }
 
 export interface SpriteAtlasManifest {
@@ -103,7 +139,7 @@ export interface SpriteAtlasManifest {
 }
 
 export interface SpriteManifest {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly wadPath: string;
   readonly wadIdentification: string;
   readonly wadSha256: string;
@@ -121,6 +157,17 @@ export interface SpriteManifest {
   };
   readonly sourceLumps: readonly SpriteSourceLumpManifest[];
   readonly atlases: readonly SpriteAtlasManifest[];
+  readonly contract: {
+    readonly tickRateHz: number;
+    readonly sources: typeof DOOM_SPRITE_CONTRACT_SOURCES;
+    readonly scale: {
+      readonly mapDoomUnitsPerEngineUnit: 16;
+      readonly actorReferenceHeightDoomUnits: 56;
+      readonly actorReferenceHeightEngineUnits: 2;
+      readonly presentationDoomUnitsPerEngineUnit: 28;
+    };
+    readonly families: readonly SpriteFamilyContractManifest[];
+  };
   readonly diagnostics: {
     readonly sourceLumpCount: number;
     readonly frameCount: number;
@@ -350,8 +397,62 @@ function buildFrameManifest(
     uv: { min: uvMin, max: uvMax },
     pixelSize: [decoded.width, decoded.height],
     origin: [decoded.leftOffset, decoded.topOffset],
+    pivot: [
+      decoded.leftOffset / decoded.width,
+      (decoded.height - decoded.topOffset) / decoded.height,
+    ],
+    boundsFromOrigin: {
+      left: -decoded.leftOffset,
+      right: decoded.width - decoded.leftOffset,
+      top: decoded.topOffset,
+      bottom: decoded.topOffset - decoded.height,
+    },
     opaquePixelCount: decoded.opaquePixelCount,
   };
+}
+
+function buildFamilyContracts(
+  atlases: readonly SpriteAtlasManifest[],
+): readonly SpriteFamilyContractManifest[] {
+  const frames = atlases.flatMap((atlas) => atlas.frames);
+  return DOOM_SPRITE_FAMILY_DEFINITIONS.map((definition) => {
+    const byFrame = new Map<
+      string,
+      Array<{ rotation: number; sourceLump: string; atlasFrame: number; mirrored: boolean }>
+    >();
+    for (const frame of frames.filter((candidate) => candidate.family === definition.prefix)) {
+      for (const assignment of parseSpriteLumpAssignments(definition.prefix, frame.sourceLump)) {
+        const rotations = byFrame.get(assignment.frame) ?? [];
+        rotations.push({
+          rotation: assignment.rotation,
+          sourceLump: frame.sourceLump,
+          atlasFrame: frame.id,
+          mirrored: assignment.mirrored,
+        });
+        byFrame.set(assignment.frame, rotations);
+      }
+    }
+    const directionalFrames = [...byFrame.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([frame, rotations]) => {
+        rotations.sort((left, right) => left.rotation - right.rotation);
+        const coverage = rotations.map((rotation) => rotation.rotation);
+        const expected = coverage[0] === 0 ? [0] : [1, 2, 3, 4, 5, 6, 7, 8];
+        if (coverage.length !== expected.length || coverage.some((value, index) => value !== expected[index])) {
+          throw new Error(`${definition.prefix}${frame} has incomplete rotation coverage: ${coverage.join(",")}`);
+        }
+        return { frame, rotations };
+      });
+    const availableFrames = new Set(directionalFrames.map((frame) => frame.frame));
+    for (const clip of definition.clips) {
+      for (const clipStep of clip.steps) {
+        if (!availableFrames.has(clipStep.frame)) {
+          throw new Error(`${definition.prefix} clip ${clip.id} references missing frame ${clipStep.frame}`);
+        }
+      }
+    }
+    return { ...definition, directionalFrames };
+  });
 }
 
 export function serializeSpriteManifest(manifest: SpriteManifest): string {
@@ -424,7 +525,7 @@ export function renderSpriteArtifacts(
     }),
   );
   const manifest: SpriteManifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     wadPath,
     wadIdentification: wad.identification,
     wadSha256: wad.sha256!,
@@ -442,6 +543,17 @@ export function renderSpriteArtifacts(
     },
     sourceLumps,
     atlases,
+    contract: {
+      tickRateHz: DOOM_SPRITE_TICK_RATE_HZ,
+      sources: DOOM_SPRITE_CONTRACT_SOURCES,
+      scale: {
+        mapDoomUnitsPerEngineUnit: 16,
+        actorReferenceHeightDoomUnits: 56,
+        actorReferenceHeightEngineUnits: 2,
+        presentationDoomUnitsPerEngineUnit: 28,
+      },
+      families: buildFamilyContracts(atlases),
+    },
     diagnostics: {
       sourceLumpCount: sourceLumps.length,
       frameCount: sourceLumps.length,
