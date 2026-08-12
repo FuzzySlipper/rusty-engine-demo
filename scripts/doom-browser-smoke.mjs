@@ -1510,6 +1510,7 @@ async function proveInteractionRoute(
     await moveToWorldPoint(client, addr, approach, traversalSamples, {
       singleHold: true,
       arrivalDistance: 0.7,
+      stopWhen: (candidate) => candidate.interaction?.target === door,
     });
     await waitForAuthoritativeState(
       addr,
@@ -1563,7 +1564,7 @@ async function proveInteractionRoute(
   ]);
   await openDoor(
     owners.startDoor,
-    encounterExitEvidence ? [139, 148] : [142, 147],
+    encounterExitEvidence ? [140, 148] : [142, 147],
   );
   const representativeEncounter = encounterExitEvidence
     ? await proveRepresentativeEncounter(
