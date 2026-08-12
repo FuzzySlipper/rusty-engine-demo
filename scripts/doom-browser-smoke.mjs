@@ -1576,7 +1576,17 @@ async function proveInteractionRoute(
     }
     await capture("encounter-corridor-cleared.png");
   }
-  await walk([[178, 146]]);
+  if (encounterExitEvidence) {
+    await moveToWorldPoint(client, addr, [178, 146], traversalSamples, {
+      singleHold: true,
+      arrivalDistance: 1.8,
+      stopWhen: (candidate) =>
+        candidate.enemies?.find((entry) => entry.id === owners.innerThreat[0])
+          ?.combatPosture !== "sleeping",
+    });
+  } else {
+    await walk([[178, 146]]);
+  }
   const innerThreat = encounterExitEvidence
     ? await defeatCanonicalThreat(
         client,
@@ -1588,6 +1598,7 @@ async function proveInteractionRoute(
     : null;
   if (innerThreat !== null) {
     await capture("encounter-inner-threat-cleared.png");
+    await walk([[178, 146]]);
   }
   await walk([
     [178, 140],
