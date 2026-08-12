@@ -1532,7 +1532,7 @@ async function proveInteractionRoute(
   ]);
   await moveToWorldPoint(client, addr, [124, 86], traversalSamples, {
     singleHold: true,
-    arrivalDistance: 1.2,
+    arrivalDistance: 2.0,
   });
   await moveToWorldPoint(client, addr, [129, 86], traversalSamples, {
     singleHold: true,
