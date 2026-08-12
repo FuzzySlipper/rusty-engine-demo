@@ -1457,9 +1457,8 @@ async function proveInteractionRoute(
 
   await capture("interaction-start.png");
   await walk([
-    [119, 78],
-    [119, 79],
-    [120, 79],
+    [117, 80],
+    [119, 80],
     [120, 80],
     [122, 80],
     [122, 81],
