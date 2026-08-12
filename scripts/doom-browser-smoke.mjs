@@ -1256,7 +1256,7 @@ async function proveRepresentativeEncounter(
   });
   await moveToWorldPoint(client, addr, [156, 146], traversalSamples, {
     singleHold: true,
-    arrivalDistance: 0.7,
+    arrivalDistance: 1.0,
   });
   const stagedState = await fetchAuthoritativeState(addr);
   const stagedEnemy = stagedState.enemies.find((entry) => entry.id === enemyId);
