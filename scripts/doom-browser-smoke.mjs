@@ -894,8 +894,18 @@ function resolveInteractionOwners(projectPath) {
     representativeEnemy: owner("doom-zombieman-12", "enemyCombat"),
     representativeDrop: owner("doom-drop-zombieman-12", "pickup"),
     corridorThreats: [
-      [owner("doom-shotgun-guy-14", "enemyCombat"), owner("doom-drop-shotgun-guy-14", "pickup")],
-      [owner("doom-zombieman-13", "enemyCombat"), owner("doom-drop-zombieman-13", "pickup")],
+      [
+        owner("doom-shotgun-guy-14", "enemyCombat"),
+        owner("doom-drop-shotgun-guy-14", "pickup"),
+      ],
+      [
+        owner("doom-zombieman-13", "enemyCombat"),
+        owner("doom-drop-zombieman-13", "pickup"),
+      ],
+    ],
+    shotgunUpgrade: [
+      owner("doom-shotgun-guy-20", "enemyCombat"),
+      owner("doom-drop-shotgun-guy-20", "pickup"),
     ],
     innerThreat: [
       owner("doom-shotgun-guy-15", "enemyCombat"),
@@ -1340,7 +1350,9 @@ async function proveRepresentativeEncounter(
         `document.pointerLockElement === document.querySelector('canvas')`,
       );
       if (!pointerLocked) {
-        throw new Error("physical encounter could not restore pointer lock before Mouse0");
+        throw new Error(
+          "physical encounter could not restore pointer lock before Mouse0",
+        );
       }
     }
     await setPhysicalPrimaryFire(client, canvasCenter, true);
@@ -1400,18 +1412,29 @@ async function proveRepresentativeEncounter(
   };
 }
 
-async function defeatCanonicalThreat(client, addr, canvasBounds, enemyId, dropId) {
+async function defeatCanonicalThreat(
+  client,
+  addr,
+  canvasBounds,
+  enemyId,
+  dropId,
+) {
   let canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
   let latest = await fetchAuthoritativeState(addr);
-  const healthBefore = latest.enemies.find((entry) => entry.id === enemyId)?.currentHealth;
+  const healthBefore = latest.enemies.find(
+    (entry) => entry.id === enemyId,
+  )?.currentHealth;
   let shots = 0;
   let damagingShots = 0;
   while (
-    latest.enemies.find((entry) => entry.id === enemyId)?.state !== "defeated" &&
+    latest.enemies.find((entry) => entry.id === enemyId)?.state !==
+      "defeated" &&
     shots < 12
   ) {
     if (latest.player?.vitalityState !== "alive") {
-      throw new Error(`player was defeated while clearing corridor threat ${enemyId}`);
+      throw new Error(
+        `player was defeated while clearing corridor threat ${enemyId}`,
+      );
     }
     await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
     const targetBefore = latest.enemies.find((entry) => entry.id === enemyId);
@@ -1428,7 +1451,9 @@ async function defeatCanonicalThreat(client, addr, canvasBounds, enemyId, dropId
       );
     }
     if (!pointerLocked) {
-      throw new Error(`could not restore pointer lock for corridor threat ${enemyId}`);
+      throw new Error(
+        `could not restore pointer lock for corridor threat ${enemyId}`,
+      );
     }
     await setPhysicalPrimaryFire(client, canvasCenter, true);
     try {
@@ -1581,6 +1606,36 @@ async function proveInteractionRoute(
       );
     }
     await capture("encounter-corridor-cleared.png");
+  }
+  const shotgunUpgrade = encounterExitEvidence
+    ? await defeatCanonicalThreat(
+        client,
+        addr,
+        canvasBounds,
+        owners.shotgunUpgrade[0],
+        owners.shotgunUpgrade[1],
+      )
+    : null;
+  if (shotgunUpgrade !== null) {
+    await walk([[154, 136]]);
+    await waitForAuthoritativeState(
+      addr,
+      "canonical shotgun drop is physically collected",
+      (candidate) =>
+        candidate.pickups?.find(
+          (entry) => entry.id === owners.shotgunUpgrade[1],
+        )?.state === "collected" &&
+        candidate.inventory?.weapons?.some(
+          (weapon) => weapon.item === "weapon/shotgun" && weapon.owned === true,
+        ),
+    );
+    await holdKeys(client, ["Digit2"], 80);
+    await waitForAuthoritativeState(
+      addr,
+      "physical Digit2 equips the canonical shotgun drop",
+      (candidate) => candidate.weapon?.item === "weapon/shotgun",
+    );
+    await capture("encounter-shotgun-collected.png");
   }
   const innerThreat = encounterExitEvidence
     ? await defeatCanonicalThreat(
