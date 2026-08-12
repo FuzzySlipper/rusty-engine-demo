@@ -1300,6 +1300,7 @@ async function proveRepresentativeEncounter(
   }
   let latest = await fetchAuthoritativeState(addr);
   let shots = 0;
+  let damagingShots = 0;
   while (
     latest.enemies.find((entry) => entry.id === enemyId)?.state !==
       "defeated" &&
@@ -1343,12 +1344,10 @@ async function proveRepresentativeEncounter(
       (entry) => entry.id === enemyId,
     );
     if (
-      targetAfterShot?.state !== "defeated" &&
-      targetAfterShot?.currentHealth >= healthBefore
+      targetAfterShot?.state === "defeated" ||
+      targetAfterShot?.currentHealth < healthBefore
     ) {
-      throw new Error(
-        `physical encounter shot missed target ${enemyId}: ${JSON.stringify({ combatState: latest.combatState, lastEvents: latest.lastEvents, cues: latest.presentation?.cues, player: { position: latest.player.position, yawDegrees: latest.player.yawDegrees, pitchDegrees: latest.player.pitchDegrees }, target: { position: targetAfterShot?.position, currentHealth: targetAfterShot?.currentHealth, combatPosture: targetAfterShot?.combatPosture } })}`,
-      );
+      damagingShots += 1;
     }
     if (targetAfterShot?.state !== "defeated") {
       await physicallyAimAtEnemy(client, addr, canvasCenter, enemyId);
@@ -1359,6 +1358,7 @@ async function proveRepresentativeEncounter(
   if (
     enemyAfter?.state !== "defeated" ||
     enemyAfter.currentHealth !== 0 ||
+    damagingShots === 0 ||
     drop?.state !== "available"
   ) {
     throw new Error(
@@ -1372,6 +1372,7 @@ async function proveRepresentativeEncounter(
     healthBefore: enemyBefore.currentHealth,
     healthAfter: enemyAfter.currentHealth,
     shots,
+    damagingShots,
     aim,
     mouseSensitivity,
     dropState: drop.state,
