@@ -1243,7 +1243,7 @@ async function proveRepresentativeEncounter(
     client,
     addr,
   );
-  const canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
+  let canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
   await moveToWorldPoint(client, addr, [156, 146], traversalSamples, {
     singleHold: true,
     arrivalDistance: 0.7,
@@ -1319,12 +1319,19 @@ async function proveRepresentativeEncounter(
         `player was not alive before physical encounter fire: ${JSON.stringify({ tick: latest.tick, health: latest.player?.currentHealth, vitalityState: latest.player?.vitalityState })}`,
       );
     }
-    const pointerLocked = await cdpEvaluate(
+    let pointerLocked = await cdpEvaluate(
       client,
       `document.pointerLockElement === document.querySelector('canvas')`,
     );
     if (!pointerLocked) {
-      throw new Error("physical encounter lost pointer lock before Mouse0");
+      canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
+      pointerLocked = await cdpEvaluate(
+        client,
+        `document.pointerLockElement === document.querySelector('canvas')`,
+      );
+      if (!pointerLocked) {
+        throw new Error("physical encounter could not restore pointer lock before Mouse0");
+      }
     }
     await setPhysicalPrimaryFire(client, canvasCenter, true);
     try {
