@@ -1617,7 +1617,14 @@ async function proveInteractionRoute(
       )
     : null;
   if (shotgunUpgrade !== null) {
-    await walk([[154, 136]]);
+    await moveToWorldPoint(client, addr, [154, 136], traversalSamples, {
+      singleHold: true,
+      arrivalDistance: 0.4,
+      stopWhen: (candidate) =>
+        candidate.pickups?.find(
+          (entry) => entry.id === owners.shotgunUpgrade[1],
+        )?.state === "collected",
+    });
     await waitForAuthoritativeState(
       addr,
       "canonical shotgun drop is physically collected",
