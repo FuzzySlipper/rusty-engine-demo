@@ -1553,7 +1553,7 @@ async function proveInteractionRoute(
   ]);
   await openDoor(
     owners.startDoor,
-    encounterExitEvidence ? [140, 148] : [142, 147],
+    encounterExitEvidence ? [139, 148] : [142, 147],
   );
   const representativeEncounter = encounterExitEvidence
     ? await proveRepresentativeEncounter(
