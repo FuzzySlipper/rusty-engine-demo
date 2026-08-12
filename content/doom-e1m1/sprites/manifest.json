@@ -8559,13 +8559,13 @@
             "loopMode": "repeat",
             "steps": [
               {
-                "state": "possStnd",
+                "state": "S_POSS_STND",
                 "frame": "A",
                 "tics": 10,
                 "fullBright": false
               },
               {
-                "state": "possStnd2",
+                "state": "S_POSS_STND2",
                 "frame": "B",
                 "tics": 10,
                 "fullBright": false
@@ -8577,49 +8577,49 @@
             "loopMode": "repeat",
             "steps": [
               {
-                "state": "possRun1",
+                "state": "S_POSS_RUN1",
                 "frame": "A",
                 "tics": 4,
                 "fullBright": false
               },
               {
-                "state": "possRun2",
+                "state": "S_POSS_RUN2",
                 "frame": "A",
                 "tics": 4,
                 "fullBright": false
               },
               {
-                "state": "possRun3",
+                "state": "S_POSS_RUN3",
                 "frame": "B",
                 "tics": 4,
                 "fullBright": false
               },
               {
-                "state": "possRun4",
+                "state": "S_POSS_RUN4",
                 "frame": "B",
                 "tics": 4,
                 "fullBright": false
               },
               {
-                "state": "possRun5",
+                "state": "S_POSS_RUN5",
                 "frame": "C",
                 "tics": 4,
                 "fullBright": false
               },
               {
-                "state": "possRun6",
+                "state": "S_POSS_RUN6",
                 "frame": "C",
                 "tics": 4,
                 "fullBright": false
               },
               {
-                "state": "possRun7",
+                "state": "S_POSS_RUN7",
                 "frame": "D",
                 "tics": 4,
                 "fullBright": false
               },
               {
-                "state": "possRun8",
+                "state": "S_POSS_RUN8",
                 "frame": "D",
                 "tics": 4,
                 "fullBright": false
@@ -8631,19 +8631,19 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "possAtk1",
+                "state": "S_POSS_ATK1",
                 "frame": "E",
                 "tics": 10,
                 "fullBright": false
               },
               {
-                "state": "possAtk2",
+                "state": "S_POSS_ATK2",
                 "frame": "F",
                 "tics": 8,
                 "fullBright": false
               },
               {
-                "state": "possAtk3",
+                "state": "S_POSS_ATK3",
                 "frame": "E",
                 "tics": 8,
                 "fullBright": false
@@ -8655,13 +8655,13 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "possPain",
+                "state": "S_POSS_PAIN",
                 "frame": "G",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "possPain2",
+                "state": "S_POSS_PAIN2",
                 "frame": "G",
                 "tics": 3,
                 "fullBright": false
@@ -8673,33 +8673,33 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "possDie1",
+                "state": "S_POSS_DIE1",
                 "frame": "H",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possDie2",
+                "state": "S_POSS_DIE2",
                 "frame": "I",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possDie3",
+                "state": "S_POSS_DIE3",
                 "frame": "J",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possDie4",
+                "state": "S_POSS_DIE4",
                 "frame": "K",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possDie5",
+                "state": "S_POSS_DIE5",
                 "frame": "L",
-                "tics": null,
+                "tics": -1,
                 "fullBright": false
               }
             ]
@@ -8709,57 +8709,57 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "possXdie1",
+                "state": "S_POSS_XDIE1",
                 "frame": "M",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possXdie2",
+                "state": "S_POSS_XDIE2",
                 "frame": "N",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possXdie3",
+                "state": "S_POSS_XDIE3",
                 "frame": "O",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possXdie4",
+                "state": "S_POSS_XDIE4",
                 "frame": "P",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possXdie5",
+                "state": "S_POSS_XDIE5",
                 "frame": "Q",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possXdie6",
+                "state": "S_POSS_XDIE6",
                 "frame": "R",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possXdie7",
+                "state": "S_POSS_XDIE7",
                 "frame": "S",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possXdie8",
+                "state": "S_POSS_XDIE8",
                 "frame": "T",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possXdie9",
+                "state": "S_POSS_XDIE9",
                 "frame": "U",
-                "tics": null,
+                "tics": -1,
                 "fullBright": false
               }
             ]
@@ -8769,25 +8769,25 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "possRaise1",
+                "state": "S_POSS_RAISE1",
                 "frame": "K",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possRaise2",
+                "state": "S_POSS_RAISE2",
                 "frame": "J",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possRaise3",
+                "state": "S_POSS_RAISE3",
                 "frame": "I",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "possRaise4",
+                "state": "S_POSS_RAISE4",
                 "frame": "H",
                 "tics": 5,
                 "fullBright": false
@@ -9337,13 +9337,13 @@
             "loopMode": "repeat",
             "steps": [
               {
-                "state": "sposStnd",
+                "state": "S_SPOS_STND",
                 "frame": "A",
                 "tics": 10,
                 "fullBright": false
               },
               {
-                "state": "sposStnd2",
+                "state": "S_SPOS_STND2",
                 "frame": "B",
                 "tics": 10,
                 "fullBright": false
@@ -9355,49 +9355,49 @@
             "loopMode": "repeat",
             "steps": [
               {
-                "state": "sposRun1",
+                "state": "S_SPOS_RUN1",
                 "frame": "A",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "sposRun2",
+                "state": "S_SPOS_RUN2",
                 "frame": "A",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "sposRun3",
+                "state": "S_SPOS_RUN3",
                 "frame": "B",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "sposRun4",
+                "state": "S_SPOS_RUN4",
                 "frame": "B",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "sposRun5",
+                "state": "S_SPOS_RUN5",
                 "frame": "C",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "sposRun6",
+                "state": "S_SPOS_RUN6",
                 "frame": "C",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "sposRun7",
+                "state": "S_SPOS_RUN7",
                 "frame": "D",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "sposRun8",
+                "state": "S_SPOS_RUN8",
                 "frame": "D",
                 "tics": 3,
                 "fullBright": false
@@ -9409,19 +9409,19 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "sposAtk1",
+                "state": "S_SPOS_ATK1",
                 "frame": "E",
                 "tics": 10,
                 "fullBright": false
               },
               {
-                "state": "sposAtk2",
+                "state": "S_SPOS_ATK2",
                 "frame": "F",
                 "tics": 10,
                 "fullBright": true
               },
               {
-                "state": "sposAtk3",
+                "state": "S_SPOS_ATK3",
                 "frame": "E",
                 "tics": 10,
                 "fullBright": false
@@ -9433,13 +9433,13 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "sposPain",
+                "state": "S_SPOS_PAIN",
                 "frame": "G",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "sposPain2",
+                "state": "S_SPOS_PAIN2",
                 "frame": "G",
                 "tics": 3,
                 "fullBright": false
@@ -9451,33 +9451,33 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "sposDie1",
+                "state": "S_SPOS_DIE1",
                 "frame": "H",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposDie2",
+                "state": "S_SPOS_DIE2",
                 "frame": "I",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposDie3",
+                "state": "S_SPOS_DIE3",
                 "frame": "J",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposDie4",
+                "state": "S_SPOS_DIE4",
                 "frame": "K",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposDie5",
+                "state": "S_SPOS_DIE5",
                 "frame": "L",
-                "tics": null,
+                "tics": -1,
                 "fullBright": false
               }
             ]
@@ -9487,57 +9487,57 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "sposXdie1",
+                "state": "S_SPOS_XDIE1",
                 "frame": "M",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposXdie2",
+                "state": "S_SPOS_XDIE2",
                 "frame": "N",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposXdie3",
+                "state": "S_SPOS_XDIE3",
                 "frame": "O",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposXdie4",
+                "state": "S_SPOS_XDIE4",
                 "frame": "P",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposXdie5",
+                "state": "S_SPOS_XDIE5",
                 "frame": "Q",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposXdie6",
+                "state": "S_SPOS_XDIE6",
                 "frame": "R",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposXdie7",
+                "state": "S_SPOS_XDIE7",
                 "frame": "S",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposXdie8",
+                "state": "S_SPOS_XDIE8",
                 "frame": "T",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposXdie9",
+                "state": "S_SPOS_XDIE9",
                 "frame": "U",
-                "tics": null,
+                "tics": -1,
                 "fullBright": false
               }
             ]
@@ -9547,31 +9547,31 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "sposRaise1",
+                "state": "S_SPOS_RAISE1",
                 "frame": "L",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposRaise2",
+                "state": "S_SPOS_RAISE2",
                 "frame": "K",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposRaise3",
+                "state": "S_SPOS_RAISE3",
                 "frame": "J",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposRaise4",
+                "state": "S_SPOS_RAISE4",
                 "frame": "I",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "sposRaise5",
+                "state": "S_SPOS_RAISE5",
                 "frame": "H",
                 "tics": 5,
                 "fullBright": false
@@ -10121,13 +10121,13 @@
             "loopMode": "repeat",
             "steps": [
               {
-                "state": "trooStnd",
+                "state": "S_TROO_STND",
                 "frame": "A",
                 "tics": 10,
                 "fullBright": false
               },
               {
-                "state": "trooStnd2",
+                "state": "S_TROO_STND2",
                 "frame": "B",
                 "tics": 10,
                 "fullBright": false
@@ -10139,49 +10139,49 @@
             "loopMode": "repeat",
             "steps": [
               {
-                "state": "trooRun1",
+                "state": "S_TROO_RUN1",
                 "frame": "A",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "trooRun2",
+                "state": "S_TROO_RUN2",
                 "frame": "A",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "trooRun3",
+                "state": "S_TROO_RUN3",
                 "frame": "B",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "trooRun4",
+                "state": "S_TROO_RUN4",
                 "frame": "B",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "trooRun5",
+                "state": "S_TROO_RUN5",
                 "frame": "C",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "trooRun6",
+                "state": "S_TROO_RUN6",
                 "frame": "C",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "trooRun7",
+                "state": "S_TROO_RUN7",
                 "frame": "D",
                 "tics": 3,
                 "fullBright": false
               },
               {
-                "state": "trooRun8",
+                "state": "S_TROO_RUN8",
                 "frame": "D",
                 "tics": 3,
                 "fullBright": false
@@ -10193,19 +10193,19 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "trooAtk1",
+                "state": "S_TROO_ATK1",
                 "frame": "E",
                 "tics": 8,
                 "fullBright": false
               },
               {
-                "state": "trooAtk2",
+                "state": "S_TROO_ATK2",
                 "frame": "F",
                 "tics": 8,
                 "fullBright": false
               },
               {
-                "state": "trooAtk3",
+                "state": "S_TROO_ATK3",
                 "frame": "G",
                 "tics": 6,
                 "fullBright": false
@@ -10217,13 +10217,13 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "trooPain",
+                "state": "S_TROO_PAIN",
                 "frame": "H",
                 "tics": 2,
                 "fullBright": false
               },
               {
-                "state": "trooPain2",
+                "state": "S_TROO_PAIN2",
                 "frame": "H",
                 "tics": 2,
                 "fullBright": false
@@ -10235,33 +10235,33 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "trooDie1",
+                "state": "S_TROO_DIE1",
                 "frame": "I",
                 "tics": 8,
                 "fullBright": false
               },
               {
-                "state": "trooDie2",
+                "state": "S_TROO_DIE2",
                 "frame": "J",
                 "tics": 8,
                 "fullBright": false
               },
               {
-                "state": "trooDie3",
+                "state": "S_TROO_DIE3",
                 "frame": "K",
                 "tics": 6,
                 "fullBright": false
               },
               {
-                "state": "trooDie4",
+                "state": "S_TROO_DIE4",
                 "frame": "L",
                 "tics": 6,
                 "fullBright": false
               },
               {
-                "state": "trooDie5",
+                "state": "S_TROO_DIE5",
                 "frame": "M",
-                "tics": null,
+                "tics": -1,
                 "fullBright": false
               }
             ]
@@ -10271,51 +10271,51 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "trooXdie1",
+                "state": "S_TROO_XDIE1",
                 "frame": "N",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "trooXdie2",
+                "state": "S_TROO_XDIE2",
                 "frame": "O",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "trooXdie3",
+                "state": "S_TROO_XDIE3",
                 "frame": "P",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "trooXdie4",
+                "state": "S_TROO_XDIE4",
                 "frame": "Q",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "trooXdie5",
+                "state": "S_TROO_XDIE5",
                 "frame": "R",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "trooXdie6",
+                "state": "S_TROO_XDIE6",
                 "frame": "S",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "trooXdie7",
+                "state": "S_TROO_XDIE7",
                 "frame": "T",
                 "tics": 5,
                 "fullBright": false
               },
               {
-                "state": "trooXdie8",
+                "state": "S_TROO_XDIE8",
                 "frame": "U",
-                "tics": null,
+                "tics": -1,
                 "fullBright": false
               }
             ]
@@ -10325,31 +10325,31 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "trooRaise1",
+                "state": "S_TROO_RAISE1",
                 "frame": "M",
                 "tics": 8,
                 "fullBright": false
               },
               {
-                "state": "trooRaise2",
+                "state": "S_TROO_RAISE2",
                 "frame": "L",
                 "tics": 8,
                 "fullBright": false
               },
               {
-                "state": "trooRaise3",
+                "state": "S_TROO_RAISE3",
                 "frame": "K",
                 "tics": 6,
                 "fullBright": false
               },
               {
-                "state": "trooRaise4",
+                "state": "S_TROO_RAISE4",
                 "frame": "J",
                 "tics": 6,
                 "fullBright": false
               },
               {
-                "state": "trooRaise5",
+                "state": "S_TROO_RAISE5",
                 "frame": "I",
                 "tics": 6,
                 "fullBright": false
@@ -10941,13 +10941,13 @@
             "loopMode": "repeat",
             "steps": [
               {
-                "state": "tball1",
+                "state": "S_TBALL1",
                 "frame": "A",
                 "tics": 4,
                 "fullBright": true
               },
               {
-                "state": "tball2",
+                "state": "S_TBALL2",
                 "frame": "B",
                 "tics": 4,
                 "fullBright": true
@@ -10959,19 +10959,19 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "tballx1",
+                "state": "S_TBALLX1",
                 "frame": "C",
                 "tics": 6,
                 "fullBright": true
               },
               {
-                "state": "tballx2",
+                "state": "S_TBALLX2",
                 "frame": "D",
                 "tics": 6,
                 "fullBright": true
               },
               {
-                "state": "tballx3",
+                "state": "S_TBALLX3",
                 "frame": "E",
                 "tics": 6,
                 "fullBright": true
@@ -11048,19 +11048,19 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "blood1",
+                "state": "S_BLOOD1",
                 "frame": "C",
                 "tics": 8,
                 "fullBright": false
               },
               {
-                "state": "blood2",
+                "state": "S_BLOOD2",
                 "frame": "B",
                 "tics": 8,
                 "fullBright": false
               },
               {
-                "state": "blood3",
+                "state": "S_BLOOD3",
                 "frame": "A",
                 "tics": 8,
                 "fullBright": false
@@ -11115,25 +11115,25 @@
             "loopMode": "once",
             "steps": [
               {
-                "state": "puff1",
+                "state": "S_PUFF1",
                 "frame": "A",
                 "tics": 4,
                 "fullBright": true
               },
               {
-                "state": "puff2",
+                "state": "S_PUFF2",
                 "frame": "B",
                 "tics": 4,
                 "fullBright": false
               },
               {
-                "state": "puff3",
+                "state": "S_PUFF3",
                 "frame": "C",
                 "tics": 4,
                 "fullBright": false
               },
               {
-                "state": "puff4",
+                "state": "S_PUFF4",
                 "frame": "D",
                 "tics": 4,
                 "fullBright": false

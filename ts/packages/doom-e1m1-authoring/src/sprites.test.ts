@@ -166,7 +166,7 @@ test("generated sprite contract keeps clips, timing, directions, dimensions, and
   );
   assert.deepEqual(
     clip("TROO", "death").steps.map(({ frame, tics }) => [frame, tics]),
-    [["I", 8], ["J", 8], ["K", 6], ["L", 6], ["M", null]],
+    [["I", 8], ["J", 8], ["K", 6], ["L", 6], ["M", -1]],
   );
   assert.deepEqual(
     clip("BLUD", "hit").steps.map(({ frame, tics }) => [frame, tics]),
@@ -184,6 +184,7 @@ test("generated sprite contract keeps clips, timing, directions, dimensions, and
   const sourceFrame = manifest.atlases[0]!.frames.find((frame) => frame.name === "POSSA1")!;
   assert.deepEqual(sourceFrame.pivot, [18 / 41, 5 / 55]);
   assert.deepEqual(sourceFrame.boundsFromOrigin, { left: -18, right: 23, top: 50, bottom: -5 });
+  assert.equal(clip("POSS", "idle").steps[0]!.state, "S_POSS_STND");
 });
 
 test("sprite posts decode as transparent RGBA without treating palette index 255 as transparent", () => {

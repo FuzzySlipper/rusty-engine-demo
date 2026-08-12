@@ -91,7 +91,7 @@ interface SpriteManifestFrame {
 interface SpriteContractClip {
   id: string;
   loopMode: "once" | "repeat";
-  steps: { frame: string; tics: number | null }[];
+  steps: { frame: string; tics: number }[];
 }
 
 interface SpriteContractFamily {
@@ -142,7 +142,7 @@ function authoredSpriteFrames(
     if (!direction) throw new Error(`missing Doom ${family.prefix}${step.frame} front frame`);
     const frame = frameIds.get(direction.sourceLump);
     if (frame === undefined) throw new Error(`missing authored Doom frame ${direction.sourceLump}`);
-    if (step.tics === null) {
+    if (step.tics < 0) {
       frames.push(frame);
       continue;
     }

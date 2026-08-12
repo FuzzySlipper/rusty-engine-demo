@@ -21,7 +21,7 @@ export const DOOM_SPRITE_CONTRACT_SOURCES = [
 export interface DoomSpriteClipStep {
   readonly state: string;
   readonly frame: string;
-  readonly tics: number | null;
+  readonly tics: number;
   readonly fullBright: boolean;
 }
 
@@ -45,44 +45,44 @@ export interface DoomSpriteFamilyDefinition {
 const step = (
   state: string,
   frame: string,
-  tics: number | null,
+  tics: number,
   fullBright = false,
 ): DoomSpriteClipStep => ({ state, frame, tics, fullBright });
 
 function actorClips(
   prefix: "POSS" | "SPOS" | "TROO",
 ): readonly DoomSpriteClipDefinition[] {
-  const p = prefix.toLowerCase();
+  const state = (name: string): string => `S_${prefix}_${name}`;
   if (prefix === "POSS") {
     return [
-      { id: "idle", loopMode: "repeat", steps: [step(`${p}Stnd`, "A", 10), step(`${p}Stnd2`, "B", 10)] },
-      { id: "walk", loopMode: "repeat", steps: ["A", "A", "B", "B", "C", "C", "D", "D"].map((frame, index) => step(`${p}Run${index + 1}`, frame, 4)) },
-      { id: "attack", loopMode: "once", steps: [step(`${p}Atk1`, "E", 10), step(`${p}Atk2`, "F", 8), step(`${p}Atk3`, "E", 8)] },
-      { id: "pain", loopMode: "once", steps: [step(`${p}Pain`, "G", 3), step(`${p}Pain2`, "G", 3)] },
-      { id: "death", loopMode: "once", steps: [step(`${p}Die1`, "H", 5), step(`${p}Die2`, "I", 5), step(`${p}Die3`, "J", 5), step(`${p}Die4`, "K", 5), step(`${p}Die5`, "L", null)] },
-      { id: "gibDeath", loopMode: "once", steps: "MNOPQRSTU".split("").map((frame, index) => step(`${p}Xdie${index + 1}`, frame, index === 8 ? null : 5)) },
-      { id: "raise", loopMode: "once", steps: ["K", "J", "I", "H"].map((frame, index) => step(`${p}Raise${index + 1}`, frame, 5)) },
+      { id: "idle", loopMode: "repeat", steps: [step(state("STND"), "A", 10), step(state("STND2"), "B", 10)] },
+      { id: "walk", loopMode: "repeat", steps: ["A", "A", "B", "B", "C", "C", "D", "D"].map((frame, index) => step(state(`RUN${index + 1}`), frame, 4)) },
+      { id: "attack", loopMode: "once", steps: [step(state("ATK1"), "E", 10), step(state("ATK2"), "F", 8), step(state("ATK3"), "E", 8)] },
+      { id: "pain", loopMode: "once", steps: [step(state("PAIN"), "G", 3), step(state("PAIN2"), "G", 3)] },
+      { id: "death", loopMode: "once", steps: [step(state("DIE1"), "H", 5), step(state("DIE2"), "I", 5), step(state("DIE3"), "J", 5), step(state("DIE4"), "K", 5), step(state("DIE5"), "L", -1)] },
+      { id: "gibDeath", loopMode: "once", steps: "MNOPQRSTU".split("").map((frame, index) => step(state(`XDIE${index + 1}`), frame, index === 8 ? -1 : 5)) },
+      { id: "raise", loopMode: "once", steps: ["K", "J", "I", "H"].map((frame, index) => step(state(`RAISE${index + 1}`), frame, 5)) },
     ];
   }
   if (prefix === "SPOS") {
     return [
-      { id: "idle", loopMode: "repeat", steps: [step(`${p}Stnd`, "A", 10), step(`${p}Stnd2`, "B", 10)] },
-      { id: "walk", loopMode: "repeat", steps: ["A", "A", "B", "B", "C", "C", "D", "D"].map((frame, index) => step(`${p}Run${index + 1}`, frame, 3)) },
-      { id: "attack", loopMode: "once", steps: [step(`${p}Atk1`, "E", 10), step(`${p}Atk2`, "F", 10, true), step(`${p}Atk3`, "E", 10)] },
-      { id: "pain", loopMode: "once", steps: [step(`${p}Pain`, "G", 3), step(`${p}Pain2`, "G", 3)] },
-      { id: "death", loopMode: "once", steps: [step(`${p}Die1`, "H", 5), step(`${p}Die2`, "I", 5), step(`${p}Die3`, "J", 5), step(`${p}Die4`, "K", 5), step(`${p}Die5`, "L", null)] },
-      { id: "gibDeath", loopMode: "once", steps: "MNOPQRSTU".split("").map((frame, index) => step(`${p}Xdie${index + 1}`, frame, index === 8 ? null : 5)) },
-      { id: "raise", loopMode: "once", steps: ["L", "K", "J", "I", "H"].map((frame, index) => step(`${p}Raise${index + 1}`, frame, 5)) },
+      { id: "idle", loopMode: "repeat", steps: [step(state("STND"), "A", 10), step(state("STND2"), "B", 10)] },
+      { id: "walk", loopMode: "repeat", steps: ["A", "A", "B", "B", "C", "C", "D", "D"].map((frame, index) => step(state(`RUN${index + 1}`), frame, 3)) },
+      { id: "attack", loopMode: "once", steps: [step(state("ATK1"), "E", 10), step(state("ATK2"), "F", 10, true), step(state("ATK3"), "E", 10)] },
+      { id: "pain", loopMode: "once", steps: [step(state("PAIN"), "G", 3), step(state("PAIN2"), "G", 3)] },
+      { id: "death", loopMode: "once", steps: [step(state("DIE1"), "H", 5), step(state("DIE2"), "I", 5), step(state("DIE3"), "J", 5), step(state("DIE4"), "K", 5), step(state("DIE5"), "L", -1)] },
+      { id: "gibDeath", loopMode: "once", steps: "MNOPQRSTU".split("").map((frame, index) => step(state(`XDIE${index + 1}`), frame, index === 8 ? -1 : 5)) },
+      { id: "raise", loopMode: "once", steps: ["L", "K", "J", "I", "H"].map((frame, index) => step(state(`RAISE${index + 1}`), frame, 5)) },
     ];
   }
   return [
-    { id: "idle", loopMode: "repeat", steps: [step(`${p}Stnd`, "A", 10), step(`${p}Stnd2`, "B", 10)] },
-    { id: "walk", loopMode: "repeat", steps: ["A", "A", "B", "B", "C", "C", "D", "D"].map((frame, index) => step(`${p}Run${index + 1}`, frame, 3)) },
-    { id: "attack", loopMode: "once", steps: [step(`${p}Atk1`, "E", 8), step(`${p}Atk2`, "F", 8), step(`${p}Atk3`, "G", 6)] },
-    { id: "pain", loopMode: "once", steps: [step(`${p}Pain`, "H", 2), step(`${p}Pain2`, "H", 2)] },
-    { id: "death", loopMode: "once", steps: [step(`${p}Die1`, "I", 8), step(`${p}Die2`, "J", 8), step(`${p}Die3`, "K", 6), step(`${p}Die4`, "L", 6), step(`${p}Die5`, "M", null)] },
-    { id: "gibDeath", loopMode: "once", steps: "NOPQRSTU".split("").map((frame, index) => step(`${p}Xdie${index + 1}`, frame, index === 7 ? null : 5)) },
-    { id: "raise", loopMode: "once", steps: [step(`${p}Raise1`, "M", 8), step(`${p}Raise2`, "L", 8), step(`${p}Raise3`, "K", 6), step(`${p}Raise4`, "J", 6), step(`${p}Raise5`, "I", 6)] },
+    { id: "idle", loopMode: "repeat", steps: [step(state("STND"), "A", 10), step(state("STND2"), "B", 10)] },
+    { id: "walk", loopMode: "repeat", steps: ["A", "A", "B", "B", "C", "C", "D", "D"].map((frame, index) => step(state(`RUN${index + 1}`), frame, 3)) },
+    { id: "attack", loopMode: "once", steps: [step(state("ATK1"), "E", 8), step(state("ATK2"), "F", 8), step(state("ATK3"), "G", 6)] },
+    { id: "pain", loopMode: "once", steps: [step(state("PAIN"), "H", 2), step(state("PAIN2"), "H", 2)] },
+    { id: "death", loopMode: "once", steps: [step(state("DIE1"), "I", 8), step(state("DIE2"), "J", 8), step(state("DIE3"), "K", 6), step(state("DIE4"), "L", 6), step(state("DIE5"), "M", -1)] },
+    { id: "gibDeath", loopMode: "once", steps: "NOPQRSTU".split("").map((frame, index) => step(state(`XDIE${index + 1}`), frame, index === 7 ? -1 : 5)) },
+    { id: "raise", loopMode: "once", steps: [step(state("RAISE1"), "M", 8), step(state("RAISE2"), "L", 8), step(state("RAISE3"), "K", 6), step(state("RAISE4"), "J", 6), step(state("RAISE5"), "I", 6)] },
   ];
 }
 
@@ -93,12 +93,12 @@ export const DOOM_SPRITE_FAMILY_DEFINITIONS: readonly DoomSpriteFamilyDefinition
   {
     prefix: "BAL1", role: "projectile", thingType: null, dimensionsDoomUnits: { radius: 6, height: 8 },
     clips: [
-      { id: "flight", loopMode: "repeat", steps: [step("tball1", "A", 4, true), step("tball2", "B", 4, true)] },
-      { id: "impact", loopMode: "once", steps: [step("tballx1", "C", 6, true), step("tballx2", "D", 6, true), step("tballx3", "E", 6, true)] },
+      { id: "flight", loopMode: "repeat", steps: [step("S_TBALL1", "A", 4, true), step("S_TBALL2", "B", 4, true)] },
+      { id: "impact", loopMode: "once", steps: [step("S_TBALLX1", "C", 6, true), step("S_TBALLX2", "D", 6, true), step("S_TBALLX3", "E", 6, true)] },
     ],
   },
-  { prefix: "BLUD", role: "effect", thingType: null, dimensionsDoomUnits: null, clips: [{ id: "hit", loopMode: "once", steps: [step("blood1", "C", 8), step("blood2", "B", 8), step("blood3", "A", 8)] }] },
-  { prefix: "PUFF", role: "effect", thingType: null, dimensionsDoomUnits: null, clips: [{ id: "impact", loopMode: "once", steps: [step("puff1", "A", 4, true), step("puff2", "B", 4), step("puff3", "C", 4), step("puff4", "D", 4)] }] },
+  { prefix: "BLUD", role: "effect", thingType: null, dimensionsDoomUnits: null, clips: [{ id: "hit", loopMode: "once", steps: [step("S_BLOOD1", "C", 8), step("S_BLOOD2", "B", 8), step("S_BLOOD3", "A", 8)] }] },
+  { prefix: "PUFF", role: "effect", thingType: null, dimensionsDoomUnits: null, clips: [{ id: "impact", loopMode: "once", steps: [step("S_PUFF1", "A", 4, true), step("S_PUFF2", "B", 4), step("S_PUFF3", "C", 4), step("S_PUFF4", "D", 4)] }] },
 ];
 
 export interface ParsedSpriteLumpAssignment {
