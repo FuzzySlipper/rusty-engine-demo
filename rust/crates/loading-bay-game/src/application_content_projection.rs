@@ -6,9 +6,11 @@ use std::path::PathBuf;
 
 use rusty_engine::engine_spatial::VoxelCollisionScene;
 use rusty_engine::render_model::{
-    pack_mesh_resources, AnimatedMeshPlaybackCommand, AnimationLoopMode, RenderAssetKind,
-    RenderDiff, RenderFrameDiff, ResolvedRenderAsset, TextureDescriptor, TextureFilter,
-    TextureWrap, MAX_MESH_RESOURCE_BYTES,
+    pack_mesh_resources, AnimatedMeshPlaybackCommand, AnimationLoopMode, BillboardMode,
+    RenderAssetKind, RenderDiff, RenderFrameDiff, RenderHandle, RenderMetadata,
+    ResolvedRenderAsset, SpriteAttachment, SpriteDepthPolicy, SpriteInstanceDescriptor,
+    SpriteShading, SpriteSizeMode, TextureDescriptor, TextureFilter, TextureWrap, Transform,
+    MAX_MESH_RESOURCE_BYTES,
 };
 use rusty_engine::render_projection::EntityRenderProjector;
 use rusty_engine::renderer_webview_host::RendererResource;
@@ -24,12 +26,22 @@ pub struct ProjectedApplicationContent {
     pub resources: Vec<RendererResource>,
 }
 
+#[derive(Debug, Clone, Copy)]
+struct HitEffectProjection {
+    started_at: u64,
+    created: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct GameplayApplicationProjector {
     entities: EntityRenderProjector,
     assets: BTreeMap<String, ResolvedRenderAsset>,
     bindings: BTreeMap<u64, BTreeMap<StoredVisualState, StoredVisualPresentation>>,
     visual_states: BTreeMap<u64, StoredVisualState>,
+    visual_frames: BTreeMap<u64, u32>,
+    visual_state_started_at: BTreeMap<u64, u64>,
+    health: BTreeMap<u64, u32>,
+    hit_effects: BTreeMap<u64, HitEffectProjection>,
 }
 
 impl GameplayApplicationProjector {
@@ -43,6 +55,8 @@ impl GameplayApplicationProjector {
                     RenderAssetKind::AnimatedMesh
                 } else if asset.static_mesh.is_some() {
                     RenderAssetKind::StaticMesh
+                } else if asset.sprite_atlas.is_some() {
+                    RenderAssetKind::Sprite
                 } else {
                     return None;
                 };
@@ -78,6 +92,10 @@ impl GameplayApplicationProjector {
             assets,
             bindings,
             visual_states: BTreeMap::new(),
+            visual_frames: BTreeMap::new(),
+            visual_state_started_at: BTreeMap::new(),
+            health: BTreeMap::new(),
+            hit_effects: BTreeMap::new(),
         }
     }
 
@@ -92,7 +110,23 @@ impl GameplayApplicationProjector {
             let Some(combat) = runtime.session().enemy_combat(id) else {
                 continue;
             };
-            let desired = if runtime
+            if let Some(health) = runtime.session().health(id) {
+                if self
+                    .health
+                    .get(entity)
+                    .is_some_and(|previous| *previous > health.current)
+                {
+                    self.hit_effects
+                        .entry(*entity)
+                        .and_modify(|effect| effect.started_at = runtime.tick().raw())
+                        .or_insert(HitEffectProjection {
+                            started_at: runtime.tick().raw(),
+                            created: false,
+                        });
+                }
+                self.health.insert(*entity, health.current);
+            }
+            let mut desired = if runtime
                 .session()
                 .enemy(id)
                 .is_some_and(|enemy| enemy.state == EnemyState::Defeated)
@@ -109,36 +143,154 @@ impl GameplayApplicationProjector {
                     EnemyCombatPosture::Dead => StoredVisualState::Defeated,
                 }
             };
-            if self.visual_states.get(entity) == Some(&desired) {
-                continue;
+            if !matches!(
+                desired,
+                StoredVisualState::Hit | StoredVisualState::Defeated
+            ) && self.visual_states.get(entity) == Some(&StoredVisualState::Attacking)
+            {
+                if let Some(StoredVisualPresentation::SpriteFrames {
+                    frames,
+                    ticks_per_frame,
+                    ..
+                }) = states.get(&StoredVisualState::Attacking)
+                {
+                    let started_at = self
+                        .visual_state_started_at
+                        .get(entity)
+                        .copied()
+                        .unwrap_or(runtime.tick().raw());
+                    let duration = ticks_per_frame.saturating_mul(frames.len() as u64);
+                    if runtime.tick().raw().saturating_sub(started_at) < duration {
+                        desired = StoredVisualState::Attacking;
+                    }
+                }
             }
-            let Some(StoredVisualPresentation::Animation {
-                clip,
-                loop_mode,
-                speed,
-                fade_seconds,
-            }) = states.get(&desired)
-            else {
+            let Some(presentation) = states.get(&desired) else {
                 continue;
             };
             let Some(handle) = self.entities.handle_of(id) else {
                 continue;
             };
-            operations.push(RenderDiff::SetAnimatedMeshPlayback {
-                handle,
-                playback: AnimatedMeshPlaybackCommand::Play {
-                    clip: clip.clone(),
-                    r#loop: match loop_mode {
-                        StoredVisualAnimationLoopMode::Once => AnimationLoopMode::Once,
-                        StoredVisualAnimationLoopMode::Repeat => AnimationLoopMode::Repeat,
+            match presentation {
+                StoredVisualPresentation::Animation {
+                    clip,
+                    loop_mode,
+                    speed,
+                    fade_seconds,
+                } if self.visual_states.get(entity) != Some(&desired) => {
+                    operations.push(RenderDiff::SetAnimatedMeshPlayback {
+                        handle,
+                        playback: AnimatedMeshPlaybackCommand::Play {
+                            clip: clip.clone(),
+                            r#loop: match loop_mode {
+                                StoredVisualAnimationLoopMode::Once => AnimationLoopMode::Once,
+                                StoredVisualAnimationLoopMode::Repeat => AnimationLoopMode::Repeat,
+                            },
+                            speed: *speed,
+                            weight: 1.0,
+                            restart: false,
+                            fade_seconds: *fade_seconds,
+                        },
+                    });
+                    self.visual_states.insert(*entity, desired);
+                }
+                StoredVisualPresentation::SpriteFrames {
+                    frames,
+                    ticks_per_frame,
+                    loop_mode,
+                } => {
+                    if self.visual_states.get(entity) != Some(&desired) {
+                        self.visual_state_started_at
+                            .insert(*entity, runtime.tick().raw());
+                    }
+                    let started_at = self
+                        .visual_state_started_at
+                        .get(entity)
+                        .copied()
+                        .unwrap_or(runtime.tick().raw());
+                    let elapsed = runtime.tick().raw().saturating_sub(started_at) / ticks_per_frame;
+                    let index = match loop_mode {
+                        StoredVisualAnimationLoopMode::Repeat => elapsed as usize % frames.len(),
+                        StoredVisualAnimationLoopMode::Once => {
+                            (elapsed as usize).min(frames.len() - 1)
+                        }
+                    };
+                    let frame = frames[index];
+                    if self.visual_frames.get(entity) != Some(&frame) {
+                        operations.push(RenderDiff::UpdateSprite {
+                            handle,
+                            frame: Some(frame),
+                            tint: None,
+                            render_order: None,
+                            visible: None,
+                        });
+                        self.visual_frames.insert(*entity, frame);
+                    }
+                    self.visual_states.insert(*entity, desired);
+                }
+                _ => {}
+            }
+        }
+        let mut completed_effects = Vec::new();
+        for (entity, effect) in &mut self.hit_effects {
+            let elapsed = runtime.tick().raw().saturating_sub(effect.started_at);
+            let handle = hit_effect_handle(*entity)?;
+            let entity_id = rusty_engine::core_ids::EntityId::new(*entity);
+            if !effect.created {
+                let translation = runtime
+                    .session()
+                    .enemy(entity_id)
+                    .and_then(|enemy| enemy.entity_view.transform)
+                    .map(|transform| transform.translation.to_array())
+                    .unwrap_or([0.0; 3]);
+                operations.push(RenderDiff::CreateSprite {
+                    handle,
+                    parent: None,
+                    sprite: SpriteInstanceDescriptor {
+                        asset: "sprite/doom-blood".to_owned(),
+                        frame: 0,
+                        pivot: [0.5, 0.5],
+                        size: [2.0, 2.0],
+                        size_mode: SpriteSizeMode::World,
+                        billboard: BillboardMode::Spherical,
+                        tint: [1.0; 4],
+                        render_order: 1,
+                        depth: SpriteDepthPolicy::Default,
+                        shading: SpriteShading::Unlit,
+                        visible: true,
+                        transform: Transform {
+                            translation,
+                            ..Transform::IDENTITY
+                        },
+                        attachment: SpriteAttachment {
+                            source_entity: Some(*entity),
+                            source_scene_node: None,
+                            attachment_point: Some("doom-hit".to_owned()),
+                        },
+                        metadata: RenderMetadata {
+                            source_entity: Some(*entity),
+                            source_scene_node: None,
+                            tags: vec!["doom-hit-effect".to_owned()],
+                            label: Some("Doom blood hit effect".to_owned()),
+                        },
                     },
-                    speed: *speed,
-                    weight: 1.0,
-                    restart: false,
-                    fade_seconds: *fade_seconds,
-                },
-            });
-            self.visual_states.insert(*entity, desired);
+                });
+                effect.created = true;
+            } else if elapsed < 12 {
+                operations.push(RenderDiff::UpdateSprite {
+                    handle,
+                    frame: Some(((elapsed / 4) as u32).min(2)),
+                    tint: None,
+                    render_order: None,
+                    visible: None,
+                });
+            } else {
+                operations.push(RenderDiff::Destroy { handle });
+                completed_effects.push(*entity);
+            }
+        }
+        for entity in completed_effects {
+            self.hit_effects.remove(&entity);
         }
         RenderFrameDiff::try_from_ops(operations)
             .map_err(|error| anyhow::anyhow!("build live gameplay frame: {error:?}"))
@@ -147,8 +299,19 @@ impl GameplayApplicationProjector {
     pub fn project_current(&self, runtime: &GameRuntime) -> anyhow::Result<RenderFrameDiff> {
         let mut current = self.clone();
         current.visual_states.clear();
+        current.visual_frames.clear();
+        current.visual_state_started_at.clear();
         current.project(runtime)
     }
+}
+
+fn hit_effect_handle(entity: u64) -> anyhow::Result<RenderHandle> {
+    const LOCAL_BITS: u32 = 40;
+    const LOCAL_MASK: u64 = (1_u64 << LOCAL_BITS) - 1;
+    if entity > LOCAL_MASK {
+        anyhow::bail!("Doom hit-effect entity identity exceeds the presentation namespace");
+    }
+    Ok(RenderHandle::new((7_u64 << LOCAL_BITS) | entity))
 }
 
 /// Build the complete immutable E1M1 frame/resource closure consumed by an
@@ -170,12 +333,15 @@ pub fn project_doom_e1m1_application_content(
         );
     }
     resources.extend(texture_resources);
+    let (sprite_resources, sprite_ops) = doom_sprite_projection(project)?;
+    resources.extend(sprite_resources);
     let (static_frame, static_resources) = static_mesh_projection(project)?;
     resources.extend(static_resources);
     let (animated_resources, animated_ops) = animated_mesh_projection(project)?;
     resources.extend(animated_resources);
 
     let mut operations = texture_ops;
+    operations.extend(sprite_ops);
     operations.extend(static_frame.ops);
     operations.extend(animated_ops);
     operations.extend(volume_frame.ops);
@@ -244,7 +410,9 @@ pub fn doom_texture_projection(
     let projected = project
         .assets
         .iter()
-        .filter(|asset| asset.id.starts_with("texture/doom-"))
+        .filter(|asset| {
+            asset.id.starts_with("texture/doom-flat-") || asset.id.starts_with("texture/doom-wall-")
+        })
         .map(|asset| {
             let metadata = asset
                 .catalog
@@ -289,6 +457,65 @@ pub fn doom_texture_projection(
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
     Ok(projected.into_iter().unzip())
+}
+
+fn doom_sprite_projection(
+    project: &StoredProject,
+) -> anyhow::Result<(Vec<RendererResource>, Vec<RenderDiff>)> {
+    let mut resources = Vec::new();
+    let mut operations = Vec::new();
+    let mut textures = std::collections::BTreeSet::new();
+    for asset in project
+        .assets
+        .iter()
+        .filter(|asset| asset.sprite_atlas.is_some())
+    {
+        let atlas = asset.sprite_atlas.as_ref().expect("filtered sprite atlas");
+        let metadata = asset
+            .catalog
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Doom sprite atlas is missing catalog metadata"))?;
+        let source_path = metadata.source_path.as_ref().ok_or_else(|| {
+            anyhow::anyhow!("Doom sprite atlas is missing its checked-in source path")
+        })?;
+        let content_hash = metadata.hash.as_ref().ok_or_else(|| {
+            anyhow::anyhow!("Doom sprite atlas is missing its declared content hash")
+        })?;
+        let source = repository_root().join(source_path);
+        let bytes = fs::read(&source).map_err(|error| {
+            anyhow::anyhow!(
+                "read checked-in Doom sprite atlas {}: {error}",
+                source.display()
+            )
+        })?;
+        if textures.insert(atlas.texture.clone()) {
+            let texture = TextureDescriptor::admit_png_rgba8_resource(
+                atlas.texture.clone(),
+                &bytes,
+                TextureFilter::Nearest,
+                TextureWrap::Clamp,
+                metadata.version,
+            )
+            .map_err(|error| anyhow::anyhow!("admit Doom sprite atlas {source_path}: {error:?}"))?;
+            if texture.content_hash.as_ref() != Some(content_hash) {
+                anyhow::bail!("Doom sprite atlas {source_path} differs from its declared hash");
+            }
+            let digest = content_hash
+                .strip_prefix("sha256:")
+                .ok_or_else(|| anyhow::anyhow!("Doom sprite atlas hash is not SHA-256"))?;
+            resources.push(RendererResource {
+                identity: format!("texture-resource/{digest}"),
+                content_hash: content_hash.clone(),
+                media_type: "image/png".to_owned(),
+                bytes,
+            });
+            operations.push(RenderDiff::DefineTexture { texture });
+        }
+        operations.push(RenderDiff::DefineSpriteAtlas {
+            atlas: atlas.clone(),
+        });
+    }
+    Ok((resources, operations))
 }
 
 pub fn externalize_frame_meshes(
@@ -349,7 +576,7 @@ mod tests {
         decode_project_document, project_stored_voxel_objects, DamageCommand, DamageService,
         DamageSource, GameRuntime,
     };
-    use rusty_engine::render_model::{AnimatedMeshPlaybackCommand, RenderDiff};
+    use rusty_engine::render_model::RenderDiff;
 
     use super::{project_doom_e1m1_application_content, GameplayApplicationProjector};
 
@@ -378,7 +605,16 @@ mod tests {
                 .iter()
                 .filter(|resource| resource.identity.starts_with("texture-resource/"))
                 .count(),
-            54
+            56
+        );
+        assert_eq!(
+            content
+                .frame
+                .ops
+                .iter()
+                .filter(|operation| matches!(operation, RenderDiff::DefineSpriteAtlas { .. }))
+                .count(),
+            5
         );
         assert!(content
             .resources
@@ -406,7 +642,7 @@ mod tests {
     }
 
     #[test]
-    fn gameplay_projection_emits_authored_hit_and_death_clips_without_hiding_the_enemy() {
+    fn gameplay_projection_emits_authored_hit_and_death_frames_without_hiding_the_enemy() {
         let source = include_str!("../../../../content/projects/doom-e1m1.project.json");
         let project = decode_project_document(source).unwrap().project;
         let mut runtime = GameRuntime::from_stored_project(source).unwrap();
@@ -423,15 +659,22 @@ mod tests {
             },
         )
         .unwrap();
-        let hit = projector.project_current(&runtime).unwrap();
+        let hit = projector.project(&runtime).unwrap();
+        assert!(hit
+            .ops
+            .iter()
+            .any(|operation| matches!(operation, RenderDiff::UpdateSprite { frame: Some(_), .. })));
         assert!(hit.ops.iter().any(|operation| matches!(
             operation,
-            RenderDiff::SetAnimatedMeshPlayback {
-                playback: AnimatedMeshPlaybackCommand::Play { clip, restart: false, .. },
-                ..
-            } if clip == "hit"
+            RenderDiff::CreateSprite { sprite, .. }
+                if sprite.asset == "sprite/doom-blood" && sprite.frame == 0
         )));
-        assert_eq!(projector.project_current(&runtime).unwrap(), hit);
+        let repeated = projector.project(&runtime).unwrap();
+        assert!(!repeated.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::CreateSprite { sprite, .. }
+                if sprite.asset == "sprite/doom-blood"
+        )));
 
         DamageService::apply(
             runtime.session_mut(),
@@ -442,14 +685,20 @@ mod tests {
             },
         )
         .unwrap();
-        let death = projector.project_current(&runtime).unwrap();
-        assert!(death.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::SetAnimatedMeshPlayback {
-                playback: AnimatedMeshPlaybackCommand::Play { clip, restart: false, .. },
-                ..
-            } if clip == "death"
-        )));
+        let death = projector.project(&runtime).unwrap();
+        assert!(death
+            .ops
+            .iter()
+            .any(|operation| matches!(operation, RenderDiff::UpdateSprite { frame: Some(_), .. })));
+        let hit_frame = hit.ops.iter().find_map(|operation| match operation {
+            RenderDiff::UpdateSprite { frame, .. } => *frame,
+            _ => None,
+        });
+        let death_frame = death.ops.iter().find_map(|operation| match operation {
+            RenderDiff::UpdateSprite { frame, .. } => *frame,
+            _ => None,
+        });
+        assert_ne!(hit_frame, death_frame);
         assert!(!death.ops.iter().any(|operation| matches!(
             operation,
             RenderDiff::Update {

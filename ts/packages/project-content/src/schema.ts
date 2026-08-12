@@ -60,6 +60,13 @@ export type VisualBindingStateDefinition =
       readonly loopMode: "once" | "repeat";
       readonly speed: number;
       readonly fadeSeconds: number | null;
+    }
+  | {
+      readonly state: VisualStateDefinition;
+      readonly kind: "spriteFrames";
+      readonly frames: readonly number[];
+      readonly ticksPerFrame: number;
+      readonly loopMode: "once" | "repeat";
     };
 
 export interface DoorDefinition {
@@ -174,6 +181,7 @@ export interface EnemyCombatDefinition {
       readonly gravityScale: number;
       readonly lifetimeTicks: number;
       readonly restitution: number;
+      readonly visualAsset?: string;
     };
   };
 }
@@ -463,6 +471,16 @@ export interface StoredAssetDefinition {
       readonly min: Vec3;
       readonly max: Vec3;
     };
+  };
+  readonly spriteAtlas?: {
+    readonly id: string;
+    readonly texture: string;
+    readonly frames: readonly {
+      readonly frame: number;
+      readonly uvMin: readonly [number, number];
+      readonly uvMax: readonly [number, number];
+      readonly size?: readonly [number, number];
+    }[];
   };
   readonly voxelObject?: StoredVoxelObjectAssetDefinition;
 }

@@ -6,9 +6,11 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use loading_bay_game::{
-    GameLoopEdgeCommand, GameLoopEdgeCommandKind, InputCommandDisposition, InputCommandRejection,
-    PlayerInputCommand, PlayerInputIntent, SaveGameError, SaveLoadRequest, SaveSlotId,
+    GameLoopEdgeCommand, GameLoopEdgeCommandKind, GameplayApplicationProjector,
+    InputCommandDisposition, InputCommandRejection, PlayerInputCommand, PlayerInputIntent,
+    SaveGameError, SaveLoadRequest, SaveSlotId,
 };
+use rusty_engine::render_model::RenderFrameDiff;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tungstenite::handshake::server::{Request, Response};
@@ -18,7 +20,8 @@ use tungstenite::protocol::WebSocketConfig;
 use tungstenite::{accept_hdr_with_config, Error as WebSocketError, Message, WebSocket};
 
 use super::state::{
-    browser_dynamic_state, browser_state, browser_static_resources, browser_static_revision,
+    browser_dynamic_state_with_gameplay_frame, browser_state, browser_static_resources,
+    browser_static_revision,
 };
 use super::{
     drain_game_loop_feedback, BrowserFeedbackProjection, BrowserRuntime, SharedBrowserRuntime,
@@ -225,6 +228,7 @@ struct SessionContext {
     force_static_resources: bool,
     acknowledged_command_sequence: u64,
     pending_restart_sequence: Option<u64>,
+    gameplay_projector: Option<GameplayApplicationProjector>,
     metrics: SessionMetrics,
 }
 
@@ -235,7 +239,10 @@ enum UpdateDisposition {
 }
 
 impl SessionContext {
-    fn new(connection_generation: u64) -> Self {
+    fn new(
+        connection_generation: u64,
+        gameplay_projector: Option<GameplayApplicationProjector>,
+    ) -> Self {
         Self {
             connection_generation,
             session_id: session_id(connection_generation),
@@ -246,6 +253,7 @@ impl SessionContext {
             force_static_resources: false,
             acknowledged_command_sequence: 0,
             pending_restart_sequence: None,
+            gameplay_projector,
             metrics: SessionMetrics::default(),
         }
     }
@@ -256,7 +264,7 @@ impl SessionContext {
         self.snapshot_sequence = 0;
         self.previous_dynamic = None;
         self.force_full = true;
-        self.force_static_resources = false;
+        self.force_static_resources = true;
         self.acknowledged_command_sequence = 0;
         self.pending_restart_sequence = None;
     }
@@ -292,12 +300,13 @@ pub(super) fn run_game_session(stream: TcpStream, runtime: Arc<SharedBrowserRunt
         .get_ref()
         .set_write_timeout(Some(SESSION_WRITE_TIMEOUT));
 
-    let connection_generation = runtime
-        .lock()
-        .expect("runtime lock")
-        .start_browser_connection();
+    let (connection_generation, gameplay_projector) = {
+        let mut host = runtime.lock().expect("runtime lock");
+        let connection_generation = host.start_browser_connection();
+        (connection_generation, host.gameplay_projector.clone())
+    };
     runtime.set_consumed_command_sequence(0);
-    let mut context = SessionContext::new(connection_generation);
+    let mut context = SessionContext::new(connection_generation, gameplay_projector);
     serve_session(websocket, &runtime, &mut context);
 
     let mut host = runtime.lock().expect("runtime lock");
@@ -816,6 +825,7 @@ fn send_latest_update(
         });
         if let Some(connection_generation) = adopted_generation {
             context.replace_connection(connection_generation);
+            context.gameplay_projector = host.gameplay_projector.clone();
             active = host.runtime.input_session();
         } else {
             drop(host);
@@ -863,8 +873,22 @@ fn send_latest_update(
         .expect("serialize legacy whole-state baseline")
         .len();
     }
-    let dynamic = serde_json::to_value(browser_dynamic_state(&host, fact_names.clone(), feedback))
-        .expect("serialize dynamic browser state");
+    let gameplay_frame = context
+        .gameplay_projector
+        .as_mut()
+        .map(|projector| projector.project(host.runtime.runtime()))
+        .transpose()
+        .expect("admitted gameplay projection")
+        .unwrap_or_else(|| {
+            RenderFrameDiff::try_from_ops(Vec::new()).expect("empty frame is valid")
+        });
+    let dynamic = serde_json::to_value(browser_dynamic_state_with_gameplay_frame(
+        &host,
+        fact_names.clone(),
+        feedback,
+        gameplay_frame,
+    ))
+    .expect("serialize dynamic browser state");
     let static_revision = browser_static_revision(&host);
     let static_changed = context.force_static_resources
         || context.previous_static_revision.as_ref() != Some(&static_revision);
@@ -1300,7 +1324,7 @@ mod tests {
 
     #[test]
     fn session_replacement_keeps_unchanged_static_resource_identity() {
-        let mut context = SessionContext::new(1);
+        let mut context = SessionContext::new(1, None);
         context.previous_static_revision = Some("7:content-hash".to_owned());
         context.replace_connection(2);
 
@@ -1309,6 +1333,7 @@ mod tests {
             Some("7:content-hash")
         );
         assert!(context.force_full);
+        assert!(context.force_static_resources);
         assert!(context.previous_dynamic.is_none());
         assert_eq!(context.snapshot_sequence, 0);
     }

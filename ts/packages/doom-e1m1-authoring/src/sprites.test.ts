@@ -1,0 +1,190 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+import {
+  decodePalette,
+  directoryByName,
+  hashBytes,
+  wadLumpBytes,
+} from "./textures.js";
+import { decodeWad } from "./wad-decode.js";
+import { sha256Hex } from "./png.js";
+import {
+  decodeSpritePatchToRgba,
+  renderSpriteArtifacts,
+  selectCanonicalSpriteLumps,
+} from "./sprite-extract.js";
+
+const WAD_PATH = "/home/research/doom.ts/public/doom1.wad";
+const WAD_SHA256 =
+  "1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771";
+const WAD_BYTE_LENGTH = 4196020;
+
+function loadWad(): ArrayBuffer {
+  const bytes = readFileSync(WAD_PATH);
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  ) as ArrayBuffer;
+}
+
+test("canonical sprite selection is bounded to the six requested Doom families", () => {
+  const wad = decodeWad(loadWad(), { computeSha256: true });
+  assert.equal(wad.sha256, WAD_SHA256);
+  assert.equal(wad.byteLength, WAD_BYTE_LENGTH);
+  const selected = selectCanonicalSpriteLumps(wad.entries);
+  const counts = new Map<string, number>();
+  for (const lump of selected.lumps)
+    counts.set(lump.family.prefix, (counts.get(lump.family.prefix) ?? 0) + 1);
+  assert.deepEqual(Object.fromEntries(counts), {
+    POSS: 49,
+    SPOS: 49,
+    TROO: 53,
+    BAL1: 5,
+    BLUD: 3,
+    PUFF: 4,
+  });
+  assert.equal(selected.lumps[0]?.entry.name, "POSSA1");
+  assert.equal(selected.lumps.at(-1)?.entry.name, "PUFFD0");
+});
+
+test("known canonical lumps retain exact source bytes and patch dimensions", () => {
+  const buffer = loadWad();
+  const wad = decodeWad(buffer);
+  const selected = selectCanonicalSpriteLumps(wad.entries).lumps;
+  const byName = new Map(
+    selected.map((lump) => [lump.entry.name, lump.entry] as const),
+  );
+  const expectations = {
+    POSSA1: {
+      size: 1392,
+      sha256:
+        "52667cdb0c9b0b6555eba69c60d62861938328945154f29618faa81a3492b34a",
+      width: 41,
+      height: 55,
+      leftOffset: 18,
+      topOffset: 50,
+    },
+    TROOA1: {
+      size: 1632,
+      sha256:
+        "5e44743944db89f3ee0f9bf48233e517a5b43ce4efa9d886c83b1d844b0cfd74",
+      width: 41,
+      height: 57,
+      leftOffset: 19,
+      topOffset: 52,
+    },
+    BAL1A0: {
+      size: 320,
+      sha256:
+        "997f514abeddc35ff75b53c49f2fec27a55b6e9c17222c91dc3411e6bb6d2892",
+      width: 15,
+      height: 15,
+      leftOffset: 8,
+      topOffset: 8,
+    },
+    PUFFA0: {
+      size: 76,
+      sha256:
+        "ba154601d0ea4daedd3c91bede57f44009b5fb7eea7885389f07eb883da27678",
+      width: 5,
+      height: 5,
+      leftOffset: 2,
+      topOffset: 3,
+    },
+  } as const;
+  for (const [name, expected] of Object.entries(expectations)) {
+    const entry = byName.get(name);
+    assert.ok(entry, `${name} must be selected`);
+    assert.equal(entry.size, expected.size, `${name} WAD size`);
+    assert.equal(
+      hashBytes(wadLumpBytes(buffer, entry)),
+      expected.sha256,
+      `${name} WAD hash`,
+    );
+    const patch = decodeSpritePatchToRgba(
+      wadLumpBytes(buffer, entry),
+      decodePalette(
+        wadLumpBytes(buffer, directoryByName(wad.entries).get("PLAYPAL")!),
+      ),
+    );
+    assert.deepEqual(
+      {
+        width: patch.width,
+        height: patch.height,
+        leftOffset: patch.leftOffset,
+        topOffset: patch.topOffset,
+      },
+      {
+        width: expected.width,
+        height: expected.height,
+        leftOffset: expected.leftOffset,
+        topOffset: expected.topOffset,
+      },
+    );
+  }
+});
+
+test("sprite posts decode as transparent RGBA without treating palette index 255 as transparent", () => {
+  const buffer = loadWad();
+  const wad = decodeWad(buffer);
+  const directory = directoryByName(wad.entries);
+  const palette = decodePalette(
+    wadLumpBytes(buffer, directory.get("PLAYPAL")!),
+  );
+  const patch = decodeSpritePatchToRgba(
+    wadLumpBytes(buffer, directory.get("PUFFA0")!),
+    palette,
+  );
+
+  assert.equal(patch.width, 5);
+  assert.equal(patch.height, 5);
+  assert.equal(patch.opaquePixelCount, 21);
+  assert.deepEqual([...patch.rgba.slice(0, 4)], [0, 0, 0, 0]);
+  const center = (2 * patch.width + 2) * 4;
+  assert.deepEqual(
+    [...patch.rgba.slice(center, center + 4)],
+    [255, 255, 115, 255],
+  );
+});
+
+test("atlas manifest has exact source/output provenance and normalized frame UVs", () => {
+  const rendered = renderSpriteArtifacts(WAD_PATH);
+  assert.equal(rendered.manifest.wadSha256, WAD_SHA256);
+  assert.equal(rendered.manifest.wadByteLength, WAD_BYTE_LENGTH);
+  assert.equal(rendered.manifest.sourceLumps.length, 163);
+  assert.deepEqual(
+    rendered.manifest.atlases.map((atlas) => [atlas.file, atlas.frames.length]),
+    [
+      ["actors.png", 151],
+      ["effects.png", 12],
+    ],
+  );
+  const actors = rendered.manifest.atlases[0]!;
+  const frame = actors.frames.find((candidate) => candidate.name === "POSSA1")!;
+  assert.equal(frame.sourceByteLength, 1392);
+  assert.deepEqual(frame.pixelSize, [41, 55]);
+  assert.deepEqual(frame.origin, [18, 50]);
+  assert.equal(frame.uv.min[0], frame.atlasRect[0] / actors.width);
+  assert.equal(
+    frame.uv.max[1],
+    (frame.atlasRect[1] + frame.atlasRect[3]) / actors.height,
+  );
+  assert.match(actors.pngSha256, /^[0-9a-f]{64}$/);
+  assert.ok(actors.pngByteLength > 0);
+  const actorFile = rendered.files.find(
+    (file) => file.relativePath === actors.file,
+  );
+  assert.ok(actorFile);
+  assert.equal(sha256Hex(actorFile.bytes), actors.pngSha256);
+  assert.equal(actorFile.bytes.length, actors.pngByteLength);
+  const header = new DataView(
+    actorFile.bytes.buffer,
+    actorFile.bytes.byteOffset,
+    actorFile.bytes.byteLength,
+  );
+  assert.equal(header.getUint32(16), actors.width);
+  assert.equal(header.getUint32(20), actors.height);
+  assert.equal(header.getUint8(25), 6, "atlas PNG must be RGBA8");
+});

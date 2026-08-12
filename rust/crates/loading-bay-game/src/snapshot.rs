@@ -566,6 +566,8 @@ pub struct EnemyCombatSnapshot {
     pub presentation: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub projectile: Option<SnapshotEnemyProjectile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projectile_visual_asset: Option<String>,
     pub posture: SnapshotEnemyCombatPosture,
     pub ready_at_tick: u64,
     #[serde(default)]
@@ -1492,6 +1494,11 @@ impl GameRuntime {
                             restitution: projectile.restitution,
                         }
                     }),
+                    projectile_visual_asset: component
+                        .config
+                        .attack
+                        .projectile_visual_asset
+                        .clone(),
                     posture: match component.state.posture {
                         EnemyCombatPosture::Sleeping => SnapshotEnemyCombatPosture::Sleeping,
                         EnemyCombatPosture::Alert => SnapshotEnemyCombatPosture::Alert,
@@ -2911,6 +2918,7 @@ impl GameRuntime {
                     cooldown_ticks: combat.cooldown_ticks,
                     origin_offset: array_vec3(combat.origin_offset),
                     presentation: combat.presentation,
+                    projectile_visual_asset: combat.projectile_visual_asset,
                     projectile: combat.projectile.map(|projectile| ProjectileDefinition {
                         mass: projectile.mass,
                         radius: projectile.radius,

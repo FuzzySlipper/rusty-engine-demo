@@ -338,12 +338,15 @@ impl<'a> ProjectAssetCatalog<'a> {
             let id = AssetId::parse(&renderable.asset).map_err(|error| {
                 StoredProjectError::new(diagnostic_code::INVALID_ASSET_ID, &path, error.to_string())
             })?;
-            if !matches!(id.kind(), AssetKind::StaticMesh | AssetKind::AnimatedMesh) {
+            if !matches!(
+                id.kind(),
+                AssetKind::StaticMesh | AssetKind::AnimatedMesh | AssetKind::Sprite
+            ) {
                 return Err(StoredProjectError::new(
                     diagnostic_code::WRONG_ASSET_KIND,
                     path,
                     format!(
-                        "renderable requires static or animated mesh identity, found `{}`",
+                        "renderable requires static mesh, animated mesh, or sprite identity, found `{}`",
                         id.kind()
                     ),
                 ));
@@ -358,11 +361,16 @@ impl<'a> ProjectAssetCatalog<'a> {
             let kind = AssetId::parse(&asset.id)
                 .expect("validated catalog identity")
                 .kind();
-            if !matches!(kind, AssetKind::StaticMesh | AssetKind::AnimatedMesh) {
+            if !matches!(
+                kind,
+                AssetKind::StaticMesh | AssetKind::AnimatedMesh | AssetKind::Sprite
+            ) {
                 return Err(StoredProjectError::new(
                     diagnostic_code::WRONG_ASSET_KIND,
                     path,
-                    format!("catalog entry `{id}` is `{kind}`, expected static or animated mesh"),
+                    format!(
+                        "catalog entry `{id}` is `{kind}`, expected static mesh, animated mesh, or sprite"
+                    ),
                 ));
             }
         }
@@ -767,17 +775,21 @@ fn authored_definition(
                 cooldown_ticks: combat.attack.cooldown_ticks,
                 origin_offset: array_vec3(combat.attack.origin_offset),
                 presentation: combat.attack.presentation.clone(),
-                projectile: combat
+                projectile_visual_asset: combat
                     .attack
                     .projectile
-                    .map(|projectile| ProjectileDefinition {
+                    .as_ref()
+                    .and_then(|projectile| projectile.visual_asset.clone()),
+                projectile: combat.attack.projectile.as_ref().map(|projectile| {
+                    ProjectileDefinition {
                         mass: projectile.mass,
                         radius: projectile.radius,
                         impulse: projectile.impulse,
                         gravity_scale: projectile.gravity_scale,
                         lifetime_ticks: projectile.lifetime_ticks,
                         restitution: projectile.restitution,
-                    }),
+                    }
+                }),
             },
         });
     }

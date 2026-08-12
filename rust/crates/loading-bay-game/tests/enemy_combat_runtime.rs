@@ -106,7 +106,8 @@ fn projectile_enemy_reuses_the_transient_engine_projectile_owner() {
             "impulse": 10,
             "gravityScale": 0,
             "lifetimeTicks": 120,
-            "restitution": 0
+            "restitution": 0,
+            "visualAsset": "mesh/physics-projectile"
         }
     });
     let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
@@ -149,6 +150,12 @@ fn projectile_enemy_reuses_the_transient_engine_projectile_owner() {
             .current,
         100
     );
+    assert!(game_loop
+        .runtime()
+        .readout()
+        .projection
+        .iter()
+        .any(|node| node.asset == "mesh/physics-projectile"));
 
     let mut hit = false;
     for _ in 0..120 {

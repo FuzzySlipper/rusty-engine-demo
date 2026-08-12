@@ -155,6 +155,7 @@ pub(crate) fn apply_prepared_conversion(
                     catalog: None,
                     static_mesh: None,
                     animated_mesh: None,
+                    sprite_atlas: None,
                     import: None,
                     voxel_volume: Some(candidate),
                     voxel_object: None,

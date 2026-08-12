@@ -771,6 +771,7 @@ fn migrate_v6(mut legacy: LegacyProjectV6) -> Result<StoredProject, StoredProjec
                 catalog: None,
                 static_mesh: None,
                 animated_mesh: None,
+                sprite_atlas: None,
                 import: None,
                 voxel_volume: None,
                 voxel_object: None,

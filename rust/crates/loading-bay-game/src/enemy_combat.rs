@@ -46,6 +46,7 @@ pub struct EnemyAttackConfig {
     pub origin_offset: Vec3,
     pub presentation: String,
     pub projectile: Option<ProjectileDefinition>,
+    pub projectile_visual_asset: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -69,12 +70,19 @@ impl EnemyCombatConfig {
             && self.attack.origin_offset.y.abs() <= MAX_ENEMY_ATTACK_RANGE
             && self.attack.origin_offset.z.abs() <= MAX_ENEMY_ATTACK_RANGE
             && match self.attack.kind {
-                EnemyAttackKind::Projectile => self
-                    .attack
-                    .projectile
-                    .is_some_and(ProjectileDefinition::is_valid),
+                EnemyAttackKind::Projectile => {
+                    self.attack
+                        .projectile
+                        .is_some_and(ProjectileDefinition::is_valid)
+                        && self
+                            .attack
+                            .projectile_visual_asset
+                            .as_ref()
+                            .is_none_or(|asset| !asset.is_empty() && asset.len() <= 128)
+                }
                 EnemyAttackKind::Melee | EnemyAttackKind::RangedHitscan => {
                     self.attack.projectile.is_none()
+                        && self.attack.projectile_visual_asset.is_none()
                 }
             }
             && !self.attack.presentation.is_empty()
@@ -418,6 +426,12 @@ impl EnemyCombatService {
                             origin,
                             direction,
                             tick,
+                            visual_asset: component
+                                .config
+                                .attack
+                                .projectile_visual_asset
+                                .clone()
+                                .unwrap_or_else(|| "mesh/physics-projectile".to_owned()),
                         },
                     )
                     .map_err(RuntimeError::Projectile)?;

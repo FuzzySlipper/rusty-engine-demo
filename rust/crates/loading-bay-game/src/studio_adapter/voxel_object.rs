@@ -368,6 +368,7 @@ pub(crate) fn apply_prepared_voxel_object_conversion(
                     catalog: None,
                     static_mesh: None,
                     animated_mesh: None,
+                    sprite_atlas: None,
                     import: None,
                     voxel_volume: None,
                     voxel_object: Some(object),

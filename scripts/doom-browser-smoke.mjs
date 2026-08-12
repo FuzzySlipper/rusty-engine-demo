@@ -267,8 +267,21 @@ async function waitForAuthoritativeState(addr, description, predicate) {
     if (predicate(lastState)) return lastState;
     await delay(100);
   }
+  const summary =
+    lastState === null
+      ? null
+      : {
+          tick: lastState.tick,
+          player: {
+            position: lastState.player?.position,
+            health: lastState.player?.currentHealth,
+            state: lastState.player?.vitalityState,
+          },
+          input: lastState.input,
+          lastEvents: lastState.lastEvents,
+        };
   throw new Error(
-    `authoritative state timeout (${description}): ${JSON.stringify(lastState).slice(0, 2000)}`,
+    `authoritative state timeout (${description}): ${JSON.stringify(summary).slice(0, 2000)}`,
   );
 }
 
@@ -365,6 +378,12 @@ async function proveFocusedHeldMovement(client, addr) {
         horizontalDistance(beforeHold.player.position, state.player.position) >=
         requiredHeldDistance,
     );
+  } catch (error) {
+    const runtimeError = await cdpEvaluate(
+      client,
+      `document.body?.dataset.runtimeError ?? 'no-runtime-error'`,
+    ).catch(() => "runtime-error-eval-failed");
+    throw new Error(`${error} runtimeError=${runtimeError}`);
   } finally {
     await dispatchKey(client, "keyUp", "KeyW");
   }
@@ -1756,8 +1775,8 @@ async function main() {
     assert(
       applicationResources.filter(
         (resource) => resource.mediaType === "image/png",
-      ).length === 54,
-      "Rust projected all 54 E1M1 textures",
+      ).length === 56,
+      "Rust projected 54 E1M1 map textures and two Doom sprite atlases",
     );
     assert(
       applicationResources.some(
@@ -1969,8 +1988,8 @@ async function main() {
         if (
           content?.state === "complete" &&
           content.frameOps > 0 &&
-          content.resourceCount > 54 &&
-          content.textureCount === 54
+          content.resourceCount > 56 &&
+          content.textureCount === 56
         ) {
           break;
         }
@@ -1979,8 +1998,8 @@ async function main() {
       if (
         content?.state !== "complete" ||
         content.frameOps <= 0 ||
-        content.resourceCount <= 54 ||
-        content.textureCount !== 54
+        content.resourceCount <= 56 ||
+        content.textureCount !== 56
       ) {
         throw new Error(
           `Engine did not admit the complete Rust content closure: ${JSON.stringify(content)}`,

@@ -398,6 +398,16 @@ pub(super) fn browser_dynamic_state(
         .unwrap_or_else(|| {
             RenderFrameDiff::try_from_ops(Vec::new()).expect("empty frame is valid")
         });
+    browser_dynamic_state_with_gameplay_frame(host, last_events, feedback, gameplay_frame)
+}
+
+pub(super) fn browser_dynamic_state_with_gameplay_frame(
+    host: &BrowserRuntime,
+    last_events: Vec<String>,
+    feedback: BrowserFeedbackProjection,
+    gameplay_frame: RenderFrameDiff,
+) -> BrowserDynamicState {
+    let runtime: &GameRuntime = host.runtime.runtime();
     let readout = runtime.readout();
     let projection = readout
         .projection

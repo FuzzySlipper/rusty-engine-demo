@@ -12,8 +12,10 @@
     }
   },
   "scripts": {
-    "check": "tsc --build && node dist/cli.js --check",
-    "generate": "tsc --build && node dist/cli.js --write",
+    "check": "tsc --build && node dist/cli.js --check && node dist/sprite-cli.js --check",
+    "generate": "tsc --build && node dist/cli.js --write && node dist/sprite-cli.js --write",
+    "sprites:check": "tsc --build && node dist/sprite-cli.js --check",
+    "sprites:generate": "tsc --build && node dist/sprite-cli.js --write",
     "test": "tsc --build && node --test dist/*.test.js",
     "typecheck": "tsc --build"
   }

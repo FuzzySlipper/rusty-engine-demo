@@ -97,6 +97,7 @@ pub(crate) struct EnemyProjectileSpawn {
     pub origin: Vec3,
     pub direction: Vec3,
     pub tick: Tick,
+    pub visual_asset: String,
 }
 
 pub(crate) struct ProjectileSpawnRequest {
@@ -206,6 +207,7 @@ impl ProjectileService {
             origin,
             direction,
             tick,
+            visual_asset,
         } = request;
         if self.active.len() >= MAX_PROJECTILE_ENTITIES {
             return Err(ProjectileError::EntityLimit {
@@ -221,7 +223,7 @@ impl ProjectileService {
                 Vec3::new(radius, radius, radius),
             )
             .with_collision(true, false)
-            .with_renderable(PROJECTILE_ASSET, true);
+            .with_renderable(visual_asset, true);
         let authoring = EntityAuthoringService;
         let entity_revision = session.entities.revision();
         authoring

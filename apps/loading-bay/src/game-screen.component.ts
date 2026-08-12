@@ -1143,6 +1143,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
             rendering.frame,
             rendering.camera,
             rendering.content,
+            rendering.applyFrame,
             rendering.replaceFrame,
           );
           if (frameReceipt !== null) {
@@ -1193,6 +1194,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
         onConnectionFailure: (message) => {
           this.connectionState.set("unavailable");
           this.connectionMessage.set(message);
+          document.body.dataset.runtimeError = message;
           this.rememberFocusForModal();
           this.scheduleModalFocus();
         },

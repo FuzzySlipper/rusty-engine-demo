@@ -48,6 +48,7 @@ pub(crate) fn import_voxel_asset_file(
                 catalog: None,
                 static_mesh: None,
                 animated_mesh: None,
+                sprite_atlas: None,
                 import: None,
                 voxel_volume: Some(asset),
                 voxel_object: None,

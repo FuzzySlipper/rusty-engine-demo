@@ -86,6 +86,7 @@ export interface LoadingBayRenderProjection {
   };
   readonly frame: Readonly<Record<string, unknown>>;
   readonly content: LoadingBayApplicationContent | null;
+  readonly applyFrame: boolean;
   readonly replaceFrame: boolean;
 }
 
@@ -160,6 +161,7 @@ export async function mountLoadingBayGame(
     },
   });
   let lastRenderFrame: Readonly<Record<string, unknown>> | null = null;
+  let lastGameplayFrame: Readonly<Record<string, unknown>> | null = null;
   let lastApplicationContent: RuntimeApplicationContent | null = null;
   let projectionQueue: Promise<void> = Promise.resolve();
 
@@ -275,10 +277,13 @@ export async function mountLoadingBayGame(
     const replaceFrame =
       descriptor === null && content === null && lastRenderFrame !== state.voxelObjectFrame;
     const frame = descriptor === null ? state.voxelObjectFrame : state.gameplayFrame;
+    const applyFrame =
+      descriptor !== null && content === null && lastGameplayFrame !== state.gameplayFrame;
     await options.onRenderProjection?.({
       camera: derivePlayerCameraPose(state.player),
       content,
       frame,
+      applyFrame,
       replaceFrame,
     });
     if (content !== null) {
@@ -286,6 +291,7 @@ export async function mountLoadingBayGame(
       lastRenderFrame = state.voxelObjectFrame;
     }
     if (replaceFrame) lastRenderFrame = state.voxelObjectFrame;
+    if (content !== null || applyFrame) lastGameplayFrame = state.gameplayFrame;
     const completedExit = state.levelExits.find(
       (candidate) => candidate.state === "completed",
     );

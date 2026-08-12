@@ -80,6 +80,28 @@ interface Manifest {
   wadByteLength: number;
 }
 
+interface SpriteManifestFrame {
+  id: number;
+  name: string;
+  family: string;
+  uv: { min: [number, number]; max: [number, number] };
+  pixelSize: [number, number];
+}
+
+interface SpriteManifestAtlas {
+  textureId: string;
+  file: string;
+  pngSha256: string;
+  pngByteLength: number;
+  frames: SpriteManifestFrame[];
+}
+
+interface SpriteManifest {
+  wadSha256: string;
+  wadByteLength: number;
+  atlases: SpriteManifestAtlas[];
+}
+
 function buildSectorEdges(inter: Intermediate) {
   const sectorSidedefs = new Map<number, number[]>();
   inter.level.sidedefs.forEach((sd, idx) => {
@@ -155,6 +177,12 @@ export function buildDoomE1M1Project(
       import.meta.url,
     ),
   ),
+  spriteManifestPath = fileURLToPath(
+    new URL(
+      "../../../../content/doom-e1m1/sprites/manifest.json",
+      import.meta.url,
+    ),
+  ),
   voxelPath = fileURLToPath(
     new URL(
       "../../../../content/doom-e1m1/doom-e1m1.voxel.json",
@@ -178,6 +206,9 @@ export function buildDoomE1M1Project(
     readFileSync(intermediatePath, "utf8"),
   );
   const manifest: Manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const spriteManifest: SpriteManifest = JSON.parse(
+    readFileSync(spriteManifestPath, "utf8"),
+  );
   const voxel = JSON.parse(readFileSync(voxelPath, "utf8"));
   const loadingBay = JSON.parse(readFileSync(loadingBayPath, "utf8"));
 
@@ -189,14 +220,73 @@ export function buildDoomE1M1Project(
   // loading-bay so Doom renderables resolve as a complete application-content
   // closure. We copy them verbatim to keep the one-way pin and avoid a second
   // catalog.
+  const retainedMeshAssets = new Set([
+    "mesh/player-marker",
+    "mesh/prop-kit/breach-scattergun",
+    "mesh/prop-kit/energy-cell",
+    "mesh/prop-kit/hazard-marker",
+    "mesh/prop-kit/impact-vest",
+    "mesh/prop-kit/level-exit",
+    "mesh/prop-kit/med-patch",
+    "mesh/prop-kit/scatter-shells",
+    "mesh/prop-kit/security-door",
+  ]);
   for (const asset of loadingBay.assets as any[]) {
     if (
       typeof asset.id === "string" &&
-      (asset.id.startsWith("mesh") || asset.material !== undefined)
+      (retainedMeshAssets.has(asset.id) || asset.material !== undefined)
     ) {
       assets.push(asset);
     }
   }
+
+  const spriteFrames = new Map<string, Map<string, number>>();
+  const addSpriteAsset = (
+    id: string,
+    atlas: SpriteManifestAtlas,
+    family: string,
+  ) => {
+    const selected = atlas.frames.filter(
+      (frame) => frame.family.toLowerCase() === family,
+    );
+    if (selected.length === 0)
+      throw new Error(`missing Doom sprite family ${family}`);
+    const frameIds = new Map<string, number>();
+    const frames = selected.map((frame, index) => {
+      frameIds.set(frame.name, index);
+      return {
+        frame: index,
+        uvMin: frame.uv.min,
+        uvMax: frame.uv.max,
+        size: [frame.pixelSize[0] / SCALE, frame.pixelSize[1] / SCALE],
+      };
+    });
+    spriteFrames.set(family, frameIds);
+    assets.push({
+      id,
+      catalog: {
+        version: 1,
+        hash: `sha256:${atlas.pngSha256}`,
+        sourcePath: `content/doom-e1m1/sprites/${atlas.file}`,
+        label: `Doom ${family.toUpperCase()} sprites`,
+        dependencies: [],
+      },
+      spriteAtlas: { id, texture: atlas.textureId, frames },
+    });
+  };
+  const actorAtlas = spriteManifest.atlases.find((atlas) =>
+    atlas.frames.some((frame) => frame.family.toLowerCase() === "poss"),
+  );
+  const effectsAtlas = spriteManifest.atlases.find((atlas) =>
+    atlas.frames.some((frame) => frame.family.toLowerCase() === "bal1"),
+  );
+  if (!actorAtlas || !effectsAtlas)
+    throw new Error("Doom sprite atlases are incomplete");
+  addSpriteAsset("sprite/doom-zombieman", actorAtlas, "poss");
+  addSpriteAsset("sprite/doom-shotgun-guy", actorAtlas, "spos");
+  addSpriteAsset("sprite/doom-imp", actorAtlas, "troo");
+  addSpriteAsset("sprite/doom-imp-fireball", effectsAtlas, "bal1");
+  addSpriteAsset("sprite/doom-blood", effectsAtlas, "blud");
   for (const entry of manifest.entries) {
     const k = kebab(entry.name);
     const matId = `material/doom-${entry.kind}-${k}`;
@@ -488,9 +578,12 @@ export function buildDoomE1M1Project(
   const enemyArchetypes = {
     9: {
       name: "shotgun-guy",
+      spriteFamily: "spos",
       health: 30,
       painDurationTicks: Math.round((6 / 35) * 60),
-      mesh: "mesh-animation/arc-warden",
+      mesh: "sprite/doom-shotgun-guy",
+      spriteScale: [3.5, 3.5, 1],
+      spriteAttackTicks: 14,
       attack: {
         kind: "rangedHitscan",
         damage: 27,
@@ -508,9 +601,12 @@ export function buildDoomE1M1Project(
     },
     3001: {
       name: "imp",
+      spriteFamily: "troo",
       health: 60,
       painDurationTicks: Math.round((4 / 35) * 60),
-      mesh: "mesh-animation/arc-warden",
+      mesh: "sprite/doom-imp",
+      spriteScale: [3.75, 3.75, 1],
+      spriteAttackTicks: 12,
       attack: {
         kind: "projectile",
         damage: 12,
@@ -525,15 +621,19 @@ export function buildDoomE1M1Project(
           gravityScale: 0,
           lifetimeTicks: 360,
           restitution: 0,
+          visualAsset: "sprite/doom-imp-fireball",
         },
       },
       drop: null,
     },
     3004: {
       name: "zombieman",
+      spriteFamily: "poss",
       health: 20,
       painDurationTicks: Math.round((6 / 35) * 60),
-      mesh: "mesh-animation/bay-rusher",
+      mesh: "sprite/doom-zombieman",
+      spriteScale: [3.5, 3.5, 1],
+      spriteAttackTicks: 14,
       attack: {
         kind: "rangedHitscan",
         damage: 9,
@@ -640,56 +740,83 @@ export function buildDoomE1M1Project(
     enemyIndex += 1;
     const pos = doomToWorldForThing(thing);
     pos[1] += 1.25;
+    const familyFrames = spriteFrames.get(archetype.spriteFamily);
+    if (!familyFrames)
+      throw new Error(`missing frames for ${archetype.spriteFamily}`);
+    const frame = (name: string): number => {
+      const value = familyFrames.get(name);
+      if (value === undefined)
+        throw new Error(`missing authored Doom frame ${name}`);
+      return value;
+    };
+    const visualNames =
+      archetype.spriteFamily === "poss"
+        ? {
+            idle: ["POSSA1", "POSSB1"],
+            moving: ["POSSA1", "POSSB1", "POSSC1", "POSSD1"],
+            attacking: ["POSSE1", "POSSF1", "POSSE1"],
+            hit: ["POSSG1"],
+            defeated: ["POSSH0", "POSSI0", "POSSJ0", "POSSK0", "POSSL0"],
+          }
+        : archetype.spriteFamily === "spos"
+          ? {
+              idle: ["SPOSA1", "SPOSB1"],
+              moving: ["SPOSA1", "SPOSB1", "SPOSC1", "SPOSD1"],
+              attacking: ["SPOSE1", "SPOSF1", "SPOSE1"],
+              hit: ["SPOSG1"],
+              defeated: ["SPOSH0", "SPOSI0", "SPOSJ0", "SPOSK0", "SPOSL0"],
+            }
+          : {
+              idle: ["TROOA1", "TROOB1"],
+              moving: ["TROOA1", "TROOB1", "TROOC1", "TROOD1"],
+              attacking: ["TROOE1", "TROOF1", "TROOG1"],
+              hit: ["TROOH1"],
+              defeated: ["TROOI0", "TROOJ0", "TROOK0", "TROOL0", "TROOM0"],
+            };
     const visualBinding = {
       version: 1,
       states: [
         {
           state: "idle",
-          kind: "animation",
-          clip: "idle",
+          kind: "spriteFrames",
+          frames: visualNames.idle.map(frame),
+          ticksPerFrame: 17,
           loopMode: "repeat",
-          speed: 1,
-          fadeSeconds: 0.12,
         },
         {
           state: "moving",
-          kind: "animation",
-          clip: "run",
+          kind: "spriteFrames",
+          frames: visualNames.moving.map(frame),
+          ticksPerFrame: 6,
           loopMode: "repeat",
-          speed: 1,
-          fadeSeconds: 0.1,
         },
         {
           state: "alert",
-          kind: "animation",
-          clip: "idle",
+          kind: "spriteFrames",
+          frames: visualNames.idle.map(frame),
+          ticksPerFrame: 12,
           loopMode: "repeat",
-          speed: 1,
-          fadeSeconds: 0.08,
         },
         {
           state: "attacking",
-          kind: "animation",
-          clip: "attack",
-          loopMode: "repeat",
-          speed: 1,
-          fadeSeconds: 0.06,
+          kind: "spriteFrames",
+          frames: visualNames.attacking.map(frame),
+          ticksPerFrame: archetype.spriteAttackTicks,
+          loopMode: "once",
         },
         {
           state: "hit",
-          kind: "animation",
-          clip: "hit",
+          kind: "spriteFrames",
+          frames: visualNames.hit.map(frame),
+          ticksPerFrame: 4,
           loopMode: "once",
-          speed: 1,
-          fadeSeconds: 0.04,
         },
         {
           state: "defeated",
-          kind: "animation",
-          clip: "death",
+          kind: "spriteFrames",
+          frames: visualNames.defeated.map(frame),
+          ticksPerFrame: 8,
           loopMode: "once",
-          speed: 1,
-          fadeSeconds: 0.08,
         },
       ],
     };
@@ -704,11 +831,10 @@ export function buildDoomE1M1Project(
         asset: archetype.mesh,
         visible: true,
         localTransform: {
-          translation: [0, -1.75, 0],
+          translation: [0, 0.5, 0],
           rotation: [0, 0, 0, 1],
-          scale: [1, 1, 1],
+          scale: archetype.spriteScale,
         },
-        initialClip: "idle",
         visualBinding,
       },
       enemy: true,

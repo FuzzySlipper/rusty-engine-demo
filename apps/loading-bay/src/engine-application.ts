@@ -25,6 +25,7 @@ export interface EngineRendererRouteLease {
     frame: RustyApplicationFrame,
     camera: RustyApplicationCameraPose,
     content: RustyApplicationContent | null,
+    applyFrame: boolean,
     replaceFrame: boolean,
   ) => Promise<RustyApplicationFrameReceipt | null>;
   readonly retire: () => void;
@@ -70,7 +71,7 @@ export function claimEngineRendererRoute(
 
   return {
     generation,
-    publish: (frame, camera, content, replaceFrame) =>
+    publish: (frame, camera, content, applyFrame, replaceFrame) =>
       enqueue(async () => {
         let receipt: RustyApplicationFrameReceipt = {
           applied: true,
@@ -80,6 +81,8 @@ export function claimEngineRendererRoute(
           receipt = await application.renderer.replaceContent(content);
         } else if (replaceFrame) {
           receipt = await application.renderer.replaceFrame(frame);
+        } else if (applyFrame) {
+          receipt = application.renderer.applyFrame(frame);
         }
         if (authority.generation === generation && !retired) {
           application.renderer.setCameraPose(camera);

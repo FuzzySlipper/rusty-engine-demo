@@ -533,6 +533,7 @@ fn install_imported_assets(
             }),
             static_mesh,
             animated_mesh,
+            sprite_atlas: None,
             import: is_mesh.then(|| import.clone()),
             voxel_volume: None,
             voxel_object: None,

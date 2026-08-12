@@ -15,7 +15,7 @@ use rusty_engine::core_time::TickDelta;
 use rusty_engine::engine_spatial::{
     decode_voxel_edit_history, MaterialVoxel, VoxelEditHistoryLimits,
 };
-use rusty_engine::render_model::{AnimatedMeshAsset, StaticMeshAsset};
+use rusty_engine::render_model::{AnimatedMeshAsset, SpriteAtlasDescriptor, StaticMeshAsset};
 use rusty_engine::voxel_annotation::{
     validate_annotation_layer, VoxelAnnotationLayer, VoxelAnnotationLimits,
 };
@@ -215,6 +215,8 @@ pub struct StoredAsset {
     pub static_mesh: Option<StaticMeshAsset>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub animated_mesh: Option<AnimatedMeshAsset>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sprite_atlas: Option<SpriteAtlasDescriptor>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub import: Option<StoredAssetImport>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -648,6 +650,11 @@ pub enum StoredVisualPresentation {
         speed: f32,
         fade_seconds: Option<f32>,
     },
+    SpriteFrames {
+        frames: Vec<u32>,
+        ticks_per_frame: u64,
+        loop_mode: StoredVisualAnimationLoopMode,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -966,7 +973,7 @@ pub enum StoredEnemyAttackKind {
     Projectile,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredEnemyProjectile {
     pub mass: f32,
@@ -975,6 +982,8 @@ pub struct StoredEnemyProjectile {
     pub gravity_scale: f32,
     pub lifetime_ticks: u64,
     pub restitution: f32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub visual_asset: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -1383,6 +1392,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     || !asset.voxel_annotations.is_empty()
                     || asset.static_mesh.is_some()
                     || asset.animated_mesh.is_some()
+                    || asset.sprite_atlas.is_some()
                     || asset.import.is_some()
                 {
                     return Err(failure(
@@ -1421,6 +1431,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     || !asset.voxel_annotations.is_empty()
                     || asset.material.is_some()
                     || asset.animated_mesh.is_some()
+                    || asset.sprite_atlas.is_some()
                 {
                     return Err(failure(
                         diagnostic_code::WRONG_ASSET_KIND,
@@ -1478,6 +1489,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     || !asset.voxel_annotations.is_empty()
                     || asset.material.is_some()
                     || asset.static_mesh.is_some()
+                    || asset.sprite_atlas.is_some()
                 {
                     return Err(failure(
                         diagnostic_code::WRONG_ASSET_KIND,
@@ -1489,6 +1501,61 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     validate_stored_import(import, &asset.id, index)?;
                 }
             }
+            AssetKind::Sprite => {
+                let Some(atlas) = &asset.sprite_atlas else {
+                    return Err(failure(
+                        diagnostic_code::INVALID_IMPORT,
+                        format!("assets[{index}].spriteAtlas"),
+                        "a sprite asset requires its canonical sprite-atlas descriptor",
+                    ));
+                };
+                if atlas.id != asset.id {
+                    return Err(failure(
+                        diagnostic_code::INVALID_IMPORT,
+                        format!("assets[{index}].spriteAtlas.id"),
+                        "sprite atlas identity must match the stored asset identity",
+                    ));
+                }
+                atlas.validate().map_err(|error| {
+                    failure(
+                        diagnostic_code::INVALID_IMPORT,
+                        format!("assets[{index}].spriteAtlas"),
+                        format!("sprite atlas descriptor is invalid: {error:?}"),
+                    )
+                })?;
+                let source_path = asset
+                    .catalog
+                    .as_ref()
+                    .and_then(|metadata| metadata.source_path.as_deref());
+                if !source_path.is_some_and(is_safe_relative_path)
+                    || asset
+                        .catalog
+                        .as_ref()
+                        .and_then(|metadata| metadata.hash.as_ref())
+                        .is_none()
+                {
+                    return Err(failure(
+                        diagnostic_code::INVALID_IMPORT,
+                        format!("assets[{index}].catalog"),
+                        "sprite resources require a pinned hash and safe project-relative source path",
+                    ));
+                }
+                if asset.voxel_volume.is_some()
+                    || asset.voxel_object.is_some()
+                    || asset.voxel_edit_history.is_some()
+                    || !asset.voxel_annotations.is_empty()
+                    || asset.material.is_some()
+                    || asset.static_mesh.is_some()
+                    || asset.animated_mesh.is_some()
+                    || asset.import.is_some()
+                {
+                    return Err(failure(
+                        diagnostic_code::WRONG_ASSET_KIND,
+                        format!("assets[{index}]"),
+                        "sprite assets cannot carry unrelated payloads",
+                    ));
+                }
+            }
             _ => {
                 if asset.voxel_volume.is_some()
                     || asset.voxel_object.is_some()
@@ -1497,6 +1564,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                     || asset.material.is_some()
                     || asset.static_mesh.is_some()
                     || asset.animated_mesh.is_some()
+                    || asset.sprite_atlas.is_some()
                     || asset.import.is_some()
                 {
                     return Err(failure(
@@ -1910,6 +1978,7 @@ fn validate_visual_binding(
             &state.presentation,
             &asset.animated_mesh,
             &asset.static_mesh,
+            &asset.sprite_atlas,
         ) {
             (
                 StoredVisualPresentation::Animation {
@@ -1919,6 +1988,7 @@ fn validate_visual_binding(
                     ..
                 },
                 Some(animated),
+                None,
                 None,
             ) => {
                 if !animated.clips.iter().any(|candidate| candidate.id == *clip) {
@@ -1953,6 +2023,7 @@ fn validate_visual_binding(
                 },
                 None,
                 Some(_),
+                None,
             ) => {
                 if !texture_tint
                     .iter()
@@ -1968,18 +2039,48 @@ fn validate_visual_binding(
                     ));
                 }
             }
-            (StoredVisualPresentation::Animation { .. }, _, _) => {
+            (
+                StoredVisualPresentation::SpriteFrames {
+                    frames,
+                    ticks_per_frame,
+                    ..
+                },
+                None,
+                None,
+                Some(atlas),
+            ) => {
+                if frames.is_empty()
+                    || *ticks_per_frame == 0
+                    || frames
+                        .iter()
+                        .any(|frame| atlas.frame_rect(*frame).is_none())
+                {
+                    return Err(failure(
+                        diagnostic_code::INVALID_COMPONENT,
+                        state_path,
+                        "sprite visual states require existing frames and a positive frame duration",
+                    ));
+                }
+            }
+            (StoredVisualPresentation::Animation { .. }, _, _, _) => {
                 return Err(failure(
                     diagnostic_code::INVALID_COMPONENT,
                     state_path,
                     "animation visual states require an animated mesh",
                 ));
             }
-            (StoredVisualPresentation::Material { .. }, _, _) => {
+            (StoredVisualPresentation::Material { .. }, _, _, _) => {
                 return Err(failure(
                     diagnostic_code::INVALID_COMPONENT,
                     state_path,
                     "material visual states require a static mesh",
+                ));
+            }
+            (StoredVisualPresentation::SpriteFrames { .. }, _, _, _) => {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    state_path,
+                    "sprite visual states require a sprite atlas",
                 ));
             }
         }
@@ -2156,21 +2257,22 @@ fn validate_scene_entities(
                         format!("animated mesh has no clip `{clip}`"),
                     ));
                 }
-            } else if parse_asset_id(&asset.id, &format!("{root}.renderable.asset"))?.kind()
-                == AssetKind::StaticMesh
-            {
+            } else if matches!(
+                parse_asset_id(&asset.id, &format!("{root}.renderable.asset"))?.kind(),
+                AssetKind::StaticMesh | AssetKind::Sprite
+            ) {
                 if renderable.initial_clip.is_some() {
                     return Err(failure(
                         diagnostic_code::INVALID_COMPONENT,
                         format!("{root}.renderable.initialClip"),
-                        "static meshes cannot select animation clips",
+                        "static meshes and sprites cannot select animation clips",
                     ));
                 }
             } else {
                 return Err(failure(
                     diagnostic_code::WRONG_ASSET_KIND,
                     format!("{root}.renderable.asset"),
-                    "renderable must reference a static or animated mesh asset",
+                    "renderable must reference a static mesh, animated mesh, or sprite asset",
                 ));
             }
             if let Some(binding) = &renderable.visual_binding {
