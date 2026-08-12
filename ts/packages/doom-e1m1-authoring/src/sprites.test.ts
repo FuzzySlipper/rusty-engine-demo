@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { inflateSync } from "node:zlib";
 
 import {
   decodePalette,
@@ -28,6 +29,49 @@ function loadWad(): ArrayBuffer {
     bytes.byteOffset,
     bytes.byteOffset + bytes.byteLength,
   ) as ArrayBuffer;
+}
+
+function decodeGeneratedPngRgba(bytes: Uint8Array): {
+  readonly width: number;
+  readonly height: number;
+  readonly rgba: Uint8Array;
+} {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const width = view.getUint32(16);
+  const height = view.getUint32(20);
+  const idatChunks: Uint8Array[] = [];
+  for (let offset = 8; offset < bytes.length; ) {
+    const length = view.getUint32(offset);
+    const type = new TextDecoder().decode(
+      bytes.subarray(offset + 4, offset + 8),
+    );
+    if (type === "IDAT")
+      idatChunks.push(bytes.subarray(offset + 8, offset + 8 + length));
+    offset += 12 + length;
+  }
+  const compressed = new Uint8Array(
+    idatChunks.reduce((sum, chunk) => sum + chunk.length, 0),
+  );
+  let compressedOffset = 0;
+  for (const chunk of idatChunks) {
+    compressed.set(chunk, compressedOffset);
+    compressedOffset += chunk.length;
+  }
+  const scanlines = inflateSync(compressed);
+  const rowBytes = width * 4;
+  const rgba = new Uint8Array(width * height * 4);
+  for (let row = 0; row < height; row += 1) {
+    assert.equal(
+      scanlines[row * (rowBytes + 1)],
+      0,
+      "generated atlas row must use PNG filter none",
+    );
+    rgba.set(
+      scanlines.subarray(row * (rowBytes + 1) + 1, (row + 1) * (rowBytes + 1)),
+      row * rowBytes,
+    );
+  }
+  return { width, height, rgba };
 }
 
 test("canonical sprite selection is bounded to the six requested Doom families", () => {
@@ -228,11 +272,11 @@ test("atlas manifest has exact source/output provenance and normalized frame UVs
   assert.deepEqual(frame.pixelSize, [41, 55]);
   assert.deepEqual(frame.origin, [18, 50]);
   assert.equal(frame.uv.min[0], frame.atlasRect[0] / actors.width);
+  assert.equal(frame.uv.min[1], frame.atlasRect[1] / actors.height);
   assert.equal(
-    frame.uv.min[1],
-    1 - (frame.atlasRect[1] + frame.atlasRect[3]) / actors.height,
+    frame.uv.max[1],
+    (frame.atlasRect[1] + frame.atlasRect[3]) / actors.height,
   );
-  assert.equal(frame.uv.max[1], 1 - frame.atlasRect[1] / actors.height);
   assert.match(actors.pngSha256, /^[0-9a-f]{64}$/);
   assert.ok(actors.pngByteLength > 0);
   const actorFile = rendered.files.find(
@@ -249,4 +293,36 @@ test("atlas manifest has exact source/output provenance and normalized frame UVs
   assert.equal(header.getUint32(16), actors.width);
   assert.equal(header.getUint32(20), actors.height);
   assert.equal(header.getUint8(25), 6, "atlas PNG must be RGBA8");
+
+  const buffer = loadWad();
+  const wad = decodeWad(buffer);
+  const directory = directoryByName(wad.entries);
+  const palette = decodePalette(
+    wadLumpBytes(buffer, directory.get("PLAYPAL")!),
+  );
+  const generated = decodeGeneratedPngRgba(actorFile.bytes);
+  for (const frameName of ["POSSA1", "SPOSA1", "TROOA1"]) {
+    const selectedFrame = actors.frames.find(
+      (candidate) => candidate.name === frameName,
+    )!;
+    const source = decodeSpritePatchToRgba(
+      wadLumpBytes(buffer, directory.get(frameName)!),
+      palette,
+    );
+    const [atlasX, atlasY, frameWidth, frameHeight] = selectedFrame.atlasRect;
+    const atlasFrame = new Uint8Array(source.rgba.length);
+    for (let sourceRow = 0; sourceRow < frameHeight; sourceRow += 1) {
+      const atlasRow = atlasY + frameHeight - 1 - sourceRow;
+      const atlasStart = (atlasRow * generated.width + atlasX) * 4;
+      atlasFrame.set(
+        generated.rgba.subarray(atlasStart, atlasStart + frameWidth * 4),
+        sourceRow * frameWidth * 4,
+      );
+    }
+    assert.deepEqual(
+      atlasFrame,
+      source.rgba,
+      `generated ${frameName} atlas rectangle must contain only its bottom-up source patch`,
+    );
+  }
 });

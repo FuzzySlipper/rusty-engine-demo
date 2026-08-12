@@ -358,7 +358,11 @@ function packAtlas(
     for (let row = 0; row < decoded.height; row += 1) {
       const sourceStart = row * decoded.width * 4;
       const sourceEnd = sourceStart + decoded.width * 4;
-      const targetStart = ((placement.y + row) * width + placement.x) * 4;
+      // Three uploads decoded PNG rows with flipY=false while sprite-plane top
+      // vertices sample uvMax. Store each Doom patch bottom-up inside its own
+      // atlas rectangle so the ordinary ordered UV rectangle renders upright.
+      const targetRow = placement.y + decoded.height - 1 - row;
+      const targetStart = (targetRow * width + placement.x) * 4;
       rgba.set(decoded.rgba.subarray(sourceStart, sourceEnd), targetStart);
     }
   }
@@ -376,15 +380,13 @@ function buildFrameManifest(
   atlasHeight: number,
 ): SpriteFrameManifest {
   const { family, entry, decoded } = placement.selected;
-  // Atlas rows are packed in top-origin PNG space. The Engine renderer uploads
-  // decoded rows with flipY=false and consumes bottom-origin sprite UVs.
   const uvMin: readonly [number, number] = [
     placement.x / atlas.width,
-    1 - (placement.y + decoded.height) / atlasHeight,
+    placement.y / atlasHeight,
   ];
   const uvMax: readonly [number, number] = [
     (placement.x + decoded.width) / atlas.width,
-    1 - placement.y / atlasHeight,
+    (placement.y + decoded.height) / atlasHeight,
   ];
   return {
     id: frameId,

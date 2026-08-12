@@ -28602,7 +28602,7 @@
       "id": "sprite/calibration-imp",
       "catalog": {
         "version": 1,
-        "hash": "sha256:5c9210c1cd26a8bc03f6d800c2f0db69cc9ed2a6dae0f9b8cb15030f591ec207",
+        "hash": "sha256:e71a1b2077c7874378f3239c34fa4fe2593c9646ec6073cf24556a45ecf5c3c0",
         "sourcePath": "content/doom-e1m1/sprites/actors.png",
         "label": "IMP · 56 DU / 2 EU"
       },
@@ -28614,11 +28614,11 @@
             "frame": 0,
             "uvMin": [
               0.22851562,
-              0.3159948
+              0.60988295
             ],
             "uvMax": [
               0.30859375,
-              0.39011705
+              0.6840052
             ],
             "size": [
               1.4642857,
@@ -28632,7 +28632,7 @@
       "id": "sprite/calibration-shotgun-guy",
       "catalog": {
         "version": 1,
-        "hash": "sha256:5c9210c1cd26a8bc03f6d800c2f0db69cc9ed2a6dae0f9b8cb15030f591ec207",
+        "hash": "sha256:e71a1b2077c7874378f3239c34fa4fe2593c9646ec6073cf24556a45ecf5c3c0",
         "sourcePath": "content/doom-e1m1/sprites/actors.png",
         "label": "SHOTGUN GUY · 56 DU / 2 EU"
       },
@@ -28644,11 +28644,11 @@
             "frame": 0,
             "uvMin": [
               0.22851562,
-              0.626788
+              0.30169052
             ],
             "uvMax": [
               0.29882812,
-              0.6983095
+              0.37321195
             ],
             "size": [
               1.2857143,
@@ -28662,7 +28662,7 @@
       "id": "sprite/calibration-zombieman",
       "catalog": {
         "version": 1,
-        "hash": "sha256:5c9210c1cd26a8bc03f6d800c2f0db69cc9ed2a6dae0f9b8cb15030f591ec207",
+        "hash": "sha256:e71a1b2077c7874378f3239c34fa4fe2593c9646ec6073cf24556a45ecf5c3c0",
         "sourcePath": "content/doom-e1m1/sprites/actors.png",
         "label": "ZOMBIEMAN · 56 DU / 2 EU"
       },
@@ -28674,11 +28674,11 @@
             "frame": 0,
             "uvMin": [
               0.001953125,
-              0.92717814
+              0.0013003901
             ],
             "uvMax": [
               0.08203125,
-              0.9986996
+              0.07282185
             ],
             "size": [
               1.4642857,
