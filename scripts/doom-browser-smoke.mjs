@@ -1539,7 +1539,9 @@ async function proveInteractionRoute(
     arrivalDistance: 1.5,
   });
   await walk([
-    [130, 130],
+    [127, 99],
+    [127, 121],
+    [128, 130],
     [131, 130],
     [131, 139],
     [132, 139],
