@@ -163936,7 +163936,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -164130,7 +164130,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -164318,7 +164318,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -164506,7 +164506,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -164700,7 +164700,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -164894,7 +164894,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -165088,7 +165088,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -165282,7 +165282,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -165476,7 +165476,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -165670,7 +165670,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -165864,7 +165864,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -166052,7 +166052,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -166240,7 +166240,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -166428,7 +166428,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -166622,7 +166622,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [
@@ -166810,7 +166810,7 @@
             "painDurationTicks": 10,
             "attack": {
               "kind": "rangedHitscan",
-              "damage": 15,
+              "damage": 12,
               "range": 128.0,
               "cooldownTicks": 51,
               "originOffset": [

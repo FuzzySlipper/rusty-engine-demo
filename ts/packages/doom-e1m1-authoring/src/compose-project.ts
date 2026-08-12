@@ -589,7 +589,7 @@ export function buildDoomE1M1Project(
         // The runtime hitscan is authoritative and cannot reproduce Doom's
         // pellet spread/misses yet. Keep one guaranteed blast dangerous
         // without treating the original average pellet total as unavoidable.
-        damage: 15,
+        damage: 12,
         range: 128,
         cooldownTicks: Math.round((30 / 35) * 60),
         originOffset: [0, 0.25, 0],
