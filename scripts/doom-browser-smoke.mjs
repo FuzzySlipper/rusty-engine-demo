@@ -1252,7 +1252,7 @@ async function proveRepresentativeEncounter(
   let canvasCenter = await acquirePhysicalPointerLock(client, canvasBounds);
   await moveToWorldPoint(client, addr, [154, 146], traversalSamples, {
     singleHold: true,
-    arrivalDistance: 0.7,
+    arrivalDistance: 1.0,
   });
   await moveToWorldPoint(client, addr, [156, 146], traversalSamples, {
     singleHold: true,
