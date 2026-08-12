@@ -8,10 +8,11 @@ provider-derived weapon entities shown by Rusty Engine Studio:
 - contract version: `1`
 - operations: `readLoadingBayWeapon` and `replaceLoadingBayWeapon`
 
-The decision follows the post-GM6 project/runtime boundary reviewed at demo
-revision `741812348f1a99a4e13415467c928a2a0dc32a43` and the downstream inspector
-extension design approved at Rusty Engine revision
-`31181bd445d072db3334a0ed706dd1f4079b2022`.
+The decision follows the post-GM6 project/runtime boundary recorded in two
+historical review identities:
+`741812348f1a99a4e13415467c928a2a0dc32a43` and
+`31181bd445d072db3334a0ed706dd1f4079b2022`. Those identities are review
+evidence, not current dependency selections or update requirements.
 
 ## Ownership
 

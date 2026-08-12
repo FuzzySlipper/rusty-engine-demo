@@ -3,6 +3,16 @@
 This repository is the external loading-bay game and reference consumer of Rusty Engine. It is not
 an Asha compatibility project and it is not the place to generalize speculative Engine APIs.
 
+## Den Guidance Bootstrap
+
+- Project ID: `rusty-engine-demo`
+- Resolve live guidance with the Den MCP `get_agent_guidance` tool before
+  substantial work.
+- Treat the resolved Den guidance packet and its referenced Den documents as
+  the source of truth for current task and review policy.
+- If Den is unreachable, stop and report which Den tool failed rather than
+  reconstructing current Den state from local files.
+
 - Keep gameplay object-centric: configuration/state lives on responsible entities; named Rust
   services and explicit host phases own behavior.
 - Rust owns live gameplay state, validation, mutation, scheduling, facts, project persistence, and

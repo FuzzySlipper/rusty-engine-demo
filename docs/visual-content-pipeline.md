@@ -6,9 +6,10 @@
 
 This document freezes the pre-replacement visual baseline for Den campaign
 `rusty-engine-demo #6350`. The evidence revision is
-`cd25485445bfb581c4005b221a23caa21408d327`, with Rust, renderer, and Studio packages pinned to
-the then-reviewed Rusty Engine `198dccaa3f6b15d776b58d0f60c0f025e4b12171`. The completed
-campaign revision and current pin are recorded in the final certification below.
+`cd25485445bfb581c4005b221a23caa21408d327`; its Rust, renderer, and Studio package identities are
+historical certification evidence for then-reviewed Rusty Engine
+`198dccaa3f6b15d776b58d0f60c0f025e4b12171`. The active dependency and host boundary lives in
+`design.md` and the Engine-hosted Studio adapter docs.
 
 Task #6351 imports no assets and changes no runtime authority. Its purpose is to make the current
 placeholder implementation, candidate sources, ownership decisions, and comparison measurements
@@ -23,15 +24,15 @@ Raw structured measurements are in
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------- |
 | Project and scene composition                                       | Loading Bay stored-project schema admitted and published by Rust                                  | `content/projects/loading-bay.project.json` after VC3       | Rust project/session construction and Studio                         | A second TypeScript scene or browser storage               |
 | Asset identity, source hash, dependencies, bounds, clips, materials | Canonical project asset catalog plus copied asset/license files                                   | Project `assets` and `content/assets`                       | Rust admission, Studio inspection, shared renderer projection        | Rust mesh/voxel literals or a browser asset registry       |
-| Static and animated source conversion                               | Rust-owned Studio adapter composing exact-pinned Engine providers                                 | Prepared plan plus atomically published project/asset files | Studio and Rust project store                                        | Ad hoc Blender output copied without provenance            |
+| Static and animated source conversion                               | Rust-owned Studio adapter composing Engine mechanisms                                             | Prepared plan plus atomically published project/asset files | Studio and Rust project store                                        | Ad hoc Blender output copied without provenance            |
 | Voxel-brush definitions                                             | Canonical Engine voxel-object definitions admitted by Rust                                        | Project voxel-object assets                                 | Studio editing/placement and shared projection                       | One browser-owned world voxel grid                         |
 | Voxel-brush instances and transforms                                | Entity-owned project instances admitted by Rust                                                   | Scene entities and voxel-object instance records            | Studio hierarchy, project readout, shared renderer                   | Unique baked mesh copies for every placement               |
 | Gameplay meaning and live state                                     | Loading Bay Rust services and fixed-tick phases                                                   | Authored gameplay components plus runtime snapshot/save     | Typed immutable browser projection                                   | Asset names, animation clips, or TypeScript state machines |
 | Collision, navigation, occlusion, hitboxes, triggers                | Rust project admission and canonical Engine spatial services                                      | Explicit entity/world proxy components                      | Rust gameplay loop                                                   | Decorative mesh triangles or fine visual voxels            |
 | Animation posture                                                   | Rust-owned enemy/weapon/progression state and facts                                               | Typed visual binding in the canonical project               | Shared renderer animation facilities through disposable presentation | A browser animation clock that decides gameplay            |
 | Camera-relative weapon presentation                                 | Shared Engine `viewmodel` layer; Loading Bay supplies serialized assets and disposable transforms | Canonical viewmodel asset references                        | One shared `RendererSurface`                                         | A private Three scene, loader, scheduler, or picking path  |
-| Rendering, resources, picking, timing                               | Exact-pinned Rusty Engine render packages                                                         | Renderer-neutral retained descriptors                       | One auto-started `RendererSurface`                                   | A demo renderer, resource cache, or second frame loop      |
-| Performance evidence                                                | Reproducible scripts plus exact-revision evidence                                                 | `docs/performance.md` and `docs/evidence`                   | CI and headed desktop certification                                  | HUD counters as gameplay authority                         |
+| Rendering, resources, picking, timing                               | Engine-owned renderer boundary (historical package evidence below)                                | Renderer-neutral retained descriptors                       | One auto-started `RendererSurface`                                   | A demo renderer, resource cache, or second frame loop      |
+| Performance evidence                                                | Reproducible scripts plus historical run evidence                                                 | `docs/performance.md` and `docs/evidence`                   | CI and headed desktop certification                                  | HUD counters as gameplay authority                         |
 
 ### Visual and gameplay proxy boundary
 

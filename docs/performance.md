@@ -3,6 +3,9 @@
 > Historical browser-renderer measurements: task #6703 removed the downstream browser renderer.
 > These captures remain predecessor provenance. Current rendered-host acceptance is
 > `pnpm run verify:native`; [`design.md`](design.md) owns the active boundary.
+>
+> Exact Demo, Engine, and package revisions in this document identify historical
+> runs only. They are not current dependency pins or freshness requirements.
 
 The Loading Bay product uses one `autoStart: true` Rusty Engine renderer surface. Browser input and
 authoritative session snapshots update that retained surface; the demo does not schedule another
@@ -37,8 +40,8 @@ bay at a 1600 by 900 viewport:
 | Local command acknowledgement  |               p95 <= 50 ms; maximum <= 100 ms |
 | Simulation                     |   Rust-owned fixed 60 Hz; <= 5 catch-up ticks |
 
-Performance certification records OS/kernel, CPU/GPU, browser build, viewport, exact Demo revision,
-and exact Engine pins. The automated Chromium gate intentionally uses headless SwiftShader and
+Historical performance certification records OS/kernel, CPU/GPU, browser build, viewport, and exact
+run identities. The automated Chromium gate intentionally uses headless SwiftShader and
 proves lifecycle/correctness only; it is not interactive GPU performance evidence.
 
 ## 2026-07-26 managed LAN baseline

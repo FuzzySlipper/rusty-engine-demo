@@ -162,10 +162,11 @@ cargo test --locked -p loading-bay-game \
   --test studio_voxel_objects
 ```
 
-The complete downstream gate is `pnpm run verify`; it also checks exact Engine resolution, boundary
-isolation, the full Rust suite and Clippy, TypeScript content/presentation, and real Chromium/WebGL.
-Rusty Engine's Studio integration command takes this checkout as an explicit argument. Neither
-repository has an ordinary sibling-checkout dependency.
+The complete downstream gate is `pnpm run verify`; it checks the adjacent Engine facade/path,
+boundary isolation, the full Rust suite and Clippy, TypeScript content/presentation, and real
+Chromium/WebGL. Rusty Engine's Studio integration command takes this checkout as an explicit
+argument. The selected source and adapter identities are run evidence; they do not create a
+downstream provider pin or update requirement.
 
 Focused downstream Studio checks are:
 

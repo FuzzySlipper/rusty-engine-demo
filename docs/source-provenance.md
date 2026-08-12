@@ -105,8 +105,8 @@ remains.
 
 ## M11B Studio adapter and voxel-owner adaptation
 
-The project-owned Studio adapter was authored directly in this repository against the exact Engine
-revision in [`engine-source.json`](../engine-source.json). It composes the public `asset-catalog`,
+The project-owned Studio adapter was authored directly in this repository during the historical
+M11B migration against then-current Engine revision metadata. It composes the public `asset-catalog`,
 `authored-scene`, `content-store`, `entity-state`, `engine-inspector`, `render-model`, and
 `render-projection` crates while retaining Loading Bay schema, layout, and domain admission here.
 No Studio or adapter implementation was copied from Engine or Asha.
@@ -182,11 +182,10 @@ art, code, generated binary asset, generic component schema, or runtime-loaded
 extension.
 
 `apps/loading-bay-studio/src/theme.css` retains the stock Engine Studio custom
-property names and values so the explicitly composed shared shell has the same
-host chrome in its downstream application. The application bootstrap and
-startup selector were independently authored against the public Engine
-composition API; no Engine app TypeScript, private workspace store, host
-script, or sibling checkout is copied into the supported product.
+property names and values as historical composition evidence. The current
+downstream product uses the Engine-owned application host and a Rust adapter;
+no Engine app TypeScript, private workspace store, host script, or sibling
+checkout is copied into the supported product.
 
 ## Original VC6 voxel-brush kit
 

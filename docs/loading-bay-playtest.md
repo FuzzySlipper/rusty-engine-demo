@@ -127,9 +127,9 @@ content; it must not add browser-owned combat or progression state.
 
 ## Complete-product certification
 
-The visual-content campaign was recertified on 2026-07-30 at exact public Demo revision
-`67e8d1d609f46d11fe8da0d990fc7a9b6ab33285`, pinning exact public Engine revision
-`0e0c49442d0c3d876a1336a5a829087f6e2314db`. Exact GitHub verify run
+The visual-content campaign was recertified on 2026-07-30 at Demo revision
+`67e8d1d609f46d11fe8da0d990fc7a9b6ab33285`, with Engine source identity
+`0e0c49442d0c3d876a1336a5a829087f6e2314db`. The exact GitHub verify run
 `30595962674` / job `91048265860` passed with authoritative RTT max 1536.6 ms, bounded queues
 1/1/1, zero dropped facts, and every campaign, completed-save, fresh-host Continue, converted
 project, migration, fresh-page, statistics, picking, reset, remount, and disposal tail. The run
@@ -146,7 +146,7 @@ by `docs/evidence/final-visual-content-certification.json`.
 The campaign was certified on 2026-07-27 from the public runtime revision
 `e31dea511377fe68ab898248c5ee9efa3f9a2cf6`. A fresh managed host built the Angular product, loaded
 the checked-in Loading Bay project, and served the real browser shell at `http://127.0.0.1:8787/`.
-Cargo and pnpm resolved only the exact public Engine revisions recorded in
+Cargo and pnpm used only the historical source identities recorded in
 `docs/source-provenance.md`; no sibling checkout, path override, global package link, copied
 renderer, or browser-owned gameplay substitute participated.
 
