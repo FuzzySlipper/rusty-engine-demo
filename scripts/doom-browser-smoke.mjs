@@ -644,7 +644,12 @@ async function moveToWorldPoint(
   addr,
   target,
   traversalSamples,
-  { singleHold = false, arrivalDistance = 0.7, stopWhen = null } = {},
+  {
+    singleHold = false,
+    arrivalDistance = 0.7,
+    stopWhen = null,
+    pulseMilliseconds = null,
+  } = {},
 ) {
   const deadline = Date.now() + 60000;
   let previousDistance = Number.POSITIVE_INFINITY;
@@ -686,7 +691,12 @@ async function moveToWorldPoint(
         ? 80
         : Math.min(2_000, Math.max(500, (distance / 6) * 1_000));
     if (singleHold) await holdKeys(client, codes, holdMilliseconds);
-    else await pulseKeys(client, codes, distance < 2 ? 80 : 500);
+    else
+      await pulseKeys(
+        client,
+        codes,
+        pulseMilliseconds ?? (distance < 2 ? 80 : 500),
+      );
 
     stalledPulses = distance >= previousDistance - 0.03 ? stalledPulses + 1 : 0;
     previousDistance = distance;
@@ -1581,6 +1591,7 @@ async function proveInteractionRoute(
     await moveToWorldPoint(client, addr, [178, 146], traversalSamples, {
       singleHold: false,
       arrivalDistance: 1.8,
+      pulseMilliseconds: 80,
       stopWhen: (candidate) =>
         candidate.enemies?.find((entry) => entry.id === owners.innerThreat[0])
           ?.combatPosture !== "sleeping",
