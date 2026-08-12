@@ -2949,13 +2949,30 @@ impl GameRuntime {
                             | EnemyCombatPosture::Attacking
                     )
             );
+            let maximum_ready_cadences = snapshot
+                .encounters
+                .iter()
+                .find(|encounter| {
+                    encounter.state != SnapshotEncounterState::Dormant
+                        && encounter.members.contains(&combat.entity)
+                })
+                .map_or(1, |encounter| {
+                    (encounter.members.len() as u64).saturating_mul(2)
+                })
+                .max(1);
             if !config.is_valid()
                 || !position_state_valid
                 || !enemy_state_valid
                 || (posture == EnemyCombatPosture::Dead && combat.pain_ticks_remaining != 0)
                 || combat.pain_ticks_remaining > config.pain_duration_ticks
                 || last_known_target_position.is_some_and(|position| !vec3_is_finite(position))
-                || combat.ready_at_tick > snapshot.tick.saturating_add(config.attack.cooldown_ticks)
+                || combat.ready_at_tick
+                    > snapshot.tick.saturating_add(
+                        config
+                            .attack
+                            .cooldown_ticks
+                            .saturating_mul(maximum_ready_cadences),
+                    )
             {
                 return Err(GameSnapshotError::InvalidEnemyCombatState {
                     entity: combat.entity,

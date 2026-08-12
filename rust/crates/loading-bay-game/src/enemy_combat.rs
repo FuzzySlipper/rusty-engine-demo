@@ -375,8 +375,14 @@ impl EnemyCombatService {
                 continue;
             }
 
-            let ready_at_tick =
-                tick.advance(TickDelta::new(component.config.attack.cooldown_ticks));
+            let cadence_multiplier = EncounterService::attack_cadence_multiplier(session, enemy);
+            let ready_at_tick = tick.advance(TickDelta::new(
+                component
+                    .config
+                    .attack
+                    .cooldown_ticks
+                    .saturating_mul(cadence_multiplier),
+            ));
             session
                 .enemy_combat
                 .get_mut(&enemy)

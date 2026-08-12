@@ -1,6 +1,6 @@
 use loading_bay_game::{
-    decode_game_snapshot, encode_game_snapshot, DoorState, EncounterState, EnemyState, GameEvent,
-    GameLoopFact, GameRuntime, LoadingBayGameLoop, ProjectContentError,
+    decode_game_snapshot, encode_game_snapshot, DoorState, EncounterState, EnemyCombatFact,
+    EnemyState, GameEvent, GameLoopFact, GameRuntime, LoadingBayGameLoop, ProjectContentError,
 };
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
@@ -17,6 +17,7 @@ const EXIT: EntityId = EntityId::new(3);
 const FIRST_ENEMY: EntityId = EntityId::new(4);
 const SECOND_ENEMY: EntityId = EntityId::new(5);
 const GENERATOR_ENCOUNTER: EntityId = EntityId::new(40);
+const GENERATOR_FIRST_ENEMY: EntityId = EntityId::new(5);
 
 #[test]
 fn authored_content_materializes_legible_entities_and_relationships() {
@@ -260,11 +261,11 @@ fn project_content_rejects_unknown_contract_fields() {
 }
 
 #[test]
-fn encounter_activation_spreads_first_attacks_over_authored_enemy_cadence() {
+fn encounter_activation_reserves_a_group_cadence_before_spreading_first_attacks() {
     let mut project: serde_json::Value = serde_json::from_str(STORED_PROJECT).unwrap();
     let encounter_position =
         stored_entity_mut(&mut project, GENERATOR_ENCOUNTER)["translation"].clone();
-    stored_entity_mut(&mut project, ACTOR)["translation"] = encounter_position;
+    stored_entity_mut(&mut project, ACTOR)["translation"] = encounter_position.clone();
     let runtime = GameRuntime::from_stored_project(&project.to_string()).expect("admit project");
     let mut game_loop = LoadingBayGameLoop::new(runtime, ACTOR).unwrap();
 
@@ -285,7 +286,57 @@ fn encounter_activation_spreads_first_attacks_over_authored_enemy_cadence() {
             .ready_at_tick
             .raw()
     });
-    assert_eq!(ready_at, [121, 241, 361]);
+    assert_eq!(ready_at, [481, 601, 721]);
+}
+
+#[test]
+fn active_encounter_members_repeat_on_the_group_scaled_cadence() {
+    let mut project: serde_json::Value = serde_json::from_str(STORED_PROJECT).unwrap();
+    let actor_position = stored_entity_mut(&mut project, ACTOR)["translation"].clone();
+    stored_entity_mut(&mut project, GENERATOR_ENCOUNTER)["translation"] = actor_position.clone();
+    let mut enemy_position = actor_position;
+    let enemy_coordinates = enemy_position.as_array_mut().expect("encounter position");
+    enemy_coordinates[2] = serde_json::json!(
+        enemy_coordinates[2]
+            .as_f64()
+            .expect("encounter z coordinate")
+            - 1.0
+    );
+    let enemy = stored_entity_mut(&mut project, GENERATOR_FIRST_ENEMY);
+    enemy["translation"] = enemy_position.clone();
+    enemy["navigation"]["goal"] = enemy_position;
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).expect("admit project");
+    let mut game_loop = LoadingBayGameLoop::new(runtime, ACTOR).unwrap();
+
+    let mut fired = None;
+    for _ in 0..600 {
+        let tick = game_loop.run_fixed_tick().expect("advance encounter");
+        fired = tick.facts.iter().find_map(|fact| match fact {
+            GameLoopFact::EnemyCombat(EnemyCombatFact::AttackFired {
+                enemy,
+                ready_at_tick,
+                ..
+            }) if *enemy == GENERATOR_FIRST_ENEMY => {
+                Some((tick.simulation_tick, ready_at_tick.raw()))
+            }
+            _ => None,
+        });
+        if fired.is_some() {
+            break;
+        }
+    }
+
+    let (fired_at, ready_at) = fired.unwrap_or_else(|| {
+        panic!(
+            "first grouped enemy attacks; final combat={:?}",
+            game_loop
+                .runtime()
+                .session()
+                .enemy_combat(GENERATOR_FIRST_ENEMY)
+        )
+    });
+    assert_eq!(fired_at, 481);
+    assert_eq!(ready_at, 841);
 }
 
 #[test]

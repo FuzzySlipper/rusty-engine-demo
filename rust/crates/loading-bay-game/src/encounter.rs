@@ -84,18 +84,18 @@ impl EncounterService {
                     .expect("activation candidate remains attached");
                 component.state = EncounterState::Active;
                 let members = component.config.members.clone();
+                let member_count = members.len() as u64;
                 for (index, member) in members.into_iter().enumerate() {
                     let Some(combat) = session.enemy_combat.get_mut(&member) else {
                         continue;
                     };
-                    // Spread first attacks over each enemy's authored cadence.
-                    // The group still wakes together, while the player receives
-                    // a reaction window instead of simultaneous first damage.
+                    // Give the player one full group cadence to react, then
+                    // spread first attacks over each enemy's authored cadence.
                     let delay = combat
                         .config
                         .attack
                         .cooldown_ticks
-                        .saturating_mul(index as u64 + 1)
+                        .saturating_mul(member_count.saturating_add(index as u64 + 1))
                         .max(1);
                     let ready_at = tick.advance(TickDelta::new(delay));
                     if combat.state.ready_at_tick.raw() < ready_at.raw() {
@@ -116,6 +116,18 @@ impl EncounterService {
             .values()
             .find(|encounter| encounter.config.members.contains(&enemy))
             .is_none_or(|encounter| encounter.state == EncounterState::Active)
+    }
+
+    pub(crate) fn attack_cadence_multiplier(session: &GameSession, enemy: EntityId) -> u64 {
+        session
+            .encounters
+            .values()
+            .find(|encounter| {
+                encounter.state == EncounterState::Active
+                    && encounter.config.members.contains(&enemy)
+            })
+            .map_or(1, |encounter| encounter.config.members.len() as u64)
+            .max(1)
     }
 
     pub(crate) fn observe_enemy_defeat(
