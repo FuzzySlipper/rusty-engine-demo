@@ -1018,6 +1018,18 @@ fn definition_error(
                 diagnostic_code::INVALID_COMPONENT,
                 entity_path(scene_index, indexes, *entity, "kinematic"),
             ),
+            rusty_engine::entity_state::EntityDefinitionError::CharacterMotionMissingTransform {
+                entity,
+            }
+            | rusty_engine::entity_state::EntityDefinitionError::CharacterMotionConflict {
+                entity,
+            }
+            | rusty_engine::entity_state::EntityDefinitionError::InvalidCharacterMotion {
+                entity,
+            } => (
+                diagnostic_code::INVALID_COMPONENT,
+                entity_path(scene_index, indexes, *entity, "characterMotion"),
+            ),
             rusty_engine::entity_state::EntityDefinitionError::InvalidRelationship {
                 entity,
                 ..
