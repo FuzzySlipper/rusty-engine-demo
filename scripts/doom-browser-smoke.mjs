@@ -654,13 +654,16 @@ async function moveToWorldPoint(
     const state = await fetchAuthoritativeState(addr);
     lastState = state;
     if (state.player?.vitalityState === "dead") {
-      throw new Error(`player died while moving to ${JSON.stringify(target)}`);
+      throw new Error(
+        `player died while moving to ${JSON.stringify(target)}; recent=${JSON.stringify(traversalSamples.slice(-8))}`,
+      );
     }
     const [x, y, z] = state.player.position;
     traversalSamples.push({
       tick: state.tick,
       position: [x, y, z],
       terrainContact: state.player.terrainContact,
+      health: state.player.currentHealth,
     });
     if (stopWhen?.(state) === true) return state;
     const dx = target[0] - x;
