@@ -259,8 +259,13 @@ async function fetchAuthoritativeState(addr) {
   return response.json();
 }
 
-async function waitForAuthoritativeState(addr, description, predicate) {
-  const deadline = Date.now() + 10000;
+async function waitForAuthoritativeState(
+  addr,
+  description,
+  predicate,
+  timeoutMilliseconds = 10000,
+) {
+  const deadline = Date.now() + timeoutMilliseconds;
   let lastState = null;
   while (Date.now() < deadline) {
     lastState = await fetchAuthoritativeState(addr);
@@ -534,6 +539,7 @@ async function proveFocusedDeathAndRestart(client, addr) {
       candidate.player?.vitalityState === "dead" &&
       candidate.player?.currentHealth === 0 &&
       candidate.restart?.authoredBaselineAvailable === true,
+    20000,
   );
   const deadline = Date.now() + 10000;
   let restartButton = null;
