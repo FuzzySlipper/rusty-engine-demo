@@ -907,6 +907,10 @@ function resolveInteractionOwners(projectPath) {
       owner("doom-shotgun-guy-20", "enemyCombat"),
       owner("doom-drop-shotgun-guy-20", "pickup"),
     ],
+    flankThreat: [
+      owner("doom-shotgun-guy-21", "enemyCombat"),
+      owner("doom-drop-shotgun-guy-21", "pickup"),
+    ],
     innerThreat: [
       owner("doom-shotgun-guy-15", "enemyCombat"),
       owner("doom-drop-shotgun-guy-15", "pickup"),
@@ -1616,6 +1620,27 @@ async function proveInteractionRoute(
         owners.shotgunUpgrade[1],
       )
     : null;
+  const flankThreat = encounterExitEvidence
+    ? await defeatCanonicalThreat(
+        client,
+        addr,
+        canvasBounds,
+        owners.flankThreat[0],
+        owners.flankThreat[1],
+      )
+    : null;
+  const innerThreat = encounterExitEvidence
+    ? await defeatCanonicalThreat(
+        client,
+        addr,
+        canvasBounds,
+        owners.innerThreat[0],
+        owners.innerThreat[1],
+      )
+    : null;
+  if (flankThreat !== null && innerThreat !== null) {
+    await capture("encounter-all-threats-cleared.png");
+  }
   if (shotgunUpgrade !== null) {
     await moveToWorldPoint(client, addr, [154, 136], traversalSamples, {
       singleHold: true,
@@ -1643,18 +1668,6 @@ async function proveInteractionRoute(
       (candidate) => candidate.weapon?.item === "weapon/shotgun",
     );
     await capture("encounter-shotgun-collected.png");
-  }
-  const innerThreat = encounterExitEvidence
-    ? await defeatCanonicalThreat(
-        client,
-        addr,
-        canvasBounds,
-        owners.innerThreat[0],
-        owners.innerThreat[1],
-      )
-    : null;
-  if (innerThreat !== null) {
-    await capture("encounter-inner-threat-cleared.png");
   }
   await walk([[178, 146]]);
   await walk([
