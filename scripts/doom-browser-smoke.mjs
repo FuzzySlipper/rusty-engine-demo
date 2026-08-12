@@ -909,6 +909,16 @@ function normalizeDegrees(value) {
 }
 
 async function acquirePhysicalPointerLock(client, canvasBounds) {
+  const center = {
+    x: canvasBounds.x + canvasBounds.width / 2,
+    y: canvasBounds.y + canvasBounds.height / 2,
+  };
+  const isLocked = () =>
+    cdpEvaluate(
+      client,
+      `document.pointerLockElement === document.querySelector('canvas')`,
+    );
+  if (await isLocked()) return center;
   if (encounterExitEvidence && headedOzonePlatform === "x11") {
     const centered = spawnSync(
       "python3",
@@ -920,32 +930,26 @@ async function acquirePhysicalPointerLock(client, canvasBounds) {
     }
   }
   await client.send("Page.bringToFront");
-  const center = {
-    x: canvasBounds.x + canvasBounds.width / 2,
-    y: canvasBounds.y + canvasBounds.height / 2,
-  };
-  await client.send("Input.dispatchMouseEvent", {
-    type: "mousePressed",
-    ...center,
-    button: "left",
-    buttons: 1,
-    clickCount: 1,
-  });
-  await client.send("Input.dispatchMouseEvent", {
-    type: "mouseReleased",
-    ...center,
-    button: "left",
-    buttons: 0,
-    clickCount: 1,
-  });
-  const deadline = Date.now() + 10_000;
-  while (Date.now() < deadline) {
-    const locked = await cdpEvaluate(
-      client,
-      `document.pointerLockElement === document.querySelector('canvas')`,
-    );
-    if (locked) return center;
-    await delay(100);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mousePressed",
+      ...center,
+      button: "left",
+      buttons: 1,
+      clickCount: 1,
+    });
+    await client.send("Input.dispatchMouseEvent", {
+      type: "mouseReleased",
+      ...center,
+      button: "left",
+      buttons: 0,
+      clickCount: 1,
+    });
+    const deadline = Date.now() + 3_000;
+    while (Date.now() < deadline) {
+      if (await isLocked()) return center;
+      await delay(100);
+    }
   }
   throw new Error("physical canvas click did not acquire pointer lock");
 }
