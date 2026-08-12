@@ -1492,7 +1492,7 @@ async function proveInteractionRoute(
     for (const waypoint of waypoints) {
       await moveToWorldPoint(client, addr, waypoint, traversalSamples, {
         singleHold: true,
-        arrivalDistance: 1.8,
+        arrivalDistance: 2.2,
       });
     }
   };
