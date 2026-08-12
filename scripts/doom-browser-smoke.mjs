@@ -1614,6 +1614,16 @@ async function proveInteractionRoute(
       shotgunDrop,
     );
     corridorThreats.push(shotgunThreat);
+    const [zombieman, bulletDrop] = owners.corridorThreats[1];
+    corridorThreats.push(
+      await defeatCanonicalThreat(
+        client,
+        addr,
+        canvasBounds,
+        zombieman,
+        bulletDrop,
+      ),
+    );
     await moveToWorldPoint(
       client,
       addr,
@@ -1644,16 +1654,6 @@ async function proveInteractionRoute(
       (candidate) => candidate.weapon?.item === "weapon/shotgun",
     );
     await capture("encounter-shotgun-collected.png");
-    const [zombieman, bulletDrop] = owners.corridorThreats[1];
-    corridorThreats.push(
-      await defeatCanonicalThreat(
-        client,
-        addr,
-        canvasBounds,
-        zombieman,
-        bulletDrop,
-      ),
-    );
     await capture("encounter-corridor-cleared.png");
   }
   if (encounterExitEvidence) {
