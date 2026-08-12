@@ -1309,6 +1309,10 @@ async function proveRepresentativeEncounter(
       `canonical representative enemy ${enemyId} was not live: ${JSON.stringify(enemyBefore)}`,
     );
   }
+  await moveToWorldPoint(client, addr, [176, 146], traversalSamples, {
+    singleHold: true,
+    arrivalDistance: 1.8,
+  });
   const engagedAim = await physicallyAimAtEnemy(
     client,
     addr,
