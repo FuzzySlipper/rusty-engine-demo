@@ -1277,7 +1277,7 @@ async function proveRepresentativeEncounter(
   );
   await moveToWorldPoint(client, addr, [158, 146], traversalSamples, {
     singleHold: true,
-    arrivalDistance: 1.2,
+    arrivalDistance: 1.5,
   });
   await moveToWorldPoint(client, addr, [160, 146], traversalSamples, {
     singleHold: true,
