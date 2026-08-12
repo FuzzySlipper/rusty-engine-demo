@@ -61,6 +61,8 @@ enum BrowserGameCommand {
     SetInputIntent {
         movement: [f32; 2],
         look_delta: [f32; 2],
+        #[serde(default)]
+        jump_held: bool,
         primary_fire_held: bool,
     },
     Interact {
@@ -543,6 +545,7 @@ fn process_command(
             BrowserGameCommand::SetInputIntent {
                 movement,
                 look_delta,
+                jump_held,
                 primary_fire_held,
             } => host.runtime.submit_input(PlayerInputCommand {
                 connection_generation: context.connection_generation,
@@ -550,6 +553,7 @@ fn process_command(
                 intent: PlayerInputIntent {
                     movement,
                     look_delta,
+                    jump_held,
                     primary_fire_held,
                 },
             }),

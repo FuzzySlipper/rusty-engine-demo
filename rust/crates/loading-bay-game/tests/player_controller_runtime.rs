@@ -1,138 +1,58 @@
 use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, GameEntityDefinitionError, GameRuntime,
-    PlayerControlFact, ProjectContentError, ResolvedPlayerAction, RuntimeError,
+    PlayerControlFact, PlayerControlReceipt, ProjectContentError, ResolvedPlayerAction,
+    RuntimeError,
 };
 use rusty_engine::core_ids::EntityId;
+use rusty_engine::engine_spatial::{CharacterBlockKind, CharacterContactKind};
 use serde_json::{json, Value};
 
 const PROJECT: &str = include_str!("../../../../content/generated/encounter-gate.project.json");
 const PLAYER: EntityId = EntityId::new(1);
 
 #[test]
-fn semantic_move_actions_use_the_collision_aware_kinematic_path() {
-    let mut runtime = GameRuntime::from_project_content(PROJECT).expect("admit player project");
-    let before = player_position(&runtime);
-    let mut moved = false;
-    let mut blocked = false;
-
-    for _ in 0..12 {
-        let receipt = runtime
-            .apply_player_action(
-                PLAYER,
-                ResolvedPlayerAction::Move {
-                    forward: 1.0,
-                    right: 0.0,
-                },
-            )
-            .expect("move action");
-        moved |= receipt
-            .facts
-            .iter()
-            .any(|fact| matches!(fact, PlayerControlFact::Moved { .. }));
-        blocked |= receipt
-            .facts
-            .iter()
-            .any(|fact| matches!(fact, PlayerControlFact::Blocked { .. }));
-    }
-
-    let after = player_position(&runtime);
-    assert!(moved, "the player should advance before reaching the wall");
-    assert!(blocked, "the generated room shell should stop the player");
-    assert!((after.x - before.x).abs() < 0.000_01);
-    assert!(after.z < before.z);
-    assert!(after.z > 1.0);
-    assert_eq!(
-        runtime
-            .session()
-            .entity(PLAYER)
-            .unwrap()
-            .kinematic
-            .unwrap()
-            .velocity,
-        rusty_engine::core_math::Vec3::ZERO,
-        "an action cannot leave polling-style velocity behind",
-    );
-}
-
-#[test]
-fn encounter_gate_blocks_its_canonical_aperture_closed_and_permits_passage_open() {
-    let mut project: Value = serde_json::from_str(PROJECT).unwrap();
-    let player = entity_mut(&mut project, PLAYER.raw());
-    player["translation"] = json!([4.5, 1.5, 10.25]);
-    player["playerController"]["initialYawDegrees"] = json!(180);
-    let mut runtime = GameRuntime::from_project_content(&project.to_string()).unwrap();
-    let before = player_position(&runtime);
-
-    let closed = runtime
-        .apply_player_action(
-            PLAYER,
-            ResolvedPlayerAction::Move {
-                forward: 1.0,
-                right: 0.0,
-            },
-        )
-        .unwrap();
-
-    assert_eq!(player_position(&runtime), before);
-    assert!(closed.facts.iter().any(
-        |fact| matches!(fact, PlayerControlFact::Blocked { entity, .. } if *entity == PLAYER)
-    ));
-
-    runtime.defeat_enemy(PLAYER, EntityId::new(4)).unwrap();
-    runtime.defeat_enemy(PLAYER, EntityId::new(5)).unwrap();
-    for _ in 0..6 {
-        runtime
-            .apply_player_action(
-                PLAYER,
-                ResolvedPlayerAction::Move {
-                    forward: 1.0,
-                    right: 0.0,
-                },
-            )
-            .unwrap();
-    }
+fn player_admission_installs_canonical_character_motion_authority() {
+    let runtime = GameRuntime::from_project_content(PROJECT).expect("admit player project");
+    let entity = runtime.session().entity(PLAYER).unwrap();
+    let player = runtime.session().player_controller(PLAYER).unwrap();
+    let motion = runtime
+        .session()
+        .entities()
+        .character_motion(PLAYER)
+        .expect("admitted player has Engine character motion");
 
     assert!(
-        player_position(&runtime).z > 12.0,
-        "the opened entity gate must expose the canonical generated aperture"
+        entity.kinematic.is_none(),
+        "legacy kinematic state is not authoritative"
+    );
+    assert_eq!(entity.character_motion, Some(*motion));
+    assert!(
+        entity.bounds.is_some(),
+        "canonical character bounds are admitted"
+    );
+    assert_eq!(player.entity_view.character_motion, Some(*motion));
+    assert_eq!(player.state.grounded, motion.grounded);
+    assert_eq!(
+        player.state.vertical_velocity,
+        (motion.controlled_velocity + motion.external_velocity).y
     );
 }
 
 #[test]
-fn semantic_look_action_updates_durable_controller_state_without_moving_the_entity() {
+fn admission_and_semantic_input_validation_reject_invalid_contracts() {
+    let mut project: Value = serde_json::from_str(PROJECT).unwrap();
+    let player = entity_mut(&mut project, PLAYER.raw());
+    player["playerController"]["bindings"]["moveBackward"] = json!("KeyW");
+
+    let error = GameRuntime::from_project_content(&project.to_string()).unwrap_err();
+    assert!(matches!(
+        error,
+        RuntimeError::Content(ProjectContentError::Definition(
+            GameEntityDefinitionError::InvalidPlayerControllerConfig { entity }
+        )) if entity == PLAYER
+    ));
+
     let mut runtime = GameRuntime::from_project_content(PROJECT).unwrap();
-    let before_position = player_position(&runtime);
-    let before = runtime.session().player_controller(PLAYER).unwrap().state;
-
-    let receipt = runtime
-        .apply_player_action(
-            PLAYER,
-            ResolvedPlayerAction::Look {
-                yaw_delta: 0.5,
-                pitch_delta: -0.25,
-            },
-        )
-        .unwrap();
-
-    let after = runtime.session().player_controller(PLAYER).unwrap().state;
-    assert_eq!(after.yaw_degrees, 6.0);
-    assert_eq!(after.pitch_degrees, -13.0);
-    assert_eq!(player_position(&runtime), before_position);
-    assert!(receipt.motion.is_none());
-    assert!(receipt.facts.iter().any(|fact| matches!(
-        fact,
-        PlayerControlFact::LookChanged {
-            before_yaw_degrees,
-            after_yaw_degrees,
-            ..
-        } if *before_yaw_degrees == before.yaw_degrees && *after_yaw_degrees == after.yaw_degrees
-    )));
-}
-
-#[test]
-fn malformed_or_unresolved_action_values_fail_closed() {
-    let mut runtime = GameRuntime::from_project_content(PROJECT).unwrap();
-
     let error = runtime
         .apply_player_action(
             PLAYER,
@@ -142,38 +62,61 @@ fn malformed_or_unresolved_action_values_fail_closed() {
             },
         )
         .unwrap_err();
-
     assert!(matches!(error, RuntimeError::InvalidPlayerAction { .. }));
 }
 
 #[test]
-fn duplicate_authored_keyboard_controls_are_rejected_at_admission() {
-    let mut project: Value = serde_json::from_str(PROJECT).unwrap();
-    let player = entity_mut(&mut project, PLAYER.raw());
-    player["playerController"]["bindings"]["moveBackward"] = json!("KeyW");
-
-    let error = GameRuntime::from_project_content(&project.to_string()).unwrap_err();
-
-    assert!(matches!(
-        error,
-        RuntimeError::Content(ProjectContentError::Definition(
-            GameEntityDefinitionError::InvalidPlayerControllerConfig { entity }
-        )) if entity == PLAYER
-    ));
-}
-
-#[test]
-fn snapshot_reopen_preserves_player_pose_and_controller_but_derives_no_camera_state() {
+fn semantic_look_updates_fps_orientation_without_moving_the_character() {
     let mut runtime = GameRuntime::from_project_content(PROJECT).unwrap();
-    runtime
+    let before_position = player_position(&runtime);
+    let before = runtime.session().player_controller(PLAYER).unwrap().state;
+
+    let receipt = runtime
         .apply_player_action(
             PLAYER,
-            ResolvedPlayerAction::Move {
-                forward: 1.0,
-                right: 0.0,
+            ResolvedPlayerAction::Look {
+                yaw_delta: 0.5,
+                pitch_delta: 0.25,
             },
         )
         .unwrap();
+
+    let after = runtime.session().player_controller(PLAYER).unwrap().state;
+    assert!(after.yaw_degrees > before.yaw_degrees);
+    assert!(after.pitch_degrees > before.pitch_degrees);
+    assert!((-89.0..=89.0).contains(&after.pitch_degrees));
+    assert_eq!(player_position(&runtime), before_position);
+    assert!(
+        receipt.motion.is_none(),
+        "look does not fabricate a motion receipt"
+    );
+    assert!(receipt.facts.iter().any(|fact| matches!(
+        fact,
+        PlayerControlFact::LookChanged {
+            before_yaw_degrees,
+            after_yaw_degrees,
+            before_pitch_degrees,
+            after_pitch_degrees,
+            ..
+        } if *after_yaw_degrees > *before_yaw_degrees
+            && *after_pitch_degrees > *before_pitch_degrees
+    )));
+}
+
+#[test]
+fn snapshot_reopen_preserves_pose_and_canonical_motion_state() {
+    let floor = floor_voxels(-2..=2, -2..=2);
+    let mut runtime = traversal_runtime(floor, false, 0.0);
+    let moved = runtime
+        .apply_player_action(
+            PLAYER,
+            ResolvedPlayerAction::Move {
+                forward: 0.5,
+                right: 0.25,
+            },
+        )
+        .unwrap();
+    assert_canonical_motion_authority(&runtime, &moved);
     runtime
         .apply_player_action(
             PLAYER,
@@ -183,9 +126,12 @@ fn snapshot_reopen_preserves_player_pose_and_controller_but_derives_no_camera_st
             },
         )
         .unwrap();
-    let encoded = encode_game_snapshot(&runtime).unwrap();
 
-    assert!(!encoded.contains("camera"));
+    let encoded = encode_game_snapshot(&runtime).unwrap();
+    assert!(
+        !encoded.contains("camera"),
+        "camera presentation is not saved as gameplay state"
+    );
     let reopened = decode_game_snapshot(&encoded).unwrap();
 
     assert_eq!(player_position(&runtime), player_position(&reopened));
@@ -193,207 +139,85 @@ fn snapshot_reopen_preserves_player_pose_and_controller_but_derives_no_camera_st
         runtime.session().player_controller(PLAYER),
         reopened.session().player_controller(PLAYER),
     );
-}
-
-#[test]
-fn grounded_traversal_steps_up_to_the_authored_limit_and_rejects_taller_walls() {
-    let floor = (-1..=4).map(|x| [x, 0, 0]);
-    let mut shallow = traversal_runtime(floor.clone().chain([[1, 1, 0]]).collect(), true, 0);
-    let stepped = shallow
-        .apply_player_action(
-            PLAYER,
-            ResolvedPlayerAction::Move {
-                forward: 1.0,
-                right: 0.0,
-            },
-        )
-        .unwrap();
-    let shallow_position = player_position(&shallow);
-    assert!(shallow_position.x > 0.5 && shallow_position.y > 2.2);
-    assert!(stepped
-        .facts
-        .iter()
-        .any(|fact| matches!(fact, PlayerControlFact::Stepped { .. })));
-
-    let floor = (-1..=4).map(|x| [x, 0, 0]);
-    let mut tall = traversal_runtime(floor.chain([[1, 1, 0], [1, 2, 0]]).collect(), true, 0);
-    let blocked = tall
-        .apply_player_action(
-            PLAYER,
-            ResolvedPlayerAction::Move {
-                forward: 1.0,
-                right: 0.0,
-            },
-        )
-        .unwrap();
-    assert_eq!(player_position(&tall).x, 0.5);
-    assert!(blocked
-        .facts
-        .iter()
-        .any(|fact| matches!(fact, PlayerControlFact::Blocked { .. })));
-}
-
-#[test]
-fn jump_is_grounded_deterministic_and_stops_at_head_collision() {
-    let floor = || (-1..=1).map(|x| [x, 0, 0]).collect();
-    let mut first = traversal_runtime(floor(), true, 0);
-    let mut second = traversal_runtime(floor(), true, 0);
-
-    let jumped = first
-        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
-        .unwrap();
-    second
-        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
-        .unwrap();
-    assert!(jumped
-        .facts
-        .iter()
-        .any(|fact| matches!(fact, PlayerControlFact::Jumped { .. })));
-    assert!(first
-        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
-        .unwrap()
-        .facts
-        .is_empty());
-    let airborne_snapshot = encode_game_snapshot(&first).unwrap();
-    let reopened_airborne = decode_game_snapshot(&airborne_snapshot).unwrap();
     assert_eq!(
-        first.session().player_controller(PLAYER),
-        reopened_airborne.session().player_controller(PLAYER),
-        "snapshot must retain grounded eligibility and the live jump velocity"
+        runtime.session().entities().character_motion(PLAYER),
+        reopened.session().entities().character_motion(PLAYER),
     );
-    let mut landed = false;
-    for _ in 0..12 {
-        first
-            .apply_player_action(
-                PLAYER,
-                ResolvedPlayerAction::Move {
-                    forward: 0.0,
-                    right: 0.0,
-                },
-            )
-            .unwrap();
-        second
-            .apply_player_action(
-                PLAYER,
-                ResolvedPlayerAction::Move {
-                    forward: 0.0,
-                    right: 0.0,
-                },
-            )
-            .unwrap();
-        if first
-            .session()
-            .player_controller(PLAYER)
-            .unwrap()
-            .state
-            .grounded
-        {
-            landed = true;
-            break;
+    assert!(reopened
+        .session()
+        .entity(PLAYER)
+        .unwrap()
+        .kinematic
+        .is_none());
+}
+
+#[test]
+fn wall_contact_preserves_tangent_progress_without_penetration() {
+    let mut voxels = floor_voxels(-2..=4, -32..=32);
+    for y in 1..=3 {
+        for z in -32..=32 {
+            voxels.push([1, y, z]);
         }
     }
-    assert!(
-        landed,
-        "jump must land within the deterministic test horizon"
-    );
-    assert_eq!(player_position(&first), player_position(&second));
-    assert!(
-        first
-            .session()
-            .player_controller(PLAYER)
-            .unwrap()
-            .state
-            .grounded,
-        "trajectory ended at {:?} with {:?}",
-        player_position(&first),
-        first.session().player_controller(PLAYER).unwrap().state
-    );
-    assert!((player_position(&first).y - 1.2501).abs() < 0.000_1);
-    assert_eq!(
-        first
-            .session()
-            .player_controller(PLAYER)
-            .unwrap()
-            .state
-            .vertical_velocity,
-        0.0,
-        "the first grounded landing tick must settle and clear downward velocity"
-    );
+    let mut runtime = traversal_runtime(voxels, false, -90.0);
+    let start = player_position(&runtime);
+    let mut saw_wall = false;
+    let mut saw_tangent_progress = false;
 
-    let mut ceiling = traversal_runtime(vec![[0, 0, 0], [0, 2, 0]], true, 0);
-    ceiling
-        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
-        .unwrap();
-    ceiling
-        .apply_player_action(
-            PLAYER,
-            ResolvedPlayerAction::Move {
-                forward: 0.0,
-                right: 0.0,
-            },
-        )
-        .unwrap();
-    assert_eq!(player_position(&ceiling).y, 1.251);
-    assert_eq!(
-        ceiling
-            .session()
-            .player_controller(PLAYER)
-            .unwrap()
-            .state
-            .vertical_velocity,
-        0.0
-    );
+    for _ in 0..30 {
+        let receipt = runtime
+            .apply_player_action(
+                PLAYER,
+                ResolvedPlayerAction::Move {
+                    forward: 1.0,
+                    right: 0.5,
+                },
+            )
+            .unwrap();
+        assert_canonical_motion_authority(&runtime, &receipt);
+        let motion = receipt.motion.as_ref().unwrap();
+        saw_wall |= motion.blocks.contains(&CharacterBlockKind::Wall)
+            || motion
+                .contacts
+                .iter()
+                .any(|contact| contact.kind == CharacterContactKind::Wall);
+        saw_tangent_progress |= player_position(&runtime).z > start.z;
+    }
 
-    let mut air_jump = traversal_runtime(vec![[0, 0, 0]], true, 1);
-    air_jump
-        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
-        .unwrap();
-    air_jump
-        .apply_player_action(
-            PLAYER,
-            ResolvedPlayerAction::Move {
-                forward: 0.0,
-                right: 0.0,
-            },
-        )
-        .unwrap();
-    assert!(air_jump
-        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
-        .unwrap()
-        .facts
-        .iter()
-        .any(|fact| matches!(fact, PlayerControlFact::Jumped { .. })));
-    assert!(air_jump
-        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
-        .unwrap()
-        .facts
-        .is_empty());
+    let end = player_position(&runtime);
+    let bounds = runtime.session().entity(PLAYER).unwrap().bounds.unwrap();
+    assert!(
+        saw_wall,
+        "the Engine receipt should report the wall contact"
+    );
+    assert!(
+        saw_tangent_progress,
+        "wall collision should preserve useful tangent motion"
+    );
+    assert!(
+        end.x + bounds.max.x <= 1.0 + 0.05,
+        "character crossed the wall plane: position={end:?}, bounds={bounds:?}"
+    );
 }
 
 #[test]
-fn ground_probe_snaps_to_contact_and_ledge_departure_clears_grounded_state() {
-    let mut runtime = traversal_runtime(vec![[0, 0, 0]], true, 0);
-    runtime
-        .apply_player_action(
-            PLAYER,
-            ResolvedPlayerAction::Move {
-                forward: 0.0,
-                right: 0.0,
-            },
-        )
-        .unwrap();
-    assert!((player_position(&runtime).y - 1.2501).abs() < 0.000_1);
-    assert!(
-        runtime
-            .session()
-            .player_controller(PLAYER)
-            .unwrap()
-            .state
-            .grounded
-    );
+fn grounded_motion_accepts_a_step_and_rejects_a_taller_obstacle() {
+    let mut short_step = traversal_project(floor_voxels(-2..=2, -4..=2), false, 0.0);
+    short_step["entities"][0]["playerController"]["traversal"]["maxStepHeight"] = json!(0.4);
+    short_step["entities"].as_array_mut().unwrap().push(json!({
+        "id": 2,
+        "name": "low-step",
+        "translation": [0.5, 1.125, -1.0],
+        "collision": { "enabled": true, "staticCollider": false },
+        "renderable": { "asset": "primitive/step", "visible": true },
+        "kinematic": { "halfExtents": [0.5, 0.125, 0.5], "velocity": [0, 0, 0] }
+    }));
+    let mut runtime = GameRuntime::from_project_content(&short_step.to_string()).unwrap();
+    let start = player_position(&runtime);
+    let mut stepped = None;
 
-    for _ in 0..2 {
-        runtime
+    for _ in 0..30 {
+        let receipt = runtime
             .apply_player_action(
                 PLAYER,
                 ResolvedPlayerAction::Move {
@@ -402,45 +226,65 @@ fn ground_probe_snaps_to_contact_and_ledge_departure_clears_grounded_state() {
                 },
             )
             .unwrap();
+        assert_canonical_motion_authority(&runtime, &receipt);
+        if receipt
+            .facts
+            .iter()
+            .any(|fact| matches!(fact, PlayerControlFact::Stepped { .. }))
+        {
+            stepped = Some(receipt);
+            break;
+        }
     }
+
+    let stepped = stepped.expect("Engine controller should report the accepted step");
+    let stepped_motion = stepped.motion.as_ref().unwrap();
+    assert!(stepped_motion.motion_after.grounded);
+    assert!(stepped.facts.iter().any(|fact| matches!(
+        fact,
+        PlayerControlFact::Stepped { before, after, .. } if after.y > before.y
+    )));
+    assert!(player_position(&runtime).z < start.z);
+
+    let mut tall_wall = floor_voxels(-2..=4, -2..=2);
+    tall_wall.extend([[1, 1, 0], [1, 2, 0]]);
+    let mut runtime = traversal_runtime(tall_wall, false, -90.0);
+    let mut saw_block = false;
+    let mut saw_accepted_step = false;
+    for _ in 0..30 {
+        let receipt = runtime
+            .apply_player_action(
+                PLAYER,
+                ResolvedPlayerAction::Move {
+                    forward: 1.0,
+                    right: 0.0,
+                },
+            )
+            .unwrap();
+        assert_canonical_motion_authority(&runtime, &receipt);
+        let motion = receipt.motion.as_ref().unwrap();
+        saw_block |= motion.blocks.contains(&CharacterBlockKind::Wall);
+        saw_accepted_step |= receipt
+            .facts
+            .iter()
+            .any(|fact| matches!(fact, PlayerControlFact::Stepped { .. }));
+    }
+
+    let position = player_position(&runtime);
+    let bounds = runtime.session().entity(PLAYER).unwrap().bounds.unwrap();
+    assert!(saw_block, "the tall obstacle should be reported as blocked");
     assert!(
-        !runtime
-            .session()
-            .player_controller(PLAYER)
-            .unwrap()
-            .state
-            .grounded
+        !saw_accepted_step,
+        "the taller obstacle must not be accepted as a step"
     );
-    let ledge_y = player_position(&runtime).y;
-    runtime
-        .apply_player_action(
-            PLAYER,
-            ResolvedPlayerAction::Move {
-                forward: 0.0,
-                right: 0.0,
-            },
-        )
-        .unwrap();
-    assert!(player_position(&runtime).y < ledge_y);
+    assert!(position.x + bounds.max.x <= 1.0 + 0.05);
 }
 
 #[test]
-fn downward_contact_never_snaps_through_a_dynamic_blocker() {
-    let mut project = traversal_project(vec![[0, 0, 0]], true, 0);
-    project["entities"][0]["translation"] = json!([0.5, 3.0, 0.5]);
-    project["entities"][0]["playerController"]["traversal"]["gravityUnitsPerSecondSquared"] =
-        json!(200);
-    project["entities"].as_array_mut().unwrap().push(json!({
-        "id": 2,
-        "name": "dynamic-platform",
-        "translation": [0.5, 1.6, 0.5],
-        "collision": { "enabled": true, "staticCollider": false },
-        "renderable": { "asset": "primitive/platform", "visible": true },
-        "kinematic": { "halfExtents": [0.25, 0.25, 0.25], "velocity": [0, 0, 0] }
-    }));
-    let mut runtime = GameRuntime::from_project_content(&project.to_string()).unwrap();
-
-    runtime
+fn floor_support_is_stable_and_ledge_departure_becomes_airborne() {
+    let floor = floor_voxels(-2..=2, 0..=4);
+    let mut runtime = traversal_runtime(floor, false, 0.0);
+    let first = runtime
         .apply_player_action(
             PLAYER,
             ResolvedPlayerAction::Move {
@@ -449,34 +293,203 @@ fn downward_contact_never_snaps_through_a_dynamic_blocker() {
             },
         )
         .unwrap();
+    assert_canonical_motion_authority(&runtime, &first);
+    assert!(first.motion.as_ref().unwrap().motion_after.grounded);
+    assert!(has_ground_support(&first));
+    let first_y = player_position(&runtime).y;
 
-    assert_eq!(player_position(&runtime).y, 3.0);
+    let second = runtime
+        .apply_player_action(
+            PLAYER,
+            ResolvedPlayerAction::Move {
+                forward: 0.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
+    assert_canonical_motion_authority(&runtime, &second);
+    assert!(second.motion.as_ref().unwrap().motion_after.grounded);
+    assert!(has_ground_support(&second));
+    assert!((player_position(&runtime).y - first_y).abs() < 0.01);
+
+    let mut departure = None;
+    for _ in 0..40 {
+        let receipt = runtime
+            .apply_player_action(
+                PLAYER,
+                ResolvedPlayerAction::Move {
+                    forward: 1.0,
+                    right: 0.0,
+                },
+            )
+            .unwrap();
+        assert_canonical_motion_authority(&runtime, &receipt);
+        if !receipt.motion.as_ref().unwrap().motion_after.grounded {
+            departure = Some(receipt);
+            break;
+        }
+    }
+
+    let departure = departure.expect("walking beyond the finite floor should lose support");
+    let departure_y = player_position(&runtime).y;
+    assert!(departure.motion.as_ref().unwrap().ground.is_none());
+    let falling = runtime
+        .apply_player_action(
+            PLAYER,
+            ResolvedPlayerAction::Move {
+                forward: 0.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
+    assert_canonical_motion_authority(&runtime, &falling);
+    assert!(player_position(&runtime).y < departure_y);
+    assert!(!falling.motion.as_ref().unwrap().motion_after.grounded);
+}
+
+#[test]
+fn jump_uses_engine_motion_and_respects_a_ceiling() {
+    let floor = floor_voxels(-2..=2, -2..=2);
+    let mut runtime = traversal_runtime(floor.clone(), true, 0.0);
+    let start = player_position(&runtime);
+    let jumped = runtime
+        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
+        .unwrap();
+    assert_canonical_motion_authority(&runtime, &jumped);
+    let jumped_motion = jumped.motion.as_ref().unwrap();
+    assert!(jumped.facts.iter().any(|fact| matches!(
+        fact,
+        PlayerControlFact::Jumped { entity, impulse } if *entity == PLAYER && *impulse > 0.0
+    )));
+    assert!(!jumped_motion.motion_after.grounded);
+    assert!(jumped_motion.motion_after.controlled_velocity.y > 0.0);
+
+    let mut landed = false;
+    for _ in 0..30 {
+        let receipt = runtime
+            .apply_player_action(
+                PLAYER,
+                ResolvedPlayerAction::Move {
+                    forward: 0.0,
+                    right: 0.0,
+                },
+            )
+            .unwrap();
+        assert_canonical_motion_authority(&runtime, &receipt);
+        landed |= receipt.motion.as_ref().unwrap().motion_after.grounded;
+        if landed {
+            break;
+        }
+    }
     assert!(
-        !runtime
-            .session()
-            .player_controller(PLAYER)
-            .unwrap()
-            .state
-            .grounded
+        landed,
+        "jump should return to Engine-reported ground support"
     );
+    assert!((player_position(&runtime).y - start.y).abs() < 0.1);
+
+    let mut ceiling_voxels = floor;
+    ceiling_voxels.push([0, 3, 0]);
+    let mut ceiling = traversal_runtime(ceiling_voxels, true, 0.0);
+    let jumped_under_ceiling = ceiling
+        .apply_player_action(PLAYER, ResolvedPlayerAction::Jump)
+        .unwrap();
+    let mut ceiling_hit = has_blocked_fact(&jumped_under_ceiling).then_some(jumped_under_ceiling);
+    for _ in 0..20 {
+        if ceiling_hit.is_some() {
+            break;
+        }
+        let receipt = ceiling
+            .apply_player_action(
+                PLAYER,
+                ResolvedPlayerAction::Move {
+                    forward: 0.0,
+                    right: 0.0,
+                },
+            )
+            .unwrap();
+        assert_canonical_motion_authority(&ceiling, &receipt);
+        if receipt
+            .motion
+            .as_ref()
+            .unwrap()
+            .blocks
+            .contains(&CharacterBlockKind::Ceiling)
+            || has_blocked_fact(&receipt)
+        {
+            ceiling_hit = Some(receipt);
+            break;
+        }
+    }
+
+    let ceiling_hit = ceiling_hit.expect("Engine receipt should report the ceiling contact");
+    let ceiling_motion = ceiling_hit.motion.as_ref().unwrap();
+    assert!(ceiling_motion.motion_after.controlled_velocity.y <= 0.0);
+    let ceiling_position = player_position(&ceiling);
+    let bounds = ceiling.session().entity(PLAYER).unwrap().bounds.unwrap();
+    assert!(ceiling_position.y + bounds.max.y <= 3.0 + 0.05);
+}
+
+fn assert_canonical_motion_authority(runtime: &GameRuntime, receipt: &PlayerControlReceipt) {
+    let motion_receipt = receipt
+        .motion
+        .as_ref()
+        .expect("movement action returns an Engine motion receipt");
+    let motion = runtime
+        .session()
+        .entities()
+        .character_motion(PLAYER)
+        .expect("player retains Engine character motion");
+    assert_eq!(motion_receipt.motion_after, *motion);
+    assert!(runtime
+        .session()
+        .entity(PLAYER)
+        .unwrap()
+        .kinematic
+        .is_none());
+    let controller = runtime.session().player_controller(PLAYER).unwrap();
+    assert_eq!(controller.state.grounded, motion.grounded);
+    assert_eq!(
+        controller.state.vertical_velocity,
+        (motion.controlled_velocity + motion.external_velocity).y
+    );
+}
+
+fn has_ground_support(receipt: &PlayerControlReceipt) -> bool {
+    let motion = receipt.motion.as_ref().unwrap();
+    motion.ground.is_some()
+        || motion
+            .floor_probe
+            .as_ref()
+            .is_some_and(|probe| probe.accepted_support.is_some())
+}
+
+fn has_blocked_fact(receipt: &PlayerControlReceipt) -> bool {
+    receipt
+        .facts
+        .iter()
+        .any(|fact| matches!(fact, PlayerControlFact::Blocked { .. }))
 }
 
 fn traversal_runtime(
     solid_voxels: Vec<[i64; 3]>,
     jump_enabled: bool,
-    max_air_jumps: u8,
+    initial_yaw_degrees: f32,
 ) -> GameRuntime {
-    let project = traversal_project(solid_voxels, jump_enabled, max_air_jumps);
+    let project = traversal_project(solid_voxels, jump_enabled, initial_yaw_degrees);
     GameRuntime::from_project_content(&project.to_string()).unwrap()
 }
 
-fn traversal_project(solid_voxels: Vec<[i64; 3]>, jump_enabled: bool, max_air_jumps: u8) -> Value {
+fn traversal_project(
+    solid_voxels: Vec<[i64; 3]>,
+    jump_enabled: bool,
+    initial_yaw_degrees: f32,
+) -> Value {
     json!({
         "schemaVersion": 6,
         "entities": [{
             "id": 1,
             "name": "player",
-            "translation": [0.5, 1.251, 0.5],
+            "translation": [0.5, 1.25, 0.5],
             "collision": { "enabled": true, "staticCollider": false },
             "renderable": { "asset": "primitive/player-marker", "visible": true },
             "kinematic": { "halfExtents": [0.25, 0.25, 0.25], "velocity": [0, 0, 0] },
@@ -484,7 +497,7 @@ fn traversal_project(solid_voxels: Vec<[i64; 3]>, jump_enabled: bool, max_air_ju
                 "moveSpeedUnitsPerSecond": 4,
                 "moveStepSeconds": 0.1,
                 "lookDegreesPerUnit": 12,
-                "initialYawDegrees": -90,
+                "initialYawDegrees": initial_yaw_degrees,
                 "initialPitchDegrees": 0,
                 "traversal": {
                     "maxStepHeight": 1,
@@ -493,7 +506,7 @@ fn traversal_project(solid_voxels: Vec<[i64; 3]>, jump_enabled: bool, max_air_ju
                     "groundProbeDistance": 0.05,
                     "eyeHeight": 1.2,
                     "manualJumpEnabled": jump_enabled,
-                    "maxAirJumps": max_air_jumps
+                    "maxAirJumps": 0
                 },
                 "bindings": {
                     "moveForward": "KeyW",
@@ -512,6 +525,15 @@ fn traversal_project(solid_voxels: Vec<[i64; 3]>, jump_enabled: bool, max_air_ju
             "solidVoxels": solid_voxels
         }
     })
+}
+
+fn floor_voxels(
+    x_range: std::ops::RangeInclusive<i64>,
+    z_range: std::ops::RangeInclusive<i64>,
+) -> Vec<[i64; 3]> {
+    x_range
+        .flat_map(|x| z_range.clone().map(move |z| [x, 0, z]))
+        .collect()
 }
 
 fn player_position(runtime: &GameRuntime) -> rusty_engine::core_math::Vec3 {

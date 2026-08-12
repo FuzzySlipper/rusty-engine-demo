@@ -185,12 +185,8 @@ impl InteractionService {
         let activation_count = switch.activation_count;
         let available = switch_is_available(session, target);
         let actor_translation = session
-            .entities
-            .view(actor)
-            .map_err(|_| RuntimeError::UnknownActor { actor })?
-            .transform
-            .ok_or(RuntimeError::SwitchActorMissingTransform { actor })?
-            .translation;
+            .gameplay_translation(actor)
+            .ok_or(RuntimeError::SwitchActorMissingTransform { actor })?;
         let switch_translation = session
             .entities
             .view(target)

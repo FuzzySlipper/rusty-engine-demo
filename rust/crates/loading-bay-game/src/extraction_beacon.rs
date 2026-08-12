@@ -67,13 +67,13 @@ impl ExtractionBeaconService {
         actor: EntityId,
         beacon: EntityId,
     ) -> Result<ExtractionBeaconReceipt, RuntimeError> {
-        let actor_translation = session
+        session
             .entities
             .view(actor)
-            .map_err(|_| RuntimeError::UnknownActor { actor })?
-            .transform
-            .ok_or(RuntimeError::ExtractionBeaconActorMissingTransform { actor })?
-            .translation;
+            .map_err(|_| RuntimeError::UnknownActor { actor })?;
+        let actor_translation = session
+            .gameplay_translation(actor)
+            .ok_or(RuntimeError::ExtractionBeaconActorMissingTransform { actor })?;
         let component = session
             .extraction_beacons
             .get(&beacon)

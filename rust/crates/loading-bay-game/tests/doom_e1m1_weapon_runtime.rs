@@ -318,6 +318,7 @@ fn input(generation: u64, sequence: u64, primary_fire_held: bool) -> PlayerInput
         intent: PlayerInputIntent {
             movement: [0.0, 0.0],
             look_delta: [0.0, 0.0],
+            jump_held: false,
             primary_fire_held,
         },
     }

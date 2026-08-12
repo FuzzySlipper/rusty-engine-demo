@@ -1,6 +1,9 @@
 import { GameSessionError, LoadingBayGameSession } from "./game-session.js";
 import { HeldMovementInput } from "./held-movement.js";
-import { resolveKeyboardAction } from "./input-resolver.js";
+import {
+  resolveKeyboardAction,
+  resolvePointerButtonAction,
+} from "./input-resolver.js";
 import { resolvePointerLook } from "./pointer-look.js";
 import type {
   RuntimeApplicationContent,
@@ -148,7 +151,9 @@ export async function mountLoadingBayGame(
   const session = await LoadingBayGameSession.connect();
   let current = session.state;
   let primaryFireHeld = false;
-  let primaryFireDriver: ReturnType<typeof globalThis.setInterval> | null = null;
+  let jumpHeld = false;
+  let primaryFireDriver: ReturnType<typeof globalThis.setInterval> | null =
+    null;
   const heldMovement = new HeldMovementInput({
     bindings: () => current.player.bindings,
     intervalMilliseconds: () => 16,
@@ -156,6 +161,7 @@ export async function mountLoadingBayGame(
       session.queueInput({
         movement: [action.forward, action.right],
         lookDelta: [0, 0],
+        jumpHeld,
         primaryFireHeld,
       });
     },
@@ -275,10 +281,15 @@ export async function mountLoadingBayGame(
         ? await loadApplicationContent(descriptor)
         : null;
     const replaceFrame =
-      descriptor === null && content === null && lastRenderFrame !== state.voxelObjectFrame;
-    const frame = descriptor === null ? state.voxelObjectFrame : state.gameplayFrame;
+      descriptor === null &&
+      content === null &&
+      lastRenderFrame !== state.voxelObjectFrame;
+    const frame =
+      descriptor === null ? state.voxelObjectFrame : state.gameplayFrame;
     const applyFrame =
-      descriptor !== null && content === null && lastGameplayFrame !== state.gameplayFrame;
+      descriptor !== null &&
+      content === null &&
+      lastGameplayFrame !== state.gameplayFrame;
     await options.onRenderProjection?.({
       camera: derivePlayerCameraPose(state.player),
       content,
@@ -346,6 +357,13 @@ export async function mountLoadingBayGame(
     heldMovement.press(event.code);
     const action = resolveKeyboardAction(event.code, current.player.bindings);
     if (action?.kind === "jump") {
+      jumpHeld = true;
+      session.queueInput({
+        movement: movement(),
+        lookDelta: [0, 0],
+        jumpHeld,
+        primaryFireHeld,
+      });
       void session.sendEdge({ kind: "jump" }).catch(record);
     }
     if (action?.kind === "selectWeaponSlot") {
@@ -357,6 +375,18 @@ export async function mountLoadingBayGame(
 
   function onKeyUp(event: KeyboardEvent): void {
     heldMovement.release(event.code);
+    if (
+      resolveKeyboardAction(event.code, current.player.bindings)?.kind ===
+      "jump"
+    ) {
+      jumpHeld = false;
+      session.queueInput({
+        movement: movement(),
+        lookDelta: [0, 0],
+        jumpHeld,
+        primaryFireHeld,
+      });
+    }
     if (options.inputEnabled?.(event) === false) {
       stopPrimaryFire();
       session.neutralizeInput();
@@ -377,13 +407,15 @@ export async function mountLoadingBayGame(
     session.queueInput({
       movement: movement(),
       lookDelta,
+      jumpHeld,
       primaryFireHeld,
     });
   }
 
   function onMouseDown(event: MouseEvent): void {
     if (
-      event.button !== 0 ||
+      document.pointerLockElement === null ||
+      resolvePointerButtonAction(event.button, current.player.bindings) === null ||
       keyboardTargetOwnsInput(event.target) ||
       options.inputEnabled?.(event) === false
     )
@@ -394,6 +426,7 @@ export async function mountLoadingBayGame(
       session.queueInput({
         movement: movement(),
         lookDelta: [0, 0],
+        jumpHeld,
         primaryFireHeld,
       });
     }, 16);
@@ -401,6 +434,7 @@ export async function mountLoadingBayGame(
       .sendInput({
         movement: movement(),
         lookDelta: [0, 0],
+        jumpHeld,
         primaryFireHeld,
       })
       .catch(record);
@@ -413,6 +447,7 @@ export async function mountLoadingBayGame(
       .sendInput({
         movement: movement(),
         lookDelta: [0, 0],
+        jumpHeld,
         primaryFireHeld,
       })
       .catch(record);
@@ -420,6 +455,7 @@ export async function mountLoadingBayGame(
 
   function onInputLoss(): void {
     heldMovement.clear(false);
+    jumpHeld = false;
     stopPrimaryFire();
     session.neutralizeInput();
   }

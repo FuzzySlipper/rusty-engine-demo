@@ -3,7 +3,7 @@ import test from "node:test";
 
 import {
   resolveKeyboardAction,
-  resolvePointerAction,
+  resolvePointerButtonAction,
 } from "./input-resolver.ts";
 import type { RuntimePlayerBindings } from "./projection.ts";
 
@@ -39,15 +39,7 @@ test("keyboard resolver emits the authored semantic jump action", () => {
   assert.deepEqual(resolveKeyboardAction("Space", bindings), { kind: "jump" });
 });
 
-void test("pointer deltas preserve the corrected first-person look directions", () => {
-  assert.deepEqual(resolvePointerAction(10, -5, bindings), {
-    kind: "look",
-    yawDelta: -0.5,
-    pitchDelta: 0.25,
-  });
-  assert.deepEqual(resolvePointerAction(-10, 5, bindings), {
-    kind: "look",
-    yawDelta: 0.5,
-    pitchDelta: -0.25,
-  });
+test("pointer fire follows the authored button binding", () => {
+  assert.deepEqual(resolvePointerButtonAction(0, bindings), { kind: "attack" });
+  assert.equal(resolvePointerButtonAction(2, bindings), null);
 });

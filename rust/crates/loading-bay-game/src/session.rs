@@ -35,7 +35,7 @@ use crate::navigation::{
     MAX_NAVIGATION_SPEED_UNITS_PER_SECOND,
 };
 use crate::pickup::{pickup_view, PickupComponent, PickupState, PickupView};
-use crate::player::{PlayerControllerComponent, PlayerControllerState, PlayerControllerView};
+use crate::player::{PlayerControllerComponent, PlayerControllerView};
 use crate::progression::{
     DoorAccessConfig, DoorAccessView, LevelExitComponent, LevelExitState, LevelExitView,
     LoadingBayInterlockConfig, LoadingBayInterlockView, SecretRegionComponent, SecretRegionState,
@@ -123,6 +123,31 @@ impl GameSession {
             .iter()
             .map(|definition| definition.entity.clone())
             .collect::<Vec<_>>();
+        for entity in &mut entity_definitions {
+            if entity.bounds.is_none() {
+                if let Some(kinematic) = entity.kinematic {
+                    entity.bounds = Some(rusty_engine::entity_state::BoundsComponent {
+                        min: kinematic.half_extents * -1.0,
+                        max: kinematic.half_extents,
+                    });
+                }
+            }
+        }
+        let mut player_controllers = BTreeMap::new();
+        for (definition, entity_definition) in definitions.iter().zip(entity_definitions.iter_mut())
+        {
+            if let Some(config) = &definition.player_controller {
+                if !config.is_valid() {
+                    return Err(GameEntityDefinitionError::InvalidPlayerControllerConfig {
+                        entity: definition.entity.id,
+                    });
+                }
+                player_controllers.insert(
+                    definition.entity.id,
+                    PlayerControllerComponent::admit(config.clone(), entity_definition)?,
+                );
+            }
+        }
         entity_definitions.extend(hidden_weapons);
         let registry = mechanics::mechanics_registry()
             .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
@@ -146,7 +171,6 @@ impl GameSession {
         let mut encounters = BTreeMap::new();
         let mut extraction_beacons = BTreeMap::new();
         let mut navigators = BTreeMap::new();
-        let mut player_controllers = BTreeMap::new();
         let mut inventories = BTreeMap::new();
         let mut pickups = BTreeMap::new();
         let mut secret_regions = BTreeMap::new();
@@ -471,7 +495,7 @@ impl GameSession {
                     },
                 );
             }
-            if let Some(config) = &definition.player_controller {
+            if definition.player_controller.is_some() {
                 let view = entities.view(entity).expect("definition created entity");
                 if view.transform.is_none() {
                     return Err(
@@ -483,7 +507,7 @@ impl GameSession {
                         GameEntityDefinitionError::PlayerControllerMissingCollision { entity },
                     );
                 }
-                if view.kinematic.is_none() {
+                if view.character_motion.is_none() {
                     return Err(
                         GameEntityDefinitionError::PlayerControllerMissingKinematic { entity },
                     );
@@ -493,24 +517,7 @@ impl GameSession {
                         GameEntityDefinitionError::PlayerControllerMissingRenderable { entity },
                     );
                 }
-                if !config.is_valid() {
-                    return Err(GameEntityDefinitionError::InvalidPlayerControllerConfig {
-                        entity,
-                    });
-                }
-                player_controllers.insert(
-                    entity,
-                    PlayerControllerComponent {
-                        config: config.clone(),
-                        state: PlayerControllerState {
-                            yaw_degrees: config.initial_yaw_degrees,
-                            pitch_degrees: config.initial_pitch_degrees,
-                            vertical_velocity: 0.0,
-                            grounded: false,
-                            remaining_air_jumps: config.traversal.max_air_jumps,
-                        },
-                    },
-                );
+                debug_assert!(player_controllers.contains_key(&entity));
             }
             if let Some(config) = &definition.inventory {
                 if definition.player_controller.is_none() {
@@ -1233,12 +1240,23 @@ impl GameSession {
 
     pub fn player_controller(&self, entity: EntityId) -> Option<PlayerControllerView> {
         let component = self.player_controllers.get(&entity)?;
+        let motion = self.entities.character_motion(entity)?;
         Some(PlayerControllerView {
             entity,
             config: component.config.clone(),
-            state: component.state,
+            state: component.state(motion),
+            eye_offset_from_center: component.eye_offset_from_center,
             entity_view: self.entities.view(entity).ok()?,
         })
+    }
+
+    pub(crate) fn gameplay_translation(&self, entity: EntityId) -> Option<Vec3> {
+        let mut translation = self.entities.transform(entity)?.translation;
+        if let Some(controller) = self.player_controllers.get(&entity) {
+            translation.y +=
+                controller.eye_offset_from_center - controller.config.traversal.eye_height;
+        }
+        Some(translation)
     }
 
     pub fn item_definition(&self, item: &ItemDefinitionId) -> Option<ItemDefinitionView> {

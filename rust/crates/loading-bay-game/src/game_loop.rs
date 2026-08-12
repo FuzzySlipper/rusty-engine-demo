@@ -20,7 +20,7 @@ pub const MAX_EDGE_COMMANDS: usize = 32;
 pub const MAX_RETAINED_COMMAND_SEQUENCES: usize = 64;
 pub const MAX_PENDING_GAME_LOOP_FACTS: usize = 256;
 pub const MAX_INPUT_AGE_TICKS: u64 = 2;
-pub const MAX_ACCUMULATED_LOOK_UNITS: f32 = 1.0;
+pub const MAX_ACCUMULATED_LOOK_UNITS: f32 = 64.0;
 
 pub const FIXED_TICK_PHASE_ORDER: [GameLoopPhase; 8] = [
     GameLoopPhase::InputConsumption,
@@ -52,6 +52,8 @@ pub struct PlayerInputIntent {
     pub movement: [f32; 2],
     /// `[yaw, pitch]`, accumulated only until the next fixed tick.
     pub look_delta: [f32; 2],
+    #[serde(default)]
+    pub jump_held: bool,
     pub primary_fire_held: bool,
 }
 
@@ -59,14 +61,18 @@ impl PlayerInputIntent {
     pub const NEUTRAL: Self = Self {
         movement: [0.0, 0.0],
         look_delta: [0.0, 0.0],
+        jump_held: false,
         primary_fire_held: false,
     };
 
     fn is_valid(self) -> bool {
         self.movement
             .into_iter()
-            .chain(self.look_delta)
             .all(|value| value.is_finite() && (-1.0..=1.0).contains(&value))
+            && self.look_delta.into_iter().all(|value| {
+                value.is_finite()
+                    && (-MAX_ACCUMULATED_LOOK_UNITS..=MAX_ACCUMULATED_LOOK_UNITS).contains(&value)
+            })
     }
 }
 
@@ -261,6 +267,8 @@ struct PlayerInputSession {
     retained_sequences: VecDeque<u64>,
     movement: [f32; 2],
     accumulated_look: [f32; 2],
+    jump_held: bool,
+    jump_pressed: bool,
     primary_fire_held: bool,
     primary_fire_pressed: bool,
     last_input_driver_tick: Option<u64>,
@@ -278,6 +286,8 @@ impl Default for PlayerInputSession {
             retained_sequences: VecDeque::new(),
             movement: PlayerInputIntent::NEUTRAL.movement,
             accumulated_look: PlayerInputIntent::NEUTRAL.look_delta,
+            jump_held: false,
+            jump_pressed: false,
             primary_fire_held: false,
             primary_fire_pressed: false,
             last_input_driver_tick: None,
@@ -301,6 +311,8 @@ impl PlayerInputSession {
     fn clear_intent(&mut self) {
         self.movement = PlayerInputIntent::NEUTRAL.movement;
         self.accumulated_look = PlayerInputIntent::NEUTRAL.look_delta;
+        self.jump_held = false;
+        self.jump_pressed = false;
         self.primary_fire_held = false;
         self.primary_fire_pressed = false;
         self.last_input_driver_tick = None;
@@ -470,6 +482,7 @@ impl LoadingBayGameLoop {
             *accumulated = (*accumulated + delta)
                 .clamp(-MAX_ACCUMULATED_LOOK_UNITS, MAX_ACCUMULATED_LOOK_UNITS);
         }
+        self.input.jump_held = command.intent.jump_held;
         if !self.input.primary_fire_held && command.intent.primary_fire_held {
             self.input.primary_fire_pressed = true;
         }
@@ -644,10 +657,7 @@ impl LoadingBayGameLoop {
             match &command.command {
                 GameLoopEdgeCommandKind::Jump => {
                     if !tick_will_be_paused && !self.runtime.is_level_complete() {
-                        let receipt = self
-                            .runtime
-                            .apply_player_action(self.player, crate::ResolvedPlayerAction::Jump)?;
-                        facts.extend(receipt.facts.into_iter().map(GameLoopFact::PlayerControl));
+                        self.input.jump_pressed = true;
                     }
                 }
                 GameLoopEdgeCommandKind::SetPaused { paused } => {
@@ -672,20 +682,6 @@ impl LoadingBayGameLoop {
             self.input.accumulated_look = PlayerInputIntent::NEUTRAL.look_delta;
             return Ok(());
         }
-        let [yaw_delta, pitch_delta] = std::mem::replace(
-            &mut self.input.accumulated_look,
-            PlayerInputIntent::NEUTRAL.look_delta,
-        );
-        if yaw_delta != 0.0 || pitch_delta != 0.0 {
-            let receipt = self.runtime.apply_player_action(
-                self.player,
-                crate::ResolvedPlayerAction::Look {
-                    yaw_delta,
-                    pitch_delta,
-                },
-            )?;
-            facts.extend(receipt.facts.into_iter().map(GameLoopFact::PlayerControl));
-        }
         Ok(())
     }
 
@@ -697,24 +693,22 @@ impl LoadingBayGameLoop {
             return Ok(());
         }
         let [forward, right] = self.input.movement;
-        if forward == 0.0
-            && right == 0.0
-            && self
-                .runtime
-                .session()
-                .player_controller(self.player)
-                .is_some_and(|controller| {
-                    controller.state.grounded
-                        || controller.config.traversal.gravity_units_per_second_squared == 0.0
-                })
-        {
-            return Ok(());
-        }
-        let receipt = self.runtime.integrate_player_motion(
+        let [yaw_delta, pitch_delta] = std::mem::replace(
+            &mut self.input.accumulated_look,
+            PlayerInputIntent::NEUTRAL.look_delta,
+        );
+        let jump_pressed = std::mem::take(&mut self.input.jump_pressed);
+        let receipt = self.runtime.integrate_player_frame(
             self.player,
-            forward,
-            right,
-            FIXED_STEP_SECONDS,
+            crate::ResolvedPlayerFrame {
+                forward,
+                right,
+                yaw_delta,
+                pitch_delta,
+                jump_pressed,
+                jump_held: self.input.jump_held,
+                step_seconds: FIXED_STEP_SECONDS,
+            },
         )?;
         facts.extend(receipt.facts.into_iter().map(GameLoopFact::PlayerControl));
         Ok(())

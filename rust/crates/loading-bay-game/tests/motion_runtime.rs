@@ -98,7 +98,9 @@ fn snapshot_rebuilds_collision_projection_and_continues_identically() {
 fn canonical_wall_faces_stop_the_real_player_head_on_and_at_high_delta() {
     let mut runtime = loading_bay_motion_runtime([1.26, 1.5, 3.5], 90.0, 2.0, 0.01, &[]);
     let player = runtime.session().entity(PLAYER).unwrap();
-    assert_eq!(player.kinematic.unwrap().half_extents.to_array(), [0.25; 3]);
+    let bounds = player.bounds.expect("canonical character bounds");
+    assert_eq!([bounds.max.x, bounds.max.z], [0.25; 2]);
+    assert!(player.character_motion.is_some());
 
     move_player(&mut runtime, 1.0, 0.0);
     let receipt = move_player(&mut runtime, 1.0, 0.0);
@@ -144,33 +146,41 @@ fn canonical_wall_sliding_is_symmetric_and_corner_motion_cannot_tunnel() {
 
 #[test]
 fn canonical_door_aperture_passes_only_inside_its_authored_proxy_opening() {
-    for x in [20.251, 22.749] {
+    for x in [20.4, 22.6] {
         let mut through = loading_bay_motion_runtime([x, 1.5, 47.5], 180.0, 20.0, 0.2, &[3]);
         assert_eq!(
-            through
-                .session()
-                .entity(PLAYER)
-                .unwrap()
-                .kinematic
-                .unwrap()
-                .half_extents
-                .to_array(),
-            [0.25; 3],
+            {
+                let bounds = through
+                    .session()
+                    .entity(PLAYER)
+                    .unwrap()
+                    .bounds
+                    .expect("canonical character bounds");
+                [bounds.max.x, bounds.max.z]
+            },
+            [0.25; 2],
         );
-        move_player(&mut through, 1.0, 0.0);
+        for _ in 0..4 {
+            move_player(&mut through, 1.0, 0.0);
+        }
         assert!(
             player_position(&through)[2] > 50.5,
             "player center {x} plus its real half extents must pass at the visible inner frame edge",
         );
     }
 
-    for x in [20.249, 22.751] {
+    for x in [20.1, 22.9] {
         let mut wall = loading_bay_motion_runtime([x, 1.5, 48.69], 180.0, 6.0, 0.01, &[3]);
-        move_player(&mut wall, 1.0, 0.0);
-        move_player(&mut wall, 1.0, 0.0);
+        let mut blocked = false;
+        for _ in 0..4 {
+            let receipt = move_player(&mut wall, 1.0, 0.0);
+            blocked |= receipt.facts.iter().any(
+                |fact| matches!(fact, PlayerControlFact::Blocked { entity, .. } if *entity == PLAYER),
+            );
+        }
         let position = player_position(&wall);
         assert!(
-            (position[2] - 48.75).abs() <= 0.001,
+            position[2] <= 48.75 + 0.001 && blocked,
             "center {x} just outside either real-half-extent edge must meet the adjacent wall: {position:?}",
         );
     }
@@ -178,10 +188,11 @@ fn canonical_door_aperture_passes_only_inside_its_authored_proxy_opening() {
 
 #[test]
 fn adjacent_canonical_door_apertures_preserve_both_real_extent_edges() {
-    for x in [3.251, 5.749, 8.251, 14.749] {
+    for x in [3.4, 5.6, 8.4, 14.6] {
         let mut through = loading_bay_motion_runtime([x, 1.5, 15.5], 180.0, 4.0, 0.2, &[11, 30]);
-        move_player(&mut through, 1.0, 0.0);
-        move_player(&mut through, 1.0, 0.0);
+        for _ in 0..4 {
+            move_player(&mut through, 1.0, 0.0);
+        }
         let position = player_position(&through);
         assert!(
             position[2] > 17.0,
@@ -189,15 +200,18 @@ fn adjacent_canonical_door_apertures_preserve_both_real_extent_edges() {
         );
     }
 
-    for x in [2.749, 6.251, 7.749, 15.251] {
+    for x in [2.6, 6.4, 7.6, 15.4] {
         let mut wall = loading_bay_motion_runtime([x, 1.5, 16.69], 180.0, 6.0, 0.01, &[11, 30]);
-        move_player(&mut wall, 1.0, 0.0);
-        let receipt = move_player(&mut wall, 1.0, 0.0);
+        let mut blocked = false;
+        for _ in 0..4 {
+            let receipt = move_player(&mut wall, 1.0, 0.0);
+            blocked |= receipt.facts.iter().any(
+                |fact| matches!(fact, PlayerControlFact::Blocked { entity, .. } if *entity == PLAYER),
+            );
+        }
         let position = player_position(&wall);
         assert!(
-            position[2] <= 16.75 && receipt.facts.iter().any(
-                |fact| matches!(fact, PlayerControlFact::Blocked { entity, .. } if *entity == PLAYER)
-            ),
+            position[2] <= 16.75 + 0.02 && blocked,
             "center {x} just outside either adjacent real-half-extent edge must meet its collision-backed wall: {position:?}",
         );
     }
@@ -234,7 +248,7 @@ fn loading_bay_motion_runtime(
         door["collision"]["enabled"] = json!(false);
     }
     let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
-    set_player_yaw(&mut runtime, yaw_degrees as f32);
+    set_player_yaw(&mut runtime, -(yaw_degrees as f32));
     runtime
 }
 

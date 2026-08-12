@@ -147,7 +147,7 @@ pub use pickup::{
 pub use player::{
     PlayerControlFact, PlayerControlReceipt, PlayerControllerComponent, PlayerControllerConfig,
     PlayerControllerState, PlayerControllerView, PlayerInputBindings, PlayerTraversalConfig,
-    ResolvedPlayerAction, MAX_GROUND_PROBE_DISTANCE, MAX_INPUT_CONTROL_LENGTH,
+    ResolvedPlayerAction, ResolvedPlayerFrame, MAX_GROUND_PROBE_DISTANCE, MAX_INPUT_CONTROL_LENGTH,
     MAX_PLAYER_EYE_HEIGHT, MAX_PLAYER_GRAVITY, MAX_PLAYER_JUMP_IMPULSE,
     MAX_PLAYER_LOOK_DEGREES_PER_UNIT, MAX_PLAYER_SPEED_UNITS_PER_SECOND, MAX_PLAYER_STEP_HEIGHT,
 };

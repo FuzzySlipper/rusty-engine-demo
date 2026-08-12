@@ -6,6 +6,8 @@ import {
   LoadingBayGameSession,
   applyServerUpdate,
   coalesceSessionLook,
+  preserveMovementPress,
+  resolveMovementSample,
   type ServerUpdateEnvelope,
 } from "./game-session.ts";
 
@@ -526,15 +528,26 @@ test("a replacement session reuses resources with the same static revision", () 
 });
 
 test("coalesced look remains within the authoritative input envelope", () => {
-  assert.deepEqual(coalesceSessionLook([0.75, 0.75], [0.75, 0.75]), [1, 1]);
-  assert.deepEqual(
-    coalesceSessionLook([-0.75, -0.75], [-0.75, -0.75]),
-    [-1, -1],
-  );
+  assert.deepEqual(coalesceSessionLook([40, 40], [40, 40]), [64, 64]);
+  assert.deepEqual(coalesceSessionLook([-40, -40], [-40, -40]), [-64, -64]);
   assert.deepEqual(
     coalesceSessionLook([0.25, -0.25], [0.125, -0.125]),
     [0.375, -0.375],
   );
+});
+
+test("a quick movement tap survives one sampled frame and then releases", () => {
+  const pressed = preserveMovementPress([0, 0], [1, 0], [0, 0]);
+  const retained = preserveMovementPress([1, 0], [0, 0], pressed);
+  assert.deepEqual(retained, [1, 0]);
+  assert.deepEqual(resolveMovementSample([0, 0], retained), {
+    movement: [1, 0],
+    mustFollowWithLatestMovement: true,
+  });
+  assert.deepEqual(resolveMovementSample([0, 0], [0, 0]), {
+    movement: [0, 0],
+    mustFollowWithLatestMovement: false,
+  });
 });
 
 test("session close settles only after the WebSocket close event", async () => {

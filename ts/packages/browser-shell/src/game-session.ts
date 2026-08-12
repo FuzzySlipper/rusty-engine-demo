@@ -4,12 +4,14 @@ export const LOADING_BAY_PROTOCOL_VERSION = 2;
 export const MAX_PENDING_EDGE_COMMANDS = 32;
 export const MAX_WEBSOCKET_BUFFERED_BYTES = 64 * 1024;
 export const INPUT_SEND_INTERVAL_MILLISECONDS = 1_000 / 60;
+export const MAX_SESSION_LOOK_UNITS = 64;
 export const SESSION_CONNECT_TIMEOUT_MILLISECONDS = 5_000;
 export const SESSION_CLOSE_TIMEOUT_MILLISECONDS = 5_000;
 
 export interface SessionInputIntent {
   readonly movement: readonly [number, number];
   readonly lookDelta: readonly [number, number];
+  readonly jumpHeld?: boolean;
   readonly primaryFireHeld: boolean;
 }
 
@@ -411,6 +413,8 @@ export class LoadingBayGameSession {
   #pendingInput = false;
   #pendingLook: [number, number] = [0, 0];
   #latestMovement: [number, number] = [0, 0];
+  #pendingMovementEdge: [number, number] = [0, 0];
+  #jumpHeld = false;
   #primaryFireHeld = false;
   #inputTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
   #lastInputSentAt = 0;
@@ -603,11 +607,18 @@ export class LoadingBayGameSession {
     if (this.#closed) {
       return;
     }
-    this.#latestMovement = [
+    const nextMovement: [number, number] = [
       clampUnit(intent.movement[0]),
       clampUnit(intent.movement[1]),
     ];
+    this.#pendingMovementEdge = preserveMovementPress(
+      this.#latestMovement,
+      nextMovement,
+      this.#pendingMovementEdge,
+    );
+    this.#latestMovement = nextMovement;
     this.#primaryFireHeld = intent.primaryFireHeld;
+    this.#jumpHeld = intent.jumpHeld === true;
     this.#pendingLook = coalesceSessionLook(
       this.#pendingLook,
       intent.lookDelta,
@@ -625,7 +636,9 @@ export class LoadingBayGameSession {
       return;
     }
     this.#latestMovement = [0, 0];
+    this.#pendingMovementEdge = [0, 0];
     this.#pendingLook = [0, 0];
+    this.#jumpHeld = false;
     this.#primaryFireHeld = false;
     this.#pendingInput = true;
     this.#maximumPendingInputFrameCount = Math.max(
@@ -995,13 +1008,19 @@ export class LoadingBayGameSession {
       return;
     }
     const sequence = this.#nextSequence();
+    const { movement, mustFollowWithLatestMovement } = resolveMovementSample(
+      this.#latestMovement,
+      this.#pendingMovementEdge,
+    );
     const command: ClientGameCommand = {
       kind: "setInputIntent",
-      movement: this.#latestMovement,
+      movement,
       lookDelta: this.#pendingLook,
+      jumpHeld: this.#jumpHeld,
       primaryFireHeld: this.#primaryFireHeld,
     };
-    this.#pendingInput = false;
+    this.#pendingInput = mustFollowWithLatestMovement;
+    this.#pendingMovementEdge = [0, 0];
     this.#pendingLook = [0, 0];
     this.#inputInFlight = sequence;
     this.#lastInputSentAt = performance.now();
@@ -1150,6 +1169,8 @@ export class LoadingBayGameSession {
     this.#pendingInput = false;
     this.#pendingLook = [0, 0];
     this.#latestMovement = [0, 0];
+    this.#pendingMovementEdge = [0, 0];
+    this.#jumpHeld = false;
     this.#primaryFireHeld = false;
   }
 
@@ -1725,9 +1746,44 @@ export function coalesceSessionLook(
   incoming: readonly [number, number],
 ): [number, number] {
   return [
-    clampUnit(current[0] + clampUnit(incoming[0])),
-    clampUnit(current[1] + clampUnit(incoming[1])),
+    clampLook(current[0] + clampLook(incoming[0])),
+    clampLook(current[1] + clampLook(incoming[1])),
   ];
+}
+
+function clampLook(value: number): number {
+  return Math.max(
+    -MAX_SESSION_LOOK_UNITS,
+    Math.min(MAX_SESSION_LOOK_UNITS, value),
+  );
+}
+
+export function preserveMovementPress(
+  previous: readonly [number, number],
+  next: readonly [number, number],
+  pending: readonly [number, number],
+): [number, number] {
+  return [0, 1].map((axis) =>
+    previous[axis] === 0 && next[axis] !== 0 ? next[axis] : pending[axis],
+  ) as [number, number];
+}
+
+export function resolveMovementSample(
+  latest: readonly [number, number],
+  pendingPress: readonly [number, number],
+): {
+  readonly movement: [number, number];
+  readonly mustFollowWithLatestMovement: boolean;
+} {
+  const movement: [number, number] = [
+    latest[0] || pendingPress[0],
+    latest[1] || pendingPress[1],
+  ];
+  return {
+    movement,
+    mustFollowWithLatestMovement:
+      movement[0] !== latest[0] || movement[1] !== latest[1],
+  };
 }
 
 function runtimeStateResources(

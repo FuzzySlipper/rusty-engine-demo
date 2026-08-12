@@ -418,15 +418,16 @@ async function proveFocusedHeldPistolFire(client, addr) {
       const canvas = document.querySelector('canvas');
       if (!canvas) return null;
       const bounds = canvas.getBoundingClientRect();
-      return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
     })()`,
   );
   if (canvas === null)
     throw new Error("Engine canvas is unavailable for Mouse0");
+  const center = await acquirePhysicalPointerLock(client, canvas);
   await client.send("Input.dispatchMouseEvent", {
     type: "mousePressed",
-    x: canvas.x,
-    y: canvas.y,
+    x: center.x,
+    y: center.y,
     button: "left",
     buttons: 1,
     clickCount: 1,
@@ -443,8 +444,8 @@ async function proveFocusedHeldPistolFire(client, addr) {
   } finally {
     await client.send("Input.dispatchMouseEvent", {
       type: "mouseReleased",
-      x: canvas.x,
-      y: canvas.y,
+      x: center.x,
+      y: center.y,
       button: "left",
       buttons: 0,
       clickCount: 1,
@@ -1910,7 +1911,9 @@ async function main() {
       ];
       hazard.bounds = {
         min: [-0.75, -0.6, -0.75],
-        max: [0.75, 0.6, 0.75],
+        // Keep the bounded W-route fixture under canonical acceleration long
+        // enough for the authored cadence to prove defeat and restart.
+        max: [0.75, 0.6, 2.5],
       };
     }
     let focusedEnemyIndex = 0;

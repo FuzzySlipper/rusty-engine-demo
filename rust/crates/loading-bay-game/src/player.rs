@@ -1,14 +1,17 @@
-use std::collections::BTreeSet;
-
 use rusty_engine::core_ids::EntityId;
-use rusty_engine::core_math::Vec3;
+use rusty_engine::core_math::{Vec2, Vec3};
 use rusty_engine::engine_spatial::{
-    KinematicMotionSystem, MotionAxis, MotionFact, MotionPhaseReceipt, VoxelCollisionScene,
-    MAX_MOTION_DELTA_SECONDS,
+    CharacterContactKind, CharacterControllerCommand, CharacterControllerConfig as EngineConfig,
+    CharacterControllerError, CharacterControllerReceipt, CharacterControllerService,
+    FirstPersonLookCommand, FirstPersonLookConfig, FirstPersonLookError, FirstPersonLookReceipt,
+    FirstPersonLookService, FirstPersonLookState, VoxelCollisionScene, MAX_MOTION_DELTA_SECONDS,
 };
-use rusty_engine::entity_state::{EntityCommand, EntityCommandBatch, EntityView};
+use rusty_engine::entity_state::{
+    BoundsComponent, CharacterMotionComponent, EntityDefinition, EntityView,
+};
 use serde::{Deserialize, Serialize};
 
+use crate::definition::GameEntityDefinitionError;
 use crate::runtime::RuntimeError;
 use crate::session::GameSession;
 
@@ -20,9 +23,10 @@ pub const MAX_PLAYER_JUMP_IMPULSE: f32 = 100.0;
 pub const MAX_PLAYER_GRAVITY: f32 = 200.0;
 pub const MAX_GROUND_PROBE_DISTANCE: f32 = 1.0;
 pub const MAX_PLAYER_EYE_HEIGHT: f32 = 10.0;
-const STEP_SEARCH_SLICES: usize = 8;
-const PLATFORM_SUPPORT_EPSILON: f32 = 0.001;
-const PLATFORM_CARRY_EPSILON: f32 = 0.000_1;
+pub const MAX_PLAYER_FRAME_LOOK_UNITS: f32 = 64.0;
+pub const MAX_PLAYER_FRAME_STEP_SECONDS: f32 = 0.25;
+const CANONICAL_STANDING_HEIGHT: f32 = 1.8;
+const CANONICAL_CROUCHED_HEIGHT: f32 = 1.1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlayerInputBindings {
@@ -123,8 +127,7 @@ impl PlayerTraversalConfig {
         self.max_step_height.is_finite()
             && (0.0..=MAX_PLAYER_STEP_HEIGHT).contains(&self.max_step_height)
             && self.gravity_units_per_second_squared.is_finite()
-            && self.gravity_units_per_second_squared >= 0.0
-            && self.gravity_units_per_second_squared <= MAX_PLAYER_GRAVITY
+            && (0.0..=MAX_PLAYER_GRAVITY).contains(&self.gravity_units_per_second_squared)
             && self.jump_impulse_units_per_second.is_finite()
             && self.jump_impulse_units_per_second > 0.0
             && self.jump_impulse_units_per_second <= MAX_PLAYER_JUMP_IMPULSE
@@ -135,6 +138,7 @@ impl PlayerTraversalConfig {
             && self.eye_height > 0.0
             && self.eye_height <= MAX_PLAYER_EYE_HEIGHT
             && (!self.manual_jump_enabled || self.gravity_units_per_second_squared > 0.0)
+            && self.max_air_jumps == 0
     }
 }
 
@@ -155,8 +159,8 @@ impl PlayerControllerConfig {
             && self.move_speed_units_per_second > 0.0
             && self.move_speed_units_per_second <= MAX_PLAYER_SPEED_UNITS_PER_SECOND
             && self.move_step_seconds.is_finite()
-            && self.move_step_seconds > 0.0
-            && self.move_step_seconds <= MAX_MOTION_DELTA_SECONDS
+            && self.move_step_seconds >= 0.001
+            && self.move_step_seconds <= MAX_MOTION_DELTA_SECONDS.min(MAX_PLAYER_FRAME_STEP_SECONDS)
             && self.look_degrees_per_unit.is_finite()
             && self.look_degrees_per_unit > 0.0
             && self.look_degrees_per_unit <= MAX_PLAYER_LOOK_DEGREES_PER_UNIT
@@ -181,7 +185,132 @@ pub struct PlayerControllerState {
 #[derive(Debug, Clone, PartialEq)]
 pub struct PlayerControllerComponent {
     pub config: PlayerControllerConfig,
-    pub state: PlayerControllerState,
+    pub(crate) engine: EngineConfig,
+    pub(crate) look: FirstPersonLookConfig,
+    pub(crate) look_state: FirstPersonLookState,
+    pub(crate) eye_offset_from_center: f32,
+}
+
+impl PlayerControllerComponent {
+    pub(crate) fn admit(
+        config: PlayerControllerConfig,
+        entity: &mut EntityDefinition,
+    ) -> Result<Self, GameEntityDefinitionError> {
+        let transform = entity.transform.as_mut().ok_or(
+            GameEntityDefinitionError::PlayerControllerMissingTransform { entity: entity.id },
+        )?;
+        let kinematic = entity.kinematic.take().ok_or(
+            GameEntityDefinitionError::PlayerControllerMissingKinematic { entity: entity.id },
+        )?;
+        let authored_half_height = kinematic.half_extents.y;
+        let standing_height = CANONICAL_STANDING_HEIGHT.max(authored_half_height * 2.0);
+        let crouched_height = CANONICAL_CROUCHED_HEIGHT.min(standing_height - 0.01);
+        let radius = kinematic
+            .half_extents
+            .x
+            .max(kinematic.half_extents.z)
+            .min(crouched_height * 0.5 - 0.01);
+        let center_lift = standing_height * 0.5 - authored_half_height;
+        transform.translation.y += center_lift;
+        entity.bounds = Some(BoundsComponent {
+            min: Vec3::new(-radius, -standing_height * 0.5, -radius),
+            max: Vec3::new(radius, standing_height * 0.5, radius),
+        });
+        entity.character_motion = Some(CharacterMotionComponent::at_rest(transform.translation.y));
+
+        let (engine, look) = canonical_configs(&config, standing_height, crouched_height, radius)
+            .map_err(|_| {
+            GameEntityDefinitionError::InvalidPlayerControllerConfig { entity: entity.id }
+        })?;
+        Ok(Self {
+            look_state: FirstPersonLookState {
+                // Existing Loading Bay content authored positive yaw with the
+                // old local basis. Canonical Engine yaw is positive-right, so
+                // convert the authored starting heading once at admission.
+                yaw_radians: -config.initial_yaw_degrees.to_radians(),
+                pitch_radians: config.initial_pitch_degrees.to_radians(),
+            },
+            eye_offset_from_center: config.traversal.eye_height - center_lift,
+            config,
+            engine,
+            look,
+        })
+    }
+
+    pub(crate) fn restore(
+        config: PlayerControllerConfig,
+        look_state: FirstPersonLookState,
+        standing_height: f32,
+        crouched_height: f32,
+        radius: f32,
+        eye_offset_from_center: f32,
+    ) -> Result<Self, CharacterControllerError> {
+        let (engine, look) = canonical_configs(&config, standing_height, crouched_height, radius)?;
+        Ok(Self {
+            config,
+            engine,
+            look,
+            look_state,
+            eye_offset_from_center,
+        })
+    }
+
+    pub(crate) fn state(&self, motion: &CharacterMotionComponent) -> PlayerControllerState {
+        PlayerControllerState {
+            yaw_degrees: self.look_state.yaw_radians.to_degrees(),
+            pitch_degrees: self.look_state.pitch_radians.to_degrees(),
+            vertical_velocity: (motion.controlled_velocity + motion.external_velocity).y,
+            grounded: motion.grounded,
+            remaining_air_jumps: 0,
+        }
+    }
+
+    pub(crate) fn look_receipt(&self) -> Result<FirstPersonLookReceipt, FirstPersonLookError> {
+        FirstPersonLookService.integrate(
+            &self.look,
+            self.look_state,
+            FirstPersonLookCommand::default(),
+        )
+    }
+}
+
+fn canonical_configs(
+    config: &PlayerControllerConfig,
+    standing_height: f32,
+    crouched_height: f32,
+    radius: f32,
+) -> Result<(EngineConfig, FirstPersonLookConfig), CharacterControllerError> {
+    let mut engine = EngineConfig::responsive_fps();
+    engine.shape.standing_height = standing_height;
+    engine.shape.crouched_height = crouched_height;
+    engine.shape.radius = radius;
+    engine.ground.forward_speed = config.move_speed_units_per_second;
+    engine.ground.backward_speed = config.move_speed_units_per_second;
+    engine.ground.strafe_speed = config.move_speed_units_per_second;
+    engine.air.maximum_speed = config.move_speed_units_per_second;
+    engine.air.wish_speed_cap = config.move_speed_units_per_second;
+    engine.vertical.gravity = config.traversal.gravity_units_per_second_squared;
+    engine.vertical.jump_speed = config.traversal.jump_impulse_units_per_second;
+    engine.vertical.terminal_fall_speed = config
+        .traversal
+        .gravity_units_per_second_squared
+        .max(config.traversal.jump_impulse_units_per_second)
+        .max(1.0);
+    engine.surface.maximum_step_height = config.traversal.max_step_height;
+    engine.surface.floor_snap_distance = config.traversal.ground_probe_distance;
+    engine.recovery.maximum_distance = standing_height.max(config.traversal.max_step_height);
+    engine.recovery.maximum_speed = 60.0;
+    engine
+        .validate()
+        .map_err(CharacterControllerError::InvalidConfig)?;
+
+    let radians_per_unit = config.look_degrees_per_unit.to_radians();
+    let mut look = FirstPersonLookConfig::default();
+    look.horizontal_radians_per_unit = radians_per_unit;
+    look.vertical_radians_per_unit = radians_per_unit;
+    look.minimum_pitch_radians = -89.0_f32.to_radians();
+    look.maximum_pitch_radians = 89.0_f32.to_radians();
+    Ok((engine, look))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -195,6 +324,17 @@ pub enum ResolvedPlayerAction {
     Move { forward: f32, right: f32 },
     Look { yaw_delta: f32, pitch_delta: f32 },
     Jump,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ResolvedPlayerFrame {
+    pub forward: f32,
+    pub right: f32,
+    pub yaw_delta: f32,
+    pub pitch_delta: f32,
+    pub jump_pressed: bool,
+    pub jump_held: bool,
+    pub step_seconds: f32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -234,7 +374,14 @@ pub enum PlayerControlFact {
 pub struct PlayerControlReceipt {
     pub action: ResolvedPlayerAction,
     pub facts: Vec<PlayerControlFact>,
-    pub motion: Option<MotionPhaseReceipt>,
+    pub motion: Option<CharacterControllerReceipt>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct PlayerFrameReceipt {
+    pub frame: ResolvedPlayerFrame,
+    pub facts: Vec<PlayerControlFact>,
+    pub motion: CharacterControllerReceipt,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -242,710 +389,327 @@ pub struct PlayerControllerView {
     pub entity: EntityId,
     pub config: PlayerControllerConfig,
     pub state: PlayerControllerState,
+    pub eye_offset_from_center: f32,
     pub entity_view: EntityView,
 }
 
-pub(crate) struct PlayerControllerService;
-
-impl PlayerControllerService {
-    pub(crate) fn move_platform_with_supported_players(
-        session: &mut GameSession,
-        scene: &VoxelCollisionScene,
-        platform: EntityId,
-        target_translation: Vec3,
-    ) -> Result<bool, RuntimeError> {
-        let Some(platform_body) = session
-            .entities
-            .kinematic_bodies()
-            .find(|body| body.entity == platform)
-        else {
-            return Ok(false);
-        };
-        let delta = target_translation - platform_body.translation;
-        if delta == Vec3::ZERO {
-            return Ok(true);
-        }
-        let supported_players = session
-            .player_controllers
-            .iter()
-            .filter_map(|(player, controller)| {
-                let body = session
-                    .entities
-                    .kinematic_bodies()
-                    .find(|body| body.entity == *player)?;
-                let collision_enabled = session
-                    .entity(*player)
-                    .ok()
-                    .and_then(|view| view.collision)
-                    .is_some_and(|collision| collision.enabled);
-                let platform_collision_enabled = session
-                    .entity(platform)
-                    .ok()
-                    .and_then(|view| view.collision)
-                    .is_some_and(|collision| collision.enabled);
-                let horizontal_overlap = (body.translation.x - platform_body.translation.x).abs()
-                    <= body.half_extents.x
-                        + platform_body.half_extents.x
-                        + PLATFORM_SUPPORT_EPSILON
-                    && (body.translation.z - platform_body.translation.z).abs()
-                        <= body.half_extents.z
-                            + platform_body.half_extents.z
-                            + PLATFORM_SUPPORT_EPSILON;
-                let player_bottom = body.translation.y - body.half_extents.y;
-                let platform_top = platform_body.translation.y + platform_body.half_extents.y;
-                let support_gap = player_bottom - platform_top;
-                let support_distance = controller
-                    .config
-                    .traversal
-                    .ground_probe_distance
-                    .max(PLATFORM_SUPPORT_EPSILON);
-                (collision_enabled
-                    && platform_collision_enabled
-                    && horizontal_overlap
-                    && controller.state.vertical_velocity <= 0.0
-                    && support_gap.abs() <= support_distance
-                    && (controller.state.grounded || support_gap.abs() <= PLATFORM_SUPPORT_EPSILON))
-                    .then_some((*player, (platform_top - player_bottom).max(0.0)))
-            })
-            .collect::<Vec<_>>();
-
-        let mut candidate = session.clone();
-        let players_move_first = delta.y >= 0.0;
-        if players_move_first && !supported_players.is_empty() {
-            candidate
-                .entities
-                .apply_batch(EntityCommandBatch::new([
-                    EntityCommand::SetCollisionEnabled {
-                        entity: platform,
-                        enabled: false,
-                    },
-                ]))
-                .map_err(RuntimeError::EntityBatch)?;
-            for (player, separation) in &supported_players {
-                let rider_delta = delta + Vec3::new(0.0, *separation, 0.0);
-                if !move_kinematic_exact(&mut candidate, scene, *player, rider_delta)? {
-                    return Ok(false);
-                }
-            }
-            candidate
-                .entities
-                .apply_batch(EntityCommandBatch::new([
-                    EntityCommand::SetCollisionEnabled {
-                        entity: platform,
-                        enabled: true,
-                    },
-                ]))
-                .map_err(RuntimeError::EntityBatch)?;
-        }
-        candidate
-            .entities
-            .apply_batch(EntityCommandBatch::new([EntityCommand::SetTranslation {
-                entity: platform,
-                translation: target_translation,
-            }]))
-            .map_err(RuntimeError::EntityBatch)?;
-        if !players_move_first {
-            for (player, separation) in &supported_players {
-                let rider_delta = delta + Vec3::new(0.0, *separation, 0.0);
-                if !move_kinematic_exact(&mut candidate, scene, *player, rider_delta)? {
-                    return Ok(false);
-                }
-            }
-        }
-        for (player, _) in supported_players {
-            let controller = candidate
-                .player_controllers
-                .get_mut(&player)
-                .expect("supported player controller remains attached");
-            controller.state.vertical_velocity = 0.0;
-            controller.state.grounded = true;
-            controller.state.remaining_air_jumps = controller.config.traversal.max_air_jumps;
-        }
-        *session = candidate;
-        Ok(true)
-    }
-
-    pub(crate) fn apply(
-        session: &mut GameSession,
-        scene: &VoxelCollisionScene,
-        player: EntityId,
-        action: ResolvedPlayerAction,
-    ) -> Result<PlayerControlReceipt, RuntimeError> {
-        let move_delta_seconds = session
-            .player_controllers
-            .get(&player)
-            .map(|component| component.config.move_step_seconds)
-            .ok_or(RuntimeError::UnknownPlayerController { player })?;
-        Self::apply_with_motion_delta(session, scene, player, action, move_delta_seconds)
-    }
-
-    pub(crate) fn apply_with_motion_delta(
-        session: &mut GameSession,
-        scene: &VoxelCollisionScene,
-        player: EntityId,
-        action: ResolvedPlayerAction,
-        move_delta_seconds: f32,
-    ) -> Result<PlayerControlReceipt, RuntimeError> {
-        if !player_action_is_valid(action) {
-            return Err(RuntimeError::InvalidPlayerAction { action });
-        }
-        let Some(component) = session.player_controllers.get(&player).cloned() else {
-            return Err(RuntimeError::UnknownPlayerController { player });
-        };
-        if crate::DamageService::is_dead(session, player) {
-            return Err(RuntimeError::PlayerDefeated { player });
-        }
-        match action {
-            ResolvedPlayerAction::Look {
-                yaw_delta,
-                pitch_delta,
-            } => {
-                let before = component.state;
-                let controller = session
-                    .player_controllers
-                    .get_mut(&player)
-                    .expect("player controller validated above");
-                controller.state.yaw_degrees = normalize_yaw(
-                    before.yaw_degrees + yaw_delta * component.config.look_degrees_per_unit,
-                );
-                controller.state.pitch_degrees = (before.pitch_degrees
-                    + pitch_delta * component.config.look_degrees_per_unit)
-                    .clamp(-89.0, 89.0);
-                Ok(PlayerControlReceipt {
-                    action,
-                    facts: vec![PlayerControlFact::LookChanged {
-                        entity: player,
-                        before_yaw_degrees: before.yaw_degrees,
-                        after_yaw_degrees: controller.state.yaw_degrees,
-                        before_pitch_degrees: before.pitch_degrees,
-                        after_pitch_degrees: controller.state.pitch_degrees,
-                    }],
-                    motion: None,
-                })
-            }
-            ResolvedPlayerAction::Move { forward, right } => {
-                let input_length = (forward * forward + right * right).sqrt();
-                let scale = 1.0 / input_length.max(1.0);
-                let yaw = component.state.yaw_degrees.to_radians();
-                let forward_basis = Vec3::new(-yaw.sin(), 0.0, -yaw.cos());
-                let right_basis = Vec3::new(yaw.cos(), 0.0, -yaw.sin());
-                let horizontal_velocity = (forward_basis * (forward * scale)
-                    + right_basis * (right * scale))
-                    * component.config.move_speed_units_per_second;
-                let before = player_translation(session, player)?;
-                let grounded_before = component.state.grounded
-                    || player_is_grounded(
-                        session,
-                        scene,
-                        player,
-                        before,
-                        component.config.traversal.ground_probe_distance,
-                    )?;
-                if grounded_before && component.state.vertical_velocity <= 0.0 {
-                    settle_downward_collision(
-                        session,
-                        scene,
-                        player,
-                        before,
-                        before.y - component.config.traversal.ground_probe_distance,
-                    )?;
-                }
-                let mut vertical_velocity = component.state.vertical_velocity;
-                if grounded_before && vertical_velocity <= 0.0 {
-                    vertical_velocity = 0.0;
-                } else {
-                    vertical_velocity -=
-                        component.config.traversal.gravity_units_per_second_squared
-                            * move_delta_seconds;
-                }
-
-                let vertical_start = player_translation(session, player)?;
-                let vertical_motion = run_velocity(
-                    session,
-                    scene,
-                    player,
-                    Vec3::new(0.0, vertical_velocity, 0.0),
-                    move_delta_seconds,
-                )?;
-                let vertical_blocked = motion_blocked_axis(&vertical_motion, player, MotionAxis::Y);
-                let downward_contact = vertical_velocity < 0.0 && vertical_blocked;
-                if downward_contact {
-                    settle_downward_collision(
-                        session,
-                        scene,
-                        player,
-                        vertical_start,
-                        vertical_start.y + vertical_velocity * move_delta_seconds,
-                    )?;
-                }
-                if vertical_blocked {
-                    vertical_velocity = 0.0;
-                }
-                let horizontal_before = player_translation(session, player)?;
-                let horizontal_motion = if input_length == 0.0 {
-                    None
-                } else {
-                    Some(run_velocity(
-                        session,
-                        scene,
-                        player,
-                        horizontal_velocity,
-                        move_delta_seconds,
-                    )?)
-                };
-                let horizontal_blocked = horizontal_motion.as_ref().is_some_and(|motion| {
-                    motion_blocked_axis(motion, player, MotionAxis::X)
-                        || motion_blocked_axis(motion, player, MotionAxis::Z)
-                });
-                let stepped = if horizontal_blocked
-                    && grounded_before
-                    && component.config.traversal.max_step_height > 0.0
-                {
-                    try_step(
-                        session,
-                        scene,
-                        player,
-                        horizontal_before,
-                        horizontal_velocity,
-                        move_delta_seconds,
-                        component.config.traversal,
-                    )?
-                } else {
-                    false
-                };
-                let mut after = player_translation(session, player)?;
-                let grounded_after = stepped
-                    || (vertical_velocity <= 0.0
-                        && player_is_grounded(
-                            session,
-                            scene,
-                            player,
-                            after,
-                            component.config.traversal.ground_probe_distance,
-                        )?);
-                let landed = !grounded_before && grounded_after;
-                if grounded_after && vertical_velocity < 0.0 {
-                    settle_downward_collision(
-                        session,
-                        scene,
-                        player,
-                        after,
-                        after.y - component.config.traversal.ground_probe_distance,
-                    )?;
-                    after = player_translation(session, player)?;
-                    vertical_velocity = 0.0;
-                }
-                let controller = session
-                    .player_controllers
-                    .get_mut(&player)
-                    .expect("player controller validated above");
-                controller.state.vertical_velocity = vertical_velocity;
-                controller.state.grounded = grounded_after;
-                if grounded_after {
-                    controller.state.remaining_air_jumps = component.config.traversal.max_air_jumps;
-                }
-
-                let mut facts = Vec::new();
-                if after != before {
-                    facts.push(PlayerControlFact::Moved {
-                        entity: player,
-                        before,
-                        after,
-                    });
-                }
-                if stepped {
-                    facts.push(PlayerControlFact::Stepped {
-                        entity: player,
-                        before: horizontal_before,
-                        after,
-                    });
-                } else if horizontal_blocked {
-                    facts.push(PlayerControlFact::Blocked {
-                        entity: player,
-                        attempted_velocity: horizontal_velocity,
-                    });
-                }
-                if landed {
-                    facts.push(PlayerControlFact::Landed {
-                        entity: player,
-                        translation: after,
-                    });
-                }
-                Ok(PlayerControlReceipt {
-                    action,
-                    facts,
-                    motion: horizontal_motion.or(Some(vertical_motion)),
-                })
-            }
-            ResolvedPlayerAction::Jump => {
-                let grounded = component.state.grounded
-                    || (component.state.vertical_velocity <= 0.0
-                        && player_is_grounded(
-                            session,
-                            scene,
-                            player,
-                            player_translation(session, player)?,
-                            component.config.traversal.ground_probe_distance,
-                        )?);
-                if !component.config.traversal.manual_jump_enabled
-                    || (!grounded && component.state.remaining_air_jumps == 0)
-                {
-                    return Ok(PlayerControlReceipt {
-                        action,
-                        facts: Vec::new(),
-                        motion: None,
-                    });
-                }
-                let impulse = component.config.traversal.jump_impulse_units_per_second;
-                let controller = session
-                    .player_controllers
-                    .get_mut(&player)
-                    .expect("player controller validated above");
-                controller.state.vertical_velocity = impulse;
-                controller.state.grounded = false;
-                if !grounded {
-                    controller.state.remaining_air_jumps =
-                        controller.state.remaining_air_jumps.saturating_sub(1);
-                }
-                Ok(PlayerControlReceipt {
-                    action,
-                    facts: vec![PlayerControlFact::Jumped {
-                        entity: player,
-                        impulse,
-                    }],
-                    motion: None,
-                })
-            }
-        }
-    }
-}
-
-fn move_kinematic_exact(
+pub(crate) fn apply_player_action(
     session: &mut GameSession,
     scene: &VoxelCollisionScene,
-    entity: EntityId,
-    delta: Vec3,
-) -> Result<bool, RuntimeError> {
-    let before = session
-        .entity(entity)
-        .ok()
-        .and_then(|view| view.transform)
-        .map(|transform| transform.translation)
-        .ok_or(RuntimeError::UnknownPlayerController { player: entity })?;
-    session
-        .entities
-        .apply_batch(EntityCommandBatch::new([
-            EntityCommand::SetKinematicVelocity {
-                entity,
-                velocity: delta,
-            },
-        ]))
-        .map_err(RuntimeError::EntityBatch)?;
-    KinematicMotionSystem::run_selected(
-        &mut session.entities,
-        scene,
-        1.0,
-        &BTreeSet::from([entity]),
-    )
-    .map_err(RuntimeError::Motion)?;
-    session
-        .entities
-        .apply_batch(EntityCommandBatch::new([
-            EntityCommand::SetKinematicVelocity {
-                entity,
-                velocity: Vec3::ZERO,
-            },
-        ]))
-        .map_err(RuntimeError::EntityBatch)?;
-    let after = session
-        .entity(entity)
-        .ok()
-        .and_then(|view| view.transform)
-        .map(|transform| transform.translation)
-        .ok_or(RuntimeError::UnknownPlayerController { player: entity })?;
-    let expected = before + delta;
-    Ok((after.x - expected.x).abs() <= PLATFORM_CARRY_EPSILON
-        && (after.y - expected.y).abs() <= PLATFORM_CARRY_EPSILON
-        && (after.z - expected.z).abs() <= PLATFORM_CARRY_EPSILON)
-}
-
-fn run_velocity(
-    session: &mut GameSession,
-    scene: &VoxelCollisionScene,
+    service: &mut CharacterControllerService,
     player: EntityId,
-    velocity: Vec3,
-    delta_seconds: f32,
-) -> Result<MotionPhaseReceipt, RuntimeError> {
-    session
-        .entities
-        .apply_batch(EntityCommandBatch::new([
-            EntityCommand::SetKinematicVelocity {
-                entity: player,
-                velocity,
-            },
-        ]))
-        .map_err(RuntimeError::EntityBatch)?;
-    let result = KinematicMotionSystem::run_selected(
-        &mut session.entities,
-        scene,
-        delta_seconds,
-        &BTreeSet::from([player]),
-    );
-    session
-        .entities
-        .apply_batch(EntityCommandBatch::new([
-            EntityCommand::SetKinematicVelocity {
-                entity: player,
-                velocity: Vec3::ZERO,
-            },
-        ]))
-        .map_err(RuntimeError::EntityBatch)?;
-    result.map_err(RuntimeError::Motion)
-}
-
-fn motion_blocked_axis(
-    motion: &MotionPhaseReceipt,
-    player: EntityId,
-    expected_axis: MotionAxis,
-) -> bool {
-    motion.facts.iter().any(|fact| {
-        matches!(fact, MotionFact::Blocked { entity, axis, .. } if *entity == player && *axis == expected_axis)
-    })
-}
-
-fn player_translation(session: &GameSession, player: EntityId) -> Result<Vec3, RuntimeError> {
-    session
-        .entity(player)
-        .expect("player controller entity validated above")
-        .transform
-        .map(|transform| transform.translation)
-        .ok_or(RuntimeError::UnknownPlayerController { player })
-}
-
-fn set_player_translation(
-    session: &mut GameSession,
-    player: EntityId,
-    translation: Vec3,
-) -> Result<(), RuntimeError> {
-    session
-        .entities
-        .apply_batch(EntityCommandBatch::new([EntityCommand::SetTranslation {
-            entity: player,
-            translation,
-        }]))
-        .map_err(RuntimeError::EntityBatch)?;
-    Ok(())
-}
-
-fn player_bounds_at(
-    session: &GameSession,
-    player: EntityId,
-    translation: Vec3,
-) -> Result<([f64; 3], [f64; 3]), RuntimeError> {
-    let view = session
-        .entity(player)
-        .expect("player controller entity validated above");
-    let half_extents = view
-        .kinematic
-        .ok_or(RuntimeError::UnknownPlayerController { player })?
-        .half_extents;
-    Ok((
-        [
-            f64::from(translation.x - half_extents.x),
-            f64::from(translation.y - half_extents.y),
-            f64::from(translation.z - half_extents.z),
-        ],
-        [
-            f64::from(translation.x + half_extents.x),
-            f64::from(translation.y + half_extents.y),
-            f64::from(translation.z + half_extents.z),
-        ],
-    ))
-}
-
-fn player_is_grounded(
-    session: &GameSession,
-    scene: &VoxelCollisionScene,
-    player: EntityId,
-    translation: Vec3,
-    probe_distance: f32,
-) -> Result<bool, RuntimeError> {
-    let probe = Vec3::new(translation.x, translation.y - probe_distance, translation.z);
-    let (min, max) = player_bounds_at(session, player, probe)?;
-    Ok(scene.aabb_overlaps_solid(min, max))
-}
-
-fn try_step(
-    session: &mut GameSession,
-    scene: &VoxelCollisionScene,
-    player: EntityId,
-    before: Vec3,
-    horizontal_velocity: Vec3,
-    delta_seconds: f32,
-    traversal: PlayerTraversalConfig,
-) -> Result<bool, RuntimeError> {
-    let normal_after = player_translation(session, player)?;
-    let target_x = before.x + horizontal_velocity.x * delta_seconds;
-    let target_z = before.z + horizontal_velocity.z * delta_seconds;
-    for slice in 1..=STEP_SEARCH_SLICES {
-        set_player_translation(session, player, before)?;
-        let lift = traversal.max_step_height * slice as f32 / STEP_SEARCH_SLICES as f32;
-        let lift_motion = run_velocity(
-            session,
-            scene,
-            player,
-            Vec3::new(0.0, lift / delta_seconds, 0.0),
-            delta_seconds,
-        )?;
-        if motion_blocked_axis(&lift_motion, player, MotionAxis::Y) {
-            break;
-        }
-        let horizontal_motion =
-            run_velocity(session, scene, player, horizontal_velocity, delta_seconds)?;
-        if motion_blocked_axis(&horizontal_motion, player, MotionAxis::X)
-            || motion_blocked_axis(&horizontal_motion, player, MotionAxis::Z)
-        {
-            continue;
-        }
-        let raised = player_translation(session, player)?;
-        if (raised.x - target_x).abs() > 0.000_1 || (raised.z - target_z).abs() > 0.000_1 {
-            continue;
-        }
-        let mut overlapping_y = before.y;
-        let mut clear_y = raised.y;
-        let base_target = Vec3::new(target_x, before.y, target_z);
-        let (base_min, base_max) = player_bounds_at(session, player, base_target)?;
-        if !scene.aabb_overlaps_solid(base_min, base_max) {
-            continue;
-        }
-        for _ in 0..16 {
-            let middle = (overlapping_y + clear_y) * 0.5;
-            let candidate = Vec3::new(target_x, middle, target_z);
-            let (min, max) = player_bounds_at(session, player, candidate)?;
-            if scene.aabb_overlaps_solid(min, max) {
-                overlapping_y = middle;
-            } else {
-                clear_y = middle;
-            }
-        }
-        let landing = Vec3::new(target_x, clear_y + 0.000_1, target_z);
-        if player_is_grounded(
-            session,
-            scene,
-            player,
-            landing,
-            traversal.ground_probe_distance,
-        )? && !dynamic_sweep_overlaps(session, player, raised, landing)
-        {
-            set_player_translation(session, player, landing)?;
-            return Ok(true);
-        }
-    }
-    set_player_translation(session, player, normal_after)?;
-    Ok(false)
-}
-
-fn settle_downward_collision(
-    session: &mut GameSession,
-    scene: &VoxelCollisionScene,
-    player: EntityId,
-    clear: Vec3,
-    attempted_y: f32,
-) -> Result<(), RuntimeError> {
-    let attempted = Vec3::new(clear.x, attempted_y, clear.z);
-    if dynamic_sweep_overlaps(session, player, clear, attempted) {
-        return Ok(());
-    }
-    let (attempted_min, attempted_max) = player_bounds_at(session, player, attempted)?;
-    if !scene.aabb_overlaps_solid(attempted_min, attempted_max) {
-        return Ok(());
-    }
-    let mut overlapping_y = attempted_y;
-    let mut clear_y = clear.y;
-    for _ in 0..16 {
-        let middle = (overlapping_y + clear_y) * 0.5;
-        let candidate = Vec3::new(clear.x, middle, clear.z);
-        let (min, max) = player_bounds_at(session, player, candidate)?;
-        if scene.aabb_overlaps_solid(min, max) {
-            overlapping_y = middle;
-        } else {
-            clear_y = middle;
-        }
-    }
-    set_player_translation(
-        session,
-        player,
-        Vec3::new(clear.x, clear_y + 0.000_1, clear.z),
-    )
-}
-
-fn dynamic_sweep_overlaps(session: &GameSession, moving: EntityId, from: Vec3, to: Vec3) -> bool {
-    let Ok((from_min, from_max)) = player_bounds_at(session, moving, from) else {
-        return true;
-    };
-    let translation = [
-        f64::from(to.x - from.x),
-        f64::from(to.y - from.y),
-        f64::from(to.z - from.z),
-    ];
-    let swept_min = [
-        from_min[0].min(from_min[0] + translation[0]),
-        from_min[1].min(from_min[1] + translation[1]),
-        from_min[2].min(from_min[2] + translation[2]),
-    ];
-    let swept_max = [
-        from_max[0].max(from_max[0] + translation[0]),
-        from_max[1].max(from_max[1] + translation[1]),
-        from_max[2].max(from_max[2] + translation[2]),
-    ];
-    session.entities().kinematic_bodies().any(|blocker| {
-        if blocker.entity == moving
-            || !session
-                .entity(blocker.entity)
-                .ok()
-                .and_then(|view| view.collision)
-                .is_some_and(|collision| collision.enabled)
-        {
-            return false;
-        }
-        let center = blocker.translation.to_array();
-        let half = blocker.half_extents.to_array();
-        let blocker_min = [
-            f64::from(center[0] - half[0]),
-            f64::from(center[1] - half[1]),
-            f64::from(center[2] - half[2]),
-        ];
-        let blocker_max = [
-            f64::from(center[0] + half[0]),
-            f64::from(center[1] + half[1]),
-            f64::from(center[2] + half[2]),
-        ];
-        (0..3)
-            .all(|axis| swept_min[axis] < blocker_max[axis] && swept_max[axis] > blocker_min[axis])
-    })
-}
-
-fn player_action_is_valid(action: ResolvedPlayerAction) -> bool {
+    action: ResolvedPlayerAction,
+) -> Result<PlayerControlReceipt, RuntimeError> {
     match action {
-        ResolvedPlayerAction::Move { forward, right } => {
-            forward.is_finite()
-                && right.is_finite()
-                && (-1.0..=1.0).contains(&forward)
-                && (-1.0..=1.0).contains(&right)
-        }
         ResolvedPlayerAction::Look {
             yaw_delta,
             pitch_delta,
-        } => {
-            yaw_delta.is_finite()
-                && pitch_delta.is_finite()
-                && (-1.0..=1.0).contains(&yaw_delta)
-                && (-1.0..=1.0).contains(&pitch_delta)
+        } => apply_look(session, player, action, yaw_delta, pitch_delta),
+        ResolvedPlayerAction::Move { forward, right } => {
+            if !forward.is_finite()
+                || !right.is_finite()
+                || !(-1.0..=1.0).contains(&forward)
+                || !(-1.0..=1.0).contains(&right)
+            {
+                return Err(RuntimeError::InvalidPlayerAction { action });
+            }
+            let step_seconds = session
+                .player_controllers
+                .get(&player)
+                .ok_or(RuntimeError::UnknownPlayerController { player })?
+                .config
+                .move_step_seconds;
+            let receipt = apply_player_frame(
+                session,
+                scene,
+                service,
+                player,
+                ResolvedPlayerFrame {
+                    forward,
+                    right,
+                    yaw_delta: 0.0,
+                    pitch_delta: 0.0,
+                    jump_pressed: false,
+                    jump_held: false,
+                    step_seconds,
+                },
+            )?;
+            Ok(PlayerControlReceipt {
+                action,
+                facts: receipt.facts,
+                motion: Some(receipt.motion),
+            })
         }
-        ResolvedPlayerAction::Jump => true,
+        ResolvedPlayerAction::Jump => {
+            let step_seconds = session
+                .player_controllers
+                .get(&player)
+                .ok_or(RuntimeError::UnknownPlayerController { player })?
+                .config
+                .move_step_seconds;
+            let receipt = apply_player_frame(
+                session,
+                scene,
+                service,
+                player,
+                ResolvedPlayerFrame {
+                    forward: 0.0,
+                    right: 0.0,
+                    yaw_delta: 0.0,
+                    pitch_delta: 0.0,
+                    jump_pressed: true,
+                    jump_held: true,
+                    step_seconds,
+                },
+            )?;
+            Ok(PlayerControlReceipt {
+                action,
+                facts: receipt.facts,
+                motion: Some(receipt.motion),
+            })
+        }
     }
 }
 
-fn normalize_yaw(yaw_degrees: f32) -> f32 {
-    (yaw_degrees + 180.0).rem_euclid(360.0) - 180.0
+fn apply_look(
+    session: &mut GameSession,
+    player: EntityId,
+    action: ResolvedPlayerAction,
+    yaw_delta: f32,
+    pitch_delta: f32,
+) -> Result<PlayerControlReceipt, RuntimeError> {
+    if !look_delta_is_valid(yaw_delta, pitch_delta, 1.0) {
+        return Err(RuntimeError::InvalidPlayerAction { action });
+    }
+    let component = session
+        .player_controllers
+        .get_mut(&player)
+        .ok_or(RuntimeError::UnknownPlayerController { player })?;
+    let before = component.look_state;
+    component.look_state = integrate_bounded_look(
+        &component.look,
+        component.look_state,
+        yaw_delta,
+        pitch_delta,
+    )?;
+    Ok(PlayerControlReceipt {
+        action,
+        facts: look_fact(player, before, component.look_state)
+            .into_iter()
+            .collect(),
+        motion: None,
+    })
+}
+
+pub(crate) fn apply_player_frame(
+    session: &mut GameSession,
+    scene: &VoxelCollisionScene,
+    service: &mut CharacterControllerService,
+    player: EntityId,
+    frame: ResolvedPlayerFrame,
+) -> Result<PlayerFrameReceipt, RuntimeError> {
+    if !player_frame_is_valid(frame) {
+        return Err(RuntimeError::InvalidPlayerFrame { frame });
+    }
+    if crate::DamageService::is_dead(session, player) {
+        return Err(RuntimeError::PlayerDefeated { player });
+    }
+    let component = session
+        .player_controllers
+        .get(&player)
+        .cloned()
+        .ok_or(RuntimeError::UnknownPlayerController { player })?;
+    let look_after = integrate_bounded_look(
+        &component.look,
+        component.look_state,
+        frame.yaw_delta,
+        frame.pitch_delta,
+    )?;
+    let motion_before = *session
+        .entities
+        .character_motion(player)
+        .ok_or(RuntimeError::UnknownPlayerController { player })?;
+    let before = session
+        .entities
+        .transform(player)
+        .ok_or(RuntimeError::UnknownPlayerController { player })?
+        .translation;
+    let minimum_substeps = if frame.jump_pressed && !motion_before.grounded {
+        2.0
+    } else {
+        1.0
+    };
+    let substeps = (frame.step_seconds / (1.0 / 60.0))
+        .ceil()
+        .max(minimum_substeps) as u32;
+    let step_seconds = frame.step_seconds / substeps as f32;
+    let mut accepted_step = None;
+    let mut any_block = false;
+    let mut motion = None;
+    for index in 0..substeps {
+        let sequence = session
+            .entities
+            .character_motion(player)
+            .expect("player retains character motion between canonical substeps")
+            .last_command_sequence
+            .checked_add(1)
+            .ok_or(RuntimeError::PlayerCommandSequenceExhausted { player })?;
+        let receipt = service
+            .step(
+                &mut session.entities,
+                scene,
+                player,
+                &component.engine,
+                CharacterControllerCommand {
+                    planar_intent: Vec2::new(frame.right, frame.forward),
+                    heading_yaw_radians: look_after.yaw_radians,
+                    jump_pressed: component.config.traversal.manual_jump_enabled
+                        && frame.jump_pressed
+                        && index == 0,
+                    jump_held: component.config.traversal.manual_jump_enabled && frame.jump_held,
+                    step_seconds,
+                    sequence,
+                    ..CharacterControllerCommand::idle(step_seconds, sequence)
+                },
+            )
+            .map_err(RuntimeError::CharacterController)?;
+        if receipt.step.is_some_and(|step| step.accepted) {
+            accepted_step = Some((
+                receipt.transform_before.translation,
+                receipt.transform_after.translation,
+            ));
+        }
+        any_block |= !receipt.blocks.is_empty()
+            || receipt
+                .contacts
+                .iter()
+                .any(|contact| contact.kind == CharacterContactKind::Wall);
+        motion = Some(receipt);
+    }
+    let motion = motion.expect("a valid sampled frame always has one canonical substep");
+    session
+        .player_controllers
+        .get_mut(&player)
+        .expect("player controller remains attached")
+        .look_state = look_after;
+
+    let mut facts = Vec::new();
+    if let Some(fact) = look_fact(player, component.look_state, look_after) {
+        facts.push(fact);
+    }
+    let after = motion.transform_after.translation;
+    if before != after {
+        facts.push(PlayerControlFact::Moved {
+            entity: player,
+            before,
+            after,
+        });
+    }
+    if let Some((step_before, step_after)) = accepted_step {
+        facts.push(PlayerControlFact::Stepped {
+            entity: player,
+            before: step_before,
+            after: step_after,
+        });
+    }
+    if any_block {
+        facts.push(PlayerControlFact::Blocked {
+            entity: player,
+            attempted_velocity: motion.wish_velocity,
+        });
+    }
+    if frame.jump_pressed
+        && component.config.traversal.manual_jump_enabled
+        && !motion.motion_after.grounded
+        && motion.motion_after.controlled_velocity.y > motion_before.controlled_velocity.y
+    {
+        facts.push(PlayerControlFact::Jumped {
+            entity: player,
+            impulse: component.config.traversal.jump_impulse_units_per_second,
+        });
+    }
+    if !motion_before.grounded && motion.motion_after.grounded {
+        facts.push(PlayerControlFact::Landed {
+            entity: player,
+            translation: after,
+        });
+    }
+    Ok(PlayerFrameReceipt {
+        frame,
+        facts,
+        motion,
+    })
+}
+
+fn integrate_bounded_look(
+    config: &FirstPersonLookConfig,
+    mut state: FirstPersonLookState,
+    mut yaw_delta: f32,
+    mut pitch_delta: f32,
+) -> Result<FirstPersonLookState, RuntimeError> {
+    while yaw_delta != 0.0 || pitch_delta != 0.0 {
+        let yaw = yaw_delta.clamp(-1.0, 1.0);
+        let pitch = pitch_delta.clamp(-1.0, 1.0);
+        state = FirstPersonLookService
+            .integrate(
+                config,
+                state,
+                FirstPersonLookCommand {
+                    delta: Vec2::new(yaw, pitch),
+                },
+            )
+            .map_err(RuntimeError::FirstPersonLook)?
+            .after;
+        yaw_delta -= yaw;
+        pitch_delta -= pitch;
+    }
+    Ok(state)
+}
+
+fn look_fact(
+    player: EntityId,
+    before: FirstPersonLookState,
+    after: FirstPersonLookState,
+) -> Option<PlayerControlFact> {
+    (before != after).then_some(PlayerControlFact::LookChanged {
+        entity: player,
+        before_yaw_degrees: before.yaw_radians.to_degrees(),
+        after_yaw_degrees: after.yaw_radians.to_degrees(),
+        before_pitch_degrees: before.pitch_radians.to_degrees(),
+        after_pitch_degrees: after.pitch_radians.to_degrees(),
+    })
+}
+
+fn look_delta_is_valid(yaw: f32, pitch: f32, maximum: f32) -> bool {
+    yaw.is_finite()
+        && pitch.is_finite()
+        && (-maximum..=maximum).contains(&yaw)
+        && (-maximum..=maximum).contains(&pitch)
+}
+
+fn player_frame_is_valid(frame: ResolvedPlayerFrame) -> bool {
+    frame.forward.is_finite()
+        && frame.right.is_finite()
+        && (-1.0..=1.0).contains(&frame.forward)
+        && (-1.0..=1.0).contains(&frame.right)
+        && look_delta_is_valid(
+            frame.yaw_delta,
+            frame.pitch_delta,
+            MAX_PLAYER_FRAME_LOOK_UNITS,
+        )
+        && frame.step_seconds.is_finite()
+        && frame.step_seconds >= 0.001
+        && frame.step_seconds <= MAX_PLAYER_FRAME_STEP_SECONDS
+}
+
+impl From<CharacterControllerError> for RuntimeError {
+    fn from(value: CharacterControllerError) -> Self {
+        Self::CharacterController(value)
+    }
+}
+
+impl From<FirstPersonLookError> for RuntimeError {
+    fn from(value: FirstPersonLookError) -> Self {
+        Self::FirstPersonLook(value)
+    }
 }

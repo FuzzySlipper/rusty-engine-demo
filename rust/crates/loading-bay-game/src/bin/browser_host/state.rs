@@ -540,7 +540,7 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
         look_degrees_per_unit: player.config.look_degrees_per_unit,
         grounded: player.state.grounded,
         vertical_velocity: player.state.vertical_velocity,
-        eye_height: player.config.traversal.eye_height,
+        eye_height: player.eye_offset_from_center,
         bindings: BrowserPlayerBindings {
             move_forward: bindings.move_forward.clone(),
             move_backward: bindings.move_backward.clone(),

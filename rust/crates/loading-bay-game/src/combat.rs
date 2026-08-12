@@ -256,6 +256,9 @@ impl CombatService {
             .player_controllers
             .get(&attacker)
             .expect("weapon admission requires a player controller");
+        let look = controller
+            .look_receipt()
+            .map_err(RuntimeError::FirstPersonLook)?;
         let transform = session
             .entities
             .view(attacker)
@@ -263,17 +266,12 @@ impl CombatService {
             .transform
             .expect("player controller admission requires a transform")
             .translation;
-        let direction = aim_direction(controller.state.yaw_degrees, controller.state.pitch_degrees);
+        let direction = look.forward;
         let origin = transform
-            + Vec3::new(0.0, controller.config.traversal.eye_height, 0.0)
-            + local_aim_offset(weapon.muzzle_offset, controller.state.yaw_degrees);
+            + Vec3::new(0.0, controller.eye_offset_from_center, 0.0)
+            + local_aim_offset(weapon.muzzle_offset, look.right, look.forward);
         let spread_seed = shot_seed(tick, attacker, &weapon_item);
-        let directions = attack_directions(
-            direction,
-            controller.state.yaw_degrees,
-            weapon.attack_mode,
-            spread_seed,
-        );
+        let directions = attack_directions(direction, look.right, weapon.attack_mode, spread_seed);
         let ammo_after = ammo_before - weapon.ammunition_cost;
         let ready_at_tick = tick.advance(TickDelta::new(weapon.cooldown_ticks));
         let mut candidate_session = session.clone();
@@ -498,20 +496,9 @@ impl CombatService {
     }
 }
 
-fn aim_direction(yaw_degrees: f32, pitch_degrees: f32) -> Vec3 {
-    let yaw = yaw_degrees.to_radians();
-    let pitch = pitch_degrees.to_radians();
-    let horizontal = pitch.cos();
-    Vec3::new(
-        -yaw.sin() * horizontal,
-        pitch.sin(),
-        -yaw.cos() * horizontal,
-    )
-}
-
 fn attack_directions(
     forward: Vec3,
-    yaw_degrees: f32,
+    right: Vec3,
     attack_mode: crate::WeaponAttackMode,
     spread_seed: u64,
 ) -> Vec<Vec3> {
@@ -522,8 +509,6 @@ fn attack_directions(
     else {
         return vec![forward];
     };
-    let yaw = yaw_degrees.to_radians();
-    let right = Vec3::new(yaw.cos(), 0.0, -yaw.sin());
     let up = right.cross(forward);
     let max_offset = spread_degrees.to_radians().tan();
     let rotation = seed_unit(spread_seed) * std::f32::consts::TAU;
@@ -579,10 +564,7 @@ fn rolled_damage(base: u32, rolls: u8, seed: u64, ray_index: u8) -> u32 {
     base * multiplier
 }
 
-fn local_aim_offset(offset: Vec3, yaw_degrees: f32) -> Vec3 {
-    let yaw = yaw_degrees.to_radians();
-    let right = Vec3::new(yaw.cos(), 0.0, -yaw.sin());
-    let forward = Vec3::new(-yaw.sin(), 0.0, -yaw.cos());
+fn local_aim_offset(offset: Vec3, right: Vec3, forward: Vec3) -> Vec3 {
     right * offset.x + Vec3::new(0.0, offset.y, 0.0) + forward * offset.z
 }
 

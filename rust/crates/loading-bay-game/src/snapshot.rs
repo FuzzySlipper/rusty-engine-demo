@@ -4,10 +4,15 @@ use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
 use rusty_engine::core_time::{Tick, TickDelta};
 use rusty_engine::engine_spatial::{
-    GeneratedRoomConfig, MaterialVoxel, TriggerGeometrySource, TriggerVolumeSnapshot,
-    TriggerVolumeSystem, VoxelCollisionScene, VoxelSourceRevision, GENERATED_ROOM_VERSION,
+    CharacterControllerService, FirstPersonLookState, GeneratedRoomConfig, MaterialVoxel,
+    TriggerGeometrySource, TriggerVolumeSnapshot, TriggerVolumeSystem, VoxelCollisionScene,
+    VoxelSourceRevision, GENERATED_ROOM_VERSION,
 };
-use rusty_engine::entity_state::{EntityLifecycle, EntityState, EntityStateSnapshot};
+use rusty_engine::entity_state::{
+    ComponentValueSnapshot, EntityLifecycle, EntityState, EntityStateSnapshot,
+    RegisteredComponentSnapshot, CHARACTER_MOTION_CODEC_ID, CHARACTER_MOTION_CODEC_VERSION,
+    CHARACTER_MOTION_COMPONENT_TYPE_ID,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::combat::{EnemyComponent, EnemyState};
@@ -45,8 +50,7 @@ use crate::pickup::{
     PickupCollectionCause, PickupComponent, PickupConfig, PickupState, PICKUP_TRIGGER_SCOPE,
 };
 use crate::player::{
-    PlayerControllerComponent, PlayerControllerConfig, PlayerControllerState, PlayerInputBindings,
-    PlayerTraversalConfig,
+    PlayerControllerComponent, PlayerControllerConfig, PlayerInputBindings, PlayerTraversalConfig,
 };
 use crate::progression::{
     DoorAccessConfig, LevelExitComponent, LevelExitConfig, LevelExitState,
@@ -58,7 +62,8 @@ use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::{HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 22;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 23;
+const CANONICAL_PLAYER_CONTROLLER_SNAPSHOT_SCHEMA_VERSION: u32 = 23;
 const VITALITY_ITEM_SNAPSHOT_SCHEMA_VERSION: u32 = 22;
 const SWITCH_CONFIG_SNAPSHOT_SCHEMA_VERSION: u32 = 21;
 const GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION: u32 = 19;
@@ -729,6 +734,14 @@ pub struct PlayerControllerSnapshot {
     pub initial_pitch_degrees: f32,
     #[serde(default)]
     pub traversal: PlayerTraversalSnapshot,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub canonical_standing_height: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub canonical_crouched_height: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub canonical_radius: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub eye_offset_from_center: Option<f32>,
     pub yaw_degrees: f32,
     pub pitch_degrees: f32,
     #[serde(default)]
@@ -1624,43 +1637,55 @@ impl GameRuntime {
                 .session
                 .player_controllers
                 .iter()
-                .map(|(entity, component)| PlayerControllerSnapshot {
-                    entity: entity.raw(),
-                    move_speed_units_per_second: component.config.move_speed_units_per_second,
-                    move_step_seconds: component.config.move_step_seconds,
-                    look_degrees_per_unit: component.config.look_degrees_per_unit,
-                    initial_yaw_degrees: component.config.initial_yaw_degrees,
-                    initial_pitch_degrees: component.config.initial_pitch_degrees,
-                    traversal: PlayerTraversalSnapshot {
-                        max_step_height: component.config.traversal.max_step_height,
-                        gravity_units_per_second_squared: component
-                            .config
-                            .traversal
-                            .gravity_units_per_second_squared,
-                        jump_impulse_units_per_second: component
-                            .config
-                            .traversal
-                            .jump_impulse_units_per_second,
-                        ground_probe_distance: component.config.traversal.ground_probe_distance,
-                        eye_height: component.config.traversal.eye_height,
-                        manual_jump_enabled: component.config.traversal.manual_jump_enabled,
-                        max_air_jumps: component.config.traversal.max_air_jumps,
-                    },
-                    yaw_degrees: component.state.yaw_degrees,
-                    pitch_degrees: component.state.pitch_degrees,
-                    vertical_velocity: component.state.vertical_velocity,
-                    grounded: component.state.grounded,
-                    remaining_air_jumps: component.state.remaining_air_jumps,
-                    bindings: PlayerInputBindingsSnapshot {
-                        move_forward: component.config.bindings.move_forward.clone(),
-                        move_backward: component.config.bindings.move_backward.clone(),
-                        move_left: component.config.bindings.move_left.clone(),
-                        move_right: component.config.bindings.move_right.clone(),
-                        mouse_look: component.config.bindings.mouse_look.clone(),
-                        primary_fire: component.config.bindings.primary_fire.clone(),
-                        jump: component.config.bindings.jump.clone(),
-                        select_weapon: component.config.bindings.select_weapon.clone(),
-                    },
+                .map(|(entity, component)| {
+                    let state = component.state(
+                        self.session
+                            .entities
+                            .character_motion(*entity)
+                            .expect("player controller retains character motion"),
+                    );
+                    PlayerControllerSnapshot {
+                        entity: entity.raw(),
+                        move_speed_units_per_second: component.config.move_speed_units_per_second,
+                        move_step_seconds: component.config.move_step_seconds,
+                        look_degrees_per_unit: component.config.look_degrees_per_unit,
+                        initial_yaw_degrees: component.config.initial_yaw_degrees,
+                        initial_pitch_degrees: component.config.initial_pitch_degrees,
+                        traversal: PlayerTraversalSnapshot {
+                            max_step_height: component.config.traversal.max_step_height,
+                            gravity_units_per_second_squared: component
+                                .config
+                                .traversal
+                                .gravity_units_per_second_squared,
+                            jump_impulse_units_per_second: component
+                                .config
+                                .traversal
+                                .jump_impulse_units_per_second,
+                            ground_probe_distance: component.config.traversal.ground_probe_distance,
+                            eye_height: component.config.traversal.eye_height,
+                            manual_jump_enabled: component.config.traversal.manual_jump_enabled,
+                            max_air_jumps: component.config.traversal.max_air_jumps,
+                        },
+                        canonical_standing_height: Some(component.engine.shape.standing_height),
+                        canonical_crouched_height: Some(component.engine.shape.crouched_height),
+                        canonical_radius: Some(component.engine.shape.radius),
+                        eye_offset_from_center: Some(component.eye_offset_from_center),
+                        yaw_degrees: state.yaw_degrees,
+                        pitch_degrees: state.pitch_degrees,
+                        vertical_velocity: state.vertical_velocity,
+                        grounded: state.grounded,
+                        remaining_air_jumps: state.remaining_air_jumps,
+                        bindings: PlayerInputBindingsSnapshot {
+                            move_forward: component.config.bindings.move_forward.clone(),
+                            move_backward: component.config.bindings.move_backward.clone(),
+                            move_left: component.config.bindings.move_left.clone(),
+                            move_right: component.config.bindings.move_right.clone(),
+                            mouse_look: component.config.bindings.mouse_look.clone(),
+                            primary_fire: component.config.bindings.primary_fire.clone(),
+                            jump: component.config.bindings.jump.clone(),
+                            select_weapon: component.config.bindings.select_weapon.clone(),
+                        },
+                    }
                 })
                 .collect(),
             inventories: self
@@ -1959,6 +1984,9 @@ impl GameRuntime {
         } else {
             None
         };
+        if source_schema_version < CANONICAL_PLAYER_CONTROLLER_SNAPSHOT_SCHEMA_VERSION {
+            migrate_legacy_player_controller_authority(&mut snapshot)?;
+        }
         let collision_scene = snapshot
             .voxel_collision
             .map(|scene| match scene.generated_room {
@@ -3016,7 +3044,7 @@ impl GameRuntime {
             })?;
             if view.transform.is_none()
                 || view.collision.is_none()
-                || view.kinematic.is_none()
+                || view.character_motion.is_none()
                 || view.renderable.is_none()
             {
                 return Err(GameSnapshotError::MissingPlayerControllerCapability {
@@ -3070,19 +3098,37 @@ impl GameRuntime {
                     entity: controller.entity,
                 });
             }
-            player_controllers.insert(
-                entity,
-                PlayerControllerComponent {
-                    config,
-                    state: PlayerControllerState {
-                        yaw_degrees: controller.yaw_degrees,
-                        pitch_degrees: controller.pitch_degrees,
-                        vertical_velocity: controller.vertical_velocity,
-                        grounded: controller.grounded,
-                        remaining_air_jumps: controller.remaining_air_jumps,
-                    },
+            let component = PlayerControllerComponent::restore(
+                config,
+                FirstPersonLookState {
+                    yaw_radians: controller.yaw_degrees.to_radians(),
+                    pitch_radians: controller.pitch_degrees.to_radians(),
                 },
-            );
+                controller.canonical_standing_height.ok_or(
+                    GameSnapshotError::InvalidPlayerControllerConfig {
+                        entity: controller.entity,
+                    },
+                )?,
+                controller.canonical_crouched_height.ok_or(
+                    GameSnapshotError::InvalidPlayerControllerConfig {
+                        entity: controller.entity,
+                    },
+                )?,
+                controller.canonical_radius.ok_or(
+                    GameSnapshotError::InvalidPlayerControllerConfig {
+                        entity: controller.entity,
+                    },
+                )?,
+                controller.eye_offset_from_center.ok_or(
+                    GameSnapshotError::InvalidPlayerControllerConfig {
+                        entity: controller.entity,
+                    },
+                )?,
+            )
+            .map_err(|_| GameSnapshotError::InvalidPlayerControllerConfig {
+                entity: controller.entity,
+            })?;
+            player_controllers.insert(entity, component);
         }
 
         let mut inventories = BTreeMap::new();
@@ -3785,6 +3831,11 @@ impl GameRuntime {
             });
         }
 
+        let player_controller_services = player_controllers
+            .keys()
+            .copied()
+            .map(|entity| (entity, CharacterControllerService::default()))
+            .collect();
         Ok(Self {
             session: GameSession {
                 entities,
@@ -3823,8 +3874,119 @@ impl GameRuntime {
             floor_action_triggers,
             lift_triggers,
             projectiles: crate::projectile::ProjectileService::default(),
+            player_controller_services,
         })
     }
+}
+
+fn migrate_legacy_player_controller_authority(
+    snapshot: &mut GameSnapshot,
+) -> Result<(), GameSnapshotError> {
+    for entity in &mut snapshot.entities.entities {
+        if entity.bounds.is_none() {
+            if let Some(kinematic) = entity.kinematic {
+                entity.bounds = Some(rusty_engine::entity_state::BoundsSnapshot {
+                    min: kinematic.half_extents.map(|value| -value),
+                    max: kinematic.half_extents,
+                });
+            }
+        }
+    }
+    let mut motion_values = Vec::new();
+    for controller in &mut snapshot.player_controllers {
+        let already_has_motion = snapshot
+            .entities
+            .registered_components
+            .iter()
+            .find(|component| component.type_id == CHARACTER_MOTION_COMPONENT_TYPE_ID)
+            .is_some_and(|component| {
+                component
+                    .values
+                    .iter()
+                    .any(|value| value.entity == controller.entity)
+            });
+        let entity = snapshot
+            .entities
+            .entities
+            .iter_mut()
+            .find(|entity| entity.id == controller.entity)
+            .ok_or(GameSnapshotError::UnknownPlayerControllerEntity {
+                entity: controller.entity,
+            })?;
+        if already_has_motion && entity.kinematic.is_none() {
+            continue;
+        }
+        controller.yaw_degrees = -controller.yaw_degrees;
+        let kinematic = entity.kinematic.take().ok_or(
+            GameSnapshotError::MissingPlayerControllerCapability {
+                entity: controller.entity,
+            },
+        )?;
+        let transform = entity.transform.as_mut().ok_or(
+            GameSnapshotError::MissingPlayerControllerCapability {
+                entity: controller.entity,
+            },
+        )?;
+        let authored_half_height = kinematic.half_extents[1];
+        let standing_height = 1.8_f32.max(authored_half_height * 2.0);
+        let crouched_height = 1.1_f32.min(standing_height - 0.01);
+        let radius = kinematic.half_extents[0]
+            .max(kinematic.half_extents[2])
+            .min(crouched_height * 0.5 - 0.01);
+        let center_lift = standing_height * 0.5 - authored_half_height;
+        transform.translation[1] += center_lift;
+        entity.bounds = Some(rusty_engine::entity_state::BoundsSnapshot {
+            min: [-radius, -standing_height * 0.5, -radius],
+            max: [radius, standing_height * 0.5, radius],
+        });
+        controller.canonical_standing_height = Some(standing_height);
+        controller.canonical_crouched_height = Some(crouched_height);
+        controller.canonical_radius = Some(radius);
+        controller.eye_offset_from_center = Some(controller.traversal.eye_height - center_lift);
+        motion_values.push(ComponentValueSnapshot {
+            entity: controller.entity,
+            value: serde_json::json!({
+                "controlledVelocity": [0.0, controller.vertical_velocity, 0.0],
+                "externalVelocity": [0.0, 0.0, 0.0],
+                "stance": "standing",
+                "grounded": controller.grounded,
+                "jumpBufferRemaining": 0.0,
+                "coyoteRemaining": 0.0,
+                "landingLockoutRemaining": 0.0,
+                "supportEntity": null,
+                "supportLocalAnchor": [0.0, 0.0, 0.0],
+                "supportPreviousTranslation": [0.0, 0.0, 0.0],
+                "supportPreviousRotation": [0.0, 0.0, 0.0, 1.0],
+                "supportPointVelocity": [0.0, 0.0, 0.0],
+                "fallOriginY": transform.translation[1],
+                "peakY": transform.translation[1],
+                "lastCommandSequence": 0,
+                "collisionWorldHash": 0
+            }),
+        });
+    }
+    if !motion_values.is_empty() {
+        if let Some(component) = snapshot
+            .entities
+            .registered_components
+            .iter_mut()
+            .find(|component| component.type_id == CHARACTER_MOTION_COMPONENT_TYPE_ID)
+        {
+            component.values.extend(motion_values);
+        } else {
+            snapshot
+                .entities
+                .registered_components
+                .push(RegisteredComponentSnapshot {
+                    type_id: CHARACTER_MOTION_COMPONENT_TYPE_ID.to_owned(),
+                    codec: CHARACTER_MOTION_CODEC_ID.to_owned(),
+                    version: CHARACTER_MOTION_CODEC_VERSION,
+                    required: true,
+                    values: motion_values,
+                });
+        }
+    }
+    Ok(())
 }
 
 pub fn encode_game_snapshot(runtime: &GameRuntime) -> Result<String, GameSnapshotError> {

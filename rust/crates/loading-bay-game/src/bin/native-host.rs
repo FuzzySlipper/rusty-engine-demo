@@ -149,6 +149,7 @@ struct NativeApplication {
     renderer: Option<RendererWebviewAdapter>,
     pressed_codes: BTreeSet<String>,
     pointer_buttons: u16,
+    pointer_position: Option<[f64; 2]>,
     pending_input: Option<u64>,
     pending_pick: Option<PendingPick>,
     dispose_request: Option<u64>,
@@ -257,6 +258,7 @@ impl NativeApplication {
             renderer: None,
             pressed_codes: BTreeSet::new(),
             pointer_buttons: 0,
+            pointer_position: None,
             pending_input: None,
             pending_pick: None,
             dispose_request: None,
@@ -368,6 +370,12 @@ impl NativeApplication {
 
     fn apply_input(&mut self, input: &RendererPhysicalInputReadout) -> Result<()> {
         let pressed = input.pressed_codes.iter().cloned().collect::<BTreeSet<_>>();
+        let pointer_delta = self.pointer_position.map_or([0.0, 0.0], |previous| {
+            [
+                input.pointer.x_pixels - previous[0],
+                input.pointer.y_pixels - previous[1],
+            ]
+        });
         let revision_before = self.runtime.runtime().readout().entity_revision;
         if pressed.is_empty() && input.pointer.buttons == 0 {
             self.proof.input_noop |=
@@ -415,10 +423,14 @@ impl NativeApplication {
                 - f32::from(pressed.contains(&bindings.move_backward));
             let right = f32::from(pressed.contains(&bindings.move_right))
                 - f32::from(pressed.contains(&bindings.move_left));
-            let yaw_delta = f32::from(pressed.contains("ArrowRight"))
-                - f32::from(pressed.contains("ArrowLeft"));
-            let pitch_delta =
-                f32::from(pressed.contains("ArrowDown")) - f32::from(pressed.contains("ArrowUp"));
+            let yaw_delta = (f32::from(pressed.contains("ArrowRight"))
+                - f32::from(pressed.contains("ArrowLeft"))
+                + (pointer_delta[0] as f32 * 0.01))
+                .clamp(-1.0, 1.0);
+            let pitch_delta = (f32::from(pressed.contains("ArrowUp"))
+                - f32::from(pressed.contains("ArrowDown"))
+                - (pointer_delta[1] as f32 * 0.01))
+                .clamp(-1.0, 1.0);
             self.input_sequence = self.input_sequence.saturating_add(1);
             self.runtime
                 .submit_input(PlayerInputCommand {
@@ -426,7 +438,11 @@ impl NativeApplication {
                     sequence: self.input_sequence,
                     intent: PlayerInputIntent {
                         movement: [forward, right],
-                        look_delta: [yaw_delta * 0.12, pitch_delta * 0.12],
+                        look_delta: [yaw_delta, pitch_delta],
+                        jump_held: bindings
+                            .jump
+                            .as_ref()
+                            .is_some_and(|jump| pressed.contains(jump)),
                         primary_fire_held: input.pointer.buttons & 1 != 0,
                     },
                 })
@@ -480,6 +496,7 @@ impl NativeApplication {
         }
         self.pressed_codes = pressed;
         self.pointer_buttons = input.pointer.buttons;
+        self.pointer_position = Some([input.pointer.x_pixels, input.pointer.y_pixels]);
         Ok(())
     }
 
@@ -521,7 +538,7 @@ impl NativeApplication {
         Ok(RendererCameraPose {
             position: [
                 f64::from(position.x),
-                f64::from(position.y + player.config.traversal.eye_height),
+                f64::from(position.y + player.eye_offset_from_center),
                 f64::from(position.z),
             ],
             pitch_degrees: f64::from(player.state.pitch_degrees),

@@ -1893,6 +1893,7 @@ mod tests {
             &loading_bay_game::encode_game_snapshot(host.runtime.runtime()).unwrap(),
         )
         .unwrap();
+        downgrade_player_controller_entities(&mut defeated_snapshot);
         defeated_snapshot["schemaVersion"] = 18.into();
         defeated_snapshot["entities"]["registeredComponents"] = serde_json::json!([]);
         for inventory in defeated_snapshot["inventories"].as_array_mut().unwrap() {
@@ -2354,5 +2355,34 @@ mod tests {
         assert!(!background_projection_due(1));
         assert!(background_projection_due(2));
         assert!(!background_projection_due(3));
+    }
+
+    fn downgrade_player_controller_entities(snapshot: &mut serde_json::Value) {
+        let controllers = snapshot["playerControllers"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
+        for controller in controllers {
+            let entity_id = controller["entity"].as_u64().unwrap();
+            let standing_height = controller["canonicalStandingHeight"].as_f64().unwrap();
+            let radius = controller["canonicalRadius"].as_f64().unwrap();
+            let eye_height = controller["traversal"]["eyeHeight"].as_f64().unwrap();
+            let eye_offset = controller["eyeOffsetFromCenter"].as_f64().unwrap();
+            let center_lift = eye_height - eye_offset;
+            let authored_half_height = standing_height * 0.5 - center_lift;
+            let entity = snapshot["entities"]["entities"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|entity| entity["id"] == entity_id)
+                .unwrap();
+            entity["transform"]["translation"][1] = serde_json::json!(
+                entity["transform"]["translation"][1].as_f64().unwrap() - center_lift
+            );
+            entity["kinematic"] = serde_json::json!({
+                "halfExtents": [radius, authored_half_height, radius],
+                "velocity": [0.0, 0.0, 0.0]
+            });
+        }
     }
 }

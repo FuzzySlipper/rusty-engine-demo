@@ -204,14 +204,7 @@ impl EnemyCombatService {
         scene: &VoxelCollisionScene,
         player: EntityId,
     ) -> Result<EnemyIntentPhaseReceipt, RuntimeError> {
-        let player_view = session
-            .entities
-            .view(player)
-            .map_err(|_| RuntimeError::UnknownActor { actor: player })?;
-        let player_position = player_view
-            .transform
-            .ok_or(RuntimeError::UnknownPlayerController { player })?
-            .translation;
+        let player_position = player_gameplay_position(session, player)?;
         let player_dead = crate::vitality::DamageService::is_dead(session, player);
         let enemies: Vec<EntityId> = session.enemy_combat.keys().copied().collect();
         let mut facts = Vec::new();
@@ -353,13 +346,7 @@ impl EnemyCombatService {
                 .transform
                 .expect("enemy combat admission requires a transform")
                 .translation;
-            let player_position = session
-                .entities
-                .view(player)
-                .map_err(|_| RuntimeError::UnknownActor { actor: player })?
-                .transform
-                .ok_or(RuntimeError::UnknownPlayerController { player })?
-                .translation;
+            let player_position = player_gameplay_position(session, player)?;
             let origin = enemy_position + component.config.attack.origin_offset;
             let distance = (player_position - origin).length();
             let kind = component.config.attack.kind;
@@ -414,7 +401,7 @@ impl EnemyCombatService {
                     .attack
                     .projectile
                     .expect("validated projectile enemy attack carries its definition");
-                let direction = player_position - origin;
+                let direction = player_controller_position(session, player)? - origin;
                 let (projectile, impulse, expires_at) = projectiles
                     .spawn_enemy(
                         session,
@@ -485,6 +472,25 @@ impl EnemyCombatService {
 
         Ok(EnemyAttackPhaseReceipt { facts, events })
     }
+}
+
+fn player_gameplay_position(session: &GameSession, player: EntityId) -> Result<Vec3, RuntimeError> {
+    session
+        .gameplay_translation(player)
+        .ok_or(RuntimeError::UnknownPlayerController { player })
+}
+
+fn player_controller_position(
+    session: &GameSession,
+    player: EntityId,
+) -> Result<Vec3, RuntimeError> {
+    Ok(session
+        .entities
+        .view(player)
+        .map_err(|_| RuntimeError::UnknownActor { actor: player })?
+        .transform
+        .ok_or(RuntimeError::UnknownPlayerController { player })?
+        .translation)
 }
 
 fn transition_posture(

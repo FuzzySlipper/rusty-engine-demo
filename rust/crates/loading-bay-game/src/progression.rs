@@ -240,13 +240,13 @@ impl ProgressionService {
         if DamageService::is_dead(session, actor) {
             return Err(DoorAccessRejection::PlayerDefeated { actor });
         }
-        let actor_translation = session
+        session
             .entities
             .view(actor)
-            .map_err(|_| DoorAccessRejection::UnknownActor { actor })?
-            .transform
-            .ok_or(DoorAccessRejection::ActorMissingTransform { actor })?
-            .translation;
+            .map_err(|_| DoorAccessRejection::UnknownActor { actor })?;
+        let actor_translation = session
+            .gameplay_translation(actor)
+            .ok_or(DoorAccessRejection::ActorMissingTransform { actor })?;
         let Some(access) = session.door_access.get(&door).cloned() else {
             return Err(DoorAccessRejection::UnknownDoor { door });
         };
@@ -411,13 +411,13 @@ impl ProgressionService {
         if DamageService::is_dead(session, actor) {
             return Err(LevelExitRejection::PlayerDefeated { actor });
         }
-        let actor_translation = session
+        session
             .entities
             .view(actor)
-            .map_err(|_| LevelExitRejection::UnknownActor { actor })?
-            .transform
-            .ok_or(LevelExitRejection::ActorMissingTransform { actor })?
-            .translation;
+            .map_err(|_| LevelExitRejection::UnknownActor { actor })?;
+        let actor_translation = session
+            .gameplay_translation(actor)
+            .ok_or(LevelExitRejection::ActorMissingTransform { actor })?;
         let Some(component) = session.level_exits.get(&exit).cloned() else {
             return Err(LevelExitRejection::UnknownExit { exit });
         };

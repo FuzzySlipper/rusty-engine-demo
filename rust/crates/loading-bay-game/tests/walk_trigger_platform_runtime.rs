@@ -2,7 +2,7 @@ use loading_bay_game::{
     decode_game_snapshot, encode_game_snapshot, AdmittedProject, FloorActionConfig,
     FloorActionState, GameEntityDefinition, GameEntityDefinitionError, GameRuntime, GameSession,
     LiftConfig, LiftState, LoadingBayGameLoop, PlayerControllerConfig, PlayerInputBindings,
-    PlayerTraversalConfig, SnapshotLiftState, FIXED_STEP_DURATION,
+    PlayerTraversalConfig, ResolvedPlayerAction, SnapshotLiftState, FIXED_STEP_DURATION,
 };
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
@@ -125,6 +125,7 @@ fn rider_runtime() -> GameRuntime {
         ),
         GameEntityDefinition::new(
             platform_entity(LIFT_PLATFORM, "warehouse-platform", lift_raised)
+                .with_collision(true, false)
                 .with_kinematic(Vec3::new(0.5, 0.5, 0.5), Vec3::ZERO),
         ),
     ];
@@ -343,10 +344,24 @@ fn named_walk_trigger_snapshot_reopens_mid_cycle() {
 #[test]
 fn differently_named_lift_carries_its_rider_across_mid_raise_snapshot_reopen() {
     let mut runtime = rider_runtime();
+    runtime
+        .apply_player_action(
+            ACTOR,
+            ResolvedPlayerAction::Move {
+                forward: 0.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
     let activation = runtime.run_walk_trigger_phase(ACTOR).unwrap();
     assert_eq!(activation.lift.activations.len(), 1);
+    let mut game_loop = LoadingBayGameLoop::new(runtime, ACTOR).unwrap();
+    game_loop.start_connection();
 
-    runtime.advance_by(6).unwrap();
+    for _ in 0..6 {
+        game_loop.run_fixed_tick().unwrap();
+    }
+    let runtime = game_loop.runtime();
     assert_eq!(
         runtime.session().lift(LIFT).unwrap().state,
         LiftState::Raising
@@ -371,20 +386,23 @@ fn differently_named_lift_carries_its_rider_across_mid_raise_snapshot_reopen() {
             .transform
             .unwrap()
             .translation,
-        Vec3::new(20.0, 4.25, 0.0)
+        Vec3::new(20.0, 4.9, 0.0)
     );
 
-    let encoded = encode_game_snapshot(&runtime).unwrap();
-    let mut reopened = decode_game_snapshot(&encoded).unwrap();
+    let encoded = encode_game_snapshot(runtime).unwrap();
+    let reopened = decode_game_snapshot(&encoded).unwrap();
     assert_eq!(encode_game_snapshot(&reopened).unwrap(), encoded);
-    reopened.advance_by(1).unwrap();
+    let mut reopened = LoadingBayGameLoop::new(reopened, ACTOR).unwrap();
+    reopened.start_connection();
+    reopened.run_fixed_tick().unwrap();
 
     assert_eq!(
-        reopened.session().lift(LIFT).unwrap().state,
+        reopened.runtime().session().lift(LIFT).unwrap().state,
         LiftState::Raised
     );
     assert_eq!(
         reopened
+            .runtime()
             .session()
             .lift(LIFT)
             .unwrap()
@@ -394,10 +412,14 @@ fn differently_named_lift_carries_its_rider_across_mid_raise_snapshot_reopen() {
             .translation,
         Vec3::new(20.0, 5.0, 0.0)
     );
-    let rider = reopened.session().player_controller(ACTOR).unwrap();
+    let rider = reopened
+        .runtime()
+        .session()
+        .player_controller(ACTOR)
+        .unwrap();
     assert_eq!(
         rider.entity_view.transform.unwrap().translation,
-        Vec3::new(20.0, 5.75, 0.0)
+        Vec3::new(20.0, 6.4, 0.0)
     );
     assert!(rider.state.grounded);
     assert_eq!(rider.state.vertical_velocity, 0.0);
@@ -417,6 +439,22 @@ fn exact_e1m1_lift_carries_a_supported_rider_during_the_fixed_raise_phase() {
     let platform = EntityId::new(authored_id("doom-lift-platform-sector-70"));
     let lift_entity = EntityId::new(authored_id("doom-repeatable-lift-linedef-195"));
     let runtime = GameRuntime::from_stored_project(DOOM_PROJECT).unwrap();
+    let player_half_height = runtime
+        .session()
+        .entity(ACTOR)
+        .unwrap()
+        .bounds
+        .unwrap()
+        .max
+        .y;
+    let platform_half_height = runtime
+        .session()
+        .entity(platform)
+        .unwrap()
+        .bounds
+        .unwrap()
+        .max
+        .y;
     let mut snapshot = runtime.snapshot();
     snapshot
         .entities
@@ -427,7 +465,7 @@ fn exact_e1m1_lift_carries_a_supported_rider_during_the_fixed_raise_phase() {
         .transform
         .as_mut()
         .unwrap()
-        .translation = [270.0, 6.25, 62.0];
+        .translation = [270.0, 6.0 + platform_half_height + player_half_height, 62.0];
     snapshot
         .entities
         .entities
@@ -445,6 +483,17 @@ fn exact_e1m1_lift_carries_a_supported_rider_during_the_fixed_raise_phase() {
         .unwrap();
     controller.grounded = true;
     controller.vertical_velocity = 0.0;
+    let mut runtime = GameRuntime::from_snapshot(snapshot).unwrap();
+    runtime
+        .apply_player_action(
+            ACTOR,
+            ResolvedPlayerAction::Move {
+                forward: 0.0,
+                right: 0.0,
+            },
+        )
+        .unwrap();
+    let mut snapshot = runtime.snapshot();
     let lift = snapshot
         .lifts
         .iter_mut()
@@ -456,6 +505,7 @@ fn exact_e1m1_lift_carries_a_supported_rider_during_the_fixed_raise_phase() {
 
     let mut game_loop =
         LoadingBayGameLoop::new(GameRuntime::from_snapshot(snapshot).unwrap(), ACTOR).unwrap();
+    game_loop.start_connection();
     game_loop.advance_elapsed(FIXED_STEP_DURATION).unwrap();
     let platform_y = game_loop
         .runtime()
@@ -479,7 +529,7 @@ fn exact_e1m1_lift_carries_a_supported_rider_during_the_fixed_raise_phase() {
         .y;
     assert!(platform_y > 6.0, "E1M1 lift did not enter its raise motion");
     assert!(
-        (player_y - (platform_y + 0.25)).abs() <= 0.002,
+        (player_y - (platform_y + platform_half_height + player_half_height)).abs() <= 0.002,
         "E1M1 lift surface at {platform_y} did not carry rider at {player_y}"
     );
 }

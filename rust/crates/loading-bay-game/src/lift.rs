@@ -3,13 +3,12 @@ use rusty_engine::core_math::Vec3;
 use rusty_engine::core_time::TickDelta;
 use rusty_engine::engine_spatial::{
     KinematicTriggerDefinition, TriggerGeometrySource, TriggerOverlapFact, TriggerOverlapFactKind,
-    TriggerReconcileCause, TriggerVolumeDiagnostic, TriggerVolumeSystem, VoxelCollisionScene,
+    TriggerReconcileCause, TriggerVolumeDiagnostic, TriggerVolumeSystem,
 };
 use rusty_engine::entity_state::{
     EntityCommand, EntityCommandBatch, EntityFact, EntityView, MAX_ABS_TRANSLATION,
 };
 
-use crate::player::PlayerControllerService;
 use crate::runtime::RuntimeError;
 use crate::session::GameSession;
 
@@ -288,10 +287,7 @@ impl LiftService {
         })
     }
 
-    pub(crate) fn run_motion_phase(
-        session: &mut GameSession,
-        scene: Option<&VoxelCollisionScene>,
-    ) -> Result<(), RuntimeError> {
+    pub(crate) fn run_motion_phase(session: &mut GameSession) -> Result<(), RuntimeError> {
         let lifts = session
             .lifts
             .iter()
@@ -390,26 +386,13 @@ impl LiftService {
                     }
                 }
             };
-            let moved = if let Some(scene) = scene {
-                PlayerControllerService::move_platform_with_supported_players(
-                    session,
-                    scene,
-                    component.config.target_platform,
+            session
+                .entities
+                .apply_batch(EntityCommandBatch::new([EntityCommand::SetTranslation {
+                    entity: component.config.target_platform,
                     translation,
-                )?
-            } else {
-                session
-                    .entities
-                    .apply_batch(EntityCommandBatch::new([EntityCommand::SetTranslation {
-                        entity: component.config.target_platform,
-                        translation,
-                    }]))
-                    .map_err(RuntimeError::EntityBatch)?;
-                true
-            };
-            if !moved {
-                continue;
-            }
+                }]))
+                .map_err(RuntimeError::EntityBatch)?;
             let component = session.lifts.get_mut(&lift).expect("lift remains attached");
             component.state = state;
             component.motion_elapsed = motion_elapsed;

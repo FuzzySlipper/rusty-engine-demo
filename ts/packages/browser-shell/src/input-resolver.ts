@@ -1,11 +1,6 @@
 import type { RuntimePlayerBindings } from "./projection.js";
 
 export type ResolvedPlayerAction =
-  | {
-      readonly kind: "look";
-      readonly pitchDelta: number;
-      readonly yawDelta: number;
-    }
   | { readonly kind: "move"; readonly forward: number; readonly right: number }
   | { readonly kind: "jump" };
 export type ResolvedAttackAction = { readonly kind: "attack" };
@@ -54,26 +49,4 @@ export function resolvePointerButtonAction(
   return bindings.primaryFire === `Mouse${String(button)}`
     ? { kind: "attack" }
     : null;
-}
-
-export function resolvePointerAction(
-  movementX: number,
-  movementY: number,
-  bindings: RuntimePlayerBindings,
-): ResolvedPlayerAction | null {
-  if (
-    bindings.mouseLook !== "pointer" ||
-    (movementX === 0 && movementY === 0)
-  ) {
-    return null;
-  }
-  return {
-    kind: "look",
-    yawDelta: clampInputUnit(-movementX / 20),
-    pitchDelta: clampInputUnit(-movementY / 20),
-  };
-}
-
-export function clampInputUnit(value: number): number {
-  return Math.max(-1, Math.min(1, value));
 }

@@ -520,9 +520,7 @@ fn aim_at(runtime: &mut GameRuntime, target: EntityId) {
         .session()
         .player_controller(PLAYER)
         .unwrap()
-        .config
-        .traversal
-        .eye_height;
+        .eye_offset_from_center;
     let target = runtime
         .session()
         .entity(target)
@@ -533,7 +531,7 @@ fn aim_at(runtime: &mut GameRuntime, target: EntityId) {
     let offset_x = target.x - player.x;
     let offset_y = target.y - player.y;
     let offset_z = target.z - player.z;
-    let desired_yaw = normalize_degrees((-offset_x).atan2(-offset_z).to_degrees());
+    let desired_yaw = normalize_degrees(offset_x.atan2(-offset_z).to_degrees());
     let desired_pitch = offset_y
         .atan2((offset_x * offset_x + offset_z * offset_z).sqrt())
         .to_degrees();

@@ -236,6 +236,7 @@ fn death_clears_intent_rejects_same_tick_edges_and_exposes_distinct_restart_mode
                 intent: PlayerInputIntent {
                     movement: [1.0, 0.0],
                     look_delta: [0.5, 0.5],
+                    jump_held: false,
                     primary_fire_held: true,
                 },
             })

@@ -1,9 +1,10 @@
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_time::{Tick, TickDelta};
 
 use rusty_engine::engine_spatial::{
+    CharacterControllerError, CharacterControllerService, FirstPersonLookError,
     KinematicMotionSystem, MotionPhaseError, MotionPhaseReceipt, NavigationStepError,
     SpatialOcclusionError, TriggerVolumeSystem, VoxelCollisionScene, VoxelEditApplyError,
     VoxelEditReceipt, VoxelEditService, VoxelEditTransaction,
@@ -29,7 +30,10 @@ use crate::pickup::{
     PickupCollectionCause, PickupCollectionCommand, PickupPhaseReceipt, PickupReceipt,
     PickupRejection, PickupService,
 };
-use crate::player::{PlayerControlReceipt, PlayerControllerService, ResolvedPlayerAction};
+use crate::player::{
+    apply_player_action, apply_player_frame, PlayerControlReceipt, PlayerFrameReceipt,
+    ResolvedPlayerAction, ResolvedPlayerFrame,
+};
 use crate::progression::{
     DoorAccessReceipt, DoorAccessRejection, LevelExitRejection, LoadingBayInterlockRejection,
     ProgressionFact, ProgressionService, SecretPhaseReceipt, SecretRejection,
@@ -123,6 +127,14 @@ pub enum RuntimeError {
     InvalidPlayerAction {
         action: ResolvedPlayerAction,
     },
+    InvalidPlayerFrame {
+        frame: ResolvedPlayerFrame,
+    },
+    PlayerCommandSequenceExhausted {
+        player: EntityId,
+    },
+    CharacterController(CharacterControllerError),
+    FirstPersonLook(FirstPersonLookError),
     EntityBatch(rusty_engine::entity_state::BatchRejection),
     InvalidFloorActionConfig {
         action: EntityId,
@@ -193,10 +205,17 @@ pub struct GameRuntime {
     pub(crate) floor_action_triggers: TriggerVolumeSystem,
     pub(crate) lift_triggers: TriggerVolumeSystem,
     pub(crate) projectiles: ProjectileService,
+    pub(crate) player_controller_services: BTreeMap<EntityId, CharacterControllerService>,
 }
 
 impl GameRuntime {
     pub fn new(session: GameSession) -> Self {
+        let player_controller_services = session
+            .player_controllers
+            .keys()
+            .copied()
+            .map(|entity| (entity, CharacterControllerService::default()))
+            .collect();
         let pickup_triggers = PickupService::trigger_system(&session);
         let hazard_triggers = HazardService::trigger_system(&session);
         let secret_triggers = ProgressionService::secret_trigger_system(&session);
@@ -215,6 +234,7 @@ impl GameRuntime {
             floor_action_triggers,
             lift_triggers,
             projectiles: ProjectileService::default(),
+            player_controller_services,
         }
     }
 
@@ -362,7 +382,7 @@ impl GameRuntime {
 
     pub(crate) fn run_walk_trigger_motion_phase(&mut self) -> Result<(), RuntimeError> {
         FloorActionService::run_motion_phase(&mut self.session)?;
-        LiftService::run_motion_phase(&mut self.session, self.collision_scene.as_ref())
+        LiftService::run_motion_phase(&mut self.session)
     }
 
     pub fn run_walk_trigger_phase(
@@ -494,27 +514,27 @@ impl GameRuntime {
             .collision_scene
             .as_ref()
             .ok_or(RuntimeError::MissingCollisionScene)?;
-        PlayerControllerService::apply(&mut self.session, scene, player, action)
+        let service = self
+            .player_controller_services
+            .get_mut(&player)
+            .ok_or(RuntimeError::UnknownPlayerController { player })?;
+        apply_player_action(&mut self.session, scene, service, player, action)
     }
 
-    pub(crate) fn integrate_player_motion(
+    pub(crate) fn integrate_player_frame(
         &mut self,
         player: EntityId,
-        forward: f32,
-        right: f32,
-        delta_seconds: f32,
-    ) -> Result<PlayerControlReceipt, RuntimeError> {
+        frame: ResolvedPlayerFrame,
+    ) -> Result<PlayerFrameReceipt, RuntimeError> {
         let scene = self
             .collision_scene
             .as_ref()
             .ok_or(RuntimeError::MissingCollisionScene)?;
-        PlayerControllerService::apply_with_motion_delta(
-            &mut self.session,
-            scene,
-            player,
-            ResolvedPlayerAction::Move { forward, right },
-            delta_seconds,
-        )
+        let service = self
+            .player_controller_services
+            .get_mut(&player)
+            .ok_or(RuntimeError::UnknownPlayerController { player })?;
+        apply_player_frame(&mut self.session, scene, service, player, frame)
     }
 
     /// Activate one game-owned extraction beacon through its named service.

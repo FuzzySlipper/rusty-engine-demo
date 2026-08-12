@@ -462,18 +462,14 @@ fn alerted_enemy_tracks_moving_player_through_transient_navigation_goal() {
         .unwrap();
 
     assert_ne!(after, before);
-    assert_eq!(
-        remembered,
-        game_loop
-            .runtime()
-            .session()
-            .player_controller(PLAYER)
-            .unwrap()
-            .entity_view
-            .transform
-            .unwrap()
-            .translation
-    );
+    let player = game_loop
+        .runtime()
+        .session()
+        .player_controller(PLAYER)
+        .unwrap();
+    let mut gameplay_position = player.entity_view.transform.unwrap().translation;
+    gameplay_position.y += player.eye_offset_from_center - player.config.traversal.eye_height;
+    assert_eq!(remembered, gameplay_position);
 }
 
 #[test]
@@ -485,7 +481,11 @@ fn simultaneous_attacks_apply_in_entity_order_and_kill_once() {
         serde_json::json!([MELEE.raw(), RANGED.raw()]);
     for enemy in [MELEE, RANGED] {
         let entity = entity_mut(&mut project, enemy);
-        entity["translation"] = serde_json::json!([1.5 + enemy.raw() as f32 * 0.1, 1.5, 4.5]);
+        entity["translation"] = if enemy == MELEE {
+            serde_json::json!([4.5, 1.5, 3.5])
+        } else {
+            serde_json::json!([6.5, 1.5, 3.5])
+        };
         entity["enemyCombat"]["attack"] = serde_json::json!({
             "kind": "rangedHitscan",
             "damage": 60,

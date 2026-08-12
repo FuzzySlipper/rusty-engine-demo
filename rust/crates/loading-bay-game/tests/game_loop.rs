@@ -39,6 +39,11 @@ fn player_position(game_loop: &LoadingBayGameLoop) -> [f32; 3] {
         .to_array()
 }
 
+fn horizontal_position(game_loop: &LoadingBayGameLoop) -> [f32; 2] {
+    let position = player_position(game_loop);
+    [position[0], position[2]]
+}
+
 fn input(
     generation: u64,
     sequence: u64,
@@ -52,6 +57,7 @@ fn input(
         intent: PlayerInputIntent {
             movement,
             look_delta,
+            jump_held: false,
             primary_fire_held,
         },
     }
@@ -77,24 +83,38 @@ fn authored_jump_edge_is_consumed_once_before_fixed_player_motion() {
         .submit_edge_command(edge(generation, 1, GameLoopEdgeCommandKind::Jump))
         .unwrap();
 
-    let tick = game_loop
-        .advance_elapsed(FIXED_STEP_DURATION)
-        .unwrap()
-        .fixed_ticks
-        .into_iter()
-        .next()
-        .expect("one fixed tick");
-
-    assert!(tick.facts.iter().any(|fact| matches!(
-        fact,
-        GameLoopFact::PlayerControl(loading_bay_game::PlayerControlFact::Jumped { .. })
-    )));
-    let state = game_loop
-        .runtime()
-        .session()
-        .player_controller(PLAYER)
-        .unwrap()
-        .state;
+    let mut jump_observation = None;
+    let mut jump_fact_count = 0;
+    for tick_index in 0..=30 {
+        let ticks = if tick_index == 0 {
+            game_loop
+                .advance_elapsed(FIXED_STEP_DURATION)
+                .unwrap()
+                .fixed_ticks
+        } else {
+            vec![game_loop.run_fixed_tick().unwrap()]
+        };
+        for tick in ticks {
+            if tick.facts.iter().any(|fact| {
+                matches!(
+                    fact,
+                    GameLoopFact::PlayerControl(loading_bay_game::PlayerControlFact::Jumped { .. })
+                )
+            }) {
+                jump_fact_count += 1;
+                jump_observation = Some(
+                    game_loop
+                        .runtime()
+                        .session()
+                        .player_controller(PLAYER)
+                        .unwrap()
+                        .state,
+                );
+            }
+        }
+    }
+    assert_eq!(jump_fact_count, 1, "jump edge must resolve exactly once");
+    let state = jump_observation.expect("jump edge must resolve after canonical settling");
     assert!(
         !state.grounded,
         "jump ended grounded at position {:?} with state {:?}",
@@ -171,7 +191,7 @@ fn authored_jump_edge_is_consumed_once_before_fixed_player_motion() {
 }
 
 #[test]
-fn fixed_tick_integrates_velocity_instead_of_applying_an_authored_request_step() {
+fn sampled_frame_looks_before_camera_relative_motion_and_uses_canonical_velocity() {
     let mut game_loop = game_loop();
     let generation = game_loop.start_connection().connection_generation;
     let before = player_position(&game_loop);
@@ -184,11 +204,17 @@ fn fixed_tick_integrates_velocity_instead_of_applying_an_authored_request_step()
         .move_speed_units_per_second
         * FIXED_STEP_DURATION.as_secs_f32();
     game_loop
-        .submit_input(input(generation, 1, [1.0, 0.0], [0.0, 0.0], false))
+        .submit_input(input(generation, 1, [1.0, 0.0], [1.0, 0.0], false))
         .unwrap();
 
     let receipt = game_loop.run_fixed_tick().unwrap();
     let after = player_position(&game_loop);
+    let state = game_loop
+        .runtime()
+        .session()
+        .player_controller(PLAYER)
+        .expect("player")
+        .state;
     let distance = before
         .into_iter()
         .zip(after)
@@ -199,8 +225,16 @@ fn fixed_tick_integrates_velocity_instead_of_applying_an_authored_request_step()
     assert_eq!(receipt.phases, FIXED_TICK_PHASE_ORDER);
     assert!(receipt.simulation_advanced);
     assert!(
-        (distance - expected_distance).abs() < 0.000_01,
-        "{distance}"
+        distance > 0.0 && distance < expected_distance,
+        "canonical acceleration must stay within one fixed-step request: {distance}"
+    );
+    assert!(
+        (normalized_angle_delta(state.yaw_degrees, 180.0) - 12.0).abs() < 0.000_1,
+        "canonical yaw after sampled look: {state:?}"
+    );
+    assert!(
+        after[0] < before[0] && after[2] > before[2],
+        "{before:?} -> {after:?}"
     );
     assert!(receipt
         .facts
@@ -217,11 +251,18 @@ fn doom_sprite_orbit_room_floor_supports_a_real_movement_tick() {
     )
     .unwrap();
     let generation = game_loop.start_connection().connection_generation;
-    game_loop
-        .submit_input(input(generation, 1, [1.0, 0.0], [0.0, 0.0], false))
-        .unwrap();
-
-    for _ in 0..600 {
+    for tick in 0..120 {
+        if tick % 2 == 0 {
+            game_loop
+                .submit_input(input(
+                    generation,
+                    tick / 2 + 1,
+                    [1.0, 0.0],
+                    [0.0, 0.0],
+                    false,
+                ))
+                .unwrap();
+        }
         game_loop.run_fixed_tick().unwrap();
     }
 
@@ -232,10 +273,10 @@ fn doom_sprite_orbit_room_floor_supports_a_real_movement_tick() {
         .player_controller(PLAYER)
         .unwrap();
     assert!(controller.state.grounded, "player state: {controller:#?}");
-    assert!((position[1] - 0.5).abs() < 0.001, "{position:?}");
+    assert!((position[1] - 1.15).abs() < 0.001, "{position:?}");
     assert!(
-        position[2] < 11.75,
-        "orbit-room player escaped its authored perimeter: {position:?}"
+        position[2] > -3.0 && position[2] < 0.0,
+        "orbit-room player did not make bounded forward progress: {position:?}"
     );
 }
 
@@ -692,7 +733,7 @@ fn look_is_coalesced_without_losing_small_deltas_and_rejects_invalid_input() {
 }
 
 #[test]
-fn coalesced_look_clamps_at_the_action_boundary_in_both_directions() {
+fn coalesced_look_preserves_the_canonical_sampled_delta_in_both_directions() {
     let mut positive = game_loop();
     let positive_generation = positive.start_connection().connection_generation;
     let positive_before = positive
@@ -728,7 +769,10 @@ fn coalesced_look_clamps_at_the_action_boundary_in_both_directions() {
         .unwrap()
         .state
         .yaw_degrees;
-    assert!((normalized_angle_delta(positive_after, positive_before) - 12.0).abs() < 0.000_1);
+    assert!(
+        (normalized_angle_delta(positive_after, positive_before) - 18.0).abs() < 0.000_1,
+        "before={positive_before} after={positive_after}"
+    );
     assert_eq!(positive.input_session().consumed_sequence, 2);
 
     let mut negative = game_loop();
@@ -766,7 +810,7 @@ fn coalesced_look_clamps_at_the_action_boundary_in_both_directions() {
         .unwrap()
         .state
         .yaw_degrees;
-    assert!((normalized_angle_delta(negative_after, negative_before) + 12.0).abs() < 0.000_1);
+    assert!((normalized_angle_delta(negative_after, negative_before) + 18.0).abs() < 0.000_1);
     assert_eq!(negative.input_session().consumed_sequence, 2);
 }
 
@@ -775,12 +819,13 @@ fn disconnect_stale_input_and_reconnect_cannot_stick_or_resurrect_movement() {
     let mut game_loop = game_loop();
     let first_generation = game_loop.start_connection().connection_generation;
     let before = player_position(&game_loop);
+    let before_horizontal = horizontal_position(&game_loop);
     game_loop
         .submit_input(input(first_generation, 1, [1.0, 0.0], [0.0, 0.0], true))
         .unwrap();
     assert!(game_loop.disconnect(first_generation));
     game_loop.run_fixed_tick().unwrap();
-    assert_eq!(player_position(&game_loop), before);
+    assert_eq!(horizontal_position(&game_loop), before_horizontal);
 
     let second_generation = game_loop.start_connection().connection_generation;
     assert_ne!(second_generation, first_generation);
@@ -795,12 +840,12 @@ fn disconnect_stale_input_and_reconnect_cannot_stick_or_resurrect_movement() {
     assert_ne!(player_position(&game_loop), before);
 
     game_loop.run_fixed_tick().unwrap();
-    let after_two_ticks = player_position(&game_loop);
     let expired = game_loop.run_fixed_tick().unwrap();
-    assert_eq!(player_position(&game_loop), after_two_ticks);
     assert!(expired
         .facts
         .contains(&GameLoopFact::InputExpired { sequence: 1 }));
+    assert_eq!(expired.consumed_sequence, 1);
+    assert_eq!(game_loop.input_session().acknowledged_sequence, 1);
 }
 
 #[test]
@@ -883,7 +928,7 @@ fn pause_and_session_replacement_clear_intent_without_resurrection() {
     let paused = game_loop.run_fixed_tick().unwrap();
     assert!(!paused.simulation_advanced);
     assert!(game_loop.input_session().paused);
-    assert_eq!(player_position(&game_loop), before);
+    assert_eq!(horizontal_position(&game_loop), [before[0], before[2]]);
 
     game_loop
         .submit_input(input(generation, 3, [1.0, 0.0], [1.0, 1.0], true))
@@ -898,7 +943,7 @@ fn pause_and_session_replacement_clear_intent_without_resurrection() {
     let resumed = game_loop.run_fixed_tick().unwrap();
     assert!(resumed.simulation_advanced);
     assert!(!game_loop.input_session().paused);
-    assert_eq!(player_position(&game_loop), before);
+    assert_eq!(horizontal_position(&game_loop), [before[0], before[2]]);
 
     let replacement_generation = game_loop
         .start_connection_after(generation)
@@ -1013,6 +1058,34 @@ fn save_and_load_edges_have_fixed_tick_meaning_while_live_paused_dead_or_complet
 }
 
 fn downgrade_to_schema_eighteen(snapshot: &mut serde_json::Value) {
+    let controllers = snapshot["playerControllers"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    for controller in controllers {
+        let entity_id = controller["entity"].as_u64().unwrap();
+        let standing_height = controller["canonicalStandingHeight"]
+            .as_f64()
+            .unwrap_or(1.8);
+        let radius = controller["canonicalRadius"].as_f64().unwrap_or(0.25);
+        let eye_height = controller["traversal"]["eyeHeight"].as_f64().unwrap();
+        let eye_offset_from_center = controller["eyeOffsetFromCenter"].as_f64().unwrap();
+        let center_lift = eye_height - eye_offset_from_center;
+        let authored_half_height = standing_height * 0.5 - center_lift;
+        let entity = snapshot["entities"]["entities"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|entity| entity["id"] == entity_id)
+            .unwrap();
+        entity["transform"]["translation"][1] = serde_json::json!(
+            entity["transform"]["translation"][1].as_f64().unwrap() - center_lift
+        );
+        entity["kinematic"] = serde_json::json!({
+            "halfExtents": [radius, authored_half_height, radius],
+            "velocity": [0.0, 0.0, 0.0]
+        });
+    }
     snapshot["schemaVersion"] = 18.into();
     support::strip_future_gameplay_mechanics_state(snapshot);
 }
