@@ -1,10 +1,9 @@
 mod support;
 
 use loading_bay_game::{
-    decode_game_snapshot, diagnostic_code, encode_game_snapshot, CombatFact, EncounterState,
-    EnemyAttackKind, EnemyDropState, EnemyState, GameEvent, GameLoopFact, GameRuntime,
-    LoadingBayGameLoop, PickupFact, PickupState, ResolvedAttackAction, RuntimeError,
-    MAX_EVENT_WAVE,
+    decode_game_snapshot, diagnostic_code, encode_game_snapshot, EncounterState, EnemyAttackKind,
+    EnemyDropState, EnemyState, GameEvent, GameLoopFact, GameRuntime, LoadingBayGameLoop,
+    PickupFact, PickupState, RuntimeError, MAX_EVENT_WAVE,
 };
 use rusty_engine::core_ids::EntityId;
 
@@ -145,17 +144,16 @@ fn lethal_damage_materializes_one_ordinary_drop_and_snapshots_every_state() {
         PickupState::Dormant
     );
 
-    let attack = runtime
-        .attack(PLAYER, ResolvedAttackAction::Attack)
-        .unwrap();
-    assert!(attack.facts.iter().any(|fact| matches!(
-        fact,
-        CombatFact::EnemyDrop(drop)
-            if drop.enemy == MELEE
-                && drop.pickup == MELEE_DROP
-                && drop.item.as_str() == "supply/med-patch"
-                && drop.quantity == 1
-                && drop.position.to_array() == [1.5, 1.5, 2.5]
+    // This is a drop-lifecycle proof, so use the bounded direct-defeat seam;
+    // directional player hitscan targeting is covered by its own combat tests.
+    let defeated = runtime.defeat_enemy(PLAYER, MELEE).unwrap();
+    assert!(defeated.events.iter().any(|event| matches!(
+        event,
+        GameEvent::EnemyDefeated {
+            enemy: MELEE,
+            actor: PLAYER,
+            ..
+        }
     )));
     assert_eq!(
         runtime.session().enemy(MELEE).unwrap().state,

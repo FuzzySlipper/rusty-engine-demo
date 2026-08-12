@@ -284,6 +284,15 @@ fn project(prop_damage: u32, prop_radius: f32, solid_voxels: &[[i64; 3]]) -> Val
                     "lookDegreesPerUnit": 12,
                     "initialYawDegrees": -90,
                     "initialPitchDegrees": 0,
+                    "traversal": {
+                        "maxStepHeight": 0.6,
+                        "gravityUnitsPerSecondSquared": 18,
+                        "jumpImpulseUnitsPerSecond": 6,
+                        "groundProbeDistance": 0.2,
+                        "eyeHeight": 0.0001,
+                        "manualJumpEnabled": false,
+                        "maxAirJumps": 0
+                    },
                     "bindings": {
                         "moveForward": "KeyW",
                         "moveBackward": "KeyS",

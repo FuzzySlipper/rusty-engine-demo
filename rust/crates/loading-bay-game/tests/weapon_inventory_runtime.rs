@@ -509,13 +509,20 @@ fn item(value: &str) -> ItemDefinitionId {
 }
 
 fn aim_at(runtime: &mut GameRuntime, target: EntityId) {
-    let player = runtime
+    let mut player = runtime
         .session()
         .entity(PLAYER)
         .unwrap()
         .transform
         .unwrap()
         .translation;
+    player.y += runtime
+        .session()
+        .player_controller(PLAYER)
+        .unwrap()
+        .config
+        .traversal
+        .eye_height;
     let target = runtime
         .session()
         .entity(target)

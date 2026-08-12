@@ -154,7 +154,7 @@ fn projectile_hits_target_once_and_applies_damage_before_removal() {
         entity_mut(project, PLAYER.raw())["playerController"]["initialYawDegrees"] =
             serde_json::json!(180.0);
         entity_mut(project, PLAYER.raw())["playerController"]["initialPitchDegrees"] =
-            serde_json::json!(0.0);
+            serde_json::json!(-15.0);
     });
     let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).expect("game loop admits");
     let activation = game_loop

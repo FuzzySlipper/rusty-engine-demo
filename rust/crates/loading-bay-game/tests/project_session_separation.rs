@@ -167,13 +167,20 @@ fn migrated_predecessor_runs_and_future_schema_preserves_the_good_project() {
 }
 
 fn aim_at(runtime: &mut GameRuntime, target: EntityId) {
-    let player = runtime
+    let mut player = runtime
         .session()
         .entity(PLAYER)
         .unwrap()
         .transform
         .unwrap()
         .translation;
+    player.y += runtime
+        .session()
+        .player_controller(PLAYER)
+        .unwrap()
+        .config
+        .traversal
+        .eye_height;
     let target = runtime
         .session()
         .entity(target)

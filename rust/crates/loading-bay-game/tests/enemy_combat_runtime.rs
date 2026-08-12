@@ -4,8 +4,8 @@ use loading_bay_game::{
     decode_game_snapshot, diagnostic_code, encode_game_snapshot, EnemyAttackKind,
     EnemyAttackMissReason, EnemyCombatFact, EnemyCombatPosture, GameLoopEdgeCommand,
     GameLoopEdgeCommandKind, GameLoopFact, GameRestartMode, GameRuntime, LoadingBayGameLoop,
-    PlayerInputCommand, PlayerInputIntent, ProgressionFact, ResolvedAttackAction,
-    ResolvedPlayerAction, RuntimeError, VitalityFact, VitalityState,
+    PlayerInputCommand, PlayerInputIntent, ProgressionFact, RuntimeError, VitalityFact,
+    VitalityState,
 };
 use rusty_engine::core_ids::EntityId;
 
@@ -531,13 +531,9 @@ fn simultaneous_attacks_apply_in_entity_order_and_kill_once() {
 
 #[test]
 fn defeated_enemy_stays_dead_and_never_reawakens() {
-    let mut project = single_enemy_project(RANGED);
-    entity_mut(&mut project, RANGED)["health"]["max"] = 60.into();
+    let project = single_enemy_project(RANGED);
     let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
-    aim_at(&mut runtime, RANGED);
-    runtime
-        .attack(PLAYER, ResolvedAttackAction::Attack)
-        .unwrap();
+    runtime.defeat_enemy(PLAYER, RANGED).unwrap();
     let defeated_at = runtime
         .session()
         .enemy(RANGED)
@@ -760,55 +756,6 @@ fn solid_room_with_muzzle_block() -> serde_json::Value {
     voxels.retain(|voxel| voxel != &serde_json::json!([4, 3, 5]));
     voxels.push(serde_json::json!([3, 1, 3]));
     room
-}
-
-fn aim_at(runtime: &mut GameRuntime, target: EntityId) {
-    let player = runtime
-        .session()
-        .entity(PLAYER)
-        .unwrap()
-        .transform
-        .unwrap()
-        .translation;
-    let target = runtime
-        .session()
-        .entity(target)
-        .unwrap()
-        .transform
-        .unwrap()
-        .translation;
-    let offset_x = target.x - player.x;
-    let offset_y = target.y - player.y;
-    let offset_z = target.z - player.z;
-    let desired_yaw = normalize_degrees((-offset_x).atan2(-offset_z).to_degrees());
-    let desired_pitch = offset_y
-        .atan2((offset_x * offset_x + offset_z * offset_z).sqrt())
-        .to_degrees();
-
-    for _ in 0..40 {
-        let controller = runtime.session().player_controller(PLAYER).unwrap();
-        let yaw_difference = normalize_degrees(desired_yaw - controller.state.yaw_degrees);
-        let pitch_difference = desired_pitch - controller.state.pitch_degrees;
-        if yaw_difference.abs() < 0.01 && pitch_difference.abs() < 0.01 {
-            return;
-        }
-        runtime
-            .apply_player_action(
-                PLAYER,
-                ResolvedPlayerAction::Look {
-                    yaw_delta: (yaw_difference / controller.config.look_degrees_per_unit)
-                        .clamp(-1.0, 1.0),
-                    pitch_delta: (pitch_difference / controller.config.look_degrees_per_unit)
-                        .clamp(-1.0, 1.0),
-                },
-            )
-            .unwrap();
-    }
-    panic!("could not aim at target");
-}
-
-fn normalize_degrees(degrees: f32) -> f32 {
-    (degrees + 180.0).rem_euclid(360.0) - 180.0
 }
 
 fn assert_enemy_damage(facts: &[GameLoopFact], enemy: EntityId, damage: u32) {
