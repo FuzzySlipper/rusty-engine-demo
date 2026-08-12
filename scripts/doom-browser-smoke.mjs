@@ -1578,7 +1578,7 @@ async function proveInteractionRoute(
   }
   if (encounterExitEvidence) {
     await moveToWorldPoint(client, addr, [178, 146], traversalSamples, {
-      singleHold: true,
+      singleHold: false,
       arrivalDistance: 1.8,
       stopWhen: (candidate) =>
         candidate.enemies?.find((entry) => entry.id === owners.innerThreat[0])
