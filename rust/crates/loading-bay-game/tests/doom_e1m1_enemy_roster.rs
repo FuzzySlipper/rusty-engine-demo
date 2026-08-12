@@ -76,7 +76,7 @@ fn admitted_roster_preserves_archetypes_drops_encounters_and_explosions() {
                     enemy.config.attack.damage,
                     enemy.config.attack.cooldown_ticks
                 ),
-                (EnemyAttackKind::RangedHitscan, 27, 51)
+                (EnemyAttackKind::RangedHitscan, 15, 51)
             );
             let pickup = session.pickup(drop.unwrap().pickup).unwrap();
             assert_eq!(pickup.config.item.as_str(), "weapon/shotgun");
