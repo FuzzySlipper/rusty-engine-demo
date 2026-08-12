@@ -896,7 +896,10 @@ function resolveInteractionOwners(projectPath) {
     corridorThreats: [
       [owner("doom-shotgun-guy-14", "enemyCombat"), owner("doom-drop-shotgun-guy-14", "pickup")],
       [owner("doom-zombieman-13", "enemyCombat"), owner("doom-drop-zombieman-13", "pickup")],
-      [owner("doom-shotgun-guy-15", "enemyCombat"), owner("doom-drop-shotgun-guy-15", "pickup")],
+    ],
+    innerThreat: [
+      owner("doom-shotgun-guy-15", "enemyCombat"),
+      owner("doom-drop-shotgun-guy-15", "pickup"),
     ],
   };
 }
@@ -1573,8 +1576,20 @@ async function proveInteractionRoute(
     }
     await capture("encounter-corridor-cleared.png");
   }
+  await walk([[178, 146]]);
+  const innerThreat = encounterExitEvidence
+    ? await defeatCanonicalThreat(
+        client,
+        addr,
+        canvasBounds,
+        owners.innerThreat[0],
+        owners.innerThreat[1],
+      )
+    : null;
+  if (innerThreat !== null) {
+    await capture("encounter-inner-threat-cleared.png");
+  }
   await walk([
-    [178, 146],
     [178, 140],
     [224, 140],
     [224, 139],
@@ -1713,6 +1728,7 @@ async function proveInteractionRoute(
     exit: completed.levelExits.find((entry) => entry.id === owners.exit),
     representativeEncounter,
     corridorThreats,
+    innerThreat,
     traversalSampleCount: traversalSamples.length,
     screenshots,
   };
