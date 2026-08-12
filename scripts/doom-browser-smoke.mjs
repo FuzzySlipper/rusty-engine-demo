@@ -1135,6 +1135,8 @@ async function physicallyAimAtEnemy(
       movementX === 0 && Math.abs(pitchError) > toleranceDegrees
         ? Math.max(-40, Math.min(40, -pitchError / degreesPerPointerUnit))
         : 0;
+    const beforeMotionYaw = state.player.yawDegrees;
+    const beforeMotionPitch = state.player.pitchDegrees;
     if (encounterExitEvidence && headedOzonePlatform === "x11") {
       const moved = spawnSync(
         "python3",
@@ -1160,8 +1162,16 @@ async function physicallyAimAtEnemy(
         buttons: 0,
       });
     }
-    await delay(80);
-    state = await fetchAuthoritativeState(addr);
+    state = await waitForAuthoritativeState(
+      addr,
+      `physical pointer motion toward enemy ${enemyId}`,
+      (candidate) =>
+        candidate.player?.vitalityState !== "alive" ||
+        Math.abs(
+          normalizeDegrees(candidate.player.yawDegrees - beforeMotionYaw),
+        ) > 0.01 ||
+        Math.abs(candidate.player.pitchDegrees - beforeMotionPitch) > 0.01,
+    );
     const currentEnemy = state.enemies.find(
       (candidate) => candidate.id === enemyId,
     );
