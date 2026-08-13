@@ -1326,6 +1326,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
           "doom-sprite-scale-room",
           "doom-sprite-orbit-room",
           "doom-sprite-animation-room",
+          "doom-combat-room",
         ].includes(requestedProject)
       ) {
         throw new Error(`Unknown project ${requestedProject}`);
