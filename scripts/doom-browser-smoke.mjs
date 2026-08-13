@@ -395,20 +395,23 @@ async function proveFocusedHeldMovement(client, addr) {
   let afterRelease = await fetchAuthoritativeState(addr);
   let releaseSettled = false;
   const releaseDeadline = Date.now() + 2_000;
+  let quietSince = Date.now();
+  let quietAnchor = afterRelease.player.position;
   while (Date.now() < releaseDeadline) {
     await delay(100);
     const candidate = await fetchAuthoritativeState(addr);
-    if (
-      horizontalDistance(
-        afterRelease.player.position,
-        candidate.player.position,
-      ) <= 0.15
-    ) {
-      afterRelease = candidate;
+    const sampleDistance = horizontalDistance(
+      quietAnchor,
+      candidate.player.position,
+    );
+    afterRelease = candidate;
+    if (sampleDistance > 0.15) {
+      quietAnchor = candidate.player.position;
+      quietSince = Date.now();
+    } else if (Date.now() - quietSince >= 500) {
       releaseSettled = true;
       break;
     }
-    afterRelease = candidate;
   }
   await delay(250);
   const stopped = await fetchAuthoritativeState(addr);
