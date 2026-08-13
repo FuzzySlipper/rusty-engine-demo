@@ -392,8 +392,24 @@ async function proveFocusedHeldMovement(client, addr) {
   } finally {
     await dispatchKey(client, "keyUp", "KeyW");
   }
-  await delay(250);
-  const afterRelease = await fetchAuthoritativeState(addr);
+  let afterRelease = await fetchAuthoritativeState(addr);
+  let releaseSettled = false;
+  const releaseDeadline = Date.now() + 2_000;
+  while (Date.now() < releaseDeadline) {
+    await delay(100);
+    const candidate = await fetchAuthoritativeState(addr);
+    if (
+      horizontalDistance(
+        afterRelease.player.position,
+        candidate.player.position,
+      ) <= 0.15
+    ) {
+      afterRelease = candidate;
+      releaseSettled = true;
+      break;
+    }
+    afterRelease = candidate;
+  }
   await delay(250);
   const stopped = await fetchAuthoritativeState(addr);
   const heldDistance = horizontalDistance(
@@ -404,9 +420,13 @@ async function proveFocusedHeldMovement(client, addr) {
     afterRelease.player.position,
     stopped.player.position,
   );
-  if (heldDistance < requiredHeldDistance || stoppedDistance > 0.15) {
+  if (
+    heldDistance < requiredHeldDistance ||
+    !releaseSettled ||
+    stoppedDistance > 0.15
+  ) {
     throw new Error(
-      `single keydown did not sustain then release movement: ${JSON.stringify({ inputSurface, heldDistance, stoppedDistance, before: beforeHold.player.position, during: duringHold.player.position, afterRelease: afterRelease.player.position, stopped: stopped.player.position })}`,
+      `single keydown did not sustain then release movement: ${JSON.stringify({ inputSurface, heldDistance, releaseSettled, stoppedDistance, before: beforeHold.player.position, during: duringHold.player.position, afterRelease: afterRelease.player.position, stopped: stopped.player.position })}`,
     );
   }
   return { heldDistance, stoppedDistance };
