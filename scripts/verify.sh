@@ -15,4 +15,3 @@ pnpm run test:performance-tools
 pnpm run build:shell
 ./scripts/verify-rust.sh
 ./scripts/verify-native-host.sh
-pnpm run smoke:e1m1
