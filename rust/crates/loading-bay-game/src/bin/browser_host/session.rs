@@ -24,8 +24,8 @@ use super::state::{
     browser_static_revision,
 };
 use super::{
-    drain_game_loop_feedback, BrowserFeedbackProjection, BrowserRuntime, SharedBrowserRuntime,
-    ACTOR,
+    drain_game_loop_feedback, BrowserFeedbackProjection, BrowserRuntime, DrainedGameLoopFeedback,
+    SharedBrowserRuntime, ACTOR,
 };
 
 const PROTOCOL_VERSION: u16 = 2;
@@ -589,7 +589,10 @@ fn process_command(
                 })
             }
             BrowserGameCommand::SetEnemyAwareness { enabled } => {
-                if host.project.project_id != "doom-combat-room" {
+                if !matches!(
+                    host.project.project_id.as_str(),
+                    "doom-combat-room" | "doom-fx-room"
+                ) {
                     Err(InputCommandRejection::InvalidInput)
                 } else {
                     host.runtime.submit_edge_command(GameLoopEdgeCommand {
@@ -865,7 +868,11 @@ fn send_latest_update(
         context.force_full = true;
         context.metrics.dropped_fact_count = dropped_facts;
     }
-    let (mut fact_projection, mut feedback) = drain_game_loop_feedback(&mut host.runtime);
+    let DrainedGameLoopFeedback {
+        facts: mut fact_projection,
+        mut feedback,
+        presentation_facts,
+    } = drain_game_loop_feedback(&mut host.runtime);
     let session_facts = host.drain_session_facts();
     feedback.extend_session_facts(&session_facts, ACTOR);
     fact_projection.extend(session_facts);
@@ -894,7 +901,7 @@ fn send_latest_update(
     let gameplay_frame = context
         .gameplay_projector
         .as_mut()
-        .map(|projector| projector.project(host.runtime.runtime()))
+        .map(|projector| projector.project_with_facts(host.runtime.runtime(), &presentation_facts))
         .transpose()
         .expect("admitted gameplay projection")
         .unwrap_or_else(|| {

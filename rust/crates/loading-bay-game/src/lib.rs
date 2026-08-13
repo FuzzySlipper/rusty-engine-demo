@@ -50,9 +50,10 @@ pub use application_content_projection::{
     GameplayApplicationProjector, ProjectedApplicationContent,
 };
 pub use combat::{
-    CombatFact, CombatMissReason, CombatReceipt, CombatRejectionReason, EnemyComponent, EnemyState,
-    EnemyView, ResolvedAttackAction, WeaponConfig, WeaponState, WeaponView, MAX_WEAPON_AMMO,
-    MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_RANGE,
+    CombatFact, CombatImpactKind, CombatMissReason, CombatReceipt, CombatRejectionReason,
+    EnemyComponent, EnemyState, EnemyView, ResolvedAttackAction, WeaponConfig, WeaponState,
+    WeaponView, MAX_WEAPON_AMMO, MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE,
+    MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_RANGE,
 };
 pub use content::{
     decode_project_content, AdmittedProject, ProjectContentError, PROJECT_CONTENT_SCHEMA_VERSION,

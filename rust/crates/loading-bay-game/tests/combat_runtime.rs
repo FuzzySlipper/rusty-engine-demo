@@ -1,5 +1,5 @@
 use loading_bay_game::{
-    decode_game_snapshot, encode_game_snapshot, CombatFact, CombatMissReason,
+    decode_game_snapshot, encode_game_snapshot, CombatFact, CombatImpactKind, CombatMissReason,
     CombatRejectionReason, DoorState, EncounterState, EnemyState, GameEntityDefinitionError,
     GameEvent, GameRuntime, ItemDefinitionId, ProjectContentError, ResolvedAttackAction,
     RuntimeError, VitalityFact,
@@ -23,6 +23,14 @@ fn aimed_attack_hits_live_target_and_applies_typed_damage() {
     assert!(receipt.facts.iter().any(|fact| matches!(
         fact,
         CombatFact::AttackHit { target, .. } if *target == ENEMY
+    )));
+    assert!(receipt.facts.iter().any(|fact| matches!(
+        fact,
+        CombatFact::ImpactResolved {
+            target: Some(target),
+            kind: CombatImpactKind::Blood,
+            ..
+        } if *target == ENEMY
     )));
     assert!(receipt.facts.iter().any(|fact| matches!(
         fact,
@@ -63,6 +71,14 @@ fn canonical_voxel_geometry_occludes_a_target_behind_it() {
         fact,
         CombatFact::AttackMissed {
             reason: CombatMissReason::WorldBlocked,
+            ..
+        }
+    )));
+    assert!(receipt.facts.iter().any(|fact| matches!(
+        fact,
+        CombatFact::ImpactResolved {
+            target: None,
+            kind: CombatImpactKind::BulletPuff,
             ..
         }
     )));

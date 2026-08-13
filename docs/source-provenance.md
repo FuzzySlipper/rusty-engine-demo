@@ -709,6 +709,32 @@ No test-only gameplay owner or E1M1 traversal is present. Run it with
 `pnpm run serve:combat-room -- --host HOST --port PORT`; the matching
 `.den-serve.combat-room.json` is the explicit Den playtest manifest.
 
+`content/projects/doom-fx-room.project.json` is the constrained live combat-FX
+room for task 6930. It does not modify or embed E1M1. The room supplies hidden
+presentation templates for canonical `BLUD`, `PUFF`, and `BAL1` atlas regions
+while its visible lanes use the ordinary Rust-owned Zombieman hitscan and Imp
+projectile behavior. A separate solid target wall provides a bounded world-hit
+surface for bullet puffs. The player starts behind a visible collision-backed
+cover wall with walk-around openings on both sides, so browser startup cannot
+expose the player to either live lane before controls are available. The
+generator reads the checked-in sprite manifest,
+preserves its patch-post transparency, source pivots, atlas dimensions, and
+28:1 actor presentation ratio, and expands source timing at cumulative 35 Hz
+boundaries into 60 Hz gameplay ticks: blood `C/B/A` for 8 tics each, puff
+`A/B/C/D` for 4 tics each, repeating fireball flight `A/B` for 4 tics each,
+and one-shot fireball impact `C/D/E` for 6 tics each.
+
+Rust publishes typed impact and projectile outcomes. The application projector
+turns those outcomes into bounded transient sprites, backs blood and puff away
+from the collision point by the source 10- and 4-Doom-unit offsets, advances
+their manifest-authored clips, and destroys them after completion; those
+sprites are never authored gameplay entities or persisted snapshot state.
+First-person muzzle patches such as `PISF` and `SHTF` remain intentionally out
+of this room because they are screen-space weapon presentation owned by task
+6931. Run the room with
+`pnpm run serve:fx-room -- --host HOST --port PORT`; the matching
+`.den-serve.doom-fx-room.json` selects the same project for Den playtesting.
+
 ### Derived voxel asset (single sparse-run volume, gameplay truth)
 
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with

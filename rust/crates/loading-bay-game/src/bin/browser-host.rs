@@ -156,6 +156,7 @@ impl BrowserRuntime {
                 | "doom-sprite-orbit-room"
                 | "doom-sprite-animation-room"
                 | "doom-combat-room"
+                | "doom-fx-room"
         );
         let mut gameplay_projector = uses_doom_application_content
             .then(|| GameplayApplicationProjector::new(authored.document()));
@@ -1201,13 +1202,19 @@ fn resolve_project_asset_source(project_file: &Path, source: &Path) -> Option<Pa
     None
 }
 
-fn drain_game_loop_feedback(
-    game_loop: &mut LoadingBayGameLoop,
-) -> (Vec<(String, Option<u64>)>, BrowserFeedbackProjection) {
+struct DrainedGameLoopFeedback {
+    facts: Vec<(String, Option<u64>)>,
+    feedback: BrowserFeedbackProjection,
+    presentation_facts: Vec<GameLoopFact>,
+}
+
+fn drain_game_loop_feedback(game_loop: &mut LoadingBayGameLoop) -> DrainedGameLoopFeedback {
     let mut facts = Vec::new();
     let mut feedback = BrowserFeedbackProjection::default();
+    let mut presentation_facts = Vec::new();
     let presentation_tick = game_loop.runtime().tick().raw();
     for fact in game_loop.drain_pending_facts() {
+        presentation_facts.push(fact.clone());
         match fact {
             GameLoopFact::PlayerControl(fact) => {
                 facts.push((player_fact_name(&fact).to_owned(), None));
@@ -1392,7 +1399,11 @@ fn drain_game_loop_feedback(
             }
         }
     }
-    (facts, feedback)
+    DrainedGameLoopFeedback {
+        facts,
+        feedback,
+        presentation_facts,
+    }
 }
 
 fn emits_locomotion_feedback(tick: u64) -> bool {
@@ -1454,6 +1465,10 @@ fn combat_fact_name(fact: &CombatFact) -> &'static str {
             reason: CombatMissReason::WorldBlocked,
             ..
         } => "CombatMissedWorldBlocked",
+        CombatFact::ImpactResolved { kind, .. } => match kind {
+            loading_bay_game::CombatImpactKind::Blood => "CombatBloodImpactResolved",
+            loading_bay_game::CombatImpactKind::BulletPuff => "CombatBulletPuffResolved",
+        },
         CombatFact::Vitality(loading_bay_game::VitalityFact::DamageApplied { .. }) => {
             "DamageApplied"
         }

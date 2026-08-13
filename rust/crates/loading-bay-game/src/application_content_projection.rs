@@ -16,10 +16,12 @@ use rusty_engine::render_projection::EntityRenderProjector;
 use rusty_engine::renderer_webview_host::RendererResource;
 
 use crate::{
-    project_stored_voxel_volume, EnemyCombatPosture, EnemyState, GameRuntime,
-    StoredDirectionalSpriteView, StoredProject, StoredVisualAnimationLoopMode,
-    StoredVisualPresentation, StoredVisualState,
+    project_stored_voxel_volume, CombatFact, CombatImpactKind, EnemyCombatFact, EnemyCombatPosture,
+    EnemyState, GameLoopFact, GameRuntime, StoredDirectionalSpriteView, StoredProject,
+    StoredVisualAnimationLoopMode, StoredVisualPresentation, StoredVisualState,
 };
+
+const MAX_DOOM_TRANSIENT_EFFECTS: usize = 256;
 
 #[derive(Debug, Clone)]
 pub struct ProjectedApplicationContent {
@@ -28,9 +30,26 @@ pub struct ProjectedApplicationContent {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct HitEffectProjection {
+struct TransientEffectProjection {
     started_at: u64,
     created: bool,
+    clip: DoomEffectClipKind,
+    position: [f32; 3],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum DoomEffectClipKind {
+    Blood,
+    BulletPuff,
+    ProjectileFlight,
+    ProjectileImpact,
+}
+
+#[derive(Debug, Clone)]
+struct DoomEffectClip {
+    asset: String,
+    frames: Vec<u32>,
+    source_origin_offsets: Vec<[f32; 2]>,
 }
 
 #[derive(Debug, Clone)]
@@ -70,7 +89,10 @@ pub struct GameplayApplicationProjector {
     visual_offsets: BTreeMap<u64, [f32; 2]>,
     visual_state_started_at: BTreeMap<u64, u64>,
     health: BTreeMap<u64, u32>,
-    hit_effects: BTreeMap<u64, HitEffectProjection>,
+    effect_clips: BTreeMap<DoomEffectClipKind, DoomEffectClip>,
+    transient_effects: BTreeMap<u64, TransientEffectProjection>,
+    active_projectiles: BTreeMap<u64, u64>,
+    next_effect_identity: u64,
     doom_sprite_inspection: Vec<DoomSpriteInspectionEntry>,
     inspection_visibility: BTreeMap<u64, bool>,
 }
@@ -143,6 +165,12 @@ impl GameplayApplicationProjector {
             })
             .collect::<Vec<_>>();
         doom_sprite_inspection.sort_by_key(|(sequence_order, _)| *sequence_order);
+        let effect_clips = project
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(doom_effect_clip)
+            .collect();
         Self {
             entities: EntityRenderProjector::new(),
             assets,
@@ -154,7 +182,10 @@ impl GameplayApplicationProjector {
             visual_offsets: BTreeMap::new(),
             visual_state_started_at: BTreeMap::new(),
             health: BTreeMap::new(),
-            hit_effects: BTreeMap::new(),
+            effect_clips,
+            transient_effects: BTreeMap::new(),
+            active_projectiles: BTreeMap::new(),
+            next_effect_identity: 1,
             doom_sprite_inspection: doom_sprite_inspection
                 .into_iter()
                 .map(|(_, entry)| entry)
@@ -222,6 +253,90 @@ impl GameplayApplicationProjector {
         None
     }
 
+    pub fn project_with_facts(
+        &mut self,
+        runtime: &GameRuntime,
+        facts: &[GameLoopFact],
+    ) -> anyhow::Result<RenderFrameDiff> {
+        self.observe_combat_outcomes(runtime, facts);
+        self.project(runtime)
+    }
+
+    fn observe_combat_outcomes(&mut self, runtime: &GameRuntime, facts: &[GameLoopFact]) {
+        for fact in facts {
+            match fact {
+                GameLoopFact::Combat(CombatFact::ImpactResolved {
+                    kind,
+                    position,
+                    direction,
+                    ..
+                }) => {
+                    let clip = match kind {
+                        CombatImpactKind::Blood => DoomEffectClipKind::Blood,
+                        CombatImpactKind::BulletPuff => DoomEffectClipKind::BulletPuff,
+                    };
+                    let doom_backoff = match kind {
+                        CombatImpactKind::Blood => 10.0 / 16.0,
+                        CombatImpactKind::BulletPuff => 4.0 / 16.0,
+                    };
+                    self.spawn_transient_effect(
+                        clip,
+                        (*position - *direction * doom_backoff).to_array(),
+                        runtime.tick().raw(),
+                    );
+                }
+                GameLoopFact::Combat(CombatFact::ProjectileImpacted {
+                    entity, position, ..
+                }) => {
+                    self.active_projectiles.remove(&entity.raw());
+                    self.spawn_transient_effect(
+                        DoomEffectClipKind::ProjectileImpact,
+                        position.to_array(),
+                        runtime.tick().raw(),
+                    );
+                }
+                GameLoopFact::Combat(CombatFact::ProjectileExpired { entity, .. }) => {
+                    self.active_projectiles.remove(&entity.raw());
+                }
+                GameLoopFact::EnemyCombat(EnemyCombatFact::ProjectileSpawned {
+                    projectile,
+                    ..
+                })
+                | GameLoopFact::Combat(CombatFact::ProjectileSpawned {
+                    entity: projectile, ..
+                }) => {
+                    self.active_projectiles
+                        .insert(projectile.raw(), runtime.tick().raw());
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn spawn_transient_effect(
+        &mut self,
+        clip: DoomEffectClipKind,
+        position: [f32; 3],
+        started_at: u64,
+    ) {
+        if !self.effect_clips.contains_key(&clip)
+            || self.transient_effects.len() >= MAX_DOOM_TRANSIENT_EFFECTS
+        {
+            return;
+        }
+        let identity = self.next_effect_identity;
+        self.next_effect_identity = self.next_effect_identity.saturating_add(1);
+        self.transient_effects.insert(
+            identity,
+            TransientEffectProjection {
+                started_at,
+                created: false,
+                clip,
+                position,
+            },
+        );
+    }
+
     pub fn project(&mut self, runtime: &GameRuntime) -> anyhow::Result<RenderFrameDiff> {
         let projected = self
             .entities
@@ -239,19 +354,6 @@ impl GameplayApplicationProjector {
                 .and_then(|combat| combat.state.last_known_target_position);
             if combat.is_some() {
                 if let Some(health) = runtime.session().health(id) {
-                    if self
-                        .health
-                        .get(entity)
-                        .is_some_and(|previous| *previous > health.current)
-                    {
-                        self.hit_effects
-                            .entry(*entity)
-                            .and_modify(|effect| effect.started_at = runtime.tick().raw())
-                            .or_insert(HitEffectProjection {
-                                started_at: runtime.tick().raw(),
-                                created: false,
-                            });
-                    }
                     self.health.insert(*entity, health.current);
                 }
             }
@@ -522,66 +624,117 @@ impl GameplayApplicationProjector {
                 _ => {}
             }
         }
+        if let Some(clip) = self.effect_clips.get(&DoomEffectClipKind::ProjectileFlight) {
+            let mut completed_projectiles = Vec::new();
+            for (entity, started_at) in &self.active_projectiles {
+                let entity_id = rusty_engine::core_ids::EntityId::new(*entity);
+                let Ok(view) = runtime.session().entity(entity_id) else {
+                    completed_projectiles.push(*entity);
+                    continue;
+                };
+                if view
+                    .renderable
+                    .as_ref()
+                    .is_none_or(|renderable| renderable.asset != clip.asset)
+                {
+                    continue;
+                }
+                let Some(handle) = self.entities.handle_of(entity_id) else {
+                    continue;
+                };
+                let elapsed = runtime.tick().raw().saturating_sub(*started_at) as usize;
+                operations.push(RenderDiff::UpdateSprite {
+                    handle,
+                    frame: Some(clip.frames[elapsed % clip.frames.len()]),
+                    tint: None,
+                    render_order: None,
+                    visible: None,
+                });
+            }
+            for entity in completed_projectiles {
+                self.active_projectiles.remove(&entity);
+            }
+        }
+
         let mut completed_effects = Vec::new();
-        for (entity, effect) in &mut self.hit_effects {
+        for (identity, effect) in &mut self.transient_effects {
             let elapsed = runtime.tick().raw().saturating_sub(effect.started_at);
-            let handle = hit_effect_handle(*entity)?;
-            let entity_id = rusty_engine::core_ids::EntityId::new(*entity);
+            let handle = transient_effect_handle(*identity)?;
+            let clip = self
+                .effect_clips
+                .get(&effect.clip)
+                .expect("transient effect is admitted only with its clip");
+            let frame_index = elapsed as usize;
+            let offset = clip
+                .source_origin_offsets
+                .get(frame_index)
+                .copied()
+                .unwrap_or([0.0, 0.0]);
+            let translation = [
+                effect.position[0] + offset[0],
+                effect.position[1] + offset[1],
+                effect.position[2],
+            ];
             if !effect.created {
-                let translation = runtime
-                    .session()
-                    .enemy(entity_id)
-                    .and_then(|enemy| enemy.entity_view.transform)
-                    .map(|transform| transform.translation.to_array())
-                    .unwrap_or([0.0; 3]);
                 operations.push(RenderDiff::CreateSprite {
                     handle,
                     parent: None,
                     sprite: SpriteInstanceDescriptor {
-                        asset: "sprite/doom-blood".to_owned(),
-                        frame: 0,
+                        asset: clip.asset.clone(),
+                        frame: clip.frames[0],
                         pivot: [0.5, 0.5],
-                        size: [2.0, 2.0],
+                        size: [1.0, 1.0],
                         size_mode: SpriteSizeMode::World,
                         billboard: BillboardMode::Spherical,
                         tint: [1.0; 4],
                         render_order: 1,
                         depth: SpriteDepthPolicy::Default,
                         shading: SpriteShading::Unlit,
+                        material: Default::default(),
                         visible: true,
                         transform: Transform {
                             translation,
                             ..Transform::IDENTITY
                         },
                         attachment: SpriteAttachment {
-                            source_entity: Some(*entity),
+                            source_entity: None,
                             source_scene_node: None,
-                            attachment_point: Some("doom-hit".to_owned()),
+                            attachment_point: Some("doom-combat-fx".to_owned()),
                         },
                         metadata: RenderMetadata {
-                            source_entity: Some(*entity),
+                            source_entity: None,
                             source_scene_node: None,
-                            tags: vec!["doom-hit-effect".to_owned()],
-                            label: Some("Doom blood hit effect".to_owned()),
+                            tags: vec!["doom-combat-fx".to_owned()],
+                            label: Some(format!("Doom {:?} effect", effect.clip)),
                         },
                     },
                 });
                 effect.created = true;
-            } else if elapsed < 12 {
+            } else if frame_index < clip.frames.len() {
                 operations.push(RenderDiff::UpdateSprite {
                     handle,
-                    frame: Some(((elapsed / 4) as u32).min(2)),
+                    frame: Some(clip.frames[frame_index]),
                     tint: None,
                     render_order: None,
                     visible: None,
                 });
+                operations.push(RenderDiff::Update {
+                    handle,
+                    transform: Some(Transform {
+                        translation,
+                        ..Transform::IDENTITY
+                    }),
+                    material: None,
+                    visible: None,
+                    metadata: None,
+                });
             } else {
                 operations.push(RenderDiff::Destroy { handle });
-                completed_effects.push(*entity);
+                completed_effects.push(*identity);
             }
         }
-        for entity in completed_effects {
-            self.hit_effects.remove(&entity);
+        for identity in completed_effects {
+            self.transient_effects.remove(&identity);
         }
         RenderFrameDiff::try_from_ops(operations)
             .map_err(|error| anyhow::anyhow!("build live gameplay frame: {error:?}"))
@@ -646,13 +799,56 @@ fn horizontal_forward(rotation: rusty_engine::entity_state::Quat) -> [f32; 2] {
     }
 }
 
-fn hit_effect_handle(entity: u64) -> anyhow::Result<RenderHandle> {
+fn doom_effect_clip(
+    entity: &crate::StoredEntityDefinition,
+) -> Option<(DoomEffectClipKind, DoomEffectClip)> {
+    let kind = match entity.name.as_str() {
+        "doom-fx-template-blood" => DoomEffectClipKind::Blood,
+        "doom-fx-template-bullet-puff" => DoomEffectClipKind::BulletPuff,
+        "doom-fx-template-projectile-flight" => DoomEffectClipKind::ProjectileFlight,
+        "doom-fx-template-projectile-impact" => DoomEffectClipKind::ProjectileImpact,
+        _ => return None,
+    };
+    let renderable = entity.renderable.as_ref()?;
+    let binding = renderable.visual_binding.as_ref()?;
+    let presentation = binding
+        .states
+        .iter()
+        .find(|state| state.state == StoredVisualState::Default)?;
+    let StoredVisualPresentation::SpriteFrames {
+        frames,
+        ticks_per_frame,
+        directional_views,
+        ..
+    } = &presentation.presentation
+    else {
+        return None;
+    };
+    if frames.is_empty() || *ticks_per_frame != 1 {
+        return None;
+    }
+    let source_origin_offsets = directional_views
+        .first()
+        .filter(|view| view.source_origin_offsets.len() == frames.len())
+        .map(|view| view.source_origin_offsets.clone())
+        .unwrap_or_else(|| vec![[0.0, 0.0]; frames.len()]);
+    Some((
+        kind,
+        DoomEffectClip {
+            asset: renderable.asset.clone(),
+            frames: frames.clone(),
+            source_origin_offsets,
+        },
+    ))
+}
+
+fn transient_effect_handle(identity: u64) -> anyhow::Result<RenderHandle> {
     const LOCAL_BITS: u32 = 40;
     const LOCAL_MASK: u64 = (1_u64 << LOCAL_BITS) - 1;
-    if entity > LOCAL_MASK {
-        anyhow::bail!("Doom hit-effect entity identity exceeds the presentation namespace");
+    if identity > LOCAL_MASK {
+        anyhow::bail!("Doom transient-effect identity exceeds the presentation namespace");
     }
-    Ok(RenderHandle::new((7_u64 << LOCAL_BITS) | entity))
+    Ok(RenderHandle::new((7_u64 << LOCAL_BITS) | identity))
 }
 
 /// Build the complete immutable E1M1 frame/resource closure consumed by an
@@ -670,6 +866,7 @@ pub fn project_doom_e1m1_application_content(
             | "doom-sprite-orbit-room"
             | "doom-sprite-animation-room"
             | "doom-combat-room"
+            | "doom-fx-room"
     ) {
         (
             RenderFrameDiff::try_from_ops(Vec::new())
@@ -930,8 +1127,9 @@ mod tests {
     use rusty_engine::render_model::RenderDiff;
 
     use crate::{
-        decode_project_document, project_stored_voxel_objects, DamageCommand, DamageService,
-        DamageSource, GameRuntime, StoredDirectionalSpriteView,
+        decode_project_document, project_stored_voxel_objects, CombatFact, CombatImpactKind,
+        DamageCommand, DamageService, DamageSource, GameLoopFact, GameRuntime,
+        StoredDirectionalSpriteView,
     };
 
     use super::{
@@ -1140,17 +1338,6 @@ mod tests {
             .ops
             .iter()
             .any(|operation| matches!(operation, RenderDiff::UpdateSprite { frame: Some(_), .. })));
-        assert!(hit.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::CreateSprite { sprite, .. }
-                if sprite.asset == "sprite/doom-blood" && sprite.frame == 0
-        )));
-        let repeated = projector.project(&runtime).unwrap();
-        assert!(!repeated.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::CreateSprite { sprite, .. }
-                if sprite.asset == "sprite/doom-blood"
-        )));
 
         DamageService::apply(
             runtime.session_mut(),
@@ -1182,5 +1369,82 @@ mod tests {
                 ..
             }
         )));
+    }
+
+    #[test]
+    fn combat_outcomes_spawn_source_timed_effect_clips_once_and_clean_them_up() {
+        use rusty_engine::core_ids::EntityId;
+
+        let source = include_str!("../../../../content/projects/doom-fx-room.project.json");
+        let project = decode_project_document(source).unwrap().project;
+        let mut runtime = GameRuntime::from_stored_project(source).unwrap();
+        let mut projector = GameplayApplicationProjector::new(&project);
+        projector.project(&runtime).unwrap();
+
+        let facts = vec![
+            GameLoopFact::Combat(CombatFact::ImpactResolved {
+                attacker: EntityId::new(1),
+                target: Some(EntityId::new(2)),
+                kind: CombatImpactKind::Blood,
+                position: Vec3::new(4.0, 1.0, 0.0),
+                direction: Vec3::new(1.0, 0.0, 0.0),
+            }),
+            GameLoopFact::Combat(CombatFact::ImpactResolved {
+                attacker: EntityId::new(1),
+                target: None,
+                kind: CombatImpactKind::BulletPuff,
+                position: Vec3::new(4.0, 1.0, 1.0),
+                direction: Vec3::new(1.0, 0.0, 0.0),
+            }),
+            GameLoopFact::Combat(CombatFact::ProjectileImpacted {
+                entity: EntityId::new(90),
+                owner: EntityId::new(3),
+                target: Some(EntityId::new(1)),
+                position: Vec3::new(0.0, 1.0, 3.0),
+                damage: 3,
+            }),
+        ];
+        let spawned = projector.project_with_facts(&runtime, &facts).unwrap();
+        let created = spawned
+            .ops
+            .iter()
+            .filter_map(|operation| match operation {
+                RenderDiff::CreateSprite { sprite, .. }
+                    if sprite.metadata.tags == ["doom-combat-fx"] =>
+                {
+                    Some((
+                        sprite.asset.as_str(),
+                        sprite.frame,
+                        sprite.transform.translation,
+                    ))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(created.len(), 3);
+        assert!(created
+            .iter()
+            .any(|(asset, frame, position)| *asset == "sprite/doom-blood"
+                && *frame == 2
+                && position[0] < 4.0));
+        assert!(created
+            .iter()
+            .any(|(asset, frame, position)| *asset == "sprite/doom-puff"
+                && *frame == 0
+                && position[0] < 4.0));
+        assert!(created
+            .iter()
+            .any(|(asset, frame, _)| *asset == "sprite/doom-imp-fireball" && *frame == 2));
+
+        runtime.advance_by(50).unwrap();
+        let cleaned = projector.project(&runtime).unwrap();
+        assert_eq!(
+            cleaned
+                .ops
+                .iter()
+                .filter(|operation| matches!(operation, RenderDiff::Destroy { .. }))
+                .count(),
+            3
+        );
     }
 }

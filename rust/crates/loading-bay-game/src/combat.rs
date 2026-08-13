@@ -89,6 +89,12 @@ pub enum CombatMissReason {
     WorldBlocked,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CombatImpactKind {
+    Blood,
+    BulletPuff,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum CombatFact {
     Inventory(InventoryFact),
@@ -119,6 +125,13 @@ pub enum CombatFact {
         ray_index: u8,
         direction: Vec3,
         reason: CombatMissReason,
+    },
+    ImpactResolved {
+        attacker: EntityId,
+        target: Option<EntityId>,
+        kind: CombatImpactKind,
+        position: Vec3,
+        direction: Vec3,
     },
     Vitality(VitalityFact),
     ExplosiveProp(ExplosivePropFact),
@@ -391,9 +404,9 @@ impl CombatService {
                 )
                 .map_err(RuntimeError::SpatialOcclusion)?
                 .map(|hit| hit.distance() as f32);
-            match target {
-                Some(hit)
-                    if world_blocker.is_none_or(|distance| hit.distance + 0.000_1 < distance) =>
+            match (target, world_blocker) {
+                (Some(hit), blocker)
+                    if blocker.is_none_or(|distance| hit.distance + 0.000_1 < distance) =>
                 {
                     facts.push(CombatFact::AttackHit {
                         attacker,
@@ -402,6 +415,13 @@ impl CombatService {
                         direction,
                         distance: hit.distance,
                         damage: ray_damage,
+                    });
+                    facts.push(CombatFact::ImpactResolved {
+                        attacker,
+                        target: Some(hit.entity),
+                        kind: CombatImpactKind::Blood,
+                        position: origin + direction * hit.distance,
+                        direction,
                     });
                     let damage = DamageService::apply(
                         &mut candidate_session,
@@ -440,18 +460,28 @@ impl CombatService {
                         events.push(event);
                     }
                 }
-                Some(_) => facts.push(CombatFact::AttackMissed {
-                    attacker,
-                    ray_index,
-                    direction,
-                    reason: CombatMissReason::WorldBlocked,
-                }),
-                None => facts.push(CombatFact::AttackMissed {
+                (_, Some(distance)) => {
+                    facts.push(CombatFact::AttackMissed {
+                        attacker,
+                        ray_index,
+                        direction,
+                        reason: CombatMissReason::WorldBlocked,
+                    });
+                    facts.push(CombatFact::ImpactResolved {
+                        attacker,
+                        target: None,
+                        kind: CombatImpactKind::BulletPuff,
+                        position: origin + direction * distance,
+                        direction,
+                    });
+                }
+                (None, None) => facts.push(CombatFact::AttackMissed {
                     attacker,
                     ray_index,
                     direction,
                     reason: CombatMissReason::NoTarget,
                 }),
+                (Some(_), None) => unreachable!("unblocked target is handled above"),
             }
         }
 

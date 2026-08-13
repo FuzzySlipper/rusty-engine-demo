@@ -183,6 +183,19 @@ const DOOM_COMBAT_ROOM_PRESENTATION: GamePresentation = {
   showsAccessKeys: false,
 };
 
+const DOOM_FX_ROOM_PRESENTATION: GamePresentation = {
+  missionLabel: "DOOM COMBAT FX ROOM",
+  levelCaption: "BLOOD · BULLET PUFF · FIREBALL IMPACT",
+  restartLabel: "Restart FX room",
+  completionTitle: "FX INSPECTION COMPLETE",
+  completionFallback: "The bounded effect lanes remain active.",
+  panelLabel: "Doom Combat FX Room",
+  documentTitle: "Rusty Engine — Doom Combat FX Room",
+  viewportLabel:
+    "Live Doom combat FX room. Use ordinary combat controls to inspect the separated blood, bullet-puff, and fireball lanes.",
+  showsAccessKeys: false,
+};
+
 declare global {
   interface Window {
     __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
@@ -251,7 +264,7 @@ declare global {
         }
         @if (
           snapshot().projectId === "doom-sprite-animation-room" &&
-          snapshot().doomSpriteInspection;
+            snapshot().doomSpriteInspection;
           as inspection
         ) {
           <aside
@@ -259,23 +272,19 @@ declare global {
             aria-label="Doom sprite animation inspection readout"
           >
             <strong>{{ inspection.label }}</strong
-            ><strong
-              >{{ inspection.family }} / {{ inspection.clip }}</strong
+            ><strong>{{ inspection.family }} / {{ inspection.clip }}</strong>
+            <span
+              >Fixture {{ inspection.sequenceIndex + 1 }} /
+              {{ inspection.sequenceCount }} · {{ inspection.loopMode }}</span
             >
             <span
-              >Fixture {{ inspection.sequenceIndex + 1 }} / {{
-                inspection.sequenceCount
-              }} · {{ inspection.loopMode }}</span
+              >Authoritative frame {{ inspection.frame }} · sample
+              {{ inspection.frameIndex + 1 }} /
+              {{ inspection.frameCount }}</span
             >
             <span
-              >Authoritative frame {{ inspection.frame }} · sample {{
-                inspection.frameIndex + 1
-              }} / {{ inspection.frameCount }}</span
-            >
-            <span
-              >Clip tick {{ inspection.elapsedTicks + 1 }} / {{
-                inspection.displayTicks
-              }}</span
+              >Clip tick {{ inspection.elapsedTicks + 1 }} /
+              {{ inspection.displayTicks }}</span
             >
           </aside>
         }
@@ -286,7 +295,8 @@ declare global {
           >
             <strong>ONE LIVE ZOMBIEMAN</strong
             ><strong
-              >AWARENESS: {{
+              >AWARENESS:
+              {{
                 snapshot().enemyAwarenessEnabled ? "ENABLED" : "DISABLED"
               }}</strong
             >
@@ -294,6 +304,24 @@ declare global {
             <span
               >Disable awareness, then circle the enemy to inspect directional
               animation</span
+            >
+          </aside>
+        }
+        @if (snapshot().projectId === "doom-fx-room") {
+          <aside
+            class="calibration-legend"
+            aria-label="Doom combat effect room controls"
+          >
+            <strong>THREE LIVE FX LANES</strong
+            ><strong
+              >AWARENESS:
+              {{
+                snapshot().enemyAwarenessEnabled ? "ENABLED" : "DISABLED"
+              }}</strong
+            >
+            <span>Blood target · bullet-puff wall · Imp fireball</span>
+            <span
+              >O toggles enemy awareness · ordinary fire resolves effects</span
             >
           </aside>
         }
@@ -1012,7 +1040,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       event.code === "KeyO" &&
       !event.repeat &&
       this.panel() === "game" &&
-      this.snapshot().projectId === "doom-combat-room"
+      ["doom-combat-room", "doom-fx-room"].includes(this.snapshot().projectId)
     ) {
       event.preventDefault();
       const enabled = !this.snapshot().enemyAwarenessEnabled;
@@ -1357,6 +1385,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
           "doom-sprite-orbit-room",
           "doom-sprite-animation-room",
           "doom-combat-room",
+          "doom-fx-room",
         ].includes(requestedProject)
       ) {
         throw new Error(`Unknown project ${requestedProject}`);
@@ -1558,6 +1587,9 @@ function gamePresentationFor(projectId: string): GamePresentation {
   }
   if (projectId === "doom-combat-room") {
     return DOOM_COMBAT_ROOM_PRESENTATION;
+  }
+  if (projectId === "doom-fx-room") {
+    return DOOM_FX_ROOM_PRESENTATION;
   }
   return projectId === "doom-e1m1"
     ? DOOM_E1M1_PRESENTATION

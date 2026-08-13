@@ -250,6 +250,7 @@ impl BrowserFeedbackProjection {
                 CombatFact::Inventory(_)
                 | CombatFact::Vitality(_)
                 | CombatFact::ExplosiveProp(_)
+                | CombatFact::ImpactResolved { .. }
                 | CombatFact::ProjectileSpawned { .. }
                 | CombatFact::ProjectileImpacted { .. }
                 | CombatFact::ProjectileExpired { .. } => {}
