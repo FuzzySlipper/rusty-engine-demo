@@ -579,27 +579,17 @@ impl GameplayApplicationProjector {
                                     "directional sprite entity {id} has no live player camera"
                                 )
                             })?;
-                        let to_camera_x = camera.translation.x - world.translation.x;
-                        let to_camera_z = camera.translation.z - world.translation.z;
-                        let camera_distance = to_camera_x.hypot(to_camera_z);
-                        let (right_x, right_z) = if camera_distance <= f32::EPSILON {
-                            (1.0, 0.0)
-                        } else {
-                            (
-                                to_camera_z / camera_distance,
-                                -to_camera_x / camera_distance,
-                            )
-                        };
                         let horizontal_offset =
                             source_origin_offset[0] * if mirrored { -1.0 } else { 1.0 };
+                        let translation = camera_relative_sprite_translation(
+                            composed.translation.to_array(),
+                            camera,
+                            [horizontal_offset, source_origin_offset[1]],
+                        );
                         operations.push(RenderDiff::Update {
                             handle,
                             transform: Some(Transform {
-                                translation: [
-                                    composed.translation.x + right_x * horizontal_offset,
-                                    composed.translation.y + source_origin_offset[1],
-                                    composed.translation.z + right_z * horizontal_offset,
-                                ],
+                                translation,
                                 rotation: [
                                     composed.rotation.x,
                                     composed.rotation.y,
@@ -625,6 +615,7 @@ impl GameplayApplicationProjector {
             }
         }
         if let Some(clip) = self.effect_clips.get(&DoomEffectClipKind::ProjectileFlight) {
+            let camera = live_camera_transform(self.camera_entity, runtime)?;
             let mut completed_projectiles = Vec::new();
             for (entity, started_at) in &self.active_projectiles {
                 let entity_id = rusty_engine::core_ids::EntityId::new(*entity);
@@ -643,12 +634,42 @@ impl GameplayApplicationProjector {
                     continue;
                 };
                 let elapsed = runtime.tick().raw().saturating_sub(*started_at) as usize;
+                let frame_index = elapsed % clip.frames.len();
                 operations.push(RenderDiff::UpdateSprite {
                     handle,
-                    frame: Some(clip.frames[elapsed % clip.frames.len()]),
+                    frame: Some(clip.frames[frame_index]),
                     tint: None,
                     render_order: None,
                     visible: None,
+                });
+                let world = view
+                    .world_transform
+                    .unwrap_or(rusty_engine::entity_state::EntityTransform::IDENTITY);
+                let composed = world.compose(
+                    view.renderable
+                        .map(|renderable| renderable.local_transform)
+                        .unwrap_or(rusty_engine::entity_state::EntityTransform::IDENTITY),
+                );
+                let translation = camera_relative_sprite_translation(
+                    composed.translation.to_array(),
+                    camera,
+                    clip.source_origin_offsets[frame_index],
+                );
+                operations.push(RenderDiff::Update {
+                    handle,
+                    transform: Some(Transform {
+                        translation,
+                        rotation: [
+                            composed.rotation.x,
+                            composed.rotation.y,
+                            composed.rotation.z,
+                            composed.rotation.w,
+                        ],
+                        scale: [composed.scale.x, composed.scale.y, composed.scale.z],
+                    }),
+                    material: None,
+                    visible: None,
+                    metadata: None,
                 });
             }
             for entity in completed_projectiles {
@@ -657,6 +678,7 @@ impl GameplayApplicationProjector {
         }
 
         let mut completed_effects = Vec::new();
+        let camera = live_camera_transform(self.camera_entity, runtime)?;
         for (identity, effect) in &mut self.transient_effects {
             let elapsed = runtime.tick().raw().saturating_sub(effect.started_at);
             let handle = transient_effect_handle(*identity)?;
@@ -670,11 +692,7 @@ impl GameplayApplicationProjector {
                 .get(frame_index)
                 .copied()
                 .unwrap_or([0.0, 0.0]);
-            let translation = [
-                effect.position[0] + offset[0],
-                effect.position[1] + offset[1],
-                effect.position[2],
-            ];
+            let translation = camera_relative_sprite_translation(effect.position, camera, offset);
             if !effect.created {
                 operations.push(RenderDiff::CreateSprite {
                     handle,
@@ -797,6 +815,44 @@ fn horizontal_forward(rotation: rusty_engine::entity_state::Quat) -> [f32; 2] {
     } else {
         [x / length, z / length]
     }
+}
+
+fn live_camera_transform(
+    camera_entity: Option<u64>,
+    runtime: &GameRuntime,
+) -> anyhow::Result<rusty_engine::entity_state::EntityTransform> {
+    camera_entity
+        .and_then(|entity| {
+            runtime
+                .session()
+                .entity(rusty_engine::core_ids::EntityId::new(entity))
+                .ok()?
+                .world_transform
+        })
+        .ok_or_else(|| anyhow::anyhow!("Doom sprite projection has no live player camera"))
+}
+
+fn camera_relative_sprite_translation(
+    anchor: [f32; 3],
+    camera: rusty_engine::entity_state::EntityTransform,
+    source_origin_offset: [f32; 2],
+) -> [f32; 3] {
+    let to_camera_x = camera.translation.x - anchor[0];
+    let to_camera_z = camera.translation.z - anchor[2];
+    let camera_distance = to_camera_x.hypot(to_camera_z);
+    let (right_x, right_z) = if camera_distance <= f32::EPSILON {
+        (1.0, 0.0)
+    } else {
+        (
+            to_camera_z / camera_distance,
+            -to_camera_x / camera_distance,
+        )
+    };
+    [
+        anchor[0] + right_x * source_origin_offset[0],
+        anchor[1] + source_origin_offset[1],
+        anchor[2] + right_z * source_origin_offset[0],
+    ]
 }
 
 fn doom_effect_clip(
@@ -1133,8 +1189,8 @@ mod tests {
     };
 
     use super::{
-        project_doom_e1m1_application_content, select_directional_sprite_view,
-        GameplayApplicationProjector,
+        camera_relative_sprite_translation, project_doom_e1m1_application_content,
+        select_directional_sprite_view, GameplayApplicationProjector,
     };
 
     #[test]
@@ -1252,6 +1308,26 @@ mod tests {
                 ..
             } if *operation_handle == handle
         )));
+    }
+
+    #[test]
+    fn combat_fx_source_origins_follow_billboard_camera_right_across_frames() {
+        let anchor = [0.0, 1.0, 0.0];
+        let front_camera = EntityTransform::at(Vec3::new(0.0, 0.0, 8.0));
+        let side_camera = EntityTransform::at(Vec3::new(8.0, 0.0, 0.0));
+
+        assert_eq!(
+            camera_relative_sprite_translation(anchor, front_camera, [0.5, 0.25]),
+            [0.5, 1.25, 0.0]
+        );
+        assert_eq!(
+            camera_relative_sprite_translation(anchor, side_camera, [0.5, 0.25]),
+            [0.0, 1.25, -0.5]
+        );
+        assert_eq!(
+            camera_relative_sprite_translation(anchor, side_camera, [-0.25, 0.5]),
+            [0.0, 1.5, 0.25]
+        );
     }
 
     #[test]
