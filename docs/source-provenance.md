@@ -713,8 +713,9 @@ No test-only gameplay owner or E1M1 traversal is present. Run it with
 room for task 6930. It does not modify or embed E1M1. The room supplies hidden
 presentation templates for canonical `BLUD`, `PUFF`, and `BAL1` atlas regions
 while its visible lanes use the ordinary Rust-owned Zombieman hitscan and Imp
-projectile behavior. A separate solid target wall provides a bounded world-hit
-surface for bullet puffs. The browser host starts this room with enemy awareness
+projectile behavior. Separate bounded static floor and target-wall entities
+provide collision without rebuilding a dense synthetic voxel field for each
+moving projectile; the wall remains the world-hit surface for bullet puffs. The browser host starts this room with enemy awareness
 disabled, and `O` enables the ordinary production combat owners after the
 player is ready. Its firing lanes remain unobstructed so this constrained room
 does not invoke unrelated pursuit navigation. The generator reads the checked-in sprite manifest,

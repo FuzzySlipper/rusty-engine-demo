@@ -320,36 +320,20 @@ const cloneLoadingAsset = (id) => {
 const column = cloneLoadingAsset("mesh/column");
 const floorStrip = cloneLoadingAsset("mesh/floor-strip");
 
-const floorXMin = -80;
-const floorXMax = 80;
-const floorZMin = -64;
-const floorZMax = 64;
-const targetWallXMin = -8;
-const targetWallXMax = 8;
-const targetWallYMin = 1;
-const targetWallYMax = 16;
-const targetWallZ = 20;
 const materialVoxels = [];
-for (let x = floorXMin; x <= floorXMax; x += 1) {
-  for (let z = floorZMin; z <= floorZMax; z += 1) {
-    materialVoxels.push({ address: [x, 0, z], materialSlot: 1 });
-  }
-}
-for (let x = targetWallXMin; x <= targetWallXMax; x += 1) {
-  for (let y = targetWallYMin; y <= targetWallYMax; y += 1) {
-    materialVoxels.push({ address: [x, y, targetWallZ], materialSlot: 1 });
-  }
-}
 
 const targetWall = {
   id: 20,
   name: "doom-fx-target-wall",
-  translation: [0, 0.25, 5],
+  translation: [0, 2.25, 5],
+  bounds: { min: [-2.125, -2, -0.125], max: [2.125, 2, 0.125] },
+  collision: { enabled: true, staticCollider: true },
+  kinematic: { halfExtents: [2.125, 2, 0.125], velocity: [0, 0, 0] },
   renderable: {
     asset: column.id,
     visible: true,
     localTransform: {
-      translation: [-0.1875, 0, -0.1875],
+      translation: [-0.1875, -2, -0.1875],
       rotation: [0, 0, 0, 1],
       scale: [8, 4, 1],
     },
@@ -358,12 +342,15 @@ const targetWall = {
 const floor = {
   id: 21,
   name: "doom-fx-room-floor",
-  translation: [-20, 0, -16],
+  translation: [0, 0, 0],
+  bounds: { min: [-20, -0.25, -16], max: [20, 0.25, 16] },
+  collision: { enabled: true, staticCollider: true },
+  kinematic: { halfExtents: [20, 0.25, 16], velocity: [0, 0, 0] },
   renderable: {
     asset: floorStrip.id,
     visible: true,
     localTransform: {
-      translation: [0, 0, 0],
+      translation: [-20, 0, -16],
       rotation: [0, 0, 0, 1],
       scale: [20, 16, 1],
     },

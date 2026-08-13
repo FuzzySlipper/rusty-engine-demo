@@ -41,21 +41,10 @@ assert.equal(scene.voxelEnvironment.kind, "material");
 assert.equal(scene.voxelEnvironment.voxelSize, 0.25);
 assert.equal(scene.voxelEnvironment.chunkSize, 16);
 assert.equal(scene.voxelEnvironment.gameplayProxy, true);
-assert.ok(
-  scene.voxelEnvironment.materialVoxels.length <= 30000,
-  "FX room voxel environment must remain bounded",
-);
-assert.ok(
-  scene.voxelEnvironment.materialVoxels.every(
-    (voxel) =>
-      voxel.address[0] >= -80 &&
-      voxel.address[0] <= 80 &&
-      voxel.address[1] >= 0 &&
-      voxel.address[1] <= 16 &&
-      voxel.address[2] >= -64 &&
-      voxel.address[2] <= 64,
-  ),
-  "FX room voxels must remain inside the authored bounds",
+assert.deepEqual(
+  scene.voxelEnvironment.materialVoxels,
+  [],
+  "FX room collision must stay on its two bounded static entities",
 );
 
 const entities = scene.entities;
@@ -125,22 +114,28 @@ assert.ok(
 
 const targetWall = entities.filter((entity) => entity.name === "doom-fx-target-wall");
 assert.equal(targetWall.length, 1, "FX room must contain one target-wall lane");
-assert.deepEqual(targetWall[0].translation, [0, 0.25, 5]);
+assert.deepEqual(targetWall[0].translation, [0, 2.25, 5]);
 assert.equal(targetWall[0].renderable.visible, true);
-const targetWallVoxels = scene.voxelEnvironment.materialVoxels.filter(
-  (voxel) => voxel.address[2] === 20 && voxel.address[1] > 0,
-);
-assert.equal(targetWallVoxels.length, 17 * 16, "target wall lane must be exact and bounded");
-assert.ok(
-  targetWallVoxels.every(
-    (voxel) => voxel.address[0] >= -8 && voxel.address[0] <= 8,
-  ),
-  "target wall lane must stay between the live combat lanes",
-);
+assert.deepEqual(targetWall[0].bounds, {
+  min: [-2.125, -2, -0.125],
+  max: [2.125, 2, 0.125],
+});
+assert.deepEqual(targetWall[0].collision, {
+  enabled: true,
+  staticCollider: true,
+});
 assert.ok(
   bloodEnemy.translation[0] < -8 && projectileEnemy.translation[0] > 8,
   "blood and projectile lanes must flank the target lane",
 );
+
+const floor = entities.find((entity) => entity.name === "doom-fx-room-floor");
+assert.ok(floor, "FX room must contain one bounded floor");
+assert.deepEqual(floor.bounds, {
+  min: [-20, -0.25, -16],
+  max: [20, 0.25, 16],
+});
+assert.deepEqual(floor.collision, { enabled: true, staticCollider: true });
 
 assert.ok(
   !entities.some((entity) => entity.name === "doom-fx-spawn-cover"),
