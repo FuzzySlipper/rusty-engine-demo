@@ -490,6 +490,18 @@ pub struct StoredEntityDefinition {
     pub secret_region: Option<StoredSecretRegion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub level_exit: Option<StoredLevelExit>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub doom_sprite_inspection: Option<StoredDoomSpriteInspection>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct StoredDoomSpriteInspection {
+    pub family: String,
+    pub clip: String,
+    pub label: String,
+    pub sequence_order: u32,
+    pub display_ticks: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -2221,6 +2233,7 @@ fn validate_scene_entities(
     assets: &BTreeMap<String, usize>,
 ) -> Result<(), StoredProjectError> {
     let mut entities = BTreeMap::new();
+    let mut doom_sprite_inspection_orders = BTreeSet::new();
     for (entity_index, entity) in scene.entities.iter().enumerate() {
         let root = format!("scenes[{scene_index}].entities[{entity_index}]");
         if entity.name.trim().is_empty() {
@@ -2248,6 +2261,38 @@ fn validate_scene_entities(
             ));
         }
         validate_entity_transform(entity, &root)?;
+        if let Some(inspection) = &entity.doom_sprite_inspection {
+            let valid_label = !inspection.family.trim().is_empty()
+                && !inspection.clip.trim().is_empty()
+                && !inspection.label.trim().is_empty();
+            let has_default_sprite_binding = entity
+                .renderable
+                .as_ref()
+                .and_then(|renderable| renderable.visual_binding.as_ref())
+                .is_some_and(|binding| {
+                    binding.states.iter().any(|state| {
+                        state.state == StoredVisualState::Default
+                            && matches!(
+                                &state.presentation,
+                                StoredVisualPresentation::SpriteFrames { .. }
+                            )
+                    })
+                });
+            if !valid_label || inspection.display_ticks == 0 || !has_default_sprite_binding {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.doomSpriteInspection"),
+                    "Doom sprite inspection requires non-empty labels, positive display ticks, and a default sprite-frame binding",
+                ));
+            }
+            if !doom_sprite_inspection_orders.insert(inspection.sequence_order) {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.doomSpriteInspection.sequenceOrder"),
+                    "Doom sprite inspection sequence order must be unique",
+                ));
+            }
+        }
         if let Some(door) = &entity.door {
             if door.motion_duration_ticks == 0 {
                 return Err(failure(
@@ -2666,6 +2711,18 @@ fn validate_scene_entities(
                 &format!("{root}.lift.targetPlatform"),
             )?;
         }
+    }
+
+    if doom_sprite_inspection_orders
+        .iter()
+        .copied()
+        .ne(0..doom_sprite_inspection_orders.len() as u32)
+    {
+        return Err(failure(
+            diagnostic_code::INVALID_COMPONENT,
+            format!("scenes[{scene_index}].entities"),
+            "Doom sprite inspection sequence order must be contiguous from zero",
+        ));
     }
 
     for (entity_index, entity) in scene.entities.iter().enumerate() {

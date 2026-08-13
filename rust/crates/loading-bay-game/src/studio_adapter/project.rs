@@ -887,6 +887,7 @@ pub fn create_scene_object(
                     weapon: None,
                     secret_region: None,
                     level_exit: None,
+                    doom_sprite_inspection: None,
                 });
             Ok(ProjectMutationReceipt::SceneObjectCreated {
                 entity_id: object.entity_id,

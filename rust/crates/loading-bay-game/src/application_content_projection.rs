@@ -34,6 +34,31 @@ struct HitEffectProjection {
 }
 
 #[derive(Debug, Clone)]
+struct DoomSpriteInspectionEntry {
+    entity: u64,
+    family: String,
+    clip: String,
+    label: String,
+    display_ticks: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DoomSpriteInspectionReadout {
+    pub entity: u64,
+    pub family: String,
+    pub clip: String,
+    pub label: String,
+    pub sequence_index: usize,
+    pub sequence_count: usize,
+    pub elapsed_ticks: u64,
+    pub display_ticks: u64,
+    pub frame: u32,
+    pub frame_index: usize,
+    pub frame_count: usize,
+    pub loop_mode: StoredVisualAnimationLoopMode,
+}
+
+#[derive(Debug, Clone)]
 pub struct GameplayApplicationProjector {
     entities: EntityRenderProjector,
     assets: BTreeMap<String, ResolvedRenderAsset>,
@@ -46,6 +71,8 @@ pub struct GameplayApplicationProjector {
     visual_state_started_at: BTreeMap<u64, u64>,
     health: BTreeMap<u64, u32>,
     hit_effects: BTreeMap<u64, HitEffectProjection>,
+    doom_sprite_inspection: Vec<DoomSpriteInspectionEntry>,
+    inspection_visibility: BTreeMap<u64, bool>,
 }
 
 impl GameplayApplicationProjector {
@@ -97,6 +124,25 @@ impl GameplayApplicationProjector {
             .flat_map(|scene| &scene.entities)
             .find(|entity| entity.player_controller.is_some())
             .map(|entity| entity.id);
+        let mut doom_sprite_inspection = project
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                let inspection = entity.doom_sprite_inspection.as_ref()?;
+                Some((
+                    inspection.sequence_order,
+                    DoomSpriteInspectionEntry {
+                        entity: entity.id,
+                        family: inspection.family.clone(),
+                        clip: inspection.clip.clone(),
+                        label: inspection.label.clone(),
+                        display_ticks: inspection.display_ticks,
+                    },
+                ))
+            })
+            .collect::<Vec<_>>();
+        doom_sprite_inspection.sort_by_key(|(sequence_order, _)| *sequence_order);
         Self {
             entities: EntityRenderProjector::new(),
             assets,
@@ -109,7 +155,71 @@ impl GameplayApplicationProjector {
             visual_state_started_at: BTreeMap::new(),
             health: BTreeMap::new(),
             hit_effects: BTreeMap::new(),
+            doom_sprite_inspection: doom_sprite_inspection
+                .into_iter()
+                .map(|(_, entry)| entry)
+                .collect(),
+            inspection_visibility: BTreeMap::new(),
         }
+    }
+
+    pub fn doom_sprite_inspection_readout(
+        &self,
+        runtime: &GameRuntime,
+    ) -> Option<DoomSpriteInspectionReadout> {
+        let (sequence_index, entry, elapsed_ticks) =
+            self.doom_sprite_inspection_selection(runtime.tick().raw())?;
+        let states = self.bindings.get(&entry.entity)?;
+        let StoredVisualPresentation::SpriteFrames {
+            frames,
+            ticks_per_frame,
+            loop_mode,
+            ..
+        } = states.get(&StoredVisualState::Default)?
+        else {
+            return None;
+        };
+        let animation_tick = elapsed_ticks / ticks_per_frame;
+        let frame_index = match loop_mode {
+            StoredVisualAnimationLoopMode::Repeat => animation_tick as usize % frames.len(),
+            StoredVisualAnimationLoopMode::Once => (animation_tick as usize).min(frames.len() - 1),
+        };
+        Some(DoomSpriteInspectionReadout {
+            entity: entry.entity,
+            family: entry.family.clone(),
+            clip: entry.clip.clone(),
+            label: entry.label.clone(),
+            sequence_index,
+            sequence_count: self.doom_sprite_inspection.len(),
+            elapsed_ticks,
+            display_ticks: entry.display_ticks,
+            frame: frames[frame_index],
+            frame_index,
+            frame_count: frames.len(),
+            loop_mode: *loop_mode,
+        })
+    }
+
+    fn doom_sprite_inspection_selection(
+        &self,
+        tick: u64,
+    ) -> Option<(usize, &DoomSpriteInspectionEntry, u64)> {
+        let cycle_ticks = self
+            .doom_sprite_inspection
+            .iter()
+            .map(|entry| entry.display_ticks)
+            .sum::<u64>();
+        if cycle_ticks == 0 {
+            return None;
+        }
+        let mut cursor = tick % cycle_ticks;
+        for (index, entry) in self.doom_sprite_inspection.iter().enumerate() {
+            if cursor < entry.display_ticks {
+                return Some((index, entry, cursor));
+            }
+            cursor -= entry.display_ticks;
+        }
+        None
     }
 
     pub fn project(&mut self, runtime: &GameRuntime) -> anyhow::Result<RenderFrameDiff> {
@@ -118,6 +228,9 @@ impl GameplayApplicationProjector {
             .project(runtime.session().entities(), &self.assets)
             .map_err(|error| anyhow::anyhow!("project live gameplay entities: {error:?}"))?;
         let mut operations = projected.frame.ops;
+        let inspection_selection = self
+            .doom_sprite_inspection_selection(runtime.tick().raw())
+            .map(|(_, entry, elapsed)| (entry.entity, elapsed));
         for (entity, states) in &self.bindings {
             let id = rusty_engine::core_ids::EntityId::new(*entity);
             let combat = runtime.session().enemy_combat(id);
@@ -188,6 +301,30 @@ impl GameplayApplicationProjector {
             let Some(handle) = self.entities.handle_of(id) else {
                 continue;
             };
+            let inspection_elapsed = if self
+                .doom_sprite_inspection
+                .iter()
+                .any(|entry| entry.entity == *entity)
+            {
+                let active =
+                    inspection_selection.is_some_and(|(active_entity, _)| active_entity == *entity);
+                if self.inspection_visibility.get(entity) != Some(&active) {
+                    operations.push(RenderDiff::UpdateSprite {
+                        handle,
+                        frame: None,
+                        tint: None,
+                        render_order: None,
+                        visible: Some(active),
+                    });
+                    self.inspection_visibility.insert(*entity, active);
+                }
+                if !active {
+                    continue;
+                }
+                inspection_selection.map(|(_, elapsed)| elapsed)
+            } else {
+                None
+            };
             match presentation {
                 StoredVisualPresentation::Animation {
                     clip,
@@ -226,7 +363,9 @@ impl GameplayApplicationProjector {
                         .get(entity)
                         .copied()
                         .unwrap_or(runtime.tick().raw());
-                    let elapsed = runtime.tick().raw().saturating_sub(started_at) / ticks_per_frame;
+                    let elapsed = inspection_elapsed
+                        .unwrap_or_else(|| runtime.tick().raw().saturating_sub(started_at))
+                        / ticks_per_frame;
                     let index = match loop_mode {
                         StoredVisualAnimationLoopMode::Repeat => elapsed as usize % frames.len(),
                         StoredVisualAnimationLoopMode::Once => {
@@ -510,7 +649,7 @@ pub fn project_doom_e1m1_application_content(
 ) -> anyhow::Result<ProjectedApplicationContent> {
     let (volume_frame, mut resources) = if matches!(
         project.project_id.as_str(),
-        "doom-sprite-scale-room" | "doom-sprite-orbit-room"
+        "doom-sprite-scale-room" | "doom-sprite-orbit-room" | "doom-sprite-animation-room"
     ) {
         (
             RenderFrameDiff::try_from_ops(Vec::new())

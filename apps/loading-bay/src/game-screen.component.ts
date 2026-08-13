@@ -67,6 +67,7 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
   headingDegrees: 0,
   hostSessionId: "",
   projectId: "",
+  doomSpriteInspection: null,
   interactionPrompt: null,
   interactionTarget: null,
   inventoryCapacity: 0,
@@ -155,6 +156,19 @@ const DOOM_SPRITE_ORBIT_PRESENTATION: GamePresentation = {
   showsAccessKeys: false,
 };
 
+const DOOM_SPRITE_ANIMATION_PRESENTATION: GamePresentation = {
+  missionLabel: "DOOM SPRITE ANIMATION ROOM",
+  levelCaption: "CANONICAL CLIP PLAYBACK",
+  restartLabel: "Restart animation sequence",
+  completionTitle: "ANIMATION INSPECTION COMPLETE",
+  completionFallback: "The canonical sequence remains active.",
+  panelLabel: "Sprite Animation Room",
+  documentTitle: "Rusty Engine — Doom Sprite Animation Room",
+  viewportLabel:
+    "Live Doom sprite animation inspection room with an authored Rust-timed clip sequence.",
+  showsAccessKeys: false,
+};
+
 declare global {
   interface Window {
     __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
@@ -218,6 +232,36 @@ declare global {
             <span>Walk the ring: front · diagonal · side · rear</span>
             <span
               >WASD move · mouse look · numbered markers orient the orbit</span
+            >
+          </aside>
+        }
+        @if (
+          snapshot().projectId === "doom-sprite-animation-room" &&
+          snapshot().doomSpriteInspection;
+          as inspection
+        ) {
+          <aside
+            class="calibration-legend"
+            aria-label="Doom sprite animation inspection readout"
+          >
+            <strong>{{ inspection.label }}</strong
+            ><strong
+              >{{ inspection.family }} / {{ inspection.clip }}</strong
+            >
+            <span
+              >Fixture {{ inspection.sequenceIndex + 1 }} / {{
+                inspection.sequenceCount
+              }} · {{ inspection.loopMode }}</span
+            >
+            <span
+              >Authoritative frame {{ inspection.frame }} · sample {{
+                inspection.frameIndex + 1
+              }} / {{ inspection.frameCount }}</span
+            >
+            <span
+              >Clip tick {{ inspection.elapsedTicks + 1 }} / {{
+                inspection.displayTicks
+              }}</span
             >
           </aside>
         }
@@ -1268,6 +1312,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
           "doom-e1m1",
           "doom-sprite-scale-room",
           "doom-sprite-orbit-room",
+          "doom-sprite-animation-room",
         ].includes(requestedProject)
       ) {
         throw new Error(`Unknown project ${requestedProject}`);
@@ -1463,6 +1508,9 @@ function gamePresentationFor(projectId: string): GamePresentation {
   }
   if (projectId === "doom-sprite-orbit-room") {
     return DOOM_SPRITE_ORBIT_PRESENTATION;
+  }
+  if (projectId === "doom-sprite-animation-room") {
+    return DOOM_SPRITE_ANIMATION_PRESENTATION;
   }
   return projectId === "doom-e1m1"
     ? DOOM_E1M1_PRESENTATION

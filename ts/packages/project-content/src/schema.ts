@@ -407,6 +407,15 @@ export interface EntityDefinition {
   readonly weapon?: WeaponDefinition;
   readonly secretRegion?: SecretRegionDefinition;
   readonly levelExit?: LevelExitDefinition;
+  readonly doomSpriteInspection?: DoomSpriteInspectionDefinition;
+}
+
+export interface DoomSpriteInspectionDefinition {
+  readonly family: string;
+  readonly clip: string;
+  readonly label: string;
+  readonly sequenceOrder: number;
+  readonly displayTicks: number;
 }
 
 export type LightDefinition =

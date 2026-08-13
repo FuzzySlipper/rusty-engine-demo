@@ -840,6 +840,7 @@ fn voxel_object_owner(
         weapon: None,
         secret_region: None,
         level_exit: None,
+        doom_sprite_inspection: None,
     }
 }
 

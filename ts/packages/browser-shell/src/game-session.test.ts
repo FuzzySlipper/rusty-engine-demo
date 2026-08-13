@@ -128,6 +128,7 @@ const dynamic = {
   interaction: null,
   enemies: [],
   presentation: { animationStates: [], cues: [] },
+  doomSpriteInspection: null,
   lastEvents: [],
 } as const;
 

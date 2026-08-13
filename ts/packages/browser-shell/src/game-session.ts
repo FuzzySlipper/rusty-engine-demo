@@ -1646,8 +1646,28 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     Array.isArray(value.enemies) &&
     value.enemies.every(isRuntimeEnemyState) &&
     isRecord(value.presentation) &&
+    (value.doomSpriteInspection === null ||
+      isRuntimeDoomSpriteInspectionState(value.doomSpriteInspection)) &&
     Array.isArray(value.lastEvents) &&
     value.lastEvents.every((event) => typeof event === "string")
+  );
+}
+
+function isRuntimeDoomSpriteInspectionState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.entity) &&
+    typeof value.family === "string" &&
+    typeof value.clip === "string" &&
+    typeof value.label === "string" &&
+    isFiniteNumber(value.sequenceIndex) &&
+    isFiniteNumber(value.sequenceCount) &&
+    isFiniteNumber(value.elapsedTicks) &&
+    isFiniteNumber(value.displayTicks) &&
+    isFiniteNumber(value.frame) &&
+    isFiniteNumber(value.frameIndex) &&
+    isFiniteNumber(value.frameCount) &&
+    (value.loopMode === "once" || value.loopMode === "repeat")
   );
 }
 

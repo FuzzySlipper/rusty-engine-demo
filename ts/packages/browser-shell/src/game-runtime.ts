@@ -8,6 +8,7 @@ import { resolvePointerLook } from "./pointer-look.js";
 import type {
   RuntimeApplicationContent,
   RuntimeBrowserState,
+  RuntimeDoomSpriteInspectionState,
   RuntimeSaveSlotId,
   RuntimeSaveSlotSummary,
 } from "./projection.js";
@@ -63,6 +64,7 @@ export interface LoadingBayPresentationSnapshot {
   readonly headingDegrees: number;
   readonly hostSessionId: string;
   readonly projectId: string;
+  readonly doomSpriteInspection: RuntimeDoomSpriteInspectionState | null;
   readonly interactionPrompt: string | null;
   readonly interactionTarget: number | null;
   readonly inventoryCapacity: number;
@@ -320,6 +322,7 @@ export async function mountLoadingBayGame(
       headingDegrees: normalizeDegrees(state.player.yawDegrees),
       hostSessionId: state.hostSessionId,
       projectId: state.projectId,
+      doomSpriteInspection: state.doomSpriteInspection,
       interactionPrompt: state.interaction?.prompt ?? null,
       interactionTarget: state.interaction?.target ?? null,
       inventoryCapacity: state.inventory?.capacitySlots ?? 0,

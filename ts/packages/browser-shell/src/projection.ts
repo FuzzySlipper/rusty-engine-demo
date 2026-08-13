@@ -478,6 +478,21 @@ export interface RuntimePresentationState {
   readonly cues: readonly RuntimeFeedbackCue[];
 }
 
+export interface RuntimeDoomSpriteInspectionState {
+  readonly entity: number;
+  readonly family: string;
+  readonly clip: string;
+  readonly label: string;
+  readonly sequenceIndex: number;
+  readonly sequenceCount: number;
+  readonly elapsedTicks: number;
+  readonly displayTicks: number;
+  readonly frame: number;
+  readonly frameIndex: number;
+  readonly frameCount: number;
+  readonly loopMode: "once" | "repeat";
+}
+
 export type RuntimeSaveSlotId = "checkpoint" | "slot1" | "slot2" | "slot3";
 
 export type RuntimeSaveSlotCompatibility =
@@ -559,6 +574,7 @@ export interface RuntimeBrowserState {
   readonly applicationContent?: RuntimeApplicationContent | null;
   readonly enemies: readonly RuntimeEnemyState[];
   readonly presentation: RuntimePresentationState;
+  readonly doomSpriteInspection: RuntimeDoomSpriteInspectionState | null;
   readonly lastEvents: readonly string[];
   readonly voxelEditReceipt?: RuntimeVoxelEditReceipt;
 }

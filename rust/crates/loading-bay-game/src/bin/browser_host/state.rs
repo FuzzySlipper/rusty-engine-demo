@@ -5,7 +5,7 @@ use loading_bay_game::{
     ExtractionBeaconState, FloorActionState, GameRuntime, ItemKind, LevelExitState, LiftState,
     NavigationState, PickupCollectionCause, PickupState, PlayerInputSessionView, RequiredKeyPolicy,
     SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretRegionState, StoredLight,
-    StoredVisualBinding, VitalityState,
+    StoredVisualAnimationLoopMode, StoredVisualBinding, VitalityState,
 };
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
@@ -327,7 +327,25 @@ pub(super) struct BrowserDynamicState {
     interaction: Option<BrowserInteractionState>,
     enemies: Vec<BrowserEnemyState>,
     presentation: BrowserPresentation,
+    doom_sprite_inspection: Option<BrowserDoomSpriteInspectionState>,
     pub(super) last_events: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserDoomSpriteInspectionState {
+    entity: u64,
+    family: String,
+    clip: String,
+    label: String,
+    sequence_index: usize,
+    sequence_count: usize,
+    elapsed_ticks: u64,
+    display_ticks: u64,
+    frame: u32,
+    frame_index: usize,
+    frame_count: usize,
+    loop_mode: &'static str,
 }
 
 #[derive(Debug, Serialize)]
@@ -906,6 +924,27 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
         interaction,
         enemies,
         presentation: project_presentation(runtime, ACTOR, &enemy_ids, EXIT, BEACON, feedback),
+        doom_sprite_inspection: host.gameplay_projector.as_ref().and_then(|projector| {
+            projector
+                .doom_sprite_inspection_readout(runtime)
+                .map(|readout| BrowserDoomSpriteInspectionState {
+                    entity: readout.entity,
+                    family: readout.family,
+                    clip: readout.clip,
+                    label: readout.label,
+                    sequence_index: readout.sequence_index,
+                    sequence_count: readout.sequence_count,
+                    elapsed_ticks: readout.elapsed_ticks,
+                    display_ticks: readout.display_ticks,
+                    frame: readout.frame,
+                    frame_index: readout.frame_index,
+                    frame_count: readout.frame_count,
+                    loop_mode: match readout.loop_mode {
+                        StoredVisualAnimationLoopMode::Once => "once",
+                        StoredVisualAnimationLoopMode::Repeat => "repeat",
+                    },
+                })
+        }),
         last_events,
     }
 }

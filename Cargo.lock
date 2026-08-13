@@ -771,6 +771,9 @@ version = "0.1.0"
 [[package]]
 name = "core-space"
 version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "core-time"

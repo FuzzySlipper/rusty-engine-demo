@@ -673,6 +673,23 @@ two Engine units high. The room has no E1M1 voxel asset, enemies, combat, or
 map placements; `pnpm run serve:sprite-scale-room -- --host HOST --port PORT`
 launches it through the ordinary Rust browser host and Engine renderer.
 
+`content/projects/doom-sprite-animation-room.project.json` is the constrained
+live animation clean room for task 6884. Its generator consumes the same
+manifest contract and expands Doom's cumulative 35 Hz clip timings into exact
+60 Hz presentation samples without inventing frame membership. A Rust-owned
+authored sequence makes one fixture visible at a time for POSS, SPOS, and TROO
+idle/walk/attack/pain/death, then BAL1 flight/impact and BLUD hit playback.
+One-shot fixtures retain their terminal source frame for a bounded observation
+window; repeat fixtures receive a bounded multi-cycle window. The runtime
+snapshot identifies the selected family, clip, sequence position, applied atlas
+frame, sample index, loop mode, and elapsed tick. All fixture atlases preserve
+manifest UVs, 28:1 presentation scale, and source pivots; the room contains no
+enemy AI, combat trigger, E1M1 voxel map, or manually duplicated clip list.
+Run it with `pnpm run serve:sprite-animation-room -- --host HOST --port PORT`.
+The room-specific `.den-serve.sprite-animation-room.json` manifest gives the
+Den playtest broker the same project selection without changing the default
+E1M1 serve manifest.
+
 ### Derived voxel asset (single sparse-run volume, gameplay truth)
 
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
