@@ -308,6 +308,20 @@ impl GameplayApplicationProjector {
                     self.active_projectiles
                         .insert(projectile.raw(), runtime.tick().raw());
                 }
+                GameLoopFact::EnemyCombat(EnemyCombatFact::AttackFired { enemy, .. })
+                    if self.bindings.get(&enemy.raw()).is_some_and(|states| {
+                        matches!(
+                            states.get(&StoredVisualState::Attacking),
+                            Some(StoredVisualPresentation::SpriteFrames { .. })
+                        )
+                    }) =>
+                {
+                    // Attacking is a sustained combat posture, while firing is a
+                    // repeatable edge. Restart the authored one-shot sprite clip
+                    // for every authoritative shot even when posture stays unchanged.
+                    self.visual_state_started_at
+                        .insert(enemy.raw(), runtime.tick().raw());
+                }
                 _ => {}
             }
         }
@@ -1184,8 +1198,8 @@ mod tests {
 
     use crate::{
         decode_project_document, project_stored_voxel_objects, CombatFact, CombatImpactKind,
-        DamageCommand, DamageService, DamageSource, GameLoopFact, GameRuntime,
-        StoredDirectionalSpriteView,
+        DamageCommand, DamageService, DamageSource, EnemyAttackKind, EnemyCombatFact, GameLoopFact,
+        GameRuntime, LoadingBayGameLoop, StoredDirectionalSpriteView,
     };
 
     use super::{
@@ -1445,6 +1459,69 @@ mod tests {
                 ..
             }
         )));
+    }
+
+    #[test]
+    fn every_authoritative_zombieman_shot_restarts_its_attack_sprite_clip() {
+        let source = include_str!("../../../../content/projects/doom-fx-room.project.json");
+        let project = decode_project_document(source).unwrap().project;
+        let mut game_loop = LoadingBayGameLoop::new(
+            GameRuntime::from_stored_project(source).unwrap(),
+            rusty_engine::core_ids::EntityId::new(1),
+        )
+        .unwrap();
+        game_loop.start_connection();
+        let mut projector = GameplayApplicationProjector::new(&project);
+        projector.project(game_loop.runtime()).unwrap();
+        let zombieman = rusty_engine::core_ids::EntityId::new(2);
+        let handle = projector.entities.handle_of(zombieman).unwrap();
+        let mut observed_shots = 0;
+        let mut shot_window = None;
+
+        for _ in 0..150 {
+            let receipt = game_loop.run_fixed_tick().unwrap();
+            let zombieman_fired = receipt.facts.iter().any(|fact| {
+                matches!(
+                    fact,
+                    GameLoopFact::EnemyCombat(EnemyCombatFact::AttackFired {
+                        enemy,
+                        kind: EnemyAttackKind::RangedHitscan,
+                        ..
+                    }) if *enemy == zombieman
+                )
+            });
+            let frame = projector
+                .project_with_facts(game_loop.runtime(), &receipt.facts)
+                .unwrap();
+            if zombieman_fired {
+                assert!(shot_window.is_none(), "shot windows must not overlap");
+                observed_shots += 1;
+                shot_window = Some((35_u64, std::collections::BTreeSet::new()));
+            }
+            if let Some((remaining, frames)) = &mut shot_window {
+                frames.extend(frame.ops.iter().filter_map(|operation| match operation {
+                    RenderDiff::UpdateSprite {
+                        handle: operation_handle,
+                        frame: Some(frame),
+                        ..
+                    } if *operation_handle == handle => Some(*frame),
+                    _ => None,
+                }));
+                *remaining = remaining.saturating_sub(1);
+                if *remaining == 0 {
+                    assert!(
+                        frames.len() >= 2,
+                        "shot {observed_shots} did not play a muzzle frame and return frame: {frames:?}"
+                    );
+                    shot_window = None;
+                    if observed_shots == 2 {
+                        break;
+                    }
+                }
+            }
+        }
+
+        assert_eq!(observed_shots, 2);
     }
 
     #[test]
