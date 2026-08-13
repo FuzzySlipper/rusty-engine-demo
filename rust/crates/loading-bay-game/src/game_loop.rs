@@ -97,6 +97,7 @@ pub enum GameLoopEdgeCommandKind {
     SelectWeaponSlot { slot: u8 },
     UseItem { item: String },
     SetPaused { paused: bool },
+    SetEnemyAwareness { enabled: bool },
     RestartAuthoredBaseline,
     RestartCheckpoint,
     SaveGame { slot: SaveSlotId },
@@ -383,6 +384,7 @@ pub struct LoadingBayGameLoop {
     driver_tick: u64,
     pending_facts: VecDeque<GameLoopFact>,
     dropped_fact_count: u64,
+    enemy_awareness_enabled: bool,
 }
 
 impl LoadingBayGameLoop {
@@ -413,6 +415,7 @@ impl LoadingBayGameLoop {
             driver_tick: 0,
             pending_facts: VecDeque::new(),
             dropped_fact_count: 0,
+            enemy_awareness_enabled: true,
         })
     }
 
@@ -430,6 +433,10 @@ impl LoadingBayGameLoop {
 
     pub fn input_session(&self) -> PlayerInputSessionView {
         self.input.view()
+    }
+
+    pub fn enemy_awareness_enabled(&self) -> bool {
+        self.enemy_awareness_enabled
     }
 
     pub fn start_connection(&mut self) -> PlayerInputSessionView {
@@ -664,6 +671,9 @@ impl LoadingBayGameLoop {
                     self.input.paused = *paused;
                     self.input.clear_intent();
                 }
+                GameLoopEdgeCommandKind::SetEnemyAwareness { enabled } => {
+                    self.enemy_awareness_enabled = *enabled;
+                }
                 GameLoopEdgeCommandKind::RestartAuthoredBaseline
                 | GameLoopEdgeCommandKind::RestartCheckpoint
                 | GameLoopEdgeCommandKind::SaveGame { .. }
@@ -715,11 +725,14 @@ impl LoadingBayGameLoop {
     }
 
     fn run_enemy_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
-        let activation_events = self.runtime.run_encounter_activation_phase(self.player)?;
-        facts.extend(activation_events.into_iter().map(GameLoopFact::Event));
-        let receipt = self
-            .runtime
-            .run_enemy_intent_and_motion_phase(self.player, FIXED_STEP_SECONDS)?;
+        let receipt = if self.enemy_awareness_enabled {
+            let activation_events = self.runtime.run_encounter_activation_phase(self.player)?;
+            facts.extend(activation_events.into_iter().map(GameLoopFact::Event));
+            self.runtime
+                .run_enemy_intent_and_motion_phase(self.player, FIXED_STEP_SECONDS)?
+        } else {
+            self.runtime.run_enemy_unaware_phase(FIXED_STEP_SECONDS)?
+        };
         facts.extend(receipt.facts.into_iter().map(GameLoopFact::EnemyCombat));
         facts.extend(
             receipt
@@ -732,14 +745,16 @@ impl LoadingBayGameLoop {
     }
 
     fn run_combat_phase(&mut self, facts: &mut Vec<GameLoopFact>) -> Result<(), RuntimeError> {
-        let enemy_attacks = self.runtime.run_enemy_attack_phase(self.player)?;
-        facts.extend(
-            enemy_attacks
-                .facts
-                .into_iter()
-                .map(GameLoopFact::EnemyCombat),
-        );
-        facts.extend(enemy_attacks.events.into_iter().map(GameLoopFact::Event));
+        if self.enemy_awareness_enabled {
+            let enemy_attacks = self.runtime.run_enemy_attack_phase(self.player)?;
+            facts.extend(
+                enemy_attacks
+                    .facts
+                    .into_iter()
+                    .map(GameLoopFact::EnemyCombat),
+            );
+            facts.extend(enemy_attacks.events.into_iter().map(GameLoopFact::Event));
+        }
         let projectiles = self.runtime.run_projectile_phase(FIXED_STEP_SECONDS)?;
         facts.extend(
             projectiles

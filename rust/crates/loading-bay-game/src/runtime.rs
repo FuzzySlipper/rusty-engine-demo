@@ -478,6 +478,29 @@ impl GameRuntime {
         })
     }
 
+    pub fn run_enemy_unaware_phase(
+        &mut self,
+        delta_seconds: f32,
+    ) -> Result<EnemyIntentAndMotionReceipt, RuntimeError> {
+        let scene = self
+            .collision_scene
+            .as_ref()
+            .ok_or(RuntimeError::MissingCollisionScene)?;
+        let mut candidate = self.session.clone();
+        let intent = EnemyCombatService::idle_without_player_awareness(&mut candidate);
+        let navigation = EnemyNavigationSystem::run_with_combat_goals(
+            &mut candidate,
+            scene,
+            delta_seconds,
+            &intent.navigation_goals,
+        )?;
+        self.session = candidate;
+        Ok(EnemyIntentAndMotionReceipt {
+            facts: intent.facts,
+            navigation,
+        })
+    }
+
     pub fn run_enemy_attack_phase(
         &mut self,
         player: EntityId,

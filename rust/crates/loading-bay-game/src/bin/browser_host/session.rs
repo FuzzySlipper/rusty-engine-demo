@@ -77,6 +77,9 @@ enum BrowserGameCommand {
     SetPaused {
         paused: bool,
     },
+    SetEnemyAwareness {
+        enabled: bool,
+    },
     Restart {
         mode: RestartMode,
     },
@@ -584,6 +587,17 @@ fn process_command(
                     sequence: envelope.sequence,
                     command: GameLoopEdgeCommandKind::SetPaused { paused },
                 })
+            }
+            BrowserGameCommand::SetEnemyAwareness { enabled } => {
+                if host.project.project_id != "doom-combat-room" {
+                    Err(InputCommandRejection::InvalidInput)
+                } else {
+                    host.runtime.submit_edge_command(GameLoopEdgeCommand {
+                        connection_generation: context.connection_generation,
+                        sequence: envelope.sequence,
+                        command: GameLoopEdgeCommandKind::SetEnemyAwareness { enabled },
+                    })
+                }
             }
             BrowserGameCommand::Restart {
                 mode: RestartMode::AuthoredBaseline,

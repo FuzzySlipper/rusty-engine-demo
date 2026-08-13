@@ -546,6 +546,7 @@ export interface RuntimeBrowserState {
   readonly navigationState: "following" | "arrived" | "blocked" | "unreachable";
   readonly playerMotionState: "idle" | "moved" | "blocked";
   readonly combatState: "ready" | "hit" | "missed";
+  readonly enemyAwarenessEnabled: boolean;
   readonly input: RuntimeInputSessionState;
   readonly player: RuntimePlayerState;
   readonly weapon: RuntimeWeaponState;

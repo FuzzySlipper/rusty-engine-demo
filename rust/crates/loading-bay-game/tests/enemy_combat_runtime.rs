@@ -90,6 +90,64 @@ fn ranged_enemy_alerts_then_attacks_on_authoritative_ticks_with_cooldown() {
 }
 
 #[test]
+fn debug_awareness_edge_clears_target_memory_and_suppresses_attacks_until_reenabled() {
+    let mut project = single_enemy_project(RANGED);
+    entity_mut(&mut project, RANGED)["translation"] = serde_json::json!([1.5, 1.5, 5.5]);
+    entity_mut(&mut project, RANGED)["enemyCombat"]["attack"]["damage"] = 7.into();
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();
+    let generation = game_loop.start_connection().connection_generation;
+
+    game_loop
+        .submit_edge_command(GameLoopEdgeCommand {
+            connection_generation: generation,
+            sequence: 1,
+            command: GameLoopEdgeCommandKind::SetEnemyAwareness { enabled: false },
+        })
+        .unwrap();
+    for _ in 0..4 {
+        let receipt = game_loop.run_fixed_tick().unwrap();
+        assert!(!receipt.facts.iter().any(|fact| matches!(
+            fact,
+            GameLoopFact::EnemyCombat(EnemyCombatFact::AttackFired { enemy: RANGED, .. })
+        )));
+    }
+    let unaware = game_loop.runtime().session().enemy_combat(RANGED).unwrap();
+    assert!(!game_loop.enemy_awareness_enabled());
+    assert_eq!(unaware.state.posture, EnemyCombatPosture::Sleeping);
+    assert_eq!(unaware.state.last_known_target_position, None);
+    assert_eq!(
+        game_loop
+            .runtime()
+            .session()
+            .health(PLAYER)
+            .unwrap()
+            .current,
+        100
+    );
+
+    game_loop
+        .submit_edge_command(GameLoopEdgeCommand {
+            connection_generation: generation,
+            sequence: 2,
+            command: GameLoopEdgeCommandKind::SetEnemyAwareness { enabled: true },
+        })
+        .unwrap();
+    let alert = game_loop.run_fixed_tick().unwrap();
+    assert!(game_loop.enemy_awareness_enabled());
+    assert!(alert.facts.iter().any(|fact| matches!(
+        fact,
+        GameLoopFact::EnemyCombat(EnemyCombatFact::Alerted {
+            enemy: RANGED,
+            target: PLAYER,
+            ..
+        })
+    )));
+    let attack = game_loop.run_fixed_tick().unwrap();
+    assert_enemy_damage(&attack.facts, RANGED, 7);
+}
+
+#[test]
 fn projectile_enemy_reuses_the_transient_engine_projectile_owner() {
     let mut project = single_enemy_project(RANGED);
     entity_mut(&mut project, RANGED)["translation"] = serde_json::json!([1.5, 1.5, 5.5]);

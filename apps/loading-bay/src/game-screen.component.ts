@@ -68,6 +68,7 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
   hostSessionId: "",
   projectId: "",
   doomSpriteInspection: null,
+  enemyAwarenessEnabled: true,
   interactionPrompt: null,
   interactionTarget: null,
   inventoryCapacity: 0,
@@ -275,6 +276,24 @@ declare global {
               >Clip tick {{ inspection.elapsedTicks + 1 }} / {{
                 inspection.displayTicks
               }}</span
+            >
+          </aside>
+        }
+        @if (snapshot().projectId === "doom-combat-room") {
+          <aside
+            class="calibration-legend"
+            aria-label="Doom combat room debug controls"
+          >
+            <strong>ONE LIVE ZOMBIEMAN</strong
+            ><strong
+              >AWARENESS: {{
+                snapshot().enemyAwarenessEnabled ? "ENABLED" : "DISABLED"
+              }}</strong
+            >
+            <span>O toggles enemy awareness</span>
+            <span
+              >Disable awareness, then circle the enemy to inspect directional
+              animation</span
             >
           </aside>
         }
@@ -987,6 +1006,17 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     if (event.code === "KeyI" && this.panel() === "game") {
       event.preventDefault();
       this.openInventory();
+      return;
+    }
+    if (
+      event.code === "KeyO" &&
+      !event.repeat &&
+      this.panel() === "game" &&
+      this.snapshot().projectId === "doom-combat-room"
+    ) {
+      event.preventDefault();
+      const enabled = !this.snapshot().enemyAwarenessEnabled;
+      void this.withAction((handle) => handle.setEnemyAwareness(enabled));
       return;
     }
     if (

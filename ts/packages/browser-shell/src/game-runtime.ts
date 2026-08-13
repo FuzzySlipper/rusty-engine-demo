@@ -65,6 +65,7 @@ export interface LoadingBayPresentationSnapshot {
   readonly hostSessionId: string;
   readonly projectId: string;
   readonly doomSpriteInspection: RuntimeDoomSpriteInspectionState | null;
+  readonly enemyAwarenessEnabled: boolean;
   readonly interactionPrompt: string | null;
   readonly interactionTarget: number | null;
   readonly inventoryCapacity: number;
@@ -132,6 +133,7 @@ export interface LoadingBayGameHandle {
   ) => Promise<void>;
   readonly selectWeaponSlot: (slot: number) => Promise<void>;
   readonly setPaused: (paused: boolean) => Promise<void>;
+  readonly setEnemyAwareness: (enabled: boolean) => Promise<void>;
   readonly updatePreferences: (
     preferences: LoadingBayHostPresentationPreferences,
   ) => void;
@@ -268,6 +270,9 @@ export async function mountLoadingBayGame(
     setPaused: async (paused) => {
       await session.sendEdge({ kind: "setPaused", paused });
     },
+    setEnemyAwareness: async (enabled) => {
+      await session.sendEdge({ kind: "setEnemyAwareness", enabled });
+    },
     updatePreferences: (next) => {
       preferences = next;
     },
@@ -323,6 +328,7 @@ export async function mountLoadingBayGame(
       hostSessionId: state.hostSessionId,
       projectId: state.projectId,
       doomSpriteInspection: state.doomSpriteInspection,
+      enemyAwarenessEnabled: state.enemyAwarenessEnabled,
       interactionPrompt: state.interaction?.prompt ?? null,
       interactionTarget: state.interaction?.target ?? null,
       inventoryCapacity: state.inventory?.capacitySlots ?? 0,

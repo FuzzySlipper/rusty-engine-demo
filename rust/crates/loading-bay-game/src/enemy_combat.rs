@@ -199,6 +199,42 @@ pub struct EnemyAttackPhaseReceipt {
 pub(crate) struct EnemyCombatService;
 
 impl EnemyCombatService {
+    pub(crate) fn idle_without_player_awareness(
+        session: &mut GameSession,
+    ) -> EnemyIntentPhaseReceipt {
+        let enemies: Vec<EntityId> = session.enemy_combat.keys().copied().collect();
+        let mut facts = Vec::new();
+
+        for enemy in enemies {
+            let defeated = session
+                .enemies
+                .get(&enemy)
+                .is_none_or(|enemy| enemy.state == EnemyState::Defeated);
+            let component = session
+                .enemy_combat
+                .get_mut(&enemy)
+                .expect("enemy combat key remains present");
+            component.state.pain_ticks_remaining =
+                component.state.pain_ticks_remaining.saturating_sub(1);
+            component.state.last_known_target_position = None;
+            transition_posture(
+                enemy,
+                component,
+                if defeated {
+                    EnemyCombatPosture::Dead
+                } else {
+                    EnemyCombatPosture::Sleeping
+                },
+                &mut facts,
+            );
+        }
+
+        EnemyIntentPhaseReceipt {
+            facts,
+            navigation_goals: BTreeMap::new(),
+        }
+    }
+
     pub(crate) fn perceive_and_plan(
         session: &mut GameSession,
         scene: &VoxelCollisionScene,

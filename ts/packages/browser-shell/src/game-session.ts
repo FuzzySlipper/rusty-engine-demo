@@ -141,6 +141,7 @@ type ClientGameCommand =
   | { readonly kind: "selectWeaponSlot"; readonly slot: number }
   | { readonly kind: "useItem"; readonly item: string }
   | { readonly kind: "setPaused"; readonly paused: boolean }
+  | { readonly kind: "setEnemyAwareness"; readonly enabled: boolean }
   | {
       readonly kind: "restart";
       readonly mode: "authoredBaseline" | "checkpoint";
@@ -1617,6 +1618,7 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     typeof value.navigationState === "string" &&
     typeof value.playerMotionState === "string" &&
     typeof value.combatState === "string" &&
+    typeof value.enemyAwarenessEnabled === "boolean" &&
     isRecord(value.input) &&
     isRuntimePlayerState(value.player) &&
     isRuntimeWeaponState(value.weapon) &&

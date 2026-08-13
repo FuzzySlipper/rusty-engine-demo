@@ -22,6 +22,7 @@ const dynamic = {
   navigationState: "following",
   playerMotionState: "idle",
   combatState: "ready",
+  enemyAwarenessEnabled: true,
   input: {
     connectionGeneration: 1,
     connected: true,

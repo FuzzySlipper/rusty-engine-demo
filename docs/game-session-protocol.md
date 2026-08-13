@@ -49,6 +49,7 @@ Version 2 accepts this closed game-specific command family:
 - `selectWeaponSlot { slot }`
 - `useItem { item }`
 - `setPaused { paused }`
+- `setEnemyAwareness { enabled }` (debug edge admitted only by the Doom combat room)
 - `restart { mode: authoredBaseline | checkpoint }`
 - `saveGame { slot, overwrite, expectedStorageRevision }`
 - `loadGame { slot, expectedStorageRevision }`
@@ -58,8 +59,9 @@ coalesced pending frame, sends at no more than 60 Hz, clamps accumulated look, a
 buffering at 64 KiB. Pointer-lock loss, blur, visibility loss, disposal, and restart clear pending
 look and submit neutral held state.
 
-Interaction, item use, weapon selection, pause, and restart are must-deliver edges. The browser admits at
-most 32 pending edges, and Rust independently admits at most 32 queued fixed-tick edges. Saturation
+Interaction, item use, weapon selection, pause, enemy-awareness debugging, and restart are
+must-deliver edges. The browser admits at most 32 pending edges, and Rust independently admits at
+most 32 queued fixed-tick edges. Saturation
 rejects the new edge as `edgeQueueSaturated` without partial mutation or disturbing accepted
 ordering. A numeric binding resolves to an authored zero-based slot; Rust rejects an invalid slot,
 unowned weapon, already-selected weapon, unusable/missing item, full health, unavailable checkpoint,
