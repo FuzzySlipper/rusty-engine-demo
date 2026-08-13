@@ -714,10 +714,10 @@ room for task 6930. It does not modify or embed E1M1. The room supplies hidden
 presentation templates for canonical `BLUD`, `PUFF`, and `BAL1` atlas regions
 while its visible lanes use the ordinary Rust-owned Zombieman hitscan and Imp
 projectile behavior. A separate solid target wall provides a bounded world-hit
-surface for bullet puffs. The player starts behind a visible collision-backed
-cover wall with walk-around openings on both sides, so browser startup cannot
-expose the player to either live lane before controls are available. The
-generator reads the checked-in sprite manifest,
+surface for bullet puffs. The browser host starts this room with enemy awareness
+disabled, and `O` enables the ordinary production combat owners after the
+player is ready. Its firing lanes remain unobstructed so this constrained room
+does not invoke unrelated pursuit navigation. The generator reads the checked-in sprite manifest,
 preserves its patch-post transparency, source pivots, atlas dimensions, and
 28:1 actor presentation ratio, and expands source timing at cumulative 35 Hz
 boundaries into 60 Hz gameplay ticks: blood `C/B/A` for 8 tics each, puff

@@ -12,7 +12,7 @@ use crate::combat::EnemyState;
 use crate::encounter::EncounterService;
 use crate::inventory::ProjectileDefinition;
 use crate::navigation::NavigationPhaseReceipt;
-use crate::projectile::{EnemyProjectileSpawn, ProjectileService};
+use crate::projectile::{is_projectile_entity_name, EnemyProjectileSpawn, ProjectileService};
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
@@ -560,6 +560,13 @@ fn line_of_sight(
         return Ok(true);
     }
     let direction = delta * distance.recip();
+    let mut ignored_entities = ignored_entities.to_vec();
+    ignored_entities.extend(
+        entities
+            .entities()
+            .filter(|entity| is_projectile_entity_name(&entity.name))
+            .map(|entity| entity.id),
+    );
     let hit = SpatialOcclusionService
         .cast_ray(
             scene,

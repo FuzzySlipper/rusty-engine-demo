@@ -85,6 +85,10 @@ assert.equal(
   "FX room must contain one live projectile combat owner",
 );
 assert.ok(enemies.every((entity) => entity.enemy === true));
+assert.ok(
+  enemies.every((entity) => entity.navigation.maxVisited === 64),
+  "live FX enemies must preserve the bounded production navigation budget",
+);
 
 const bloodEnemy = entities.find(
   (entity) => entity.name === "doom-fx-blood-lane-zombieman",
@@ -138,25 +142,9 @@ assert.ok(
   "blood and projectile lanes must flank the target lane",
 );
 
-const spawnCover = entities.filter(
-  (entity) => entity.name === "doom-fx-spawn-cover",
-);
-assert.equal(spawnCover.length, 1, "FX room must contain one visible spawn cover");
-assert.deepEqual(spawnCover[0].translation, [0, 0.25, -4]);
-assert.equal(spawnCover[0].renderable.visible, true);
-const spawnCoverVoxels = scene.voxelEnvironment.materialVoxels.filter(
-  (voxel) => voxel.address[2] === -16 && voxel.address[1] > 0,
-);
-assert.equal(
-  spawnCoverVoxels.length,
-  49 * 12,
-  "spawn cover must provide exact bounded startup occlusion",
-);
 assert.ok(
-  spawnCoverVoxels.every(
-    (voxel) => voxel.address[0] >= -24 && voxel.address[0] <= 24,
-  ),
-  "spawn cover must leave ordinary walk-around openings at both sides",
+  !entities.some((entity) => entity.name === "doom-fx-spawn-cover"),
+  "FX room must expose unobstructed firing lanes once awareness is enabled",
 );
 
 const sourceFrames = manifest.atlases.flatMap((atlas) =>

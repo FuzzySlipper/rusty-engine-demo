@@ -406,6 +406,14 @@ impl LoadingBayGameLoop {
     }
 
     pub fn new(runtime: GameRuntime, player: EntityId) -> Result<Self, RuntimeError> {
+        Self::new_with_enemy_awareness(runtime, player, true)
+    }
+
+    pub fn new_with_enemy_awareness(
+        runtime: GameRuntime,
+        player: EntityId,
+        enemy_awareness_enabled: bool,
+    ) -> Result<Self, RuntimeError> {
         Self::validate_runtime(&runtime, player)?;
         Ok(Self {
             runtime,
@@ -415,7 +423,7 @@ impl LoadingBayGameLoop {
             driver_tick: 0,
             pending_facts: VecDeque::new(),
             dropped_fact_count: 0,
-            enemy_awareness_enabled: true,
+            enemy_awareness_enabled,
         })
     }
 

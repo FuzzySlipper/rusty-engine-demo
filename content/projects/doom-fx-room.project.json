@@ -89853,102 +89853,6 @@
           },
           {
             "address": [
-              -24,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -24,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               -23,
               0,
               -64
@@ -90976,102 +90880,6 @@
               -23,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -23,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -92109,102 +91917,6 @@
           },
           {
             "address": [
-              -22,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -22,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               -21,
               0,
               -64
@@ -93232,102 +92944,6 @@
               -21,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -21,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -94365,102 +93981,6 @@
           },
           {
             "address": [
-              -20,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -20,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               -19,
               0,
               -64
@@ -95488,102 +95008,6 @@
               -19,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -19,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -96621,102 +96045,6 @@
           },
           {
             "address": [
-              -18,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -18,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               -17,
               0,
               -64
@@ -97744,102 +97072,6 @@
               -17,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -17,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -98877,102 +98109,6 @@
           },
           {
             "address": [
-              -16,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -16,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               -15,
               0,
               -64
@@ -100000,102 +99136,6 @@
               -15,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -15,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -101133,102 +100173,6 @@
           },
           {
             "address": [
-              -14,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -14,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               -13,
               0,
               -64
@@ -102256,102 +101200,6 @@
               -13,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -13,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -103389,102 +102237,6 @@
           },
           {
             "address": [
-              -12,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -12,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               -11,
               0,
               -64
@@ -104512,102 +103264,6 @@
               -11,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -11,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -105645,102 +104301,6 @@
           },
           {
             "address": [
-              -10,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -10,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               -9,
               0,
               -64
@@ -106768,102 +105328,6 @@
               -9,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -9,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -107903,23 +106367,7 @@
             "address": [
               -8,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -107935,23 +106383,7 @@
             "address": [
               -8,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -107967,23 +106399,7 @@
             "address": [
               -8,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -107999,23 +106415,7 @@
             "address": [
               -8,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -108031,23 +106431,7 @@
             "address": [
               -8,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -108063,23 +106447,7 @@
             "address": [
               -8,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -8,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -109159,23 +107527,7 @@
             "address": [
               -7,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -109191,23 +107543,7 @@
             "address": [
               -7,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -109223,23 +107559,7 @@
             "address": [
               -7,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -109255,23 +107575,7 @@
             "address": [
               -7,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -109287,23 +107591,7 @@
             "address": [
               -7,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -109319,23 +107607,7 @@
             "address": [
               -7,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -7,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -110415,23 +108687,7 @@
             "address": [
               -6,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -110447,23 +108703,7 @@
             "address": [
               -6,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -110479,23 +108719,7 @@
             "address": [
               -6,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -110511,23 +108735,7 @@
             "address": [
               -6,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -110543,23 +108751,7 @@
             "address": [
               -6,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -110575,23 +108767,7 @@
             "address": [
               -6,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -6,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -111671,23 +109847,7 @@
             "address": [
               -5,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -111703,23 +109863,7 @@
             "address": [
               -5,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -111735,23 +109879,7 @@
             "address": [
               -5,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -111767,23 +109895,7 @@
             "address": [
               -5,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -111799,23 +109911,7 @@
             "address": [
               -5,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -111831,23 +109927,7 @@
             "address": [
               -5,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -5,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -112927,23 +111007,7 @@
             "address": [
               -4,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -112959,23 +111023,7 @@
             "address": [
               -4,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -112991,23 +111039,7 @@
             "address": [
               -4,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -113023,23 +111055,7 @@
             "address": [
               -4,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -113055,23 +111071,7 @@
             "address": [
               -4,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -113087,23 +111087,7 @@
             "address": [
               -4,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -4,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -114183,23 +112167,7 @@
             "address": [
               -3,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -114215,23 +112183,7 @@
             "address": [
               -3,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -114247,23 +112199,7 @@
             "address": [
               -3,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -114279,23 +112215,7 @@
             "address": [
               -3,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -114311,23 +112231,7 @@
             "address": [
               -3,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -114343,23 +112247,7 @@
             "address": [
               -3,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -3,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -115439,23 +113327,7 @@
             "address": [
               -2,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -115471,23 +113343,7 @@
             "address": [
               -2,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -115503,23 +113359,7 @@
             "address": [
               -2,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -115535,23 +113375,7 @@
             "address": [
               -2,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -115567,23 +113391,7 @@
             "address": [
               -2,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -115599,23 +113407,7 @@
             "address": [
               -2,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -2,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -116695,23 +114487,7 @@
             "address": [
               -1,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -116727,23 +114503,7 @@
             "address": [
               -1,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -116759,23 +114519,7 @@
             "address": [
               -1,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -116791,23 +114535,7 @@
             "address": [
               -1,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -116823,23 +114551,7 @@
             "address": [
               -1,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -116855,23 +114567,7 @@
             "address": [
               -1,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              -1,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -117951,23 +115647,7 @@
             "address": [
               0,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -117983,23 +115663,7 @@
             "address": [
               0,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -118015,23 +115679,7 @@
             "address": [
               0,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -118047,23 +115695,7 @@
             "address": [
               0,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -118079,23 +115711,7 @@
             "address": [
               0,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -118111,23 +115727,7 @@
             "address": [
               0,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              0,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -119207,23 +116807,7 @@
             "address": [
               1,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -119239,23 +116823,7 @@
             "address": [
               1,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -119271,23 +116839,7 @@
             "address": [
               1,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -119303,23 +116855,7 @@
             "address": [
               1,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -119335,23 +116871,7 @@
             "address": [
               1,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -119367,23 +116887,7 @@
             "address": [
               1,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              1,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -120463,23 +117967,7 @@
             "address": [
               2,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -120495,23 +117983,7 @@
             "address": [
               2,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -120527,23 +117999,7 @@
             "address": [
               2,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -120559,23 +118015,7 @@
             "address": [
               2,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -120591,23 +118031,7 @@
             "address": [
               2,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -120623,23 +118047,7 @@
             "address": [
               2,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              2,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -121719,14 +119127,6 @@
             "address": [
               3,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              1,
               20
             ],
             "materialSlot": 1
@@ -121735,23 +119135,7 @@
             "address": [
               3,
               2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              2,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              3,
-              -16
             ],
             "materialSlot": 1
           },
@@ -121767,23 +119151,7 @@
             "address": [
               3,
               4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              4,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              5,
-              -16
             ],
             "materialSlot": 1
           },
@@ -121799,23 +119167,7 @@
             "address": [
               3,
               6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              6,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              7,
-              -16
             ],
             "materialSlot": 1
           },
@@ -121831,23 +119183,7 @@
             "address": [
               3,
               8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              8,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              9,
-              -16
             ],
             "materialSlot": 1
           },
@@ -121863,14 +119199,6 @@
             "address": [
               3,
               10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              10,
               20
             ],
             "materialSlot": 1
@@ -121879,23 +119207,7 @@
             "address": [
               3,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              3,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -122975,23 +120287,7 @@
             "address": [
               4,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -123007,23 +120303,7 @@
             "address": [
               4,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -123039,23 +120319,7 @@
             "address": [
               4,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -123071,23 +120335,7 @@
             "address": [
               4,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -123103,23 +120351,7 @@
             "address": [
               4,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -123135,23 +120367,7 @@
             "address": [
               4,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              4,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -124231,23 +121447,7 @@
             "address": [
               5,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -124263,14 +121463,6 @@
             "address": [
               5,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              3,
               20
             ],
             "materialSlot": 1
@@ -124279,23 +121471,7 @@
             "address": [
               5,
               4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              4,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              5,
-              -16
             ],
             "materialSlot": 1
           },
@@ -124311,23 +121487,7 @@
             "address": [
               5,
               6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              6,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              7,
-              -16
             ],
             "materialSlot": 1
           },
@@ -124343,23 +121503,7 @@
             "address": [
               5,
               8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              8,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              9,
-              -16
             ],
             "materialSlot": 1
           },
@@ -124375,14 +121519,6 @@
             "address": [
               5,
               10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              10,
               20
             ],
             "materialSlot": 1
@@ -124391,23 +121527,7 @@
             "address": [
               5,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              5,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -125487,23 +122607,7 @@
             "address": [
               6,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -125519,23 +122623,7 @@
             "address": [
               6,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -125551,23 +122639,7 @@
             "address": [
               6,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -125583,23 +122655,7 @@
             "address": [
               6,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -125615,23 +122671,7 @@
             "address": [
               6,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -125647,23 +122687,7 @@
             "address": [
               6,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              6,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -126743,23 +123767,7 @@
             "address": [
               7,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -126775,23 +123783,7 @@
             "address": [
               7,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -126807,14 +123799,6 @@
             "address": [
               7,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              5,
               20
             ],
             "materialSlot": 1
@@ -126823,23 +123807,7 @@
             "address": [
               7,
               6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              6,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              7,
-              -16
             ],
             "materialSlot": 1
           },
@@ -126855,23 +123823,7 @@
             "address": [
               7,
               8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              8,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              9,
-              -16
             ],
             "materialSlot": 1
           },
@@ -126887,14 +123839,6 @@
             "address": [
               7,
               10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              10,
               20
             ],
             "materialSlot": 1
@@ -126903,23 +123847,7 @@
             "address": [
               7,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              7,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -127999,23 +124927,7 @@
             "address": [
               8,
               1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              1,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              2,
-              -16
             ],
             "materialSlot": 1
           },
@@ -128031,23 +124943,7 @@
             "address": [
               8,
               3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              3,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              4,
-              -16
             ],
             "materialSlot": 1
           },
@@ -128063,23 +124959,7 @@
             "address": [
               8,
               5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              5,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              6,
-              -16
             ],
             "materialSlot": 1
           },
@@ -128095,23 +124975,7 @@
             "address": [
               8,
               7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              7,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              8,
-              -16
             ],
             "materialSlot": 1
           },
@@ -128127,23 +124991,7 @@
             "address": [
               8,
               9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              9,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              10,
-              -16
             ],
             "materialSlot": 1
           },
@@ -128159,23 +125007,7 @@
             "address": [
               8,
               11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              11,
               20
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              8,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -129253,102 +126085,6 @@
           },
           {
             "address": [
-              9,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              9,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               10,
               0,
               -64
@@ -130376,102 +127112,6 @@
               10,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              10,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -131509,102 +128149,6 @@
           },
           {
             "address": [
-              11,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              11,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               12,
               0,
               -64
@@ -132632,102 +129176,6 @@
               12,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              12,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -133765,102 +130213,6 @@
           },
           {
             "address": [
-              13,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              13,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               14,
               0,
               -64
@@ -134888,102 +131240,6 @@
               14,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              14,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -136021,102 +132277,6 @@
           },
           {
             "address": [
-              15,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              15,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               16,
               0,
               -64
@@ -137144,102 +133304,6 @@
               16,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              16,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -138277,102 +134341,6 @@
           },
           {
             "address": [
-              17,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              17,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               18,
               0,
               -64
@@ -139400,102 +135368,6 @@
               18,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              18,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -140533,102 +136405,6 @@
           },
           {
             "address": [
-              19,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              19,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               20,
               0,
               -64
@@ -141656,102 +137432,6 @@
               20,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              20,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -142789,102 +138469,6 @@
           },
           {
             "address": [
-              21,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              21,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               22,
               0,
               -64
@@ -143912,102 +139496,6 @@
               22,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              22,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -145045,102 +140533,6 @@
           },
           {
             "address": [
-              23,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              23,
-              12,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
               24,
               0,
               -64
@@ -146168,102 +141560,6 @@
               24,
               0,
               64
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              1,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              2,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              3,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              4,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              5,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              6,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              7,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              8,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              9,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              10,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              11,
-              -16
-            ],
-            "materialSlot": 1
-          },
-          {
-            "address": [
-              24,
-              12,
-              -16
             ],
             "materialSlot": 1
           },
@@ -227457,37 +222753,6 @@
               "scale": [
                 20.0,
                 16.0,
-                1.0
-              ]
-            }
-          }
-        },
-        {
-          "id": 22,
-          "name": "doom-fx-spawn-cover",
-          "translation": [
-            0.0,
-            0.25,
-            -4.0
-          ],
-          "renderable": {
-            "asset": "mesh/column",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                -0.1875,
-                0.0,
-                -0.1875
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                32.0,
-                3.0,
                 1.0
               ]
             }

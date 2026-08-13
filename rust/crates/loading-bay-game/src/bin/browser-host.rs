@@ -147,8 +147,12 @@ impl BrowserRuntime {
                     "visible"
                 }
             });
-        let runtime = LoadingBayGameLoop::new(GameRuntime::from_admitted_project(admitted), ACTOR)
-            .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?;
+        let runtime = LoadingBayGameLoop::new_with_enemy_awareness(
+            GameRuntime::from_admitted_project(admitted),
+            ACTOR,
+            project.project_id != "doom-fx-room",
+        )
+        .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?;
         let uses_doom_application_content = matches!(
             project.project_id.as_str(),
             "doom-e1m1"
@@ -383,8 +387,12 @@ impl BrowserRuntime {
     fn replacement_from_runtime(&self, runtime: GameRuntime) -> Result<Self, String> {
         Ok(Self {
             host_session_id: self.host_session_id.clone(),
-            runtime: LoadingBayGameLoop::new(runtime, ACTOR)
-                .map_err(|error| format!("could not restore Loading Bay game loop: {error}"))?,
+            runtime: LoadingBayGameLoop::new_with_enemy_awareness(
+                runtime,
+                ACTOR,
+                self.project.project_id != "doom-fx-room",
+            )
+            .map_err(|error| format!("could not restore Loading Bay game loop: {error}"))?,
             authored: self.authored.clone(),
             voxel_object_frame: self.voxel_object_frame.clone(),
             application_content: self.application_content.clone(),
@@ -687,6 +695,12 @@ fn start_game_loop_driver(runtime: &Arc<SharedBrowserRuntime>) {
             let elapsed = now.saturating_duration_since(previous);
             previous = now;
             let mut host = runtime.lock().expect("runtime lock");
+            // A browser product session owns whether this live simulation is in use.
+            // Do not let enemies, hazards, or fact queues run ahead while no client is
+            // connected, then dump that stale work into the next browser bootstrap.
+            if !host.runtime.input_session().connected {
+                continue;
+            }
             match host.runtime.advance_elapsed(elapsed) {
                 Ok(receipt) => {
                     // Autonomous retained presentation needs no second clock:

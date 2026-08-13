@@ -20,6 +20,15 @@ use crate::vitality::{DamageCommand, DamageService, DamageSource, VitalityReject
 
 const PROJECTILE_ASSET: &str = "mesh/physics-projectile";
 const MAX_PROJECTILE_ENTITIES: usize = 256;
+const PLAYER_PROJECTILE_ENTITY_NAME: &str = "physics projectile";
+const ENEMY_PROJECTILE_ENTITY_NAME: &str = "enemy projectile";
+
+pub(crate) fn is_projectile_entity_name(name: &str) -> bool {
+    matches!(
+        name,
+        PLAYER_PROJECTILE_ENTITY_NAME | ENEMY_PROJECTILE_ENTITY_NAME
+    )
+}
 
 #[derive(Debug)]
 pub enum ProjectileError {
@@ -139,7 +148,7 @@ impl ProjectileService {
         }
         let entity = self.allocate_entity(session)?;
         let radius = definition.radius;
-        let definition_entity = EntityDefinition::new(entity, "physics projectile")
+        let definition_entity = EntityDefinition::new(entity, PLAYER_PROJECTILE_ENTITY_NAME)
             .with_full_transform(EntityTransform::at(origin))
             .with_bounds(
                 Vec3::new(-radius, -radius, -radius),
@@ -216,7 +225,7 @@ impl ProjectileService {
         }
         let entity = self.allocate_entity(session)?;
         let radius = definition.radius;
-        let definition_entity = EntityDefinition::new(entity, "enemy projectile")
+        let definition_entity = EntityDefinition::new(entity, ENEMY_PROJECTILE_ENTITY_NAME)
             .with_full_transform(EntityTransform::at(origin))
             .with_bounds(
                 Vec3::new(-radius, -radius, -radius),

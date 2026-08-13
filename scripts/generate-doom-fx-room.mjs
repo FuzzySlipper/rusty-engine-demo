@@ -213,6 +213,7 @@ function liveActor(source, id, name, prefix, assetId, translation) {
   actor.kinematic.halfExtents = [0.45, 1, 0.45];
   actor.navigation.goal = translation;
   actor.navigation.speedUnitsPerSecond = 3;
+  actor.navigation.maxVisited = 64;
   actor.renderable = {
     asset: assetId,
     visible: true,
@@ -328,9 +329,6 @@ const targetWallXMax = 8;
 const targetWallYMin = 1;
 const targetWallYMax = 16;
 const targetWallZ = 20;
-const spawnCoverXMin = -24;
-const spawnCoverXMax = 24;
-const spawnCoverZ = -16;
 const materialVoxels = [];
 for (let x = floorXMin; x <= floorXMax; x += 1) {
   for (let z = floorZMin; z <= floorZMax; z += 1) {
@@ -340,11 +338,6 @@ for (let x = floorXMin; x <= floorXMax; x += 1) {
 for (let x = targetWallXMin; x <= targetWallXMax; x += 1) {
   for (let y = targetWallYMin; y <= targetWallYMax; y += 1) {
     materialVoxels.push({ address: [x, y, targetWallZ], materialSlot: 1 });
-  }
-}
-for (let x = spawnCoverXMin; x <= spawnCoverXMax; x += 1) {
-  for (let y = 1; y <= 12; y += 1) {
-    materialVoxels.push({ address: [x, y, spawnCoverZ], materialSlot: 1 });
   }
 }
 
@@ -373,20 +366,6 @@ const floor = {
       translation: [0, 0, 0],
       rotation: [0, 0, 0, 1],
       scale: [20, 16, 1],
-    },
-  },
-};
-const spawnCover = {
-  id: 22,
-  name: "doom-fx-spawn-cover",
-  translation: [0, 0.25, -4],
-  renderable: {
-    asset: column.id,
-    visible: true,
-    localTransform: {
-      translation: [-0.1875, 0, -0.1875],
-      rotation: [0, 0, 0, 1],
-      scale: [32, 3, 1],
     },
   },
 };
@@ -435,7 +414,6 @@ const project = {
         ...effectTemplates,
         targetWall,
         floor,
-        spawnCover,
       ],
     },
   ],

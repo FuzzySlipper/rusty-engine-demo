@@ -17,6 +17,8 @@ const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.pro
 const DOOM_PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const DOOM_SPRITE_ORBIT_ROOM_PROJECT: &str =
     include_str!("../../../../content/projects/doom-sprite-orbit-room.project.json");
+const DOOM_FX_ROOM_PROJECT: &str =
+    include_str!("../../../../content/projects/doom-fx-room.project.json");
 
 fn game_loop() -> LoadingBayGameLoop {
     LoadingBayGameLoop::new(
@@ -846,6 +848,54 @@ fn disconnect_stale_input_and_reconnect_cannot_stick_or_resurrect_movement() {
         .contains(&GameLoopFact::InputExpired { sequence: 1 }));
     assert_eq!(expired.consumed_sequence, 1);
     assert_eq!(game_loop.input_session().acknowledged_sequence, 1);
+}
+
+#[test]
+fn explicit_initial_enemy_awareness_is_retained_until_a_debug_edge_changes_it() {
+    let game_loop = LoadingBayGameLoop::new_with_enemy_awareness(
+        GameRuntime::from_stored_project(PROJECT).unwrap(),
+        PLAYER,
+        false,
+    )
+    .unwrap();
+
+    assert!(!game_loop.enemy_awareness_enabled());
+}
+
+#[test]
+fn doom_fx_room_awareness_enters_direct_combat_without_navigation_failures() {
+    let mut game_loop = LoadingBayGameLoop::new_with_enemy_awareness(
+        GameRuntime::from_stored_project(DOOM_FX_ROOM_PROJECT).unwrap(),
+        PLAYER,
+        false,
+    )
+    .unwrap();
+    let generation = game_loop.start_connection().connection_generation;
+    game_loop
+        .submit_edge_command(edge(
+            generation,
+            1,
+            GameLoopEdgeCommandKind::SetEnemyAwareness { enabled: true },
+        ))
+        .unwrap();
+
+    let facts = (0..4)
+        .flat_map(|_| game_loop.run_fixed_tick().unwrap().facts)
+        .collect::<Vec<_>>();
+    assert!(
+        facts.iter().any(|fact| matches!(
+            fact,
+            GameLoopFact::EnemyCombat(loading_bay_game::EnemyCombatFact::AttackFired { .. })
+        )),
+        "{facts:#?}"
+    );
+    assert!(
+        !facts.iter().any(|fact| matches!(
+            fact,
+            GameLoopFact::Navigation(loading_bay_game::NavigationFact::Unreachable { .. })
+        )),
+        "{facts:#?}"
+    );
 }
 
 #[test]
