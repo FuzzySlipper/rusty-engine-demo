@@ -690,6 +690,25 @@ The room-specific `.den-serve.sprite-animation-room.json` manifest gives the
 Den playtest broker the same project selection without changing the default
 E1M1 serve manifest.
 
+`content/projects/doom-combat-room.project.json` is the bounded live combat
+clean room for task 6885. Its generator reuses the canonical E1M1 Zombieman
+combat, vitality, navigation, and bullet-drop components, but replaces the old
+map presentation with the manifest-derived 28:1 sprite atlas and complete
+version-2 directional views for idle, walk, attack, pain, and death. The
+rotation-0 death art is intentionally repeated for all camera sectors; the
+other states retain their authored rotation and mirror metadata. Rust selects
+views from the actor's authored facing before perception and from its
+Rust-owned combat target facing after perception. That logical direction is
+kept separate from the renderer's cylindrical camera-facing billboard.
+
+The room starts the player behind an exact gameplay-proxy cover wall with a
+visible side opening. Leaving cover exercises ordinary sight activation,
+pursuit/navigation, hitscan cadence and player damage; returning fire exercises
+pain/blood, defeat, collision disable, and the dormant-to-available bullet drop.
+No test-only gameplay owner or E1M1 traversal is present. Run it with
+`pnpm run serve:combat-room -- --host HOST --port PORT`; the matching
+`.den-serve.combat-room.json` is the explicit Den playtest manifest.
+
 ### Derived voxel asset (single sparse-run volume, gameplay truth)
 
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with

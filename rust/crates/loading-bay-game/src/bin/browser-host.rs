@@ -155,6 +155,7 @@ impl BrowserRuntime {
                 | "doom-sprite-scale-room"
                 | "doom-sprite-orbit-room"
                 | "doom-sprite-animation-room"
+                | "doom-combat-room"
         );
         let mut gameplay_projector = uses_doom_application_content
             .then(|| GameplayApplicationProjector::new(authored.document()));

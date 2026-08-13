@@ -169,6 +169,19 @@ const DOOM_SPRITE_ANIMATION_PRESENTATION: GamePresentation = {
   showsAccessKeys: false,
 };
 
+const DOOM_COMBAT_ROOM_PRESENTATION: GamePresentation = {
+  missionLabel: "DOOM SINGLE-ENEMY COMBAT ROOM",
+  levelCaption: "COVER · ATTACK · PAIN · DEATH · DROP",
+  restartLabel: "Restart combat room",
+  completionTitle: "COMBAT INSPECTION COMPLETE",
+  completionFallback: "The bounded enemy encounter remains active.",
+  panelLabel: "Doom Combat Room",
+  documentTitle: "Rusty Engine — Doom Combat Room",
+  viewportLabel:
+    "Live Doom single-enemy combat room. Leave cover, circle the logically facing Zombieman, exchange fire, and collect its drop.",
+  showsAccessKeys: false,
+};
+
 declare global {
   interface Window {
     __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
@@ -1511,6 +1524,9 @@ function gamePresentationFor(projectId: string): GamePresentation {
   }
   if (projectId === "doom-sprite-animation-room") {
     return DOOM_SPRITE_ANIMATION_PRESENTATION;
+  }
+  if (projectId === "doom-combat-room") {
+    return DOOM_COMBAT_ROOM_PRESENTATION;
   }
   return projectId === "doom-e1m1"
     ? DOOM_E1M1_PRESENTATION

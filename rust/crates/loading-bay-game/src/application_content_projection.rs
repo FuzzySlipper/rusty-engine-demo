@@ -234,6 +234,9 @@ impl GameplayApplicationProjector {
         for (entity, states) in &self.bindings {
             let id = rusty_engine::core_ids::EntityId::new(*entity);
             let combat = runtime.session().enemy_combat(id);
+            let logical_facing_target = combat
+                .as_ref()
+                .and_then(|combat| combat.state.last_known_target_position);
             if combat.is_some() {
                 if let Some(health) = runtime.session().health(id) {
                     if self
@@ -406,6 +409,7 @@ impl GameplayApplicationProjector {
                             index,
                             camera,
                             actor,
+                            logical_facing_target,
                         )
                         .ok_or_else(|| {
                             anyhow::anyhow!(
@@ -596,6 +600,7 @@ fn select_directional_sprite_view(
     animation_index: usize,
     camera: rusty_engine::entity_state::EntityTransform,
     actor: rusty_engine::entity_state::EntityTransform,
+    logical_facing_target: Option<rusty_engine::core_math::Vec3>,
 ) -> Option<&StoredDirectionalSpriteView> {
     let to_camera_x = camera.translation.x - actor.translation.x;
     let to_camera_z = camera.translation.z - actor.translation.z;
@@ -603,7 +608,16 @@ fn select_directional_sprite_view(
     let rotation = if distance <= f32::EPSILON {
         1
     } else {
-        let [forward_x, forward_z] = horizontal_forward(actor.rotation);
+        let [forward_x, forward_z] = logical_facing_target
+            .map(|target| target - actor.translation)
+            .filter(|facing| facing.x.hypot(facing.z) > f32::EPSILON)
+            .map_or_else(
+                || horizontal_forward(actor.rotation),
+                |facing| {
+                    let length = facing.x.hypot(facing.z);
+                    [facing.x / length, facing.z / length]
+                },
+            );
         let camera_x = to_camera_x / distance;
         let camera_z = to_camera_z / distance;
         let dot = forward_x * camera_x + forward_z * camera_z;
@@ -649,7 +663,10 @@ pub fn project_doom_e1m1_application_content(
 ) -> anyhow::Result<ProjectedApplicationContent> {
     let (volume_frame, mut resources) = if matches!(
         project.project_id.as_str(),
-        "doom-sprite-scale-room" | "doom-sprite-orbit-room" | "doom-sprite-animation-room"
+        "doom-sprite-scale-room"
+            | "doom-sprite-orbit-room"
+            | "doom-sprite-animation-room"
+            | "doom-combat-room"
     ) {
         (
             RenderFrameDiff::try_from_ops(Vec::new())
@@ -944,7 +961,7 @@ mod tests {
         for (translation, expected_rotation, expected_mirror) in orbit {
             let camera =
                 EntityTransform::at(Vec3::new(translation[0], translation[1], translation[2]));
-            let selected = select_directional_sprite_view(&views, 0, camera, actor).unwrap();
+            let selected = select_directional_sprite_view(&views, 0, camera, actor, None).unwrap();
             assert_eq!(selected.rotation, expected_rotation);
             assert_eq!(selected.frames, [100 + u32::from(expected_rotation)]);
             assert_eq!(selected.mirrored, expected_mirror);
@@ -971,6 +988,7 @@ mod tests {
             0,
             EntityTransform::at(Vec3::new(0.0, 0.0, 8.0)),
             actor,
+            None,
         )
         .unwrap();
         let rear = select_directional_sprite_view(
@@ -978,11 +996,39 @@ mod tests {
             0,
             EntityTransform::at(Vec3::new(0.0, 0.0, -8.0)),
             actor,
+            None,
         )
         .unwrap();
 
         assert_eq!(front.rotation, 1);
         assert_eq!(rear.rotation, 5);
+    }
+
+    #[test]
+    fn directional_sprite_selector_keeps_combat_facing_separate_from_billboarding() {
+        let views = (1_u8..=8)
+            .map(|rotation| StoredDirectionalSpriteView {
+                rotation,
+                frames: vec![u32::from(rotation)],
+                mirrored: false,
+                source_origin_offsets: vec![[0.0, 0.0]],
+            })
+            .collect::<Vec<_>>();
+        let actor = EntityTransform::IDENTITY;
+        let camera = EntityTransform::at(Vec3::new(0.0, 0.0, 8.0));
+
+        let authored = select_directional_sprite_view(&views, 0, camera, actor, None).unwrap();
+        let combat_facing = select_directional_sprite_view(
+            &views,
+            0,
+            camera,
+            actor,
+            Some(Vec3::new(0.0, 0.0, 8.0)),
+        )
+        .unwrap();
+
+        assert_eq!(authored.rotation, 5);
+        assert_eq!(combat_facing.rotation, 1);
     }
 
     #[test]
