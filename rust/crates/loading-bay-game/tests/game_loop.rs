@@ -863,7 +863,7 @@ fn explicit_initial_enemy_awareness_is_retained_until_a_debug_edge_changes_it() 
 }
 
 #[test]
-fn doom_fx_room_awareness_enters_direct_combat_without_navigation_failures() {
+fn doom_fx_room_dodged_projectiles_do_not_stall_enemy_sight_or_navigation() {
     let mut game_loop = LoadingBayGameLoop::new_with_enemy_awareness(
         GameRuntime::from_stored_project(DOOM_FX_ROOM_PROJECT).unwrap(),
         PLAYER,
@@ -879,9 +879,37 @@ fn doom_fx_room_awareness_enters_direct_combat_without_navigation_failures() {
         ))
         .unwrap();
 
-    let facts = (0..4)
-        .flat_map(|_| game_loop.run_fixed_tick().unwrap().facts)
-        .collect::<Vec<_>>();
+    let mut facts = Vec::new();
+    for tick_index in 0..300_u64 {
+        game_loop
+            .submit_input(input(
+                generation,
+                tick_index + 2,
+                [
+                    if (tick_index / 40) % 2 == 0 {
+                        1.0
+                    } else {
+                        -1.0
+                    },
+                    0.0,
+                ],
+                [0.0, 0.0],
+                false,
+            ))
+            .unwrap();
+        facts.extend(game_loop.run_fixed_tick().unwrap().facts);
+    }
+    let projectile_spawn_count = facts
+        .iter()
+        .filter(|fact| {
+            matches!(
+                fact,
+                GameLoopFact::EnemyCombat(
+                    loading_bay_game::EnemyCombatFact::ProjectileSpawned { .. }
+                )
+            )
+        })
+        .count();
     assert!(
         facts.iter().any(|fact| matches!(
             fact,
@@ -889,6 +917,7 @@ fn doom_fx_room_awareness_enters_direct_combat_without_navigation_failures() {
         )),
         "{facts:#?}"
     );
+    assert!(projectile_spawn_count >= 7, "{projectile_spawn_count}");
     assert!(
         !facts.iter().any(|fact| matches!(
             fact,

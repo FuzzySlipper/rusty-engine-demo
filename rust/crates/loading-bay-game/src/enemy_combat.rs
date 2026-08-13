@@ -560,26 +560,96 @@ fn line_of_sight(
         return Ok(true);
     }
     let direction = delta * distance.recip();
-    let mut ignored_entities = ignored_entities.to_vec();
-    ignored_entities.extend(
-        entities
-            .entities()
-            .filter(|entity| is_projectile_entity_name(&entity.name))
-            .map(|entity| entity.id),
-    );
-    let hit = SpatialOcclusionService
-        .cast_ray(
-            scene,
-            entities,
-            SpatialOcclusionQuery {
-                origin: [origin.x as f64, origin.y as f64, origin.z as f64],
-                direction: [direction.x as f64, direction.y as f64, direction.z as f64],
-                max_distance: distance as f64,
-                ignored_entities: &ignored_entities,
-            },
-        )
-        .map_err(RuntimeError::SpatialOcclusion)?;
-    Ok(hit.is_none_or(|hit| hit.distance() as f32 + 0.000_1 >= distance))
+    let direction_array = [direction.x as f64, direction.y as f64, direction.z as f64];
+    let mut ray_origin = [origin.x as f64, origin.y as f64, origin.z as f64];
+    let mut remaining = distance as f64;
+    let projectile_count = entities
+        .entities()
+        .filter(|entity| is_projectile_entity_name(&entity.name))
+        .count();
+
+    // Projectiles participate in physics, but transient shots are not durable
+    // vision blockers. Walk through each projectile AABB instead of appending
+    // every active shot to SpatialOcclusionQuery::ignored_entities, whose
+    // bounded endpoint/source list must remain small.
+    for _ in 0..=projectile_count {
+        let hit = SpatialOcclusionService
+            .cast_ray(
+                scene,
+                entities,
+                SpatialOcclusionQuery {
+                    origin: ray_origin,
+                    direction: direction_array,
+                    max_distance: remaining,
+                    ignored_entities: &ignored_entities,
+                },
+            )
+            .map_err(RuntimeError::SpatialOcclusion)?;
+        let Some(hit) = hit else {
+            return Ok(true);
+        };
+        if hit.distance() + 0.000_1 >= remaining {
+            return Ok(true);
+        }
+        let rusty_engine::engine_spatial::SpatialOcclusionHit::Entity {
+            entity,
+            point,
+            distance: hit_distance,
+        } = hit
+        else {
+            return Ok(false);
+        };
+        if !entities
+            .core(entity)
+            .is_some_and(|entity| is_projectile_entity_name(&entity.name))
+        {
+            return Ok(false);
+        }
+        let Some(exit_distance) =
+            projectile_ray_exit_distance(entities, entity, point, direction_array)
+        else {
+            return Ok(false);
+        };
+        let advance = hit_distance + exit_distance + 0.000_1;
+        if advance >= remaining {
+            return Ok(true);
+        }
+        ray_origin = [
+            point[0] + direction_array[0] * (exit_distance + 0.000_1),
+            point[1] + direction_array[1] * (exit_distance + 0.000_1),
+            point[2] + direction_array[2] * (exit_distance + 0.000_1),
+        ];
+        remaining -= advance;
+    }
+    Ok(false)
+}
+
+fn projectile_ray_exit_distance(
+    entities: &EntityState,
+    entity: EntityId,
+    point: [f64; 3],
+    direction: [f64; 3],
+) -> Option<f64> {
+    let bounds = entities.bounds(entity)?;
+    let translation = entities.world_transform(entity)?.translation;
+    let minimum = bounds.min + translation;
+    let maximum = bounds.max + translation;
+    let minimum = [minimum.x as f64, minimum.y as f64, minimum.z as f64];
+    let maximum = [maximum.x as f64, maximum.y as f64, maximum.z as f64];
+    let mut exit_distance = f64::INFINITY;
+    for axis in 0..3 {
+        let axis_exit = if direction[axis] > f64::EPSILON {
+            (maximum[axis] - point[axis]) / direction[axis]
+        } else if direction[axis] < -f64::EPSILON {
+            (minimum[axis] - point[axis]) / direction[axis]
+        } else {
+            continue;
+        };
+        if axis_exit >= 0.0 {
+            exit_distance = exit_distance.min(axis_exit);
+        }
+    }
+    exit_distance.is_finite().then_some(exit_distance)
 }
 
 fn finite_positive_bounded(value: f32, maximum: f32) -> bool {
