@@ -448,6 +448,9 @@ impl GameplayApplicationProjector {
                     if self.visual_mirrors.get(entity) != Some(&mirrored)
                         || self.visual_offsets.get(entity) != Some(&source_origin_offset)
                         || mirrored && authored_transform_changed
+                        // The horizontal source origin is camera-right relative. Recompose it
+                        // as either participant moves even when its numeric value is unchanged.
+                        || source_origin_offset != [0.0, 0.0]
                     {
                         let view = runtime.session().entity(id).map_err(|error| {
                             anyhow::anyhow!("read directional sprite entity {id}: {error}")
@@ -1029,6 +1032,28 @@ mod tests {
 
         assert_eq!(authored.rotation, 5);
         assert_eq!(combat_facing.rotation, 1);
+    }
+
+    #[test]
+    fn directional_sprite_projection_recomposes_camera_relative_source_offsets() {
+        let source = include_str!("../../../../content/projects/doom-combat-room.project.json");
+        let project = decode_project_document(source).unwrap().project;
+        let runtime = GameRuntime::from_stored_project(source).unwrap();
+        let enemy = runtime.session().enemy_combatants().next().unwrap().entity;
+        let mut projector = GameplayApplicationProjector::new(&project);
+
+        projector.project(&runtime).unwrap();
+        let repeated = projector.project(&runtime).unwrap();
+        let handle = projector.entities.handle_of(enemy).unwrap();
+
+        assert!(repeated.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::Update {
+                handle: operation_handle,
+                transform: Some(_),
+                ..
+            } if *operation_handle == handle
+        )));
     }
 
     #[test]
