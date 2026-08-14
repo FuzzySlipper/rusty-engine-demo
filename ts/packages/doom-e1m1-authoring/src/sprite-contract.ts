@@ -34,7 +34,6 @@ export interface DoomSpriteClipStep {
   readonly tics: number;
   readonly fullBright: boolean;
 }
-
 export interface DoomSpriteClipDefinition {
   readonly id: string;
   readonly loopMode: "once" | "repeat";
@@ -43,7 +42,7 @@ export interface DoomSpriteClipDefinition {
 
 export interface DoomSpriteFamilyDefinition {
   readonly prefix: string;
-  readonly role: "actor" | "projectile" | "effect" | "weapon";
+  readonly role: "actor" | "projectile" | "effect" | "weapon" | "item";
   readonly thingType: number | null;
   readonly dimensionsDoomUnits: {
     readonly radius: number;
@@ -138,6 +137,17 @@ export const DOOM_SPRITE_FAMILY_DEFINITIONS: readonly DoomSpriteFamilyDefinition
     prefix: "SHTF", role: "weapon", thingType: null, dimensionsDoomUnits: null,
     clips: [{ id: "flash", loopMode: "once", steps: [step("S_SGUNFLASH1", "A", 4, true), step("S_SGUNFLASH2", "B", 3, true)] }],
   },
+  { prefix: "SHOT", role: "item", thingType: 2001, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_SHOT", "A", -1)] }] },
+  { prefix: "CLIP", role: "item", thingType: 2007, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_CLIP", "A", -1)] }] },
+  { prefix: "SHEL", role: "item", thingType: 2008, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_SHEL", "A", -1)] }] },
+  { prefix: "AMMO", role: "item", thingType: 2048, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_AMMO", "A", -1)] }] },
+  { prefix: "SBOX", role: "item", thingType: 2049, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_SBOX", "A", -1)] }] },
+  { prefix: "STIM", role: "item", thingType: 2011, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_STIM", "A", -1)] }] },
+  { prefix: "MEDI", role: "item", thingType: 2012, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_MEDI", "A", -1)] }] },
+  { prefix: "BON1", role: "item", thingType: 2014, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_BON1", "A", 6), step("S_BON1A", "B", 6), step("S_BON1B", "C", 6), step("S_BON1C", "D", 6), step("S_BON1B", "C", 6), step("S_BON1A", "B", 6)] }] },
+  { prefix: "BON2", role: "item", thingType: 2015, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_BON2", "A", 6), step("S_BON2A", "B", 6), step("S_BON2B", "C", 6), step("S_BON2C", "D", 6), step("S_BON2B", "C", 6), step("S_BON2A", "B", 6)] }] },
+  { prefix: "ARM1", role: "item", thingType: 2018, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_ARM1", "A", 6), step("S_ARM1A", "B", 7, true)] }] },
+  { prefix: "ARM2", role: "item", thingType: 2019, dimensionsDoomUnits: { radius: 20, height: 16 }, clips: [{ id: "available", loopMode: "repeat", steps: [step("S_ARM2", "A", 6), step("S_ARM2A", "B", 6, true)] }] },
 ];
 
 export interface ParsedSpriteLumpAssignment {

@@ -37,6 +37,17 @@ export const SPRITE_FAMILIES = [
   { prefix: "PISF", kind: "weapon", atlas: "weapons" },
   { prefix: "SHTG", kind: "weapon", atlas: "weapons" },
   { prefix: "SHTF", kind: "weapon", atlas: "weapons" },
+  { prefix: "SHOT", kind: "item", atlas: "effects" },
+  { prefix: "CLIP", kind: "item", atlas: "effects" },
+  { prefix: "SHEL", kind: "item", atlas: "effects" },
+  { prefix: "AMMO", kind: "item", atlas: "effects" },
+  { prefix: "SBOX", kind: "item", atlas: "effects" },
+  { prefix: "STIM", kind: "item", atlas: "effects" },
+  { prefix: "MEDI", kind: "item", atlas: "effects" },
+  { prefix: "BON1", kind: "item", atlas: "effects" },
+  { prefix: "BON2", kind: "item", atlas: "effects" },
+  { prefix: "ARM1", kind: "item", atlas: "effects" },
+  { prefix: "ARM2", kind: "item", atlas: "effects" },
 ] as const;
 
 const ATLAS_CONFIGS = [
@@ -72,7 +83,6 @@ export interface SelectedSpriteLump {
   readonly directoryIndex: number;
   readonly entry: DoomWadDirectoryEntry;
 }
-
 export interface DecodedSprite {
   readonly width: number;
   readonly height: number;
@@ -128,7 +138,7 @@ export interface SpriteDirectionalFrameManifest {
 
 export interface SpriteFamilyContractManifest {
   readonly prefix: string;
-  readonly role: "actor" | "projectile" | "effect" | "weapon";
+  readonly role: "actor" | "projectile" | "effect" | "weapon" | "item";
   readonly thingType: number | null;
   readonly dimensionsDoomUnits: {
     readonly radius: number;

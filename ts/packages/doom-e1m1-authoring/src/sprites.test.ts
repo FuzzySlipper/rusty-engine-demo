@@ -74,7 +74,7 @@ function decodeGeneratedPngRgba(bytes: Uint8Array): {
   return { width, height, rgba };
 }
 
-test("canonical sprite selection is bounded to the requested world and player-weapon families", () => {
+test("canonical sprite selection is bounded to the requested world, player-weapon, and E1M1 pickup families", () => {
   const wad = decodeWad(loadWad(), { computeSha256: true });
   assert.equal(wad.sha256, WAD_SHA256);
   assert.equal(wad.byteLength, WAD_BYTE_LENGTH);
@@ -94,11 +94,21 @@ test("canonical sprite selection is bounded to the requested world and player-we
     PISF: 1,
     SHTG: 4,
     SHTF: 2,
+    SHOT: 1,
+    CLIP: 1,
+    SHEL: 1,
+    AMMO: 1,
+    SBOX: 1,
+    STIM: 1,
+    MEDI: 1,
+    BON1: 4,
+    BON2: 4,
+    ARM1: 2,
+    ARM2: 2,
   });
   assert.equal(selected.lumps[0]?.entry.name, "POSSA1");
-  assert.equal(selected.lumps.at(-1)?.entry.name, "SHTFB0");
+  assert.equal(selected.lumps.at(-1)?.entry.name, "ARM2B0");
 });
-
 test("known canonical lumps retain exact source bytes and patch dimensions", () => {
   const buffer = loadWad();
   const wad = decodeWad(buffer);
@@ -229,6 +239,14 @@ test("generated sprite contract keeps clips, timing, directions, dimensions, and
     clip("BLUD", "hit").steps.map(({ frame, tics }) => [frame, tics]),
     [["C", 8], ["B", 8], ["A", 8]],
   );
+  assert.deepEqual(
+    clip("BON1", "available").steps.map(({ frame, tics }) => [frame, tics]),
+    [["A", 6], ["B", 6], ["C", 6], ["D", 6], ["C", 6], ["B", 6]],
+  );
+  assert.deepEqual(
+    clip("ARM1", "available").steps.map(({ frame, tics, fullBright }) => [frame, tics, fullBright]),
+    [["A", 6, false], ["B", 7, true]],
+  );
   assert.deepEqual(family("POSS").dimensionsDoomUnits, { radius: 20, height: 56 });
   assert.deepEqual(family("BAL1").dimensionsDoomUnits, { radius: 6, height: 8 });
 
@@ -271,12 +289,12 @@ test("atlas manifest has exact source/output provenance and normalized frame UVs
   const rendered = renderSpriteArtifacts(WAD_PATH);
   assert.equal(rendered.manifest.wadSha256, WAD_SHA256);
   assert.equal(rendered.manifest.wadByteLength, WAD_BYTE_LENGTH);
-  assert.equal(rendered.manifest.sourceLumps.length, 179);
+  assert.equal(rendered.manifest.sourceLumps.length, 198);
   assert.deepEqual(
     rendered.manifest.atlases.map((atlas) => [atlas.file, atlas.frames.length]),
     [
       ["actors.png", 151],
-      ["effects.png", 12],
+      ["effects.png", 31],
       ["weapons.png", 16],
     ],
   );

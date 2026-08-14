@@ -209,6 +209,19 @@ const DOOM_WEAPON_ROOM_PRESENTATION: GamePresentation = {
   showsAccessKeys: false,
 };
 
+const DOOM_PICKUP_ROOM_PRESENTATION: GamePresentation = {
+  missionLabel: "DOOM PICKUP AND ITEM ROOM",
+  levelCaption: "STATIC · ANIMATED · ENEMY DROP",
+  restartLabel: "Restart pickup room",
+  completionTitle: "PICKUP INSPECTION COMPLETE",
+  completionFallback: "The bounded pickup gallery remains active.",
+  panelLabel: "Doom Pickup Room",
+  documentTitle: "Rusty Engine — Doom Pickup and Item Room",
+  viewportLabel:
+    "Live Doom pickup room. Inspect the source-scaled gallery, collect items with ordinary movement, and defeat the stationary Zombieman to materialize its bullet clip.",
+  showsAccessKeys: false,
+};
+
 declare global {
   interface Window {
     __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
@@ -347,6 +360,17 @@ declare global {
             <strong>1 PISTOL · 2 SHOTGUN · 3 FIST</strong>
             <span>Click viewport, select a slot, then use ordinary fire</span>
             <span>Stationary target has no awareness or attack behavior</span>
+          </aside>
+        }
+        @if (snapshot().projectId === "doom-pickup-room") {
+          <aside
+            class="calibration-legend"
+            aria-label="Doom pickup and item room controls"
+          >
+            <strong>ELEVEN E1M1 PICKUP FAMILIES</strong>
+            <strong>STATIC · ANIMATED · ENEMY DROP</strong>
+            <span>Walk through a sprite to collect it and observe the HUD</span>
+            <span>Defeat the stationary Zombieman to materialize its clip</span>
           </aside>
         }
 
@@ -1411,6 +1435,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
           "doom-combat-room",
           "doom-fx-room",
           "doom-weapon-room",
+          "doom-pickup-room",
         ].includes(requestedProject)
       ) {
         throw new Error(`Unknown project ${requestedProject}`);
@@ -1618,6 +1643,9 @@ function gamePresentationFor(projectId: string): GamePresentation {
   }
   if (projectId === "doom-weapon-room") {
     return DOOM_WEAPON_ROOM_PRESENTATION;
+  }
+  if (projectId === "doom-pickup-room") {
+    return DOOM_PICKUP_ROOM_PRESENTATION;
   }
   return projectId === "doom-e1m1"
     ? DOOM_E1M1_PRESENTATION

@@ -1432,6 +1432,7 @@ pub fn project_doom_e1m1_application_content(
             | "doom-combat-room"
             | "doom-fx-room"
             | "doom-weapon-room"
+            | "doom-pickup-room"
     ) {
         (
             RenderFrameDiff::try_from_ops(Vec::new())
@@ -1985,6 +1986,39 @@ mod tests {
             }
             _ => true,
         }));
+    }
+
+    #[test]
+    fn pickup_room_initial_projection_contains_visible_pickup_sprites() {
+        let source = include_str!("../../../../content/projects/doom-pickup-room.project.json");
+        let project = decode_project_document(source).unwrap().project;
+        let runtime = GameRuntime::from_stored_project(source).unwrap();
+        let admitted = runtime.collision_scene().unwrap();
+        let scene = VoxelCollisionScene::from_material_voxels(
+            admitted.voxel_size(),
+            admitted.chunk_size(),
+            admitted.material_voxels().to_vec(),
+        )
+        .unwrap();
+        let objects = project_stored_voxel_objects(&project).unwrap();
+        let mut gameplay = GameplayApplicationProjector::new(&project);
+        let entities = gameplay.project(&runtime).unwrap();
+        let content =
+            project_doom_e1m1_application_content(&project, &scene, &objects, &entities).unwrap();
+
+        let visible_pickups = content
+            .frame
+            .ops
+            .iter()
+            .filter(|operation| {
+                matches!(
+                    operation,
+                    RenderDiff::CreateSprite { sprite, .. }
+                        if sprite.asset.starts_with("sprite/doom-pickup-") && sprite.visible
+                )
+            })
+            .count();
+        assert_eq!(visible_pickups, 11);
     }
 
     #[test]

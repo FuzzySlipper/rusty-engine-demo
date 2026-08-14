@@ -736,8 +736,7 @@ from the collision point by the source 10- and 4-Doom-unit offsets, advances
 their manifest-authored clips, and destroys them after completion; those
 sprites are never authored gameplay entities or persisted snapshot state.
 First-person muzzle patches such as `PISF` and `SHTF` remain intentionally out
-of this room because they are screen-space weapon presentation owned by task
-6931. Run the room with
+of this room because they are screen-space weapon presentation owned by task 6931. Run the room with
 `pnpm run serve:fx-room -- --host HOST --port PORT`; the matching
 `.den-serve.doom-fx-room.json` selects the same project for Den playtesting.
 
@@ -767,12 +766,33 @@ hit correspondence without E1M1 traversal or enemy interference. Generate and
 check it through `generate:weapon-room` and `check:weapon-room`; the matching
 `.den-serve.doom-weapon-room.json` is its explicit Den playtest manifest.
 
+`content/doom-e1m1/sprites/effects.png` also contains the task-6932 pickup
+families used by E1M1 and its enemy drops: `SHOT`, `CLIP`, `SHEL`, `AMMO`,
+`SBOX`, `STIM`, `MEDI`, `BON1`, `BON2`, `ARM1`, and `ARM2`. The same hashed
+IWAD provides exact patch bytes, PLAYPAL colors, dimensions, signed origins,
+and transparency. The reading reference at `/home/research/doom.ts` HEAD
+`0d88ba912f7b084a05b776a19801d45f383cef20` supplies the item state order and
+35 Hz timing from `src/doom/doom/info/states.ts`: static pickup frames remain
+indefinite, bonuses ping-pong `A/B/C/D/C/B` at six tics per frame, green armor
+uses `A:6/B:7`, and blue armor uses `A:6/B:6`, with the authored armor
+full-bright frames retained in the generated contract.
+
+`content/projects/doom-pickup-room.project.json` is the bounded live inspection
+room for task 6932. It uses source-origin anchoring at the established
+28-Doom-unit presentation scale, exposes all eleven scoped families as ordinary
+Rust-owned pickups, starts health and ammunition below their caps so collection
+has visible consequences, and links a dormant `CLIP` sprite to a stationary
+Zombieman through the production defeat-drop relationship. Rust alone decides
+materialization, collection eligibility, consequences, and removal. Generate
+and check it through `generate:pickup-room` and `check:pickup-room`; the matching
+`.den-serve.doom-pickup-room.json` is its explicit Den playtest manifest.
+
 ### Derived voxel asset (single sparse-run volume, gameplay truth)
 
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
 `voxelDataHash sha256:fad81c1c1d8b8ffe30b733817f70b494b26c1ca788e4c8a40a6fe16ffb6c756d`
 `contentHash sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c`
-`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:2d1d47b2078c3e0a5a108654206fb47d79fb0c799398bf11281f805d88a35834`.
+`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:755a557dc0d496129748f5deb7719d3c92e8f44766a177b93e0981956916de1f`.
 
 ### Authored project
 

@@ -162,6 +162,7 @@ impl BrowserRuntime {
                 | "doom-combat-room"
                 | "doom-fx-room"
                 | "doom-weapon-room"
+                | "doom-pickup-room"
         );
         let mut gameplay_projector = uses_doom_application_content
             .then(|| GameplayApplicationProjector::new(authored.document()));

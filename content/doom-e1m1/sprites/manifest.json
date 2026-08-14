@@ -1268,6 +1268,139 @@
       "directoryIndex": 643,
       "size": 1668,
       "sha256": "d7bda7f8f818309b3e21abe02d0daa370bd378e02b3c443043afbeadb8e4fa6c"
+    },
+    {
+      "name": "SHOTA0",
+      "family": "SHOT",
+      "directoryIndex": 977,
+      "size": 904,
+      "sha256": "69c86e67bf331998aab041179ebe2bb6b1bccbde9c99064e70172b97be9438db"
+    },
+    {
+      "name": "CLIPA0",
+      "family": "CLIP",
+      "directoryIndex": 981,
+      "size": 188,
+      "sha256": "dba7992cf2234573a8672670277c366212ea023d674c710f043ea58c2b942b15"
+    },
+    {
+      "name": "SHELA0",
+      "family": "SHEL",
+      "directoryIndex": 982,
+      "size": 216,
+      "sha256": "d0fcd1bddca2dc77c0330f1b0016303e0e6f254e6f33989d1611305793542dbc"
+    },
+    {
+      "name": "AMMOA0",
+      "family": "AMMO",
+      "directoryIndex": 995,
+      "size": 704,
+      "sha256": "90da656c4d31fe65ee36c3013b7894132b944035416e8fdaf0428792692c6507"
+    },
+    {
+      "name": "SBOXA0",
+      "family": "SBOX",
+      "directoryIndex": 996,
+      "size": 664,
+      "sha256": "1030121fde4e2d13c7e08279f52dd3635759f413a7d08478b96ce71e7c030888"
+    },
+    {
+      "name": "STIMA0",
+      "family": "STIM",
+      "directoryIndex": 984,
+      "size": 340,
+      "sha256": "d436a1a06ef9e31a9bc9db574f70cce9da852d052efb0b5f9cb7ee3e3a53524d"
+    },
+    {
+      "name": "MEDIA0",
+      "family": "MEDI",
+      "directoryIndex": 985,
+      "size": 780,
+      "sha256": "47b8c6d7e70233d7a5f3857410ae76c79e261837f9a587d1e0da2f3f4828a1d0"
+    },
+    {
+      "name": "BON1A0",
+      "family": "BON1",
+      "directoryIndex": 1020,
+      "size": 292,
+      "sha256": "d3cadc565cd83a666a162fc3113b615c3fd9050bddbb31055840acb04bd9394d"
+    },
+    {
+      "name": "BON1B0",
+      "family": "BON1",
+      "directoryIndex": 1021,
+      "size": 292,
+      "sha256": "8d8da77de254872aa8e9b31588a87099feb94e92143d5ca653efe13c39049239"
+    },
+    {
+      "name": "BON1C0",
+      "family": "BON1",
+      "directoryIndex": 1022,
+      "size": 292,
+      "sha256": "8107df21a06838382d346c4bae70c777632030c8a3608ba512288d90c21b4f8f"
+    },
+    {
+      "name": "BON1D0",
+      "family": "BON1",
+      "directoryIndex": 1023,
+      "size": 292,
+      "sha256": "c098a94a7074fbba2bf7c215bbcf453cfd10559c5a79aaccb6702dd5ddd9189d"
+    },
+    {
+      "name": "BON2A0",
+      "family": "BON2",
+      "directoryIndex": 1028,
+      "size": 356,
+      "sha256": "0a42a82b7862183b58d009df85beed8f74d294da33739cb17ce479937c7a8159"
+    },
+    {
+      "name": "BON2B0",
+      "family": "BON2",
+      "directoryIndex": 1029,
+      "size": 356,
+      "sha256": "d428f6c78ad1cf64ad4d2ba53abbdb07e31cd1736dbbe90fdcd89a01101b8f68"
+    },
+    {
+      "name": "BON2C0",
+      "family": "BON2",
+      "directoryIndex": 1030,
+      "size": 356,
+      "sha256": "3fe0ea85a3f8ae53672ccad5c3110c79d1951cd4731f84a7336fd773229c4888"
+    },
+    {
+      "name": "BON2D0",
+      "family": "BON2",
+      "directoryIndex": 1031,
+      "size": 356,
+      "sha256": "57846b51b6699acf6c67fc1eb74e10dd65ef89a976810e0bd91919379cac19b1"
+    },
+    {
+      "name": "ARM1A0",
+      "family": "ARM1",
+      "directoryIndex": 986,
+      "size": 656,
+      "sha256": "0868b76a232567b7a0a9b903e29cffc978842b40837e5f5043365058fd36613a"
+    },
+    {
+      "name": "ARM1B0",
+      "family": "ARM1",
+      "directoryIndex": 987,
+      "size": 656,
+      "sha256": "30966ba9ddb3b6d1657083c7477b8267a519c77f13e4a325ea8ced59461490ad"
+    },
+    {
+      "name": "ARM2A0",
+      "family": "ARM2",
+      "directoryIndex": 988,
+      "size": 656,
+      "sha256": "d70263beb1fc0a6993558050448dd735e6bef2b74c30e688404059bed80f65fd"
+    },
+    {
+      "name": "ARM2B0",
+      "family": "ARM2",
+      "directoryIndex": 989,
+      "size": 656,
+      "sha256": "629a672b011132e9ab50527713cf4e68664b9bb6d9f3f40606b1041a8aa1e610"
     }
   ],
   "atlases": [
@@ -8083,10 +8216,10 @@
       "textureId": "texture/doom-e1m1-effects",
       "file": "effects.png",
       "width": 128,
-      "height": 86,
+      "height": 160,
       "padding": 1,
-      "pngSha256": "e6e5a2cf053289f5da8dce43e8d9d527c0449b0beab7fdb62d1b3b964e3f572a",
-      "pngByteLength": 3482,
+      "pngSha256": "aed7642d26d2822ecae8ab363ac73b3c3bb4f873dbf71424f5639ebcc3dea29a",
+      "pngByteLength": 6839,
       "frames": [
         {
           "id": 0,
@@ -8106,11 +8239,11 @@
           "uv": {
             "min": [
               0.0078125,
-              0.011627906976744186
+              0.00625
             ],
             "max": [
               0.125,
-              0.18604651162790697
+              0.1
             ]
           },
           "pixelSize": [
@@ -8151,11 +8284,11 @@
           "uv": {
             "min": [
               0.1328125,
-              0.011627906976744186
+              0.00625
             ],
             "max": [
               0.25,
-              0.18604651162790697
+              0.1
             ]
           },
           "pixelSize": [
@@ -8196,11 +8329,11 @@
           "uv": {
             "min": [
               0.2578125,
-              0.011627906976744186
+              0.00625
             ],
             "max": [
               0.546875,
-              0.4186046511627907
+              0.225
             ]
           },
           "pixelSize": [
@@ -8241,11 +8374,11 @@
           "uv": {
             "min": [
               0.5546875,
-              0.011627906976744186
+              0.00625
             ],
             "max": [
               0.890625,
-              0.46511627906976744
+              0.25
             ]
           },
           "pixelSize": [
@@ -8286,11 +8419,11 @@
           "uv": {
             "min": [
               0.0078125,
-              0.47674418604651164
+              0.25625
             ],
             "max": [
               0.3984375,
-              0.9883720930232558
+              0.53125
             ]
           },
           "pixelSize": [
@@ -8331,11 +8464,11 @@
           "uv": {
             "min": [
               0.40625,
-              0.47674418604651164
+              0.25625
             ],
             "max": [
               0.4453125,
-              0.5465116279069767
+              0.29375
             ]
           },
           "pixelSize": [
@@ -8376,11 +8509,11 @@
           "uv": {
             "min": [
               0.453125,
-              0.47674418604651164
+              0.25625
             ],
             "max": [
               0.515625,
-              0.5697674418604651
+              0.30625
             ]
           },
           "pixelSize": [
@@ -8421,11 +8554,11 @@
           "uv": {
             "min": [
               0.5234375,
-              0.47674418604651164
+              0.25625
             ],
             "max": [
               0.6171875,
-              0.6046511627906976
+              0.325
             ]
           },
           "pixelSize": [
@@ -8466,11 +8599,11 @@
           "uv": {
             "min": [
               0.625,
-              0.47674418604651164
+              0.25625
             ],
             "max": [
               0.6640625,
-              0.5348837209302325
+              0.2875
             ]
           },
           "pixelSize": [
@@ -8511,11 +8644,11 @@
           "uv": {
             "min": [
               0.671875,
-              0.47674418604651164
+              0.25625
             ],
             "max": [
               0.7421875,
-              0.5697674418604651
+              0.30625
             ]
           },
           "pixelSize": [
@@ -8556,11 +8689,11 @@
           "uv": {
             "min": [
               0.75,
-              0.47674418604651164
+              0.25625
             ],
             "max": [
               0.84375,
-              0.6046511627906976
+              0.325
             ]
           },
           "pixelSize": [
@@ -8601,11 +8734,11 @@
           "uv": {
             "min": [
               0.8515625,
-              0.47674418604651164
+              0.25625
             ],
             "max": [
               0.96875,
-              0.6511627906976745
+              0.35
             ]
           },
           "pixelSize": [
@@ -8627,6 +8760,861 @@
             "bottom": -8
           },
           "opaquePixelCount": 88
+        },
+        {
+          "id": 12,
+          "key": "shot:a0",
+          "name": "SHOTA0",
+          "family": "SHOT",
+          "atlas": "effects",
+          "sourceLump": "SHOTA0",
+          "sourceByteLength": 904,
+          "sourceSha256": "69c86e67bf331998aab041179ebe2bb6b1bccbde9c99064e70172b97be9438db",
+          "atlasRect": [
+            1,
+            86,
+            63,
+            12
+          ],
+          "uv": {
+            "min": [
+              0.0078125,
+              0.5375
+            ],
+            "max": [
+              0.5,
+              0.6125
+            ]
+          },
+          "pixelSize": [
+            63,
+            12
+          ],
+          "origin": [
+            31,
+            17
+          ],
+          "pivot": [
+            0.49206349206349204,
+            -0.4166666666666667
+          ],
+          "boundsFromOrigin": {
+            "left": -31,
+            "right": 32,
+            "top": 17,
+            "bottom": 5
+          },
+          "opaquePixelCount": 325
+        },
+        {
+          "id": 13,
+          "key": "clip:a0",
+          "name": "CLIPA0",
+          "family": "CLIP",
+          "atlas": "effects",
+          "sourceLump": "CLIPA0",
+          "sourceByteLength": 188,
+          "sourceSha256": "dba7992cf2234573a8672670277c366212ea023d674c710f043ea58c2b942b15",
+          "atlasRect": [
+            65,
+            86,
+            9,
+            11
+          ],
+          "uv": {
+            "min": [
+              0.5078125,
+              0.5375
+            ],
+            "max": [
+              0.578125,
+              0.60625
+            ]
+          },
+          "pixelSize": [
+            9,
+            11
+          ],
+          "origin": [
+            2,
+            11
+          ],
+          "pivot": [
+            0.2222222222222222,
+            0
+          ],
+          "boundsFromOrigin": {
+            "left": -2,
+            "right": 7,
+            "top": 11,
+            "bottom": 0
+          },
+          "opaquePixelCount": 97
+        },
+        {
+          "id": 14,
+          "key": "shel:a0",
+          "name": "SHELA0",
+          "family": "SHEL",
+          "atlas": "effects",
+          "sourceLump": "SHELA0",
+          "sourceByteLength": 216,
+          "sourceSha256": "d0fcd1bddca2dc77c0330f1b0016303e0e6f254e6f33989d1611305793542dbc",
+          "atlasRect": [
+            75,
+            86,
+            15,
+            7
+          ],
+          "uv": {
+            "min": [
+              0.5859375,
+              0.5375
+            ],
+            "max": [
+              0.703125,
+              0.58125
+            ]
+          },
+          "pixelSize": [
+            15,
+            7
+          ],
+          "origin": [
+            5,
+            7
+          ],
+          "pivot": [
+            0.3333333333333333,
+            0
+          ],
+          "boundsFromOrigin": {
+            "left": -5,
+            "right": 10,
+            "top": 7,
+            "bottom": 0
+          },
+          "opaquePixelCount": 84
+        },
+        {
+          "id": 15,
+          "key": "ammo:a0",
+          "name": "AMMOA0",
+          "family": "AMMO",
+          "atlas": "effects",
+          "sourceLump": "AMMOA0",
+          "sourceByteLength": 704,
+          "sourceSha256": "90da656c4d31fe65ee36c3013b7894132b944035416e8fdaf0428792692c6507",
+          "atlasRect": [
+            91,
+            86,
+            28,
+            16
+          ],
+          "uv": {
+            "min": [
+              0.7109375,
+              0.5375
+            ],
+            "max": [
+              0.9296875,
+              0.6375
+            ]
+          },
+          "pixelSize": [
+            28,
+            16
+          ],
+          "origin": [
+            12,
+            16
+          ],
+          "pivot": [
+            0.42857142857142855,
+            0
+          ],
+          "boundsFromOrigin": {
+            "left": -12,
+            "right": 16,
+            "top": 16,
+            "bottom": 0
+          },
+          "opaquePixelCount": 442
+        },
+        {
+          "id": 16,
+          "key": "sbox:a0",
+          "name": "SBOXA0",
+          "family": "SBOX",
+          "atlas": "effects",
+          "sourceLump": "SBOXA0",
+          "sourceByteLength": 664,
+          "sourceSha256": "1030121fde4e2d13c7e08279f52dd3635759f413a7d08478b96ce71e7c030888",
+          "atlasRect": [
+            1,
+            103,
+            32,
+            12
+          ],
+          "uv": {
+            "min": [
+              0.0078125,
+              0.64375
+            ],
+            "max": [
+              0.2578125,
+              0.71875
+            ]
+          },
+          "pixelSize": [
+            32,
+            12
+          ],
+          "origin": [
+            16,
+            12
+          ],
+          "pivot": [
+            0.5,
+            0
+          ],
+          "boundsFromOrigin": {
+            "left": -16,
+            "right": 16,
+            "top": 12,
+            "bottom": 0
+          },
+          "opaquePixelCount": 367
+        },
+        {
+          "id": 17,
+          "key": "stim:a0",
+          "name": "STIMA0",
+          "family": "STIM",
+          "atlas": "effects",
+          "sourceLump": "STIMA0",
+          "sourceByteLength": 340,
+          "sourceSha256": "d436a1a06ef9e31a9bc9db574f70cce9da852d052efb0b5f9cb7ee3e3a53524d",
+          "atlasRect": [
+            34,
+            103,
+            14,
+            15
+          ],
+          "uv": {
+            "min": [
+              0.265625,
+              0.64375
+            ],
+            "max": [
+              0.375,
+              0.7375
+            ]
+          },
+          "pixelSize": [
+            14,
+            15
+          ],
+          "origin": [
+            7,
+            15
+          ],
+          "pivot": [
+            0.5,
+            0
+          ],
+          "boundsFromOrigin": {
+            "left": -7,
+            "right": 7,
+            "top": 15,
+            "bottom": 0
+          },
+          "opaquePixelCount": 204
+        },
+        {
+          "id": 18,
+          "key": "medi:a0",
+          "name": "MEDIA0",
+          "family": "MEDI",
+          "atlas": "effects",
+          "sourceLump": "MEDIA0",
+          "sourceByteLength": 780,
+          "sourceSha256": "47b8c6d7e70233d7a5f3857410ae76c79e261837f9a587d1e0da2f3f4828a1d0",
+          "atlasRect": [
+            49,
+            103,
+            28,
+            19
+          ],
+          "uv": {
+            "min": [
+              0.3828125,
+              0.64375
+            ],
+            "max": [
+              0.6015625,
+              0.7625
+            ]
+          },
+          "pixelSize": [
+            28,
+            19
+          ],
+          "origin": [
+            13,
+            19
+          ],
+          "pivot": [
+            0.4642857142857143,
+            0
+          ],
+          "boundsFromOrigin": {
+            "left": -13,
+            "right": 15,
+            "top": 19,
+            "bottom": 0
+          },
+          "opaquePixelCount": 520
+        },
+        {
+          "id": 19,
+          "key": "bon1:a0",
+          "name": "BON1A0",
+          "family": "BON1",
+          "atlas": "effects",
+          "sourceLump": "BON1A0",
+          "sourceByteLength": 292,
+          "sourceSha256": "d3cadc565cd83a666a162fc3113b615c3fd9050bddbb31055840acb04bd9394d",
+          "atlasRect": [
+            78,
+            103,
+            14,
+            18
+          ],
+          "uv": {
+            "min": [
+              0.609375,
+              0.64375
+            ],
+            "max": [
+              0.71875,
+              0.75625
+            ]
+          },
+          "pixelSize": [
+            14,
+            18
+          ],
+          "origin": [
+            7,
+            14
+          ],
+          "pivot": [
+            0.5,
+            0.2222222222222222
+          ],
+          "boundsFromOrigin": {
+            "left": -7,
+            "right": 7,
+            "top": 14,
+            "bottom": -4
+          },
+          "opaquePixelCount": 158
+        },
+        {
+          "id": 20,
+          "key": "bon1:b0",
+          "name": "BON1B0",
+          "family": "BON1",
+          "atlas": "effects",
+          "sourceLump": "BON1B0",
+          "sourceByteLength": 292,
+          "sourceSha256": "8d8da77de254872aa8e9b31588a87099feb94e92143d5ca653efe13c39049239",
+          "atlasRect": [
+            93,
+            103,
+            14,
+            18
+          ],
+          "uv": {
+            "min": [
+              0.7265625,
+              0.64375
+            ],
+            "max": [
+              0.8359375,
+              0.75625
+            ]
+          },
+          "pixelSize": [
+            14,
+            18
+          ],
+          "origin": [
+            7,
+            14
+          ],
+          "pivot": [
+            0.5,
+            0.2222222222222222
+          ],
+          "boundsFromOrigin": {
+            "left": -7,
+            "right": 7,
+            "top": 14,
+            "bottom": -4
+          },
+          "opaquePixelCount": 158
+        },
+        {
+          "id": 21,
+          "key": "bon1:c0",
+          "name": "BON1C0",
+          "family": "BON1",
+          "atlas": "effects",
+          "sourceLump": "BON1C0",
+          "sourceByteLength": 292,
+          "sourceSha256": "8107df21a06838382d346c4bae70c777632030c8a3608ba512288d90c21b4f8f",
+          "atlasRect": [
+            108,
+            103,
+            14,
+            18
+          ],
+          "uv": {
+            "min": [
+              0.84375,
+              0.64375
+            ],
+            "max": [
+              0.953125,
+              0.75625
+            ]
+          },
+          "pixelSize": [
+            14,
+            18
+          ],
+          "origin": [
+            7,
+            14
+          ],
+          "pivot": [
+            0.5,
+            0.2222222222222222
+          ],
+          "boundsFromOrigin": {
+            "left": -7,
+            "right": 7,
+            "top": 14,
+            "bottom": -4
+          },
+          "opaquePixelCount": 158
+        },
+        {
+          "id": 22,
+          "key": "bon1:d0",
+          "name": "BON1D0",
+          "family": "BON1",
+          "atlas": "effects",
+          "sourceLump": "BON1D0",
+          "sourceByteLength": 292,
+          "sourceSha256": "c098a94a7074fbba2bf7c215bbcf453cfd10559c5a79aaccb6702dd5ddd9189d",
+          "atlasRect": [
+            1,
+            123,
+            14,
+            18
+          ],
+          "uv": {
+            "min": [
+              0.0078125,
+              0.76875
+            ],
+            "max": [
+              0.1171875,
+              0.88125
+            ]
+          },
+          "pixelSize": [
+            14,
+            18
+          ],
+          "origin": [
+            7,
+            14
+          ],
+          "pivot": [
+            0.5,
+            0.2222222222222222
+          ],
+          "boundsFromOrigin": {
+            "left": -7,
+            "right": 7,
+            "top": 14,
+            "bottom": -4
+          },
+          "opaquePixelCount": 158
+        },
+        {
+          "id": 23,
+          "key": "bon2:a0",
+          "name": "BON2A0",
+          "family": "BON2",
+          "atlas": "effects",
+          "sourceLump": "BON2A0",
+          "sourceByteLength": 356,
+          "sourceSha256": "0a42a82b7862183b58d009df85beed8f74d294da33739cb17ce479937c7a8159",
+          "atlasRect": [
+            16,
+            123,
+            16,
+            15
+          ],
+          "uv": {
+            "min": [
+              0.125,
+              0.76875
+            ],
+            "max": [
+              0.25,
+              0.8625
+            ]
+          },
+          "pixelSize": [
+            16,
+            15
+          ],
+          "origin": [
+            7,
+            13
+          ],
+          "pivot": [
+            0.4375,
+            0.13333333333333333
+          ],
+          "boundsFromOrigin": {
+            "left": -7,
+            "right": 9,
+            "top": 13,
+            "bottom": -2
+          },
+          "opaquePixelCount": 202
+        },
+        {
+          "id": 24,
+          "key": "bon2:b0",
+          "name": "BON2B0",
+          "family": "BON2",
+          "atlas": "effects",
+          "sourceLump": "BON2B0",
+          "sourceByteLength": 356,
+          "sourceSha256": "d428f6c78ad1cf64ad4d2ba53abbdb07e31cd1736dbbe90fdcd89a01101b8f68",
+          "atlasRect": [
+            33,
+            123,
+            16,
+            15
+          ],
+          "uv": {
+            "min": [
+              0.2578125,
+              0.76875
+            ],
+            "max": [
+              0.3828125,
+              0.8625
+            ]
+          },
+          "pixelSize": [
+            16,
+            15
+          ],
+          "origin": [
+            7,
+            13
+          ],
+          "pivot": [
+            0.4375,
+            0.13333333333333333
+          ],
+          "boundsFromOrigin": {
+            "left": -7,
+            "right": 9,
+            "top": 13,
+            "bottom": -2
+          },
+          "opaquePixelCount": 202
+        },
+        {
+          "id": 25,
+          "key": "bon2:c0",
+          "name": "BON2C0",
+          "family": "BON2",
+          "atlas": "effects",
+          "sourceLump": "BON2C0",
+          "sourceByteLength": 356,
+          "sourceSha256": "3fe0ea85a3f8ae53672ccad5c3110c79d1951cd4731f84a7336fd773229c4888",
+          "atlasRect": [
+            50,
+            123,
+            16,
+            15
+          ],
+          "uv": {
+            "min": [
+              0.390625,
+              0.76875
+            ],
+            "max": [
+              0.515625,
+              0.8625
+            ]
+          },
+          "pixelSize": [
+            16,
+            15
+          ],
+          "origin": [
+            7,
+            13
+          ],
+          "pivot": [
+            0.4375,
+            0.13333333333333333
+          ],
+          "boundsFromOrigin": {
+            "left": -7,
+            "right": 9,
+            "top": 13,
+            "bottom": -2
+          },
+          "opaquePixelCount": 202
+        },
+        {
+          "id": 26,
+          "key": "bon2:d0",
+          "name": "BON2D0",
+          "family": "BON2",
+          "atlas": "effects",
+          "sourceLump": "BON2D0",
+          "sourceByteLength": 356,
+          "sourceSha256": "57846b51b6699acf6c67fc1eb74e10dd65ef89a976810e0bd91919379cac19b1",
+          "atlasRect": [
+            67,
+            123,
+            16,
+            15
+          ],
+          "uv": {
+            "min": [
+              0.5234375,
+              0.76875
+            ],
+            "max": [
+              0.6484375,
+              0.8625
+            ]
+          },
+          "pixelSize": [
+            16,
+            15
+          ],
+          "origin": [
+            7,
+            13
+          ],
+          "pivot": [
+            0.4375,
+            0.13333333333333333
+          ],
+          "boundsFromOrigin": {
+            "left": -7,
+            "right": 9,
+            "top": 13,
+            "bottom": -2
+          },
+          "opaquePixelCount": 202
+        },
+        {
+          "id": 27,
+          "key": "arm1:a0",
+          "name": "ARM1A0",
+          "family": "ARM1",
+          "atlas": "effects",
+          "sourceLump": "ARM1A0",
+          "sourceByteLength": 656,
+          "sourceSha256": "0868b76a232567b7a0a9b903e29cffc978842b40837e5f5043365058fd36613a",
+          "atlasRect": [
+            84,
+            123,
+            31,
+            17
+          ],
+          "uv": {
+            "min": [
+              0.65625,
+              0.76875
+            ],
+            "max": [
+              0.8984375,
+              0.875
+            ]
+          },
+          "pixelSize": [
+            31,
+            17
+          ],
+          "origin": [
+            15,
+            17
+          ],
+          "pivot": [
+            0.4838709677419355,
+            0
+          ],
+          "boundsFromOrigin": {
+            "left": -15,
+            "right": 16,
+            "top": 17,
+            "bottom": 0
+          },
+          "opaquePixelCount": 366
+        },
+        {
+          "id": 28,
+          "key": "arm1:b0",
+          "name": "ARM1B0",
+          "family": "ARM1",
+          "atlas": "effects",
+          "sourceLump": "ARM1B0",
+          "sourceByteLength": 656,
+          "sourceSha256": "30966ba9ddb3b6d1657083c7477b8267a519c77f13e4a325ea8ced59461490ad",
+          "atlasRect": [
+            1,
+            142,
+            31,
+            17
+          ],
+          "uv": {
+            "min": [
+              0.0078125,
+              0.8875
+            ],
+            "max": [
+              0.25,
+              0.99375
+            ]
+          },
+          "pixelSize": [
+            31,
+            17
+          ],
+          "origin": [
+            15,
+            17
+          ],
+          "pivot": [
+            0.4838709677419355,
+            0
+          ],
+          "boundsFromOrigin": {
+            "left": -15,
+            "right": 16,
+            "top": 17,
+            "bottom": 0
+          },
+          "opaquePixelCount": 366
+        },
+        {
+          "id": 29,
+          "key": "arm2:a0",
+          "name": "ARM2A0",
+          "family": "ARM2",
+          "atlas": "effects",
+          "sourceLump": "ARM2A0",
+          "sourceByteLength": 656,
+          "sourceSha256": "d70263beb1fc0a6993558050448dd735e6bef2b74c30e688404059bed80f65fd",
+          "atlasRect": [
+            33,
+            142,
+            31,
+            17
+          ],
+          "uv": {
+            "min": [
+              0.2578125,
+              0.8875
+            ],
+            "max": [
+              0.5,
+              0.99375
+            ]
+          },
+          "pixelSize": [
+            31,
+            17
+          ],
+          "origin": [
+            15,
+            17
+          ],
+          "pivot": [
+            0.4838709677419355,
+            0
+          ],
+          "boundsFromOrigin": {
+            "left": -15,
+            "right": 16,
+            "top": 17,
+            "bottom": 0
+          },
+          "opaquePixelCount": 366
+        },
+        {
+          "id": 30,
+          "key": "arm2:b0",
+          "name": "ARM2B0",
+          "family": "ARM2",
+          "atlas": "effects",
+          "sourceLump": "ARM2B0",
+          "sourceByteLength": 656,
+          "sourceSha256": "629a672b011132e9ab50527713cf4e68664b9bb6d9f3f40606b1041a8aa1e610",
+          "atlasRect": [
+            65,
+            142,
+            31,
+            17
+          ],
+          "uv": {
+            "min": [
+              0.5078125,
+              0.8875
+            ],
+            "max": [
+              0.75,
+              0.99375
+            ]
+          },
+          "pixelSize": [
+            31,
+            17
+          ],
+          "origin": [
+            15,
+            17
+          ],
+          "pivot": [
+            0.4838709677419355,
+            0
+          ],
+          "boundsFromOrigin": {
+            "left": -15,
+            "right": 16,
+            "top": 17,
+            "bottom": 0
+          },
+          "opaquePixelCount": 366
         }
       ]
     },
@@ -12447,15 +13435,571 @@
             ]
           }
         ]
+      },
+      {
+        "prefix": "SHOT",
+        "role": "item",
+        "thingType": 2001,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_SHOT",
+                "frame": "A",
+                "tics": -1,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "SHOTA0",
+                "atlasFrame": 12,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "CLIP",
+        "role": "item",
+        "thingType": 2007,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_CLIP",
+                "frame": "A",
+                "tics": -1,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "CLIPA0",
+                "atlasFrame": 13,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "SHEL",
+        "role": "item",
+        "thingType": 2008,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_SHEL",
+                "frame": "A",
+                "tics": -1,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "SHELA0",
+                "atlasFrame": 14,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "AMMO",
+        "role": "item",
+        "thingType": 2048,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_AMMO",
+                "frame": "A",
+                "tics": -1,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "AMMOA0",
+                "atlasFrame": 15,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "SBOX",
+        "role": "item",
+        "thingType": 2049,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_SBOX",
+                "frame": "A",
+                "tics": -1,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "SBOXA0",
+                "atlasFrame": 16,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "STIM",
+        "role": "item",
+        "thingType": 2011,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_STIM",
+                "frame": "A",
+                "tics": -1,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "STIMA0",
+                "atlasFrame": 17,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "MEDI",
+        "role": "item",
+        "thingType": 2012,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_MEDI",
+                "frame": "A",
+                "tics": -1,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "MEDIA0",
+                "atlasFrame": 18,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "BON1",
+        "role": "item",
+        "thingType": 2014,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_BON1",
+                "frame": "A",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_BON1A",
+                "frame": "B",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_BON1B",
+                "frame": "C",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_BON1C",
+                "frame": "D",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_BON1B",
+                "frame": "C",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_BON1A",
+                "frame": "B",
+                "tics": 6,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "BON1A0",
+                "atlasFrame": 19,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "B",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "BON1B0",
+                "atlasFrame": 20,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "C",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "BON1C0",
+                "atlasFrame": 21,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "D",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "BON1D0",
+                "atlasFrame": 22,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "BON2",
+        "role": "item",
+        "thingType": 2015,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_BON2",
+                "frame": "A",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_BON2A",
+                "frame": "B",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_BON2B",
+                "frame": "C",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_BON2C",
+                "frame": "D",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_BON2B",
+                "frame": "C",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_BON2A",
+                "frame": "B",
+                "tics": 6,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "BON2A0",
+                "atlasFrame": 23,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "B",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "BON2B0",
+                "atlasFrame": 24,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "C",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "BON2C0",
+                "atlasFrame": 25,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "D",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "BON2D0",
+                "atlasFrame": 26,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "ARM1",
+        "role": "item",
+        "thingType": 2018,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_ARM1",
+                "frame": "A",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_ARM1A",
+                "frame": "B",
+                "tics": 7,
+                "fullBright": true
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "ARM1A0",
+                "atlasFrame": 27,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "B",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "ARM1B0",
+                "atlasFrame": 28,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "ARM2",
+        "role": "item",
+        "thingType": 2019,
+        "dimensionsDoomUnits": {
+          "radius": 20,
+          "height": 16
+        },
+        "clips": [
+          {
+            "id": "available",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_ARM2",
+                "frame": "A",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_ARM2A",
+                "frame": "B",
+                "tics": 6,
+                "fullBright": true
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "ARM2A0",
+                "atlasFrame": 29,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "B",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "ARM2B0",
+                "atlasFrame": 30,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
       }
     ]
   },
   "diagnostics": {
-    "sourceLumpCount": 179,
-    "frameCount": 179,
+    "sourceLumpCount": 198,
+    "frameCount": 198,
     "atlasCount": 3,
-    "totalPngBytes": 194624,
-    "totalDecodedRgbaBytes": 1659472,
-    "totalOpaquePixels": 204626
+    "totalPngBytes": 197981,
+    "totalDecodedRgbaBytes": 1685912,
+    "totalOpaquePixels": 209569
   }
 }

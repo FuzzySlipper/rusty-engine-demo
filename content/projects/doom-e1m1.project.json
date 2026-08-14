@@ -27406,7 +27406,7 @@
       "id": "sprite/doom-blood",
       "catalog": {
         "version": 1,
-        "hash": "sha256:e6e5a2cf053289f5da8dce43e8d9d527c0449b0beab7fdb62d1b3b964e3f572a",
+        "hash": "sha256:aed7642d26d2822ecae8ab363ac73b3c3bb4f873dbf71424f5639ebcc3dea29a",
         "sourcePath": "content/doom-e1m1/sprites/effects.png",
         "label": "Doom BLUD sprites"
       },
@@ -27418,11 +27418,11 @@
             "frame": 0,
             "uvMin": [
               0.40625,
-              0.47674417
+              0.25625
             ],
             "uvMax": [
               0.4453125,
-              0.54651165
+              0.29375
             ],
             "size": [
               0.3125,
@@ -27433,11 +27433,11 @@
             "frame": 1,
             "uvMin": [
               0.453125,
-              0.47674417
+              0.25625
             ],
             "uvMax": [
               0.515625,
-              0.5697674
+              0.30625
             ],
             "size": [
               0.5,
@@ -27448,11 +27448,11 @@
             "frame": 2,
             "uvMin": [
               0.5234375,
-              0.47674417
+              0.25625
             ],
             "uvMax": [
               0.6171875,
-              0.60465115
+              0.325
             ],
             "size": [
               0.75,
@@ -28351,7 +28351,7 @@
       "id": "sprite/doom-imp-fireball",
       "catalog": {
         "version": 1,
-        "hash": "sha256:e6e5a2cf053289f5da8dce43e8d9d527c0449b0beab7fdb62d1b3b964e3f572a",
+        "hash": "sha256:aed7642d26d2822ecae8ab363ac73b3c3bb4f873dbf71424f5639ebcc3dea29a",
         "sourcePath": "content/doom-e1m1/sprites/effects.png",
         "label": "Doom BAL1 sprites"
       },
@@ -28363,11 +28363,11 @@
             "frame": 0,
             "uvMin": [
               0.0078125,
-              0.011627907
+              0.00625
             ],
             "uvMax": [
               0.125,
-              0.18604651
+              0.1
             ],
             "size": [
               0.9375,
@@ -28378,11 +28378,11 @@
             "frame": 1,
             "uvMin": [
               0.1328125,
-              0.011627907
+              0.00625
             ],
             "uvMax": [
               0.25,
-              0.18604651
+              0.1
             ],
             "size": [
               0.9375,
@@ -28393,11 +28393,11 @@
             "frame": 2,
             "uvMin": [
               0.2578125,
-              0.011627907
+              0.00625
             ],
             "uvMax": [
               0.546875,
-              0.41860464
+              0.225
             ],
             "size": [
               2.3125,
@@ -28408,11 +28408,11 @@
             "frame": 3,
             "uvMin": [
               0.5546875,
-              0.011627907
+              0.00625
             ],
             "uvMax": [
               0.890625,
-              0.4651163
+              0.25
             ],
             "size": [
               2.6875,
@@ -28423,11 +28423,11 @@
             "frame": 4,
             "uvMin": [
               0.0078125,
-              0.47674417
+              0.25625
             ],
             "uvMax": [
               0.3984375,
-              0.9883721
+              0.53125
             ],
             "size": [
               3.125,
