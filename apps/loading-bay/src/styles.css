@@ -663,6 +663,13 @@ html.game-route-active .viewport-card {
   font-size: 0.72rem;
 }
 
+.calibration-legend--weapon {
+  inset: 7rem auto auto 1rem;
+  width: min(28rem, 36%);
+  transform: none;
+  grid-template-columns: 1fr 1fr;
+}
+
 .reticle::before {
   height: 1px;
   left: -6px;

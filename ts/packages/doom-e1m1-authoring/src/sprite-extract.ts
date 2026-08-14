@@ -32,6 +32,11 @@ export const SPRITE_FAMILIES = [
   { prefix: "BAL1", kind: "effect", atlas: "effects" },
   { prefix: "BLUD", kind: "effect", atlas: "effects" },
   { prefix: "PUFF", kind: "effect", atlas: "effects" },
+  { prefix: "PUNG", kind: "weapon", atlas: "weapons" },
+  { prefix: "PISG", kind: "weapon", atlas: "weapons" },
+  { prefix: "PISF", kind: "weapon", atlas: "weapons" },
+  { prefix: "SHTG", kind: "weapon", atlas: "weapons" },
+  { prefix: "SHTF", kind: "weapon", atlas: "weapons" },
 ] as const;
 
 const ATLAS_CONFIGS = [
@@ -48,6 +53,13 @@ const ATLAS_CONFIGS = [
     textureId: "texture/doom-e1m1-effects",
     file: "effects.png",
     width: 128,
+  },
+  {
+    key: "weapons",
+    id: "sprite/doom-e1m1-weapons",
+    textureId: "texture/doom-e1m1-weapons",
+    file: "weapons.png",
+    width: 512,
   },
 ] as const;
 
@@ -116,7 +128,7 @@ export interface SpriteDirectionalFrameManifest {
 
 export interface SpriteFamilyContractManifest {
   readonly prefix: string;
-  readonly role: "actor" | "projectile" | "effect";
+  readonly role: "actor" | "projectile" | "effect" | "weapon";
   readonly thingType: number | null;
   readonly dimensionsDoomUnits: {
     readonly radius: number;

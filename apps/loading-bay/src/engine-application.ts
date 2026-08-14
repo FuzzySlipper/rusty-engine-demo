@@ -86,6 +86,9 @@ export function claimEngineRendererRoute(
         }
         if (authority.generation === generation && !retired) {
           application.renderer.setCameraPose(camera);
+          if (applyFrame && receipt.applied) {
+            application.renderer.renderOnce();
+          }
         }
         return receipt;
       }),

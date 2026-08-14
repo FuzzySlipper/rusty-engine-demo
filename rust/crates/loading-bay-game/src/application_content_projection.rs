@@ -6,9 +6,9 @@ use std::path::PathBuf;
 
 use rusty_engine::engine_spatial::VoxelCollisionScene;
 use rusty_engine::render_model::{
-    pack_mesh_resources, AnimatedMeshPlaybackCommand, AnimationLoopMode, BillboardMode,
-    RenderAssetKind, RenderDiff, RenderFrameDiff, RenderHandle, RenderMetadata,
-    ResolvedRenderAsset, SpriteAttachment, SpriteDepthPolicy, SpriteInstanceDescriptor,
+    pack_mesh_resources, AnimatedMeshPlaybackCommand, AnimationLoopMode, BillboardMode, Geometry,
+    RenderAssetKind, RenderDiff, RenderFrameDiff, RenderHandle, RenderLayer, RenderMetadata,
+    RenderNode, ResolvedRenderAsset, SpriteAttachment, SpriteDepthPolicy, SpriteInstanceDescriptor,
     SpriteShading, SpriteSizeMode, TextureDescriptor, TextureFilter, TextureWrap, Transform,
     MAX_MESH_RESOURCE_BYTES,
 };
@@ -50,6 +50,21 @@ struct DoomEffectClip {
     asset: String,
     frames: Vec<u32>,
     source_origin_offsets: Vec<[f32; 2]>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct DoomWeaponViewmodelFrame {
+    frame: u32,
+    translation: [f32; 3],
+}
+
+#[derive(Debug, Clone)]
+struct DoomWeaponViewmodel {
+    asset: String,
+    ready: DoomWeaponViewmodelFrame,
+    fire: Vec<DoomWeaponViewmodelFrame>,
+    flash_asset: Option<String>,
+    flash: Vec<DoomWeaponViewmodelFrame>,
 }
 
 #[derive(Debug, Clone)]
@@ -95,6 +110,13 @@ pub struct GameplayApplicationProjector {
     next_effect_identity: u64,
     doom_sprite_inspection: Vec<DoomSpriteInspectionEntry>,
     inspection_visibility: BTreeMap<u64, bool>,
+    weapon_viewmodels: BTreeMap<String, DoomWeaponViewmodel>,
+    viewmodel_root_created: bool,
+    viewmodel_weapon: Option<String>,
+    viewmodel_base_frame: Option<DoomWeaponViewmodelFrame>,
+    viewmodel_flash_frame: Option<DoomWeaponViewmodelFrame>,
+    viewmodel_flash_visible: bool,
+    viewmodel_attack: Option<(String, u64)>,
 }
 
 impl GameplayApplicationProjector {
@@ -171,6 +193,7 @@ impl GameplayApplicationProjector {
             .flat_map(|scene| &scene.entities)
             .filter_map(doom_effect_clip)
             .collect();
+        let weapon_viewmodels = doom_weapon_viewmodels(project);
         Self {
             entities: EntityRenderProjector::new(),
             assets,
@@ -191,6 +214,13 @@ impl GameplayApplicationProjector {
                 .map(|(_, entry)| entry)
                 .collect(),
             inspection_visibility: BTreeMap::new(),
+            weapon_viewmodels,
+            viewmodel_root_created: false,
+            viewmodel_weapon: None,
+            viewmodel_base_frame: None,
+            viewmodel_flash_frame: None,
+            viewmodel_flash_visible: false,
+            viewmodel_attack: None,
         }
     }
 
@@ -297,6 +327,15 @@ impl GameplayApplicationProjector {
                 }
                 GameLoopFact::Combat(CombatFact::ProjectileExpired { entity, .. }) => {
                     self.active_projectiles.remove(&entity.raw());
+                }
+                GameLoopFact::Combat(CombatFact::AttackFired {
+                    attacker,
+                    presentation,
+                    ..
+                }) if self.camera_entity == Some(attacker.raw())
+                    && self.weapon_viewmodels.contains_key(presentation) =>
+                {
+                    self.viewmodel_attack = Some((presentation.clone(), runtime.tick().raw()));
                 }
                 GameLoopFact::EnemyCombat(EnemyCombatFact::ProjectileSpawned {
                     projectile,
@@ -768,6 +807,7 @@ impl GameplayApplicationProjector {
         for identity in completed_effects {
             self.transient_effects.remove(&identity);
         }
+        self.project_weapon_viewmodel(runtime, &mut operations)?;
         RenderFrameDiff::try_from_ops(operations)
             .map_err(|error| anyhow::anyhow!("build live gameplay frame: {error:?}"))
     }
@@ -779,7 +819,461 @@ impl GameplayApplicationProjector {
         current.visual_mirrors.clear();
         current.visual_offsets.clear();
         current.visual_state_started_at.clear();
+        current.viewmodel_root_created = false;
+        current.viewmodel_weapon = None;
+        current.viewmodel_base_frame = None;
+        current.viewmodel_flash_frame = None;
+        current.viewmodel_flash_visible = false;
         current.project(runtime)
+    }
+
+    fn project_weapon_viewmodel(
+        &mut self,
+        runtime: &GameRuntime,
+        operations: &mut Vec<RenderDiff>,
+    ) -> anyhow::Result<()> {
+        let Some(player) = self
+            .camera_entity
+            .map(rusty_engine::core_ids::EntityId::new)
+        else {
+            return Ok(());
+        };
+        let weapon = runtime.session().weapon(player);
+        let presentation = weapon
+            .as_ref()
+            .map(|weapon| weapon.definition.presentation.clone());
+        let cooldown_ticks = weapon
+            .as_ref()
+            .map(|weapon| weapon.definition.cooldown_ticks as usize)
+            .unwrap_or(0);
+        let definition = presentation
+            .as_ref()
+            .and_then(|presentation| self.weapon_viewmodels.get(presentation));
+        if definition.is_none() {
+            if let Some(previous) = self.viewmodel_weapon.take() {
+                operations.push(RenderDiff::UpdateSprite {
+                    handle: doom_weapon_viewmodel_base_handle(&previous),
+                    frame: None,
+                    tint: None,
+                    render_order: None,
+                    visible: Some(false),
+                });
+                if self.viewmodel_flash_frame.is_some() {
+                    operations.push(RenderDiff::UpdateSprite {
+                        handle: doom_weapon_viewmodel_flash_handle(&previous),
+                        frame: None,
+                        tint: None,
+                        render_order: None,
+                        visible: Some(false),
+                    });
+                }
+            }
+            return Ok(());
+        }
+        let definition = definition.expect("checked above");
+        let presentation = presentation.expect("definition requires presentation");
+        let elapsed = self
+            .viewmodel_attack
+            .as_ref()
+            .and_then(|(attack, started_at)| {
+                let elapsed = runtime.tick().raw().saturating_sub(*started_at) as usize;
+                (attack == &presentation && elapsed < cooldown_ticks).then_some(elapsed)
+            });
+        let base = elapsed
+            .and_then(|elapsed| definition.fire.get(elapsed).copied())
+            .unwrap_or(definition.ready);
+        let flash = elapsed.and_then(|elapsed| definition.flash.get(elapsed).copied());
+
+        if !self.viewmodel_root_created {
+            let mut root = RenderNode::new(Geometry::Group);
+            root.layer = RenderLayer::Viewmodel;
+            root.transform = Transform {
+                translation: [0.0, 0.0, -1.0],
+                // The Engine application host owns a 55-degree viewmodel camera.
+                // This maps Doom's 200-pixel-tall presentation plane exactly at z=-1.
+                scale: [0.083_290_72, 0.083_290_72, 0.083_290_72],
+                ..Transform::IDENTITY
+            };
+            root.metadata.tags = vec!["doom-player-weapon".to_owned()];
+            root.metadata.label = Some("Doom player weapon viewmodel root".to_owned());
+            operations.push(RenderDiff::Create {
+                handle: doom_weapon_viewmodel_root_handle(),
+                parent: None,
+                node: root,
+            });
+            for (candidate, candidate_definition) in &self.weapon_viewmodels {
+                operations.push(create_doom_weapon_sprite(
+                    doom_weapon_viewmodel_base_handle(candidate),
+                    &candidate_definition.asset,
+                    candidate_definition.ready,
+                    candidate == &presentation,
+                    "Doom player weapon",
+                ));
+                if let (Some(asset), Some(initial)) = (
+                    &candidate_definition.flash_asset,
+                    candidate_definition.flash.first().copied(),
+                ) {
+                    operations.push(create_doom_weapon_sprite(
+                        doom_weapon_viewmodel_flash_handle(candidate),
+                        asset,
+                        initial,
+                        candidate == &presentation && flash.is_some(),
+                        "Doom player weapon muzzle flash",
+                    ));
+                }
+            }
+            self.viewmodel_root_created = true;
+            self.viewmodel_weapon = Some(presentation);
+            self.viewmodel_base_frame = Some(base);
+            self.viewmodel_flash_frame = definition.flash.first().copied();
+            self.viewmodel_flash_visible = flash.is_some();
+            if base != definition.ready {
+                update_doom_weapon_sprite(
+                    operations,
+                    doom_weapon_viewmodel_base_handle(
+                        self.viewmodel_weapon.as_deref().expect("weapon was set"),
+                    ),
+                    base,
+                );
+            }
+            return Ok(());
+        }
+
+        if self.viewmodel_weapon.as_deref() != Some(&presentation) {
+            if let Some(previous) = &self.viewmodel_weapon {
+                operations.push(RenderDiff::UpdateSprite {
+                    handle: doom_weapon_viewmodel_base_handle(previous),
+                    frame: None,
+                    tint: None,
+                    render_order: None,
+                    visible: Some(false),
+                });
+                if self.weapon_viewmodels[previous].flash_asset.is_some() {
+                    operations.push(RenderDiff::UpdateSprite {
+                        handle: doom_weapon_viewmodel_flash_handle(previous),
+                        frame: None,
+                        tint: None,
+                        render_order: None,
+                        visible: Some(false),
+                    });
+                }
+            }
+            update_doom_weapon_sprite(
+                operations,
+                doom_weapon_viewmodel_base_handle(&presentation),
+                base,
+            );
+            operations.push(RenderDiff::UpdateSprite {
+                handle: doom_weapon_viewmodel_base_handle(&presentation),
+                frame: None,
+                tint: None,
+                render_order: None,
+                visible: Some(true),
+            });
+            if definition.flash_asset.is_some() {
+                let initial = flash
+                    .or_else(|| definition.flash.first().copied())
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "Doom weapon {presentation} has a flash asset without frames"
+                        )
+                    })?;
+                update_doom_weapon_sprite(
+                    operations,
+                    doom_weapon_viewmodel_flash_handle(&presentation),
+                    initial,
+                );
+                operations.push(RenderDiff::UpdateSprite {
+                    handle: doom_weapon_viewmodel_flash_handle(&presentation),
+                    frame: None,
+                    tint: None,
+                    render_order: None,
+                    visible: Some(flash.is_some()),
+                });
+                self.viewmodel_flash_frame = Some(initial);
+            } else {
+                self.viewmodel_flash_frame = None;
+            }
+            self.viewmodel_weapon = Some(presentation);
+            self.viewmodel_base_frame = Some(base);
+            self.viewmodel_flash_visible = flash.is_some();
+            return Ok(());
+        }
+
+        if self.viewmodel_base_frame != Some(base) {
+            update_doom_weapon_sprite(
+                operations,
+                doom_weapon_viewmodel_base_handle(&presentation),
+                base,
+            );
+            self.viewmodel_base_frame = Some(base);
+        }
+        if let Some(frame) = flash {
+            if self.viewmodel_flash_frame != Some(frame) {
+                update_doom_weapon_sprite(
+                    operations,
+                    doom_weapon_viewmodel_flash_handle(&presentation),
+                    frame,
+                );
+                self.viewmodel_flash_frame = Some(frame);
+            }
+        }
+        if self.viewmodel_flash_visible != flash.is_some() && definition.flash_asset.is_some() {
+            operations.push(RenderDiff::UpdateSprite {
+                handle: doom_weapon_viewmodel_flash_handle(&presentation),
+                frame: None,
+                tint: None,
+                render_order: None,
+                visible: Some(flash.is_some()),
+            });
+            self.viewmodel_flash_visible = flash.is_some();
+        }
+        Ok(())
+    }
+}
+
+fn doom_weapon_viewmodels(project: &StoredProject) -> BTreeMap<String, DoomWeaponViewmodel> {
+    if !project
+        .assets
+        .iter()
+        .any(|asset| asset.id == "sprite/doom-pistol-viewmodel")
+    {
+        return BTreeMap::new();
+    }
+    let manifest: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../content/doom-e1m1/sprites/manifest.json"
+    ))
+    .expect("checked-in Doom sprite manifest is generated JSON");
+    let definitions = [
+        ("fist", "PUNG", "sprite/doom-fist-viewmodel", None),
+        (
+            "pistol",
+            "PISG",
+            "sprite/doom-pistol-viewmodel",
+            Some(("PISF", "sprite/doom-pistol-flash-viewmodel")),
+        ),
+        (
+            "shotgun",
+            "SHTG",
+            "sprite/doom-shotgun-viewmodel",
+            Some(("SHTF", "sprite/doom-shotgun-flash-viewmodel")),
+        ),
+    ];
+    definitions
+        .into_iter()
+        .map(|(presentation, family, asset, flash)| {
+            let ready = doom_weapon_clip(&manifest, family, "ready")
+                .into_iter()
+                .next()
+                .unwrap_or_else(|| panic!("generated Doom {family} ready clip is empty"));
+            let fire = doom_weapon_clip(&manifest, family, "fire");
+            let (flash_asset, flash) = flash.map_or_else(
+                || (None, Vec::new()),
+                |(flash_family, flash_asset)| {
+                    (
+                        Some(flash_asset.to_owned()),
+                        doom_weapon_clip(&manifest, flash_family, "flash"),
+                    )
+                },
+            );
+            (
+                presentation.to_owned(),
+                DoomWeaponViewmodel {
+                    asset: asset.to_owned(),
+                    ready,
+                    fire,
+                    flash_asset,
+                    flash,
+                },
+            )
+        })
+        .collect()
+}
+
+fn doom_weapon_clip(
+    manifest: &serde_json::Value,
+    family: &str,
+    clip_id: &str,
+) -> Vec<DoomWeaponViewmodelFrame> {
+    let atlas = manifest["atlases"]
+        .as_array()
+        .and_then(|atlases| {
+            atlases.iter().find(|atlas| {
+                atlas["frames"].as_array().is_some_and(|frames| {
+                    frames
+                        .iter()
+                        .any(|frame| frame["family"].as_str() == Some(family))
+                })
+            })
+        })
+        .unwrap_or_else(|| panic!("generated Doom atlas has no {family} family"));
+    let family_frames = atlas["frames"]
+        .as_array()
+        .expect("generated Doom atlas frames")
+        .iter()
+        .filter(|frame| frame["family"].as_str() == Some(family))
+        .collect::<Vec<_>>();
+    let contract = manifest["contract"]["families"]
+        .as_array()
+        .and_then(|families| {
+            families
+                .iter()
+                .find(|candidate| candidate["prefix"].as_str() == Some(family))
+        })
+        .unwrap_or_else(|| panic!("generated Doom contract has no {family} family"));
+    let clip = contract["clips"]
+        .as_array()
+        .and_then(|clips| {
+            clips
+                .iter()
+                .find(|candidate| candidate["id"].as_str() == Some(clip_id))
+        })
+        .unwrap_or_else(|| panic!("generated Doom {family} contract has no {clip_id} clip"));
+    let mut source_ticks = 0_i64;
+    let mut runtime_ticks = 0_i64;
+    let mut result = Vec::new();
+    for step in clip["steps"]
+        .as_array()
+        .expect("generated Doom weapon clip steps")
+    {
+        let frame_name = step["frame"]
+            .as_str()
+            .expect("generated Doom weapon frame name");
+        let source_lump = contract["directionalFrames"]
+            .as_array()
+            .and_then(|frames| {
+                frames
+                    .iter()
+                    .find(|frame| frame["frame"].as_str() == Some(frame_name))
+            })
+            .and_then(|frame| frame["rotations"].as_array())
+            .and_then(|rotations| rotations.first())
+            .and_then(|rotation| rotation["sourceLump"].as_str())
+            .expect("generated Doom weapon source lump");
+        let (local_frame, source) = family_frames
+            .iter()
+            .enumerate()
+            .find(|(_, frame)| frame["name"].as_str() == Some(source_lump))
+            .unwrap_or_else(|| panic!("generated Doom family {family} is missing {source_lump}"));
+        let width = source["pixelSize"][0]
+            .as_f64()
+            .expect("generated Doom weapon width") as f32;
+        let height = source["pixelSize"][1]
+            .as_f64()
+            .expect("generated Doom weapon height") as f32;
+        let left_offset = source["origin"][0]
+            .as_f64()
+            .expect("generated Doom weapon left offset") as f32;
+        let top_offset = source["origin"][1]
+            .as_f64()
+            .expect("generated Doom weapon top offset") as f32;
+        let center_x = 1.0 - left_offset + width * 0.5;
+        let center_y = 32.0 - top_offset + height * 0.5;
+        let frame = DoomWeaponViewmodelFrame {
+            frame: u32::try_from(local_frame).expect("bounded Doom weapon frame"),
+            translation: [(center_x - 160.0) / 16.0, (100.0 - center_y) / 16.0, 0.0],
+        };
+        let tics = step["tics"]
+            .as_i64()
+            .expect("generated Doom weapon source tics");
+        let duration = if tics < 0 {
+            1
+        } else {
+            source_ticks += tics;
+            let next_runtime_ticks = ((source_ticks as f64 * 60.0) / 35.0).round() as i64;
+            let duration = (next_runtime_ticks - runtime_ticks).max(1);
+            runtime_ticks = next_runtime_ticks;
+            duration
+        };
+        result.extend(std::iter::repeat_n(frame, duration as usize));
+    }
+    result
+}
+
+fn create_doom_weapon_sprite(
+    handle: RenderHandle,
+    asset: &str,
+    frame: DoomWeaponViewmodelFrame,
+    visible: bool,
+    label: &str,
+) -> RenderDiff {
+    RenderDiff::CreateSprite {
+        handle,
+        parent: Some(doom_weapon_viewmodel_root_handle()),
+        sprite: SpriteInstanceDescriptor {
+            asset: asset.to_owned(),
+            frame: frame.frame,
+            pivot: [0.5, 0.5],
+            size: [1.0, 1.0],
+            size_mode: SpriteSizeMode::World,
+            billboard: BillboardMode::None,
+            tint: [1.0; 4],
+            render_order: 100,
+            depth: SpriteDepthPolicy::DepthTestOff,
+            shading: SpriteShading::Unlit,
+            material: Default::default(),
+            visible,
+            transform: Transform {
+                translation: frame.translation,
+                ..Transform::IDENTITY
+            },
+            attachment: SpriteAttachment {
+                source_entity: None,
+                source_scene_node: None,
+                attachment_point: Some("doom-player-weapon".to_owned()),
+            },
+            metadata: RenderMetadata {
+                source_entity: None,
+                source_scene_node: None,
+                tags: vec!["doom-player-weapon".to_owned()],
+                label: Some(label.to_owned()),
+            },
+        },
+    }
+}
+
+fn update_doom_weapon_sprite(
+    operations: &mut Vec<RenderDiff>,
+    handle: RenderHandle,
+    frame: DoomWeaponViewmodelFrame,
+) {
+    operations.push(RenderDiff::UpdateSprite {
+        handle,
+        frame: Some(frame.frame),
+        tint: None,
+        render_order: None,
+        visible: None,
+    });
+    operations.push(RenderDiff::Update {
+        handle,
+        transform: Some(Transform {
+            translation: frame.translation,
+            ..Transform::IDENTITY
+        }),
+        material: None,
+        visible: None,
+        metadata: None,
+    });
+}
+
+fn doom_weapon_viewmodel_root_handle() -> RenderHandle {
+    RenderHandle::new((6_u64 << 40) | 1)
+}
+
+fn doom_weapon_viewmodel_base_handle(presentation: &str) -> RenderHandle {
+    RenderHandle::new((6_u64 << 40) | doom_weapon_viewmodel_handle_offset(presentation))
+}
+
+fn doom_weapon_viewmodel_flash_handle(presentation: &str) -> RenderHandle {
+    RenderHandle::new((6_u64 << 40) | doom_weapon_viewmodel_handle_offset(presentation) | 1)
+}
+
+fn doom_weapon_viewmodel_handle_offset(presentation: &str) -> u64 {
+    match presentation {
+        "fist" => 2,
+        "pistol" => 4,
+        "shotgun" => 6,
+        _ => unreachable!("viewmodel definitions admit only known Doom weapon presentations"),
     }
 }
 
@@ -937,6 +1431,7 @@ pub fn project_doom_e1m1_application_content(
             | "doom-sprite-animation-room"
             | "doom-combat-room"
             | "doom-fx-room"
+            | "doom-weapon-room"
     ) {
         (
             RenderFrameDiff::try_from_ops(Vec::new())
@@ -1199,13 +1694,100 @@ mod tests {
     use crate::{
         decode_project_document, project_stored_voxel_objects, CombatFact, CombatImpactKind,
         DamageCommand, DamageService, DamageSource, EnemyAttackKind, EnemyCombatFact, GameLoopFact,
-        GameRuntime, LoadingBayGameLoop, StoredDirectionalSpriteView,
+        GameRuntime, InventoryService, LoadingBayGameLoop, ResolvedAttackAction,
+        StoredDirectionalSpriteView,
     };
 
     use super::{
-        camera_relative_sprite_translation, project_doom_e1m1_application_content,
-        select_directional_sprite_view, GameplayApplicationProjector,
+        camera_relative_sprite_translation, doom_weapon_viewmodel_base_handle,
+        doom_weapon_viewmodel_flash_handle, doom_weapon_viewmodel_root_handle,
+        project_doom_e1m1_application_content, select_directional_sprite_view,
+        GameplayApplicationProjector,
     };
+
+    #[test]
+    fn doom_weapon_viewmodel_uses_generated_source_clips_and_authoritative_fire_edges() {
+        let source = include_str!("../../../../content/projects/doom-weapon-room.project.json");
+        let project = decode_project_document(source).unwrap().project;
+        let mut runtime = GameRuntime::from_stored_project(source).unwrap();
+        let mut projector = GameplayApplicationProjector::new(&project);
+        assert_eq!(projector.weapon_viewmodels["fist"].fire.len(), 38);
+        assert_eq!(projector.weapon_viewmodels["pistol"].fire.len(), 26);
+        assert_eq!(projector.weapon_viewmodels["pistol"].flash.len(), 12);
+        assert_eq!(projector.weapon_viewmodels["shotgun"].fire.len(), 70);
+        assert_eq!(projector.weapon_viewmodels["shotgun"].flash.len(), 12);
+
+        let initial = projector.project(&runtime).unwrap();
+        assert!(initial.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::Create { handle, node, .. }
+                if *handle == doom_weapon_viewmodel_root_handle()
+                    && node.layer == rusty_engine::render_model::RenderLayer::Viewmodel
+        )));
+        assert!(initial.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::CreateSprite { handle, sprite, .. }
+                if *handle == doom_weapon_viewmodel_base_handle("pistol")
+                    && sprite.asset == "sprite/doom-pistol-viewmodel"
+                    && sprite.frame == 0
+                    && sprite.visible
+        )));
+        assert!(initial.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::CreateSprite { handle, sprite, .. }
+                if *handle == doom_weapon_viewmodel_flash_handle("pistol")
+                    && sprite.asset == "sprite/doom-pistol-flash-viewmodel"
+                    && !sprite.visible
+        )));
+        assert!(initial.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::CreateSprite { handle, sprite, .. }
+                if *handle == doom_weapon_viewmodel_base_handle("shotgun")
+                    && sprite.asset == "sprite/doom-shotgun-viewmodel"
+                    && !sprite.visible
+        )));
+
+        let receipt = runtime
+            .attack(
+                rusty_engine::core_ids::EntityId::new(1),
+                ResolvedAttackAction::Attack,
+            )
+            .unwrap();
+        let facts = receipt
+            .facts
+            .into_iter()
+            .map(GameLoopFact::Combat)
+            .collect::<Vec<_>>();
+        let fired = projector.project_with_facts(&runtime, &facts).unwrap();
+        assert!(fired.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::UpdateSprite { handle, frame: Some(1), .. }
+                if *handle == doom_weapon_viewmodel_base_handle("pistol")
+        )));
+        assert!(fired.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::UpdateSprite { handle, visible: Some(true), .. }
+                if *handle == doom_weapon_viewmodel_flash_handle("pistol")
+        )));
+
+        InventoryService::select_weapon_slot(
+            runtime.session_mut(),
+            rusty_engine::core_ids::EntityId::new(1),
+            1,
+        )
+        .unwrap();
+        let switched = projector.project(&runtime).unwrap();
+        assert!(switched.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::UpdateSprite { handle, visible: Some(false), .. }
+                if *handle == doom_weapon_viewmodel_base_handle("pistol")
+        )));
+        assert!(switched.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::UpdateSprite { handle, visible: Some(true), .. }
+                if *handle == doom_weapon_viewmodel_base_handle("shotgun")
+        )));
+    }
 
     #[test]
     fn directional_sprite_selector_maps_one_orbit_to_eight_views_and_mirrors() {
@@ -1369,7 +1951,7 @@ mod tests {
                 .iter()
                 .filter(|resource| resource.identity.starts_with("texture-resource/"))
                 .count(),
-            56
+            57
         );
         assert_eq!(
             content
@@ -1378,7 +1960,7 @@ mod tests {
                 .iter()
                 .filter(|operation| matches!(operation, RenderDiff::DefineSpriteAtlas { .. }))
                 .count(),
-            5
+            10
         );
         assert!(content
             .resources

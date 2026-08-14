@@ -10,6 +10,7 @@ import { claimEngineRendererRoute } from "./engine-application.ts";
 
 test("retained gameplay diffs reach the active Engine renderer after content install", async () => {
   const applied: RustyApplicationFrame[] = [];
+  let renders = 0;
   let replacements = 0;
   const application = {
     renderer: {
@@ -18,7 +19,9 @@ test("retained gameplay diffs reach the active Engine renderer after content ins
         return { applied: true, diagnostics: [] };
       },
       clear: async () => {},
-      renderOnce: () => {},
+      renderOnce: () => {
+        renders += 1;
+      },
       replaceContent: async () => {
         replacements += 1;
         return { applied: true, diagnostics: [] };
@@ -50,6 +53,7 @@ test("retained gameplay diffs reach the active Engine renderer after content ins
   await route.publish(dynamic, camera, null, true, false);
 
   assert.deepEqual(applied, [dynamic]);
+  assert.equal(renders, 1);
   assert.equal(replacements, 0);
 });
 

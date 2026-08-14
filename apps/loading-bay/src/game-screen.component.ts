@@ -196,6 +196,19 @@ const DOOM_FX_ROOM_PRESENTATION: GamePresentation = {
   showsAccessKeys: false,
 };
 
+const DOOM_WEAPON_ROOM_PRESENTATION: GamePresentation = {
+  missionLabel: "DOOM PLAYER WEAPON ROOM",
+  levelCaption: "FIST · PISTOL · SHOTGUN",
+  restartLabel: "Restart weapon room",
+  completionTitle: "WEAPON INSPECTION COMPLETE",
+  completionFallback: "The bounded weapon target remains active.",
+  panelLabel: "Doom Player Weapon Room",
+  documentTitle: "Rusty Engine — Doom Player Weapon Room",
+  viewportLabel:
+    "Live Doom player weapon room. Use slots one through three and ordinary fire to inspect every ready, firing, flash, and recovery sequence.",
+  showsAccessKeys: false,
+};
+
 declare global {
   interface Window {
     __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
@@ -323,6 +336,17 @@ declare global {
             <span
               >O toggles enemy awareness · ordinary fire resolves effects</span
             >
+          </aside>
+        }
+        @if (snapshot().projectId === "doom-weapon-room") {
+          <aside
+            class="calibration-legend calibration-legend--weapon"
+            aria-label="Doom player weapon room controls"
+          >
+            <strong>PLAYER WEAPON VIEWMODELS</strong>
+            <strong>1 PISTOL · 2 SHOTGUN · 3 FIST</strong>
+            <span>Click viewport, select a slot, then use ordinary fire</span>
+            <span>Stationary target has no awareness or attack behavior</span>
           </aside>
         }
 
@@ -1386,6 +1410,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
           "doom-sprite-animation-room",
           "doom-combat-room",
           "doom-fx-room",
+          "doom-weapon-room",
         ].includes(requestedProject)
       ) {
         throw new Error(`Unknown project ${requestedProject}`);
@@ -1590,6 +1615,9 @@ function gamePresentationFor(projectId: string): GamePresentation {
   }
   if (projectId === "doom-fx-room") {
     return DOOM_FX_ROOM_PRESENTATION;
+  }
+  if (projectId === "doom-weapon-room") {
+    return DOOM_WEAPON_ROOM_PRESENTATION;
   }
   return projectId === "doom-e1m1"
     ? DOOM_E1M1_PRESENTATION

@@ -16,6 +16,16 @@ export const DOOM_SPRITE_CONTRACT_SOURCES = [
     sha256: "3f676d2928c387400fa3ddcefb25c9daf5c80049ef852e91feede0f92d760c38",
     role: "actor and projectile Doom-unit dimensions",
   },
+  {
+    path: "/home/research/doom.ts/src/doom/play/p-sprite.ts",
+    sha256: "03c2dc8b31f752945aebc9be5f7a4d0fb8eee4e2d961efe977601246f75bdb87",
+    role: "player weapon ready, fire, flash, recovery, and screen-coordinate semantics",
+  },
+  {
+    path: "/home/research/doom.ts/src/doom/webgl/objects/p-sprite.ts",
+    sha256: "b1912113524feda070b55dd53c0b8e79a76e0bc30bf36b4157e30f683fa44713",
+    role: "320 by 200 player weapon patch placement",
+  },
 ] as const;
 
 export interface DoomSpriteClipStep {
@@ -33,7 +43,7 @@ export interface DoomSpriteClipDefinition {
 
 export interface DoomSpriteFamilyDefinition {
   readonly prefix: string;
-  readonly role: "actor" | "projectile" | "effect";
+  readonly role: "actor" | "projectile" | "effect" | "weapon";
   readonly thingType: number | null;
   readonly dimensionsDoomUnits: {
     readonly radius: number;
@@ -99,6 +109,35 @@ export const DOOM_SPRITE_FAMILY_DEFINITIONS: readonly DoomSpriteFamilyDefinition
   },
   { prefix: "BLUD", role: "effect", thingType: null, dimensionsDoomUnits: null, clips: [{ id: "hit", loopMode: "once", steps: [step("S_BLOOD1", "C", 8), step("S_BLOOD2", "B", 8), step("S_BLOOD3", "A", 8)] }] },
   { prefix: "PUFF", role: "effect", thingType: null, dimensionsDoomUnits: null, clips: [{ id: "impact", loopMode: "once", steps: [step("S_PUFF1", "A", 4, true), step("S_PUFF2", "B", 4), step("S_PUFF3", "C", 4), step("S_PUFF4", "D", 4)] }] },
+  {
+    prefix: "PUNG", role: "weapon", thingType: null, dimensionsDoomUnits: null,
+    clips: [
+      { id: "ready", loopMode: "repeat", steps: [step("S_PUNCH", "A", 1)] },
+      { id: "fire", loopMode: "once", steps: [step("S_PUNCH1", "B", 4), step("S_PUNCH2", "C", 4), step("S_PUNCH3", "D", 5), step("S_PUNCH4", "C", 4), step("S_PUNCH5", "B", 5)] },
+    ],
+  },
+  {
+    prefix: "PISG", role: "weapon", thingType: null, dimensionsDoomUnits: null,
+    clips: [
+      { id: "ready", loopMode: "repeat", steps: [step("S_PISTOL", "A", 1)] },
+      { id: "fire", loopMode: "once", steps: [step("S_PISTOL2", "B", 6), step("S_PISTOL3", "C", 4), step("S_PISTOL4", "B", 5)] },
+    ],
+  },
+  {
+    prefix: "PISF", role: "weapon", thingType: null, dimensionsDoomUnits: null,
+    clips: [{ id: "flash", loopMode: "once", steps: [step("S_PISTOLFLASH", "A", 7, true)] }],
+  },
+  {
+    prefix: "SHTG", role: "weapon", thingType: null, dimensionsDoomUnits: null,
+    clips: [
+      { id: "ready", loopMode: "repeat", steps: [step("S_SGUN", "A", 1)] },
+      { id: "fire", loopMode: "once", steps: [step("S_SGUN2", "A", 7), step("S_SGUN3", "B", 5), step("S_SGUN4", "C", 5), step("S_SGUN5", "D", 4), step("S_SGUN6", "C", 5), step("S_SGUN7", "B", 5), step("S_SGUN8", "A", 3), step("S_SGUN9", "A", 7)] },
+    ],
+  },
+  {
+    prefix: "SHTF", role: "weapon", thingType: null, dimensionsDoomUnits: null,
+    clips: [{ id: "flash", loopMode: "once", steps: [step("S_SGUNFLASH1", "A", 4, true), step("S_SGUNFLASH2", "B", 3, true)] }],
+  },
 ];
 
 export interface ParsedSpriteLumpAssignment {

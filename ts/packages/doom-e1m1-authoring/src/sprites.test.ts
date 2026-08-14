@@ -74,7 +74,7 @@ function decodeGeneratedPngRgba(bytes: Uint8Array): {
   return { width, height, rgba };
 }
 
-test("canonical sprite selection is bounded to the six requested Doom families", () => {
+test("canonical sprite selection is bounded to the requested world and player-weapon families", () => {
   const wad = decodeWad(loadWad(), { computeSha256: true });
   assert.equal(wad.sha256, WAD_SHA256);
   assert.equal(wad.byteLength, WAD_BYTE_LENGTH);
@@ -89,9 +89,14 @@ test("canonical sprite selection is bounded to the six requested Doom families",
     BAL1: 5,
     BLUD: 3,
     PUFF: 4,
+    PUNG: 4,
+    PISG: 5,
+    PISF: 1,
+    SHTG: 4,
+    SHTF: 2,
   });
   assert.equal(selected.lumps[0]?.entry.name, "POSSA1");
-  assert.equal(selected.lumps.at(-1)?.entry.name, "PUFFD0");
+  assert.equal(selected.lumps.at(-1)?.entry.name, "SHTFB0");
 });
 
 test("known canonical lumps retain exact source bytes and patch dimensions", () => {
@@ -205,6 +210,14 @@ test("generated sprite contract keeps clips, timing, directions, dimensions, and
     [["E", 10], ["F", 8], ["E", 8]],
   );
   assert.deepEqual(
+    clip("PISG", "fire").steps.map(({ frame, tics }) => [frame, tics]),
+    [["B", 6], ["C", 4], ["B", 5]],
+  );
+  assert.deepEqual(
+    clip("SHTF", "flash").steps.map(({ frame, tics }) => [frame, tics]),
+    [["A", 4], ["B", 3]],
+  );
+  assert.deepEqual(
     clip("SPOS", "pain").steps.map(({ frame, tics }) => [frame, tics]),
     [["G", 3], ["G", 3]],
   );
@@ -258,12 +271,13 @@ test("atlas manifest has exact source/output provenance and normalized frame UVs
   const rendered = renderSpriteArtifacts(WAD_PATH);
   assert.equal(rendered.manifest.wadSha256, WAD_SHA256);
   assert.equal(rendered.manifest.wadByteLength, WAD_BYTE_LENGTH);
-  assert.equal(rendered.manifest.sourceLumps.length, 163);
+  assert.equal(rendered.manifest.sourceLumps.length, 179);
   assert.deepEqual(
     rendered.manifest.atlases.map((atlas) => [atlas.file, atlas.frames.length]),
     [
       ["actors.png", 151],
       ["effects.png", 12],
+      ["weapons.png", 16],
     ],
   );
   const actors = rendered.manifest.atlases[0]!;

@@ -1156,6 +1156,118 @@
       "directoryIndex": 575,
       "size": 376,
       "sha256": "b1cbdbade14386ef325dad20ff2ff9bb31204fbf5295110247658eb3418bdc7f"
+    },
+    {
+      "name": "PUNGA0",
+      "family": "PUNG",
+      "directoryIndex": 623,
+      "size": 3112,
+      "sha256": "518ac20da0c9f5f418cbaf688403d7374cec12c77045d0e7a97314f6be2c39ef"
+    },
+    {
+      "name": "PUNGB0",
+      "family": "PUNG",
+      "directoryIndex": 624,
+      "size": 2596,
+      "sha256": "0e8aad46515ee52adcd6243584c1a4bcccccce73ed0bb8cbcb0761e193b6cf5f"
+    },
+    {
+      "name": "PUNGC0",
+      "family": "PUNG",
+      "directoryIndex": 625,
+      "size": 4152,
+      "sha256": "342d9fb3646efd348385f1fa1581cb3916c00fcd20a2f8e4b0f80588b2d76f9a"
+    },
+    {
+      "name": "PUNGD0",
+      "family": "PUNG",
+      "directoryIndex": 626,
+      "size": 6716,
+      "sha256": "f466ea2d4cfda445b6ea346eb398500491808eca02cabcacd2a3c9f3973e4be7"
+    },
+    {
+      "name": "PISGA0",
+      "family": "PISG",
+      "directoryIndex": 561,
+      "size": 2632,
+      "sha256": "94797c438b6e0de86c8097d38c7bf25b2e4cf9eef434d9d55883dc26130a48f8"
+    },
+    {
+      "name": "PISGB0",
+      "family": "PISG",
+      "directoryIndex": 562,
+      "size": 3768,
+      "sha256": "9cfe9cb3b4f911308d85e0d2e7c895fc9593a4909ddac45e9e4b5d3af951d3b5"
+    },
+    {
+      "name": "PISGC0",
+      "family": "PISG",
+      "directoryIndex": 563,
+      "size": 3664,
+      "sha256": "2fd8a25f15eeca3b434c983f241914fd4cb3426c65c064ba82c4ffc04839f6b9"
+    },
+    {
+      "name": "PISGD0",
+      "family": "PISG",
+      "directoryIndex": 564,
+      "size": 3616,
+      "sha256": "b0adabcf9410f8935b4a534bf66d1f26b37ba823fe7d3ee22ba756436886390c"
+    },
+    {
+      "name": "PISGE0",
+      "family": "PISG",
+      "directoryIndex": 565,
+      "size": 4892,
+      "sha256": "5e337a31b4bb9cc2813b2cdd7683b0e2e265ef366b26f39fbd4e0513eec72d83"
+    },
+    {
+      "name": "PISFA0",
+      "family": "PISF",
+      "directoryIndex": 566,
+      "size": 1408,
+      "sha256": "b704552b2e0fd5d8fb36dc408e2556d5427302f10ecf12dcb5521c5aa379fea1"
+    },
+    {
+      "name": "SHTGA0",
+      "family": "SHTG",
+      "directoryIndex": 638,
+      "size": 3400,
+      "sha256": "2c3f4aec034b2d5c05e224ebd39dfbcec0b5bb6acff9c4599b413efed621a740"
+    },
+    {
+      "name": "SHTGB0",
+      "family": "SHTG",
+      "directoryIndex": 639,
+      "size": 8860,
+      "sha256": "73d21069d59655ed701b1414d68f731f26393461744fe9d2a42ba79796e61721"
+    },
+    {
+      "name": "SHTGC0",
+      "family": "SHTG",
+      "directoryIndex": 640,
+      "size": 10368,
+      "sha256": "78d1d155151287151fdc60151f1b5746df21b1bcde0c8e1cd652dc26ac7ff181"
+    },
+    {
+      "name": "SHTGD0",
+      "family": "SHTG",
+      "directoryIndex": 641,
+      "size": 10668,
+      "sha256": "2a78cc112afea454f9d4bb32cd69a564ed07fb1e330a4970217efbec75f840b7"
+    },
+    {
+      "name": "SHTFA0",
+      "family": "SHTF",
+      "directoryIndex": 642,
+      "size": 1156,
+      "sha256": "ad029b0c3fe1768cdb7079c8d2fe92ca8afe97783846b7308b1cc7bf8ff91136"
+    },
+    {
+      "name": "SHTFB0",
+      "family": "SHTF",
+      "directoryIndex": 643,
+      "size": 1668,
+      "sha256": "d7bda7f8f818309b3e21abe02d0daa370bd378e02b3c443043afbeadb8e4fa6c"
     }
   ],
   "atlases": [
@@ -8517,6 +8629,738 @@
           "opaquePixelCount": 88
         }
       ]
+    },
+    {
+      "id": "sprite/doom-e1m1-weapons",
+      "textureId": "texture/doom-e1m1-weapons",
+      "file": "weapons.png",
+      "width": 512,
+      "height": 334,
+      "padding": 1,
+      "pngSha256": "12d001091a165ba055824ae2d572336a5798a855f47ed032c0a24cb7f3d36bbc",
+      "pngByteLength": 46566,
+      "frames": [
+        {
+          "id": 0,
+          "key": "pung:a0",
+          "name": "PUNGA0",
+          "family": "PUNG",
+          "atlas": "weapons",
+          "sourceLump": "PUNGA0",
+          "sourceByteLength": 3112,
+          "sourceSha256": "518ac20da0c9f5f418cbaf688403d7374cec12c77045d0e7a97314f6be2c39ef",
+          "atlasRect": [
+            1,
+            1,
+            113,
+            42
+          ],
+          "uv": {
+            "min": [
+              0.001953125,
+              0.0029940119760479044
+            ],
+            "max": [
+              0.22265625,
+              0.12874251497005987
+            ]
+          },
+          "pixelSize": [
+            113,
+            42
+          ],
+          "origin": [
+            -151,
+            -126
+          ],
+          "pivot": [
+            -1.336283185840708,
+            4
+          ],
+          "boundsFromOrigin": {
+            "left": 151,
+            "right": 264,
+            "top": -126,
+            "bottom": -168
+          },
+          "opaquePixelCount": 2063
+        },
+        {
+          "id": 1,
+          "key": "pung:b0",
+          "name": "PUNGB0",
+          "family": "PUNG",
+          "atlas": "weapons",
+          "sourceLump": "PUNGB0",
+          "sourceByteLength": 2596,
+          "sourceSha256": "0e8aad46515ee52adcd6243584c1a4bcccccce73ed0bb8cbcb0761e193b6cf5f",
+          "atlasRect": [
+            115,
+            1,
+            80,
+            41
+          ],
+          "uv": {
+            "min": [
+              0.224609375,
+              0.0029940119760479044
+            ],
+            "max": [
+              0.380859375,
+              0.12574850299401197
+            ]
+          },
+          "pixelSize": [
+            80,
+            41
+          ],
+          "origin": [
+            -67,
+            -127
+          ],
+          "pivot": [
+            -0.8375,
+            4.097560975609756
+          ],
+          "boundsFromOrigin": {
+            "left": 67,
+            "right": 147,
+            "top": -127,
+            "bottom": -168
+          },
+          "opaquePixelCount": 1867
+        },
+        {
+          "id": 2,
+          "key": "pung:c0",
+          "name": "PUNGC0",
+          "family": "PUNG",
+          "atlas": "weapons",
+          "sourceLump": "PUNGC0",
+          "sourceByteLength": 4152,
+          "sourceSha256": "342d9fb3646efd348385f1fa1581cb3916c00fcd20a2f8e4b0f80588b2d76f9a",
+          "atlasRect": [
+            196,
+            1,
+            107,
+            52
+          ],
+          "uv": {
+            "min": [
+              0.3828125,
+              0.0029940119760479044
+            ],
+            "max": [
+              0.591796875,
+              0.15868263473053892
+            ]
+          },
+          "pixelSize": [
+            107,
+            52
+          ],
+          "origin": [
+            -52,
+            -116
+          ],
+          "pivot": [
+            -0.48598130841121495,
+            3.230769230769231
+          ],
+          "boundsFromOrigin": {
+            "left": 52,
+            "right": 159,
+            "top": -116,
+            "bottom": -168
+          },
+          "opaquePixelCount": 3158
+        },
+        {
+          "id": 3,
+          "key": "pung:d0",
+          "name": "PUNGD0",
+          "family": "PUNG",
+          "atlas": "weapons",
+          "sourceLump": "PUNGD0",
+          "sourceByteLength": 6716,
+          "sourceSha256": "f466ea2d4cfda445b6ea346eb398500491808eca02cabcacd2a3c9f3973e4be7",
+          "atlasRect": [
+            304,
+            1,
+            147,
+            76
+          ],
+          "uv": {
+            "min": [
+              0.59375,
+              0.0029940119760479044
+            ],
+            "max": [
+              0.880859375,
+              0.23053892215568864
+            ]
+          },
+          "pixelSize": [
+            147,
+            76
+          ],
+          "origin": [
+            -36,
+            -92
+          ],
+          "pivot": [
+            -0.24489795918367346,
+            2.210526315789474
+          ],
+          "boundsFromOrigin": {
+            "left": 36,
+            "right": 183,
+            "top": -92,
+            "bottom": -168
+          },
+          "opaquePixelCount": 5373
+        },
+        {
+          "id": 4,
+          "key": "pisg:a0",
+          "name": "PISGA0",
+          "family": "PISG",
+          "atlas": "weapons",
+          "sourceLump": "PISGA0",
+          "sourceByteLength": 2632,
+          "sourceSha256": "94797c438b6e0de86c8097d38c7bf25b2e4cf9eef434d9d55883dc26130a48f8",
+          "atlasRect": [
+            452,
+            1,
+            57,
+            62
+          ],
+          "uv": {
+            "min": [
+              0.8828125,
+              0.0029940119760479044
+            ],
+            "max": [
+              0.994140625,
+              0.18862275449101795
+            ]
+          },
+          "pixelSize": [
+            57,
+            62
+          ],
+          "origin": [
+            -126,
+            -106
+          ],
+          "pivot": [
+            -2.210526315789474,
+            2.7096774193548385
+          ],
+          "boundsFromOrigin": {
+            "left": 126,
+            "right": 183,
+            "top": -106,
+            "bottom": -168
+          },
+          "opaquePixelCount": 2084
+        },
+        {
+          "id": 5,
+          "key": "pisg:b0",
+          "name": "PISGB0",
+          "family": "PISG",
+          "atlas": "weapons",
+          "sourceLump": "PISGB0",
+          "sourceByteLength": 3768,
+          "sourceSha256": "9cfe9cb3b4f911308d85e0d2e7c895fc9593a4909ddac45e9e4b5d3af951d3b5",
+          "atlasRect": [
+            1,
+            78,
+            79,
+            82
+          ],
+          "uv": {
+            "min": [
+              0.001953125,
+              0.23353293413173654
+            ],
+            "max": [
+              0.15625,
+              0.47904191616766467
+            ]
+          },
+          "pixelSize": [
+            79,
+            82
+          ],
+          "origin": [
+            -104,
+            -86
+          ],
+          "pivot": [
+            -1.3164556962025316,
+            2.048780487804878
+          ],
+          "boundsFromOrigin": {
+            "left": 104,
+            "right": 183,
+            "top": -86,
+            "bottom": -168
+          },
+          "opaquePixelCount": 3020
+        },
+        {
+          "id": 6,
+          "key": "pisg:c0",
+          "name": "PISGC0",
+          "family": "PISG",
+          "atlas": "weapons",
+          "sourceLump": "PISGC0",
+          "sourceByteLength": 3664,
+          "sourceSha256": "2fd8a25f15eeca3b434c983f241914fd4cb3426c65c064ba82c4ffc04839f6b9",
+          "atlasRect": [
+            81,
+            78,
+            66,
+            81
+          ],
+          "uv": {
+            "min": [
+              0.158203125,
+              0.23353293413173654
+            ],
+            "max": [
+              0.287109375,
+              0.47604790419161674
+            ]
+          },
+          "pixelSize": [
+            66,
+            81
+          ],
+          "origin": [
+            -119,
+            -87
+          ],
+          "pivot": [
+            -1.803030303030303,
+            2.074074074074074
+          ],
+          "boundsFromOrigin": {
+            "left": 119,
+            "right": 185,
+            "top": -87,
+            "bottom": -168
+          },
+          "opaquePixelCount": 3035
+        },
+        {
+          "id": 7,
+          "key": "pisg:d0",
+          "name": "PISGD0",
+          "family": "PISG",
+          "atlas": "weapons",
+          "sourceLump": "PISGD0",
+          "sourceByteLength": 3616,
+          "sourceSha256": "b0adabcf9410f8935b4a534bf66d1f26b37ba823fe7d3ee22ba756436886390c",
+          "atlasRect": [
+            148,
+            78,
+            61,
+            81
+          ],
+          "uv": {
+            "min": [
+              0.2890625,
+              0.23353293413173654
+            ],
+            "max": [
+              0.408203125,
+              0.47604790419161674
+            ]
+          },
+          "pixelSize": [
+            61,
+            81
+          ],
+          "origin": [
+            -125,
+            -87
+          ],
+          "pivot": [
+            -2.0491803278688523,
+            2.074074074074074
+          ],
+          "boundsFromOrigin": {
+            "left": 125,
+            "right": 186,
+            "top": -87,
+            "bottom": -168
+          },
+          "opaquePixelCount": 3033
+        },
+        {
+          "id": 8,
+          "key": "pisg:e0",
+          "name": "PISGE0",
+          "family": "PISG",
+          "atlas": "weapons",
+          "sourceLump": "PISGE0",
+          "sourceByteLength": 4892,
+          "sourceSha256": "5e337a31b4bb9cc2813b2cdd7683b0e2e265ef366b26f39fbd4e0513eec72d83",
+          "atlasRect": [
+            210,
+            78,
+            78,
+            103
+          ],
+          "uv": {
+            "min": [
+              0.41015625,
+              0.23353293413173654
+            ],
+            "max": [
+              0.5625,
+              0.5419161676646707
+            ]
+          },
+          "pixelSize": [
+            78,
+            103
+          ],
+          "origin": [
+            -106,
+            -65
+          ],
+          "pivot": [
+            -1.358974358974359,
+            1.6310679611650485
+          ],
+          "boundsFromOrigin": {
+            "left": 106,
+            "right": 184,
+            "top": -65,
+            "bottom": -168
+          },
+          "opaquePixelCount": 4161
+        },
+        {
+          "id": 9,
+          "key": "pisf:a0",
+          "name": "PISFA0",
+          "family": "PISF",
+          "atlas": "weapons",
+          "sourceLump": "PISFA0",
+          "sourceByteLength": 1408,
+          "sourceSha256": "b704552b2e0fd5d8fb36dc408e2556d5427302f10ecf12dcb5521c5aa379fea1",
+          "atlasRect": [
+            289,
+            78,
+            41,
+            38
+          ],
+          "uv": {
+            "min": [
+              0.564453125,
+              0.23353293413173654
+            ],
+            "max": [
+              0.64453125,
+              0.3473053892215569
+            ]
+          },
+          "pixelSize": [
+            41,
+            38
+          ],
+          "origin": [
+            -140,
+            -66
+          ],
+          "pivot": [
+            -3.4146341463414633,
+            2.736842105263158
+          ],
+          "boundsFromOrigin": {
+            "left": 140,
+            "right": 181,
+            "top": -66,
+            "bottom": -104
+          },
+          "opaquePixelCount": 980
+        },
+        {
+          "id": 10,
+          "key": "shtg:a0",
+          "name": "SHTGA0",
+          "family": "SHTG",
+          "atlas": "weapons",
+          "sourceLump": "SHTGA0",
+          "sourceByteLength": 3400,
+          "sourceSha256": "2c3f4aec034b2d5c05e224ebd39dfbcec0b5bb6acff9c4599b413efed621a740",
+          "atlasRect": [
+            331,
+            78,
+            79,
+            60
+          ],
+          "uv": {
+            "min": [
+              0.646484375,
+              0.23353293413173654
+            ],
+            "max": [
+              0.80078125,
+              0.41317365269461076
+            ]
+          },
+          "pixelSize": [
+            79,
+            60
+          ],
+          "origin": [
+            -121,
+            -108
+          ],
+          "pivot": [
+            -1.5316455696202531,
+            2.8
+          ],
+          "boundsFromOrigin": {
+            "left": 121,
+            "right": 200,
+            "top": -108,
+            "bottom": -168
+          },
+          "opaquePixelCount": 2672
+        },
+        {
+          "id": 11,
+          "key": "shtg:b0",
+          "name": "SHTGB0",
+          "family": "SHTG",
+          "atlas": "weapons",
+          "sourceLump": "SHTGB0",
+          "sourceByteLength": 8860,
+          "sourceSha256": "73d21069d59655ed701b1414d68f731f26393461744fe9d2a42ba79796e61721",
+          "atlasRect": [
+            1,
+            182,
+            119,
+            121
+          ],
+          "uv": {
+            "min": [
+              0.001953125,
+              0.5449101796407185
+            ],
+            "max": [
+              0.234375,
+              0.907185628742515
+            ]
+          },
+          "pixelSize": [
+            119,
+            121
+          ],
+          "origin": [
+            -43,
+            -47
+          ],
+          "pivot": [
+            -0.36134453781512604,
+            1.3884297520661157
+          ],
+          "boundsFromOrigin": {
+            "left": 43,
+            "right": 162,
+            "top": -47,
+            "bottom": -168
+          },
+          "opaquePixelCount": 7722
+        },
+        {
+          "id": 12,
+          "key": "shtg:c0",
+          "name": "SHTGC0",
+          "family": "SHTG",
+          "atlas": "weapons",
+          "sourceLump": "SHTGC0",
+          "sourceByteLength": 10368,
+          "sourceSha256": "78d1d155151287151fdc60151f1b5746df21b1bcde0c8e1cd652dc26ac7ff181",
+          "atlasRect": [
+            121,
+            182,
+            87,
+            151
+          ],
+          "uv": {
+            "min": [
+              0.236328125,
+              0.5449101796407185
+            ],
+            "max": [
+              0.40625,
+              0.9970059880239521
+            ]
+          },
+          "pixelSize": [
+            87,
+            151
+          ],
+          "origin": [
+            -30,
+            -17
+          ],
+          "pivot": [
+            -0.3448275862068966,
+            1.1125827814569536
+          ],
+          "boundsFromOrigin": {
+            "left": 30,
+            "right": 117,
+            "top": -17,
+            "bottom": -168
+          },
+          "opaquePixelCount": 9395
+        },
+        {
+          "id": 13,
+          "key": "shtg:d0",
+          "name": "SHTGD0",
+          "family": "SHTG",
+          "atlas": "weapons",
+          "sourceLump": "SHTGD0",
+          "sourceByteLength": 10668,
+          "sourceSha256": "2a78cc112afea454f9d4bb32cd69a564ed07fb1e330a4970217efbec75f840b7",
+          "atlasRect": [
+            209,
+            182,
+            113,
+            131
+          ],
+          "uv": {
+            "min": [
+              0.408203125,
+              0.5449101796407185
+            ],
+            "max": [
+              0.62890625,
+              0.937125748502994
+            ]
+          },
+          "pixelSize": [
+            113,
+            131
+          ],
+          "origin": [
+            -29,
+            -37
+          ],
+          "pivot": [
+            -0.25663716814159293,
+            1.282442748091603
+          ],
+          "boundsFromOrigin": {
+            "left": 29,
+            "right": 142,
+            "top": -37,
+            "bottom": -168
+          },
+          "opaquePixelCount": 9587
+        },
+        {
+          "id": 14,
+          "key": "shtf:a0",
+          "name": "SHTFA0",
+          "family": "SHTF",
+          "atlas": "weapons",
+          "sourceLump": "SHTFA0",
+          "sourceByteLength": 1156,
+          "sourceSha256": "ad029b0c3fe1768cdb7079c8d2fe92ca8afe97783846b7308b1cc7bf8ff91136",
+          "atlasRect": [
+            323,
+            182,
+            44,
+            31
+          ],
+          "uv": {
+            "min": [
+              0.630859375,
+              0.5449101796407185
+            ],
+            "max": [
+              0.716796875,
+              0.6377245508982036
+            ]
+          },
+          "pixelSize": [
+            44,
+            31
+          ],
+          "origin": [
+            -141,
+            -95
+          ],
+          "pivot": [
+            -3.2045454545454546,
+            4.064516129032258
+          ],
+          "boundsFromOrigin": {
+            "left": 141,
+            "right": 185,
+            "top": -95,
+            "bottom": -126
+          },
+          "opaquePixelCount": 716
+        },
+        {
+          "id": 15,
+          "key": "shtf:b0",
+          "name": "SHTFB0",
+          "family": "SHTF",
+          "atlas": "weapons",
+          "sourceLump": "SHTFB0",
+          "sourceByteLength": 1668,
+          "sourceSha256": "d7bda7f8f818309b3e21abe02d0daa370bd378e02b3c443043afbeadb8e4fa6c",
+          "atlasRect": [
+            368,
+            182,
+            54,
+            44
+          ],
+          "uv": {
+            "min": [
+              0.71875,
+              0.5449101796407185
+            ],
+            "max": [
+              0.82421875,
+              0.6766467065868264
+            ]
+          },
+          "pixelSize": [
+            54,
+            44
+          ],
+          "origin": [
+            -136,
+            -86
+          ],
+          "pivot": [
+            -2.5185185185185186,
+            2.9545454545454546
+          ],
+          "boundsFromOrigin": {
+            "left": 136,
+            "right": 190,
+            "top": -86,
+            "bottom": -130
+          },
+          "opaquePixelCount": 1118
+        }
+      ]
     }
   ],
   "contract": {
@@ -8536,6 +9380,16 @@
         "path": "/home/research/doom.ts/src/doom/doom/info/mobj-infos.ts",
         "sha256": "3f676d2928c387400fa3ddcefb25c9daf5c80049ef852e91feede0f92d760c38",
         "role": "actor and projectile Doom-unit dimensions"
+      },
+      {
+        "path": "/home/research/doom.ts/src/doom/play/p-sprite.ts",
+        "sha256": "03c2dc8b31f752945aebc9be5f7a4d0fb8eee4e2d961efe977601246f75bdb87",
+        "role": "player weapon ready, fire, flash, recovery, and screen-coordinate semantics"
+      },
+      {
+        "path": "/home/research/doom.ts/src/doom/webgl/objects/p-sprite.ts",
+        "sha256": "b1912113524feda070b55dd53c0b8e79a76e0bc30bf36b4157e30f683fa44713",
+        "role": "320 by 200 player weapon patch placement"
       }
     ],
     "scale": {
@@ -11187,15 +12041,421 @@
             ]
           }
         ]
+      },
+      {
+        "prefix": "PUNG",
+        "role": "weapon",
+        "thingType": null,
+        "dimensionsDoomUnits": null,
+        "clips": [
+          {
+            "id": "ready",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_PUNCH",
+                "frame": "A",
+                "tics": 1,
+                "fullBright": false
+              }
+            ]
+          },
+          {
+            "id": "fire",
+            "loopMode": "once",
+            "steps": [
+              {
+                "state": "S_PUNCH1",
+                "frame": "B",
+                "tics": 4,
+                "fullBright": false
+              },
+              {
+                "state": "S_PUNCH2",
+                "frame": "C",
+                "tics": 4,
+                "fullBright": false
+              },
+              {
+                "state": "S_PUNCH3",
+                "frame": "D",
+                "tics": 5,
+                "fullBright": false
+              },
+              {
+                "state": "S_PUNCH4",
+                "frame": "C",
+                "tics": 4,
+                "fullBright": false
+              },
+              {
+                "state": "S_PUNCH5",
+                "frame": "B",
+                "tics": 5,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "PUNGA0",
+                "atlasFrame": 0,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "B",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "PUNGB0",
+                "atlasFrame": 1,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "C",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "PUNGC0",
+                "atlasFrame": 2,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "D",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "PUNGD0",
+                "atlasFrame": 3,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "PISG",
+        "role": "weapon",
+        "thingType": null,
+        "dimensionsDoomUnits": null,
+        "clips": [
+          {
+            "id": "ready",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_PISTOL",
+                "frame": "A",
+                "tics": 1,
+                "fullBright": false
+              }
+            ]
+          },
+          {
+            "id": "fire",
+            "loopMode": "once",
+            "steps": [
+              {
+                "state": "S_PISTOL2",
+                "frame": "B",
+                "tics": 6,
+                "fullBright": false
+              },
+              {
+                "state": "S_PISTOL3",
+                "frame": "C",
+                "tics": 4,
+                "fullBright": false
+              },
+              {
+                "state": "S_PISTOL4",
+                "frame": "B",
+                "tics": 5,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "PISGA0",
+                "atlasFrame": 4,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "B",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "PISGB0",
+                "atlasFrame": 5,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "C",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "PISGC0",
+                "atlasFrame": 6,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "D",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "PISGD0",
+                "atlasFrame": 7,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "E",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "PISGE0",
+                "atlasFrame": 8,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "PISF",
+        "role": "weapon",
+        "thingType": null,
+        "dimensionsDoomUnits": null,
+        "clips": [
+          {
+            "id": "flash",
+            "loopMode": "once",
+            "steps": [
+              {
+                "state": "S_PISTOLFLASH",
+                "frame": "A",
+                "tics": 7,
+                "fullBright": true
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "PISFA0",
+                "atlasFrame": 9,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "SHTG",
+        "role": "weapon",
+        "thingType": null,
+        "dimensionsDoomUnits": null,
+        "clips": [
+          {
+            "id": "ready",
+            "loopMode": "repeat",
+            "steps": [
+              {
+                "state": "S_SGUN",
+                "frame": "A",
+                "tics": 1,
+                "fullBright": false
+              }
+            ]
+          },
+          {
+            "id": "fire",
+            "loopMode": "once",
+            "steps": [
+              {
+                "state": "S_SGUN2",
+                "frame": "A",
+                "tics": 7,
+                "fullBright": false
+              },
+              {
+                "state": "S_SGUN3",
+                "frame": "B",
+                "tics": 5,
+                "fullBright": false
+              },
+              {
+                "state": "S_SGUN4",
+                "frame": "C",
+                "tics": 5,
+                "fullBright": false
+              },
+              {
+                "state": "S_SGUN5",
+                "frame": "D",
+                "tics": 4,
+                "fullBright": false
+              },
+              {
+                "state": "S_SGUN6",
+                "frame": "C",
+                "tics": 5,
+                "fullBright": false
+              },
+              {
+                "state": "S_SGUN7",
+                "frame": "B",
+                "tics": 5,
+                "fullBright": false
+              },
+              {
+                "state": "S_SGUN8",
+                "frame": "A",
+                "tics": 3,
+                "fullBright": false
+              },
+              {
+                "state": "S_SGUN9",
+                "frame": "A",
+                "tics": 7,
+                "fullBright": false
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "SHTGA0",
+                "atlasFrame": 10,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "B",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "SHTGB0",
+                "atlasFrame": 11,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "C",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "SHTGC0",
+                "atlasFrame": 12,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "D",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "SHTGD0",
+                "atlasFrame": 13,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prefix": "SHTF",
+        "role": "weapon",
+        "thingType": null,
+        "dimensionsDoomUnits": null,
+        "clips": [
+          {
+            "id": "flash",
+            "loopMode": "once",
+            "steps": [
+              {
+                "state": "S_SGUNFLASH1",
+                "frame": "A",
+                "tics": 4,
+                "fullBright": true
+              },
+              {
+                "state": "S_SGUNFLASH2",
+                "frame": "B",
+                "tics": 3,
+                "fullBright": true
+              }
+            ]
+          }
+        ],
+        "directionalFrames": [
+          {
+            "frame": "A",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "SHTFA0",
+                "atlasFrame": 14,
+                "mirrored": false
+              }
+            ]
+          },
+          {
+            "frame": "B",
+            "rotations": [
+              {
+                "rotation": 0,
+                "sourceLump": "SHTFB0",
+                "atlasFrame": 15,
+                "mirrored": false
+              }
+            ]
+          }
+        ]
       }
     ]
   },
   "diagnostics": {
-    "sourceLumpCount": 163,
-    "frameCount": 163,
-    "atlasCount": 2,
-    "totalPngBytes": 148058,
-    "totalDecodedRgbaBytes": 1237584,
-    "totalOpaquePixels": 144642
+    "sourceLumpCount": 179,
+    "frameCount": 179,
+    "atlasCount": 3,
+    "totalPngBytes": 194624,
+    "totalDecodedRgbaBytes": 1659472,
+    "totalOpaquePixels": 204626
   }
 }

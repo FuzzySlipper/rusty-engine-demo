@@ -86,6 +86,7 @@ interface SpriteManifestFrame {
   family: string;
   uv: { min: [number, number]; max: [number, number] };
   pixelSize: [number, number];
+  origin: [number, number];
 }
 
 interface SpriteContractClip {
@@ -340,6 +341,15 @@ export function buildDoomE1M1Project(
   addSpriteAsset("sprite/doom-imp", actorAtlas, "troo");
   addSpriteAsset("sprite/doom-imp-fireball", effectsAtlas, "bal1");
   addSpriteAsset("sprite/doom-blood", effectsAtlas, "blud");
+  const weaponAtlas = spriteManifest.atlases.find((atlas) =>
+    atlas.frames.some((frame) => frame.family.toLowerCase() === "pisg"),
+  );
+  if (!weaponAtlas) throw new Error("Doom player weapon sprite atlas is missing");
+  addSpriteAsset("sprite/doom-fist-viewmodel", weaponAtlas, "pung");
+  addSpriteAsset("sprite/doom-pistol-viewmodel", weaponAtlas, "pisg");
+  addSpriteAsset("sprite/doom-pistol-flash-viewmodel", weaponAtlas, "pisf");
+  addSpriteAsset("sprite/doom-shotgun-viewmodel", weaponAtlas, "shtg");
+  addSpriteAsset("sprite/doom-shotgun-flash-viewmodel", weaponAtlas, "shtf");
   for (const entry of manifest.entries) {
     const k = kebab(entry.name);
     const matId = `material/doom-${entry.kind}-${k}`;
