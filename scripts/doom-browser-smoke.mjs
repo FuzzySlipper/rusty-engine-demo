@@ -1962,6 +1962,19 @@ async function main() {
   const interactionOwners = interactionEvidence
     ? resolveInteractionOwners(projectPath)
     : null;
+  const expectedProject = JSON.parse(readFileSync(projectPath, "utf8"));
+  const expectedProjectionCount = expectedProject.scenes[0].entities.filter(
+    (entity) => entity.renderable != null,
+  ).length;
+  const mapTextureCount = expectedProject.assets.filter((asset) =>
+    asset.id.startsWith("texture/doom-"),
+  ).length;
+  const spriteTextureCount = new Set(
+    expectedProject.assets
+      .filter((asset) => asset.spriteAtlas != null)
+      .map((asset) => asset.spriteAtlas.texture),
+  ).size;
+  const expectedPngResourceCount = mapTextureCount + spriteTextureCount;
   console.log(`DOOM SMOKE host ${addr} save ${saveRoot}`);
   const { host, getOut } = launchHost(addr, saveRoot, projectPath);
   let chromiumProc = null;
@@ -1991,8 +2004,8 @@ async function main() {
       `host projectId doom-e1m1, got ${state.projectId}`,
     );
     assert(
-      state.projection?.length === 123,
-      `projection 123, got ${state.projection?.length}`,
+      state.projection?.length === expectedProjectionCount,
+      `projection ${expectedProjectionCount}, got ${state.projection?.length}`,
     );
     assert(
       state.enemies?.length === 29,
@@ -2028,8 +2041,8 @@ async function main() {
     assert(
       applicationResources.filter(
         (resource) => resource.mediaType === "image/png",
-      ).length === 56,
-      "Rust projected 54 E1M1 map textures and two Doom sprite atlases",
+      ).length === expectedPngResourceCount,
+      `Rust projected ${mapTextureCount} E1M1 map textures and ${spriteTextureCount} Doom sprite atlases`,
     );
     assert(
       applicationResources.some(

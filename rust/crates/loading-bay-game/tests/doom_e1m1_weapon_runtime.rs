@@ -133,7 +133,7 @@ fn authored_fist_is_selectable_and_damages_at_zero_ammunition_cost() {
     entities
         .iter_mut()
         .find(|entity| entity["id"] == target_id.raw())
-        .unwrap()["translation"] = serde_json::json!([114.0, 9.25, 80.0]);
+        .unwrap()["translation"] = serde_json::json!([114.0, 10.25, 80.0]);
 
     let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     let mut game_loop = LoadingBayGameLoop::new(runtime, PLAYER).unwrap();

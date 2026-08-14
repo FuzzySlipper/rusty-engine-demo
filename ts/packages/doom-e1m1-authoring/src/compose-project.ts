@@ -87,6 +87,7 @@ interface SpriteManifestFrame {
   uv: { min: [number, number]; max: [number, number] };
   pixelSize: [number, number];
   origin: [number, number];
+  pivot: [number, number];
 }
 
 interface SpriteContractClip {
@@ -97,6 +98,8 @@ interface SpriteContractClip {
 
 interface SpriteContractFamily {
   prefix: string;
+  role: string;
+  dimensionsDoomUnits?: { radius: number; height: number };
   directionalFrames: {
     frame: string;
     rotations: {
@@ -122,38 +125,93 @@ interface SpriteManifest {
   atlases: SpriteManifestAtlas[];
   contract: {
     tickRateHz: number;
+    scale: {
+      mapDoomUnitsPerEngineUnit: number;
+      actorReferenceHeightDoomUnits: number;
+      actorReferenceHeightEngineUnits: number;
+      presentationDoomUnitsPerEngineUnit: number;
+    };
     families: SpriteContractFamily[];
   };
 }
 
-function authoredSpriteFrames(
+interface AuthoredSpriteClip {
+  frames: number[];
+  ticksPerFrame: number;
+  loopMode: "once" | "repeat";
+  directionalViews: {
+    rotation: number;
+    frames: number[];
+    mirrored: boolean;
+    sourceOriginOffsets: [number, number][];
+  }[];
+}
+
+function authoredSpriteClip(
   family: SpriteContractFamily,
   clipId: string,
   frameIds: ReadonlyMap<string, number>,
-): number[] {
+  frameByName: ReadonlyMap<string, SpriteManifestFrame>,
+  presentationScale: number,
+  tickRateHz: number,
+): AuthoredSpriteClip {
   const clip = family.clips.find((candidate) => candidate.id === clipId);
   if (!clip) throw new Error(`missing Doom ${family.prefix} clip ${clipId}`);
-  const frames: number[] = [];
+  const directionalViews = Array.from({ length: 8 }, (_, index) => ({
+    rotation: index + 1,
+    frames: [] as number[],
+    mirrored: false,
+    sourceOriginOffsets: [] as [number, number][],
+  }));
   let sourceTics = 0;
   let runtimeTicks = 0;
   for (const step of clip.steps) {
-    const direction = family.directionalFrames
-      .find((candidate) => candidate.frame === step.frame)
-      ?.rotations.find((candidate) => candidate.rotation === 1 || candidate.rotation === 0);
-    if (!direction) throw new Error(`missing Doom ${family.prefix}${step.frame} front frame`);
-    const frame = frameIds.get(direction.sourceLump);
-    if (frame === undefined) throw new Error(`missing authored Doom frame ${direction.sourceLump}`);
-    if (step.tics < 0) {
-      frames.push(frame);
-      continue;
+    const duration = (() => {
+      if (step.tics < 0) return 1;
+      sourceTics += step.tics;
+      const nextRuntimeTicks = Math.round((sourceTics * 60) / tickRateHz);
+      const ticks = Math.max(1, nextRuntimeTicks - runtimeTicks);
+      runtimeTicks = nextRuntimeTicks;
+      return ticks;
+    })();
+    const directions = family.directionalFrames.find(
+      (candidate) => candidate.frame === step.frame,
+    );
+    for (const view of directionalViews) {
+      const direction =
+        directions?.rotations.find(
+          (candidate) => candidate.rotation === view.rotation,
+        ) ??
+        directions?.rotations.find((candidate) => candidate.rotation === 0);
+      if (!direction)
+        throw new Error(
+          `missing Doom ${family.prefix}${step.frame} rotation ${view.rotation}`,
+        );
+      const frame = frameIds.get(direction.sourceLump);
+      const source = frameByName.get(direction.sourceLump);
+      if (frame === undefined || !source)
+        throw new Error(`missing authored Doom frame ${direction.sourceLump}`);
+      const size: [number, number] = [
+        source.pixelSize[0] / presentationScale,
+        source.pixelSize[1] / presentationScale,
+      ];
+      const sourceOriginOffset: [number, number] = [
+        (0.5 - source.pivot[0]) * size[0],
+        (0.5 - source.pivot[1]) * size[1],
+      ];
+      for (let tick = 0; tick < duration; tick += 1) {
+        view.frames.push(frame);
+        view.sourceOriginOffsets.push(sourceOriginOffset);
+      }
+      if (direction.mirrored) view.mirrored = true;
     }
-    sourceTics += step.tics;
-    const nextRuntimeTicks = Math.round((sourceTics * 60) / 35);
-    const duration = Math.max(1, nextRuntimeTicks - runtimeTicks);
-    for (let tick = 0; tick < duration; tick += 1) frames.push(frame);
-    runtimeTicks = nextRuntimeTicks;
   }
-  return frames;
+  return {
+    frames: directionalViews[0]!.frames,
+    ticksPerFrame: 1,
+    loopMode: clip.loopMode,
+    directionalViews,
+  };
 }
 
 function buildSectorEdges(inter: Intermediate) {
@@ -263,6 +321,15 @@ export function buildDoomE1M1Project(
   const spriteManifest: SpriteManifest = JSON.parse(
     readFileSync(spriteManifestPath, "utf8"),
   );
+  const presentationScale =
+    spriteManifest.contract.scale.presentationDoomUnitsPerEngineUnit;
+  if (presentationScale !== 28)
+    throw new Error(`unexpected Doom presentation scale ${presentationScale}`);
+  const spriteFrameByName = new Map(
+    spriteManifest.atlases.flatMap((atlas) =>
+      atlas.frames.map((frame) => [frame.name, frame] as const),
+    ),
+  );
   const voxel = JSON.parse(readFileSync(voxelPath, "utf8"));
   const loadingBay = JSON.parse(readFileSync(loadingBayPath, "utf8"));
 
@@ -312,7 +379,10 @@ export function buildDoomE1M1Project(
         frame: index,
         uvMin: frame.uv.min,
         uvMax: frame.uv.max,
-        size: [frame.pixelSize[0] / SCALE, frame.pixelSize[1] / SCALE],
+        size: [
+          frame.pixelSize[0] / presentationScale,
+          frame.pixelSize[1] / presentationScale,
+        ],
       };
     });
     spriteFrames.set(family, frameIds);
@@ -341,10 +411,33 @@ export function buildDoomE1M1Project(
   addSpriteAsset("sprite/doom-imp", actorAtlas, "troo");
   addSpriteAsset("sprite/doom-imp-fireball", effectsAtlas, "bal1");
   addSpriteAsset("sprite/doom-blood", effectsAtlas, "blud");
+  addSpriteAsset("sprite/doom-puff", effectsAtlas, "puff");
+  const pickupSpriteSpecs = [
+    ["shot", "sprite/doom-pickup-shot"],
+    ["clip", "sprite/doom-pickup-clip"],
+    ["shel", "sprite/doom-pickup-shel"],
+    ["ammo", "sprite/doom-pickup-ammo"],
+    ["sbox", "sprite/doom-pickup-sbox"],
+    ["stim", "sprite/doom-pickup-stim"],
+    ["medi", "sprite/doom-pickup-medi"],
+    ["bon1", "sprite/doom-pickup-bon1"],
+    ["bon2", "sprite/doom-pickup-bon2"],
+    ["arm1", "sprite/doom-pickup-arm1"],
+    ["arm2", "sprite/doom-pickup-arm2"],
+  ] as const;
+  for (const [family, id] of pickupSpriteSpecs) {
+    const atlas = spriteManifest.atlases.find((candidate) =>
+      candidate.frames.some((frame) => frame.family.toLowerCase() === family),
+    );
+    if (!atlas)
+      throw new Error(`Doom ${family.toUpperCase()} pickup atlas is missing`);
+    addSpriteAsset(id, atlas, family);
+  }
   const weaponAtlas = spriteManifest.atlases.find((atlas) =>
     atlas.frames.some((frame) => frame.family.toLowerCase() === "pisg"),
   );
-  if (!weaponAtlas) throw new Error("Doom player weapon sprite atlas is missing");
+  if (!weaponAtlas)
+    throw new Error("Doom player weapon sprite atlas is missing");
   addSpriteAsset("sprite/doom-fist-viewmodel", weaponAtlas, "pung");
   addSpriteAsset("sprite/doom-pistol-viewmodel", weaponAtlas, "pisg");
   addSpriteAsset("sprite/doom-pistol-flash-viewmodel", weaponAtlas, "pisf");
@@ -645,7 +738,6 @@ export function buildDoomE1M1Project(
       health: 30,
       painDurationTicks: Math.round((6 / 35) * 60),
       mesh: "sprite/doom-shotgun-guy",
-      spriteScale: [3.5, 3.5, 1],
       attack: {
         kind: "rangedHitscan",
         // The runtime hitscan is authoritative and cannot reproduce Doom's
@@ -660,7 +752,8 @@ export function buildDoomE1M1Project(
       drop: {
         item: "weapon/shotgun",
         quantity: 1,
-        mesh: "mesh/prop-kit/breach-scattergun",
+        spriteFamily: "shot",
+        asset: "sprite/doom-pickup-shot",
         starterAmmunition: { item: "ammo/shells", quantity: 4 },
       },
     },
@@ -670,7 +763,6 @@ export function buildDoomE1M1Project(
       health: 60,
       painDurationTicks: Math.round((4 / 35) * 60),
       mesh: "sprite/doom-imp",
-      spriteScale: [3.75, 3.75, 1],
       attack: {
         kind: "projectile",
         damage: 12,
@@ -696,7 +788,6 @@ export function buildDoomE1M1Project(
       health: 20,
       painDurationTicks: Math.round((6 / 35) * 60),
       mesh: "sprite/doom-zombieman",
-      spriteScale: [3.5, 3.5, 1],
       attack: {
         kind: "rangedHitscan",
         damage: 9,
@@ -708,7 +799,8 @@ export function buildDoomE1M1Project(
       drop: {
         item: "ammo/bullets",
         quantity: 5,
-        mesh: "mesh/prop-kit/energy-cell",
+        spriteFamily: "clip",
+        asset: "sprite/doom-pickup-clip",
       },
     },
   } as const;
@@ -717,67 +809,190 @@ export function buildDoomE1M1Project(
     {
       item: string;
       quantity: number;
-      mesh: string;
+      spriteFamily: string;
+      asset: string;
       starterAmmunition?: { item: string; quantity: number };
     }
   > = {
     2001: {
       item: "weapon/shotgun",
       quantity: 1,
-      mesh: "mesh/prop-kit/breach-scattergun",
+      spriteFamily: "shot",
+      asset: "sprite/doom-pickup-shot",
       starterAmmunition: { item: "ammo/shells", quantity: 8 },
     },
     2007: {
       item: "ammo/bullets",
       quantity: 10,
-      mesh: "mesh/prop-kit/energy-cell",
+      spriteFamily: "clip",
+      asset: "sprite/doom-pickup-clip",
     },
     2008: {
       item: "ammo/shells",
       quantity: 4,
-      mesh: "mesh/prop-kit/scatter-shells",
+      spriteFamily: "shel",
+      asset: "sprite/doom-pickup-shel",
     },
     2048: {
       item: "ammo/bullets",
       quantity: 50,
-      mesh: "mesh/prop-kit/energy-cell",
+      spriteFamily: "ammo",
+      asset: "sprite/doom-pickup-ammo",
     },
     2049: {
       item: "ammo/shells",
       quantity: 20,
-      mesh: "mesh/prop-kit/scatter-shells",
+      spriteFamily: "sbox",
+      asset: "sprite/doom-pickup-sbox",
     },
     2011: {
       item: "supply/stimpack",
       quantity: 1,
-      mesh: "mesh/prop-kit/med-patch",
+      spriteFamily: "stim",
+      asset: "sprite/doom-pickup-stim",
     },
     2012: {
       item: "supply/medikit",
       quantity: 1,
-      mesh: "mesh/prop-kit/med-patch",
+      spriteFamily: "medi",
+      asset: "sprite/doom-pickup-medi",
     },
     2014: {
       item: "supply/health-bonus",
       quantity: 1,
-      mesh: "mesh/prop-kit/med-patch",
+      spriteFamily: "bon1",
+      asset: "sprite/doom-pickup-bon1",
     },
     2015: {
       item: "armor/bonus",
       quantity: 1,
-      mesh: "mesh/prop-kit/impact-vest",
+      spriteFamily: "bon2",
+      asset: "sprite/doom-pickup-bon2",
     },
     2018: {
       item: "armor/green",
       quantity: 1,
-      mesh: "mesh/prop-kit/impact-vest",
+      spriteFamily: "arm1",
+      asset: "sprite/doom-pickup-arm1",
     },
     2019: {
       item: "armor/blue",
       quantity: 1,
-      mesh: "mesh/prop-kit/impact-vest",
+      spriteFamily: "arm2",
+      asset: "sprite/doom-pickup-arm2",
     },
   };
+
+  const spriteClip = (familyName: string, clipId: string) => {
+    const family = spriteManifest.contract.families.find(
+      (candidate) => candidate.prefix.toLowerCase() === familyName,
+    );
+    const frames = spriteFrames.get(familyName);
+    if (!family || !frames)
+      throw new Error(`missing Doom sprite contract ${familyName}`);
+    return authoredSpriteClip(
+      family,
+      clipId,
+      frames,
+      spriteFrameByName,
+      presentationScale,
+      spriteManifest.contract.tickRateHz,
+    );
+  };
+  const spriteState = (state: string, familyName: string, clipId: string) => ({
+    state,
+    kind: "spriteFrames",
+    ...spriteClip(familyName, clipId),
+  });
+  const actorVisualBinding = (familyName: string) => ({
+    version: 2,
+    states: [
+      spriteState("idle", familyName, "idle"),
+      spriteState("moving", familyName, "walk"),
+      spriteState("alert", familyName, "idle"),
+      spriteState("attacking", familyName, "attack"),
+      spriteState("hit", familyName, "pain"),
+      spriteState("defeated", familyName, "death"),
+    ],
+  });
+  const pickupVisualBinding = (familyName: string) => {
+    const state = (name: string) => spriteState(name, familyName, "available");
+    return {
+      version: 2,
+      states: [state("dormant"), state("available"), state("collected")],
+    };
+  };
+  const pickupPresentation = (mapping: {
+    spriteFamily: string;
+    asset: string;
+  }) => {
+    const family = spriteManifest.contract.families.find(
+      (candidate) => candidate.prefix.toLowerCase() === mapping.spriteFamily,
+    );
+    if (family?.role !== "item" || family.dimensionsDoomUnits?.radius !== 20) {
+      throw new Error(
+        `unexpected ${mapping.spriteFamily.toUpperCase()} pickup contract`,
+      );
+    }
+    const halfExtent = family.dimensionsDoomUnits.radius / presentationScale;
+    return {
+      bounds: {
+        min: [-halfExtent, -0.35, -halfExtent],
+        max: [halfExtent, 0.65, halfExtent],
+      },
+      renderable: {
+        asset: mapping.asset,
+        visible: true,
+        localTransform: {
+          translation: [0, 0, 0],
+          rotation: [0, 0, 0, 1],
+          scale: [1, 1, 1],
+        },
+      },
+    };
+  };
+  const effectTemplate = (
+    name: string,
+    spriteFamily: string,
+    clipId: string,
+    asset: string,
+  ) => ({
+    id: nextId++,
+    name,
+    translation: [0, 0, 0],
+    renderable: {
+      asset,
+      visible: false,
+      localTransform: {
+        translation: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+        scale: [1, 1, 1],
+      },
+      visualBinding: {
+        version: 2,
+        states: [spriteState("default", spriteFamily, clipId)],
+      },
+    },
+  });
+  const visualTemplate = (
+    name: string,
+    asset: string,
+    visualBinding: ReturnType<typeof actorVisualBinding>,
+  ) => ({
+    id: nextId++,
+    name,
+    translation: [0, 0, 0],
+    renderable: {
+      asset,
+      visible: false,
+      localTransform: {
+        translation: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+        scale: [1, 1, 1],
+      },
+      visualBinding,
+    },
+  });
 
   // E1M1 UV enemies. The archetype records above are immutable authored
   // calibration; every placement resolves to ordinary reusable Rust owners.
@@ -803,63 +1018,6 @@ export function buildDoomE1M1Project(
     enemyIndex += 1;
     const pos = doomToWorldForThing(thing);
     pos[1] += 1.25;
-    const familyFrames = spriteFrames.get(archetype.spriteFamily);
-    if (!familyFrames)
-      throw new Error(`missing frames for ${archetype.spriteFamily}`);
-    const familyContract = spriteManifest.contract.families.find(
-      (candidate) => candidate.prefix.toLowerCase() === archetype.spriteFamily,
-    );
-    if (!familyContract)
-      throw new Error(`missing Doom sprite contract ${archetype.spriteFamily}`);
-    const clipFrames = (clip: string) =>
-      authoredSpriteFrames(familyContract, clip, familyFrames);
-    const visualBinding = {
-      version: 1,
-      states: [
-        {
-          state: "idle",
-          kind: "spriteFrames",
-          frames: clipFrames("idle"),
-          ticksPerFrame: 1,
-          loopMode: "repeat",
-        },
-        {
-          state: "moving",
-          kind: "spriteFrames",
-          frames: clipFrames("walk"),
-          ticksPerFrame: 1,
-          loopMode: "repeat",
-        },
-        {
-          state: "alert",
-          kind: "spriteFrames",
-          frames: clipFrames("idle"),
-          ticksPerFrame: 1,
-          loopMode: "repeat",
-        },
-        {
-          state: "attacking",
-          kind: "spriteFrames",
-          frames: clipFrames("attack"),
-          ticksPerFrame: 1,
-          loopMode: "once",
-        },
-        {
-          state: "hit",
-          kind: "spriteFrames",
-          frames: clipFrames("pain"),
-          ticksPerFrame: 1,
-          loopMode: "once",
-        },
-        {
-          state: "defeated",
-          kind: "spriteFrames",
-          frames: clipFrames("death"),
-          ticksPerFrame: 1,
-          loopMode: "once",
-        },
-      ],
-    };
     const id = nextId++;
     const enemy: any = {
       id,
@@ -871,11 +1029,10 @@ export function buildDoomE1M1Project(
         asset: archetype.mesh,
         visible: true,
         localTransform: {
-          translation: [0, 0.5, 0],
+          translation: [0, -1, 0],
           rotation: [0, 0, 0, 1],
-          scale: archetype.spriteScale,
+          scale: [1, 1, 1],
         },
-        visualBinding,
       },
       enemy: true,
       enemyCombat: {
@@ -886,27 +1043,26 @@ export function buildDoomE1M1Project(
       },
       health: {
         max: archetype.health,
-        hitboxHalfExtents: [1.25, 1.75, 1.25],
+        hitboxHalfExtents: [0.45, 1, 0.45],
       },
-      kinematic: { halfExtents: [1.25, 1.75, 1.25], velocity: [0, 0, 0] },
+      kinematic: { halfExtents: [0.45, 1, 0.45], velocity: [0, 0, 0] },
       navigation: {
         goal: pos,
-        speedUnitsPerSecond: 8,
+        speedUnitsPerSecond: 3,
         maxVisited: 64,
       },
     };
     if (archetype.drop !== null) {
       const dropId = nextId++;
       enemy.defeatDrop = { pickup: dropId };
+      const dropPresentation = pickupPresentation(archetype.drop);
+      dropPresentation.renderable.visible = false;
+      dropPresentation.renderable.localTransform.translation = [0, -1, 0];
       entities.push(enemy, {
         id: dropId,
         name: `doom-drop-${archetype.name}-${enemyIndex}`,
         translation: pos,
-        bounds: { min: [-0.3, -0.3, -0.3], max: [0.3, 0.3, 0.3] },
-        renderable: {
-          asset: archetype.drop.mesh,
-          visible: false,
-        },
+        ...dropPresentation,
         pickup: {
           item: archetype.drop.item,
           quantity: archetype.drop.quantity,
@@ -987,37 +1143,7 @@ export function buildDoomE1M1Project(
       id,
       name: `doom-pickup-${thing.type}-${pickupIndex}`,
       translation: pos,
-      bounds: { min: [-0.3, -0.3, -0.3], max: [0.3, 0.3, 0.3] },
-      renderable: {
-        asset: mapping.mesh,
-        visible: true,
-        visualBinding: {
-          version: 1,
-          states: [
-            {
-              state: "dormant",
-              kind: "material",
-              textureTint: [0.58, 0.62, 0.68, 1],
-              emissionColor: [0.12, 0.14, 0.18],
-              emissionIntensity: 0.04,
-            },
-            {
-              state: "available",
-              kind: "material",
-              textureTint: [0.62, 1, 0.82, 1],
-              emissionColor: [0.12, 0.82, 0.52],
-              emissionIntensity: 0.35,
-            },
-            {
-              state: "collected",
-              kind: "material",
-              textureTint: [1, 1, 1, 1],
-              emissionColor: [0, 0, 0],
-              emissionIntensity: 0,
-            },
-          ],
-        },
-      },
+      ...pickupPresentation(mapping),
       pickup: {
         item: mapping.item,
         quantity: mapping.quantity,
@@ -1027,6 +1153,63 @@ export function buildDoomE1M1Project(
       },
     });
   }
+
+  // One validated binding per sprite family keeps canonical E1M1 below the
+  // project-store admission bound. The Rust application projector resolves
+  // these game-specific templates by asset for live actors and pickups.
+  entities.push(
+    visualTemplate(
+      "doom-visual-template-zombieman",
+      "sprite/doom-zombieman",
+      actorVisualBinding("poss"),
+    ),
+    visualTemplate(
+      "doom-visual-template-shotgun-guy",
+      "sprite/doom-shotgun-guy",
+      actorVisualBinding("spos"),
+    ),
+    visualTemplate(
+      "doom-visual-template-imp",
+      "sprite/doom-imp",
+      actorVisualBinding("troo"),
+    ),
+    ...pickupSpriteSpecs.map(([family, asset]) =>
+      visualTemplate(
+        `doom-visual-template-pickup-${family}`,
+        asset,
+        pickupVisualBinding(family),
+      ),
+    ),
+  );
+
+  // Runtime combat effects resolve their exact validated sprite clips from
+  // these invisible application-content templates.
+  entities.push(
+    effectTemplate(
+      "doom-fx-template-blood",
+      "blud",
+      "hit",
+      "sprite/doom-blood",
+    ),
+    effectTemplate(
+      "doom-fx-template-bullet-puff",
+      "puff",
+      "impact",
+      "sprite/doom-puff",
+    ),
+    effectTemplate(
+      "doom-fx-template-projectile-flight",
+      "bal1",
+      "flight",
+      "sprite/doom-imp-fireball",
+    ),
+    effectTemplate(
+      "doom-fx-template-projectile-impact",
+      "bal1",
+      "impact",
+      "sprite/doom-imp-fireball",
+    ),
+  );
 
   // Special-7 nukage sectors use the reusable bounded hazard owner. The map
   // supplies region geometry and source timing; Rust owns overlap and damage.
@@ -1360,7 +1543,10 @@ export function buildDoomE1M1Project(
   };
 
   mkdirSync(resolve(outPath, ".."), { recursive: true });
-  writeFileSync(outPath, `${JSON.stringify(project, null, 2)}\n`, "utf8");
+  // Keep the pre-canonical admission payload compact. Directional sprite
+  // contracts are intentionally data-rich and the Rust loader enforces an
+  // 8 MiB input safety bound before it rewrites canonical bytes.
+  writeFileSync(outPath, `${JSON.stringify(project)}\n`, "utf8");
 
   // Canonicalize via Rust project-store to guarantee byte equality
   const canonicalOut = `${outPath}.canon`;
@@ -1401,5 +1587,39 @@ if (
   process.argv[1] &&
   fileURLToPath(import.meta.url) === resolve(process.argv[1])
 ) {
-  buildDoomE1M1Project();
+  if (process.argv.includes("--check")) {
+    const canonicalPath = fileURLToPath(
+      new URL(
+        "../../../../content/projects/doom-e1m1.project.json",
+        import.meta.url,
+      ),
+    );
+    const candidatePath = `${canonicalPath}.check`;
+    try {
+      buildDoomE1M1Project(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        candidatePath,
+      );
+      const expected = readFileSync(canonicalPath);
+      const candidate = readFileSync(candidatePath);
+      if (!expected.equals(candidate)) {
+        throw new Error(
+          "canonical Doom E1M1 project is stale; run the authoring generate command",
+        );
+      }
+      console.log("Canonical Doom E1M1 composition is current");
+    } finally {
+      try {
+        unlinkSync(candidatePath);
+      } catch {}
+      try {
+        unlinkSync(`${candidatePath}.canon`);
+      } catch {}
+    }
+  } else {
+    buildDoomE1M1Project();
+  }
 }

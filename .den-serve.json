@@ -1,7 +1,7 @@
 {
   "project": "rusty-engine-demo",
   "serve": {
-    "command": "RUSTY_ENGINE_DEMO_PROJECT=content/projects/doom-player-hurt-room.project.json bash scripts/serve-den.sh -- --host {host} --port {port}",
+    "command": "RUSTY_ENGINE_DEMO_PROJECT=content/projects/doom-e1m1.project.json bash scripts/serve-den.sh -- --host {host} --port {port}",
     "preferredPort": 37300,
     "healthUrl": "/health",
     "readyText": "\"project\":\"rusty-engine-demo\"",
@@ -10,7 +10,7 @@
     "startupTimeout": "180s"
   },
   "playtest": {
-    "startPath": "/#/game?mode=new&project=doom-player-hurt-room",
+    "startPath": "/#/game?mode=new&project=doom-e1m1",
     "viewport": {
       "width": 1600,
       "height": 900

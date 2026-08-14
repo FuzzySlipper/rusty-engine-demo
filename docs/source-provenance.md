@@ -641,10 +641,11 @@ The offline sprite forge selects only the canonical `POSS`, `SPOS`, `TROO`,
 between `S_START` and `S_END` in the same
 4,196,020-byte WAD (`sha256:1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771`).
 It decodes Doom patch posts with absent-post transparency and the first
-`PLAYPAL` palette, then packs 179 named frames without interpolation:
+`PLAYPAL` palette, then packs 198 named frames without interpolation:
 49 zombieman, 49 shotgun-guy, 53 imp, five imp-fireball, three blood, four
-bullet-puff, four fist, five pistol, one pistol-flash, four shotgun, and two
-shotgun-flash frames. `content/doom-e1m1/sprites/manifest.json` records every
+bullet-puff, nineteen pickup/item frames, four fist, five pistol, one
+pistol-flash, four shotgun, and two shotgun-flash frames.
+`content/doom-e1m1/sprites/manifest.json` records every
 source lump's directory index, byte length, SHA-256, frame origin, dimensions,
 UV rectangle, and output identity. Manifest schema 2 also records the canonical
 35 Hz state clips, Doom tic durations, full-bright inputs, rotation coverage,
@@ -654,15 +655,15 @@ than inferred from atlas order. The contract records the map-coordinate scale
 (16 Doom units per Engine unit) separately from the product actor presentation
 reference (56 Doom units equals 2 Engine units, or 28:1).
 
-The checked-in outputs are `actors.png` (512x769, 144,841 bytes,
-`sha256:5c9210c1cd26a8bc03f6d800c2f0db69cc9ed2a6dae0f9b8cb15030f591ec207`)
-and `effects.png` (128x86, 3,466 bytes,
-`sha256:1de53dc9c4067c4d1fcd4cc5a9a77ddb653068830a0ad62a7af6bccec8e8d91a`),
+The checked-in outputs are `actors.png` (512x769, 144,576 bytes,
+`sha256:e71a1b2077c7874378f3239c34fa4fe2593c9646ec6073cf24556a45ecf5c3c0`)
+and `effects.png` (128x160, 6,839 bytes,
+`sha256:aed7642d26d2822ecae8ab363ac73b3c3bb4f873dbf71424f5639ebcc3dea29a`),
 plus `weapons.png` (512x334, 46,566 bytes,
 `sha256:12d001091a165ba055824ae2d572336a5798a855f47ed032c0a24cb7f3d36bbc`).
-The authored project selects ten closed sprite assets from those atlases:
-zombieman, shotgun guy, imp, imp fireball, blood hit effect, and the five
-player weapon/base-flash families. Rust chooses
+The authored project selects 22 closed sprite assets from those atlases:
+zombieman, shotgun guy, imp, imp fireball, blood, bullet puff, all eleven
+scoped pickup families, and the five player weapon/base-flash families. Rust chooses
 actor attack, pain, and death frames from authoritative combat state, projects
 the configured imp fireball on the Rust-owned projectile entity, and emits the
 three-frame blood effect when authoritative enemy health decreases. The old
@@ -792,11 +793,11 @@ and check it through `generate:pickup-room` and `check:pickup-room`; the matchin
 TS `voxelize(manifest, scale=16, offset=[−768,−136,−4864]) → VoxelAsset` produces `content/doom-e1m1/doom-e1m1.voxel.json` with
 `voxelDataHash sha256:fad81c1c1d8b8ffe30b733817f70b494b26c1ca788e4c8a40a6fe16ffb6c756d`
 `contentHash sha256:4119fe84f82e6fd98dc66e069eaede6b1faebcb32a86b738f116a97e3a78b65c`
-`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:755a557dc0d496129748f5deb7719d3c92e8f44766a177b93e0981956916de1f`.
+`sparseRuns 14,476 / 49,908 resolved cells, bounds [0,0,0]-[286,24,176]`, `materialPalette` 54 entries mapping each flat/wall name to `material/doom-flat-*` / `material/doom-wall-*` (tileScale as above). Doom type-1 door spans remain represented by the authored Rust-owned door entities rather than duplicate immutable collision voxels, so opening those entities leaves the connected E1M1 route traversable. Budget `≤1M` voxels, `≤65k` resolved cells, verified by `cargo test -p loading-bay-game --test doom_voxel_asset` which decodes without mutation. Project `content/projects/doom-e1m1.project.json` file SHA-256 and current static revision are `sha256:3f3eec402a4fc6702aef1c4b76899c60fa4e04af093903ad2e52bd7776099e40`.
 
 ### Authored project
 
-`content/projects/doom-e1m1.project.json` schema 25 `scene/doom-e1m1` embeds the voxel volume (`voxel-volume/doom-e1m1` at identity, plus `voxelEnvironment` material proxy referencing same asset), 54 VTX6 materials (`material/doom-*` with `voxelSurface` repeat), 54 map textures (`texture/doom-*`), ten Doom sprite assets, and nine retained non-enemy prop meshes. One `StoredMaterialDefinition` per map texture carries `tileScaleCells`/`tileOriginCells` with straight-alpha Nearest/Repeat sampling; sprite atlases use straight-alpha Nearest/Clamp. Project admits via `ProjectStore` canonical round-trip (<8 MiB) and is listed in `libs/project-content` alongside `loading-bay`/`relay-annex`. Enemy and player-weapon presentation consume the generated clip contract and preserve unequal 35 Hz state durations by deterministic cumulative conversion to the 60 Hz gameplay tick; the E1M1 composer no longer duplicates sprite frame labels.
+`content/projects/doom-e1m1.project.json` schema 25 `scene/doom-e1m1` embeds the voxel volume (`voxel-volume/doom-e1m1` at identity, plus `voxelEnvironment` material proxy referencing same asset), 54 VTX6 materials (`material/doom-*` with `voxelSurface` repeat), 54 map textures (`texture/doom-*`), 22 Doom sprite assets, and nine retained non-enemy prop meshes. One `StoredMaterialDefinition` per map texture carries `tileScaleCells`/`tileOriginCells` with straight-alpha Nearest/Repeat sampling; sprite atlases use straight-alpha Nearest/Clamp. Project admits via `ProjectStore` canonical round-trip (<8 MiB) and is listed in `libs/project-content` alongside `loading-bay`/`relay-annex`. Enemy, pickup, effect, and player-weapon presentation consume the generated clip contract and preserve unequal 35 Hz state durations by deterministic cumulative conversion to the 60 Hz gameplay tick. One invisible application-content template per actor or pickup asset carries the exact shared clip and directional tables; Rust resolves those templates by asset for live entities without duplicating the same data across every map placement.
 
 Task #6804 ports only E1M1's single-player weapon subset: the starting fist and
 pistol, the one placed shotgun, bullets, and shells. Thing types 2001, 2007, 2008,
@@ -811,9 +812,9 @@ cadence. The authored 60 Hz cooldowns are the nearest integral fixed-tick
 calibration of those 35 Hz state intervals. Rust implements reusable held-fire,
 cooldown, deterministic damage-roll, spread, hit, occlusion, ammo, vitality,
 death, drop, fact, and snapshot owners; TypeScript only composes these values
-and disposable presentation identities. Existing original Loading Bay prop
-meshes remain temporary visual substitutes and are not represented as Doom
-sprites or weapon art.
+and disposable presentation identities. Placed ammunition, weapons, health,
+armor, and enemy drops now use the generated Doom pickup sprites; retained
+Loading Bay meshes remain only for unrelated world props such as doors and the exit.
 
 Task #6805 reads E1M1's single-player health and armor Things from the same
 hashed intermediate: one stimpack grants 10 and three medikits grant 25 through

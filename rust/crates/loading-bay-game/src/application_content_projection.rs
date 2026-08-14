@@ -17,7 +17,7 @@ use rusty_engine::renderer_webview_host::RendererResource;
 
 use crate::{
     project_stored_voxel_volume, CombatFact, CombatImpactKind, EnemyCombatFact, EnemyCombatPosture,
-    EnemyState, GameLoopFact, GameRuntime, StoredDirectionalSpriteView, StoredProject,
+    EnemyState, GameLoopFact, GameRuntime, PickupState, StoredDirectionalSpriteView, StoredProject,
     StoredVisualAnimationLoopMode, StoredVisualPresentation, StoredVisualState,
 };
 
@@ -146,20 +146,45 @@ impl GameplayApplicationProjector {
                 ))
             })
             .collect();
-        let bindings = project
+        let shared_doom_bindings: BTreeMap<
+            String,
+            BTreeMap<StoredVisualState, StoredVisualPresentation>,
+        > = project
             .scenes
             .iter()
             .flat_map(|scene| &scene.entities)
+            .filter(|entity| entity.name.starts_with("doom-visual-template-"))
             .filter_map(|entity| {
-                let binding = entity.renderable.as_ref()?.visual_binding.as_ref()?;
+                let renderable = entity.renderable.as_ref()?;
+                let binding = renderable.visual_binding.as_ref()?;
                 Some((
-                    entity.id,
+                    renderable.asset.clone(),
                     binding
                         .states
                         .iter()
                         .map(|state| (state.state, state.presentation.clone()))
                         .collect(),
                 ))
+            })
+            .collect();
+        let bindings = project
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                let renderable = entity.renderable.as_ref()?;
+                let states = renderable
+                    .visual_binding
+                    .as_ref()
+                    .map(|binding| {
+                        binding
+                            .states
+                            .iter()
+                            .map(|state| (state.state, state.presentation.clone()))
+                            .collect()
+                    })
+                    .or_else(|| shared_doom_bindings.get(&renderable.asset).cloned())?;
+                Some((entity.id, states))
             })
             .collect();
         let camera_entity = project
@@ -427,6 +452,12 @@ impl GameplayApplicationProjector {
                         EnemyCombatPosture::Attacking => StoredVisualState::Attacking,
                         EnemyCombatPosture::Dead => StoredVisualState::Defeated,
                     }
+                }
+            } else if let Some(pickup) = runtime.session().pickup(id) {
+                match pickup.state {
+                    PickupState::Dormant => StoredVisualState::Dormant,
+                    PickupState::Available => StoredVisualState::Available,
+                    PickupState::Collected { .. } => StoredVisualState::Collected,
                 }
             } else {
                 StoredVisualState::Default
@@ -1697,7 +1728,7 @@ mod tests {
         decode_project_document, project_stored_voxel_objects, CombatFact, CombatImpactKind,
         DamageCommand, DamageService, DamageSource, EnemyAttackKind, EnemyCombatFact, GameLoopFact,
         GameRuntime, InventoryService, LoadingBayGameLoop, ResolvedAttackAction,
-        StoredDirectionalSpriteView,
+        StoredDirectionalSpriteView, StoredVisualPresentation, StoredVisualState,
     };
 
     use super::{
@@ -1706,6 +1737,41 @@ mod tests {
         project_doom_e1m1_application_content, select_directional_sprite_view,
         GameplayApplicationProjector,
     };
+
+    #[test]
+    fn e1m1_resolves_shared_actor_and_pickup_sprite_bindings_by_asset() {
+        let source = include_str!("../../../../content/projects/doom-e1m1.project.json");
+        let project = decode_project_document(source).unwrap().project;
+        let projector = GameplayApplicationProjector::new(&project);
+        let entities = &project.scenes[0].entities;
+
+        let actor = entities
+            .iter()
+            .find(|entity| entity.name == "doom-zombieman-12")
+            .unwrap();
+        assert!(actor.renderable.as_ref().unwrap().visual_binding.is_none());
+        let actor_states = &projector.bindings[&actor.id];
+        assert!(matches!(
+            actor_states.get(&StoredVisualState::Attacking),
+            Some(StoredVisualPresentation::SpriteFrames {
+                directional_views,
+                ..
+            }) if directional_views.len() == 8
+        ));
+
+        let pickup = entities
+            .iter()
+            .find(|entity| entity.name == "doom-pickup-2014-5")
+            .unwrap();
+        assert!(pickup.renderable.as_ref().unwrap().visual_binding.is_none());
+        assert!(matches!(
+            projector.bindings[&pickup.id].get(&StoredVisualState::Available),
+            Some(StoredVisualPresentation::SpriteFrames {
+                directional_views,
+                ..
+            }) if directional_views.len() == 8
+        ));
+    }
 
     #[test]
     fn doom_weapon_viewmodel_uses_generated_source_clips_and_authoritative_fire_edges() {
@@ -1962,7 +2028,7 @@ mod tests {
                 .iter()
                 .filter(|operation| matches!(operation, RenderDiff::DefineSpriteAtlas { .. }))
                 .count(),
-            10
+            22
         );
         assert!(content
             .resources

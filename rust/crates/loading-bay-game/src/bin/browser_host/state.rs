@@ -427,6 +427,30 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
     gameplay_frame: RenderFrameDiff,
 ) -> BrowserDynamicState {
     let runtime: &GameRuntime = host.runtime.runtime();
+    let authored_entities = host
+        .authored
+        .document()
+        .scenes
+        .iter()
+        .find(|scene| scene.id == host.authored.document().entry_scene)
+        .map(|scene| scene.entities.as_slice())
+        .unwrap_or_default();
+    let actor = authored_entities
+        .iter()
+        .find(|entity| entity.player_controller.is_some())
+        .map_or(ACTOR, |entity| EntityId::new(entity.id));
+    let primary_door = authored_entities
+        .iter()
+        .find(|entity| entity.door.is_some())
+        .map_or(EXIT, |entity| EntityId::new(entity.id));
+    let primary_encounter = authored_entities
+        .iter()
+        .find(|entity| entity.encounter.is_some())
+        .map_or(ENCOUNTER, |entity| EntityId::new(entity.id));
+    let primary_beacon = authored_entities
+        .iter()
+        .find(|entity| entity.extraction_beacon.is_some())
+        .map_or(BEACON, |entity| EntityId::new(entity.id));
     let readout = runtime.readout();
     let projection = readout
         .projection
@@ -506,10 +530,10 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
         .collect();
     let player = runtime
         .session()
-        .player_controller(ACTOR)
+        .player_controller(actor)
         .expect("browser player controller");
     let bindings = &player.config.bindings;
-    let player_vitality = runtime.session().health(ACTOR);
+    let player_vitality = runtime.session().health(actor);
     let (current_health, max_health, armor, max_armor, vitality_state) = player_vitality
         .as_ref()
         .map_or((0, 0, 0, 0, "alive"), |health| {
@@ -551,7 +575,7 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
             })
     });
     let player_state = BrowserPlayerState {
-        id: ACTOR.raw(),
+        id: actor.raw(),
         position: player_position,
         yaw_degrees: player.state.yaw_degrees,
         pitch_degrees: player.state.pitch_degrees,
@@ -579,7 +603,7 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
     };
     let weapon = runtime
         .session()
-        .weapon(ACTOR)
+        .weapon(actor)
         .expect("browser player weapon");
     let weapon_state = BrowserWeaponState {
         item: weapon.item.as_str().to_owned(),
@@ -592,7 +616,7 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
         } else {
             runtime
                 .session()
-                .inventory(ACTOR)
+                .inventory(actor)
                 .and_then(|inventory| {
                     inventory
                         .stacks
@@ -615,7 +639,7 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
     let inventory_state =
         runtime
             .session()
-            .inventory(ACTOR)
+            .inventory(actor)
             .map(|inventory| BrowserInventoryState {
                 owner: inventory.owner.raw(),
                 capacity_slots: inventory.capacity_slots,
@@ -787,22 +811,25 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
             }
         })
         .collect();
-    let extraction_beacon = runtime.session().extraction_beacon(BEACON).map(|beacon| {
-        let (state, activated_by, activated_at_tick) = match beacon.state {
-            ExtractionBeaconState::Standby => ("standby", None, None),
-            ExtractionBeaconState::Active {
-                actor,
-                activated_at,
-            } => ("active", Some(actor.raw()), Some(activated_at.raw())),
-        };
-        BrowserExtractionBeaconState {
-            id: beacon.entity.raw(),
-            state,
-            activation_radius: beacon.config.activation_radius,
-            activated_by,
-            activated_at_tick,
-        }
-    });
+    let extraction_beacon = runtime
+        .session()
+        .extraction_beacon(primary_beacon)
+        .map(|beacon| {
+            let (state, activated_by, activated_at_tick) = match beacon.state {
+                ExtractionBeaconState::Standby => ("standby", None, None),
+                ExtractionBeaconState::Active {
+                    actor,
+                    activated_at,
+                } => ("active", Some(actor.raw()), Some(activated_at.raw())),
+            };
+            BrowserExtractionBeaconState {
+                id: beacon.entity.raw(),
+                state,
+                activation_radius: beacon.config.activation_radius,
+                activated_by,
+                activated_at_tick,
+            }
+        });
     let hazards = runtime
         .session()
         .hazards()
@@ -837,7 +864,7 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
         projection,
         door_state: runtime
             .session()
-            .door(EXIT)
+            .door(primary_door)
             .map(|door| match door.state {
                 DoorState::Closed => "closed",
                 DoorState::Opening => "opening",
@@ -847,7 +874,7 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
             .unwrap_or("closed"),
         encounter_state: runtime
             .session()
-            .encounter(ENCOUNTER)
+            .encounter(primary_encounter)
             .map(|enc| match enc.state {
                 EncounterState::Dormant => "dormant",
                 EncounterState::Active => "active",
@@ -864,7 +891,7 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
                 .or_else(|| {
                     runtime
                         .session()
-                        .entity(ACTOR)
+                        .entity(actor)
                         .ok()
                         .and_then(|e| e.kinematic)
                         .map(|k| k.velocity.x)
@@ -925,7 +952,14 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
         level_complete: runtime.is_level_complete(),
         interaction,
         enemies,
-        presentation: project_presentation(runtime, ACTOR, &enemy_ids, EXIT, BEACON, feedback),
+        presentation: project_presentation(
+            runtime,
+            actor,
+            &enemy_ids,
+            primary_door,
+            primary_beacon,
+            feedback,
+        ),
         doom_sprite_inspection: host.gameplay_projector.as_ref().and_then(|projector| {
             projector
                 .doom_sprite_inspection_readout(runtime)
