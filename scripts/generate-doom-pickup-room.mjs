@@ -49,6 +49,14 @@ const familyByPrefix = new Map(
   manifest.contract.families.map((family) => [family.prefix, family]),
 );
 
+function pickupTriggerHalfExtent(spec) {
+  const family = familyByPrefix.get(spec.prefix);
+  const radius = family?.dimensionsDoomUnits?.radius;
+  if (family?.role !== "item" || radius !== 20)
+    throw new Error(`unexpected ${spec.prefix} pickup trigger radius ${radius}`);
+  return radius / presentationScale;
+}
+
 const pickupSpecs = [
   {
     prefix: "SHOT",
@@ -191,6 +199,7 @@ function pickupEntity(
   { visible = true, localY = 0 } = {},
 ) {
   const clip = expandedAvailable(spec);
+  const triggerHalfExtent = pickupTriggerHalfExtent(spec);
   const pickup = { item: spec.item, quantity: spec.quantity };
   if (spec.starterAmmunition) pickup.starterAmmunition = spec.starterAmmunition;
   const state = (name) => ({
@@ -205,7 +214,10 @@ function pickupEntity(
     id,
     name: `doom-pickup-room-${spec.prefix.toLowerCase()}-${spec.label.toLowerCase().replaceAll(" ", "-")}`,
     translation,
-    bounds: { min: [-0.45, -0.35, -0.45], max: [0.45, 0.65, 0.45] },
+    bounds: {
+      min: [-triggerHalfExtent, -0.35, -triggerHalfExtent],
+      max: [triggerHalfExtent, 0.65, triggerHalfExtent],
+    },
     renderable: {
       asset: assetByPrefix.get(spec.prefix).id,
       visible,

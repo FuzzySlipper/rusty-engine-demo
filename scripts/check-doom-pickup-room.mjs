@@ -40,6 +40,8 @@ assert.equal(manifest.contract.scale.presentationDoomUnitsPerEngineUnit, 28);
 const families = new Map(
   manifest.contract.families.map((family) => [family.prefix, family]),
 );
+const presentationScale =
+  manifest.contract.scale.presentationDoomUnitsPerEngineUnit;
 const pickups = scene.entities.filter((entity) => entity.pickup != null);
 assert.equal(
   pickups.length,
@@ -67,6 +69,17 @@ for (const [prefix, frames] of Object.entries(expected)) {
     `sprite/doom-pickup-${prefix.toLowerCase()}`,
   );
   assert.deepEqual(entity.renderable.localTransform.scale, [1, 1, 1]);
+  const triggerHalfExtent = Number(
+    Math.fround(family.dimensionsDoomUnits.radius / presentationScale).toFixed(8),
+  );
+  assert.deepEqual(
+    entity.bounds,
+    {
+      min: [-triggerHalfExtent, -0.35, -triggerHalfExtent],
+      max: [triggerHalfExtent, 0.65, triggerHalfExtent],
+    },
+    `${prefix} trigger uses its centered source radius independent of sprite dimensions`,
+  );
   assert.deepEqual(
     entity.renderable.visualBinding.states.map((state) => state.state),
     ["dormant", "available", "collected"],

@@ -828,6 +828,21 @@ eligibility, effect application, rejection-without-removal, damage ordering,
 death, restart, facts, and snapshots. Item names, caps, transition policies,
 absorption, region bounds, and timing remain authored data.
 
+Task #6955 adapts the source pickup contact footprint for the bounded pickup
+room. The reading reference at
+`/home/research/doom.ts` revision
+`0d88ba912f7b084a05b776a19801d45f383cef20`, specifically
+`src/doom/play/map.ts` SHA-256
+`415ff6230fa2c1792f0ef8a9f5f5d39c3eb5b3a3ee5330e3f71a384141929d49`
+and `src/doom/doom/info/mobj-infos.ts` SHA-256
+`3f676d2928c387400fa3ddcefb25c9daf5c80049ef852e91feede0f92d760c38`, gives
+each scoped item a 20-Doom-unit radius and tests contact independently on both
+horizontal axes using the sum of item and toucher radii. Pickup entities
+therefore author centered, uniform horizontal trigger half-extents of `20 / 28`
+Engine units from the generated sprite contract. Rust admits those bounds as
+non-solid `EntityBounds` trigger geometry; renderer billboarding, sprite patch
+dimensions, and render-local transforms do not participate in collection.
+
 Task #6807 reads the UV enemy and explosive-prop roster from the same hashed
 intermediate: 16 type-9 shotgun guys, four type-3001 imps, nine type-3004
 zombiemen, and six type-2035 barrels, preserving each source position and
