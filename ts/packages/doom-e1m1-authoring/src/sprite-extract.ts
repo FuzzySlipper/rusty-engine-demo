@@ -380,10 +380,10 @@ function packAtlas(
     for (let row = 0; row < decoded.height; row += 1) {
       const sourceStart = row * decoded.width * 4;
       const sourceEnd = sourceStart + decoded.width * 4;
-      // Three uploads decoded PNG rows with flipY=false while sprite-plane top
-      // vertices sample uvMax. Store each Doom patch bottom-up inside its own
-      // atlas rectangle so the ordinary ordered UV rectangle renders upright.
-      const targetRow = placement.y + decoded.height - 1 - row;
+      // Doom patch rows and PNG image rows both use a top-left origin. Preserve
+      // that ordinary image orientation; the Engine sprite UV contract maps
+      // the decoded PNG top directly to the sprite-plane top.
+      const targetRow = placement.y + row;
       const targetStart = (targetRow * width + placement.x) * 4;
       rgba.set(decoded.rgba.subarray(sourceStart, sourceEnd), targetStart);
     }

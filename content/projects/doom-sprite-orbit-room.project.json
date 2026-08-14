@@ -28602,7 +28602,7 @@
       "id": "sprite/orbit-room-imp",
       "catalog": {
         "version": 1,
-        "hash": "sha256:e71a1b2077c7874378f3239c34fa4fe2593c9646ec6073cf24556a45ecf5c3c0",
+        "hash": "sha256:5c9210c1cd26a8bc03f6d800c2f0db69cc9ed2a6dae0f9b8cb15030f591ec207",
         "sourcePath": "content/doom-e1m1/sprites/actors.png",
         "label": "Directional Imp · TROO A1..A8"
       },

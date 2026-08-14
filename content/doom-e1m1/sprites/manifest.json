@@ -1411,8 +1411,8 @@
       "width": 512,
       "height": 769,
       "padding": 1,
-      "pngSha256": "e71a1b2077c7874378f3239c34fa4fe2593c9646ec6073cf24556a45ecf5c3c0",
-      "pngByteLength": 144576,
+      "pngSha256": "5c9210c1cd26a8bc03f6d800c2f0db69cc9ed2a6dae0f9b8cb15030f591ec207",
+      "pngByteLength": 144841,
       "frames": [
         {
           "id": 0,
@@ -8218,8 +8218,8 @@
       "width": 128,
       "height": 160,
       "padding": 1,
-      "pngSha256": "aed7642d26d2822ecae8ab363ac73b3c3bb4f873dbf71424f5639ebcc3dea29a",
-      "pngByteLength": 6839,
+      "pngSha256": "383f1e9e73b183157e1db637d76e38fcbbc68f6644fbcfc660f7ed2474f1a847",
+      "pngByteLength": 6872,
       "frames": [
         {
           "id": 0,
@@ -9625,8 +9625,8 @@
       "width": 512,
       "height": 334,
       "padding": 1,
-      "pngSha256": "12d001091a165ba055824ae2d572336a5798a855f47ed032c0a24cb7f3d36bbc",
-      "pngByteLength": 46566,
+      "pngSha256": "64f428752d6beccddeb786ec441cdf076fbc44a36d5a3558b184b2a77e4a08d1",
+      "pngByteLength": 46699,
       "frames": [
         {
           "id": 0,
@@ -13998,7 +13998,7 @@
     "sourceLumpCount": 198,
     "frameCount": 198,
     "atlasCount": 3,
-    "totalPngBytes": 197981,
+    "totalPngBytes": 198412,
     "totalDecodedRgbaBytes": 1685912,
     "totalOpaquePixels": 209569
   }

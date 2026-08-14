@@ -344,7 +344,7 @@ test("atlas manifest has exact source/output provenance and normalized frame UVs
     const [atlasX, atlasY, frameWidth, frameHeight] = selectedFrame.atlasRect;
     const atlasFrame = new Uint8Array(source.rgba.length);
     for (let sourceRow = 0; sourceRow < frameHeight; sourceRow += 1) {
-      const atlasRow = atlasY + frameHeight - 1 - sourceRow;
+      const atlasRow = atlasY + sourceRow;
       const atlasStart = (atlasRow * generated.width + atlasX) * 4;
       atlasFrame.set(
         generated.rgba.subarray(atlasStart, atlasStart + frameWidth * 4),
@@ -354,7 +354,7 @@ test("atlas manifest has exact source/output provenance and normalized frame UVs
     assert.deepEqual(
       atlasFrame,
       source.rgba,
-      `generated ${frameName} atlas rectangle must contain only its bottom-up source patch`,
+      `generated ${frameName} atlas rectangle must preserve its upright source rows`,
     );
   }
 });

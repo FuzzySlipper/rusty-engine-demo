@@ -27920,7 +27920,7 @@
       "id": "sprite/animation-room-bal1",
       "catalog": {
         "version": 1,
-        "hash": "sha256:aed7642d26d2822ecae8ab363ac73b3c3bb4f873dbf71424f5639ebcc3dea29a",
+        "hash": "sha256:383f1e9e73b183157e1db637d76e38fcbbc68f6644fbcfc660f7ed2474f1a847",
         "sourcePath": "content/doom-e1m1/sprites/effects.png",
         "label": "IMP FIREBALL canonical animation frames"
       },
@@ -28010,7 +28010,7 @@
       "id": "sprite/animation-room-blud",
       "catalog": {
         "version": 1,
-        "hash": "sha256:aed7642d26d2822ecae8ab363ac73b3c3bb4f873dbf71424f5639ebcc3dea29a",
+        "hash": "sha256:383f1e9e73b183157e1db637d76e38fcbbc68f6644fbcfc660f7ed2474f1a847",
         "sourcePath": "content/doom-e1m1/sprites/effects.png",
         "label": "BLOOD / HIT FX canonical animation frames"
       },
@@ -28070,7 +28070,7 @@
       "id": "sprite/animation-room-poss",
       "catalog": {
         "version": 1,
-        "hash": "sha256:e71a1b2077c7874378f3239c34fa4fe2593c9646ec6073cf24556a45ecf5c3c0",
+        "hash": "sha256:5c9210c1cd26a8bc03f6d800c2f0db69cc9ed2a6dae0f9b8cb15030f591ec207",
         "sourcePath": "content/doom-e1m1/sprites/actors.png",
         "label": "ZOMBIEMAN canonical animation frames"
       },
@@ -28820,7 +28820,7 @@
       "id": "sprite/animation-room-spos",
       "catalog": {
         "version": 1,
-        "hash": "sha256:e71a1b2077c7874378f3239c34fa4fe2593c9646ec6073cf24556a45ecf5c3c0",
+        "hash": "sha256:5c9210c1cd26a8bc03f6d800c2f0db69cc9ed2a6dae0f9b8cb15030f591ec207",
         "sourcePath": "content/doom-e1m1/sprites/actors.png",
         "label": "SHOTGUN GUY canonical animation frames"
       },
@@ -29570,7 +29570,7 @@
       "id": "sprite/animation-room-troo",
       "catalog": {
         "version": 1,
-        "hash": "sha256:e71a1b2077c7874378f3239c34fa4fe2593c9646ec6073cf24556a45ecf5c3c0",
+        "hash": "sha256:5c9210c1cd26a8bc03f6d800c2f0db69cc9ed2a6dae0f9b8cb15030f591ec207",
         "sourcePath": "content/doom-e1m1/sprites/actors.png",
         "label": "IMP canonical animation frames"
       },
