@@ -102,6 +102,7 @@ pub struct GameplayApplicationProjector {
     visual_frames: BTreeMap<u64, u32>,
     visual_mirrors: BTreeMap<u64, bool>,
     visual_offsets: BTreeMap<u64, [f32; 2]>,
+    visual_transforms: BTreeMap<u64, Transform>,
     visual_state_started_at: BTreeMap<u64, u64>,
     health: BTreeMap<u64, u32>,
     effect_clips: BTreeMap<DoomEffectClipKind, DoomEffectClip>,
@@ -228,6 +229,7 @@ impl GameplayApplicationProjector {
             visual_frames: BTreeMap::new(),
             visual_mirrors: BTreeMap::new(),
             visual_offsets: BTreeMap::new(),
+            visual_transforms: BTreeMap::new(),
             visual_state_started_at: BTreeMap::new(),
             health: BTreeMap::new(),
             effect_clips,
@@ -670,26 +672,30 @@ impl GameplayApplicationProjector {
                             camera,
                             [horizontal_offset, source_origin_offset[1]],
                         );
-                        operations.push(RenderDiff::Update {
-                            handle,
-                            transform: Some(Transform {
-                                translation,
-                                rotation: [
-                                    composed.rotation.x,
-                                    composed.rotation.y,
-                                    composed.rotation.z,
-                                    composed.rotation.w,
-                                ],
-                                scale: [
-                                    composed.scale.x.abs() * if mirrored { -1.0 } else { 1.0 },
-                                    composed.scale.y,
-                                    composed.scale.z,
-                                ],
-                            }),
-                            material: None,
-                            visible: None,
-                            metadata: None,
-                        });
+                        let transform = Transform {
+                            translation,
+                            rotation: [
+                                composed.rotation.x,
+                                composed.rotation.y,
+                                composed.rotation.z,
+                                composed.rotation.w,
+                            ],
+                            scale: [
+                                composed.scale.x.abs() * if mirrored { -1.0 } else { 1.0 },
+                                composed.scale.y,
+                                composed.scale.z,
+                            ],
+                        };
+                        if self.visual_transforms.get(entity) != Some(&transform) {
+                            operations.push(RenderDiff::Update {
+                                handle,
+                                transform: Some(transform),
+                                material: None,
+                                visible: None,
+                                metadata: None,
+                            });
+                            self.visual_transforms.insert(*entity, transform);
+                        }
                         self.visual_mirrors.insert(*entity, mirrored);
                         self.visual_offsets.insert(*entity, source_origin_offset);
                     }
@@ -849,6 +855,7 @@ impl GameplayApplicationProjector {
         current.visual_frames.clear();
         current.visual_mirrors.clear();
         current.visual_offsets.clear();
+        current.visual_transforms.clear();
         current.visual_state_started_at.clear();
         current.viewmodel_root_created = false;
         current.viewmodel_weapon = None;
@@ -1721,7 +1728,7 @@ fn repository_root() -> PathBuf {
 mod tests {
     use rusty_engine::core_math::Vec3;
     use rusty_engine::engine_spatial::VoxelCollisionScene;
-    use rusty_engine::entity_state::{EntityTransform, Quat};
+    use rusty_engine::entity_state::{EntityTransform, Quat, TransformCommand};
     use rusty_engine::render_model::RenderDiff;
 
     use crate::{
@@ -1953,10 +1960,10 @@ mod tests {
     }
 
     #[test]
-    fn directional_sprite_projection_recomposes_camera_relative_source_offsets() {
+    fn directional_sprite_projection_does_not_reemit_unchanged_source_offsets() {
         let source = include_str!("../../../../content/projects/doom-combat-room.project.json");
         let project = decode_project_document(source).unwrap().project;
-        let runtime = GameRuntime::from_stored_project(source).unwrap();
+        let mut runtime = GameRuntime::from_stored_project(source).unwrap();
         let enemy = runtime.session().enemy_combatants().next().unwrap().entity;
         let mut projector = GameplayApplicationProjector::new(&project);
 
@@ -1964,7 +1971,30 @@ mod tests {
         let repeated = projector.project(&runtime).unwrap();
         let handle = projector.entities.handle_of(enemy).unwrap();
 
-        assert!(repeated.ops.iter().any(|operation| matches!(
+        assert!(!repeated.ops.iter().any(|operation| matches!(
+            operation,
+            RenderDiff::Update {
+                handle: operation_handle,
+                transform: Some(_),
+                ..
+            } if *operation_handle == handle
+        )));
+
+        let camera = rusty_engine::core_ids::EntityId::new(projector.camera_entity.unwrap());
+        let revision = runtime.session().entities().revision();
+        runtime
+            .session_mut()
+            .entities
+            .apply_transform(
+                revision,
+                TransformCommand::Translate {
+                    entity: camera,
+                    delta: Vec3::new(1.0, 0.0, 0.0),
+                },
+            )
+            .unwrap();
+        let moved = projector.project(&runtime).unwrap();
+        assert!(moved.ops.iter().any(|operation| matches!(
             operation,
             RenderDiff::Update {
                 handle: operation_handle,

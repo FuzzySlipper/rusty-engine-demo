@@ -50,6 +50,9 @@ if [[ ! -x "$DEMO_NX" ]]; then
   exit 1
 fi
 "$DEMO_NX" build loading-bay
-exec cargo run --locked -p loading-bay-game --bin browser-host -- \
+# E1M1's complete live roster is a product-scale workload. An unoptimized host
+# cannot sustain the fixed-step loop and starves input acknowledgements while
+# cloning atomic trigger state, which makes ordinary playtesting misleading.
+exec cargo run --release --locked -p loading-bay-game --bin browser-host -- \
   --addr "${DEMO_BIND_HOST}:${DEMO_BIND_PORT}" \
   --project "$DEMO_PROJECT"
