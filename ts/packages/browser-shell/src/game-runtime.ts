@@ -9,6 +9,7 @@ import type {
   RuntimeApplicationContent,
   RuntimeBrowserState,
   RuntimeDoomSpriteInspectionState,
+  RuntimeFeedbackCue,
   RuntimeSaveSlotId,
   RuntimeSaveSlotSummary,
 } from "./projection.js";
@@ -108,12 +109,19 @@ export interface LoadingBayApplicationContent {
 
 export interface LoadingBayGameOptions {
   readonly inputEnabled?: (event: Event) => boolean;
+  readonly onFeedback?: (feedback: LoadingBayFeedbackProjection) => void;
   readonly onProjection?: (snapshot: LoadingBayPresentationSnapshot) => void;
   readonly onRenderProjection?: (
     rendering: LoadingBayRenderProjection,
   ) => void | Promise<void>;
   readonly onConnectionFailure?: (message: string) => void;
   readonly preferences?: LoadingBayHostPresentationPreferences;
+}
+
+export interface LoadingBayFeedbackProjection {
+  readonly cues: readonly RuntimeFeedbackCue[];
+  readonly playerEntity: number;
+  readonly tick: number;
 }
 
 export interface LoadingBayGameHandle {
@@ -313,6 +321,11 @@ export async function mountLoadingBayGame(
     const completedExit = state.levelExits.find(
       (candidate) => candidate.state === "completed",
     );
+    options.onFeedback?.({
+      cues: state.presentation.cues,
+      playerEntity: state.player.id,
+      tick: state.tick,
+    });
     options.onProjection?.({
       ammoCapacity: state.weapon.ammoCapacity,
       ammoRemaining: state.weapon.ammoRemaining,
@@ -424,7 +437,8 @@ export async function mountLoadingBayGame(
   function onMouseDown(event: MouseEvent): void {
     if (
       document.pointerLockElement === null ||
-      resolvePointerButtonAction(event.button, current.player.bindings) === null ||
+      resolvePointerButtonAction(event.button, current.player.bindings) ===
+        null ||
       keyboardTargetOwnsInput(event.target) ||
       options.inputEnabled?.(event) === false
     )
@@ -556,3 +570,7 @@ function defaultPreferences(): LoadingBayHostPresentationPreferences {
 }
 
 export { GameSessionError };
+export {
+  PlayerHurtFeedback,
+  type PlayerHurtReaction,
+} from "./player-hurt-feedback.js";

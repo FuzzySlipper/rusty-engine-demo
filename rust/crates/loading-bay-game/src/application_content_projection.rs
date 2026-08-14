@@ -1433,6 +1433,7 @@ pub fn project_doom_e1m1_application_content(
             | "doom-fx-room"
             | "doom-weapon-room"
             | "doom-pickup-room"
+            | "doom-player-hurt-room"
     ) {
         (
             RenderFrameDiff::try_from_ops(Vec::new())

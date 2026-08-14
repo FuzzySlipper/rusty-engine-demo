@@ -69,6 +69,53 @@ html.game-route-active .viewport-card {
   z-index: 4;
 }
 
+.player-hurt-flash {
+  --hurt-duration: 280ms;
+  --hurt-opacity: 0.35;
+  animation: player-hurt-fade var(--hurt-duration) steps(7, end) forwards;
+  background:
+    radial-gradient(
+      circle at center,
+      transparent 20%,
+      #a4000066 72%,
+      #d00000cc
+    ),
+    #b0000029;
+  inset: 0;
+  opacity: var(--hurt-opacity);
+  position: absolute;
+}
+
+.player-hurt-fatal {
+  background:
+    radial-gradient(circle at center, transparent 8%, #8d000088 62%, #d00000e6),
+    #b0000047;
+}
+
+.player-hurt-readout {
+  background: #190000d9;
+  border: 1px solid #ff7d70;
+  bottom: 8.5rem;
+  color: #ffd4cf;
+  font: 700 0.78rem/1 var(--font-mono);
+  left: 50%;
+  letter-spacing: 0.08em;
+  padding: 0.45rem 0.65rem;
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+@keyframes player-hurt-fade {
+  from {
+    opacity: var(--hurt-opacity);
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
 .feedback-particle {
   border-radius: 50%;
   box-shadow:

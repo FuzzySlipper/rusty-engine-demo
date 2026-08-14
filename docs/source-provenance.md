@@ -843,6 +843,31 @@ Engine units from the generated sprite contract. Rust admits those bounds as
 non-solid `EntityBounds` trigger geometry; renderer billboarding, sprite patch
 dimensions, and render-local transforms do not participate in collection.
 
+Task #6933 adapts Doom's player-damage response from the reading reference at
+`/home/research/doom.ts` revision
+`0d88ba912f7b084a05b776a19801d45f383cef20`. Effective post-armor damage adds
+to a disposable presentation count capped at 100, that count decays at the
+source 35 Hz cadence, and `(count + 7) >> 3` selects one of seven increasing
+red levels. Repeated accepted hits add to the undecayed count and recreate the
+overlay, while health selects the source five-band reaction tier. Attacker
+left/front/right is derived in Rust from logical entity position and player
+facing; billboard rotation never participates. Environmental damage remains a
+front reaction, matching the source behavior. The browser draws an original
+red overlay and text indicator from response-local `DamageApplied` cues; it
+does not infer damage from health polling and cannot mutate gameplay.
+
+`content/projects/doom-player-hurt-room.project.json` is the bounded live
+inspection room for that response. It starts safely at 100 health and separates
+two visible ordinary Rust-owned hazards: a staged marker applies 10 damage on a
+180-tick cooldown for isolated hit, recovery, and retrigger observations, while
+a second marker applies 100 damage for an immediate terminal-state observation.
+This avoids coupling the recoverable probe to browser-observation latency and
+requires no enemy awareness or E1M1 traversal. The existing
+authoritative dead state and restart modal provide persistent terminal
+feedback. Doom PLAYPAL bytes, status-face patches, and pain/death sounds were
+not copied: the current product has no licensed audio/status-face asset surface,
+and inventing one here would obscure rather than preserve provenance.
+
 Task #6807 reads the UV enemy and explosive-prop roster from the same hashed
 intermediate: 16 type-9 shotgun guys, four type-3001 imps, nine type-3004
 zombiemen, and six type-2035 barrels, preserving each source position and

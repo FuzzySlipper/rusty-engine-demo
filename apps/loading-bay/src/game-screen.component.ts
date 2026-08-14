@@ -16,6 +16,8 @@ import {
   type LoadingBayPresentationSnapshot,
   type LoadingBaySaveSlot,
   type LoadingBaySaveSlotId,
+  PlayerHurtFeedback,
+  type PlayerHurtReaction,
 } from "@rusty-engine-demo/game-runtime";
 import {
   browserDocumentEffects,
@@ -222,6 +224,19 @@ const DOOM_PICKUP_ROOM_PRESENTATION: GamePresentation = {
   showsAccessKeys: false,
 };
 
+const DOOM_PLAYER_HURT_ROOM_PRESENTATION: GamePresentation = {
+  missionLabel: "DOOM PLAYER HURT ROOM",
+  levelCaption: "ENTER · EXIT · RETRIGGER · DEATH",
+  restartLabel: "Restart hurt room",
+  completionTitle: "HURT INSPECTION COMPLETE",
+  completionFallback: "The bounded damage zone remains active.",
+  panelLabel: "Doom Player Hurt Room",
+  documentTitle: "Rusty Engine — Doom Player Hurt Room",
+  viewportLabel:
+    "Live Doom player hurt room. Enter the marked hazard for one accepted hit, leave it to inspect recovery, or remain inside to inspect retrigger and death feedback.",
+  showsAccessKeys: false,
+};
+
 declare global {
   interface Window {
     __loadingBayAnimationCapture?: LoadingBayGameHandle["captureAnimation"];
@@ -255,11 +270,24 @@ declare global {
           role="application"
           [attr.aria-label]="projectPresentation().viewportLabel"
         ></div>
-        <div
-          id="feedback-layer"
-          class="feedback-layer"
-          aria-live="polite"
-        ></div>
+        <div id="feedback-layer" class="feedback-layer" aria-live="polite">
+          @for (reaction of hurtReactions(); track reaction.sequence) {
+            <div
+              class="player-hurt-flash"
+              [class.player-hurt-fatal]="reaction.fatal"
+              [style.--hurt-duration]="reaction.visibleForMilliseconds + 'ms'"
+              [style.--hurt-opacity]="reaction.intensity"
+            >
+              <span class="player-hurt-readout">
+                {{ reaction.direction === "left" ? "◀" : "" }} HIT −{{
+                  reaction.amount
+                }}
+                · {{ reaction.remaining }} HEALTH
+                {{ reaction.direction === "right" ? "▶" : "" }}
+              </span>
+            </div>
+          }
+        </div>
         <div class="viewport-vignette" aria-hidden="true"></div>
         <div class="reticle" aria-hidden="true"></div>
         @if (snapshot().projectId === "doom-sprite-scale-room") {
@@ -371,6 +399,19 @@ declare global {
             <strong>STATIC · ANIMATED · ENEMY DROP</strong>
             <span>Walk through a sprite to collect it and observe the HUD</span>
             <span>Defeat the stationary Zombieman to materialize its clip</span>
+          </aside>
+        }
+        @if (snapshot().projectId === "doom-player-hurt-room") {
+          <aside
+            class="calibration-legend"
+            aria-label="Doom player hurt room controls"
+          >
+            <strong>TWO AUTHORITATIVE DAMAGE ZONES</strong>
+            <strong>AHEAD: STAGED · RIGHT: TERMINAL</strong>
+            <span
+              >Ahead marker: 10 damage every 180 ticks; step off safely</span
+            >
+            <span>Right marker: one 100-damage terminal-state probe</span>
           </aside>
         }
 
@@ -868,6 +909,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   protected readonly connectionMessage = signal(
     "Connecting to the Rust-owned fixed simulation…",
   );
+  protected readonly hurtReactions = signal<readonly PlayerHurtReaction[]>([]);
   protected readonly sessionStatus = computed(() => {
     const snapshot = this.snapshot();
     if (snapshot.connected) {
@@ -1006,6 +1048,8 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
   private destroyed = false;
   private focusReturnTarget: HTMLElement | null = null;
   private handle: LoadingBayGameHandle | null = null;
+  private readonly hurtFeedback = new PlayerHurtFeedback();
+  private hurtFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly engineInteractionEffect = effect(() => {
     const mode = this.modalActive() ? "modal" : "gameplay";
     this.engineApplication.ui.setInteractionMode(mode);
@@ -1021,6 +1065,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyed = true;
+    this.clearHurtFeedback();
     this.rendererRoute.retire();
     this.documentEffects.setRootClass("game-route-active", false);
     const handle = this.handle;
@@ -1352,6 +1397,27 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       const handle = await mountLoadingBayGame({
         inputEnabled: (event) =>
           this.engineApplication.ui.allowsGameplayInput(event),
+        onFeedback: (feedback) => {
+          for (const cue of feedback.cues) {
+            const reaction = this.hurtFeedback.apply(
+              cue,
+              feedback.playerEntity,
+              feedback.tick,
+              this.settings().flashIntensity,
+              performance.now(),
+            );
+            if (reaction === null) continue;
+            this.hurtReactions.set([reaction]);
+            if (this.hurtFeedbackTimeout !== null) {
+              clearTimeout(this.hurtFeedbackTimeout);
+            }
+            this.hurtFeedbackTimeout = setTimeout(() => {
+              if (this.hurtReactions()[0]?.sequence === reaction.sequence) {
+                this.hurtReactions.set([]);
+              }
+            }, reaction.visibleForMilliseconds);
+          }
+        },
         onRenderProjection: async (rendering) => {
           const frameReceipt = await this.rendererRoute.publish(
             rendering.frame,
@@ -1394,8 +1460,16 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
           }
         },
         onProjection: (snapshot) => {
-          const wasDead = this.snapshot().vitalityState === "dead";
-          const wasComplete = this.snapshot().levelComplete;
+          const previous = this.snapshot();
+          const wasDead = previous.vitalityState === "dead";
+          const wasComplete = previous.levelComplete;
+          if (
+            (wasDead && snapshot.vitalityState === "alive") ||
+            (previous.hostSessionId !== "" &&
+              previous.hostSessionId !== snapshot.hostSessionId)
+          ) {
+            this.clearHurtFeedback();
+          }
           this.snapshot.set(snapshot);
           if (
             (!wasDead && snapshot.vitalityState === "dead") ||
@@ -1436,6 +1510,7 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
           "doom-fx-room",
           "doom-weapon-room",
           "doom-pickup-room",
+          "doom-player-hurt-room",
         ].includes(requestedProject)
       ) {
         throw new Error(`Unknown project ${requestedProject}`);
@@ -1553,6 +1628,15 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
     this.slotStatus.set(null);
   }
 
+  private clearHurtFeedback(): void {
+    this.hurtFeedback.reset();
+    this.hurtReactions.set([]);
+    if (this.hurtFeedbackTimeout !== null) {
+      clearTimeout(this.hurtFeedbackTimeout);
+      this.hurtFeedbackTimeout = null;
+    }
+  }
+
   private focusViewport(): void {
     this.engineApplication.ui.focusGameplay();
   }
@@ -1646,6 +1730,9 @@ function gamePresentationFor(projectId: string): GamePresentation {
   }
   if (projectId === "doom-pickup-room") {
     return DOOM_PICKUP_ROOM_PRESENTATION;
+  }
+  if (projectId === "doom-player-hurt-room") {
+    return DOOM_PLAYER_HURT_ROOM_PRESENTATION;
   }
   return projectId === "doom-e1m1"
     ? DOOM_E1M1_PRESENTATION

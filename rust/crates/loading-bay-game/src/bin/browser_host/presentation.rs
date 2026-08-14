@@ -68,6 +68,9 @@ enum BrowserFeedbackCue {
         target: u64,
         amount: u32,
         remaining: u32,
+        direction: &'static str,
+        #[serde(skip)]
+        directional_source: bool,
     },
     EnemyAlert {
         entity: u64,
@@ -209,6 +212,8 @@ impl BrowserFeedbackProjection {
                     target: target.raw(),
                     amount: *health_damage,
                     remaining: *health_after,
+                    direction: "front",
+                    directional_source: damage_source_is_directional(source),
                 }),
                 CombatFact::EnemyDefeated {
                     attacker, enemy, ..
@@ -321,6 +326,8 @@ impl BrowserFeedbackProjection {
                     target: target.raw(),
                     amount: *health_damage,
                     remaining: *health_after,
+                    direction: "front",
+                    directional_source: damage_source_is_directional(source),
                 }),
                 EnemyCombatFact::PostureChanged { .. }
                 | EnemyCombatFact::AttackHit { .. }
@@ -344,6 +351,8 @@ impl BrowserFeedbackProjection {
                     target: target.raw(),
                     amount: *health_damage,
                     remaining: *health_after,
+                    direction: "front",
+                    directional_source: damage_source_is_directional(source),
                 });
             }
         }
@@ -537,7 +546,7 @@ pub(super) fn project_presentation(
     enemies: &[EntityId],
     door: EntityId,
     beacon: EntityId,
-    feedback: BrowserFeedbackProjection,
+    mut feedback: BrowserFeedbackProjection,
 ) -> BrowserPresentation {
     let mut animation_states = Vec::with_capacity(enemies.len() + 3);
     animation_states.push(BrowserAnimationState {
@@ -615,9 +624,79 @@ pub(super) fn project_presentation(
             },
         });
     }
+    for cue in &mut feedback.cues {
+        if let BrowserFeedbackCue::Damage {
+            attacker,
+            target,
+            direction,
+            directional_source,
+            ..
+        } = cue
+        {
+            if *target == player.raw() && *directional_source {
+                *direction = runtime
+                    .session()
+                    .entity(EntityId::new(*attacker))
+                    .ok()
+                    .and_then(|entity| entity.transform)
+                    .and_then(|attacker_transform| {
+                        let controller = runtime.session().player_controller(player)?;
+                        let player_transform = controller.entity_view.transform?;
+                        Some(classify_damage_direction(
+                            [
+                                player_transform.translation.x,
+                                player_transform.translation.z,
+                            ],
+                            controller.state.yaw_degrees,
+                            [
+                                attacker_transform.translation.x,
+                                attacker_transform.translation.z,
+                            ],
+                        ))
+                    })
+                    .unwrap_or("front");
+            }
+        }
+    }
     BrowserPresentation {
         animation_states,
         cues: feedback.cues,
+    }
+}
+
+fn damage_source_is_directional(source: &loading_bay_game::DamageSource) -> bool {
+    matches!(
+        source,
+        loading_bay_game::DamageSource::Weapon { .. }
+            | loading_bay_game::DamageSource::EnemyAttack { .. }
+            | loading_bay_game::DamageSource::Explosion { .. }
+    )
+}
+
+fn classify_damage_direction(
+    player: [f32; 2],
+    yaw_degrees: f32,
+    attacker: [f32; 2],
+) -> &'static str {
+    let delta_x = attacker[0] - player[0];
+    let delta_z = attacker[1] - player[1];
+    let length = delta_x.hypot(delta_z);
+    if length <= f32::EPSILON {
+        return "front";
+    }
+    let yaw = yaw_degrees.to_radians();
+    let direction_x = delta_x / length;
+    let direction_z = delta_z / length;
+    let forward_dot = direction_x * yaw.sin() - direction_z * yaw.cos();
+    if forward_dot >= std::f32::consts::FRAC_1_SQRT_2 {
+        "front"
+    } else {
+        let right_dot = direction_x * yaw.cos() + direction_z * yaw.sin();
+        if right_dot >= 0.0 {
+            "right"
+        } else {
+            "left"
+        }
     }
 }
 
@@ -763,7 +842,29 @@ mod tests {
                 target: player.raw(),
                 amount: 15,
                 remaining: 85,
+                direction: "front",
+                directional_source: false,
             }]
+        );
+    }
+
+    #[test]
+    fn damage_direction_uses_player_facing_without_billboard_orientation() {
+        assert_eq!(
+            classify_damage_direction([0.0, 0.0], 0.0, [0.0, -2.0]),
+            "front"
+        );
+        assert_eq!(
+            classify_damage_direction([0.0, 0.0], 0.0, [-2.0, 0.0]),
+            "left"
+        );
+        assert_eq!(
+            classify_damage_direction([0.0, 0.0], 0.0, [2.0, 0.0]),
+            "right"
+        );
+        assert_eq!(
+            classify_damage_direction([0.0, 0.0], 180.0, [0.0, 2.0]),
+            "front"
         );
     }
 

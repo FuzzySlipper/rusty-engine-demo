@@ -380,6 +380,7 @@ export type RuntimeFeedbackCue =
       readonly target: number;
       readonly amount: number;
       readonly remaining: number;
+      readonly direction: "front" | "left" | "right";
     }
   | {
       readonly kind: "enemyAlert";
