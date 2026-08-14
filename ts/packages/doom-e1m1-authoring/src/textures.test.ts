@@ -158,10 +158,14 @@ test("texture manifest VTX budgets within limits", () => {
   }
   const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as {
     entries: { pngByteLength: number; width: number; height: number }[];
+    sky: { pngByteLength: number; width: number; height: number; runtimeMapping: string };
     diagnostics: { totalPngBytes: number; totalDecodedRgbaBytes: number; textureIdentities: number };
   };
   assert.equal(manifest.entries.length, 54);
-  assert.equal(manifest.diagnostics.textureIdentities, 54);
+  assert.equal(manifest.diagnostics.textureIdentities, 55);
+  assert.equal(manifest.sky.width, manifest.sky.height * 2);
+  assert.equal(manifest.sky.runtimeMapping, "equirectangular");
+  assert.ok(manifest.sky.pngByteLength <= 16 * 1024 * 1024);
   assert.ok(manifest.diagnostics.totalPngBytes < 128 * 1024 * 1024);
   assert.ok(manifest.diagnostics.totalDecodedRgbaBytes < 256 * 1024 * 1024);
   for (const e of manifest.entries) {

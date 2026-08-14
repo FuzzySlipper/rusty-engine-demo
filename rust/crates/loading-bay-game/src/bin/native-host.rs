@@ -7,10 +7,10 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 use loading_bay_game::{
-    decode_game_snapshot, decode_project_document, doom_texture_projection, encode_game_snapshot,
-    externalize_frame_meshes, project_stored_voxel_volume, GameLoopEdgeCommand,
-    GameLoopEdgeCommandKind, GameRuntime, LoadingBayGameLoop, PlayerInputCommand,
-    PlayerInputIntent, ResolvedPlayerAction, RuntimeError,
+    decode_game_snapshot, decode_project_document, doom_sky_projection, doom_texture_projection,
+    encode_game_snapshot, externalize_frame_meshes, project_stored_voxel_volume,
+    GameLoopEdgeCommand, GameLoopEdgeCommandKind, GameRuntime, LoadingBayGameLoop,
+    PlayerInputCommand, PlayerInputIntent, ResolvedPlayerAction, RuntimeError,
 };
 use rusty_engine::{
     core_ids::EntityId,
@@ -205,12 +205,15 @@ impl NativeApplication {
             }
             let frame = project_stored_voxel_volume(&stored, &route_scene)?;
             let (frame, mut resources) = externalize_frame_meshes(frame)?;
-            let (texture_resources, texture_ops) = doom_texture_projection(&stored)?;
+            let (texture_resources, mut texture_ops) = doom_texture_projection(&stored)?;
             let doom_texture_count = texture_resources.len();
             if doom_texture_count != 54 {
                 bail!("Doom native proof requires 54 textures, found {doom_texture_count}");
             }
             resources.extend(texture_resources);
+            let (sky_resources, sky_ops) = doom_sky_projection(&stored)?;
+            resources.extend(sky_resources);
+            texture_ops.extend(sky_ops);
             let texture_frame = RenderFrameDiff::try_from_ops(texture_ops)
                 .map_err(|error| anyhow::anyhow!("build Doom texture frame: {error:?}"))?;
             (

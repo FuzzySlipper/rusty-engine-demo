@@ -46,8 +46,9 @@ mod voxel_volume_projection;
 mod weapon_authoring;
 
 pub use application_content_projection::{
-    doom_texture_projection, externalize_frame_meshes, project_doom_e1m1_application_content,
-    GameplayApplicationProjector, ProjectedApplicationContent,
+    doom_sky_projection, doom_texture_projection, externalize_frame_meshes,
+    project_doom_e1m1_application_content, GameplayApplicationProjector,
+    ProjectedApplicationContent,
 };
 pub use combat::{
     CombatFact, CombatImpactKind, CombatMissReason, CombatReceipt, CombatRejectionReason,

@@ -816,9 +816,20 @@
       ]
     }
   ],
+  "sky": {
+    "name": "SKY1",
+    "sourceLump": "TEXTURE1:SKY1",
+    "sourceByteLength": 35112,
+    "sourceSha256": "3f13bcccf14268366042d776892042424e7cc0b8ab713e800dfab878812b84d5",
+    "pngSha256": "2834a39fac8f538bbc340ab8a7d780251669f81d43ef1e94a0db551fe8c66429",
+    "pngByteLength": 16636,
+    "width": 256,
+    "height": 128,
+    "runtimeMapping": "equirectangular"
+  },
   "diagnostics": {
-    "totalPngBytes": 183120,
-    "totalDecodedRgbaBytes": 1739776,
-    "textureIdentities": 54
+    "totalPngBytes": 199756,
+    "totalDecodedRgbaBytes": 1870848,
+    "textureIdentities": 55
   }
 }

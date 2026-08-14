@@ -25,6 +25,18 @@ export interface TextureManifestEntry {
   readonly tileScale: [number, number] | null;
 }
 
+export interface SkyTextureManifestEntry {
+  readonly name: "SKY1";
+  readonly sourceLump: "TEXTURE1:SKY1";
+  readonly sourceByteLength: number;
+  readonly sourceSha256: string;
+  readonly pngSha256: string;
+  readonly pngByteLength: number;
+  readonly width: number;
+  readonly height: number;
+  readonly runtimeMapping: "equirectangular";
+}
+
 export interface TextureManifest {
   readonly generatedAt: string;
   readonly wadPath: string;
@@ -32,6 +44,7 @@ export interface TextureManifest {
   readonly wadByteLength: number;
   readonly paletteSha256: string;
   readonly entries: readonly TextureManifestEntry[];
+  readonly sky: SkyTextureManifestEntry;
   readonly diagnostics: {
     readonly totalPngBytes: number;
     readonly totalDecodedRgbaBytes: number;
@@ -112,12 +125,18 @@ export function buildTextureArtifacts(wadPath: string = DEFAULT_WAD, outDir: str
     getPatch(name);
     return patchBytesCache.get(key)!;
   };
+  const skyDef = texByName.get("SKY1");
+  if (!skyDef) throw new Error("TEXTURE1 missing canonical SKY1 panorama");
+  if (skyDef.width !== skyDef.height * 2) {
+    throw new Error(`SKY1 must be an exact 2:1 panorama, got ${skyDef.width}x${skyDef.height}`);
+  }
   // Preload all patch bytes needed for E1M1 walls (to validate missing-patch early)
   for (const w of wallNames) {
     const def = texByName.get(w);
     if (!def) throw new Error(`TEXTURE1 missing definition for wall ${w}`);
     for (const p of def.patches) getPatch(p.patchName);
   }
+  for (const patch of skyDef.patches) getPatch(patch.patchName);
 
   const entries: TextureManifestEntry[] = [];
   let totalPng = 0;
@@ -187,8 +206,35 @@ export function buildTextureArtifacts(wadPath: string = DEFAULT_WAD, outDir: str
     });
   }
 
+  const skyPngBytes = textureToPngBytes(skyDef, new Map(patchCache.entries()), palette);
+  if (skyPngBytes.length > 16 * 1024 * 1024) {
+    throw new Error(`SKY1 PNG ${skyPngBytes.length} exceeds 16 MiB`);
+  }
+  const skyEntryBytes = texEntryBytesByName.get("SKY1");
+  if (!skyEntryBytes) throw new Error("TEXTURE1 provenance bytes missing for SKY1");
+  const skyPatchBytes = skyDef.patches.map((patch) => getPatchBytes(patch.patchName));
+  const skySourceHasher = createHash("sha256");
+  skySourceHasher.update(skyEntryBytes);
+  for (const bytes of skyPatchBytes) skySourceHasher.update(bytes);
+  const sky: SkyTextureManifestEntry = {
+    name: "SKY1",
+    sourceLump: "TEXTURE1:SKY1",
+    sourceByteLength: skyEntryBytes.length + skyPatchBytes.reduce((sum, bytes) => sum + bytes.length, 0),
+    sourceSha256: skySourceHasher.digest("hex"),
+    pngSha256: hashBytes(skyPngBytes),
+    pngByteLength: skyPngBytes.length,
+    width: skyDef.width,
+    height: skyDef.height,
+    runtimeMapping: "equirectangular",
+  };
+  const skyPath = join(outDir, "sky", "SKY1.png");
+  mkdirSync(resolve(skyPath, ".."), { recursive: true });
+  writeFileSync(skyPath, skyPngBytes);
+  totalPng += skyPngBytes.length;
+  totalRgba += skyDef.width * skyDef.height * 4;
+
   // VTX budgets
-  if (entries.length > 256) throw new Error(`texture identities ${entries.length} exceeds 256`);
+  if (entries.length + 1 > 256) throw new Error(`texture identities ${entries.length + 1} exceeds 256`);
   if (totalPng > 128 * 1024 * 1024) throw new Error(`total PNG bytes ${totalPng} exceeds 128 MiB`);
   if (totalRgba > 256 * 1024 * 1024) throw new Error(`total decoded RGBA bytes ${totalRgba} exceeds 256 MiB`);
 
@@ -202,10 +248,11 @@ export function buildTextureArtifacts(wadPath: string = DEFAULT_WAD, outDir: str
     wadByteLength: buffer.byteLength,
     paletteSha256: paletteSha,
     entries,
+    sky,
     diagnostics: {
       totalPngBytes: totalPng,
       totalDecodedRgbaBytes: totalRgba,
-      textureIdentities: entries.length,
+      textureIdentities: entries.length + 1,
     },
   };
 
@@ -269,6 +316,11 @@ if (mode === "write") {
       const a = readFileSync(p);
       const b = readFileSync(tmpP);
       if (!a.equals(b)) throw new Error(`PNG mismatch ${e.name}`);
+    }
+    const skyPath = resolve(outArg, "sky", "SKY1.png");
+    const rebuiltSkyPath = resolve(tmpDir, "sky", "SKY1.png");
+    if (!readFileSync(skyPath).equals(readFileSync(rebuiltSkyPath))) {
+      throw new Error("PNG mismatch SKY1");
     }
     console.log(`OK ${existingPath} (${existing.entries.length} textures)`);
   } finally {

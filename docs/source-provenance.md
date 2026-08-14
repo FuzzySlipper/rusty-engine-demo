@@ -634,6 +634,21 @@ One PNG per distinct E1M1 incidence (32 walls, 22 flats) staged at
 
 Exact PNG bytes and hashes are closed by `content/doom-e1m1/textures/manifest.json`. Two golden flats (`FLOOR7_2`, `CEIL3_5`) are byte-equal to the reference `doom.ts` canvas rendering at the same `PLAYPAL` revision; wall provenance for `BIGDOOR2` includes `TEXTURE1` entry bytes (22 B) plus patch `W94_1` bytes.
 
+### Canonical E1M1 sky panorama
+
+Task #6967 adds the source `SKY1` composite as a distinct presentation asset rather than treating
+the `F_SKY1` flat marker as sky pixels. The same deterministic `TEXTURE1` + `PNAMES` + patch-post
+forge writes `content/doom-e1m1/textures/sky/SKY1.png`: 256 by 128 RGBA8 sRGB, PNG SHA-256
+`2834a39fac8f538bbc340ab8a7d780251669f81d43ef1e94a0db551fe8c66429`, 16,636 bytes. Its
+provenance closure is the exact `TEXTURE1:SKY1` entry followed by its source patch bytes, 35,112
+bytes with SHA-256 `3f13bcccf14268366042d776892042424e7cc0b8ab713e800dfab878812b84d5`.
+
+The checked manifest records the runtime mapping as `equirectangular`. This is a documented direct
+adaptation of Doom's horizontally wrapping 2:1 panorama to Engine's narrow camera-relative
+background contract; no six-face synthesis, sky geometry, filtering resample, or runtime WAD read
+is involved. The panorama affects only scene background presentation and supplies no lighting,
+reflection, depth, collision, picking, or gameplay authority.
+
 ### Enemy, combat-effect, and player-weapon sprites
 
 The offline sprite forge selects only the canonical `POSS`, `SPOS`, `TROO`,

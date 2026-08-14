@@ -8,9 +8,9 @@ use rusty_engine::engine_spatial::VoxelCollisionScene;
 use rusty_engine::render_model::{
     pack_mesh_resources, AnimatedMeshPlaybackCommand, AnimationLoopMode, BillboardMode, Geometry,
     RenderAssetKind, RenderDiff, RenderFrameDiff, RenderHandle, RenderLayer, RenderMetadata,
-    RenderNode, ResolvedRenderAsset, SpriteAttachment, SpriteDepthPolicy, SpriteInstanceDescriptor,
-    SpriteShading, SpriteSizeMode, TextureDescriptor, TextureFilter, TextureWrap, Transform,
-    MAX_MESH_RESOURCE_BYTES,
+    RenderNode, ResolvedRenderAsset, SkyBackgroundDescriptor, SpriteAttachment, SpriteDepthPolicy,
+    SpriteInstanceDescriptor, SpriteShading, SpriteSizeMode, TextureDescriptor, TextureFilter,
+    TexturePayloadSource, TextureWrap, Transform, MAX_MESH_RESOURCE_BYTES,
 };
 use rusty_engine::render_projection::EntityRenderProjector;
 use rusty_engine::renderer_webview_host::RendererResource;
@@ -22,6 +22,8 @@ use crate::{
 };
 
 const MAX_DOOM_TRANSIENT_EFFECTS: usize = 256;
+const DOOM_SKY_TEXTURE_ID: &str = "texture/doom-sky1-panorama";
+const DOOM_SKY_SOURCE_PATH: &str = "content/doom-e1m1/textures/sky/SKY1.png";
 
 #[derive(Debug, Clone)]
 pub struct ProjectedApplicationContent {
@@ -1489,6 +1491,8 @@ pub fn project_doom_e1m1_application_content(
         );
     }
     resources.extend(texture_resources);
+    let (sky_resources, sky_ops) = doom_sky_projection(project)?;
+    resources.extend(sky_resources);
     let (sprite_resources, sprite_ops) = doom_sprite_projection(project)?;
     resources.extend(sprite_resources);
     let (static_frame, static_resources) = static_mesh_projection(project)?;
@@ -1497,6 +1501,7 @@ pub fn project_doom_e1m1_application_content(
     resources.extend(animated_resources);
 
     let mut operations = texture_ops;
+    operations.extend(sky_ops);
     operations.extend(sprite_ops);
     operations.extend(static_frame.ops);
     operations.extend(animated_ops);
@@ -1506,6 +1511,64 @@ pub fn project_doom_e1m1_application_content(
     let frame = RenderFrameDiff::try_from_ops(operations)
         .map_err(|error| anyhow::anyhow!("build complete E1M1 application frame: {error:?}"))?;
     Ok(ProjectedApplicationContent { frame, resources })
+}
+
+/// Project canonical E1M1's original SKY1 composite through the Engine-owned
+/// camera-relative background contract. Calibration rooms intentionally retain
+/// their neutral clear background.
+pub fn doom_sky_projection(
+    project: &StoredProject,
+) -> anyhow::Result<(Vec<RendererResource>, Vec<RenderDiff>)> {
+    if project.project_id != "doom-e1m1" {
+        return Ok((Vec::new(), Vec::new()));
+    }
+    let source = repository_root().join(DOOM_SKY_SOURCE_PATH);
+    let bytes = fs::read(&source).map_err(|error| {
+        anyhow::anyhow!(
+            "read checked-in Doom SKY1 panorama {}: {error}",
+            source.display()
+        )
+    })?;
+    let texture = TextureDescriptor::admit_png_rgba8_resource(
+        DOOM_SKY_TEXTURE_ID.to_owned(),
+        &bytes,
+        TextureFilter::Nearest,
+        TextureWrap::Clamp,
+        1,
+    )
+    .map_err(|error| anyhow::anyhow!("admit Doom SKY1 panorama: {error:?}"))?;
+    if texture.width != texture.height * 2 {
+        anyhow::bail!(
+            "Doom SKY1 panorama must be exact 2:1, got {}x{}",
+            texture.width,
+            texture.height
+        );
+    }
+    let payload = texture
+        .payload
+        .as_ref()
+        .expect("admitted SKY1 panorama has a retained payload");
+    let TexturePayloadSource::Resource { resource } = &payload.source else {
+        anyhow::bail!("Doom SKY1 panorama must use a retained resource");
+    };
+    let renderer_resource = RendererResource {
+        identity: resource.clone(),
+        content_hash: payload.content_hash.clone(),
+        media_type: "image/png".to_owned(),
+        bytes,
+    };
+    let background = SkyBackgroundDescriptor {
+        texture: texture.id.clone(),
+    };
+    Ok((
+        vec![renderer_resource],
+        vec![
+            RenderDiff::DefineTexture { texture },
+            RenderDiff::SetSkyBackground {
+                background: Some(background),
+            },
+        ],
+    ))
 }
 
 fn static_mesh_projection(
@@ -2049,8 +2112,34 @@ mod tests {
                 .iter()
                 .filter(|resource| resource.identity.starts_with("texture-resource/"))
                 .count(),
-            57
+            58
         );
+        let sky_define = content
+            .frame
+            .ops
+            .iter()
+            .position(|operation| {
+                matches!(
+                    operation,
+                    RenderDiff::DefineTexture { texture }
+                        if texture.id == "texture/doom-sky1-panorama"
+                )
+            })
+            .expect("canonical E1M1 defines SKY1");
+        let sky_select = content
+            .frame
+            .ops
+            .iter()
+            .position(|operation| {
+                matches!(
+                    operation,
+                    RenderDiff::SetSkyBackground {
+                        background: Some(background)
+                    } if background.texture == "texture/doom-sky1-panorama"
+                )
+            })
+            .expect("canonical E1M1 selects SKY1");
+        assert!(sky_define < sky_select);
         assert_eq!(
             content
                 .frame
