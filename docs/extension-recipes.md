@@ -83,8 +83,8 @@ Use an existing explicit attack mode (`hitscan`, bounded `spread`, or `automatic
 
 `combat.rs`, its Doom-owned `combat_resolution.rs` policy/transaction, and the fixed combat phase
 remain the only hit/ammo/damage authority. Single-ray hitscan and automatic fire use the Engine's
-host-neutral resolution lifecycle with precomputed spatial evidence, but all operations and the
-candidate `GameSession` commit stay here. A new firing mode is a Rust gameplay change: extend the
+host-neutral resolution lifecycle with precomputed spatial evidence. All operations and atomic
+`GameSession` publication stay here. A new firing mode is a Rust gameplay change: extend the
 closed stored schema, admission, definition, combat service, facts, snapshot migration,
 TypeScript decoder/projection, and focused tests together.
 Never implement a weapon as a TypeScript callback or a string-dispatched effect graph.
