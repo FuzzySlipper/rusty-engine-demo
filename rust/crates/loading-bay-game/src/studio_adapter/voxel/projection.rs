@@ -216,6 +216,8 @@ fn render_material(
             material.emission_color.b,
         ],
         emission_intensity: material.emissive,
+        alpha_mode: Default::default(),
+        double_sided: false,
         uv_strategy: match material.uv_strategy {
             UvStrategy::Flat => MaterialUvStrategy::Flat,
             UvStrategy::Planar => MaterialUvStrategy::Planar,

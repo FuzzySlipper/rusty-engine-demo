@@ -18,6 +18,10 @@ content, and its Rust adapter; it does not install or import Studio or renderer 
 
 - Loading Bay Rust owns project admission, live gameplay state, fixed phases, consequences,
   snapshots, saves, and persistence.
+- Loading Bay's single-ray hitscan/automatic combat path supplies Doom-owned intent, spatial hit
+  evidence, weapon operations, semantic events, and the fail-atomic `GameSession` transaction to
+  `rusty_engine::gameplay_resolution`. Engine orders and traces the bounded attempt; it does not
+  acquire weapon, ammo, target, damage, tick, death, or combat-loop meaning.
 - Browser TypeScript owns semantic device capture, typed transport, HUD/readout composition, and
   bounded startup or failure state. It transports the complete Rust-projected content aggregate
   without deriving renderer manifests or backend configuration.

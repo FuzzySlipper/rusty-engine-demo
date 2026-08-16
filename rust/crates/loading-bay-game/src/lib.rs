@@ -8,6 +8,7 @@
 
 mod application_content_projection;
 mod combat;
+mod combat_resolution;
 mod content;
 mod definition;
 mod doom_e1m1_materials;

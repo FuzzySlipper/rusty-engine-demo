@@ -198,6 +198,8 @@ pub(crate) fn stored_project_material_descriptors(
                         style.emission_color[2],
                     ],
                     emission_intensity: style.emissive,
+                    alpha_mode: Default::default(),
+                    double_sided: false,
                     uv_strategy: match style.uv_strategy.as_str() {
                         "flat" => MaterialUvStrategy::Flat,
                         "planar" => MaterialUvStrategy::Planar,

@@ -97,6 +97,9 @@ pub enum RuntimeError {
         entity: EntityId,
         reason: CombatRejectionReason,
     },
+    CombatResolutionFailed {
+        reason: String,
+    },
     UnknownPlayerController {
         player: EntityId,
     },

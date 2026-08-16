@@ -1583,6 +1583,8 @@ fn project_material_descriptors(
                         material.emission_color.b,
                     ],
                     emission_intensity: material.emissive,
+                    alpha_mode: Default::default(),
+                    double_sided: false,
                     uv_strategy: match material.uv_strategy {
                         UvStrategy::Flat => MaterialUvStrategy::Flat,
                         UvStrategy::Planar => MaterialUvStrategy::Planar,
@@ -1732,6 +1734,8 @@ fn studio_material(id: &str, asset: &str) -> RenderMaterialDescriptor {
         texture_tint: [1.0; 4],
         emission_color: [0.0; 3],
         emission_intensity: 0.0,
+        alpha_mode: Default::default(),
+        double_sided: false,
         uv_strategy: MaterialUvStrategy::Flat,
         voxel_surface: None,
     }
@@ -1817,6 +1821,7 @@ fn cuboid_payload([width, height, depth]: [f32; 3]) -> MeshPayloadDescriptor {
                 0.577, 0.577,
             ],
             uvs: None,
+            colors: None,
             indices: vec![
                 4, 5, 6, 4, 6, 7, 1, 0, 3, 1, 3, 2, 0, 4, 7, 0, 7, 3, 5, 1, 2, 5, 2, 6, 3, 7, 6, 3,
                 6, 2, 0, 1, 5, 0, 5, 4,

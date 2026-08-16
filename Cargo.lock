@@ -1527,6 +1527,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "gameplay-resolution"
+version = "0.1.0"
+
+[[package]]
 name = "gameplay-rules"
 version = "0.1.0"
 dependencies = [
@@ -4020,6 +4024,7 @@ dependencies = [
  "entity-state",
  "environment-authoring",
  "gameplay-mechanics",
+ "gameplay-resolution",
  "gameplay-rules",
  "render-host-contracts",
  "render-model",

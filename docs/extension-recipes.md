@@ -81,16 +81,19 @@ Use an existing explicit attack mode (`hitscan`, bounded `spread`, or `automatic
    `pnpm run verify:native` and browser HUD selection/fire/dry-fire through the session shell.
 5. Save/reload the canonical project, run `pnpm run check:content`, and update provenance.
 
-`combat.rs` and the fixed combat phase remain the only hit/ammo/damage authority. A new firing
-mode is a Rust gameplay change: extend the closed stored schema, admission, definition, combat
-service, facts, snapshot migration, TypeScript decoder/projection, and focused tests together.
+`combat.rs`, its Doom-owned `combat_resolution.rs` policy/transaction, and the fixed combat phase
+remain the only hit/ammo/damage authority. Single-ray hitscan and automatic fire use the Engine's
+host-neutral resolution lifecycle with precomputed spatial evidence, but all operations and the
+candidate `GameSession` commit stay here. A new firing mode is a Rust gameplay change: extend the
+closed stored schema, admission, definition, combat service, facts, snapshot migration,
+TypeScript decoder/projection, and focused tests together.
 Never implement a weapon as a TypeScript callback or a string-dispatched effect graph.
 
 Loading Bay versus Relay Annex already proves content-only weapon tuning: the same arc-pistol
 service admits different authored damage without a Rust branch.
-Open an Engine task only for a renderer-neutral retained/picking/spatial capability with a second
-consumer. Weapon modes, ammunition policy, cadence, hit selection, damage, and combat facts are
-gameplay and stay here.
+Open an Engine task only for a host-neutral mechanism demonstrated by another real consumer.
+Weapon modes, ammunition policy, cadence, hit selection, damage, and combat facts are gameplay
+and stay here; never add them to `gameplay-resolution`.
 
 ## Recipe: add an Engine rigid-body projectile weapon
 

@@ -33,6 +33,17 @@ meanings, fixed-tick ordering, ammunition and cooldown policy, pickups, combat t
 consequences, saves, projections, and schema migration; no sibling checkout or TypeScript
 mechanics authority is required.
 
+## Task #7032 gameplay-resolution consumer
+
+The adjacent Engine `gameplay-resolution` provider supplies only lifecycle, bounded structural
+program traversal, explicit evidence retention, staged transaction ordering, and generic
+receipts/traces. Loading Bay's `combat_resolution.rs` is the mechanically different second
+consumer: it adapts the existing single-ray hitscan and automatic-fire path without importing any
+Dagger or RPG vocabulary. Doom targeting and occlusion are precomputed Rust evidence; weapon,
+ammo, cooldown, damage, death consequences, facts, game events, and the candidate-session commit
+remain Loading Bay-owned. This is architectural provenance, not a selected or pinned Engine
+revision.
+
 ## M10A Rust transfer
 
 | Local surface                             | Source path             | Treatment                                                                                                                      |

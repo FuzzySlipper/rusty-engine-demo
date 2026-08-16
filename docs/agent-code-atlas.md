@@ -7,7 +7,7 @@ remain authoritative.
 | --------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | Game entities and services        | `rust/crates/loading-bay-game/src/*.rs`                                                        | `./scripts/verify-rust.sh`                             |
 | Project admission and persistence | `stored_project.rs`, `project_*`, `save_game.rs`, `snapshot.rs`                                | focused Rust integration tests                         |
-| Fixed input/game phases           | `game_loop.rs`, `player.rs`, `combat.rs`                                                       | game-loop and controller tests                         |
+| Fixed input/game phases           | `game_loop.rs`, `player.rs`, `combat.rs`, `combat_resolution.rs`                              | game-loop, combat, and controller tests                |
 | Native rendered product           | `src/bin/native-host.rs`                                                                       | `pnpm run verify:native`                               |
 | Browser transport and HUD shell   | `src/bin/browser-host.rs`, `ts/packages/browser-shell`, `apps/loading-bay`                     | `pnpm run test:shell`, browser smoke                   |
 | Studio adapter and bootstrap      | `studio_adapter/`, `.rusty-studio.json`                                                        | focused Studio adapter tests                           |

@@ -194,9 +194,9 @@ pub(crate) struct CombatResolution {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct CombatTargetHit {
-    entity: EntityId,
-    distance: f32,
+pub(crate) struct CombatTargetHit {
+    pub(crate) entity: EntityId,
+    pub(crate) distance: f32,
 }
 
 impl CombatService {
@@ -287,6 +287,26 @@ impl CombatService {
         let directions = attack_directions(direction, look.right, weapon.attack_mode, spread_seed);
         let ammo_after = ammo_before - weapon.ammunition_cost;
         let ready_at_tick = tick.advance(TickDelta::new(weapon.cooldown_ticks));
+        if matches!(
+            weapon.attack_mode,
+            WeaponAttackMode::Hitscan | WeaponAttackMode::Automatic
+        ) {
+            return crate::combat_resolution::resolve_single_hitscan(
+                session,
+                scene,
+                tick,
+                attacker,
+                action,
+                weapon_item,
+                weapon,
+                origin,
+                direction,
+                spread_seed,
+                ammo_before,
+                ammo_after,
+                ready_at_tick,
+            );
+        }
         let mut candidate_session = session.clone();
         let ammunition_facts = if weapon.ammunition_cost == 0 {
             Vec::new()
@@ -583,7 +603,7 @@ fn seed_unit(seed: u64) -> f32 {
     ((seed >> 40) as f32) / ((1u32 << 24) - 1) as f32
 }
 
-fn rolled_damage(base: u32, rolls: u8, seed: u64, ray_index: u8) -> u32 {
+pub(crate) fn rolled_damage(base: u32, rolls: u8, seed: u64, ray_index: u8) -> u32 {
     let mut mixed = seed ^ (u64::from(ray_index) + 1).wrapping_mul(0x9e37_79b9_7f4a_7c15);
     mixed ^= mixed >> 30;
     mixed = mixed.wrapping_mul(0xbf58_476d_1ce4_e5b9);
@@ -598,7 +618,7 @@ fn local_aim_offset(offset: Vec3, right: Vec3, forward: Vec3) -> Vec3 {
     right * offset.x + Vec3::new(0.0, offset.y, 0.0) + forward * offset.z
 }
 
-fn nearest_combat_target(
+pub(crate) fn nearest_combat_target(
     session: &GameSession,
     attacker: EntityId,
     origin: Vec3,
