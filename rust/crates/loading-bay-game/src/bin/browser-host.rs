@@ -147,24 +147,9 @@ impl BrowserRuntime {
                     "visible"
                 }
             });
-        let runtime = LoadingBayGameLoop::new_with_enemy_awareness(
-            GameRuntime::from_admitted_project(admitted),
-            ACTOR,
-            project.project_id != "doom-fx-room",
-        )
-        .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?;
-        let uses_doom_application_content = matches!(
-            project.project_id.as_str(),
-            "doom-e1m1"
-                | "doom-sprite-scale-room"
-                | "doom-sprite-orbit-room"
-                | "doom-sprite-animation-room"
-                | "doom-combat-room"
-                | "doom-fx-room"
-                | "doom-weapon-room"
-                | "doom-pickup-room"
-                | "doom-player-hurt-room"
-        );
+        let runtime = LoadingBayGameLoop::new(GameRuntime::from_admitted_project(admitted), ACTOR)
+            .map_err(|error| format!("could not create Loading Bay game loop: {error}"))?;
+        let uses_doom_application_content = project.project_id == "doom-e1m1";
         let mut gameplay_projector = uses_doom_application_content
             .then(|| GameplayApplicationProjector::new(authored.document()));
         let initial_gameplay_frame = gameplay_projector
@@ -390,12 +375,8 @@ impl BrowserRuntime {
     fn replacement_from_runtime(&self, runtime: GameRuntime) -> Result<Self, String> {
         Ok(Self {
             host_session_id: self.host_session_id.clone(),
-            runtime: LoadingBayGameLoop::new_with_enemy_awareness(
-                runtime,
-                ACTOR,
-                self.project.project_id != "doom-fx-room",
-            )
-            .map_err(|error| format!("could not restore Loading Bay game loop: {error}"))?,
+            runtime: LoadingBayGameLoop::new(runtime, ACTOR)
+                .map_err(|error| format!("could not restore Loading Bay game loop: {error}"))?,
             authored: self.authored.clone(),
             voxel_object_frame: self.voxel_object_frame.clone(),
             application_content: self.application_content.clone(),

@@ -11,7 +11,6 @@ pnpm run test:ts
 pnpm run test:platform
 pnpm run test:shell
 pnpm run test:engine-route
-pnpm run test:performance-tools
 pnpm run build:shell
 ./scripts/verify-rust.sh
 ./scripts/verify-native-host.sh

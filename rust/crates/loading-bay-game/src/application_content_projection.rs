@@ -1464,25 +1464,8 @@ pub fn project_doom_e1m1_application_content(
     object_frame: &RenderFrameDiff,
     entity_frame: &RenderFrameDiff,
 ) -> anyhow::Result<ProjectedApplicationContent> {
-    let (volume_frame, mut resources) = if matches!(
-        project.project_id.as_str(),
-        "doom-sprite-scale-room"
-            | "doom-sprite-orbit-room"
-            | "doom-sprite-animation-room"
-            | "doom-combat-room"
-            | "doom-fx-room"
-            | "doom-weapon-room"
-            | "doom-pickup-room"
-            | "doom-player-hurt-room"
-    ) {
-        (
-            RenderFrameDiff::try_from_ops(Vec::new())
-                .expect("an empty calibration-room volume frame is valid"),
-            Vec::new(),
-        )
-    } else {
-        externalize_frame_meshes(project_stored_voxel_volume(project, scene)?)?
-    };
+    let (volume_frame, mut resources) =
+        externalize_frame_meshes(project_stored_voxel_volume(project, scene)?)?;
     let (texture_resources, texture_ops) = doom_texture_projection(project)?;
     if texture_resources.len() != 54 {
         anyhow::bail!(
@@ -1791,21 +1774,18 @@ fn repository_root() -> PathBuf {
 mod tests {
     use rusty_engine::core_math::Vec3;
     use rusty_engine::engine_spatial::VoxelCollisionScene;
-    use rusty_engine::entity_state::{EntityTransform, Quat, TransformCommand};
+    use rusty_engine::entity_state::{EntityTransform, Quat};
     use rusty_engine::render_model::RenderDiff;
 
     use crate::{
-        decode_project_document, project_stored_voxel_objects, CombatFact, CombatImpactKind,
-        DamageCommand, DamageService, DamageSource, EnemyAttackKind, EnemyCombatFact, GameLoopFact,
-        GameRuntime, InventoryService, LoadingBayGameLoop, ResolvedAttackAction,
-        StoredDirectionalSpriteView, StoredVisualPresentation, StoredVisualState,
+        decode_project_document, project_stored_voxel_objects, DamageCommand, DamageService,
+        DamageSource, GameRuntime, StoredDirectionalSpriteView, StoredVisualPresentation,
+        StoredVisualState,
     };
 
     use super::{
-        camera_relative_sprite_translation, doom_weapon_viewmodel_base_handle,
-        doom_weapon_viewmodel_flash_handle, doom_weapon_viewmodel_root_handle,
-        project_doom_e1m1_application_content, select_directional_sprite_view,
-        GameplayApplicationProjector,
+        camera_relative_sprite_translation, project_doom_e1m1_application_content,
+        select_directional_sprite_view, GameplayApplicationProjector,
     };
 
     #[test]
@@ -1841,90 +1821,6 @@ mod tests {
                 ..
             }) if directional_views.len() == 8
         ));
-    }
-
-    #[test]
-    fn doom_weapon_viewmodel_uses_generated_source_clips_and_authoritative_fire_edges() {
-        let source = include_str!("../../../../content/projects/doom-weapon-room.project.json");
-        let project = decode_project_document(source).unwrap().project;
-        let mut runtime = GameRuntime::from_stored_project(source).unwrap();
-        let mut projector = GameplayApplicationProjector::new(&project);
-        assert_eq!(projector.weapon_viewmodels["fist"].fire.len(), 38);
-        assert_eq!(projector.weapon_viewmodels["pistol"].fire.len(), 26);
-        assert_eq!(projector.weapon_viewmodels["pistol"].flash.len(), 12);
-        assert_eq!(projector.weapon_viewmodels["shotgun"].fire.len(), 70);
-        assert_eq!(projector.weapon_viewmodels["shotgun"].flash.len(), 12);
-
-        let initial = projector.project(&runtime).unwrap();
-        assert!(initial.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::Create { handle, node, .. }
-                if *handle == doom_weapon_viewmodel_root_handle()
-                    && node.layer == rusty_engine::render_model::RenderLayer::Viewmodel
-        )));
-        assert!(initial.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::CreateSprite { handle, sprite, .. }
-                if *handle == doom_weapon_viewmodel_base_handle("pistol")
-                    && sprite.asset == "sprite/doom-pistol-viewmodel"
-                    && sprite.frame == 0
-                    && sprite.visible
-        )));
-        assert!(initial.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::CreateSprite { handle, sprite, .. }
-                if *handle == doom_weapon_viewmodel_flash_handle("pistol")
-                    && sprite.asset == "sprite/doom-pistol-flash-viewmodel"
-                    && !sprite.visible
-        )));
-        assert!(initial.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::CreateSprite { handle, sprite, .. }
-                if *handle == doom_weapon_viewmodel_base_handle("shotgun")
-                    && sprite.asset == "sprite/doom-shotgun-viewmodel"
-                    && !sprite.visible
-        )));
-
-        let receipt = runtime
-            .attack(
-                rusty_engine::core_ids::EntityId::new(1),
-                ResolvedAttackAction::Attack,
-            )
-            .unwrap();
-        let facts = receipt
-            .facts
-            .into_iter()
-            .map(GameLoopFact::Combat)
-            .collect::<Vec<_>>();
-        let fired = projector.project_with_facts(&runtime, &facts).unwrap();
-        assert!(fired.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::UpdateSprite { handle, frame: Some(1), .. }
-                if *handle == doom_weapon_viewmodel_base_handle("pistol")
-        )));
-        assert!(fired.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::UpdateSprite { handle, visible: Some(true), .. }
-                if *handle == doom_weapon_viewmodel_flash_handle("pistol")
-        )));
-
-        InventoryService::select_weapon_slot(
-            runtime.session_mut(),
-            rusty_engine::core_ids::EntityId::new(1),
-            1,
-        )
-        .unwrap();
-        let switched = projector.project(&runtime).unwrap();
-        assert!(switched.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::UpdateSprite { handle, visible: Some(false), .. }
-                if *handle == doom_weapon_viewmodel_base_handle("pistol")
-        )));
-        assert!(switched.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::UpdateSprite { handle, visible: Some(true), .. }
-                if *handle == doom_weapon_viewmodel_base_handle("shotgun")
-        )));
     }
 
     #[test]
@@ -2020,51 +1916,6 @@ mod tests {
 
         assert_eq!(authored.rotation, 5);
         assert_eq!(combat_facing.rotation, 1);
-    }
-
-    #[test]
-    fn directional_sprite_projection_does_not_reemit_unchanged_source_offsets() {
-        let source = include_str!("../../../../content/projects/doom-combat-room.project.json");
-        let project = decode_project_document(source).unwrap().project;
-        let mut runtime = GameRuntime::from_stored_project(source).unwrap();
-        let enemy = runtime.session().enemy_combatants().next().unwrap().entity;
-        let mut projector = GameplayApplicationProjector::new(&project);
-
-        projector.project(&runtime).unwrap();
-        let repeated = projector.project(&runtime).unwrap();
-        let handle = projector.entities.handle_of(enemy).unwrap();
-
-        assert!(!repeated.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::Update {
-                handle: operation_handle,
-                transform: Some(_),
-                ..
-            } if *operation_handle == handle
-        )));
-
-        let camera = rusty_engine::core_ids::EntityId::new(projector.camera_entity.unwrap());
-        let revision = runtime.session().entities().revision();
-        runtime
-            .session_mut()
-            .entities
-            .apply_transform(
-                revision,
-                TransformCommand::Translate {
-                    entity: camera,
-                    delta: Vec3::new(1.0, 0.0, 0.0),
-                },
-            )
-            .unwrap();
-        let moved = projector.project(&runtime).unwrap();
-        assert!(moved.ops.iter().any(|operation| matches!(
-            operation,
-            RenderDiff::Update {
-                handle: operation_handle,
-                transform: Some(_),
-                ..
-            } if *operation_handle == handle
-        )));
     }
 
     #[test]
@@ -2175,39 +2026,6 @@ mod tests {
     }
 
     #[test]
-    fn pickup_room_initial_projection_contains_visible_pickup_sprites() {
-        let source = include_str!("../../../../content/projects/doom-pickup-room.project.json");
-        let project = decode_project_document(source).unwrap().project;
-        let runtime = GameRuntime::from_stored_project(source).unwrap();
-        let admitted = runtime.collision_scene().unwrap();
-        let scene = VoxelCollisionScene::from_material_voxels(
-            admitted.voxel_size(),
-            admitted.chunk_size(),
-            admitted.material_voxels().to_vec(),
-        )
-        .unwrap();
-        let objects = project_stored_voxel_objects(&project).unwrap();
-        let mut gameplay = GameplayApplicationProjector::new(&project);
-        let entities = gameplay.project(&runtime).unwrap();
-        let content =
-            project_doom_e1m1_application_content(&project, &scene, &objects, &entities).unwrap();
-
-        let visible_pickups = content
-            .frame
-            .ops
-            .iter()
-            .filter(|operation| {
-                matches!(
-                    operation,
-                    RenderDiff::CreateSprite { sprite, .. }
-                        if sprite.asset.starts_with("sprite/doom-pickup-") && sprite.visible
-                )
-            })
-            .count();
-        assert_eq!(visible_pickups, 11);
-    }
-
-    #[test]
     fn gameplay_projection_emits_authored_hit_and_death_frames_without_hiding_the_enemy() {
         let source = include_str!("../../../../content/projects/doom-e1m1.project.json");
         let project = decode_project_document(source).unwrap().project;
@@ -2261,145 +2079,5 @@ mod tests {
                 ..
             }
         )));
-    }
-
-    #[test]
-    fn every_authoritative_zombieman_shot_restarts_its_attack_sprite_clip() {
-        let source = include_str!("../../../../content/projects/doom-fx-room.project.json");
-        let project = decode_project_document(source).unwrap().project;
-        let mut game_loop = LoadingBayGameLoop::new(
-            GameRuntime::from_stored_project(source).unwrap(),
-            rusty_engine::core_ids::EntityId::new(1),
-        )
-        .unwrap();
-        game_loop.start_connection();
-        let mut projector = GameplayApplicationProjector::new(&project);
-        projector.project(game_loop.runtime()).unwrap();
-        let zombieman = rusty_engine::core_ids::EntityId::new(2);
-        let handle = projector.entities.handle_of(zombieman).unwrap();
-        let mut observed_shots = 0;
-        let mut shot_window = None;
-
-        for _ in 0..150 {
-            let receipt = game_loop.run_fixed_tick().unwrap();
-            let zombieman_fired = receipt.facts.iter().any(|fact| {
-                matches!(
-                    fact,
-                    GameLoopFact::EnemyCombat(EnemyCombatFact::AttackFired {
-                        enemy,
-                        kind: EnemyAttackKind::RangedHitscan,
-                        ..
-                    }) if *enemy == zombieman
-                )
-            });
-            let frame = projector
-                .project_with_facts(game_loop.runtime(), &receipt.facts)
-                .unwrap();
-            if zombieman_fired {
-                assert!(shot_window.is_none(), "shot windows must not overlap");
-                observed_shots += 1;
-                shot_window = Some((35_u64, std::collections::BTreeSet::new()));
-            }
-            if let Some((remaining, frames)) = &mut shot_window {
-                frames.extend(frame.ops.iter().filter_map(|operation| match operation {
-                    RenderDiff::UpdateSprite {
-                        handle: operation_handle,
-                        frame: Some(frame),
-                        ..
-                    } if *operation_handle == handle => Some(*frame),
-                    _ => None,
-                }));
-                *remaining = remaining.saturating_sub(1);
-                if *remaining == 0 {
-                    assert!(
-                        frames.len() >= 2,
-                        "shot {observed_shots} did not play a muzzle frame and return frame: {frames:?}"
-                    );
-                    shot_window = None;
-                    if observed_shots == 2 {
-                        break;
-                    }
-                }
-            }
-        }
-
-        assert_eq!(observed_shots, 2);
-    }
-
-    #[test]
-    fn combat_outcomes_spawn_source_timed_effect_clips_once_and_clean_them_up() {
-        use rusty_engine::core_ids::EntityId;
-
-        let source = include_str!("../../../../content/projects/doom-fx-room.project.json");
-        let project = decode_project_document(source).unwrap().project;
-        let mut runtime = GameRuntime::from_stored_project(source).unwrap();
-        let mut projector = GameplayApplicationProjector::new(&project);
-        projector.project(&runtime).unwrap();
-
-        let facts = vec![
-            GameLoopFact::Combat(CombatFact::ImpactResolved {
-                attacker: EntityId::new(1),
-                target: Some(EntityId::new(2)),
-                kind: CombatImpactKind::Blood,
-                position: Vec3::new(4.0, 1.0, 0.0),
-                direction: Vec3::new(1.0, 0.0, 0.0),
-            }),
-            GameLoopFact::Combat(CombatFact::ImpactResolved {
-                attacker: EntityId::new(1),
-                target: None,
-                kind: CombatImpactKind::BulletPuff,
-                position: Vec3::new(4.0, 1.0, 1.0),
-                direction: Vec3::new(1.0, 0.0, 0.0),
-            }),
-            GameLoopFact::Combat(CombatFact::ProjectileImpacted {
-                entity: EntityId::new(90),
-                owner: EntityId::new(3),
-                target: Some(EntityId::new(1)),
-                position: Vec3::new(0.0, 1.0, 3.0),
-                damage: 3,
-            }),
-        ];
-        let spawned = projector.project_with_facts(&runtime, &facts).unwrap();
-        let created = spawned
-            .ops
-            .iter()
-            .filter_map(|operation| match operation {
-                RenderDiff::CreateSprite { sprite, .. }
-                    if sprite.metadata.tags == ["doom-combat-fx"] =>
-                {
-                    Some((
-                        sprite.asset.as_str(),
-                        sprite.frame,
-                        sprite.transform.translation,
-                    ))
-                }
-                _ => None,
-            })
-            .collect::<Vec<_>>();
-        assert_eq!(created.len(), 3);
-        assert!(created
-            .iter()
-            .any(|(asset, frame, position)| *asset == "sprite/doom-blood"
-                && *frame == 2
-                && position[0] < 4.0));
-        assert!(created
-            .iter()
-            .any(|(asset, frame, position)| *asset == "sprite/doom-puff"
-                && *frame == 0
-                && position[0] < 4.0));
-        assert!(created
-            .iter()
-            .any(|(asset, frame, _)| *asset == "sprite/doom-imp-fireball" && *frame == 2));
-
-        runtime.advance_by(50).unwrap();
-        let cleaned = projector.project(&runtime).unwrap();
-        assert_eq!(
-            cleaned
-                .ops
-                .iter()
-                .filter(|operation| matches!(operation, RenderDiff::Destroy { .. }))
-                .count(),
-            3
-        );
     }
 }

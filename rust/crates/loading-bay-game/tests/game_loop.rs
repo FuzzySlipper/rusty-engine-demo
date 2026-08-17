@@ -15,10 +15,6 @@ use rusty_engine::core_ids::EntityId;
 const PLAYER: EntityId = EntityId::new(1);
 const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
 const DOOM_PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
-const DOOM_SPRITE_ORBIT_ROOM_PROJECT: &str =
-    include_str!("../../../../content/projects/doom-sprite-orbit-room.project.json");
-const DOOM_FX_ROOM_PROJECT: &str =
-    include_str!("../../../../content/projects/doom-fx-room.project.json");
 
 fn game_loop() -> LoadingBayGameLoop {
     LoadingBayGameLoop::new(
@@ -242,44 +238,6 @@ fn sampled_frame_looks_before_camera_relative_motion_and_uses_canonical_velocity
         .facts
         .iter()
         .any(|fact| matches!(fact, GameLoopFact::PlayerControl(_))));
-}
-
-#[test]
-fn doom_sprite_orbit_room_floor_supports_a_real_movement_tick() {
-    let mut game_loop = LoadingBayGameLoop::new(
-        GameRuntime::from_stored_project(DOOM_SPRITE_ORBIT_ROOM_PROJECT)
-            .expect("admit Doom directional-sprite orbit room"),
-        PLAYER,
-    )
-    .unwrap();
-    let generation = game_loop.start_connection().connection_generation;
-    for tick in 0..120 {
-        if tick % 2 == 0 {
-            game_loop
-                .submit_input(input(
-                    generation,
-                    tick / 2 + 1,
-                    [1.0, 0.0],
-                    [0.0, 0.0],
-                    false,
-                ))
-                .unwrap();
-        }
-        game_loop.run_fixed_tick().unwrap();
-    }
-
-    let position = player_position(&game_loop);
-    let controller = game_loop
-        .runtime()
-        .session()
-        .player_controller(PLAYER)
-        .unwrap();
-    assert!(controller.state.grounded, "player state: {controller:#?}");
-    assert!((position[1] - 1.15).abs() < 0.001, "{position:?}");
-    assert!(
-        position[2] > -3.0 && position[2] < 0.0,
-        "orbit-room player did not make bounded forward progress: {position:?}"
-    );
 }
 
 #[test]
@@ -860,71 +818,6 @@ fn explicit_initial_enemy_awareness_is_retained_until_a_debug_edge_changes_it() 
     .unwrap();
 
     assert!(!game_loop.enemy_awareness_enabled());
-}
-
-#[test]
-fn doom_fx_room_dodged_projectiles_do_not_stall_enemy_sight_or_navigation() {
-    let mut game_loop = LoadingBayGameLoop::new_with_enemy_awareness(
-        GameRuntime::from_stored_project(DOOM_FX_ROOM_PROJECT).unwrap(),
-        PLAYER,
-        false,
-    )
-    .unwrap();
-    let generation = game_loop.start_connection().connection_generation;
-    game_loop
-        .submit_edge_command(edge(
-            generation,
-            1,
-            GameLoopEdgeCommandKind::SetEnemyAwareness { enabled: true },
-        ))
-        .unwrap();
-
-    let mut facts = Vec::new();
-    for tick_index in 0..300_u64 {
-        game_loop
-            .submit_input(input(
-                generation,
-                tick_index + 2,
-                [
-                    if (tick_index / 40) % 2 == 0 {
-                        1.0
-                    } else {
-                        -1.0
-                    },
-                    0.0,
-                ],
-                [0.0, 0.0],
-                false,
-            ))
-            .unwrap();
-        facts.extend(game_loop.run_fixed_tick().unwrap().facts);
-    }
-    let projectile_spawn_count = facts
-        .iter()
-        .filter(|fact| {
-            matches!(
-                fact,
-                GameLoopFact::EnemyCombat(
-                    loading_bay_game::EnemyCombatFact::ProjectileSpawned { .. }
-                )
-            )
-        })
-        .count();
-    assert!(
-        facts.iter().any(|fact| matches!(
-            fact,
-            GameLoopFact::EnemyCombat(loading_bay_game::EnemyCombatFact::AttackFired { .. })
-        )),
-        "{facts:#?}"
-    );
-    assert!(projectile_spawn_count >= 7, "{projectile_spawn_count}");
-    assert!(
-        !facts.iter().any(|fact| matches!(
-            fact,
-            GameLoopFact::Navigation(loading_bay_game::NavigationFact::Unreachable { .. })
-        )),
-        "{facts:#?}"
-    );
 }
 
 #[test]

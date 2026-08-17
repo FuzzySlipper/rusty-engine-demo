@@ -589,18 +589,10 @@ fn process_command(
                 })
             }
             BrowserGameCommand::SetEnemyAwareness { enabled } => {
-                if !matches!(
-                    host.project.project_id.as_str(),
-                    "doom-combat-room" | "doom-fx-room"
-                ) {
-                    Err(InputCommandRejection::InvalidInput)
-                } else {
-                    host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                        connection_generation: context.connection_generation,
-                        sequence: envelope.sequence,
-                        command: GameLoopEdgeCommandKind::SetEnemyAwareness { enabled },
-                    })
-                }
+                let _ = enabled;
+                // Enemy-awareness toggling was a calibration-room debug edge;
+                // the retired rooms were its only consumers.
+                Err(InputCommandRejection::InvalidInput)
             }
             BrowserGameCommand::Restart {
                 mode: RestartMode::AuthoredBaseline,
