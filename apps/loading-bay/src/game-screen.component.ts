@@ -134,108 +134,6 @@ const DOOM_E1M1_PRESENTATION: GamePresentation = {
   showsAccessKeys: false,
 };
 
-const DOOM_SPRITE_SCALE_PRESENTATION: GamePresentation = {
-  missionLabel: "DOOM SPRITE SCALE ROOM",
-  levelCaption: "2 ENGINE UNIT REFERENCES",
-  restartLabel: "Reset fixed camera",
-  completionTitle: "CALIBRATION COMPLETE",
-  completionFallback: "The scale lineup remains visible.",
-  panelLabel: "Sprite Scale Room",
-  documentTitle: "Rusty Engine — Doom Sprite Scale Room",
-  viewportLabel: "Fixed Doom sprite scale calibration renderer surface.",
-  showsAccessKeys: false,
-};
-
-const DOOM_SPRITE_ORBIT_PRESENTATION: GamePresentation = {
-  missionLabel: "DOOM DIRECTIONAL SPRITE ROOM",
-  levelCaption: "LIVE CAMERA-RELATIVE VIEWS",
-  restartLabel: "Reset orbit room",
-  completionTitle: "ORBIT COMPLETE",
-  completionFallback: "The directional sprite remains visible.",
-  panelLabel: "Sprite Orbit Room",
-  documentTitle: "Rusty Engine — Doom Directional Sprite Room",
-  viewportLabel:
-    "Live Doom directional sprite room. Click to capture the pointer, then walk around the stationary Imp.",
-  showsAccessKeys: false,
-};
-
-const DOOM_SPRITE_ANIMATION_PRESENTATION: GamePresentation = {
-  missionLabel: "DOOM SPRITE ANIMATION ROOM",
-  levelCaption: "CANONICAL CLIP PLAYBACK",
-  restartLabel: "Restart animation sequence",
-  completionTitle: "ANIMATION INSPECTION COMPLETE",
-  completionFallback: "The canonical sequence remains active.",
-  panelLabel: "Sprite Animation Room",
-  documentTitle: "Rusty Engine — Doom Sprite Animation Room",
-  viewportLabel:
-    "Live Doom sprite animation inspection room with an authored Rust-timed clip sequence.",
-  showsAccessKeys: false,
-};
-
-const DOOM_COMBAT_ROOM_PRESENTATION: GamePresentation = {
-  missionLabel: "DOOM SINGLE-ENEMY COMBAT ROOM",
-  levelCaption: "COVER · ATTACK · PAIN · DEATH · DROP",
-  restartLabel: "Restart combat room",
-  completionTitle: "COMBAT INSPECTION COMPLETE",
-  completionFallback: "The bounded enemy encounter remains active.",
-  panelLabel: "Doom Combat Room",
-  documentTitle: "Rusty Engine — Doom Combat Room",
-  viewportLabel:
-    "Live Doom single-enemy combat room. Leave cover, circle the logically facing Zombieman, exchange fire, and collect its drop.",
-  showsAccessKeys: false,
-};
-
-const DOOM_FX_ROOM_PRESENTATION: GamePresentation = {
-  missionLabel: "DOOM COMBAT FX ROOM",
-  levelCaption: "BLOOD · BULLET PUFF · FIREBALL IMPACT",
-  restartLabel: "Restart FX room",
-  completionTitle: "FX INSPECTION COMPLETE",
-  completionFallback: "The bounded effect lanes remain active.",
-  panelLabel: "Doom Combat FX Room",
-  documentTitle: "Rusty Engine — Doom Combat FX Room",
-  viewportLabel:
-    "Live Doom combat FX room. Use ordinary combat controls to inspect the separated blood, bullet-puff, and fireball lanes.",
-  showsAccessKeys: false,
-};
-
-const DOOM_WEAPON_ROOM_PRESENTATION: GamePresentation = {
-  missionLabel: "DOOM PLAYER WEAPON ROOM",
-  levelCaption: "FIST · PISTOL · SHOTGUN",
-  restartLabel: "Restart weapon room",
-  completionTitle: "WEAPON INSPECTION COMPLETE",
-  completionFallback: "The bounded weapon target remains active.",
-  panelLabel: "Doom Player Weapon Room",
-  documentTitle: "Rusty Engine — Doom Player Weapon Room",
-  viewportLabel:
-    "Live Doom player weapon room. Use slots one through three and ordinary fire to inspect every ready, firing, flash, and recovery sequence.",
-  showsAccessKeys: false,
-};
-
-const DOOM_PICKUP_ROOM_PRESENTATION: GamePresentation = {
-  missionLabel: "DOOM PICKUP AND ITEM ROOM",
-  levelCaption: "STATIC · ANIMATED · ENEMY DROP",
-  restartLabel: "Restart pickup room",
-  completionTitle: "PICKUP INSPECTION COMPLETE",
-  completionFallback: "The bounded pickup gallery remains active.",
-  panelLabel: "Doom Pickup Room",
-  documentTitle: "Rusty Engine — Doom Pickup and Item Room",
-  viewportLabel:
-    "Live Doom pickup room. Inspect the source-scaled gallery, collect items with ordinary movement, and defeat the stationary Zombieman to materialize its bullet clip.",
-  showsAccessKeys: false,
-};
-
-const DOOM_PLAYER_HURT_ROOM_PRESENTATION: GamePresentation = {
-  missionLabel: "DOOM PLAYER HURT ROOM",
-  levelCaption: "ENTER · EXIT · RETRIGGER · DEATH",
-  restartLabel: "Restart hurt room",
-  completionTitle: "HURT INSPECTION COMPLETE",
-  completionFallback: "The bounded damage zone remains active.",
-  panelLabel: "Doom Player Hurt Room",
-  documentTitle: "Rusty Engine — Doom Player Hurt Room",
-  viewportLabel:
-    "Live Doom player hurt room. Enter the marked hazard for one accepted hit, leave it to inspect recovery, or remain inside to inspect retrigger and death feedback.",
-  showsAccessKeys: false,
-};
 
 declare global {
   interface Window {
@@ -290,130 +188,6 @@ declare global {
         </div>
         <div class="viewport-vignette" aria-hidden="true"></div>
         <div class="reticle" aria-hidden="true"></div>
-        @if (snapshot().projectId === "doom-sprite-scale-room") {
-          <aside
-            class="calibration-legend"
-            aria-label="Sprite scale calibration labels"
-          >
-            <strong>ZOMBIEMAN</strong><strong>SHOTGUN GUY</strong
-            ><strong>IMP</strong>
-            <span>Each sprite: 56 Doom units = 2 Engine units</span>
-            <span>Each gray column: exactly 2 Engine units tall</span>
-            <span>Source origin anchored to the floor</span>
-          </aside>
-        }
-        @if (snapshot().projectId === "doom-sprite-orbit-room") {
-          <aside
-            class="calibration-legend"
-            aria-label="Directional sprite orbit labels"
-          >
-            <strong>ONE STATIONARY IMP</strong
-            ><strong>LIVE RUST SELECTION</strong>
-            <span>Spawn / south marker: front view</span>
-            <span>Walk the ring: front · diagonal · side · rear</span>
-            <span
-              >WASD move · mouse look · numbered markers orient the orbit</span
-            >
-          </aside>
-        }
-        @if (
-          snapshot().projectId === "doom-sprite-animation-room" &&
-            snapshot().doomSpriteInspection;
-          as inspection
-        ) {
-          <aside
-            class="calibration-legend"
-            aria-label="Doom sprite animation inspection readout"
-          >
-            <strong>{{ inspection.label }}</strong
-            ><strong>{{ inspection.family }} / {{ inspection.clip }}</strong>
-            <span
-              >Fixture {{ inspection.sequenceIndex + 1 }} /
-              {{ inspection.sequenceCount }} · {{ inspection.loopMode }}</span
-            >
-            <span
-              >Authoritative frame {{ inspection.frame }} · sample
-              {{ inspection.frameIndex + 1 }} /
-              {{ inspection.frameCount }}</span
-            >
-            <span
-              >Clip tick {{ inspection.elapsedTicks + 1 }} /
-              {{ inspection.displayTicks }}</span
-            >
-          </aside>
-        }
-        @if (snapshot().projectId === "doom-combat-room") {
-          <aside
-            class="calibration-legend"
-            aria-label="Doom combat room debug controls"
-          >
-            <strong>ONE LIVE ZOMBIEMAN</strong
-            ><strong
-              >AWARENESS:
-              {{
-                snapshot().enemyAwarenessEnabled ? "ENABLED" : "DISABLED"
-              }}</strong
-            >
-            <span>O toggles enemy awareness</span>
-            <span
-              >Disable awareness, then circle the enemy to inspect directional
-              animation</span
-            >
-          </aside>
-        }
-        @if (snapshot().projectId === "doom-fx-room") {
-          <aside
-            class="calibration-legend"
-            aria-label="Doom combat effect room controls"
-          >
-            <strong>THREE LIVE FX LANES</strong
-            ><strong
-              >AWARENESS:
-              {{
-                snapshot().enemyAwarenessEnabled ? "ENABLED" : "DISABLED"
-              }}</strong
-            >
-            <span>Blood target · bullet-puff wall · Imp fireball</span>
-            <span
-              >O toggles enemy awareness · ordinary fire resolves effects</span
-            >
-          </aside>
-        }
-        @if (snapshot().projectId === "doom-weapon-room") {
-          <aside
-            class="calibration-legend calibration-legend--weapon"
-            aria-label="Doom player weapon room controls"
-          >
-            <strong>PLAYER WEAPON VIEWMODELS</strong>
-            <strong>1 PISTOL · 2 SHOTGUN · 3 FIST</strong>
-            <span>Click viewport, select a slot, then use ordinary fire</span>
-            <span>Stationary target has no awareness or attack behavior</span>
-          </aside>
-        }
-        @if (snapshot().projectId === "doom-pickup-room") {
-          <aside
-            class="calibration-legend"
-            aria-label="Doom pickup and item room controls"
-          >
-            <strong>ELEVEN E1M1 PICKUP FAMILIES</strong>
-            <strong>STATIC · ANIMATED · ENEMY DROP</strong>
-            <span>Walk through a sprite to collect it and observe the HUD</span>
-            <span>Defeat the stationary Zombieman to materialize its clip</span>
-          </aside>
-        }
-        @if (snapshot().projectId === "doom-player-hurt-room") {
-          <aside
-            class="calibration-legend"
-            aria-label="Doom player hurt room controls"
-          >
-            <strong>TWO AUTHORITATIVE DAMAGE ZONES</strong>
-            <strong>AHEAD: STAGED · RIGHT: TERMINAL</strong>
-            <span
-              >Ahead marker: 10 damage every 180 ticks; step off safely</span
-            >
-            <span>Right marker: one 100-damage terminal-state probe</span>
-          </aside>
-        }
 
         <header class="hud-top" [attr.inert]="modalActive() ? '' : null">
           <div class="mission">
@@ -1130,17 +904,6 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       return;
     }
     if (
-      event.code === "KeyO" &&
-      !event.repeat &&
-      this.panel() === "game" &&
-      ["doom-combat-room", "doom-fx-room"].includes(this.snapshot().projectId)
-    ) {
-      event.preventDefault();
-      const enabled = !this.snapshot().enemyAwarenessEnabled;
-      void this.withAction((handle) => handle.setEnemyAwareness(enabled));
-      return;
-    }
-    if (
       event.code === "KeyE" &&
       this.panel() === "game" &&
       this.snapshot().interactionTarget !== null
@@ -1503,14 +1266,6 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
           "loading-bay",
           "relay-annex",
           "doom-e1m1",
-          "doom-sprite-scale-room",
-          "doom-sprite-orbit-room",
-          "doom-sprite-animation-room",
-          "doom-combat-room",
-          "doom-fx-room",
-          "doom-weapon-room",
-          "doom-pickup-room",
-          "doom-player-hurt-room",
         ].includes(requestedProject)
       ) {
         throw new Error(`Unknown project ${requestedProject}`);
@@ -1710,30 +1465,6 @@ const FOCUSABLE_SELECTOR =
   'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function gamePresentationFor(projectId: string): GamePresentation {
-  if (projectId === "doom-sprite-scale-room") {
-    return DOOM_SPRITE_SCALE_PRESENTATION;
-  }
-  if (projectId === "doom-sprite-orbit-room") {
-    return DOOM_SPRITE_ORBIT_PRESENTATION;
-  }
-  if (projectId === "doom-sprite-animation-room") {
-    return DOOM_SPRITE_ANIMATION_PRESENTATION;
-  }
-  if (projectId === "doom-combat-room") {
-    return DOOM_COMBAT_ROOM_PRESENTATION;
-  }
-  if (projectId === "doom-fx-room") {
-    return DOOM_FX_ROOM_PRESENTATION;
-  }
-  if (projectId === "doom-weapon-room") {
-    return DOOM_WEAPON_ROOM_PRESENTATION;
-  }
-  if (projectId === "doom-pickup-room") {
-    return DOOM_PICKUP_ROOM_PRESENTATION;
-  }
-  if (projectId === "doom-player-hurt-room") {
-    return DOOM_PLAYER_HURT_ROOM_PRESENTATION;
-  }
   return projectId === "doom-e1m1"
     ? DOOM_E1M1_PRESENTATION
     : LOADING_BAY_PRESENTATION;
