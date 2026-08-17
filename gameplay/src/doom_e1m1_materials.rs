@@ -121,9 +121,8 @@ fn texture_id_for(name: &str, kind: &str) -> String {
 }
 
 fn manifest_path_from_manifest_dir() -> PathBuf {
-    // CARGO_MANIFEST_DIR = rust/crates/loading-bay-game
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../content/doom-e1m1/textures/manifest.json")
+    // CARGO_MANIFEST_DIR = gameplay
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../content/doom-e1m1/textures/manifest.json")
 }
 
 pub fn doom_manifest_path() -> PathBuf {
@@ -552,7 +551,7 @@ pub fn validate_doom_palette_closure(
 /// dimensions — used by `pnpm run check:content` style gates and by unit tests.
 pub fn verify_doom_texture_files() -> Result<(), String> {
     let bindings = load_doom_manifest()?;
-    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
     for binding in &bindings {
         let png_path = repo_root.join(format!(
             "content/doom-e1m1/textures/{}/{}.png",

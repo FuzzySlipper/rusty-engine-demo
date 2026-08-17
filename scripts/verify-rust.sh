@@ -8,12 +8,12 @@ cargo fmt --all --check
 
 FORBIDDEN_ASHA_ENGINE="asha""-engine"
 FORBIDDEN_ASHA_DEMO="asha""-demo"
-if rg -n "git\\s*=\\s*\".*rusty-engine|${FORBIDDEN_ASHA_ENGINE}|${FORBIDDEN_ASHA_DEMO}" Cargo.toml rust; then
+if rg -n "git\\s*=\\s*\".*rusty-engine|${FORBIDDEN_ASHA_ENGINE}|${FORBIDDEN_ASHA_DEMO}" Cargo.toml gameplay/Cargo.toml rust/crates/loading-bay-game/Cargo.toml rust gameplay/src; then
   echo "forbidden remote/Asha dependency surfaced in active Rust source" >&2
   exit 1
 fi
 grep -F 'rusty-engine = { path = "../rusty-engine/rust/crates/rusty-engine" }' Cargo.toml >/dev/null
 
 cargo metadata --format-version 1 --locked --no-deps > /dev/null
-cargo test --locked -p loading-bay-game
-cargo clippy --locked -p loading-bay-game --all-targets -- -D warnings
+cargo test --locked -p loading-bay-gameplay -p loading-bay-game
+cargo clippy --locked -p loading-bay-gameplay -p loading-bay-game --all-targets -- -D warnings

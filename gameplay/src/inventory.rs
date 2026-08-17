@@ -518,7 +518,7 @@ impl InventoryService {
         })
     }
 
-    pub(crate) fn select_weapon_slot(
+    pub fn select_weapon_slot(
         session: &mut crate::session::GameSession,
         owner: EntityId,
         slot: usize,

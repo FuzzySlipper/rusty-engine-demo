@@ -196,7 +196,7 @@ pub struct WalkTriggerPhaseReceipt {
 
 #[derive(Debug)]
 pub struct GameRuntime {
-    pub(crate) session: GameSession,
+    pub session: GameSession,
     pub(crate) tick: Tick,
     pub(crate) scheduler: Scheduler,
     pub(crate) events: VecDeque<GameEvent>,
@@ -280,8 +280,7 @@ impl GameRuntime {
         &self.session
     }
 
-    #[cfg(test)]
-    pub(crate) fn session_mut(&mut self) -> &mut GameSession {
+    pub fn session_mut(&mut self) -> &mut GameSession {
         &mut self.session
     }
 
@@ -335,7 +334,7 @@ impl GameRuntime {
         .map_err(RuntimeError::Pickup)
     }
 
-    pub(crate) fn run_pickup_phase(
+    pub fn run_pickup_phase(
         &mut self,
         actor: EntityId,
     ) -> Result<PickupPhaseReceipt, RuntimeError> {
@@ -348,7 +347,7 @@ impl GameRuntime {
         .map_err(RuntimeError::Pickup)
     }
 
-    pub(crate) fn run_hazard_phase(
+    pub fn run_hazard_phase(
         &mut self,
         player: EntityId,
     ) -> Result<HazardPhaseReceipt, RuntimeError> {
@@ -379,11 +378,11 @@ impl GameRuntime {
             .map_err(RuntimeError::Motion)
     }
 
-    pub(crate) fn run_door_motion_phase(&mut self) -> Result<(), RuntimeError> {
+    pub fn run_door_motion_phase(&mut self) -> Result<(), RuntimeError> {
         DoorService::run_motion_phase(&mut self.session)
     }
 
-    pub(crate) fn run_walk_trigger_motion_phase(&mut self) -> Result<(), RuntimeError> {
+    pub fn run_walk_trigger_motion_phase(&mut self) -> Result<(), RuntimeError> {
         FloorActionService::run_motion_phase(&mut self.session)?;
         LiftService::run_motion_phase(&mut self.session)
     }
@@ -433,7 +432,7 @@ impl GameRuntime {
     /// its transient pursuit goals into the canonical bounded Engine navigation
     /// and collision-aware motion seams. The candidate session commits only
     /// after both phases succeed.
-    pub(crate) fn run_encounter_activation_phase(
+    pub fn run_encounter_activation_phase(
         &mut self,
         player: EntityId,
     ) -> Result<Vec<GameEvent>, RuntimeError> {
@@ -547,7 +546,7 @@ impl GameRuntime {
         apply_player_action(&mut self.session, scene, service, player, action)
     }
 
-    pub(crate) fn integrate_player_frame(
+    pub fn integrate_player_frame(
         &mut self,
         player: EntityId,
         frame: ResolvedPlayerFrame,
@@ -642,7 +641,7 @@ impl GameRuntime {
             .map_err(RuntimeError::LevelExit)
     }
 
-    pub(crate) fn run_secret_phase(
+    pub fn run_secret_phase(
         &mut self,
         actor: EntityId,
     ) -> Result<SecretPhaseReceipt, RuntimeError> {
@@ -753,13 +752,11 @@ impl GameRuntime {
         Ok(self.receipt(processed))
     }
 
-    pub(crate) fn begin_fixed_tick(&mut self) {
+    pub fn begin_fixed_tick(&mut self) {
         self.tick = self.tick.next();
     }
 
-    pub(crate) fn run_scheduled_consequence_phase(
-        &mut self,
-    ) -> Result<Vec<GameEvent>, RuntimeError> {
+    pub fn run_scheduled_consequence_phase(&mut self) -> Result<Vec<GameEvent>, RuntimeError> {
         for intent in self.scheduler.drain_due(self.tick) {
             self.handle_scheduled_intent(intent)?;
         }

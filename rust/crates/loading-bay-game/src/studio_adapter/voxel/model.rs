@@ -12,8 +12,8 @@ use rusty_engine::voxel_asset::{
     VoxelSparseRun,
 };
 
-use crate::stored_project::expand_voxel_asset;
 use crate::{StoredAsset, StoredProject, StoredScene, StoredVoxelInstance};
+use loading_bay_gameplay::stored_project::expand_voxel_asset;
 
 use super::super::protocol::{AdapterRejection, VoxelHistoryReadout};
 

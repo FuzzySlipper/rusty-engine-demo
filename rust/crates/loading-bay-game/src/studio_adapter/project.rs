@@ -41,7 +41,6 @@ use rusty_engine::voxel_asset::{VoxelFrame, VoxelObjectAsset};
 use rusty_engine::voxel_convert::VoxelObjectFrameSelection;
 use rusty_engine::voxel_object_runtime::{admit_voxel_object, VoxelObjectRuntimeLimits};
 
-use crate::stored_project::validate_voxel_object_aggregate_budget;
 use crate::weapon_authoring::loading_bay_weapon_owner_entity_ids;
 use crate::{
     admit_stored_project_with_document, encode_project_document, project_stored_voxel_objects_with,
@@ -51,6 +50,7 @@ use crate::{
     LOADING_BAY_WEAPON_AUTHORING_CONTRACT_ID, LOADING_BAY_WEAPON_AUTHORING_CONTRACT_VERSION,
     LOADING_BAY_WEAPON_COMPONENT_TYPE_ID, STORED_PROJECT_SCHEMA_VERSION,
 };
+use loading_bay_gameplay::stored_project::validate_voxel_object_aggregate_budget;
 
 use super::path::ProjectLocation;
 use super::protocol::{

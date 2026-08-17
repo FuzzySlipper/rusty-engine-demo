@@ -18,8 +18,8 @@ use rusty_engine::voxel_object_runtime::{
     VoxelObjectAdmissionOptions, VoxelObjectRuntimeLimits,
 };
 
-use crate::stored_project::validate_voxel_object_aggregate_budget;
 use crate::{StoredProject, StoredVoxelObjectFrameSelection, StoredVoxelObjectMaterialOverride};
+use loading_bay_gameplay::stored_project::validate_voxel_object_aggregate_budget;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoredVoxelObjectProjectionError(String);

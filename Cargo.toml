@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["rust/crates/loading-bay-game", "src-tauri"]
+members = ["gameplay", "rust/crates/loading-bay-game", "src-tauri"]
 
 [workspace.package]
 version = "0.1.0"

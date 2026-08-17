@@ -1785,7 +1785,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
     Ok(())
 }
 
-pub(crate) fn validate_voxel_object_aggregate_budget(
+pub fn validate_voxel_object_aggregate_budget(
     document: &StoredProject,
     replacement: Option<&VoxelObjectAsset>,
 ) -> Result<(), StoredProjectError> {
@@ -3132,9 +3132,7 @@ fn validate_stored_voxel_object(
     Ok(())
 }
 
-pub(crate) fn expand_voxel_asset(
-    asset: &VoxelAsset,
-) -> Result<Vec<MaterialVoxel>, StoredProjectError> {
+pub fn expand_voxel_asset(asset: &VoxelAsset) -> Result<Vec<MaterialVoxel>, StoredProjectError> {
     let mut voxels = Vec::new();
     for run in &asset.representation.sparse_runs {
         for offset in 0..run.length {

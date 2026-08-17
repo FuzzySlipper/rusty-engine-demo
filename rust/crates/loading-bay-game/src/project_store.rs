@@ -11,11 +11,11 @@ use std::path::{Path, PathBuf};
 
 use rusty_engine::content_store::ContentHash;
 
-use crate::project_admission::AdmittedStoredProject;
-use crate::project_codec::{
+use loading_bay_gameplay::project_admission::AdmittedStoredProject;
+use loading_bay_gameplay::project_codec::{
     decode_project_document, encode_project_document, DecodedProjectDocument,
 };
-use crate::stored_project::{StoredProjectError, STORED_PROJECT_SCHEMA_VERSION};
+use loading_bay_gameplay::stored_project::{StoredProjectError, STORED_PROJECT_SCHEMA_VERSION};
 
 pub const DEFAULT_MAX_PROJECT_FILE_BYTES: usize = 8 * 1024 * 1024;
 
