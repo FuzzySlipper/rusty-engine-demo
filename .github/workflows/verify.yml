@@ -8,15 +8,23 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Check out Rusty Engine Demo
         uses: actions/checkout@v4
 
       - name: Provision adjacent Rusty Engine checkout
-        run: git clone --depth 1 https://github.com/FuzzySlipper/rusty-engine.git ../rusty-engine
+        id: engine
+        run: |
+          git clone --depth 1 https://github.com/FuzzySlipper/rusty-engine.git ../rusty-engine
+          echo "rev=$(git -C ../rusty-engine rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -33,23 +41,28 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install Tauri compile dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            libxkbcommon-x11-0 \
-            imagemagick \
-            ripgrep \
-            xvfb \
-            xdotool \
-            librsvg2-dev
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          # The Engine sibling is consumed via a path dependency outside this
+          # checkout, so its revision must participate in the cache key.
+          key: engine-${{ steps.engine.outputs.rev }}
+
+      - name: Install script dependencies
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y ripgrep
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify complete downstream product
-        env:
-          CHROMIUM_BIN: /usr/bin/google-chrome
-        run: pnpm run verify
+      - name: Verify downstream product (node and Rust checks)
+        run: |
+          pnpm run audit:boundary
+          pnpm run typecheck
+          pnpm run check:content
+          pnpm run test:ts
+          pnpm run test:platform
+          pnpm run test:shell
+          pnpm run test:engine-route
+          pnpm run test:performance-tools
+          pnpm run build:shell
+          ./scripts/verify-rust.sh
