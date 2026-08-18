@@ -38,6 +38,17 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Build Engine gameplay-rules authoring packages
+        # The rules packages are consumed via file: dependencies whose
+        # package.json entry points live in gitignored dist output; a fresh
+        # clone has only src, and pnpm does not run `prepare` for file:
+        # dependencies. Build them from the cloned Engine workspace before
+        # the demo install links them. (The application-host artifact, by
+        # contrast, is committed prebuilt and needs no step.)
+        run: |
+          pnpm --dir ../rusty-engine/rules install --frozen-lockfile
+          pnpm --dir ../rusty-engine/rules run build
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
