@@ -4,7 +4,9 @@
   "requiredChecks": ["verify"],
   "localVerification": [
     "pnpm run verify",
+    "pnpm run verify:native (for renderer/host changes)",
+    "pnpm run audit:boundary (for boundary-contract changes)",
     "pnpm run verify:tauri (for Tauri-relevant changes)"
   ],
-  "notes": "Automatic managed reviews require the complete downstream verify job. Tauri verification is an explicit manual workflow for desktop-relevant changes."
+  "notes": "Automatic managed reviews require the downstream verify job, which runs the lean gate (typecheck, gameplay-package drift, canonical content, TS unit tests, shell build, Rust fmt/tests/clippy). Boundary audit, native-host proof, and desktop verification are explicit on-demand commands outside the automatic workflow."
 }

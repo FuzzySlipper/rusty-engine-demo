@@ -84,11 +84,12 @@ The complete product gate is:
 pnpm run verify
 ```
 
-It checks package and repository boundaries, TypeScript content and browser-shell tests, the
-adjacent Engine facade and bundled application host, the downstream gameplay crate and Clippy, the
-Engine-owned native adapter proof, and a focused E1M1 mount/content/pixel smoke. Desktop verification
-is a separate CI job; long E1M1 traversal and installed-package certification are explicit release
-operations. See [docs/ci-smoke-inventory.md](docs/ci-smoke-inventory.md).
+It typechecks the workspace, drift-checks the authored gameplay package against the committed
+canonical artifact, regenerates the canonical E1M1 content byte-identically, runs the TypeScript
+unit tests, builds the browser shell, and runs the Rust gate (format check, gameplay-package
+parity, focused suites, Clippy). Boundary auditing, the Engine-owned native adapter proof, the
+E1M1 pixel smoke, and desktop verification are explicit on-demand commands — see
+[docs/ci-smoke-inventory.md](docs/ci-smoke-inventory.md).
 For Rust-only iteration, `./scripts/verify-rust.sh` remains available.
 
 For focused diagnosis:

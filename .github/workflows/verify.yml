@@ -15,7 +15,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - name: Check out Rusty Engine Demo
         uses: actions/checkout@v4
@@ -48,30 +48,24 @@ jobs:
           # checkout, so its revision must participate in the cache key.
           key: engine-${{ steps.engine.outputs.rev }}
 
-      - name: Install script dependencies
-        # ripgrep: verify-rust.sh forbidden-dependency grep. The GTK/webkit
-        # stack is required to BUILD the game crate on Linux: the complete
-        # rusty-engine facade includes renderer-webview-host (wry ->
-        # webkit2gtk -> javascriptcore/glib), and webkit2gtk-4.1's pkg-config
-        # additionally requires gtk+-3.0 and libsoup-3.0. Removing this needs
-        # an upstream Engine feature seam, not a downstream change.
+      - name: Install build dependencies
+        # The GTK/webkit stack is required to BUILD the game crate on Linux:
+        # the complete rusty-engine facade includes renderer-webview-host
+        # (wry -> webkit2gtk -> javascriptcore/glib), and webkit2gtk-4.1's
+        # pkg-config additionally requires gtk+-3.0 and libsoup-3.0. Removing
+        # this needs an upstream Engine feature seam, not a downstream change.
         run: >
           sudo apt-get update &&
           sudo apt-get install --no-install-recommends -y
-          ripgrep libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev libxkbcommon-x11-0
+          libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify downstream product (node and Rust checks)
-        run: |
-          pnpm run audit:boundary
-          pnpm run typecheck
-          pnpm run gameplay:check
-          pnpm run check:content
-          pnpm run test:ts
-          pnpm run test:platform
-          pnpm run test:shell
-          pnpm run test:engine-route
-          pnpm run build:shell
-          ./scripts/verify-rust.sh
+      - name: Verify downstream product
+        # The lean gate (task 7052/7053): typecheck, gameplay-package drift,
+        # canonical content, TS unit tests, browser shell build, and the Rust
+        # gate (fmt, package parity bin, focused suites, clippy). Boundary
+        # audit, native proof, and the wider TS suites are on-demand local
+        # commands — see docs/ci-smoke-inventory.md.
+        run: pnpm run verify
