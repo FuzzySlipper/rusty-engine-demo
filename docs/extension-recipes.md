@@ -407,13 +407,11 @@ pnpm run generate:content # deliberate fixtures only
 pnpm run check:content
 pnpm run test:ts
 ./scripts/verify-rust.sh
-pnpm run test:shell
-pnpm run test:boundaries
-pnpm run lint
-pnpm run typecheck
-pnpm run build:shell
-pnpm run audit:boundary
 pnpm run verify
+# On demand for renderer/host or boundary work:
+#   pnpm run verify:native   (native-host + E1M1 proof)
+#   pnpm run audit:boundary  (downstream boundary contract)
+#   pnpm run test:platform / test:shell / test:engine-route
 ```
 
 In Den, record the exact public head SHA and useful diff base, commands actually run, live browser

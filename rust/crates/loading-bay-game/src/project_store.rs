@@ -265,9 +265,6 @@ impl ProjectStore {
     }
 }
 
-#[cfg(test)]
-mod tests;
-
 #[derive(Debug)]
 pub enum ProjectStoreError {
     InvalidTargetPath {

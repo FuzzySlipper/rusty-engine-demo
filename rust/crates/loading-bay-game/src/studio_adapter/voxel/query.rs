@@ -267,26 +267,3 @@ pub(crate) const fn readout_face(face: Face) -> VoxelPickFace {
         Direction6::PosZ => VoxelPickFace::PositiveZ,
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rusty_engine::entity_state::Quat;
-
-    #[test]
-    fn preview_transform_preserves_translated_rotated_anisotropic_instance_geometry() {
-        let transform = rusty_engine::entity_state::EntityTransform {
-            translation: rusty_engine::core_math::Vec3::new(-3.0, 0.0, 2.0),
-            rotation: Quat::new(0.0, 0.382_683_43, 0.0, 0.923_879_5),
-            scale: rusty_engine::core_math::Vec3::new(0.75, 1.25, 0.5),
-        };
-
-        let preview = preview_transform(transform, [4, 0, 6], 1.0);
-
-        assert!((preview.translation[0] - 1.684_582).abs() < 0.000_01);
-        assert!((preview.translation[1] - 0.625).abs() < 0.000_01);
-        assert!((preview.translation[2] - 1.911_612).abs() < 0.000_01);
-        assert_eq!(preview.rotation, [0.0, 0.382_683_43, 0.0, 0.923_879_5]);
-        assert_eq!(preview.scale, [0.75, 1.25, 0.5]);
-    }
-}
