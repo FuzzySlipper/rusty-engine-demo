@@ -34,32 +34,15 @@ mutation request remain in the separate closed downstream contract described
 above. A client must complete `describe` before accepting a contract-bearing
 project readout.
 
-## Loading Bay Studio composition
+## Studio composition
 
-`apps/loading-bay-studio` is the product-owned Studio application root. It
-constructs one Engine `StudioWorkspaceStore`, one Loading Bay v1 weapon client,
-and one immutable contribution list:
-
-```ts
-[
-  ...RUSTY_ENGINE_ENTITY_INSPECTOR_CONTRIBUTIONS,
-  LOADING_BAY_WEAPON_INSPECTOR_CONTRIBUTION,
-];
-```
-
-The list is compiled into the application. It is not populated by adapter
-bytes, an Angular multi-provider, a package scan, or runtime loading. The
-Loading Bay panel receives only Engine's selected-owner context and mutation
-lease. It reads and replaces the durable weapon through the closed downstream
-client, then gives the receipt hashes back to the lease so the Engine host can
-perform the canonical project reread. It never receives `StudioWorkspaceStore`,
-renderer handles, a generic operation callback, or live gameplay state.
-
-The form is disposable. Project, selection, or contract generation changes
-abort its outstanding read and remount it from Rust. Host busy state disables
-editing without restarting an in-flight panel mutation. Unsupported contract
-versions remain the Engine outlet's identity-only readout and do not mount this
-v1 panel.
+The bespoke downstream Studio application (`apps/loading-bay-studio` and its weapon-inspector
+lib) was retired: Studio is an Engine-hosted product, and this repository's complete Studio
+integration is exactly the trusted root-local bootstrap, this project-owned adapter, and the
+repository's project content and storage policy. Engine's hosted Studio supplies the workspace,
+entity inspector, and renderer outlet; every game-specific read and mutation flows through the
+closed adapter contract above. A downstream does not install, build, or ship its own Studio UI,
+and nothing about the panel lifecycle is game code anymore.
 
 Prepared source imports, voxel and voxel-object conversion plans, and history reverts remain private
 adapter state. Preparing a second candidate replaces the first. A later apply must name the exact

@@ -92,75 +92,8 @@ New Game path, and first retained renderer submission.
 
 ## Local deployment
 
-The supported deployment consumes an exact reviewed Debian artifact; it never rebuilds from the
-checkout being used to install it. Supply the artifact SHA-256 and the full source revision from
-the same immutable CI run:
-
-```bash
-pnpm run deploy:tauri -- install \
-  --artifact /absolute/path/to/Loading\ Bay_0.1.0_amd64.deb \
-  --artifact-sha256 <64-hex-deb-digest> \
-  --evidence /absolute/path/to/tauri-package-evidence.json \
-  --source-revision <40-hex-source-revision>
-pnpm run deploy:tauri -- status
-```
-
-The installer verifies the Debian digest before extraction, the embedded manifest identity, every
-packaged resource, and the sidecar. Tauri's Debian bundler may strip the main executable, so the
-receipt deliberately records three distinct identities: the exact Debian artifact, the executable
-actually installed from it, and the direct-build executable reported by CI. Treating those bytes
-as interchangeable would make a valid package impossible to install and would hide which artifact
-was actually deployed.
-
-The installation is entirely user-scoped:
-
-| Surface       | Default location                                                        |
-| ------------- | ----------------------------------------------------------------------- |
-| Releases      | `$XDG_DATA_HOME/rusty-engine-demo/desktop/releases/<source>-<artifact>` |
-| Active/backup | atomic `current` and `previous` symlinks under the desktop install root |
-| Launcher      | `$XDG_BIN_HOME/loading-bay`                                             |
-| Desktop entry | `$XDG_DATA_HOME/applications/loading-bay.desktop`                       |
-| Save data     | `$XDG_DATA_HOME/dev.fuzzyslipper.rusty-engine-demo.loading-bay/saves`   |
-| Cache/logs    | the matching platform application directories returned by Tauri         |
-
-`rollback` atomically exchanges the active and previous release. `uninstall` removes only the
-managed launcher, desktop entry, icons, and immutable release tree; it preserves application data,
-saves, cache, and logs. Data removal requires the explicit `uninstall --purge-data` command. The
-installer refuses to remove an entry point that lacks its ownership marker.
-It likewise refuses to replace an unmanaged launcher or desktop entry during install.
-
-```bash
-pnpm run deploy:tauri -- rollback
-pnpm run deploy:tauri -- uninstall
-pnpm run deploy:tauri -- uninstall --purge-data # explicit destructive reset
-```
-
-`pnpm run certify:tauri-deploy` certifies the active install. It drives the absolute installed
-binary through Tauri 2 WebDriver from a temporary working directory, captures full and 960×540
-screenshots, checks New Game/application-host rendering, game-frame release/replacement,
-singleton delegation,
-focus loss plus the native show/unminimize/focus activation receipt, WebKit identity and the
-Engine-owned WebGL surface,
-native process-tree RSS and idle activity,
-normal/crash cleanup, a visible fail-closed startup screen, and then verifies that the installed
-sidecar and Web bundle expose only the single public Engine application-host package rather than
-renderer internals. WebKit now carries the Engine-owned WebGL canvas beneath the Angular UI; that
-does not give downstream TypeScript backend or input authority. The browser and Tauri proofs read
-authoritative Rust state and verify Engine pointer/modal arbitration; the focused `native-host`
-gate separately certifies the Rust webview adapter's physical-input and pick path.
-The native callback schedules one main-thread transaction that requests show, unminimize, native
-focus, and WebView focus on the existing window. The bounded cache receipt is written after those
-requests; the evidence records the window manager's resulting visible/minimized/focus state without
-treating an OS focus grant as application authority. The secondary process must terminate within the
-bounded wait and may not start a host;
-its exit code and bounded stdout/stderr are retained because Linux DBus/WebDriver teardown can return
-a nonzero plugin-cleanup status after successful delegation.
-When the smoke owns an Xvfb session, it publishes that exact display for both the driver-owned primary
-and the directly spawned secondary shell; a secondary that cannot initialize the native display is
-therefore not mistaken for successful single-instance delegation.
-Installed certification runs the Tauri/WebDriver product proof once. Browser-only control campaigns
-are not part of package certification; use focused shell tests, `pnpm run smoke:e1m1`, or
-`pnpm run certify:e1m1` for their respective claims. The manual `certify Tauri release` GitHub
-workflow builds and installs the Debian package, certifies it, and uploads its receipts and
-screenshots. Routine `verify-tauri` checks the direct desktop build without producing release
-artifacts.
+The user-scoped managed installer (`pnpm run deploy:tauri` install/status/rollback/uninstall)
+and the installed-product certification command (`certify:tauri-deploy`) were retired together
+with the release certification ceremony. Install the built Debian/AppImage artifacts with your
+platform's normal package tooling when needed; the build outputs, layout, and security model
+documented above are unchanged, and `pnpm run smoke:tauri` remains the desktop product proof.

@@ -4,10 +4,13 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -1966,6 +1969,36 @@ async function main() {
   const expectedProjectionCount = expectedProject.scenes[0].entities.filter(
     (entity) => entity.renderable != null,
   ).length;
+  // The projected texture resources are content-addressed: the honest
+  // expectation is the set of DISTINCT png source bytes under the authored
+  // E1M1 content tree (map textures + sprite-atlas pages). Asset-id
+  // arithmetic undercounts: atlas texture ids are references, and some
+  // on-disk textures reach the renderer through the voxel material table
+  // rather than a declared texture/doom- asset.
+  const pngSourceFiles = [
+    "textures",
+    "sprites",
+  ].flatMap((dir) => {
+    const root = join(actualRoot, "content/doom-e1m1", dir);
+    const walk = (entry) =>
+      readdirSync(entry, { withFileTypes: true }).flatMap((child) => {
+        const path = join(entry, child.name);
+        return child.isDirectory()
+          ? walk(path)
+          : child.name.endsWith(".png")
+            ? [path]
+            : [];
+      });
+    return walk(root);
+  });
+  const expectedPngResourceCount = new Set(
+    pngSourceFiles.map((path) =>
+      createHash("sha256").update(readFileSync(path)).digest("hex"),
+    ),
+  ).size;
+  const expectedPngSizeMultiset = pngSourceFiles
+    .map((path) => statSync(path).size)
+    .sort((a, b) => a - b);
   const mapTextureCount = expectedProject.assets.filter((asset) =>
     asset.id.startsWith("texture/doom-"),
   ).length;
@@ -1974,7 +2007,6 @@ async function main() {
       .filter((asset) => asset.spriteAtlas != null)
       .map((asset) => asset.spriteAtlas.texture),
   ).size;
-  const expectedPngResourceCount = mapTextureCount + spriteTextureCount;
   console.log(`DOOM SMOKE host ${addr} save ${saveRoot}`);
   const { host, getOut } = launchHost(addr, saveRoot, projectPath);
   let chromiumProc = null;
@@ -2038,11 +2070,18 @@ async function main() {
       (state.applicationContent?.frame?.ops?.length ?? 0) > 0,
       "Rust projected a non-empty application frame",
     );
+    const projectedPngs = applicationResources.filter(
+      (resource) => resource.mediaType === "image/png",
+    );
     assert(
-      applicationResources.filter(
-        (resource) => resource.mediaType === "image/png",
-      ).length === expectedPngResourceCount,
-      `Rust projected ${mapTextureCount} E1M1 map textures and ${spriteTextureCount} Doom sprite atlases`,
+      new Set(projectedPngs.map((resource) => resource.contentHash)).size ===
+        expectedPngResourceCount &&
+        JSON.stringify(
+          projectedPngs
+            .map((resource) => resource.byteLength)
+            .sort((a, b) => a - b),
+        ) === JSON.stringify(expectedPngSizeMultiset),
+      `Rust projected the ${expectedPngResourceCount} distinct authored png sources (${mapTextureCount} declared map textures + ${spriteTextureCount} sprite atlases) at their exact source byte sizes, got ${projectedPngs.length}`,
     );
     assert(
       applicationResources.some(
@@ -2254,8 +2293,8 @@ async function main() {
         if (
           content?.state === "complete" &&
           content.frameOps > 0 &&
-          content.resourceCount > 56 &&
-          content.textureCount === 56
+          content.resourceCount > expectedPngResourceCount &&
+          content.textureCount === expectedPngResourceCount
         ) {
           break;
         }
@@ -2264,8 +2303,8 @@ async function main() {
       if (
         content?.state !== "complete" ||
         content.frameOps <= 0 ||
-        content.resourceCount <= 56 ||
-        content.textureCount !== 56
+        content.resourceCount <= expectedPngResourceCount ||
+        content.textureCount !== expectedPngResourceCount
       ) {
         throw new Error(
           `Engine did not admit the complete Rust content closure: ${JSON.stringify(content)}`,
