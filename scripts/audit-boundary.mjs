@@ -236,16 +236,25 @@ for (const [label, packageJson] of [
 ]) {
   for (const section of ["dependencies", "devDependencies"]) {
     for (const dependencyName of Object.keys(packageJson[section] ?? {})) {
-      const allowedApplicationHost =
+      // The Engine's public downstream surfaces only: the bundled web
+      // application host, and the gameplay-rules authoring packages the
+      // downstream-adoption guide's TS authoring step is built on (the
+      // rusty-dagger worked example depends on exactly these). Renderer and
+      // Studio internals stay banned in downstream TS.
+      const allowedEnginePackages =
         label === "package.json" &&
         section === "dependencies" &&
-        dependencyName === "@rusty-engine/application-host";
+        [
+          "@rusty-engine/application-host",
+          "@rusty-engine/gameplay-rules-authoring",
+          "@rusty-engine/gameplay-rules-contracts",
+        ].includes(dependencyName);
       if (
         dependencyName.startsWith("@rusty-engine/") &&
-        !allowedApplicationHost
+        !allowedEnginePackages
       ) {
         violations.push(
-          `${label}: downstream ${section} must contain only the public Engine application host, not ${dependencyName}`,
+          `${label}: downstream ${section} must contain only the public Engine application host and gameplay-rules authoring packages, not ${dependencyName}`,
         );
       }
     }

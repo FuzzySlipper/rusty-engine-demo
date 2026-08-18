@@ -10,8 +10,10 @@
 
 #![forbid(unsafe_code)]
 
+pub mod authored;
 pub mod combat;
 pub mod combat_resolution;
+pub mod compile;
 pub mod content;
 pub mod definition;
 mod doom_e1m1_materials;

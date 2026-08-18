@@ -167,7 +167,7 @@ fn admit_scene(
     })
 }
 
-fn authored_item_definition(
+pub fn authored_item_definition(
     authored: &StoredItemDefinition,
     index: usize,
 ) -> Result<ItemDefinition, StoredProjectError> {

@@ -528,135 +528,37 @@ export function buildDoomE1M1Project(
     voxelVolume: voxel,
   });
 
-  // E1M1's single-player item vocabulary. Rust owns the reusable pickup,
-  // vitality, and firing state machines; these values are authored calibration.
-  const itemDefinitions = [
-    { id: "ammo/bullets", maxQuantity: 200, kind: { kind: "ammunition" } },
-    { id: "ammo/shells", maxQuantity: 50, kind: { kind: "ammunition" } },
-    {
-      id: "armor/bonus",
-      maxQuantity: 1,
-      kind: {
-        kind: "armor",
-        protection: 1,
-        maximumArmor: 200,
-        absorptionDivisor: 3,
-        grantMode: "add",
-        transition: "preserve",
-        consumeAtCap: true,
-      },
-    },
-    {
-      id: "armor/green",
-      maxQuantity: 1,
-      kind: {
-        kind: "armor",
-        protection: 100,
-        maximumArmor: 200,
-        absorptionDivisor: 3,
-        grantMode: "setMinimum",
-        transition: "replace",
-      },
-    },
-    {
-      id: "armor/blue",
-      maxQuantity: 1,
-      kind: {
-        kind: "armor",
-        protection: 200,
-        maximumArmor: 200,
-        absorptionDivisor: 2,
-        grantMode: "setMinimum",
-        transition: "replace",
-      },
-    },
-    {
-      id: "supply/stimpack",
-      maxQuantity: 1,
-      kind: {
-        kind: "healthSupply",
-        restoreHealth: 10,
-        maximumHealth: 100,
-        automaticUse: true,
-      },
-    },
-    {
-      id: "supply/medikit",
-      maxQuantity: 1,
-      kind: {
-        kind: "healthSupply",
-        restoreHealth: 25,
-        maximumHealth: 100,
-        automaticUse: true,
-      },
-    },
-    {
-      id: "supply/health-bonus",
-      maxQuantity: 1,
-      kind: {
-        kind: "healthSupply",
-        restoreHealth: 1,
-        maximumHealth: 200,
-        automaticUse: true,
-        consumeAtCap: true,
-      },
-    },
-    {
-      id: "weapon/fist",
-      maxQuantity: 1,
-      kind: {
-        kind: "weapon",
-        // The closed weapon schema retains an ammunition identity for every
-        // attack, while zero cost makes this portable melee action resource-free.
-        ammunition: "ammo/bullets",
-        attackMode: "hitscan",
-        repeatWhileHeld: true,
-        damage: 2,
-        damageRolls: 10,
-        maxDistance: 4,
-        cooldownTicks: 38,
-        ammunitionCost: 0,
-        muzzleOffset: [0, 0, 0],
-        presentation: "fist",
-      },
-    },
-    {
-      id: "weapon/pistol",
-      maxQuantity: 1,
-      kind: {
-        kind: "weapon",
-        ammunition: "ammo/bullets",
-        attackMode: "hitscan",
-        repeatWhileHeld: true,
-        damage: 5,
-        damageRolls: 3,
-        maxDistance: 128,
-        cooldownTicks: 24,
-        ammunitionCost: 1,
-        muzzleOffset: [0, 0, 0],
-        presentation: "pistol",
-      },
-    },
-    {
-      id: "weapon/shotgun",
-      maxQuantity: 1,
-      kind: {
-        kind: "weapon",
-        ammunition: "ammo/shells",
-        attackMode: "spread",
-        repeatWhileHeld: true,
-        pelletCount: 7,
-        spreadDegrees: 5.625,
-        damage: 5,
-        damageRolls: 3,
-        maxDistance: 128,
-        cooldownTicks: 63,
-        ammunitionCost: 1,
-        muzzleOffset: [0, 0, 0],
-        presentation: "shotgun",
-      },
-    },
-  ];
+  // E1M1's single-player item vocabulary is authored ONCE in
+  // gameplay/authoring/src/catalogs/items.ts, materialized into the committed
+  // gameplay-rules package artifact (data/gameplay/), and admitted here from
+  // that artifact. Rust owns the reusable pickup, vitality, and firing state
+  // machines; these values are authored calibration. The project document
+  // carries the admitted definitions for entity placement; the package is the
+  // authored source of truth, and gameplay-package-check proves parity.
+  const gameplayPackagePath = fileURLToPath(
+    new URL(
+      "../../../../data/gameplay/loading-bay-e1m1-core.package.json",
+      import.meta.url,
+    ),
+  );
+  const gameplayPackage: {
+    kind?: unknown;
+    domain?: unknown;
+    package?: unknown;
+    payload?: { schemaVersion?: unknown; items?: unknown };
+  } = JSON.parse(readFileSync(gameplayPackagePath, "utf8"));
+  if (
+    gameplayPackage.kind !== "rusty.gameplay-rules.package" ||
+    gameplayPackage.domain !== "loading-bay" ||
+    gameplayPackage.package !== "e1m1-core" ||
+    gameplayPackage.payload?.schemaVersion !== 1 ||
+    !Array.isArray(gameplayPackage.payload?.items)
+  ) {
+    throw new Error(
+      `unexpected gameplay package at ${gameplayPackagePath}: run \`pnpm gameplay:build\` to materialize the authored catalog`,
+    );
+  }
+  const itemDefinitions = gameplayPackage.payload.items;
 
   // Entities
   const entities: any[] = [];

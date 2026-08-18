@@ -6,6 +6,7 @@ cd "$DEMO_ROOT"
 
 pnpm run audit:boundary
 pnpm run typecheck
+pnpm run gameplay:check
 pnpm run check:content
 pnpm run test:ts
 pnpm run test:platform

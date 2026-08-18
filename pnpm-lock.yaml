@@ -26,6 +26,12 @@ importers:
       '@rusty-engine/application-host':
         specifier: file:../rusty-engine/render/artifacts/application-host
         version: file:../rusty-engine/render/artifacts/application-host
+      '@rusty-engine/gameplay-rules-authoring':
+        specifier: file:../rusty-engine/rules/packages/gameplay-rules-authoring
+        version: file:../rusty-engine/rules/packages/gameplay-rules-authoring(@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts)
+      '@rusty-engine/gameplay-rules-contracts':
+        specifier: file:../rusty-engine/rules/packages/gameplay-rules-contracts
+        version: file:../rusty-engine/rules/packages/gameplay-rules-contracts
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -2252,6 +2258,14 @@ packages:
 
   '@rusty-engine/application-host@file:../rusty-engine/render/artifacts/application-host':
     resolution: {directory: ../rusty-engine/render/artifacts/application-host, type: directory}
+
+  '@rusty-engine/gameplay-rules-authoring@file:../rusty-engine/rules/packages/gameplay-rules-authoring':
+    resolution: {directory: ../rusty-engine/rules/packages/gameplay-rules-authoring, type: directory}
+    peerDependencies:
+      '@rusty-engine/gameplay-rules-contracts': 0.1.0
+
+  '@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts':
+    resolution: {directory: ../rusty-engine/rules/packages/gameplay-rules-contracts, type: directory}
 
   '@schematics/angular@21.2.19':
     resolution: {integrity: sha512-eL+UU9eizoadhDB4YEctRmmo0A5iwrSmGzeuEa6akrq8nLGVWM8zO91HTJutkPqGQjelF+UOiOShsQSZAU9SIQ==}
@@ -8058,6 +8072,12 @@ snapshots:
   '@rspack/lite-tapable@1.1.2': {}
 
   '@rusty-engine/application-host@file:../rusty-engine/render/artifacts/application-host': {}
+
+  '@rusty-engine/gameplay-rules-authoring@file:../rusty-engine/rules/packages/gameplay-rules-authoring(@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts)':
+    dependencies:
+      '@rusty-engine/gameplay-rules-contracts': file:../rusty-engine/rules/packages/gameplay-rules-contracts
+
+  '@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts': {}
 
   '@schematics/angular@21.2.19(chokidar@5.0.0)':
     dependencies:

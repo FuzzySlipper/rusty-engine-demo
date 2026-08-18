@@ -15,5 +15,6 @@ fi
 grep -F 'rusty-engine = { path = "../rusty-engine/rust/crates/rusty-engine" }' Cargo.toml >/dev/null
 
 cargo metadata --format-version 1 --locked --no-deps > /dev/null
+cargo run --locked -p loading-bay-gameplay --bin gameplay-package-check
 cargo test --locked -p loading-bay-gameplay -p loading-bay-game
 cargo clippy --locked -p loading-bay-gameplay -p loading-bay-game --all-targets -- -D warnings

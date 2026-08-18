@@ -29,7 +29,10 @@
     "verify:native": "./scripts/verify-native-host.sh",
     "test:ts": "pnpm --filter @rusty-engine-demo/project-content test",
     "typecheck": "tsc --build ts/tsconfig.json && pnpm --filter @rusty-engine-demo/browser-shell typecheck && nx run-many -t typecheck --all",
-    "verify": "bash scripts/verify.sh"
+    "verify": "bash scripts/verify.sh",
+    "gameplay:typecheck": "tsc -p gameplay/authoring/tsconfig.json --noEmit",
+    "gameplay:build": "tsc -p gameplay/authoring/tsconfig.json && node gameplay/authoring/scripts/materialize.mjs",
+    "gameplay:check": "pnpm gameplay:build && git diff --exit-code -- data/gameplay/"
   },
   "dependencies": {
     "@angular/common": "~21.2.0",
@@ -38,6 +41,8 @@
     "@angular/platform-browser": "~21.2.0",
     "@angular/router": "~21.2.0",
     "@rusty-engine/application-host": "file:../rusty-engine/render/artifacts/application-host",
+    "@rusty-engine/gameplay-rules-authoring": "file:../rusty-engine/rules/packages/gameplay-rules-authoring",
+    "@rusty-engine/gameplay-rules-contracts": "file:../rusty-engine/rules/packages/gameplay-rules-contracts",
     "rxjs": "~7.8.0",
     "tslib": "^2.8.1"
   },
