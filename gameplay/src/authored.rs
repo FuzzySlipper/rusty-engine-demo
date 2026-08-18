@@ -16,7 +16,6 @@ pub const LOADING_BAY_GAMEPLAY_DOMAIN: &str = "loading-bay";
 /// Downstream quotas enforced before compilation (guide: explicit bounds on
 /// every downstream collection).
 pub const MAX_AUTHORED_ITEMS: usize = 64;
-pub const MAX_AUTHORED_ITEM_ID_BYTES: usize = 64;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]

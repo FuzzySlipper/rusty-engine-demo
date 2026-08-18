@@ -4,17 +4,15 @@
 //! canonical item definitions through the SAME conversion project admission
 //! uses. Only this canonical result may enter live gameplay.
 
-use std::collections::BTreeSet;
-
 use rusty_engine::gameplay_rules::decode_rule_package;
 
 use crate::authored::{
     AuthoredGameplayPayload, LOADING_BAY_GAMEPLAY_DOMAIN, LOADING_BAY_GAMEPLAY_SCHEMA_VERSION,
-    MAX_AUTHORED_ITEMS, MAX_AUTHORED_ITEM_ID_BYTES,
+    MAX_AUTHORED_ITEMS,
 };
 use crate::inventory::ItemDefinition;
 use crate::project_admission::authored_item_definition;
-use crate::stored_project::StoredItemKind;
+use crate::stored_project::validate_item_definitions;
 
 /// The compiled, canonical result of one gameplay package.
 #[derive(Debug, Clone)]
@@ -40,16 +38,14 @@ pub enum GameplayCompileError {
         count: usize,
         limit: usize,
     },
+    /// A candidate violated the shared item admission invariants
+    /// (`stored_project::validate_item_definitions`).
+    ItemInvariants(String),
+    /// Conversion from a validated candidate failed. Unreachable while the
+    /// validator and conversion agree; kept so conversion can never panic.
     InvalidItem {
         index: usize,
         reason: String,
-    },
-    DuplicateItem {
-        id: String,
-    },
-    UnknownReference {
-        item: String,
-        ammunition: String,
     },
 }
 
@@ -69,15 +65,11 @@ impl std::fmt::Display for GameplayCompileError {
                 count,
                 limit,
             } => write!(formatter, "{section} quota exceeded: {count} > {limit}"),
+            Self::ItemInvariants(message) => {
+                write!(formatter, "item invariants rejected: {message}")
+            }
             Self::InvalidItem { index, reason } => {
                 write!(formatter, "item[{index}] rejected: {reason}")
-            }
-            Self::DuplicateItem { id } => write!(formatter, "duplicate item id {id}"),
-            Self::UnknownReference { item, ammunition } => {
-                write!(
-                    formatter,
-                    "item {item} references unknown ammunition {ammunition}"
-                )
             }
         }
     }
@@ -121,35 +113,14 @@ pub fn compile_gameplay_package(
         });
     }
 
-    // Identity validity, uniqueness, and reference resolution — facts the
-    // envelope cannot know.
-    let mut seen = BTreeSet::new();
-    for (index, item) in authored.items.iter().enumerate() {
-        if item.id.is_empty() || item.id.len() > MAX_AUTHORED_ITEM_ID_BYTES {
-            return Err(GameplayCompileError::InvalidItem {
-                index,
-                reason: format!(
-                    "id length {} outside 1..={MAX_AUTHORED_ITEM_ID_BYTES}",
-                    item.id.len()
-                ),
-            });
-        }
-        if !seen.insert(item.id.clone()) {
-            return Err(GameplayCompileError::DuplicateItem {
-                id: item.id.clone(),
-            });
-        }
-        if let StoredItemKind::Weapon { ammunition, .. } = &item.kind {
-            if !authored.items.iter().any(|candidate| {
-                candidate.id == *ammunition && matches!(candidate.kind, StoredItemKind::Ammunition)
-            }) {
-                return Err(GameplayCompileError::UnknownReference {
-                    item: item.id.clone(),
-                    ammunition: ammunition.clone(),
-                });
-            }
-        }
-    }
+    // The SAME admission invariants project admission enforces: id grammar,
+    // quantity/effect limits, uniqueness, weapon shape completeness, and
+    // weapon -> ammunition reference resolution. Running this before
+    // conversion backs the `expect` calls in `authored_item_definition`
+    // on the package path exactly as the project path does.
+    validate_item_definitions(&authored.items).map_err(|error| {
+        GameplayCompileError::ItemInvariants(error.diagnostic().message.clone())
+    })?;
 
     // Single semantic owner: the same conversion project admission applies.
     let items = authored
@@ -170,4 +141,179 @@ pub fn compile_gameplay_package(
         fingerprint: package.fingerprint().to_string(),
         items,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ammunition(id: &str, max_quantity: u32) -> serde_json::Value {
+        serde_json::json!({
+            "id": id,
+            "maxQuantity": max_quantity,
+            "kind": { "kind": "ammunition" },
+        })
+    }
+
+    fn hitscan_weapon(id: &str, ammunition: &str) -> serde_json::Value {
+        serde_json::json!({
+            "id": id,
+            "maxQuantity": 1,
+            "kind": {
+                "kind": "weapon",
+                "ammunition": ammunition,
+                "attackMode": "hitscan",
+                "damage": 5,
+                "maxDistance": 128.0,
+                "cooldownTicks": 24,
+                "ammunitionCost": 1,
+                "muzzleOffset": [0.0, 0.0, 0.0],
+                "presentation": "test",
+            },
+        })
+    }
+
+    /// Wraps candidate items in the same schema-2 binary64 envelope shape the
+    /// TS authoring workspace materializes.
+    fn package_bytes(items: &[serde_json::Value]) -> Vec<u8> {
+        serde_json::to_vec(&serde_json::json!({
+            "kind": "rusty.gameplay-rules.package",
+            "schemaVersion": 2,
+            "domain": "loading-bay",
+            "package": "e1m1-core",
+            "version": 1,
+            "dependencies": [],
+            "sources": [
+                { "id": "items", "path": "gameplay/authoring/src/catalogs/items.ts" },
+            ],
+            "provenance": [],
+            "payload": { "schemaVersion": 1, "items": items },
+        }))
+        .expect("test package serializes")
+    }
+
+    fn compile(
+        items: &[serde_json::Value],
+    ) -> Result<CompiledGameplayPackage, GameplayCompileError> {
+        compile_gameplay_package(&package_bytes(items), "e1m1-core")
+    }
+
+    #[test]
+    fn valid_candidates_compile() {
+        let compiled = compile(&[
+            ammunition("ammo/test-bullets", 200),
+            hitscan_weapon("weapon/test-pistol", "ammo/test-bullets"),
+        ])
+        .expect("valid package compiles");
+        assert_eq!(compiled.items.len(), 2);
+    }
+
+    #[test]
+    fn committed_artifact_compiles() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../data/gameplay/loading-bay-e1m1-core.package.json");
+        let bytes = std::fs::read(&path).expect("committed package artifact exists");
+        let compiled =
+            compile_gameplay_package(&bytes, "e1m1-core").expect("committed artifact compiles");
+        assert_eq!(compiled.items.len(), 11);
+    }
+
+    #[test]
+    fn weapon_without_attack_mode_is_rejected_not_panicked() {
+        // Regression: this shape used to reach `authored_item_definition`
+        // unvalidated and panic on its `expect("validated …")` call.
+        let weapon = serde_json::json!({
+            "id": "weapon/test-pistol",
+            "maxQuantity": 1,
+            "kind": {
+                "kind": "weapon",
+                "ammunition": "ammo/test-bullets",
+                "damage": 5,
+                "maxDistance": 128.0,
+                "cooldownTicks": 24,
+                "ammunitionCost": 1,
+                "muzzleOffset": [0.0, 0.0, 0.0],
+                "presentation": "test",
+            },
+        });
+        let error = compile(&[ammunition("ammo/test-bullets", 200), weapon])
+            .expect_err("attack-mode-less weapon must be rejected");
+        assert!(
+            matches!(error, GameplayCompileError::ItemInvariants(_)),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn spread_weapon_without_pellets_is_rejected() {
+        let weapon = serde_json::json!({
+            "id": "weapon/test-shotgun",
+            "maxQuantity": 1,
+            "kind": {
+                "kind": "weapon",
+                "ammunition": "ammo/test-shells",
+                "attackMode": "spread",
+                "spreadDegrees": 5.625,
+                "damage": 5,
+                "maxDistance": 128.0,
+                "cooldownTicks": 63,
+                "ammunitionCost": 1,
+                "muzzleOffset": [0.0, 0.0, 0.0],
+                "presentation": "test",
+            },
+        });
+        let error = compile(&[ammunition("ammo/test-shells", 50), weapon])
+            .expect_err("spread weapon without pelletCount must be rejected");
+        assert!(matches!(error, GameplayCompileError::ItemInvariants(_)));
+    }
+
+    #[test]
+    fn zero_max_quantity_is_rejected() {
+        let error = compile(&[ammunition("ammo/test-bullets", 0)])
+            .expect_err("zero maxQuantity must be rejected");
+        assert!(matches!(error, GameplayCompileError::ItemInvariants(_)));
+    }
+
+    #[test]
+    fn weapon_with_stackable_quantity_is_rejected() {
+        let mut weapon = hitscan_weapon("weapon/test-pistol", "ammo/test-bullets");
+        weapon["maxQuantity"] = serde_json::json!(2);
+        let error = compile(&[ammunition("ammo/test-bullets", 200), weapon])
+            .expect_err("weapon maxQuantity != 1 must be rejected");
+        assert!(matches!(error, GameplayCompileError::ItemInvariants(_)));
+    }
+
+    #[test]
+    fn zero_effect_armor_is_rejected() {
+        let armor = serde_json::json!({
+            "id": "armor/test",
+            "maxQuantity": 1,
+            "kind": {
+                "kind": "armor",
+                "protection": 0,
+                "maximumArmor": 100,
+                "absorptionDivisor": 3,
+                "transition": "replace",
+            },
+        });
+        let error = compile(&[armor]).expect_err("armor with zero protection must be rejected");
+        assert!(matches!(error, GameplayCompileError::ItemInvariants(_)));
+    }
+
+    #[test]
+    fn duplicate_ids_are_rejected() {
+        let error = compile(&[
+            ammunition("ammo/test-bullets", 200),
+            ammunition("ammo/test-bullets", 50),
+        ])
+        .expect_err("duplicate ids must be rejected");
+        assert!(matches!(error, GameplayCompileError::ItemInvariants(_)));
+    }
+
+    #[test]
+    fn unknown_ammunition_reference_is_rejected() {
+        let error = compile(&[hitscan_weapon("weapon/test-pistol", "ammo/missing")])
+            .expect_err("weapon referencing unknown ammunition must be rejected");
+        assert!(matches!(error, GameplayCompileError::ItemInvariants(_)));
+    }
 }

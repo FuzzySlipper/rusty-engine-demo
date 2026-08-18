@@ -1173,35 +1173,20 @@ pub fn decode_stored_project(input: &str) -> Result<StoredProject, StoredProject
     Ok(document)
 }
 
-pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), StoredProjectError> {
-    if document.schema_version != STORED_PROJECT_SCHEMA_VERSION {
-        return Err(failure(
-            diagnostic_code::UNSUPPORTED_SCHEMA,
-            "schemaVersion",
-            format!(
-                "expected schema {}, found {}",
-                STORED_PROJECT_SCHEMA_VERSION, document.schema_version
-            ),
-        ));
-    }
-    if !is_kebab_segment(&document.project_id) {
-        return Err(failure(
-            diagnostic_code::INVALID_PROJECT_ID,
-            "projectId",
-            "project identity must be one kebab-case segment",
-        ));
-    }
-    if document.name.trim().is_empty() {
-        return Err(failure(
-            diagnostic_code::INVALID_VALUE,
-            "name",
-            "project name must not be empty",
-        ));
-    }
-    validate_voxel_object_aggregate_budget(document, None)?;
-
+/// Validates item definitions against the shared admission invariants:
+/// id grammar, quantity and per-kind effect limits, uniqueness, weapon
+/// shape completeness (attack-mode-consistent optional fields, damage,
+/// range, cadence, cost, muzzle offset, presentation, projectile fields),
+/// and weapon -> ammunition reference resolution. Both project admission
+/// and the gameplay-package semantic compiler must run this BEFORE
+/// converting candidates, so the `expect` calls in
+/// `project_admission::authored_item_definition` are backed by validation
+/// on every path.
+pub(crate) fn validate_item_definitions(
+    items: &[StoredItemDefinition],
+) -> Result<(), StoredProjectError> {
     let mut item_definitions = BTreeMap::new();
-    for (index, definition) in document.item_definitions.iter().enumerate() {
+    for (index, definition) in items.iter().enumerate() {
         let path = format!("itemDefinitions[{index}]");
         let id = ItemDefinitionId::parse(definition.id.clone()).map_err(|error| {
             failure(
@@ -1264,7 +1249,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             ));
         }
     }
-    for (index, definition) in document.item_definitions.iter().enumerate() {
+    for (index, definition) in items.iter().enumerate() {
         let StoredItemKind::Weapon {
             ammunition,
             repeat_while_held: _,
@@ -1372,10 +1357,7 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
                 format!("weapon references missing ammunition `{ammunition}`"),
             ));
         };
-        if !matches!(
-            document.item_definitions[ammunition_index].kind,
-            StoredItemKind::Ammunition
-        ) {
+        if !matches!(items[ammunition_index].kind, StoredItemKind::Ammunition) {
             return Err(failure(
                 diagnostic_code::INVALID_VALUE,
                 format!("itemDefinitions[{index}].kind.ammunition"),
@@ -1383,6 +1365,37 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             ));
         }
     }
+    Ok(())
+}
+
+pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), StoredProjectError> {
+    if document.schema_version != STORED_PROJECT_SCHEMA_VERSION {
+        return Err(failure(
+            diagnostic_code::UNSUPPORTED_SCHEMA,
+            "schemaVersion",
+            format!(
+                "expected schema {}, found {}",
+                STORED_PROJECT_SCHEMA_VERSION, document.schema_version
+            ),
+        ));
+    }
+    if !is_kebab_segment(&document.project_id) {
+        return Err(failure(
+            diagnostic_code::INVALID_PROJECT_ID,
+            "projectId",
+            "project identity must be one kebab-case segment",
+        ));
+    }
+    if document.name.trim().is_empty() {
+        return Err(failure(
+            diagnostic_code::INVALID_VALUE,
+            "name",
+            "project name must not be empty",
+        ));
+    }
+    validate_voxel_object_aggregate_budget(document, None)?;
+
+    validate_item_definitions(&document.item_definitions)?;
 
     let entry_scene = parse_asset_id(&document.entry_scene, "entryScene")?;
     expect_kind(&entry_scene, AssetKind::Scene, "entryScene")?;
