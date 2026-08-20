@@ -47,4 +47,3 @@ The full `pnpm run certify:e1m1` route is release/manual work and currently stal
 - [doom-e1m1-gameplay-ledger.md](docs/doom-e1m1-gameplay-ledger.md) — content calibration.
 - [source-provenance.md](docs/source-provenance.md) — E1M1, WAD, sprite/texture, and prop closure.
 - [extension-recipes.md](docs/extension-recipes.md) — safe downstream changes.
-- [studio-adapter.md](docs/studio-adapter.md) and [weapon-authoring-contract.md](docs/weapon-authoring-contract.md) — current closed authoring surfaces.

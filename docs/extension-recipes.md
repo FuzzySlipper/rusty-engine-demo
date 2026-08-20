@@ -14,10 +14,6 @@ Author the change in `ts/packages/doom-e1m1-authoring` and materialize the sole 
 
 Browser changes belong in the Angular shell or `browser-shell`, translating semantic input to the existing service/session contract. Tauri changes belong in the typed in-process adapter. Both must use the public Engine application-host; neither may import a private renderer bridge, create a canvas, or own a frame loop.
 
-## Studio
-
-Use the project-owned Rust `studio-adapter` for authored project mutation. Add a named closed contract when a genuinely game-specific inspector operation is required; do not expose a generic component editor or dynamic method dispatch. See [studio-adapter.md](studio-adapter.md) and [weapon-authoring-contract.md](weapon-authoring-contract.md).
-
 ## Proof
 
 Run `./scripts/verify-rust.sh` for Rust-only work and `pnpm run verify` for product-visible or cross-language work. Add focused checks for the touched surface:

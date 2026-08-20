@@ -12,16 +12,12 @@ extern crate self as loading_bay_game;
 
 pub use loading_bay_gameplay::*;
 
-mod weapon_authoring;
-pub use weapon_authoring::*;
-
 mod application_content_projection;
 pub mod browser_adapter;
 mod game_loop;
 mod product_service;
 mod project_store;
 mod save_game;
-mod studio_adapter;
 mod voxel_object_projection;
 mod voxel_volume_projection;
 
@@ -57,18 +53,5 @@ pub use save_game::{
     SavePlayerState, SaveProjectIdentity, SaveSlotCompatibility, SaveSlotId, SaveSlotSummary,
     SaveWriteRequest, MAX_SAVE_GAME_BYTES, MAX_SAVE_SLOTS, SAVE_GAME_SCHEMA_VERSION,
 };
-pub use studio_adapter::{
-    AdapterDescription, AdapterRejection, CanonicalOwnerContent, EntityTranslationReceipt,
-    OwnerInspections, PathSafetyError, ProjectLocation, ProjectionDiagnosticReadout,
-    ProjectionReadout, StudioAdapterRequest, StudioAdapterResponse, StudioAdapterService,
-    StudioEntityComponentReference, StudioEntityInspectorContractIdentity, StudioProjectIdentity,
-    StudioProjectReadout, MAX_PROJECT_PATH_BYTES, MAX_REQUEST_ID_BYTES, MAX_ROOT_PATH_BYTES,
-    MAX_STUDIO_ADAPTER_REQUEST_BYTES, MAX_STUDIO_ADAPTER_RESPONSE_BYTES,
-    MAX_STUDIO_ENTITY_COMPONENTS_PER_OWNER, MAX_STUDIO_ENTITY_COMPONENT_REFERENCES,
-    MAX_STUDIO_ENTITY_INSPECTOR_CONTRACTS, STUDIO_ADAPTER_PROTOCOL_VERSION,
-    VOXEL_OBJECT_COMPONENT_TYPE_ID, VOXEL_OBJECT_INSPECTOR_CONTRACT_ID,
-    VOXEL_OBJECT_INSPECTOR_CONTRACT_VERSION,
-};
-pub(crate) use voxel_object_projection::project_stored_voxel_objects_with;
 pub use voxel_object_projection::{project_stored_voxel_objects, StoredVoxelObjectProjectionError};
 pub use voxel_volume_projection::{project_stored_voxel_volume, StoredVoxelVolumeProjectionError};

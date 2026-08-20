@@ -6,7 +6,7 @@
 //! owners, and the semantic compiler that turns authored project content
 //! into canonical game definitions. The product shell (loading-bay-game)
 //! owns the fixed-tick loop, persistence, projections, hosts, and the
-//! studio adapter.
+//! product adapters.
 
 #![forbid(unsafe_code)]
 

@@ -13,7 +13,7 @@ test("Doom E1M1 is the sole canonical authored project", () => {
   assert.deepEqual(CANONICAL_PROJECT_FILES, ["doom-e1m1.project.json"]);
 });
 
-test("canonical project reads decode without rewriting Studio-owned bytes", () => {
+test("canonical project reads decode without rewriting authored bytes", () => {
   const root = mkdtempSync(join(tmpdir(), "doom-e1m1-canonical-"));
   try {
     const project = canonicalProject();

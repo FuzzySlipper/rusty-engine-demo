@@ -5,9 +5,7 @@ export const activeGuidancePaths = new Set([
   "docs/extension-recipes.md",
   "docs/source-provenance.md",
   "docs/game-session-protocol.md",
-  "docs/studio-adapter.md",
   "docs/tauri-desktop.md",
-  "docs/weapon-authoring-contract.md",
 ]);
 
 const engine = /\b(?:Rusty\s+)?Engine\b/iu;

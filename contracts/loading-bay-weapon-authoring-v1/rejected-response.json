@@ -1,9 +1,0 @@
-{
-  "type": "loadingBayWeaponRejected",
-  "contractVersion": 1,
-  "requestId": "fixture-replace-arc-pistol",
-  "rejection": {
-    "code": "staleComponent",
-    "message": "expected component revision no longer matches"
-  }
-}

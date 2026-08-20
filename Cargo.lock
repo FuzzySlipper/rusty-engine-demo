@@ -2066,13 +2066,10 @@ name = "loading-bay-game"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "hex",
  "loading-bay-gameplay",
  "rusty-engine",
  "serde",
  "serde_json",
- "serde_path_to_error",
- "sha2",
  "tungstenite",
 ]
 

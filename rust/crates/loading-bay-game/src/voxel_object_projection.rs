@@ -1,6 +1,6 @@
 //! Canonical downstream projection of admitted authored voxel-object instances.
 //!
-//! Studio and the game host both call this seam. Rust resolves stored object
+//! The game host calls this seam. Rust resolves stored object
 //! identities, frames, transforms, and materials; Rusty Engine remains the
 //! only owner of voxel meshing, retained handles, and render operations.
 
@@ -11,8 +11,6 @@ use rusty_engine::render_model::{
     RenderMetadata, Transform,
 };
 use rusty_engine::render_projection::{VoxelObjectProjectionInstance, VoxelObjectRenderProjector};
-use rusty_engine::voxel_asset::VoxelObjectAsset;
-use rusty_engine::voxel_convert::VoxelObjectFrameSelection;
 use rusty_engine::voxel_object_runtime::{
     admit_voxel_object, admit_voxel_object_with_options, AdmittedVoxelObject,
     VoxelObjectAdmissionOptions, VoxelObjectRuntimeLimits,
@@ -35,18 +33,9 @@ impl std::error::Error for StoredVoxelObjectProjectionError {}
 pub fn project_stored_voxel_objects(
     project: &StoredProject,
 ) -> Result<RenderFrameDiff, StoredVoxelObjectProjectionError> {
-    project_stored_voxel_objects_with(project, None, &mut VoxelObjectRenderProjector::new(), None)
-}
-
-pub(crate) fn project_stored_voxel_objects_with(
-    project: &StoredProject,
-    candidate: Option<(&VoxelObjectAsset, &VoxelObjectFrameSelection)>,
-    projector: &mut VoxelObjectRenderProjector,
-    frame_override: Option<(&str, u32)>,
-) -> Result<RenderFrameDiff, StoredVoxelObjectProjectionError> {
-    validate_voxel_object_aggregate_budget(project, candidate.map(|(object, _)| object))
+    validate_voxel_object_aggregate_budget(project, None)
         .map_err(|error| projection_error(error.to_string()))?;
-    let mut admitted = project
+    let admitted = project
         .assets
         .iter()
         .filter_map(|asset| asset.voxel_object.as_ref())
@@ -58,12 +47,6 @@ pub(crate) fn project_stored_voxel_objects_with(
                 })
         })
         .collect::<Result<BTreeMap<String, AdmittedVoxelObject>, _>>()?;
-    if let Some((object, _)) = candidate {
-        let admitted_candidate = admit_voxel_object(object, VoxelObjectRuntimeLimits::default())
-            .map_err(|error| projection_error(format!("candidate admission failed: {error}")))?;
-        admitted.insert(object.asset_id.clone(), admitted_candidate);
-    }
-
     let entry_scene = project
         .scenes
         .iter()
@@ -103,9 +86,7 @@ pub(crate) fn project_stored_voxel_objects_with(
         variants.insert((asset_id, surface_mode), variant);
     }
 
-    let mut instances = Vec::with_capacity(
-        entry_scene.voxel_object_instances.len() + usize::from(candidate.is_some()),
-    );
+    let mut instances = Vec::with_capacity(entry_scene.voxel_object_instances.len());
     for instance in &entry_scene.voxel_object_instances {
         let object = if instance.surface_mode.is_default() {
             admitted.get(&instance.voxel_object_asset_id)
@@ -124,12 +105,7 @@ pub(crate) fn project_stored_voxel_objects_with(
         instances.push(VoxelObjectProjectionInstance {
             instance_id: instance.instance_id.clone(),
             object,
-            frame: frame_override
-                .filter(|(instance_id, _)| *instance_id == instance.instance_id)
-                .map_or_else(
-                    || stored_object_frame(object, &instance.frame),
-                    |(_, frame)| Ok(frame),
-                )?,
+            frame: stored_object_frame(object, &instance.frame)?,
             transform: Transform {
                 translation: instance.translation,
                 rotation: instance.rotation,
@@ -140,35 +116,12 @@ pub(crate) fn project_stored_voxel_objects_with(
             metadata: RenderMetadata {
                 source_entity: Some(instance.owner_entity_id),
                 source_scene_node: Some(instance.owner_entity_id),
-                tags: vec!["studio".to_string(), "voxel-object".to_string()],
+                tags: vec!["voxel-object".to_string()],
                 label: Some(instance.instance_id.clone()),
             },
         });
     }
-    if let Some((candidate_asset, selection)) = candidate {
-        let object = admitted
-            .get(&candidate_asset.asset_id)
-            .expect("candidate admitted above");
-        instances.push(VoxelObjectProjectionInstance {
-            instance_id: "studio-voxel-object-candidate".to_string(),
-            object,
-            frame: selected_object_frame(object, selection)?,
-            transform: Transform::IDENTITY,
-            visible: true,
-            material_overrides: Vec::new(),
-            metadata: RenderMetadata {
-                source_entity: None,
-                source_scene_node: None,
-                tags: vec![
-                    "candidate".to_string(),
-                    "studio".to_string(),
-                    "voxel-object".to_string(),
-                ],
-                label: Some("Voxel object candidate".to_string()),
-            },
-        });
-    }
-    projector
+    VoxelObjectRenderProjector::new()
         .project(&instances, &stored_project_material_descriptors(project))
         .map(|projected| projected.frame)
         .map_err(|error| projection_error(format!("Engine projection rejected: {error:?}")))
@@ -230,25 +183,6 @@ fn stored_object_frame(
     match selection {
         StoredVoxelObjectFrameSelection::Default => Ok(0),
         StoredVoxelObjectFrameSelection::Clip {
-            clip_id,
-            frame_index,
-        } => object
-            .clip(clip_id)
-            .and_then(|clip| clip.frame_indices.get(*frame_index as usize))
-            .copied()
-            .ok_or_else(|| {
-                projection_error(format!("clip `{clip_id}` has no frame {frame_index}"))
-            }),
-    }
-}
-
-fn selected_object_frame(
-    object: &AdmittedVoxelObject,
-    selection: &VoxelObjectFrameSelection,
-) -> Result<u32, StoredVoxelObjectProjectionError> {
-    match selection {
-        VoxelObjectFrameSelection::Default => Ok(0),
-        VoxelObjectFrameSelection::Clip {
             clip_id,
             frame_index,
         } => object

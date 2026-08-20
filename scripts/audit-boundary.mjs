@@ -240,7 +240,7 @@ for (const [label, packageJson] of [
       // application host, and the gameplay-rules authoring packages the
       // downstream-adoption guide's TS authoring step is built on (the
       // rusty-dagger worked example depends on exactly these). Renderer and
-      // Studio internals stay banned in downstream TS.
+      // Private Engine internals stay banned in downstream TS.
       const allowedEnginePackages =
         label === "package.json" &&
         section === "dependencies" &&
@@ -268,17 +268,6 @@ if (
     "package.json: the sole Engine web dependency must use the adjacent bundled application-host artifact",
   );
 }
-for (const relativePath of [
-  "apps/loading-bay-studio/project.json",
-  "libs/studio-weapon-inspector/project.json",
-]) {
-  if (existsSync(resolve(repoRoot, relativePath))) {
-    violations.push(
-      `${relativePath}: downstream-owned Studio code must remain absent`,
-    );
-  }
-}
-
 const cargoManifest = readFileSync(resolve(repoRoot, "Cargo.toml"), "utf8");
 const expectedEngineDependency =
   'rusty-engine = { path = "../rusty-engine/rust/crates/rusty-engine" }';
@@ -309,7 +298,7 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `downstream boundary audit passed: ${String(files.length)} operational files, one adjacent Rust facade, one bundled Engine application host, no downstream Studio or renderer internals`,
+  `downstream boundary audit passed: ${String(files.length)} operational files, one adjacent Rust facade, one bundled Engine application host, no private downstream or renderer internals`,
 );
 
 function collect(path) {

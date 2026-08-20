@@ -1,7 +1,0 @@
-{
-  "schemaVersion": 1,
-  "adapter": {
-    "command": ["./scripts/studio-adapter.sh"],
-    "cwd": "."
-  }
-}
