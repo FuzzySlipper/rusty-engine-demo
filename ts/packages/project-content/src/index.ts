@@ -1,3 +1,2 @@
-export * from "./encounter-project.js";
-export * from "./motion-project.js";
+export * from "./content-artifacts.js";
 export type * from "./schema.js";

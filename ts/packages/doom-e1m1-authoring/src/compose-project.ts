@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
+import { readE1M1PropAssets } from "./e1m1-props.js";
+
 const SCALE = 16;
 const MIN_X = -768;
 const MIN_Y = -4864;
@@ -307,12 +309,6 @@ export function buildDoomE1M1Project(
       import.meta.url,
     ),
   ),
-  loadingBayPath = fileURLToPath(
-    new URL(
-      "../../../../content/projects/loading-bay.project.json",
-      import.meta.url,
-    ),
-  ),
 ): any {
   const inter: Intermediate = JSON.parse(
     readFileSync(intermediatePath, "utf8"),
@@ -331,35 +327,15 @@ export function buildDoomE1M1Project(
     ),
   );
   const voxel = JSON.parse(readFileSync(voxelPath, "utf8"));
-  const loadingBay = JSON.parse(readFileSync(loadingBayPath, "utf8"));
 
   const sectorEdges = buildSectorEdges(inter);
 
   // Build material assets (54 materials + 54 textures =108) to match Rust helper
   const assets: any[] = [];
-  // Include the required mesh assets and their authored materials from
-  // loading-bay so Doom renderables resolve as a complete application-content
-  // closure. We copy them verbatim to keep the one-way pin and avoid a second
-  // catalog.
-  const retainedMeshAssets = new Set([
-    "mesh/player-marker",
-    "mesh/prop-kit/breach-scattergun",
-    "mesh/prop-kit/energy-cell",
-    "mesh/prop-kit/hazard-marker",
-    "mesh/prop-kit/impact-vest",
-    "mesh/prop-kit/level-exit",
-    "mesh/prop-kit/med-patch",
-    "mesh/prop-kit/scatter-shells",
-    "mesh/prop-kit/security-door",
-  ]);
-  for (const asset of loadingBay.assets as any[]) {
-    if (
-      typeof asset.id === "string" &&
-      (retainedMeshAssets.has(asset.id) || asset.material !== undefined)
-    ) {
-      assets.push(asset);
-    }
-  }
+  // Props are E1M1-owned input, not an import from the retired Loading Bay
+  // fixture. The retained closure includes only mesh dependencies used by the
+  // authored level, so legacy prop materials cannot leak back into the game.
+  assets.push({ id: "mesh/player-marker" }, ...readE1M1PropAssets());
 
   const spriteFrames = new Map<string, Map<string, number>>();
   const addSpriteAsset = (

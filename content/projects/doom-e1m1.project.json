@@ -5,375 +5,6 @@
   "entryScene": "scene/doom-e1m1",
   "assets": [
     {
-      "id": "material/brush-kit/ceiling-strip",
-      "catalog": {
-        "version": 1,
-        "hash": "9b2ae6c5e77c444d9ff43685f3b061840bba28d8bf8c6176bc1240f6788b8ba6",
-        "sourcePath": null,
-        "label": "ceiling-strip"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/brush-kit/column",
-      "catalog": {
-        "version": 1,
-        "hash": "f807133b12cc544b2e4d80af33ee862c47ef1201cd7d7e85d5f8f2c8f12ed845",
-        "sourcePath": null,
-        "label": "column"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/brush-kit/corner",
-      "catalog": {
-        "version": 1,
-        "hash": "2a7d351cf02a44aec92a2ea8a518c11e58dc39165fc490d7ec8f807a4d9083a1",
-        "sourcePath": null,
-        "label": "corner"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/brush-kit/doorway",
-      "catalog": {
-        "version": 1,
-        "hash": "e01ce599f4ac9f5141fd361aac8e3b08895e3658a97c9ff2993bb0cc5d7eb40c",
-        "sourcePath": null,
-        "label": "doorway"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/brush-kit/floor-strip",
-      "catalog": {
-        "version": 1,
-        "hash": "021002fa700dab11d48809e58550125fc784a2f93aa9c450cd6b56f35ef6de77",
-        "sourcePath": null,
-        "label": "floor-strip"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/brush-kit/landmark-relay",
-      "catalog": {
-        "version": 1,
-        "hash": "73a0cd5425c11232749f44e571b4e73a8e51a06dd55f899881c7ed8ce8203119",
-        "sourcePath": null,
-        "label": "landmark-relay"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/brush-kit/vent-panel",
-      "catalog": {
-        "version": 1,
-        "hash": "14f50a829167a8fd54bcf645d4d6287acd93bb58b378f651d6617289365137e3",
-        "sourcePath": null,
-        "label": "vent-panel"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/brush-kit/wall-conservative",
-      "catalog": {
-        "version": 1,
-        "hash": "464bda56364746da5dd896121341f156609f8ab0a2e17be743a9436403596829",
-        "sourcePath": null,
-        "label": "wall-conservative"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/brush-kit/wall-dense",
-      "catalog": {
-        "version": 1,
-        "hash": "d7e01255994dfa5515967aa4c121c8264c8a4223902466425ff09eadd430a546",
-        "sourcePath": null,
-        "label": "wall-dense"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.31,
-            0.38,
-            0.43,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
       "id": "material/doom-flat-ceil3-5",
       "catalog": {
         "version": 1,
@@ -4510,129 +4141,6 @@
       }
     },
     {
-      "id": "material/prop-kit/arc-pistol-accent",
-      "catalog": {
-        "version": 1,
-        "hash": "fd78f3f507f94ff8458be1837f2d72c596bef3c6db1e1fdf66d08c2f995be65c",
-        "sourcePath": null,
-        "label": "arc-pistol-accent"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.16,
-            0.76,
-            0.94,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.16,
-            0.76,
-            0.94,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/arc-pistol-grip",
-      "catalog": {
-        "version": 1,
-        "hash": "c16b64dc75c1bcd1608ed68f0d98bb31404132d577499b364e1b60286de2ba86",
-        "sourcePath": null,
-        "label": "arc-pistol-grip"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.08,
-            0.12,
-            0.16,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.08,
-            0.12,
-            0.16,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/arc-pistol-receiver",
-      "catalog": {
-        "version": 1,
-        "hash": "68ec9a6801a7efa89c78d7ff41639c7d125101e6d0690bd30a9cd5da39279d2a",
-        "sourcePath": null,
-        "label": "arc-pistol-receiver"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.12,
-            0.28,
-            0.34,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.12,
-            0.28,
-            0.34,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
       "id": "material/prop-kit/breach-scattergun-accent",
       "catalog": {
         "version": 1,
@@ -4756,47 +4264,6 @@
       }
     },
     {
-      "id": "material/prop-kit/control-panel-surface",
-      "catalog": {
-        "version": 1,
-        "hash": "62caf455f3260f81ee5f8395a6cd5eb702ecbaba719f3d8120fd88755c833497",
-        "sourcePath": null,
-        "label": "control-panel-surface"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.16,
-            0.42,
-            0.48,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.16,
-            0.42,
-            0.48,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
       "id": "material/prop-kit/energy-cell-charge",
       "catalog": {
         "version": 1,
@@ -4870,47 +4337,6 @@
             0.12,
             0.24,
             0.28,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/extraction-beacon-surface",
-      "catalog": {
-        "version": 1,
-        "hash": "a6f2008ccdb5353816c19d32bfd4be49e5f0d595a62df1fdd3e5b955f25fc289",
-        "sourcePath": null,
-        "label": "extraction-beacon-surface"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.12,
-            0.68,
-            0.58,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.12,
-            0.68,
-            0.58,
             1.0
           ],
           "roughness": 1.0,
@@ -5043,88 +4469,6 @@
       }
     },
     {
-      "id": "material/prop-kit/landmark-crane-surface",
-      "catalog": {
-        "version": 1,
-        "hash": "7b6a92c33b02e7a4fa8bb6800677f706d06edf4a39f51b84dd1861d008cdc89e",
-        "sourcePath": null,
-        "label": "landmark-crane-surface"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.72,
-            0.36,
-            0.09,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.72,
-            0.36,
-            0.09,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/landmark-tank-surface",
-      "catalog": {
-        "version": 1,
-        "hash": "24ae1449638b10cb96a1ce8642dbfe7a81da382e86da1a51caa59ea3b4575d42",
-        "sourcePath": null,
-        "label": "landmark-tank-surface"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.24,
-            0.36,
-            0.4,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.24,
-            0.36,
-            0.4,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
       "id": "material/prop-kit/level-exit-surface",
       "catalog": {
         "version": 1,
@@ -5157,129 +4501,6 @@
             0.18,
             0.78,
             0.55,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/maintenance-pass-card",
-      "catalog": {
-        "version": 1,
-        "hash": "3d0c9bb50dd9dfc6d973f7f36353b0cfd3aee6c6336261fde46fa7e436a79f6f",
-        "sourcePath": null,
-        "label": "maintenance-pass-card"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.72,
-            0.18,
-            0.76,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.72,
-            0.18,
-            0.76,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/maintenance-pass-loop",
-      "catalog": {
-        "version": 1,
-        "hash": "643d42fbb0e13aeae89f5eba5deb660ba8a599c59eaf48a05ab4e9f9ab4a05c1",
-        "sourcePath": null,
-        "label": "maintenance-pass-loop"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.18,
-            0.22,
-            0.26,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.18,
-            0.22,
-            0.26,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/maintenance-pass-stripe",
-      "catalog": {
-        "version": 1,
-        "hash": "085322c101f47382ef0aa8650ac3f218a1486ce6b1cb5ea5a98fa66572085b69",
-        "sourcePath": null,
-        "label": "maintenance-pass-stripe"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.95,
-            0.74,
-            0.18,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.95,
-            0.74,
-            0.18,
             1.0
           ],
           "roughness": 1.0,
@@ -5362,170 +4583,6 @@
             0.12,
             0.82,
             0.35,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/muzzle-flash-flare",
-      "catalog": {
-        "version": 1,
-        "hash": "258b938fad23300549aa37602834d355aa2470ac2335310ace998a7c9cfe4806",
-        "sourcePath": null,
-        "label": "muzzle-flash-flare"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            1.0,
-            0.76,
-            0.14,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            1.0,
-            0.76,
-            0.14,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/rivet-carbine-accent",
-      "catalog": {
-        "version": 1,
-        "hash": "e3daaa087ef30263ef3caaf41b9e837c7f824327d99874723d71d0d6003efa95",
-        "sourcePath": null,
-        "label": "rivet-carbine-accent"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.3,
-            0.65,
-            0.67,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.3,
-            0.65,
-            0.67,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/rivet-carbine-grip",
-      "catalog": {
-        "version": 1,
-        "hash": "6b23d5a45008d1155f4e66441e855b2d2034cbddeca3d1d6989ed938e368c4bb",
-        "sourcePath": null,
-        "label": "rivet-carbine-grip"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.84,
-            0.39,
-            0.12,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.84,
-            0.39,
-            0.12,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/rivet-carbine-receiver",
-      "catalog": {
-        "version": 1,
-        "hash": "bd159dd459556c6255c2c19740f153a2097c9de68fd39318dd890045f30f7abd",
-        "sourcePath": null,
-        "label": "rivet-carbine-receiver"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.1,
-            0.27,
-            0.3,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.1,
-            0.27,
-            0.3,
             1.0
           ],
           "roughness": 1.0,
@@ -5690,47 +4747,6 @@
             0.78,
             0.43,
             0.12,
-            1.0
-          ],
-          "roughness": 1.0,
-          "emissive": 0.0,
-          "uvStrategy": "flat"
-        }
-      }
-    },
-    {
-      "id": "material/prop-kit/status-runner-surface",
-      "catalog": {
-        "version": 1,
-        "hash": "7574b6b4aa55fe6c7dd0873d172b1f2f95f24dd5e497ea68b0be956fcfcf9fae",
-        "sourcePath": null,
-        "label": "status-runner-surface"
-      },
-      "material": {
-        "authority": {
-          "solid": false,
-          "collidable": false,
-          "occludes": false,
-          "structuralClass": "decorative"
-        },
-        "style": {
-          "color": [
-            0.18,
-            0.72,
-            0.76,
-            1.0
-          ],
-          "texture": null,
-          "textureTint": [
-            1.0,
-            1.0,
-            1.0,
-            1.0
-          ],
-          "emissionColor": [
-            0.18,
-            0.72,
-            0.76,
             1.0
           ],
           "roughness": 1.0,
@@ -8298,13 +7314,13 @@
       "import": {
         "source": {
           "scope": "project",
-          "path": "content/assets/prop-kit/breach-scattergun.mesh.json"
+          "path": "content/doom-e1m1/props/breach-scattergun.mesh.json"
         },
         "sourceHash": "c3f3836a849e8890a01a47586018650506bb5ba3189821bad0de81508afc644f",
         "sourceByteCount": 25404,
         "importerVersion": 1,
-        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/prop-kit/breach-scattergun.mesh.json\",\n  \"sourceHash\": \"c3f3836a849e8890a01a47586018650506bb5ba3189821bad0de81508afc644f\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/breach-scattergun\",\n  \"guid\": \"6627cda4bd9e6bdef53879086c78b4c1\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/breach-scattergun.catalog.json\",\n      \"contentHash\": \"bc68fc2ea3d867fc22f4d2cc843930901f510c6227c050a89e120d98b71bb051\",\n      \"byteLen\": 3840\n    },\n    {\n      \"relativePath\": \"prop-kit/breach-scattergun.static-mesh.json\",\n      \"contentHash\": \"34fe7f286b8122b5a4c66c3c21a1867772e98d4034b64c2309eccd51393c9ce6\",\n      \"byteLen\": 37277\n    }\n  ]\n}\n",
-        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"6627cda4bd9e6bdef53879086c78b4c1\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/prop-kit/breach-scattergun.mesh.json\"\n  },\n  \"sourceHash\": \"c3f3836a849e8890a01a47586018650506bb5ba3189821bad0de81508afc644f\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/breach-scattergun.catalog.json\",\n      \"contentHash\": \"bc68fc2ea3d867fc22f4d2cc843930901f510c6227c050a89e120d98b71bb051\",\n      \"byteLen\": 3840\n    },\n    {\n      \"relativePath\": \"prop-kit/breach-scattergun.static-mesh.json\",\n      \"contentHash\": \"34fe7f286b8122b5a4c66c3c21a1867772e98d4034b64c2309eccd51393c9ce6\",\n      \"byteLen\": 37277\n    }\n  ]\n}\n",
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/doom-e1m1/props/breach-scattergun.mesh.json\",\n  \"sourceHash\": \"c3f3836a849e8890a01a47586018650506bb5ba3189821bad0de81508afc644f\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/breach-scattergun\",\n  \"guid\": \"6627cda4bd9e6bdef53879086c78b4c1\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/breach-scattergun.catalog.json\",\n      \"contentHash\": \"bc68fc2ea3d867fc22f4d2cc843930901f510c6227c050a89e120d98b71bb051\",\n      \"byteLen\": 3840\n    },\n    {\n      \"relativePath\": \"prop-kit/breach-scattergun.static-mesh.json\",\n      \"contentHash\": \"34fe7f286b8122b5a4c66c3c21a1867772e98d4034b64c2309eccd51393c9ce6\",\n      \"byteLen\": 37277\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"6627cda4bd9e6bdef53879086c78b4c1\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/doom-e1m1/props/breach-scattergun.mesh.json\"\n  },\n  \"sourceHash\": \"c3f3836a849e8890a01a47586018650506bb5ba3189821bad0de81508afc644f\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/breach-scattergun.catalog.json\",\n      \"contentHash\": \"bc68fc2ea3d867fc22f4d2cc843930901f510c6227c050a89e120d98b71bb051\",\n      \"byteLen\": 3840\n    },\n    {\n      \"relativePath\": \"prop-kit/breach-scattergun.static-mesh.json\",\n      \"contentHash\": \"34fe7f286b8122b5a4c66c3c21a1867772e98d4034b64c2309eccd51393c9ce6\",\n      \"byteLen\": 37277\n    }\n  ]\n}\n",
         "generatedAssetIds": [
           "material/prop-kit/breach-scattergun-accent",
           "material/prop-kit/breach-scattergun-grip",
@@ -11435,13 +10451,13 @@
       "import": {
         "source": {
           "scope": "project",
-          "path": "content/assets/prop-kit/energy-cell.mesh.json"
+          "path": "content/doom-e1m1/props/energy-cell.mesh.json"
         },
         "sourceHash": "a7e7edd7e7be3d0b8b1355f5370800037ba85751e48b6f6c1226a9aa381cdbc2",
         "sourceByteCount": 30920,
         "importerVersion": 1,
-        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/prop-kit/energy-cell.mesh.json\",\n  \"sourceHash\": \"a7e7edd7e7be3d0b8b1355f5370800037ba85751e48b6f6c1226a9aa381cdbc2\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/energy-cell\",\n  \"guid\": \"71926b170118d7af65412677f4f9cd57\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/energy-cell.catalog.json\",\n      \"contentHash\": \"270e39ef7789a5d4642eac5503fa93dc9a4a6a0461bd7b520fb95b4f7e51501e\",\n      \"byteLen\": 2615\n    },\n    {\n      \"relativePath\": \"prop-kit/energy-cell.static-mesh.json\",\n      \"contentHash\": \"30b595a833abf52b35516ccd615c06880ab9a28c5b1a9f1ff2d9c220363fdbd2\",\n      \"byteLen\": 45793\n    }\n  ]\n}\n",
-        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"71926b170118d7af65412677f4f9cd57\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/prop-kit/energy-cell.mesh.json\"\n  },\n  \"sourceHash\": \"a7e7edd7e7be3d0b8b1355f5370800037ba85751e48b6f6c1226a9aa381cdbc2\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/energy-cell.catalog.json\",\n      \"contentHash\": \"270e39ef7789a5d4642eac5503fa93dc9a4a6a0461bd7b520fb95b4f7e51501e\",\n      \"byteLen\": 2615\n    },\n    {\n      \"relativePath\": \"prop-kit/energy-cell.static-mesh.json\",\n      \"contentHash\": \"30b595a833abf52b35516ccd615c06880ab9a28c5b1a9f1ff2d9c220363fdbd2\",\n      \"byteLen\": 45793\n    }\n  ]\n}\n",
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/doom-e1m1/props/energy-cell.mesh.json\",\n  \"sourceHash\": \"a7e7edd7e7be3d0b8b1355f5370800037ba85751e48b6f6c1226a9aa381cdbc2\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/energy-cell\",\n  \"guid\": \"71926b170118d7af65412677f4f9cd57\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/energy-cell.catalog.json\",\n      \"contentHash\": \"270e39ef7789a5d4642eac5503fa93dc9a4a6a0461bd7b520fb95b4f7e51501e\",\n      \"byteLen\": 2615\n    },\n    {\n      \"relativePath\": \"prop-kit/energy-cell.static-mesh.json\",\n      \"contentHash\": \"30b595a833abf52b35516ccd615c06880ab9a28c5b1a9f1ff2d9c220363fdbd2\",\n      \"byteLen\": 45793\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"71926b170118d7af65412677f4f9cd57\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/doom-e1m1/props/energy-cell.mesh.json\"\n  },\n  \"sourceHash\": \"a7e7edd7e7be3d0b8b1355f5370800037ba85751e48b6f6c1226a9aa381cdbc2\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/energy-cell.catalog.json\",\n      \"contentHash\": \"270e39ef7789a5d4642eac5503fa93dc9a4a6a0461bd7b520fb95b4f7e51501e\",\n      \"byteLen\": 2615\n    },\n    {\n      \"relativePath\": \"prop-kit/energy-cell.static-mesh.json\",\n      \"contentHash\": \"30b595a833abf52b35516ccd615c06880ab9a28c5b1a9f1ff2d9c220363fdbd2\",\n      \"byteLen\": 45793\n    }\n  ]\n}\n",
         "generatedAssetIds": [
           "material/prop-kit/energy-cell-charge",
           "material/prop-kit/energy-cell-shell",
@@ -13672,13 +12688,13 @@
       "import": {
         "source": {
           "scope": "project",
-          "path": "content/assets/prop-kit/hazard-marker.mesh.json"
+          "path": "content/doom-e1m1/props/hazard-marker.mesh.json"
         },
         "sourceHash": "9aebaa2cd04ab0fd68fd45c9850dbc229a83fff59efb35f26edfb043e9f327cb",
         "sourceByteCount": 23800,
         "importerVersion": 1,
-        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/prop-kit/hazard-marker.mesh.json\",\n  \"sourceHash\": \"9aebaa2cd04ab0fd68fd45c9850dbc229a83fff59efb35f26edfb043e9f327cb\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/hazard-marker\",\n  \"guid\": \"b3514a191168f3c980b31acbbf46e54c\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/hazard-marker.catalog.json\",\n      \"contentHash\": \"cbce6757ef18edc324e4d7f8e298ebcc0cee348d7863cbbbe781bd0b6c6b52dc\",\n      \"byteLen\": 1471\n    },\n    {\n      \"relativePath\": \"prop-kit/hazard-marker.static-mesh.json\",\n      \"contentHash\": \"c1e81e50948b94e62a87339ba53cbff45d854179003ebb9188ea9ff38865be2a\",\n      \"byteLen\": 34086\n    }\n  ]\n}\n",
-        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"b3514a191168f3c980b31acbbf46e54c\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/prop-kit/hazard-marker.mesh.json\"\n  },\n  \"sourceHash\": \"9aebaa2cd04ab0fd68fd45c9850dbc229a83fff59efb35f26edfb043e9f327cb\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/hazard-marker.catalog.json\",\n      \"contentHash\": \"cbce6757ef18edc324e4d7f8e298ebcc0cee348d7863cbbbe781bd0b6c6b52dc\",\n      \"byteLen\": 1471\n    },\n    {\n      \"relativePath\": \"prop-kit/hazard-marker.static-mesh.json\",\n      \"contentHash\": \"c1e81e50948b94e62a87339ba53cbff45d854179003ebb9188ea9ff38865be2a\",\n      \"byteLen\": 34086\n    }\n  ]\n}\n",
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/doom-e1m1/props/hazard-marker.mesh.json\",\n  \"sourceHash\": \"9aebaa2cd04ab0fd68fd45c9850dbc229a83fff59efb35f26edfb043e9f327cb\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/hazard-marker\",\n  \"guid\": \"b3514a191168f3c980b31acbbf46e54c\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/hazard-marker.catalog.json\",\n      \"contentHash\": \"cbce6757ef18edc324e4d7f8e298ebcc0cee348d7863cbbbe781bd0b6c6b52dc\",\n      \"byteLen\": 1471\n    },\n    {\n      \"relativePath\": \"prop-kit/hazard-marker.static-mesh.json\",\n      \"contentHash\": \"c1e81e50948b94e62a87339ba53cbff45d854179003ebb9188ea9ff38865be2a\",\n      \"byteLen\": 34086\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"b3514a191168f3c980b31acbbf46e54c\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/doom-e1m1/props/hazard-marker.mesh.json\"\n  },\n  \"sourceHash\": \"9aebaa2cd04ab0fd68fd45c9850dbc229a83fff59efb35f26edfb043e9f327cb\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/hazard-marker.catalog.json\",\n      \"contentHash\": \"cbce6757ef18edc324e4d7f8e298ebcc0cee348d7863cbbbe781bd0b6c6b52dc\",\n      \"byteLen\": 1471\n    },\n    {\n      \"relativePath\": \"prop-kit/hazard-marker.static-mesh.json\",\n      \"contentHash\": \"c1e81e50948b94e62a87339ba53cbff45d854179003ebb9188ea9ff38865be2a\",\n      \"byteLen\": 34086\n    }\n  ]\n}\n",
         "generatedAssetIds": [
           "material/prop-kit/hazard-marker-surface",
           "mesh/prop-kit/hazard-marker"
@@ -15043,13 +14059,13 @@
       "import": {
         "source": {
           "scope": "project",
-          "path": "content/assets/prop-kit/impact-vest.mesh.json"
+          "path": "content/doom-e1m1/props/impact-vest.mesh.json"
         },
         "sourceHash": "fe9b9f41b2e7bff72b5faeb3e049cef19226fea78fa841ea08f86356c82b39cd",
         "sourceByteCount": 11679,
         "importerVersion": 1,
-        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/prop-kit/impact-vest.mesh.json\",\n  \"sourceHash\": \"fe9b9f41b2e7bff72b5faeb3e049cef19226fea78fa841ea08f86356c82b39cd\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/impact-vest\",\n  \"guid\": \"deed5d281b3c35560c0a8f6f4966d4d7\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/impact-vest.catalog.json\",\n      \"contentHash\": \"49e5111af0ece27cbf7650e1fca1fa63b2ff1c20288dd6873f00403042a57aef\",\n      \"byteLen\": 2607\n    },\n    {\n      \"relativePath\": \"prop-kit/impact-vest.static-mesh.json\",\n      \"contentHash\": \"1ed4a24efb5170948066b0088150c079b1cfa15cef2be17aca934494ac2db582\",\n      \"byteLen\": 18281\n    }\n  ]\n}\n",
-        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"deed5d281b3c35560c0a8f6f4966d4d7\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/prop-kit/impact-vest.mesh.json\"\n  },\n  \"sourceHash\": \"fe9b9f41b2e7bff72b5faeb3e049cef19226fea78fa841ea08f86356c82b39cd\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/impact-vest.catalog.json\",\n      \"contentHash\": \"49e5111af0ece27cbf7650e1fca1fa63b2ff1c20288dd6873f00403042a57aef\",\n      \"byteLen\": 2607\n    },\n    {\n      \"relativePath\": \"prop-kit/impact-vest.static-mesh.json\",\n      \"contentHash\": \"1ed4a24efb5170948066b0088150c079b1cfa15cef2be17aca934494ac2db582\",\n      \"byteLen\": 18281\n    }\n  ]\n}\n",
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/doom-e1m1/props/impact-vest.mesh.json\",\n  \"sourceHash\": \"fe9b9f41b2e7bff72b5faeb3e049cef19226fea78fa841ea08f86356c82b39cd\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/impact-vest\",\n  \"guid\": \"deed5d281b3c35560c0a8f6f4966d4d7\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/impact-vest.catalog.json\",\n      \"contentHash\": \"49e5111af0ece27cbf7650e1fca1fa63b2ff1c20288dd6873f00403042a57aef\",\n      \"byteLen\": 2607\n    },\n    {\n      \"relativePath\": \"prop-kit/impact-vest.static-mesh.json\",\n      \"contentHash\": \"1ed4a24efb5170948066b0088150c079b1cfa15cef2be17aca934494ac2db582\",\n      \"byteLen\": 18281\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"deed5d281b3c35560c0a8f6f4966d4d7\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/doom-e1m1/props/impact-vest.mesh.json\"\n  },\n  \"sourceHash\": \"fe9b9f41b2e7bff72b5faeb3e049cef19226fea78fa841ea08f86356c82b39cd\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/impact-vest.catalog.json\",\n      \"contentHash\": \"49e5111af0ece27cbf7650e1fca1fa63b2ff1c20288dd6873f00403042a57aef\",\n      \"byteLen\": 2607\n    },\n    {\n      \"relativePath\": \"prop-kit/impact-vest.static-mesh.json\",\n      \"contentHash\": \"1ed4a24efb5170948066b0088150c079b1cfa15cef2be17aca934494ac2db582\",\n      \"byteLen\": 18281\n    }\n  ]\n}\n",
         "generatedAssetIds": [
           "material/prop-kit/impact-vest-armor",
           "material/prop-kit/impact-vest-trim",
@@ -15453,13 +14469,13 @@
       "import": {
         "source": {
           "scope": "project",
-          "path": "content/assets/prop-kit/level-exit.mesh.json"
+          "path": "content/doom-e1m1/props/level-exit.mesh.json"
         },
         "sourceHash": "30145feb5ba17ddd2ae2ac1195639a9811a42e21d180e07831181df49cc0a324",
         "sourceByteCount": 3033,
         "importerVersion": 1,
-        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/prop-kit/level-exit.mesh.json\",\n  \"sourceHash\": \"30145feb5ba17ddd2ae2ac1195639a9811a42e21d180e07831181df49cc0a324\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/level-exit\",\n  \"guid\": \"dafdb8a65dd46e01cc8453e2f68c0154\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/level-exit.catalog.json\",\n      \"contentHash\": \"5de9f24ee68bbcb9319d77b0e63240af758660359a32a04ce83dddac1cd34542\",\n      \"byteLen\": 1456\n    },\n    {\n      \"relativePath\": \"prop-kit/level-exit.static-mesh.json\",\n      \"contentHash\": \"d67b64dda0a64723488ae09c39db34c9d3296e6f6dd81cd2cc044546bc8c6ac4\",\n      \"byteLen\": 5200\n    }\n  ]\n}\n",
-        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"dafdb8a65dd46e01cc8453e2f68c0154\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/prop-kit/level-exit.mesh.json\"\n  },\n  \"sourceHash\": \"30145feb5ba17ddd2ae2ac1195639a9811a42e21d180e07831181df49cc0a324\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/level-exit.catalog.json\",\n      \"contentHash\": \"5de9f24ee68bbcb9319d77b0e63240af758660359a32a04ce83dddac1cd34542\",\n      \"byteLen\": 1456\n    },\n    {\n      \"relativePath\": \"prop-kit/level-exit.static-mesh.json\",\n      \"contentHash\": \"d67b64dda0a64723488ae09c39db34c9d3296e6f6dd81cd2cc044546bc8c6ac4\",\n      \"byteLen\": 5200\n    }\n  ]\n}\n",
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/doom-e1m1/props/level-exit.mesh.json\",\n  \"sourceHash\": \"30145feb5ba17ddd2ae2ac1195639a9811a42e21d180e07831181df49cc0a324\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/level-exit\",\n  \"guid\": \"dafdb8a65dd46e01cc8453e2f68c0154\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/level-exit.catalog.json\",\n      \"contentHash\": \"5de9f24ee68bbcb9319d77b0e63240af758660359a32a04ce83dddac1cd34542\",\n      \"byteLen\": 1456\n    },\n    {\n      \"relativePath\": \"prop-kit/level-exit.static-mesh.json\",\n      \"contentHash\": \"d67b64dda0a64723488ae09c39db34c9d3296e6f6dd81cd2cc044546bc8c6ac4\",\n      \"byteLen\": 5200\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"dafdb8a65dd46e01cc8453e2f68c0154\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/doom-e1m1/props/level-exit.mesh.json\"\n  },\n  \"sourceHash\": \"30145feb5ba17ddd2ae2ac1195639a9811a42e21d180e07831181df49cc0a324\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/level-exit.catalog.json\",\n      \"contentHash\": \"5de9f24ee68bbcb9319d77b0e63240af758660359a32a04ce83dddac1cd34542\",\n      \"byteLen\": 1456\n    },\n    {\n      \"relativePath\": \"prop-kit/level-exit.static-mesh.json\",\n      \"contentHash\": \"d67b64dda0a64723488ae09c39db34c9d3296e6f6dd81cd2cc044546bc8c6ac4\",\n      \"byteLen\": 5200\n    }\n  ]\n}\n",
         "generatedAssetIds": [
           "material/prop-kit/level-exit-surface",
           "mesh/prop-kit/level-exit"
@@ -16320,13 +15336,13 @@
       "import": {
         "source": {
           "scope": "project",
-          "path": "content/assets/prop-kit/med-patch.mesh.json"
+          "path": "content/doom-e1m1/props/med-patch.mesh.json"
         },
         "sourceHash": "b159578981d3f6714a3c7c7b433ee18fe4f1c371949926a72dfbc8feab29bee1",
         "sourceByteCount": 7208,
         "importerVersion": 1,
-        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/prop-kit/med-patch.mesh.json\",\n  \"sourceHash\": \"b159578981d3f6714a3c7c7b433ee18fe4f1c371949926a72dfbc8feab29bee1\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/med-patch\",\n  \"guid\": \"bbc0b8edd53c9f4cc6d68f2588826a23\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/med-patch.catalog.json\",\n      \"contentHash\": \"3a3444a1d0c6a651eb6cf59123683a622fac7df961b3a18da9d5219cf38fc61c\",\n      \"byteLen\": 2593\n    },\n    {\n      \"relativePath\": \"prop-kit/med-patch.static-mesh.json\",\n      \"contentHash\": \"8a29dfad7a432e1597b1e86e294449759ea5d0b5e86e7b962894339d4cd4dddd\",\n      \"byteLen\": 11363\n    }\n  ]\n}\n",
-        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"bbc0b8edd53c9f4cc6d68f2588826a23\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/prop-kit/med-patch.mesh.json\"\n  },\n  \"sourceHash\": \"b159578981d3f6714a3c7c7b433ee18fe4f1c371949926a72dfbc8feab29bee1\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/med-patch.catalog.json\",\n      \"contentHash\": \"3a3444a1d0c6a651eb6cf59123683a622fac7df961b3a18da9d5219cf38fc61c\",\n      \"byteLen\": 2593\n    },\n    {\n      \"relativePath\": \"prop-kit/med-patch.static-mesh.json\",\n      \"contentHash\": \"8a29dfad7a432e1597b1e86e294449759ea5d0b5e86e7b962894339d4cd4dddd\",\n      \"byteLen\": 11363\n    }\n  ]\n}\n",
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/doom-e1m1/props/med-patch.mesh.json\",\n  \"sourceHash\": \"b159578981d3f6714a3c7c7b433ee18fe4f1c371949926a72dfbc8feab29bee1\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/med-patch\",\n  \"guid\": \"bbc0b8edd53c9f4cc6d68f2588826a23\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/med-patch.catalog.json\",\n      \"contentHash\": \"3a3444a1d0c6a651eb6cf59123683a622fac7df961b3a18da9d5219cf38fc61c\",\n      \"byteLen\": 2593\n    },\n    {\n      \"relativePath\": \"prop-kit/med-patch.static-mesh.json\",\n      \"contentHash\": \"8a29dfad7a432e1597b1e86e294449759ea5d0b5e86e7b962894339d4cd4dddd\",\n      \"byteLen\": 11363\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"bbc0b8edd53c9f4cc6d68f2588826a23\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/doom-e1m1/props/med-patch.mesh.json\"\n  },\n  \"sourceHash\": \"b159578981d3f6714a3c7c7b433ee18fe4f1c371949926a72dfbc8feab29bee1\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/med-patch.catalog.json\",\n      \"contentHash\": \"3a3444a1d0c6a651eb6cf59123683a622fac7df961b3a18da9d5219cf38fc61c\",\n      \"byteLen\": 2593\n    },\n    {\n      \"relativePath\": \"prop-kit/med-patch.static-mesh.json\",\n      \"contentHash\": \"8a29dfad7a432e1597b1e86e294449759ea5d0b5e86e7b962894339d4cd4dddd\",\n      \"byteLen\": 11363\n    }\n  ]\n}\n",
         "generatedAssetIds": [
           "material/prop-kit/med-patch-case",
           "material/prop-kit/med-patch-cross",
@@ -26831,13 +25847,13 @@
       "import": {
         "source": {
           "scope": "project",
-          "path": "content/assets/prop-kit/scatter-shells.mesh.json"
+          "path": "content/doom-e1m1/props/scatter-shells.mesh.json"
         },
         "sourceHash": "72400133c29dd4ca34deb658e10cdb006c53dbf11201597e4a310d8cdf7457d3",
         "sourceByteCount": 109697,
         "importerVersion": 1,
-        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/prop-kit/scatter-shells.mesh.json\",\n  \"sourceHash\": \"72400133c29dd4ca34deb658e10cdb006c53dbf11201597e4a310d8cdf7457d3\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/scatter-shells\",\n  \"guid\": \"bef8182bc9cecbc5dce274be63c97786\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/scatter-shells.catalog.json\",\n      \"contentHash\": \"0ce0d41f4e9dd28fc9f28b2595b41d3da281c9437a14d44bd9cce58318ae3221\",\n      \"byteLen\": 3793\n    },\n    {\n      \"relativePath\": \"prop-kit/scatter-shells.static-mesh.json\",\n      \"contentHash\": \"75ef8a1fb1f69bc3f42f7221c07046f09a1e75cb609e1ead16257824aafead91\",\n      \"byteLen\": 158255\n    }\n  ]\n}\n",
-        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"bef8182bc9cecbc5dce274be63c97786\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/prop-kit/scatter-shells.mesh.json\"\n  },\n  \"sourceHash\": \"72400133c29dd4ca34deb658e10cdb006c53dbf11201597e4a310d8cdf7457d3\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/scatter-shells.catalog.json\",\n      \"contentHash\": \"0ce0d41f4e9dd28fc9f28b2595b41d3da281c9437a14d44bd9cce58318ae3221\",\n      \"byteLen\": 3793\n    },\n    {\n      \"relativePath\": \"prop-kit/scatter-shells.static-mesh.json\",\n      \"contentHash\": \"75ef8a1fb1f69bc3f42f7221c07046f09a1e75cb609e1ead16257824aafead91\",\n      \"byteLen\": 158255\n    }\n  ]\n}\n",
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/doom-e1m1/props/scatter-shells.mesh.json\",\n  \"sourceHash\": \"72400133c29dd4ca34deb658e10cdb006c53dbf11201597e4a310d8cdf7457d3\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/scatter-shells\",\n  \"guid\": \"bef8182bc9cecbc5dce274be63c97786\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/scatter-shells.catalog.json\",\n      \"contentHash\": \"0ce0d41f4e9dd28fc9f28b2595b41d3da281c9437a14d44bd9cce58318ae3221\",\n      \"byteLen\": 3793\n    },\n    {\n      \"relativePath\": \"prop-kit/scatter-shells.static-mesh.json\",\n      \"contentHash\": \"75ef8a1fb1f69bc3f42f7221c07046f09a1e75cb609e1ead16257824aafead91\",\n      \"byteLen\": 158255\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"bef8182bc9cecbc5dce274be63c97786\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/doom-e1m1/props/scatter-shells.mesh.json\"\n  },\n  \"sourceHash\": \"72400133c29dd4ca34deb658e10cdb006c53dbf11201597e4a310d8cdf7457d3\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/scatter-shells.catalog.json\",\n      \"contentHash\": \"0ce0d41f4e9dd28fc9f28b2595b41d3da281c9437a14d44bd9cce58318ae3221\",\n      \"byteLen\": 3793\n    },\n    {\n      \"relativePath\": \"prop-kit/scatter-shells.static-mesh.json\",\n      \"contentHash\": \"75ef8a1fb1f69bc3f42f7221c07046f09a1e75cb609e1ead16257824aafead91\",\n      \"byteLen\": 158255\n    }\n  ]\n}\n",
         "generatedAssetIds": [
           "material/prop-kit/scatter-shells-brass",
           "material/prop-kit/scatter-shells-rack",
@@ -27389,13 +26405,13 @@
       "import": {
         "source": {
           "scope": "project",
-          "path": "content/assets/prop-kit/security-door.mesh.json"
+          "path": "content/doom-e1m1/props/security-door.mesh.json"
         },
         "sourceHash": "104d0745cd8f26619aee9128fed8ae41475e90acf7b56c71c00c13fabce30e47",
         "sourceByteCount": 4509,
         "importerVersion": 1,
-        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/assets/prop-kit/security-door.mesh.json\",\n  \"sourceHash\": \"104d0745cd8f26619aee9128fed8ae41475e90acf7b56c71c00c13fabce30e47\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/security-door\",\n  \"guid\": \"6a9922c6b70b7f19ff7a37d5e0ed3b38\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/security-door.catalog.json\",\n      \"contentHash\": \"9f06aceed0c0b5665fb143fc2c0573a51bd4a45690c869f0902aca68fe0bad3a\",\n      \"byteLen\": 1471\n    },\n    {\n      \"relativePath\": \"prop-kit/security-door.static-mesh.json\",\n      \"contentHash\": \"ab21ed588a7a36214dfbd630435e2e2b31b87b9934c27f17d165d1e8567f2087\",\n      \"byteLen\": 7426\n    }\n  ]\n}\n",
-        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"6a9922c6b70b7f19ff7a37d5e0ed3b38\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/assets/prop-kit/security-door.mesh.json\"\n  },\n  \"sourceHash\": \"104d0745cd8f26619aee9128fed8ae41475e90acf7b56c71c00c13fabce30e47\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/security-door.catalog.json\",\n      \"contentHash\": \"9f06aceed0c0b5665fb143fc2c0573a51bd4a45690c869f0902aca68fe0bad3a\",\n      \"byteLen\": 1471\n    },\n    {\n      \"relativePath\": \"prop-kit/security-door.static-mesh.json\",\n      \"contentHash\": \"ab21ed588a7a36214dfbd630435e2e2b31b87b9934c27f17d165d1e8567f2087\",\n      \"byteLen\": 7426\n    }\n  ]\n}\n",
+        "manifestJson": "{\n  \"schemaVersion\": 1,\n  \"sourceUri\": \"content/doom-e1m1/props/security-door.mesh.json\",\n  \"sourceHash\": \"104d0745cd8f26619aee9128fed8ae41475e90acf7b56c71c00c13fabce30e47\",\n  \"sourceSchemaVersion\": 1,\n  \"importerVersion\": 1,\n  \"meshAssetId\": \"mesh/prop-kit/security-door\",\n  \"guid\": \"6a9922c6b70b7f19ff7a37d5e0ed3b38\",\n  \"artifacts\": [\n    {\n      \"relativePath\": \"prop-kit/security-door.catalog.json\",\n      \"contentHash\": \"9f06aceed0c0b5665fb143fc2c0573a51bd4a45690c869f0902aca68fe0bad3a\",\n      \"byteLen\": 1471\n    },\n    {\n      \"relativePath\": \"prop-kit/security-door.static-mesh.json\",\n      \"contentHash\": \"ab21ed588a7a36214dfbd630435e2e2b31b87b9934c27f17d165d1e8567f2087\",\n      \"byteLen\": 7426\n    }\n  ]\n}\n",
+        "sidecarJson": "{\n  \"schemaVersion\": 1,\n  \"guid\": \"6a9922c6b70b7f19ff7a37d5e0ed3b38\",\n  \"sourceUri\": {\n    \"kind\": \"relativePath\",\n    \"value\": \"content/doom-e1m1/props/security-door.mesh.json\"\n  },\n  \"sourceHash\": \"104d0745cd8f26619aee9128fed8ae41475e90acf7b56c71c00c13fabce30e47\",\n  \"importerVersion\": 1,\n  \"declaredKind\": \"mesh\",\n  \"labels\": [],\n  \"importSettings\": {\n    \"scale\": 1.0,\n    \"generateCollision\": false,\n    \"materialNamespace\": \"prop-kit\"\n  },\n  \"generatedArtifacts\": [\n    {\n      \"relativePath\": \"prop-kit/security-door.catalog.json\",\n      \"contentHash\": \"9f06aceed0c0b5665fb143fc2c0573a51bd4a45690c869f0902aca68fe0bad3a\",\n      \"byteLen\": 1471\n    },\n    {\n      \"relativePath\": \"prop-kit/security-door.static-mesh.json\",\n      \"contentHash\": \"ab21ed588a7a36214dfbd630435e2e2b31b87b9934c27f17d165d1e8567f2087\",\n      \"byteLen\": 7426\n    }\n  ]\n}\n",
         "generatedAssetIds": [
           "material/prop-kit/security-door-surface",
           "mesh/prop-kit/security-door"

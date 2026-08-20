@@ -1,4 +1,6 @@
-import type { RuntimeBrowserState } from "./projection.js";
+import { invoke, isTauri } from "@tauri-apps/api/core";
+
+import type { RuntimeBrowserState, RuntimeSaveSlotSummary } from "./projection.js";
 
 export const LOADING_BAY_PROTOCOL_VERSION = 2;
 export const MAX_PENDING_EDGE_COMMANDS = 32;
@@ -132,7 +134,7 @@ interface CommandRejectionEnvelope {
   readonly message: string;
 }
 
-type ClientGameCommand =
+export type ClientGameCommand =
   | ({
       readonly kind: "setInputIntent";
     } & SessionInputIntent)
@@ -141,7 +143,6 @@ type ClientGameCommand =
   | { readonly kind: "selectWeaponSlot"; readonly slot: number }
   | { readonly kind: "useItem"; readonly item: string }
   | { readonly kind: "setPaused"; readonly paused: boolean }
-  | { readonly kind: "setEnemyAwareness"; readonly enabled: boolean }
   | {
       readonly kind: "restart";
       readonly mode: "authoredBaseline" | "checkpoint";
@@ -160,6 +161,22 @@ type ClientGameCommand =
 
 interface RequestFullStateCommand {
   readonly kind: "requestFullState";
+}
+
+/** The browser and desktop adapters expose this same small session contract. */
+export interface LoadingBayGameTransport {
+  readonly state: RuntimeBrowserState;
+  setStateListener(
+    listener: (state: RuntimeBrowserState, delivery: SessionStateDelivery) => void,
+  ): void;
+  setFailureListener(listener: (error: GameSessionError) => void): void;
+  queueInput(intent: SessionInputIntent): void;
+  sendInput(intent: SessionInputIntent): Promise<RuntimeBrowserState>;
+  neutralizeInput(): void;
+  sendEdge(
+    command: Exclude<ClientGameCommand, { readonly kind: "setInputIntent" }>,
+  ): Promise<RuntimeBrowserState>;
+  close(): Promise<void>;
 }
 
 interface ClientCommandEnvelope {
@@ -1196,6 +1213,302 @@ export class LoadingBayGameSession {
       elapsed,
     );
   }
+}
+
+interface TauriSessionReply {
+  readonly connectionGeneration?: number | null;
+  readonly projection: {
+    readonly dynamic: RuntimeDynamicState;
+    readonly resources: RuntimeStaticResources;
+  };
+}
+
+interface TauriServiceOutcome {
+  readonly kind: string;
+  readonly connectionGeneration: number;
+  readonly commandSequence?: number;
+  readonly message?: string;
+  readonly sessionReplaced: boolean;
+}
+
+interface TauriDynamicReply {
+  readonly connectionGeneration?: number | null;
+  readonly dynamic: RuntimeDynamicState;
+}
+
+class TauriLoadingBayGameSession implements LoadingBayGameTransport {
+  #current: RuntimeBrowserState;
+  #connectionGeneration: number;
+  #sequence = 0;
+  #closed = false;
+  #sendChain: Promise<void> = Promise.resolve();
+  #tickTimer: ReturnType<typeof globalThis.setInterval> | null = null;
+  #pollInFlight = false;
+  #onState:
+    | ((state: RuntimeBrowserState, delivery: SessionStateDelivery) => void)
+    | null = null;
+  #onFailure: ((error: GameSessionError) => void) | null = null;
+
+  private constructor(reply: TauriSessionReply) {
+    if (reply.connectionGeneration == null) {
+      throw new GameSessionError("protocolMismatch", "desktop session omitted its generation");
+    }
+    this.#connectionGeneration = reply.connectionGeneration;
+    this.#current = decodeTauriProjection(reply.projection);
+    this.#tickTimer = globalThis.setInterval(() => {
+      if (this.#pollInFlight) return;
+      this.#pollInFlight = true;
+      void invokeTauri<TauriDynamicReply>("loading_bay_service_readout")
+        .then((readout) => this.#acceptDynamic(readout.dynamic, readout.connectionGeneration))
+        .catch((error) => this.#fail(error))
+        .finally(() => {
+          this.#pollInFlight = false;
+        });
+    }, 33);
+  }
+
+  static async connect(): Promise<TauriLoadingBayGameSession> {
+    return new TauriLoadingBayGameSession(
+      await invokeTauri<TauriSessionReply>("loading_bay_service_begin_session"),
+    );
+  }
+
+  get state(): RuntimeBrowserState {
+    return this.#current;
+  }
+
+  setStateListener(
+    listener: (state: RuntimeBrowserState, delivery: SessionStateDelivery) => void,
+  ): void {
+    this.#onState = listener;
+  }
+
+  setFailureListener(listener: (error: GameSessionError) => void): void {
+    this.#onFailure = listener;
+  }
+
+  queueInput(intent: SessionInputIntent): void {
+    void this.#send({
+      kind: "setInputIntent",
+      movement: [clampUnit(intent.movement[0]), clampUnit(intent.movement[1])],
+      lookDelta: intent.lookDelta,
+      jumpHeld: intent.jumpHeld === true,
+      primaryFireHeld: intent.primaryFireHeld,
+    }).catch((error) => this.#fail(error));
+  }
+
+  neutralizeInput(): void {
+    this.queueInput({
+      movement: [0, 0],
+      lookDelta: [0, 0],
+      jumpHeld: false,
+      primaryFireHeld: false,
+    });
+  }
+
+  async sendInput(intent: SessionInputIntent): Promise<RuntimeBrowserState> {
+    await this.#send({
+      kind: "setInputIntent",
+      movement: [clampUnit(intent.movement[0]), clampUnit(intent.movement[1])],
+      lookDelta: intent.lookDelta,
+      jumpHeld: intent.jumpHeld === true,
+      primaryFireHeld: intent.primaryFireHeld,
+    });
+    return this.#current;
+  }
+
+  async sendEdge(
+    command: Exclude<ClientGameCommand, { readonly kind: "setInputIntent" }>,
+  ): Promise<RuntimeBrowserState> {
+    await this.#send(command);
+    return this.#current;
+  }
+
+  async close(): Promise<void> {
+    this.#closed = true;
+    if (this.#tickTimer !== null) {
+      globalThis.clearInterval(this.#tickTimer);
+      this.#tickTimer = null;
+    }
+    await this.#sendChain;
+    await invokeTauri<void>("loading_bay_service_disconnect_session", {
+      connectionGeneration: this.#connectionGeneration,
+    });
+  }
+
+  async #send(command: ClientGameCommand): Promise<void> {
+    if (this.#closed) return;
+    const dispatch = this.#sendChain.then(() => this.#dispatch(command));
+    this.#sendChain = dispatch.catch(() => undefined);
+    return dispatch;
+  }
+
+  async #dispatch(command: ClientGameCommand): Promise<void> {
+    const sequence = ++this.#sequence;
+    const serviceCommand = command.kind === "setInputIntent"
+      ? {
+          kind: "setInputIntent",
+          connectionGeneration: this.#connectionGeneration,
+          sequence,
+          movement: command.movement,
+          lookDelta: command.lookDelta,
+          jumpHeld: command.jumpHeld === true,
+          primaryFireHeld: command.primaryFireHeld,
+        }
+      : tauriServiceCommand(
+          command,
+          this.#connectionGeneration,
+          sequence,
+        );
+    const reply = await invokeTauri<TauriDynamicReply>("loading_bay_service_submit", {
+      command: serviceCommand,
+    });
+    this.#acceptDynamic(reply.dynamic, reply.connectionGeneration);
+    const outcome = await this.#awaitOutcome(this.#connectionGeneration, sequence);
+    if (typeof outcome.message === "string") {
+      throw new GameSessionError(
+        isSessionRejectionCode(outcome.kind) ? outcome.kind : "internalDefect",
+        outcome.message,
+      );
+    }
+    const authoritative = await invokeTauri<TauriDynamicReply>("loading_bay_service_readout");
+    this.#acceptDynamic(authoritative.dynamic, authoritative.connectionGeneration);
+  }
+
+  async #awaitOutcome(
+    connectionGeneration: number,
+    sequence: number,
+  ): Promise<TauriServiceOutcome> {
+    const deadline = performance.now() + 2_000;
+    while (!this.#closed && performance.now() < deadline) {
+      const outcome = await invokeTauri<TauriServiceOutcome | null>(
+        "loading_bay_service_command_outcome",
+        { connectionGeneration, sequence },
+      );
+      if (outcome !== null) return outcome;
+      await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 8));
+    }
+    throw new GameSessionError(
+      "transportLost",
+      "desktop command was not consumed by the Rust fixed-step service",
+      "reconnect",
+    );
+  }
+
+  #accept(
+    projection: TauriSessionReply["projection"],
+    connectionGeneration?: number | null,
+  ): void {
+    const sessionReplaced = connectionGeneration != null
+      && connectionGeneration !== this.#connectionGeneration;
+    if (sessionReplaced) {
+      this.#connectionGeneration = connectionGeneration;
+      this.#sequence = 0;
+    }
+    this.#current = decodeTauriProjection(projection);
+    this.#onState?.(this.#current, { sessionReplaced });
+  }
+
+  #acceptDynamic(dynamic: RuntimeDynamicState, connectionGeneration?: number | null): void {
+    const sessionReplaced = connectionGeneration != null
+      && connectionGeneration !== this.#connectionGeneration;
+    if (sessionReplaced) {
+      this.#connectionGeneration = connectionGeneration;
+      this.#sequence = 0;
+    }
+    this.#current = { ...this.#current, ...dynamic };
+    this.#onState?.(this.#current, { sessionReplaced });
+  }
+
+  #fail(cause: unknown): void {
+    const error = cause instanceof GameSessionError
+      ? cause
+      : new GameSessionError(
+          "transportLost",
+          cause instanceof Error ? cause.message : String(cause),
+          "reconnect",
+        );
+    this.#onFailure?.(error);
+  }
+}
+
+export function decodeTauriProjection(
+  projection: TauriSessionReply["projection"],
+): RuntimeBrowserState {
+  return { ...projection.dynamic, ...projection.resources } as RuntimeBrowserState;
+}
+
+function tauriServiceCommand(
+  command: Exclude<ClientGameCommand, { readonly kind: "setInputIntent" }>,
+  connectionGeneration: number,
+  sequence: number,
+): Record<string, unknown> {
+  switch (command.kind) {
+    case "restart":
+      return { kind: "restart", connectionGeneration, sequence, mode: command.mode };
+    case "saveGame":
+      return {
+        kind: "saveGame",
+        connectionGeneration,
+        sequence,
+        slot: command.slot,
+        overwrite: command.overwrite,
+        expectedStorageRevision: command.expectedStorageRevision,
+      };
+    case "loadGame":
+      return {
+        kind: "loadGame",
+        connectionGeneration,
+        sequence,
+        slot: command.slot,
+        expectedStorageRevision: command.expectedStorageRevision,
+      };
+    default:
+      return { kind: "edge", connectionGeneration, sequence, command };
+  }
+}
+
+function tauriAvailable(): boolean {
+  return isTauri();
+}
+
+async function invokeTauri<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  if (!isTauri()) {
+    throw new GameSessionError("transportLost", "Tauri IPC is unavailable", "reconnect");
+  }
+  return invoke<T>(command, args);
+}
+
+export async function connectLoadingBayGameTransport(): Promise<LoadingBayGameTransport> {
+  return tauriAvailable()
+    ? TauriLoadingBayGameSession.connect()
+    : LoadingBayGameSession.connect();
+}
+
+export interface LoadingBayMenuReadout {
+  readonly project: { readonly projectId: string };
+  readonly saveSlots: readonly RuntimeSaveSlotSummary[];
+  readonly hostSessionId?: string;
+}
+
+/** Browser HTTP is an adapter detail; desktop reads the same Rust-owned menu
+ * readout through typed IPC and never contacts a browser-host sidecar. */
+export async function readLoadingBayMenuReadout(): Promise<LoadingBayMenuReadout> {
+  if (tauriAvailable()) {
+    return invokeTauri<LoadingBayMenuReadout>("loading_bay_service_menu_readout");
+  }
+  const response = await fetch("/api/menu-state", { cache: "no-store" });
+  if (!response.ok) throw new Error(`host state returned ${String(response.status)}`);
+  const value: unknown = await response.json();
+  if (!isRecord(value) || typeof value.projectId !== "string" || !Array.isArray(value.saveSlots)) {
+    throw new GameSessionError("protocolMismatch", "host menu readout was malformed");
+  }
+  const hostSessionId = typeof value.hostSessionId === "string" ? value.hostSessionId : undefined;
+  return {
+    project: { projectId: value.projectId },
+    saveSlots: value.saveSlots as RuntimeSaveSlotSummary[],
+    ...(hostSessionId === undefined ? {} : { hostSessionId }),
+  };
 }
 
 function decodeMessage(data: unknown): unknown {

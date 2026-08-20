@@ -4,9 +4,9 @@
   "requiredChecks": ["verify"],
   "localVerification": [
     "pnpm run verify",
-    "pnpm run verify:native (for renderer/host changes)",
     "pnpm run audit:boundary (for boundary-contract changes)",
+    "pnpm run smoke:e1m1 (for browser-visible E1M1 changes)",
     "pnpm run verify:tauri (for Tauri-relevant changes)"
   ],
-  "notes": "Automatic managed reviews require the downstream verify job, which runs the lean gate (typecheck, gameplay-package drift, canonical content, TS unit tests, shell build, Rust fmt/tests/clippy). Boundary audit, native-host proof, and desktop verification are explicit on-demand commands outside the automatic workflow."
+  "notes": "Managed reviews require the lean verify gate. Browser smoke and Tauri contract/build/visible-package evidence are relevance-triggered; run smoke:tauri:headed before claiming a visible or packaged desktop result. The manual E1M1 certifier currently stalls at waypoint [127,121]."
 }

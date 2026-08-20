@@ -1,56 +1,27 @@
-# Design and authority boundary
+# Loading Bay design and authority boundary
 
-Rusty Engine Demo is a downstream game, not an Engine extension layer. Objects carry admitted
-facts, named Rust services own Loading Bay mechanisms, and the product owns meaning and
-orchestration.
+Loading Bay is one Rusty Engine downstream game. Its supported content is the authored Doom E1M1 project; retired fixture projects are not alternate products.
 
-## Dependency direction
+## Authority
 
-The only normal Rust provider dependency is the adjacent complete `rusty-engine` facade. Downstream
-imports preserved owner namespaces such as `rusty_engine::entity_state` and
-`rusty_engine::render_model`; it does not select an accidental subset of provider crates or manage
-the sibling checkout through versions, Git pins, SHAs, freshness checks, or update helpers.
+`LoadingBayProductService` is the game-specific, transport-neutral Rust authority. It admits the authored project, builds and advances the fixed-step loop, accepts typed semantic commands, owns session generations, saves, facts, and projection readouts. It knows no socket, Tauri, or renderer implementation.
 
-Rusty Studio is an Engine-hosted product. This repository exposes `.rusty-studio.json`, project
-content, and its Rust adapter; it does not install or import Studio or renderer packages.
+Rust owns runtime state, validation, mutation, scheduling, persistence, and projection. TypeScript owns immutable content composition, browser semantic-input capture, and disposable HUD/product-shell presentation. It does not become a second gameplay evaluator.
 
-## Runtime authority
+## Adapters
 
-- Loading Bay Rust owns project admission, live gameplay state, fixed phases, consequences,
-  snapshots, saves, and persistence.
-- Loading Bay's single-ray hitscan/automatic combat path supplies Doom-owned intent, spatial hit
-  evidence, weapon operations, semantic events, and the fail-atomic `GameSession` transaction to
-  `rusty_engine::gameplay_resolution`. Engine orders and traces the bounded attempt; it does not
-  acquire weapon, ammo, target, damage, tick, death, or combat-loop meaning.
-- Browser TypeScript owns semantic device capture, typed transport, HUD/readout composition, and
-  bounded startup or failure state. It transports the complete Rust-projected content aggregate
-  without deriving renderer manifests or backend configuration.
-- The native product owns its window, mount rectangle, timing, semantic input mapping, picks and
-  their consequences, and product resource selection.
-- Rusty Engine owns retained rendering, the Rust-to-TypeScript decoder border, the private renderer
-  artifact, resource lifecycle, and renderer cleanup. Downstream calls only named Rust adapter
-  operations.
+`browser-host` is the normal development adapter: it translates bounded `loading-bay.v2` WebSocket messages to the service and exposes read-only diagnostics. The Angular shell consumes the projected content through Rusty Engine's public application-host.
 
-The renderer observes Rust facts. A renderer failure can discard presentation, but cannot publish
-or retain a second gameplay, project, or save state.
+Tauri is the final-product adapter. It packages the same shell in one WebView and calls typed in-process commands over the same service. It has no packaged browser-host process, loopback readiness protocol, asset-hash handshake, orphan process cleanup, or second product window.
 
-Studio protocol 15 exposes the Engine-owned voxel surface selector for voxel-object entities. The
-dropdown is observational TypeScript wiring over a closed Rust mutation: Loading Bay persists the
-per-instance `surfaceMode`, guards it with the exact project hash, stages complete admission and
-projection before atomic replacement, and returns the canonical readout. Engine remains the owner
-of greedy-cube, marching-cubes, and dual-contouring meshing and of their renderer resource
-lifecycle. Textured reconstructed surfaces reject until Engine has a stable UV contract; Studio
-never reaches into the renderer or keeps a local mode override.
+Rusty Engine alone owns renderer and canvas lifetime. This repository neither imports a private bridge nor builds a competing renderer/resource cache/frame loop.
 
-## Concrete hosts
+## Dependency and extension boundary
 
-`browser-host` remains the game-specific transport and diagnostics host. Its Rust projection feeds
-one bundled `@rusty-engine/application-host`, which owns renderer/DOM composition while Angular
-owns Loading Bay's rich HUD, forms, menus, and accessibility tree. The identical web application
-runs in an ordinary browser and the Tauri wrapper; only the existing Rust transport/sidecar launch
-varies. `native-host` remains a focused Rust-adapter acceptance product for named operations,
-physical input, picking, resource admission, transactional mount failure, and disposal.
+The only Rust provider dependency is the complete adjacent `rusty-engine` facade, through one unconditional path dependency. Owner namespaces remain explicit. This repo does not pin or manage the sibling checkout, and it does not select Engine subcrates.
 
-There is intentionally no generic command tunnel, eval seam, callback registry, renderer-package
-graph, or downstream renderer bootstrap. The one application-host import exposes only bounded
-frame, camera, interaction-mode, and lifecycle ports.
+Game-owned semantics belong here first. A reusable Engine seam requires evidence from another real consumer. Do not introduce a plugin registry, service locator, generic method-name bridge, behavior IR, replay/certification framework, or live TypeScript authority.
+
+## Content and evidence
+
+`content/projects/doom-e1m1.project.json` is the sole canonical project. E1M1 textures, sprites, voxel data, and the eight-prop closure live under `content/doom-e1m1/`; exact source boundaries are in [source-provenance.md](source-provenance.md). Historical campaign material belongs in Den, not as active repository documentation or proof.

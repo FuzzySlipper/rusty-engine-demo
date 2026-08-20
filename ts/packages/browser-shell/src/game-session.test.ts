@@ -6,6 +6,7 @@ import {
   LoadingBayGameSession,
   applyServerUpdate,
   coalesceSessionLook,
+  decodeTauriProjection,
   preserveMovementPress,
   resolveMovementSample,
   type ServerUpdateEnvelope,
@@ -192,6 +193,12 @@ test("full session bootstrap composes dynamic state with immutable resources", (
   assert.equal(applied.state.tick, 1);
   assert.equal(applied.state.voxelAuthorityHash, "abc");
   assert.equal(applied.state.voxelMeshes, resources.voxelMeshes);
+});
+
+test("Tauri IPC bootstrap requires nested dynamic and resource projections", () => {
+  const state = decodeTauriProjection({ dynamic, resources });
+  assert.equal(state.tick, 1);
+  assert.equal(state.voxelAuthorityHash, resources.voxelAuthorityHash);
 });
 
 test("legacy projects preserve an absent Rust inventory through browser composition", () => {
@@ -1612,7 +1619,7 @@ class SaveRejectionSocket extends EventTarget {
           },
           facts: [
             {
-              kind: "SaveRejectedOverwriteRequired",
+              kind: "saveOverwriteRequired",
               code: "saveOverwriteRequired",
               commandSequence: envelope.sequence,
             },

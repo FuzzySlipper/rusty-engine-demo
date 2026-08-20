@@ -177,7 +177,8 @@ pub enum EdgeCommandRejection {
     LevelComplete,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum GameRestartMode {
     AuthoredBaseline,
     Checkpoint,

@@ -1,12 +1,10 @@
 {
   "$schema": "../gen/schemas/remote-schema.json",
   "identifier": "main-window",
-  "description": "The Loading Bay product can request an orderly close of its sole native window.",
+  "description": "The Loading Bay desktop adapter invokes a bounded in-process product service.",
   "windows": ["main"],
-  "remote": {
-    "urls": ["http://127.0.0.1:*"]
-  },
   "permissions": [
+    "core:default",
     "core:window:allow-close",
     "core:window:allow-is-focused",
     "core:window:allow-is-minimized",

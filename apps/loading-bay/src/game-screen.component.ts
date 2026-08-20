@@ -61,6 +61,7 @@ const INITIAL_SNAPSHOT: LoadingBayPresentationSnapshot = {
     selectWeapon: ["Digit1", "Digit2", "Digit3"],
   },
   connected: false,
+  connectionGeneration: 0,
   doorState: "closed",
   equippedWeapon: null,
   encounterState: "loading",
@@ -275,6 +276,7 @@ declare global {
           id="feedback-session-status"
           class="feedback-audio-status"
           [attr.data-state]="snapshot().connected ? 'connected' : 'inactive'"
+          [attr.data-connection-generation]="snapshot().connectionGeneration"
         >
           {{ connectionFeedback() }}
         </div>
@@ -1258,34 +1260,6 @@ export class GameScreenComponent implements AfterViewInit, OnDestroy {
       this.handle = handle;
       if (this.route.snapshot.queryParamMap.get("visualQa") === "animation") {
         window.__loadingBayAnimationCapture = handle.captureAnimation;
-      }
-      const requestedProject = this.route.snapshot.queryParamMap.get("project");
-      if (
-        requestedProject !== null &&
-        ![
-          "loading-bay",
-          "relay-annex",
-          "doom-e1m1",
-        ].includes(requestedProject)
-      ) {
-        throw new Error(`Unknown project ${requestedProject}`);
-      }
-      // The card targets a host already configured for that project: the host is
-      // launched with a fixed --project (see main-menu startScene). After the
-      // session connects we compare the requested project against the host's
-      // authoritative projectId (exposed in the static session resources). A
-      // mismatch fails loudly instead of silently serving a different scene, so
-      // a real Doom card click only succeeds when the host is running Doom.
-      if (requestedProject !== null) {
-        const hostProjectId = this.snapshot().projectId;
-        if (hostProjectId !== requestedProject) {
-          await handle.dispose();
-          this.handle = null;
-          throw new Error(
-            `This host is serving project "${hostProjectId || "unknown"}", not "${requestedProject}". ` +
-              `Launch the browser host with --project content/projects/${requestedProject}.project.json to open that scene.`,
-          );
-        }
       }
       const entryMode = this.route.snapshot.queryParamMap.get("mode");
       if (entryMode === "new") {

@@ -1,56 +1,28 @@
 import assert from "node:assert/strict";
-import {
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
 import {
+  CANONICAL_PROJECT_FILES,
   readCanonicalProject,
-  synchronizeGeneratedProjects,
 } from "./content-artifacts.js";
 
-test("fixture generation cannot overwrite canonical project artifacts", () => {
-  const root = mkdtempSync(join(tmpdir(), "loading-bay-content-"));
-  try {
-    const generated = join(root, "generated");
-    const projects = join(root, "projects");
-    mkdirSync(projects);
-    const canonical = `${JSON.stringify(canonicalProject(), null, 2)}\n`;
-    const canonicalPath = join(projects, "loading-bay.project.json");
-    writeFileSync(canonicalPath, canonical);
-
-    synchronizeGeneratedProjects(
-      generated,
-      { "fixture.project.json": { schemaVersion: 6, entities: [] } },
-      "write",
-    );
-
-    assert.equal(readFileSync(canonicalPath, "utf8"), canonical);
-    assert.equal(
-      readFileSync(join(generated, "fixture.project.json"), "utf8"),
-      '{\n  "schemaVersion": 6,\n  "entities": []\n}\n',
-    );
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
+test("Doom E1M1 is the sole canonical authored project", () => {
+  assert.deepEqual(CANONICAL_PROJECT_FILES, ["doom-e1m1.project.json"]);
 });
 
 test("canonical project reads decode without rewriting Studio-owned bytes", () => {
-  const root = mkdtempSync(join(tmpdir(), "loading-bay-canonical-"));
+  const root = mkdtempSync(join(tmpdir(), "doom-e1m1-canonical-"));
   try {
     const project = canonicalProject();
-    const path = join(root, "loading-bay.project.json");
+    const path = join(root, "doom-e1m1.project.json");
     const canonical = `${JSON.stringify(project, null, 2)}\n`;
     writeFileSync(path, canonical);
 
     assert.deepEqual(
-      readCanonicalProject(root, "loading-bay.project.json"),
+      readCanonicalProject(root, "doom-e1m1.project.json"),
       project,
     );
     assert.equal(readFileSync(path, "utf8"), canonical);
@@ -58,14 +30,14 @@ test("canonical project reads decode without rewriting Studio-owned bytes", () =
     const compact = JSON.stringify(project);
     writeFileSync(path, compact);
     assert.deepEqual(
-      readCanonicalProject(root, "loading-bay.project.json"),
+      readCanonicalProject(root, "doom-e1m1.project.json"),
       project,
     );
     assert.equal(readFileSync(path, "utf8"), compact);
 
     writeFileSync(path, "{");
     assert.throws(
-      () => readCanonicalProject(root, "loading-bay.project.json"),
+      () => readCanonicalProject(root, "doom-e1m1.project.json"),
       SyntaxError,
     );
     assert.equal(readFileSync(path, "utf8"), "{");
@@ -77,16 +49,16 @@ test("canonical project reads decode without rewriting Studio-owned bytes", () =
 function canonicalProject() {
   return {
     schemaVersion: 25,
-    projectId: "loading-bay",
-    name: "Loading Bay",
-    entryScene: "scene/loading-bay",
+    projectId: "doom-e1m1",
+    name: "Doom E1M1",
+    entryScene: "scene/doom-e1m1",
     assets: [],
     itemDefinitions: [],
     weaponEntities: [],
     scenes: [
       {
-        id: "scene/loading-bay",
-        name: "Loading Bay",
+        id: "scene/doom-e1m1",
+        name: "E1M1",
         entities: [],
       },
     ],

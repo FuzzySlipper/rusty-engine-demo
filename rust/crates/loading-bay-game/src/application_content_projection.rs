@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 
 use rusty_engine::engine_spatial::VoxelCollisionScene;
 use rusty_engine::render_model::{
@@ -1463,10 +1463,11 @@ pub fn project_doom_e1m1_application_content(
     scene: &VoxelCollisionScene,
     object_frame: &RenderFrameDiff,
     entity_frame: &RenderFrameDiff,
+    content_root: &Path,
 ) -> anyhow::Result<ProjectedApplicationContent> {
     let (volume_frame, mut resources) =
         externalize_frame_meshes(project_stored_voxel_volume(project, scene)?)?;
-    let (texture_resources, texture_ops) = doom_texture_projection(project)?;
+    let (texture_resources, texture_ops) = doom_texture_projection(project, content_root)?;
     if texture_resources.len() != 54 {
         anyhow::bail!(
             "Doom E1M1 application content requires 54 textures, found {}",
@@ -1474,13 +1475,13 @@ pub fn project_doom_e1m1_application_content(
         );
     }
     resources.extend(texture_resources);
-    let (sky_resources, sky_ops) = doom_sky_projection(project)?;
+    let (sky_resources, sky_ops) = doom_sky_projection(project, content_root)?;
     resources.extend(sky_resources);
-    let (sprite_resources, sprite_ops) = doom_sprite_projection(project)?;
+    let (sprite_resources, sprite_ops) = doom_sprite_projection(project, content_root)?;
     resources.extend(sprite_resources);
     let (static_frame, static_resources) = static_mesh_projection(project)?;
     resources.extend(static_resources);
-    let (animated_resources, animated_ops) = animated_mesh_projection(project)?;
+    let (animated_resources, animated_ops) = animated_mesh_projection(project, content_root)?;
     resources.extend(animated_resources);
 
     let mut operations = texture_ops;
@@ -1501,11 +1502,12 @@ pub fn project_doom_e1m1_application_content(
 /// their neutral clear background.
 pub fn doom_sky_projection(
     project: &StoredProject,
+    content_root: &Path,
 ) -> anyhow::Result<(Vec<RendererResource>, Vec<RenderDiff>)> {
     if project.project_id != "doom-e1m1" {
         return Ok((Vec::new(), Vec::new()));
     }
-    let source = repository_root().join(DOOM_SKY_SOURCE_PATH);
+    let source = content_root.join(DOOM_SKY_SOURCE_PATH);
     let bytes = fs::read(&source).map_err(|error| {
         anyhow::anyhow!(
             "read checked-in Doom SKY1 panorama {}: {error}",
@@ -1570,6 +1572,7 @@ fn static_mesh_projection(
 
 fn animated_mesh_projection(
     project: &StoredProject,
+    content_root: &Path,
 ) -> anyhow::Result<(Vec<RendererResource>, Vec<RenderDiff>)> {
     project
         .assets
@@ -1589,7 +1592,7 @@ fn animated_mesh_projection(
                 .ok_or_else(|| {
                     anyhow::anyhow!("animated mesh {} has no source path", mesh.asset)
                 })?;
-            let bytes = fs::read(repository_root().join(source))?;
+            let bytes = fs::read(content_root.join(source))?;
             Ok((
                 RendererResource {
                     identity: format!("mesh-resource/{digest}"),
@@ -1608,6 +1611,7 @@ fn animated_mesh_projection(
 
 pub fn doom_texture_projection(
     project: &StoredProject,
+    content_root: &Path,
 ) -> anyhow::Result<(Vec<RendererResource>, Vec<RenderDiff>)> {
     let projected = project
         .assets
@@ -1626,7 +1630,7 @@ pub fn doom_texture_projection(
             let content_hash = metadata.hash.as_ref().ok_or_else(|| {
                 anyhow::anyhow!("Doom texture is missing its declared content hash")
             })?;
-            let source = repository_root().join(source_path);
+            let source = content_root.join(source_path);
             let bytes = fs::read(&source).map_err(|error| {
                 anyhow::anyhow!("read checked-in Doom texture {}: {error}", source.display())
             })?;
@@ -1663,6 +1667,7 @@ pub fn doom_texture_projection(
 
 fn doom_sprite_projection(
     project: &StoredProject,
+    content_root: &Path,
 ) -> anyhow::Result<(Vec<RendererResource>, Vec<RenderDiff>)> {
     let mut resources = Vec::new();
     let mut operations = Vec::new();
@@ -1683,7 +1688,7 @@ fn doom_sprite_projection(
         let content_hash = metadata.hash.as_ref().ok_or_else(|| {
             anyhow::anyhow!("Doom sprite atlas is missing its declared content hash")
         })?;
-        let source = repository_root().join(source_path);
+        let source = content_root.join(source_path);
         let bytes = fs::read(&source).map_err(|error| {
             anyhow::anyhow!(
                 "read checked-in Doom sprite atlas {}: {error}",
@@ -1766,16 +1771,13 @@ pub fn externalize_frame_meshes(
     Ok((frame, resources))
 }
 
-fn repository_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..")
-}
-
 #[cfg(test)]
 mod tests {
     use rusty_engine::core_math::Vec3;
     use rusty_engine::engine_spatial::VoxelCollisionScene;
     use rusty_engine::entity_state::{EntityTransform, Quat};
     use rusty_engine::render_model::RenderDiff;
+    use std::path::Path;
 
     use crate::{
         decode_project_document, project_stored_voxel_objects, DamageCommand, DamageService,
@@ -1953,8 +1955,14 @@ mod tests {
         let objects = project_stored_voxel_objects(&project).unwrap();
         let mut gameplay = GameplayApplicationProjector::new(&project);
         let entities = gameplay.project(&runtime).unwrap();
-        let content =
-            project_doom_e1m1_application_content(&project, &scene, &objects, &entities).unwrap();
+        let content = project_doom_e1m1_application_content(
+            &project,
+            &scene,
+            &objects,
+            &entities,
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."),
+        )
+        .unwrap();
 
         assert!(!content.frame.ops.is_empty());
         assert_eq!(

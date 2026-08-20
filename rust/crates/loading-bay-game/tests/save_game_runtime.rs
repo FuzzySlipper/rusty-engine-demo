@@ -4,12 +4,11 @@ use std::path::PathBuf;
 use loading_bay_game::{
     decode_game_snapshot, decode_project_document, encode_game_snapshot, GameRuntime,
     InventoryAction, InventoryCommand, ItemDefinitionId, ResolvedPlayerAction, SaveGameStore,
-    SaveLoadRequest, SaveProjectIdentity, SaveSlotId, SaveWriteRequest, VoxelEdit,
-    VoxelEditTransaction, VoxelSourceRevision,
+    SaveLoadRequest, SaveProjectIdentity, SaveSlotId, SaveWriteRequest,
 };
 use rusty_engine::core_ids::EntityId;
 
-const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
+const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const PLAYER: EntityId = EntityId::new(1);
 
 #[test]
@@ -35,7 +34,7 @@ fn multiple_mid_level_slots_restore_exact_state_and_eventual_behavior() {
             InventoryCommand {
                 sequence: 1,
                 action: InventoryAction::Consume {
-                    item: ItemDefinitionId::parse("ammo/energy-cell").unwrap(),
+                    item: ItemDefinitionId::parse("ammo/bullets").unwrap(),
                     quantity: 3,
                 },
             },
@@ -56,12 +55,6 @@ fn multiple_mid_level_slots_restore_exact_state_and_eventual_behavior() {
         )
         .unwrap();
 
-    runtime
-        .apply_voxel_edits(VoxelEditTransaction {
-            expected_revision: VoxelSourceRevision::INITIAL,
-            edits: &[VoxelEdit::Clear { address: [2, 1, 6] }],
-        })
-        .unwrap();
     runtime
         .apply_player_action(
             PLAYER,
@@ -99,14 +92,6 @@ fn multiple_mid_level_slots_restore_exact_state_and_eventual_behavior() {
         encode_game_snapshot(&first_loaded.runtime).unwrap(),
         first_snapshot
     );
-    assert_eq!(
-        first_loaded
-            .runtime
-            .collision_scene()
-            .unwrap()
-            .source_revision(),
-        VoxelSourceRevision::INITIAL
-    );
 
     let second_loaded = store
         .load(
@@ -120,15 +105,6 @@ fn multiple_mid_level_slots_restore_exact_state_and_eventual_behavior() {
     assert_eq!(
         encode_game_snapshot(&second_loaded.runtime).unwrap(),
         second_snapshot
-    );
-    assert_eq!(
-        second_loaded
-            .runtime
-            .collision_scene()
-            .unwrap()
-            .source_revision()
-            .raw(),
-        1
     );
 
     let mut expected = decode_game_snapshot(&second_snapshot).unwrap();

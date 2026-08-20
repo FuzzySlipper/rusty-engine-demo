@@ -6,9 +6,12 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use loading_bay_game::{
-    GameLoopEdgeCommand, GameLoopEdgeCommandKind, GameplayApplicationProjector,
-    InputCommandDisposition, InputCommandRejection, PlayerInputCommand, PlayerInputIntent,
-    SaveGameError, SaveLoadRequest, SaveSlotId,
+    browser_adapter::{
+        browser_dynamic_state_with_gameplay_frame, browser_state, browser_static_resources,
+        browser_static_revision, drain_projection_feedback, BrowserFeedbackProjection,
+    },
+    GameLoopEdgeCommandKind, GameRestartMode, GameplayApplicationProjector,
+    LoadingBayServiceCommand, LoadingBayServiceReceipt, SaveSlotId,
 };
 use rusty_engine::render_model::RenderFrameDiff;
 use serde::{Deserialize, Serialize};
@@ -19,14 +22,7 @@ use tungstenite::http::StatusCode;
 use tungstenite::protocol::WebSocketConfig;
 use tungstenite::{accept_hdr_with_config, Error as WebSocketError, Message, WebSocket};
 
-use super::state::{
-    browser_dynamic_state_with_gameplay_frame, browser_state, browser_static_resources,
-    browser_static_revision,
-};
-use super::{
-    drain_game_loop_feedback, BrowserFeedbackProjection, BrowserRuntime, DrainedGameLoopFeedback,
-    SharedBrowserRuntime, ACTOR,
-};
+use super::{SharedBrowserRuntime, ACTOR};
 
 const PROTOCOL_VERSION: u16 = 2;
 const SESSION_READ_TIMEOUT: Duration = Duration::from_millis(1);
@@ -76,9 +72,6 @@ enum BrowserGameCommand {
     },
     SetPaused {
         paused: bool,
-    },
-    SetEnemyAwareness {
-        enabled: bool,
     },
     Restart {
         mode: RestartMode,
@@ -307,18 +300,15 @@ pub(super) fn run_game_session(stream: TcpStream, runtime: Arc<SharedBrowserRunt
 
     let (connection_generation, gameplay_projector) = {
         let mut host = runtime.lock().expect("runtime lock");
-        let connection_generation = host.start_browser_connection();
-        (connection_generation, host.gameplay_projector.clone())
+        let connection_generation = host.start_session();
+        (connection_generation, host.gameplay_projector().cloned())
     };
     runtime.set_consumed_command_sequence(0);
     let mut context = SessionContext::new(connection_generation, gameplay_projector);
     serve_session(websocket, &runtime, &mut context);
 
     let mut host = runtime.lock().expect("runtime lock");
-    host.disconnect_browser_session(
-        context.connection_generation,
-        context.pending_restart_sequence,
-    );
+    host.disconnect_session(context.connection_generation);
 }
 
 #[allow(clippy::result_large_err)] // Tungstenite requires this exact handshake callback result.
@@ -530,297 +520,124 @@ fn process_command(
         return Ok(());
     }
 
-    let mut host = runtime.lock().expect("runtime lock");
-    let result = if host.pending_restart.is_some()
-        && !host.staged_restart_matches(context.connection_generation, envelope.sequence)
-    {
-        Err(InputCommandRejection::EdgeQueueSaturated { capacity: 1 })
-    } else {
-        match envelope.command {
-            BrowserGameCommand::RequestFullState => {
-                unreachable!("full-state control returned before gameplay dispatch")
-            }
-            BrowserGameCommand::Jump => host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                connection_generation: context.connection_generation,
-                sequence: envelope.sequence,
-                command: GameLoopEdgeCommandKind::Jump,
-            }),
-            BrowserGameCommand::SetInputIntent {
-                movement,
-                look_delta,
-                jump_held,
-                primary_fire_held,
-            } => host.runtime.submit_input(PlayerInputCommand {
-                connection_generation: context.connection_generation,
-                sequence: envelope.sequence,
-                intent: PlayerInputIntent {
-                    movement,
-                    look_delta,
-                    jump_held,
-                    primary_fire_held,
-                },
-            }),
-            BrowserGameCommand::Interact { target } => {
-                host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                    connection_generation: context.connection_generation,
-                    sequence: envelope.sequence,
-                    command: GameLoopEdgeCommandKind::Interact { target },
-                })
-            }
-            BrowserGameCommand::SelectWeaponSlot { slot } => {
-                host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                    connection_generation: context.connection_generation,
-                    sequence: envelope.sequence,
-                    command: GameLoopEdgeCommandKind::SelectWeaponSlot { slot },
-                })
-            }
-            BrowserGameCommand::UseItem { item } => {
-                host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                    connection_generation: context.connection_generation,
-                    sequence: envelope.sequence,
-                    command: GameLoopEdgeCommandKind::UseItem { item },
-                })
-            }
-            BrowserGameCommand::SetPaused { paused } => {
-                host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                    connection_generation: context.connection_generation,
-                    sequence: envelope.sequence,
-                    command: GameLoopEdgeCommandKind::SetPaused { paused },
-                })
-            }
-            BrowserGameCommand::SetEnemyAwareness { enabled } => {
-                let _ = enabled;
-                // Enemy-awareness toggling was a calibration-room debug edge;
-                // the retired rooms were its only consumers.
-                Err(InputCommandRejection::InvalidInput)
-            }
-            BrowserGameCommand::Restart {
-                mode: RestartMode::AuthoredBaseline,
-            } => {
-                if let Some(pending) = host.pending_restart.as_ref() {
-                    if pending.identity.connection_generation == context.connection_generation
-                        && pending.identity.sequence == envelope.sequence
-                    {
-                        host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                            connection_generation: context.connection_generation,
-                            sequence: envelope.sequence,
-                            command: GameLoopEdgeCommandKind::RestartAuthoredBaseline,
-                        })
-                    } else {
-                        Err(InputCommandRejection::EdgeQueueSaturated { capacity: 1 })
-                    }
-                } else {
-                    let project_path = host.project_path.clone();
-                    let save_root = host.save_store.root().to_path_buf();
-                    let replacement =
-                        match BrowserRuntime::load_with_save_root(&project_path, &save_root) {
-                            Ok(replacement) => replacement,
-                            Err(error) => {
-                                drop(host);
-                                return send_rejection(
-                                    websocket,
-                                    context,
-                                    Some(envelope.sequence),
-                                    RejectionCode::InternalDefect,
-                                    RetryDisposition::Never,
-                                    &format!("restart failed before mutation: {error}"),
-                                );
-                            }
-                        };
-                    let receipt = host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                        connection_generation: context.connection_generation,
-                        sequence: envelope.sequence,
-                        command: GameLoopEdgeCommandKind::RestartAuthoredBaseline,
-                    });
-                    if receipt.is_ok() {
-                        host.stage_restart(
-                            context.connection_generation,
-                            envelope.sequence,
-                            replacement,
-                        );
-                        context.pending_restart_sequence = Some(envelope.sequence);
-                    }
-                    receipt
-                }
-            }
-            BrowserGameCommand::Restart {
-                mode: RestartMode::Checkpoint,
-            } => {
-                if host.staged_restart_matches(context.connection_generation, envelope.sequence) {
-                    host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                        connection_generation: context.connection_generation,
-                        sequence: envelope.sequence,
-                        command: GameLoopEdgeCommandKind::LoadGame {
-                            slot: SaveSlotId::Checkpoint,
-                        },
-                    })
-                } else {
-                    let loaded = match host.save_store.load(
-                        &host.save_identity,
-                        SaveLoadRequest {
-                            slot: SaveSlotId::Checkpoint,
-                            expected_storage_revision: None,
-                        },
-                    ) {
-                        Ok(loaded) => loaded,
-                        Err(error) => {
-                            let (code, retry) = save_rejection_identity(&error);
-                            drop(host);
-                            return send_rejection(
-                                websocket,
-                                context,
-                                Some(envelope.sequence),
-                                code,
-                                retry,
-                                &error.to_string(),
-                            );
-                        }
-                    };
-                    let replacement = match host.replacement_from_runtime(loaded.runtime) {
-                        Ok(replacement) => replacement,
-                        Err(error) => {
-                            drop(host);
-                            return send_rejection(
-                                websocket,
-                                context,
-                                Some(envelope.sequence),
-                                RejectionCode::InternalDefect,
-                                RetryDisposition::Never,
-                                &error,
-                            );
-                        }
-                    };
-                    let receipt = host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                        connection_generation: context.connection_generation,
-                        sequence: envelope.sequence,
-                        command: GameLoopEdgeCommandKind::LoadGame {
-                            slot: SaveSlotId::Checkpoint,
-                        },
-                    });
-                    if receipt.as_ref().is_ok_and(|receipt| {
-                        receipt.disposition == InputCommandDisposition::Accepted
-                    }) {
-                        host.stage_restart(
-                            context.connection_generation,
-                            envelope.sequence,
-                            replacement,
-                        );
-                        context.pending_restart_sequence = Some(envelope.sequence);
-                    }
-                    receipt
-                }
-            }
-            BrowserGameCommand::SaveGame {
-                slot,
-                overwrite,
-                expected_storage_revision,
-            } => {
-                if host.pending_restart.is_some() {
-                    Err(InputCommandRejection::EdgeQueueSaturated { capacity: 1 })
-                } else {
-                    let receipt = host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                        connection_generation: context.connection_generation,
-                        sequence: envelope.sequence,
-                        command: GameLoopEdgeCommandKind::SaveGame { slot },
-                    });
-                    if receipt.as_ref().is_ok_and(|receipt| {
-                        receipt.disposition == InputCommandDisposition::Accepted
-                    }) {
-                        host.stage_save(
-                            context.connection_generation,
-                            envelope.sequence,
-                            slot,
-                            overwrite,
-                            expected_storage_revision,
-                        );
-                    }
-                    receipt
-                }
-            }
-            BrowserGameCommand::LoadGame {
-                slot,
-                expected_storage_revision,
-            } => {
-                if host.staged_restart_matches(context.connection_generation, envelope.sequence) {
-                    host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                        connection_generation: context.connection_generation,
-                        sequence: envelope.sequence,
-                        command: GameLoopEdgeCommandKind::LoadGame { slot },
-                    })
-                } else {
-                    let loaded = match host.save_store.load(
-                        &host.save_identity,
-                        SaveLoadRequest {
-                            slot,
-                            expected_storage_revision,
-                        },
-                    ) {
-                        Ok(loaded) => loaded,
-                        Err(error) => {
-                            let (code, retry) = save_rejection_identity(&error);
-                            drop(host);
-                            return send_rejection(
-                                websocket,
-                                context,
-                                Some(envelope.sequence),
-                                code,
-                                retry,
-                                &error.to_string(),
-                            );
-                        }
-                    };
-                    let replacement = match host.replacement_from_runtime(loaded.runtime) {
-                        Ok(replacement) => replacement,
-                        Err(error) => {
-                            drop(host);
-                            return send_rejection(
-                                websocket,
-                                context,
-                                Some(envelope.sequence),
-                                RejectionCode::InternalDefect,
-                                RetryDisposition::Never,
-                                &error,
-                            );
-                        }
-                    };
-                    let receipt = host.runtime.submit_edge_command(GameLoopEdgeCommand {
-                        connection_generation: context.connection_generation,
-                        sequence: envelope.sequence,
-                        command: GameLoopEdgeCommandKind::LoadGame { slot },
-                    });
-                    if receipt.as_ref().is_ok_and(|receipt| {
-                        receipt.disposition == InputCommandDisposition::Accepted
-                    }) {
-                        host.stage_restart(
-                            context.connection_generation,
-                            envelope.sequence,
-                            replacement,
-                        );
-                        context.pending_restart_sequence = Some(envelope.sequence);
-                    }
-                    receipt
-                }
-            }
-        }
+    let replaces_session = matches!(
+        envelope.command,
+        BrowserGameCommand::Restart { .. } | BrowserGameCommand::LoadGame { .. }
+    );
+    let command = match envelope.command {
+        BrowserGameCommand::RequestFullState => unreachable!("control returned before dispatch"),
+        BrowserGameCommand::Jump => LoadingBayServiceCommand::Edge {
+            connection_generation: context.connection_generation,
+            sequence: envelope.sequence,
+            command: GameLoopEdgeCommandKind::Jump,
+        },
+        BrowserGameCommand::SetInputIntent {
+            movement,
+            look_delta,
+            jump_held,
+            primary_fire_held,
+        } => LoadingBayServiceCommand::SetInputIntent {
+            connection_generation: context.connection_generation,
+            sequence: envelope.sequence,
+            movement,
+            look_delta,
+            jump_held,
+            primary_fire_held,
+        },
+        BrowserGameCommand::Interact { target } => edge_command(
+            context,
+            envelope.sequence,
+            GameLoopEdgeCommandKind::Interact { target },
+        ),
+        BrowserGameCommand::SelectWeaponSlot { slot } => edge_command(
+            context,
+            envelope.sequence,
+            GameLoopEdgeCommandKind::SelectWeaponSlot { slot },
+        ),
+        BrowserGameCommand::UseItem { item } => edge_command(
+            context,
+            envelope.sequence,
+            GameLoopEdgeCommandKind::UseItem { item },
+        ),
+        BrowserGameCommand::SetPaused { paused } => edge_command(
+            context,
+            envelope.sequence,
+            GameLoopEdgeCommandKind::SetPaused { paused },
+        ),
+        BrowserGameCommand::Restart { mode } => LoadingBayServiceCommand::Restart {
+            connection_generation: context.connection_generation,
+            sequence: envelope.sequence,
+            mode: match mode {
+                RestartMode::AuthoredBaseline => GameRestartMode::AuthoredBaseline,
+                RestartMode::Checkpoint => GameRestartMode::Checkpoint,
+            },
+        },
+        BrowserGameCommand::SaveGame {
+            slot,
+            overwrite,
+            expected_storage_revision,
+        } => LoadingBayServiceCommand::SaveGame {
+            connection_generation: context.connection_generation,
+            sequence: envelope.sequence,
+            slot,
+            overwrite,
+            expected_storage_revision,
+        },
+        BrowserGameCommand::LoadGame {
+            slot,
+            expected_storage_revision,
+        } => LoadingBayServiceCommand::LoadGame {
+            connection_generation: context.connection_generation,
+            sequence: envelope.sequence,
+            slot,
+            expected_storage_revision,
+        },
     };
+    let mut host = runtime.lock().expect("runtime lock");
+    let result = host.submit(command);
     drop(host);
 
     match result {
         Ok(receipt) => {
-            context.acknowledged_command_sequence = receipt.acknowledged_sequence;
+            context.acknowledged_command_sequence = receipt_acknowledged_sequence(&receipt);
+            if replaces_session {
+                context.pending_restart_sequence = Some(envelope.sequence);
+            }
             Ok(())
         }
-        Err(rejection) => {
-            let (code, retry) = rejection_identity(rejection);
-            send_rejection(
-                websocket,
-                context,
-                Some(envelope.sequence),
-                code,
-                retry,
-                &rejection.to_string(),
-            )
+        Err(error) => send_rejection(
+            websocket,
+            context,
+            Some(envelope.sequence),
+            RejectionCode::InvalidInput,
+            RetryDisposition::Never,
+            &error,
+        ),
+    }
+}
+
+fn edge_command(
+    context: &SessionContext,
+    sequence: u64,
+    command: GameLoopEdgeCommandKind,
+) -> LoadingBayServiceCommand {
+    LoadingBayServiceCommand::Edge {
+        connection_generation: context.connection_generation,
+        sequence,
+        command,
+    }
+}
+
+fn receipt_acknowledged_sequence(receipt: &LoadingBayServiceReceipt) -> u64 {
+    match receipt {
+        LoadingBayServiceReceipt::Input {
+            acknowledged_sequence,
+            ..
         }
+        | LoadingBayServiceReceipt::Edge {
+            acknowledged_sequence,
+            ..
+        } => *acknowledged_sequence,
     }
 }
 
@@ -831,15 +648,15 @@ fn send_latest_update(
 ) -> Result<UpdateDisposition, WebSocketError> {
     let build_started = Instant::now();
     let mut host = runtime.lock().expect("runtime lock");
-    let mut active = host.runtime.input_session();
+    let mut active = host.runtime().input_session();
     if active.connection_generation != context.connection_generation || !active.connected {
-        let adopted_generation = context.pending_restart_sequence.and_then(|sequence| {
-            host.adopt_consumed_restart(context.connection_generation, sequence)
-        });
+        let adopted_generation = context
+            .pending_restart_sequence
+            .map(|_| active.connection_generation);
         if let Some(connection_generation) = adopted_generation {
             context.replace_connection(connection_generation);
-            context.gameplay_projector = host.gameplay_projector.clone();
-            active = host.runtime.input_session();
+            context.gameplay_projector = host.gameplay_projector().cloned();
+            active = host.runtime().input_session();
         } else {
             drop(host);
             send_rejection(
@@ -860,23 +677,30 @@ fn send_latest_update(
         context.force_full = true;
         context.metrics.dropped_fact_count = dropped_facts;
     }
-    let DrainedGameLoopFeedback {
-        facts: mut fact_projection,
-        mut feedback,
-        presentation_facts,
-    } = drain_game_loop_feedback(&mut host.runtime);
-    let session_facts = host.drain_session_facts();
+    let presentation_tick = host.runtime().runtime().tick().raw();
+    let raw_facts = host.drain_game_loop_facts();
+    // Browser and desktop consume the same product-level fact naming; the
+    // browser's local pass only constructs its socket-local cue payload.
+    let shared_feedback = drain_projection_feedback(raw_facts, presentation_tick);
+    let mut fact_projection = shared_feedback.facts;
+    let mut feedback = shared_feedback.feedback;
+    let presentation_facts = shared_feedback.presentation_facts;
+    let service_outcomes = host.drain_outcomes();
+    if context.pending_restart_sequence.is_some_and(|sequence| {
+        service_outcomes.iter().any(|outcome| {
+            outcome.command_sequence == Some(sequence)
+                && outcome.message.is_some()
+                && !outcome.session_replaced
+        })
+    }) {
+        context.pending_restart_sequence = None;
+    }
+    let session_facts = service_outcomes
+        .iter()
+        .map(|outcome| (outcome.kind.clone(), outcome.command_sequence))
+        .collect::<Vec<_>>();
     feedback.extend_session_facts(&session_facts, ACTOR);
     fact_projection.extend(session_facts);
-    if let Some(sequence) = context.pending_restart_sequence {
-        let restart_rejected = fact_projection.iter().any(|(kind, command_sequence)| {
-            *command_sequence == Some(sequence) && kind == "InputEdgeRejectedPaused"
-        });
-        if restart_rejected {
-            host.cancel_staged_restart(context.connection_generation, sequence);
-            context.pending_restart_sequence = None;
-        }
-    }
     let fact_names = fact_projection
         .iter()
         .map(|(kind, _)| kind.clone())
@@ -893,7 +717,9 @@ fn send_latest_update(
     let gameplay_frame = context
         .gameplay_projector
         .as_mut()
-        .map(|projector| projector.project_with_facts(host.runtime.runtime(), &presentation_facts))
+        .map(|projector| {
+            projector.project_with_facts(host.runtime().runtime(), &presentation_facts)
+        })
         .transpose()
         .expect("admitted gameplay projection")
         .unwrap_or_else(|| {
@@ -949,7 +775,7 @@ fn send_latest_update(
         protocol_version: PROTOCOL_VERSION,
         session_id: context.session_id.clone(),
         connection_generation: context.connection_generation,
-        server_tick: host.runtime.runtime().tick().raw(),
+        server_tick: host.runtime().runtime().tick().raw(),
         snapshot_sequence: next_snapshot_sequence,
         acknowledged_command_sequence: context.acknowledged_command_sequence,
         static_revision: static_revision.clone(),
@@ -1027,44 +853,6 @@ fn send_rejection(
     ))
 }
 
-fn rejection_identity(rejection: InputCommandRejection) -> (RejectionCode, RetryDisposition) {
-    match rejection {
-        InputCommandRejection::SessionDisconnected
-        | InputCommandRejection::WrongConnectionGeneration { .. } => {
-            (RejectionCode::SessionClosed, RetryDisposition::Reconnect)
-        }
-        InputCommandRejection::StaleSequence { .. } => {
-            (RejectionCode::StaleSequence, RetryDisposition::Never)
-        }
-        InputCommandRejection::InvalidInput => {
-            (RejectionCode::InvalidInput, RetryDisposition::Never)
-        }
-        InputCommandRejection::EdgeQueueSaturated { .. } => {
-            (RejectionCode::EdgeQueueSaturated, RetryDisposition::Never)
-        }
-        InputCommandRejection::PlayerDefeated => {
-            (RejectionCode::PlayerDefeated, RetryDisposition::Never)
-        }
-    }
-}
-
-fn save_rejection_identity(error: &SaveGameError) -> (RejectionCode, RetryDisposition) {
-    (
-        match error {
-            SaveGameError::Empty { .. } | SaveGameError::Io { .. } | SaveGameError::Encode(_) => {
-                RejectionCode::SaveUnavailable
-            }
-            SaveGameError::OverwriteRequired { .. } => RejectionCode::SaveOverwriteRequired,
-            SaveGameError::Stale { .. } => RejectionCode::SaveStale,
-            SaveGameError::Corrupt { .. } | SaveGameError::TooLarge { .. } => {
-                RejectionCode::SnapshotCorrupt
-            }
-            SaveGameError::Incompatible { .. } => RejectionCode::SnapshotIncompatible,
-        },
-        RetryDisposition::Never,
-    )
-}
-
 fn fact_rejection_code(kind: &str) -> Option<RejectionCode> {
     match kind {
         "InputEdgeRejectedUnknownTarget" => Some(RejectionCode::UnknownTarget),
@@ -1077,11 +865,31 @@ fn fact_rejection_code(kind: &str) -> Option<RejectionCode> {
         "InputEdgeRejectedItemNotUsable" => Some(RejectionCode::ItemNotUsable),
         "InputEdgeRejectedHealthFull" => Some(RejectionCode::HealthFull),
         "InputEdgeRejectedCheckpointUnavailable" => Some(RejectionCode::CheckpointUnavailable),
-        "SaveRejectedUnavailable" => Some(RejectionCode::SaveUnavailable),
-        "SaveRejectedOverwriteRequired" => Some(RejectionCode::SaveOverwriteRequired),
-        "SaveRejectedStale" => Some(RejectionCode::SaveStale),
-        "SaveRejectedSnapshotCorrupt" => Some(RejectionCode::SnapshotCorrupt),
-        "SaveRejectedSnapshotIncompatible" => Some(RejectionCode::SnapshotIncompatible),
+        "saveUnavailable" => Some(RejectionCode::SaveUnavailable),
+        "saveOverwriteRequired" => Some(RejectionCode::SaveOverwriteRequired),
+        "saveStale" => Some(RejectionCode::SaveStale),
+        "snapshotCorrupt" => Some(RejectionCode::SnapshotCorrupt),
+        "snapshotIncompatible" => Some(RejectionCode::SnapshotIncompatible),
+        "checkpointUnavailable" => Some(RejectionCode::CheckpointUnavailable),
+        "paused" => Some(RejectionCode::Paused),
+        "unknownTarget" => Some(RejectionCode::UnknownTarget),
+        "notInteractable" => Some(RejectionCode::NotInteractable),
+        "invalidWeaponSlot" => Some(RejectionCode::InvalidWeaponSlot),
+        "weaponNotOwned" => Some(RejectionCode::WeaponNotOwned),
+        "weaponAlreadySelected" => Some(RejectionCode::WeaponAlreadySelected),
+        "playerDefeated" => Some(RejectionCode::PlayerDefeated),
+        "itemNotOwned" => Some(RejectionCode::ItemNotOwned),
+        "itemNotUsable" => Some(RejectionCode::ItemNotUsable),
+        "healthFull" => Some(RejectionCode::HealthFull),
+        "internalDefect"
+        | "runtimeRestoreFailed"
+        | "projectLoadFailed"
+        | "projectPathUnavailable"
+        | "projectEncodingFailed"
+        | "projectAdmissionFailed"
+        | "runtimeInitializationFailed"
+        | "saveIdentityFailed"
+        | "runtimeAdvanceFailed" => Some(RejectionCode::InternalDefect),
         "CombatRejectedCooldown" => Some(RejectionCode::Cooldown),
         "CombatRejectedNoAmmo" => Some(RejectionCode::NoAmmo),
         "CombatRejectedNoEquippedWeapon" => Some(RejectionCode::NoEquippedWeapon),
@@ -1353,5 +1161,26 @@ mod tests {
         assert!(context.force_static_resources);
         assert!(context.previous_dynamic.is_none());
         assert_eq!(context.snapshot_sequence, 0);
+    }
+
+    #[test]
+    fn product_outcome_codes_map_to_browser_rejections() {
+        assert_eq!(
+            fact_rejection_code("saveOverwriteRequired"),
+            Some(RejectionCode::SaveOverwriteRequired)
+        );
+        assert_eq!(
+            fact_rejection_code("snapshotCorrupt"),
+            Some(RejectionCode::SnapshotCorrupt)
+        );
+        assert_eq!(
+            fact_rejection_code("checkpointUnavailable"),
+            Some(RejectionCode::CheckpointUnavailable)
+        );
+        assert_eq!(fact_rejection_code("paused"), Some(RejectionCode::Paused));
+        assert_eq!(
+            fact_rejection_code("runtimeRestoreFailed"),
+            Some(RejectionCode::InternalDefect)
+        );
     }
 }

@@ -272,14 +272,11 @@ mod tests {
     use super::project_stored_voxel_objects;
     use crate::decode_project_document;
 
-    const LOADING_BAY_PROJECT: &str =
-        include_str!("../../../../content/projects/loading-bay.project.json");
+    const E1M1_PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 
     #[test]
-    fn canonical_game_projection_reuses_the_studio_voxel_object_seam() {
-        let project = decode_project_document(LOADING_BAY_PROJECT)
-            .unwrap()
-            .project;
+    fn e1m1_projection_has_no_legacy_voxel_object_instances() {
+        let project = decode_project_document(E1M1_PROJECT).unwrap().project;
         let frame = project_stored_voxel_objects(&project).unwrap();
         let definitions = frame
             .ops
@@ -295,8 +292,8 @@ mod tests {
             })
             .collect::<Vec<_>>();
 
-        assert_eq!(definitions, 9);
-        assert_eq!(instances.len(), 365);
+        assert_eq!(definitions, 0);
+        assert!(instances.is_empty());
         let definition_sizes = frame
             .ops
             .iter()

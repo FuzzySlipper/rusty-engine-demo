@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Lean demo verification gate (task 7052): typecheck, authored-package drift,
-# canonical E1M1 content, TS unit tests, browser shell build, and the Rust
-# gate. Boundary audit, native-host proof, and per-package TS suites remain
-# available as explicit commands (audit:boundary, verify:native,
-# test:platform/shell/engine-route) and in CI until task 7053 finalizes it.
+# Lean demo verification gate: typecheck, authored-package drift, canonical
+# E1M1 content, TS unit tests, browser shell build, and Rust authority.
+# Browser interaction and Tauri packaging are relevance-triggered checks.
 set -euo pipefail
 
 DEMO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

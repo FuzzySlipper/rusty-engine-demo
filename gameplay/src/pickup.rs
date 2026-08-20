@@ -372,6 +372,11 @@ impl PickupService {
             .map_err(|error| PickupRejection::Trigger {
                 diagnostics: error.diagnostics,
             })?;
+        let trigger_facts = prune_unavailable_pickup_overlaps(
+            &candidate_session,
+            &mut candidate_triggers,
+            trigger_receipt.facts,
+        );
         let item = component.config.item.clone();
         let quantity = component.config.quantity;
         let inventory_facts = inventory
@@ -387,7 +392,7 @@ impl PickupService {
             after,
             inventory,
             entity_facts: entity_receipt.facts,
-            trigger_facts: trigger_receipt.facts,
+            trigger_facts,
             facts: vec![PickupFact::Collected {
                 pickup: command.pickup,
                 actor: command.actor,
@@ -420,6 +425,7 @@ impl PickupService {
             .map_err(|error| PickupRejection::Trigger {
                 diagnostics: error.diagnostics,
             })?;
+        let facts = prune_unavailable_pickup_overlaps(session, triggers, facts);
         let entered = facts
             .iter()
             .filter(|fact| {
@@ -458,6 +464,38 @@ impl PickupService {
             rejected,
         })
     }
+}
+
+/// Pickup trigger definitions are permanent admission-time identities: dormant
+/// enemy drops need their definitions intact so they can be materialized after
+/// an enemy dies. Their overlaps are live state, however, and only available
+/// pickups may retain them. Keep that distinction at the gameplay boundary so
+/// snapshots and trigger facts never describe a collectable interaction for a
+/// dormant or already-collected pickup.
+fn prune_unavailable_pickup_overlaps(
+    session: &GameSession,
+    triggers: &mut TriggerVolumeSystem,
+    facts: Vec<TriggerOverlapFact>,
+) -> Vec<TriggerOverlapFact> {
+    let unavailable = session
+        .pickups
+        .iter()
+        .filter_map(|(entity, pickup)| (pickup.state != PickupState::Available).then_some(*entity))
+        .collect::<std::collections::BTreeSet<_>>();
+    if unavailable.is_empty() {
+        return facts;
+    }
+
+    let mut snapshot = triggers.snapshot();
+    snapshot
+        .active_overlaps
+        .retain(|pair| !unavailable.contains(&pair.trigger_id()));
+    *triggers = TriggerVolumeSystem::from_snapshot(snapshot)
+        .expect("pickup trigger definitions are admitted and only active overlaps were pruned");
+    facts
+        .into_iter()
+        .filter(|fact| !unavailable.contains(&fact.pair.trigger_id()))
+        .collect()
 }
 
 pub(crate) fn pickup_view(entity: EntityId, component: &PickupComponent) -> PickupView {

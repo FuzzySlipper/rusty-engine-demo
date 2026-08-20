@@ -1,4 +1,9 @@
-import { GameSessionError, LoadingBayGameSession } from "./game-session.js";
+import {
+  connectLoadingBayGameTransport,
+  GameSessionError,
+  readLoadingBayMenuReadout,
+} from "./game-session.js";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { HeldMovementInput } from "./held-movement.js";
 import {
   resolveKeyboardAction,
@@ -25,6 +30,8 @@ export interface LoadingBayHostPresentationPreferences {
 
 export type LoadingBaySaveSlotId = RuntimeSaveSlotId;
 export type LoadingBaySaveSlot = RuntimeSaveSlotSummary;
+
+export { readLoadingBayMenuReadout };
 
 export interface LoadingBayInventoryStack {
   readonly item: string;
@@ -57,6 +64,7 @@ export interface LoadingBayPresentationSnapshot {
   readonly armor: number;
   readonly bindings: LoadingBayInputBindings;
   readonly connected: boolean;
+  readonly connectionGeneration: number;
   readonly doorState: "closed" | "opening" | "open" | "closing";
   readonly equippedWeapon: string | null;
   readonly encounterState: string;
@@ -141,7 +149,6 @@ export interface LoadingBayGameHandle {
   ) => Promise<void>;
   readonly selectWeaponSlot: (slot: number) => Promise<void>;
   readonly setPaused: (paused: boolean) => Promise<void>;
-  readonly setEnemyAwareness: (enabled: boolean) => Promise<void>;
   readonly updatePreferences: (
     preferences: LoadingBayHostPresentationPreferences,
   ) => void;
@@ -160,7 +167,7 @@ export async function mountLoadingBayGame(
   let preferences = options.preferences ?? defaultPreferences();
   let lastRejection: string | null = null;
   let disposed = false;
-  const session = await LoadingBayGameSession.connect();
+  const session = await connectLoadingBayGameTransport();
   let current = session.state;
   let primaryFireHeld = false;
   let jumpHeld = false;
@@ -278,9 +285,6 @@ export async function mountLoadingBayGame(
     setPaused: async (paused) => {
       await session.sendEdge({ kind: "setPaused", paused });
     },
-    setEnemyAwareness: async (enabled) => {
-      await session.sendEdge({ kind: "setEnemyAwareness", enabled });
-    },
     updatePreferences: (next) => {
       preferences = next;
     },
@@ -332,6 +336,7 @@ export async function mountLoadingBayGame(
       armor: state.player.armor,
       bindings: state.player.bindings,
       connected: state.input.connected,
+      connectionGeneration: state.input.connectionGeneration,
       doorState: state.doorState,
       equippedWeapon: state.inventory?.equippedWeapon ?? null,
       encounterState: state.encounterState,
@@ -510,13 +515,7 @@ async function loadApplicationContent(
 ): Promise<LoadingBayApplicationContent> {
   const resources = await Promise.all(
     descriptor.resources.map(async (resource) => {
-      const response = await fetch(resource.resourceUrl, { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(
-          `Rust application resource ${resource.identity} returned HTTP ${String(response.status)}`,
-        );
-      }
-      const bytes = new Uint8Array(await response.arrayBuffer());
+      const bytes = await loadApplicationResource(resource.resourceUrl);
       if (bytes.byteLength !== resource.byteLength) {
         throw new Error(
           `Rust application resource ${resource.identity} declared ${String(resource.byteLength)} bytes but returned ${String(bytes.byteLength)}`,
@@ -531,6 +530,22 @@ async function loadApplicationContent(
     }),
   );
   return { frame: descriptor.frame, resources };
+}
+
+async function loadApplicationResource(resourceUrl: string): Promise<Uint8Array> {
+  if (isTauri()) {
+    const index = Number(resourceUrl.split("/").at(-1));
+    if (!Number.isSafeInteger(index) || index < 0) {
+      throw new Error(`invalid desktop application resource URL ${resourceUrl}`);
+    }
+    const value = await invoke<unknown>("loading_bay_service_application_resource", { index });
+    return value instanceof Uint8Array ? value : new Uint8Array(value as number[]);
+  }
+  const response = await fetch(resourceUrl, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Rust application resource ${resourceUrl} returned HTTP ${String(response.status)}`);
+  }
+  return new Uint8Array(await response.arrayBuffer());
 }
 
 function markApplicationViewportBoundary(): void {

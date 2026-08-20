@@ -4,13 +4,13 @@
   "version": "0.1.0",
   "identifier": "dev.fuzzyslipper.rusty-engine-demo.loading-bay",
   "build": {
-    "beforeBuildCommand": "pnpm run prepare:tauri",
+    "beforeBuildCommand": "pnpm run build:shell",
     "frontendDist": "../dist/apps/loading-bay/browser"
   },
   "app": {
     "windows": [],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:*; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; worker-src 'self' blob:",
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; worker-src 'self' blob:",
       "freezePrototype": true
     },
     "withGlobalTauri": false
@@ -19,14 +19,13 @@
     "active": true,
     "targets": ["deb", "appimage"],
     "category": "Game",
-    "shortDescription": "An original industrial first-person exploration game built with Rusty Engine.",
-    "longDescription": "Loading Bay is the native desktop package of the Rust-authoritative Rusty Engine Demo.",
+    "shortDescription": "A Rust-authoritative E1M1 reference game built with Rusty Engine.",
+    "longDescription": "Loading Bay packages its E1M1 reference game as one WebView over an in-process Rust gameplay service.",
     "copyright": "Copyright 2026 FuzzySlipper",
-    "externalBin": ["binaries/loading-bay-browser-host"],
     "resources": {
-      "../dist/apps/loading-bay/browser/": "web/",
-      "../content/": "content/",
-      "resources/desktop-package-manifest.json": "desktop-package-manifest.json"
+      "../content/projects/doom-e1m1.project.json": "content/projects/doom-e1m1.project.json",
+      "../content/doom-e1m1/textures/": "content/doom-e1m1/textures/",
+      "../content/doom-e1m1/sprites/": "content/doom-e1m1/sprites/"
     },
     "icon": [
       "icons/32x32.png",

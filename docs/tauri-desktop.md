@@ -1,99 +1,21 @@
-# Loading Bay Tauri desktop package
+# Loading Bay desktop shell
 
-Loading Bay has one Tauri 2 shell around the existing product. It does not contain a second
-gameplay or rendering implementation:
+Tauri packages Loading Bay as one final-product WebView over the same Angular build used by the browser shell. It is an in-process adapter over `LoadingBayProductService`.
 
-```text
-Tauri Rust lifecycle owner
-  -> packaged browser-host sidecar on an ephemeral 127.0.0.1 port
-  -> existing relative HTTP and WebSocket protocol
-  -> existing Angular loading-bay production build in one WebView
-```
+## Contract
 
-Rust owns sidecar launch, the loopback bind requirement, a 15-second readiness and health bound,
-resource verification, user-data locations, logging, crash handling, and shutdown. TypeScript has
-no Tauri shell, process, or filesystem permission. The main remote WebView capability grants no
-Tauri commands.
+At startup Tauri loads the packaged E1M1 content closure, creates the product service, and exposes typed commands for service readout, session start/disconnect, command submission, and projected application resources. Rust owns fixed-step ticking for the active desktop session; the WebView polls readout and never advances gameplay. The WebView selects that transport in desktop mode; browser mode continues to use `loading-bay.v2` through `browser-host`.
 
-## Build inputs and outputs
+There is no `browser-host` sidecar, loopback port, readiness polling, asset-hash handshake, orphan process cleanup, or second product window. Engine remains the only canvas/renderer owner.
 
-All Tauri, plugin, and CLI versions are exact in `src-tauri/Cargo.toml`, `Cargo.lock`,
-`package.json`, and `pnpm-lock.yaml`. Build beside the adjacent Engine checkout used by the
-Demo's Rust facade and application-host path dependencies. Those paths are compile-time inputs only:
-the packaged application copies the sidecar, web assets, and content closure and performs no sibling
-Engine lookup at runtime. Release binaries may retain compiler source-provenance strings, so the
-package inspector rejects runtime-relative sibling paths and unpackaged dependency trees rather than
-ordinary build-machine source paths.
+## Verification
 
 ```bash
-pnpm install --frozen-lockfile
-pnpm run test:tauri
+pnpm run test:tauri      # typed source/contract coverage
 pnpm run build:tauri:binary
-pnpm run smoke:tauri
+pnpm run smoke:tauri     # contract smoke
+pnpm run smoke:tauri:headed # headed WebView evidence: menu, E1M1 frame, typed session, shutdown
+pnpm run verify:tauri
 ```
 
-`prepare:tauri` builds Angular, builds `browser-host` for the selected Rust target, and creates a
-canonical manifest containing the exact Git revision, byte length, and SHA-256 digest of every
-web/content resource plus the sidecar. Tauri runs that preparation automatically before a release
-build, and `test:tauri` runs it before checking the generated manifest. Generated binaries and
-manifests are build outputs, not committed inputs. Ordinary non-release Cargo workspace checks
-compile the desktop crate with bundle resources disabled; release builds retain the complete
-configuration and fail if the prepared sidecar or resource tree is absent.
-
-The direct Linux layout is:
-
-```text
-target/release/loading-bay-desktop
-target/release/loading-bay-browser-host
-target/lib/loading-bay-desktop/
-  desktop-package-manifest.json
-  web/
-  content/
-```
-
-Moving only the first executable is deliberately unsupported: startup fails closed when the
-manifest, sidecar, canonical project, or an asset is missing, has a different size, or has a
-different hash.
-
-The installable packages are built with:
-
-```bash
-pnpm run build:tauri
-```
-
-The supported reproducible bundle baseline is the `verify-tauri` GitHub job on Ubuntu 22.04 with
-WebKitGTK 4.1 development packages, `patchelf`, and Tauri's Linux bundler. It produces and uploads
-the deb, AppImage, direct binary layout, native-smoke JSON, and WebView screenshot. An Arch package
-build is useful for the direct binary and deb, but it is not the portability baseline: the current
-linuxdeploy strip binary cannot read Arch's RELR sections, so an Arch AppImage failure must not be
-represented as a product failure or a portable artifact.
-
-## Runtime locations and security
-
-The shell resolves Tauri's platform application directories rather than the current directory or
-environment-provided project paths:
-
-- application data: save slots and WebKit durable data;
-- application cache: atomic sidecar readiness;
-- application logs: `browser-host.log`.
-
-The sidecar receives explicit absolute packaged paths and a cleared environment. It binds
-`127.0.0.1:0`, publishes an atomic PID/address/content-hash receipt, and rejects a non-loopback
-address before binding. The WebView accepts only that exact origin (plus WebView-owned `about:` and
-`data:` documents). HTTP responses include a restrictive CSP, `Referrer-Policy: no-referrer`, and
-`X-Content-Type-Options: nosniff`. The CSP permits Angular's exact hashed production stylesheet
-activation handler and runtime component styles; the native smoke fails if the optimized
-stylesheet remains in its pre-load `print` state.
-
-Normal exit removes the sidecar once. A host crash exits the shell, and a shell crash is detected
-by the host's parent monitor so the host cannot survive as an orphan. `smoke:tauri` exercises all
-four paths with the compiled application through WebKit WebDriver, also proving the Rust-owned menu,
-New Game path, and first retained renderer submission.
-
-## Local deployment
-
-The user-scoped managed installer (`pnpm run deploy:tauri` install/status/rollback/uninstall)
-and the installed-product certification command (`certify:tauri-deploy`) were retired together
-with the release certification ceremony. Install the built Debian/AppImage artifacts with your
-platform's normal package tooling when needed; the build outputs, layout, and security model
-documented above are unchanged, and `pnpm run smoke:tauri` remains the desktop product proof.
+These are relevance-triggered checks, not the default CI gate. A source/contract check does not prove a visible or packaged desktop experience. Before making either claim, obtain a headed WebView run that observes one rendered frame, a typed session round-trip, packaged resources, and clean shutdown.

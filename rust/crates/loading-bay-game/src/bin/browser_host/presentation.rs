@@ -153,12 +153,12 @@ enum BrowserFeedbackCue {
 /// Response-local projection accumulator. Repeated movement collapses to one
 /// cue per entity so bounded multi-step phases cannot flood the browser.
 #[derive(Debug, Default)]
-pub(super) struct BrowserFeedbackProjection {
+pub struct BrowserFeedbackProjection {
     cues: Vec<BrowserFeedbackCue>,
 }
 
 impl BrowserFeedbackProjection {
-    pub(super) fn extend_player_control(&mut self, facts: &[PlayerControlFact]) {
+    pub fn extend_player_control(&mut self, facts: &[PlayerControlFact]) {
         for fact in facts {
             match fact {
                 PlayerControlFact::Moved {
@@ -175,7 +175,7 @@ impl BrowserFeedbackProjection {
         }
     }
 
-    pub(super) fn extend_combat(&mut self, facts: &[CombatFact]) {
+    pub fn extend_combat(&mut self, facts: &[CombatFact]) {
         for fact in facts {
             match fact {
                 CombatFact::AttackFired {
@@ -263,7 +263,7 @@ impl BrowserFeedbackProjection {
         }
     }
 
-    pub(super) fn extend_enemy_combat(&mut self, facts: &[EnemyCombatFact]) {
+    pub fn extend_enemy_combat(&mut self, facts: &[EnemyCombatFact]) {
         for fact in facts {
             match fact {
                 EnemyCombatFact::Alerted {
@@ -336,7 +336,7 @@ impl BrowserFeedbackProjection {
         }
     }
 
-    pub(super) fn extend_vitality(&mut self, facts: &[VitalityFact]) {
+    pub fn extend_vitality(&mut self, facts: &[VitalityFact]) {
         for fact in facts {
             if let VitalityFact::DamageApplied {
                 source,
@@ -358,7 +358,7 @@ impl BrowserFeedbackProjection {
         }
     }
 
-    pub(super) fn extend_events(&mut self, events: &[GameEvent]) {
+    pub fn extend_events(&mut self, events: &[GameEvent]) {
         for event in events {
             match event {
                 GameEvent::DoorOpened { door, .. } => self.push_door(*door, "open"),
@@ -386,11 +386,7 @@ impl BrowserFeedbackProjection {
         }
     }
 
-    pub(super) fn extend_session_facts(
-        &mut self,
-        facts: &[(String, Option<u64>)],
-        player: EntityId,
-    ) {
+    pub fn extend_session_facts(&mut self, facts: &[(String, Option<u64>)], player: EntityId) {
         for (kind, _) in facts {
             let action = match kind.as_str() {
                 "CheckpointSaved" => "saved",
@@ -404,7 +400,7 @@ impl BrowserFeedbackProjection {
         }
     }
 
-    pub(super) fn extend_extraction_beacon(&mut self, fact: ExtractionBeaconFact) {
+    pub fn extend_extraction_beacon(&mut self, fact: ExtractionBeaconFact) {
         let ExtractionBeaconFact::Activated { beacon, actor, .. } = fact;
         self.cues
             .push(BrowserFeedbackCue::ExtractionBeaconActivated {
@@ -413,7 +409,7 @@ impl BrowserFeedbackProjection {
             });
     }
 
-    pub(super) fn extend_dry_fire(
+    pub fn extend_dry_fire(
         &mut self,
         attacker: EntityId,
         weapon: &loading_bay_game::ItemDefinitionId,
@@ -426,7 +422,7 @@ impl BrowserFeedbackProjection {
         });
     }
 
-    pub(super) fn extend_pickup(&mut self, fact: &PickupFact) {
+    pub fn extend_pickup(&mut self, fact: &PickupFact) {
         let PickupFact::Collected {
             pickup,
             actor,
@@ -442,7 +438,7 @@ impl BrowserFeedbackProjection {
         });
     }
 
-    pub(super) fn extend_progression(&mut self, fact: &ProgressionFact) {
+    pub fn extend_progression(&mut self, fact: &ProgressionFact) {
         match fact {
             ProgressionFact::DoorAccessGranted {
                 door,
@@ -479,7 +475,7 @@ impl BrowserFeedbackProjection {
         }
     }
 
-    pub(super) fn extend_door_access_denied(
+    pub fn extend_door_access_denied(
         &mut self,
         door: EntityId,
         required_key: &loading_bay_game::ItemDefinitionId,

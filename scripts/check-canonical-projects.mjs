@@ -6,11 +6,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const projectFiles = [
-  "content/projects/loading-bay.project.json",
-  "content/projects/relay-annex.project.json",
-  "content/projects/doom-e1m1.project.json",
-];
+const projectFiles = ["content/projects/doom-e1m1.project.json"];
 const proofRoot = mkdtempSync(join(tmpdir(), "loading-bay-project-check-"));
 
 try {

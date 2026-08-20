@@ -1,37 +1,9 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import type { StoredProjectContent } from "./schema.js";
 
-export type ContentGenerationMode = "check" | "write";
-
-export const CANONICAL_PROJECT_FILES = [
-  "loading-bay.project.json",
-  "relay-annex.project.json",
-  "doom-e1m1.project.json",
-] as const;
-
-export function synchronizeGeneratedProjects(
-  outputDirectory: string,
-  projects: Readonly<Record<string, unknown>>,
-  mode: ContentGenerationMode,
-): void {
-  if (mode === "write") {
-    mkdirSync(outputDirectory, { recursive: true });
-  }
-  for (const [filename, project] of Object.entries(projects)) {
-    const expected = `${JSON.stringify(project, null, 2)}\n`;
-    const output = resolve(outputDirectory, filename);
-    if (mode === "write") {
-      writeFileSync(output, expected, "utf8");
-      continue;
-    }
-    const actual = readFileSync(output, "utf8");
-    if (actual !== expected) {
-      throw new Error(`${filename} is stale; run pnpm run generate:content`);
-    }
-  }
-}
+export const CANONICAL_PROJECT_FILES = ["doom-e1m1.project.json"] as const;
 
 export function readCanonicalProject(
   projectDirectory: string,

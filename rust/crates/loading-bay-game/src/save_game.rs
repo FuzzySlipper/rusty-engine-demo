@@ -17,7 +17,9 @@ use crate::{
 };
 
 pub const SAVE_GAME_SCHEMA_VERSION: u32 = 1;
-pub const MAX_SAVE_GAME_BYTES: usize = 2 * 1024 * 1024;
+// E1M1's admitted voxel snapshot is roughly 7 MiB.  Keep a bounded ceiling
+// above the supported product rather than rejecting legitimate saves.
+pub const MAX_SAVE_GAME_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_SAVE_SLOTS: usize = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -727,7 +729,7 @@ mod tests {
     use super::*;
     use crate::{decode_project_document, encode_game_snapshot, ResolvedPlayerAction};
 
-    const PROJECT: &str = include_str!("../../../../content/projects/loading-bay.project.json");
+    const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 
     fn fixture() -> (StoredProject, GameRuntime) {
         let project = decode_project_document(PROJECT).unwrap().project;

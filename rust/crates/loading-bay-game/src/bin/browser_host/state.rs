@@ -289,7 +289,7 @@ struct BrowserVisualBindingResource {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct BrowserState {
+pub struct BrowserState {
     #[serde(flatten)]
     pub(super) dynamic: BrowserDynamicState,
     #[serde(flatten)]
@@ -298,7 +298,7 @@ pub(super) struct BrowserState {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct BrowserDynamicState {
+pub struct BrowserDynamicState {
     tick: u64,
     entity_revision: u64,
     gameplay_frame: RenderFrameDiff,
@@ -351,7 +351,7 @@ struct BrowserDoomSpriteInspectionState {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct BrowserStaticResources {
+pub struct BrowserStaticResources {
     host_session_id: String,
     project_id: String,
     static_revision: String,
@@ -389,7 +389,7 @@ struct BrowserApplicationResource {
     resource_url: String,
 }
 
-pub(super) fn browser_state(
+pub fn browser_state(
     host: &BrowserRuntime,
     last_events: Vec<String>,
     feedback: BrowserFeedbackProjection,
@@ -400,15 +400,14 @@ pub(super) fn browser_state(
     }
 }
 
-pub(super) fn browser_dynamic_state(
+pub fn browser_dynamic_state(
     host: &BrowserRuntime,
     last_events: Vec<String>,
     feedback: BrowserFeedbackProjection,
 ) -> BrowserDynamicState {
-    let runtime: &GameRuntime = host.runtime.runtime();
+    let runtime: &GameRuntime = host.runtime().runtime();
     let gameplay_frame = host
-        .gameplay_projector
-        .as_ref()
+        .gameplay_projector()
         .map(|projector| {
             projector
                 .project_current(runtime)
@@ -420,19 +419,19 @@ pub(super) fn browser_dynamic_state(
     browser_dynamic_state_with_gameplay_frame(host, last_events, feedback, gameplay_frame)
 }
 
-pub(super) fn browser_dynamic_state_with_gameplay_frame(
+pub fn browser_dynamic_state_with_gameplay_frame(
     host: &BrowserRuntime,
     last_events: Vec<String>,
     feedback: BrowserFeedbackProjection,
     gameplay_frame: RenderFrameDiff,
 ) -> BrowserDynamicState {
-    let runtime: &GameRuntime = host.runtime.runtime();
+    let runtime: &GameRuntime = host.runtime().runtime();
     let authored_entities = host
-        .authored
+        .authored_project()
         .document()
         .scenes
         .iter()
-        .find(|scene| scene.id == host.authored.document().entry_scene)
+        .find(|scene| scene.id == host.authored_project().document().entry_scene)
         .map(|scene| scene.entities.as_slice())
         .unwrap_or_default();
     let actor = authored_entities
@@ -928,8 +927,8 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
             .unwrap_or("blocked"),
         player_motion_state,
         combat_state,
-        enemy_awareness_enabled: host.runtime.enemy_awareness_enabled(),
-        input: host.runtime.input_session(),
+        enemy_awareness_enabled: host.runtime().enemy_awareness_enabled(),
+        input: host.runtime().input_session(),
         player: player_state,
         weapon: weapon_state,
         inventory: inventory_state,
@@ -937,12 +936,12 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
         hazards,
         restart: BrowserRestartState {
             authored_baseline_available: true,
-            checkpoint_available: host.save_slots.iter().any(|slot| {
+            checkpoint_available: host.save_slots().iter().any(|slot| {
                 slot.slot == SaveSlotId::Checkpoint
                     && slot.compatibility == SaveSlotCompatibility::Available
             }),
         },
-        save_slots: host.save_slots.clone(),
+        save_slots: host.save_slots().to_vec(),
         extraction_beacon,
         door_access,
         secret_regions,
@@ -960,7 +959,7 @@ pub(super) fn browser_dynamic_state_with_gameplay_frame(
             primary_beacon,
             feedback,
         ),
-        doom_sprite_inspection: host.gameplay_projector.as_ref().and_then(|projector| {
+        doom_sprite_inspection: host.gameplay_projector().and_then(|projector| {
             projector
                 .doom_sprite_inspection_readout(runtime)
                 .map(|readout| BrowserDoomSpriteInspectionState {
@@ -1080,9 +1079,9 @@ fn available_interaction(
         })
 }
 
-pub(super) fn browser_static_revision(host: &BrowserRuntime) -> String {
+pub fn browser_static_revision(host: &BrowserRuntime) -> String {
     let scene = host
-        .runtime
+        .runtime()
         .runtime()
         .collision_scene()
         .expect("browser project collision scene");
@@ -1090,16 +1089,16 @@ pub(super) fn browser_static_revision(host: &BrowserRuntime) -> String {
         "{}:{:016x}:{}",
         scene.source_revision().raw(),
         scene.authority_hash(),
-        host.project.content_hash,
+        host.project().content_hash,
     )
 }
 
-pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticResources {
-    let runtime: &GameRuntime = host.runtime.runtime();
+pub fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticResources {
+    let runtime: &GameRuntime = host.runtime().runtime();
     let scene = runtime
         .collision_scene()
         .expect("browser project collision scene");
-    let voxel_meshes = if host.voxel_environment_role == "gameplayProxy" {
+    let voxel_meshes = if host.voxel_environment_role() == "gameplayProxy" {
         Vec::new()
     } else {
         scene
@@ -1137,7 +1136,7 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
             mesh_quads,
         }
     });
-    let document = host.authored.document();
+    let document = host.authored_project().document();
     let authored_scene = document
         .scenes
         .iter()
@@ -1210,31 +1209,30 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
             })
         })
         .collect();
-    let application_content =
-        host.application_content
-            .as_ref()
-            .map(|content| BrowserApplicationContent {
-                frame: content.frame.clone(),
-                resources: content
-                    .resources
-                    .iter()
-                    .enumerate()
-                    .map(|(index, resource)| BrowserApplicationResource {
-                        identity: resource.identity.clone(),
-                        content_hash: resource.content_hash.clone(),
-                        media_type: if resource.identity.starts_with("texture-resource/") {
-                            "image/png"
-                        } else {
-                            "application/octet-stream"
-                        },
-                        byte_length: resource.bytes.len(),
-                        resource_url: format!("/api/application-resource/{index}"),
-                    })
-                    .collect(),
-            });
+    let application_content = host
+        .application_content()
+        .map(|content| BrowserApplicationContent {
+            frame: content.frame.clone(),
+            resources: content
+                .resources
+                .iter()
+                .enumerate()
+                .map(|(index, resource)| BrowserApplicationResource {
+                    identity: resource.identity.clone(),
+                    content_hash: resource.content_hash.clone(),
+                    media_type: if resource.identity.starts_with("texture-resource/") {
+                        "image/png"
+                    } else {
+                        "application/octet-stream"
+                    },
+                    byte_length: resource.bytes.len(),
+                    resource_url: format!("/api/application-resource/{index}"),
+                })
+                .collect(),
+        });
     BrowserStaticResources {
-        host_session_id: host.host_session_id.clone(),
-        project_id: host.project.project_id.clone(),
+        host_session_id: host.host_session_id().to_owned(),
+        project_id: host.project().project_id.clone(),
         static_revision: browser_static_revision(host),
         voxel_revision: scene.source_revision().raw(),
         voxel_authority_hash: format!("{:016x}", scene.authority_hash()),
@@ -1249,9 +1247,9 @@ pub(super) fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticRe
                 512,
             )
             .map_or(0, |step| step.path_len),
-        voxel_environment_role: host.voxel_environment_role,
+        voxel_environment_role: host.voxel_environment_role(),
         voxel_meshes,
-        voxel_object_frame: host.voxel_object_frame.clone(),
+        voxel_object_frame: host.voxel_object_frame().clone(),
         lights,
         generated_environment,
         render_materials,

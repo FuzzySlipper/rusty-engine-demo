@@ -1,10 +1,9 @@
 export const activeGuidancePaths = new Set([
   "AGENTS.md",
   "README.md",
-  "docs/agent-code-atlas.md",
   "docs/design.md",
   "docs/extension-recipes.md",
-  "docs/fps-product-architecture.md",
+  "docs/source-provenance.md",
   "docs/game-session-protocol.md",
   "docs/studio-adapter.md",
   "docs/tauri-desktop.md",
