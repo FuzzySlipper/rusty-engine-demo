@@ -9,6 +9,7 @@ use rusty_engine::gameplay_mechanics::{
 
 use crate::combat::EnemyState;
 use crate::enemy_drop::{EnemyDropFact, EnemyDropRejection, EnemyDropService};
+use crate::enemy_program::{execute_enemy_defeat_program, EnemyDefeatOperation};
 use crate::explosive_prop::{ExplosivePropFact, ExplosivePropState};
 use crate::inventory::{
     ArmorGrantMode, ArmorTransition, InventoryAction, InventoryCommand, InventoryReceipt,
@@ -130,6 +131,10 @@ pub enum VitalityFact {
     Died {
         source: DamageSource,
         entity: EntityId,
+    },
+    EnemyDefeatProgramRecorded {
+        enemy: EntityId,
+        program_id: String,
     },
     ArmorGranted {
         entity: EntityId,
@@ -337,6 +342,7 @@ impl DamageService {
         let mut event = None;
         let mut enemy_drops = Vec::new();
         let mut explosive_props = Vec::new();
+        let mut recorded_enemy_defeat_program = None;
         if let Some(combat) = candidate.enemy_combat.get_mut(&command.target) {
             combat.state.pain_ticks_remaining = if died {
                 0
@@ -361,14 +367,35 @@ impl DamageService {
                     entity: command.target,
                     enabled: false,
                 });
-                if let Some(fact) = EnemyDropService::stage_materialization(
-                    &mut candidate,
-                    command.target,
-                    &mut commands,
-                )
-                .map_err(VitalityRejection::EnemyDrop)?
-                {
-                    enemy_drops.push(fact);
+                if let Some(combat) = candidate.enemy_combat.get(&command.target) {
+                    let program_id = combat.config.defeat_program.clone();
+                    let program = candidate
+                        .enemy_defeat_programs
+                        .get(&program_id)
+                        .expect("enemy defeat program was admitted")
+                        .clone();
+                    let mut recorded = false;
+                    execute_enemy_defeat_program(&program, &mut |operation| match operation {
+                        EnemyDefeatOperation::RecordEnemyDefeat => {
+                            recorded = true;
+                            Ok(())
+                        }
+                        EnemyDefeatOperation::ActivateBoundDrop => {
+                            if let Some(fact) = EnemyDropService::stage_materialization(
+                                &mut candidate,
+                                command.target,
+                                &mut commands,
+                            )
+                            .map_err(VitalityRejection::EnemyDrop)?
+                            {
+                                enemy_drops.push(fact);
+                            }
+                            Ok(())
+                        }
+                    })?;
+                    if recorded {
+                        recorded_enemy_defeat_program = Some(program_id);
+                    }
                 }
             }
             if let Some(prop) = candidate.explosive_props.get_mut(&command.target) {
@@ -433,6 +460,12 @@ impl DamageService {
             facts.push(VitalityFact::Died {
                 source: command.source,
                 entity: command.target,
+            });
+        }
+        if let Some(program_id) = recorded_enemy_defeat_program {
+            facts.push(VitalityFact::EnemyDefeatProgramRecorded {
+                enemy: command.target,
+                program_id,
             });
         }
         *session = candidate;

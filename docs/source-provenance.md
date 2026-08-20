@@ -13,7 +13,20 @@ The forge reads the id Software shareware IWAD at `/home/research/doom.ts/public
 - `content/doom-e1m1/doom-e1m1.voxel.json` is the authored voxel volume (SHA-256 `59041f8a5e291b844ccc6c17ea404d5842bf2832633014b93f223a9eeea8497b`).
 - `content/doom-e1m1/textures/manifest.json` closes the 54 derived wall/flat PNGs, their source WAD hash, palette hash `fd895921b5d0a394612bb29852ed003d44d69f76dec31c0dc6b5d5fc7d63f7bb`, and each output hash. `SKY1` is an authored equirectangular presentation asset; its source closure and output hashes are in that manifest.
 - `content/doom-e1m1/sprites/manifest.json` closes three generated atlases, 198 source lumps, frame identities, and the WAD/palette hashes. Sprite presentation is selected from authoritative Rust state; atlas frames do not own combat, collision, or timing authority.
-- `content/projects/doom-e1m1.project.json` is the sole canonical project (current SHA-256 `ff0ee07ec053cf26f8c002a3313d69dd9712c1acded6355b011977007101a544`). `pnpm run check:content` verifies canonical admission and byte-stable regeneration.
+- `content/projects/doom-e1m1.project.json` is the sole canonical project (current SHA-256 `8c3efbe6570d5dfeaf6562f1a672e73849fa4be31ea79bc525e35b45c4186e8e`). `pnpm run check:content` verifies canonical admission and byte-stable regeneration.
+
+## Environmental program provenance
+
+`gameplay/authoring/src/catalogs/environment-programs.ts` is the immutable authored source for the `hazard/nukage` and `explosive-prop/barrel` programs. The committed gameplay package records that file as the provenance source for both catalogs; the project binds every WAD-derived damaging sector and barrel to one of those IDs. The original WAD supplies placement and calibrated damage, radius, and cooldown fields; Rust evaluates overlap, eligibility, cooldown timing, radial targeting, occlusion, scaled damage, causes, chaining, and mutation.
+
+## Encounter program provenance
+
+`gameplay/authoring/src/catalogs/encounter-programs.ts` is the immutable
+authored source for `encounter/e1m1`. The package records it as the source for
+that catalog, and the forge binds each WAD-derived E1M1 encounter volume to
+that ID. The WAD supplies encounter placement and member placement only; Rust
+evaluates spatial activation, bound-member lifecycle and cadence, optional
+exit-door relations, scheduling, mutation, and event/journal facts.
 
 ## E1M1 prop closure
 

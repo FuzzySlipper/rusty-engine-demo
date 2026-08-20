@@ -9,6 +9,10 @@ use crate::inventory::{
     InventoryAction, InventoryCommand, InventoryFact, InventoryReceipt, InventoryRejection,
     InventoryService, ItemDefinitionId,
 };
+use crate::pickup_program::{
+    execute_pickup_program, pickup_applied_outcome, pickup_operation_label,
+    pickup_rejected_outcome, PickupOperation, PickupPredicate,
+};
 use crate::session::GameSession;
 use crate::vitality::{DamageService, VitalityFact, VitalityRejection};
 
@@ -19,14 +23,17 @@ pub const MAX_PICKUP_OVERLAP_SUBJECTS: usize = 128;
 pub struct PickupConfig {
     pub item: ItemDefinitionId,
     pub quantity: u32,
+    /// Required closed pickup program selected by authored placement.
+    pub program: String,
     pub starter_ammunition: Option<crate::InventoryStack>,
 }
 
 impl PickupConfig {
-    pub fn new(item: ItemDefinitionId, quantity: u32) -> Self {
+    pub fn new(item: ItemDefinitionId, quantity: u32, program: impl Into<String>) -> Self {
         Self {
             item,
             quantity,
+            program: program.into(),
             starter_ammunition: None,
         }
     }
@@ -145,6 +152,10 @@ pub enum PickupRejection {
     },
     Inventory(InventoryRejection),
     Vitality(VitalityRejection),
+    GameplayProgramRejected {
+        item: ItemDefinitionId,
+        context: &'static str,
+    },
     WorldMutationFailed {
         pickup: EntityId,
     },
@@ -196,12 +207,12 @@ impl PickupService {
                 actor: command.actor,
             });
         }
-        let Some(component) = session.pickups.get(&command.pickup) else {
+        let Some(component) = session.pickups.get(&command.pickup).cloned() else {
             return Err(PickupRejection::UnknownPickup {
                 pickup: command.pickup,
             });
         };
-        let before = pickup_view(command.pickup, component);
+        let before = pickup_view(command.pickup, &component);
         if component.state == PickupState::Dormant {
             return Err(PickupRejection::NotMaterialized {
                 pickup: command.pickup,
@@ -244,125 +255,161 @@ impl PickupService {
             });
         }
 
+        let program_id = component.config.program.clone();
+        let program = session
+            .pickup_programs
+            .get(&program_id)
+            .cloned()
+            .ok_or_else(|| PickupRejection::GameplayProgramRejected {
+                item: component.config.item.clone(),
+                context: "pickup-program",
+            })?;
         let mut candidate_session = session.clone();
         let mut candidate_triggers = triggers.clone();
-        let inventory_sequence = candidate_session
-            .inventories
-            .get(&command.actor)
-            .and_then(|inventory| inventory.last_applied_command_sequence)
-            .map_or(Some(1), |sequence| sequence.checked_add(1))
-            .ok_or(PickupRejection::InventorySequenceOverflow {
-                actor: command.actor,
-            })?;
-        let duplicate_weapon_with_ammunition = component
-            .config
-            .starter_ammunition
-            .as_ref()
-            .is_some_and(|_| {
-                candidate_session
-                    .item_definitions
-                    .get(&component.config.item)
-                    .is_some_and(|definition| matches!(definition.kind, crate::ItemKind::Weapon(_)))
-                    && candidate_session
-                        .inventory(command.actor)
-                        .is_some_and(|inventory| {
-                            inventory
-                                .stacks
-                                .iter()
-                                .any(|stack| stack.item == component.config.item)
-                        })
-            });
         let mut inventory = Vec::new();
-        let mut next_sequence = inventory_sequence;
-        if !duplicate_weapon_with_ammunition {
-            inventory.push(
-                InventoryService::apply(
-                    &mut candidate_session,
-                    command.actor,
-                    InventoryCommand {
-                        sequence: next_sequence,
-                        action: InventoryAction::Grant {
-                            item: component.config.item.clone(),
-                            quantity: component.config.quantity,
-                        },
-                    },
-                )
-                .map_err(PickupRejection::Inventory)?,
-            );
-            next_sequence =
-                next_sequence
-                    .checked_add(1)
-                    .ok_or(PickupRejection::InventorySequenceOverflow {
-                        actor: command.actor,
-                    })?;
-        }
-        if let Some(starter) = &component.config.starter_ammunition {
-            inventory.push(
-                InventoryService::apply(
-                    &mut candidate_session,
-                    command.actor,
-                    InventoryCommand {
-                        sequence: next_sequence,
-                        action: InventoryAction::Grant {
-                            item: starter.item.clone(),
-                            quantity: starter.quantity,
-                        },
-                    },
-                )
-                .map_err(PickupRejection::Inventory)?,
-            );
-        }
         let mut vitality_facts = Vec::new();
-        let immediate_vitality_kind = candidate_session
-            .item_definitions
-            .get(&component.config.item)
-            .map(|definition| definition.kind.clone());
-        match immediate_vitality_kind {
-            Some(crate::inventory::ItemKind::Armor { .. }) => {
-                let vitality = DamageService::grant_armor(
-                    &mut candidate_session,
-                    command.actor,
-                    component.config.item.clone(),
-                )
-                .map_err(PickupRejection::Vitality)?;
-                vitality_facts.extend(vitality.facts);
-                inventory.extend(vitality.inventory);
-            }
-            Some(crate::inventory::ItemKind::HealthSupply {
-                automatic_use: true,
-                ..
-            }) => {
-                let vitality = DamageService::use_health_supply(
-                    &mut candidate_session,
-                    command.actor,
-                    component.config.item.clone(),
-                )
-                .map_err(PickupRejection::Vitality)?;
-                vitality_facts.extend(vitality.facts);
-                inventory.extend(vitality.inventory);
-            }
-            _ => {}
+        let mut entity_facts = Vec::new();
+        let mut executed_operations = Vec::new();
+        let mut effects = Vec::new();
+        let mut consumed = false;
+        let execute_result = execute_pickup_program(
+            &program,
+            &mut candidate_session,
+            &mut |candidate_session, predicate| match predicate {
+                PickupPredicate::WeaponAlreadyOwnedWithStarterAmmunition => Ok(component
+                    .config
+                    .starter_ammunition
+                    .as_ref()
+                    .is_some_and(|_| {
+                        candidate_session
+                            .item_definitions
+                            .get(&component.config.item)
+                            .is_some_and(|definition| {
+                                matches!(definition.kind, crate::ItemKind::Weapon(_))
+                            })
+                            && candidate_session
+                                .inventory(command.actor)
+                                .is_some_and(|inventory| {
+                                    inventory
+                                        .stacks
+                                        .iter()
+                                        .any(|stack| stack.item == component.config.item)
+                                })
+                    })),
+            },
+            &mut |candidate_session, operation| {
+                let label = pickup_operation_label(operation).to_owned();
+                match operation {
+                    PickupOperation::GrantPickedItem => {
+                        let receipt = grant_pickup_inventory_item(
+                            candidate_session,
+                            command.actor,
+                            component.config.item.clone(),
+                            component.config.quantity,
+                        )?;
+                        inventory.push(receipt);
+                        effects.push("inventory".to_owned());
+                    }
+                    PickupOperation::GrantStarterAmmunition => {
+                        let starter = component.config.starter_ammunition.as_ref().ok_or(
+                            PickupRejection::GameplayProgramRejected {
+                                item: component.config.item.clone(),
+                                context: "pickup-starter-ammunition",
+                            },
+                        )?;
+                        let receipt = grant_pickup_inventory_item(
+                            candidate_session,
+                            command.actor,
+                            starter.item.clone(),
+                            starter.quantity,
+                        )?;
+                        inventory.push(receipt);
+                        effects.push("inventory".to_owned());
+                    }
+                    PickupOperation::UseGrantedHealthSupply => {
+                        let receipt = DamageService::use_health_supply(
+                            candidate_session,
+                            command.actor,
+                            component.config.item.clone(),
+                        )
+                        .map_err(PickupRejection::Vitality)?;
+                        vitality_facts.extend(receipt.facts);
+                        inventory.extend(receipt.inventory);
+                        effects.push("vitality".to_owned());
+                    }
+                    PickupOperation::ApplyGrantedArmor => {
+                        let receipt = DamageService::grant_armor(
+                            candidate_session,
+                            command.actor,
+                            component.config.item.clone(),
+                        )
+                        .map_err(PickupRejection::Vitality)?;
+                        vitality_facts.extend(receipt.facts);
+                        inventory.extend(receipt.inventory);
+                        effects.push("vitality".to_owned());
+                    }
+                    PickupOperation::ConsumePickup => {
+                        if consumed {
+                            return Err(PickupRejection::GameplayProgramRejected {
+                                item: component.config.item.clone(),
+                                context: "pickup-consumed-twice",
+                            });
+                        }
+                        let entity_revision = candidate_session.entities.revision();
+                        let receipt = EntityAuthoringService
+                            .destroy(
+                                &mut candidate_session.entities,
+                                entity_revision,
+                                command.pickup,
+                            )
+                            .map_err(|_| PickupRejection::WorldMutationFailed {
+                                pickup: command.pickup,
+                            })?;
+                        candidate_session
+                            .pickups
+                            .get_mut(&command.pickup)
+                            .expect("pickup was validated before staging")
+                            .state = PickupState::Collected {
+                            actor: command.actor,
+                            collected_at_tick: command.tick,
+                            cause: command.cause.clone(),
+                        };
+                        entity_facts.extend(receipt.facts);
+                        consumed = true;
+                        effects.push("pickup-lifecycle".to_owned());
+                    }
+                }
+                executed_operations.push(label);
+                Ok(())
+            },
+        );
+        if let Err(error) = execute_result {
+            session.record_gameplay_outcome(pickup_rejected_outcome(
+                program_id,
+                &program,
+                error.to_string(),
+            ));
+            return Err(error);
         }
-        let entity_revision = candidate_session.entities.revision();
-        let entity_receipt = EntityAuthoringService
-            .destroy(
-                &mut candidate_session.entities,
-                entity_revision,
-                command.pickup,
-            )
-            .map_err(|_| PickupRejection::WorldMutationFailed {
-                pickup: command.pickup,
-            })?;
-        let candidate_component = candidate_session
-            .pickups
-            .get_mut(&command.pickup)
-            .expect("pickup was validated before staging");
-        candidate_component.state = PickupState::Collected {
-            actor: command.actor,
-            collected_at_tick: command.tick,
-            cause: command.cause.clone(),
-        };
-        let after = pickup_view(command.pickup, candidate_component);
+        if !consumed {
+            let error = PickupRejection::GameplayProgramRejected {
+                item: component.config.item.clone(),
+                context: "pickup-not-consumed",
+            };
+            session.record_gameplay_outcome(pickup_rejected_outcome(
+                program_id,
+                &program,
+                error.to_string(),
+            ));
+            return Err(error);
+        }
+        let after = pickup_view(
+            command.pickup,
+            candidate_session
+                .pickups
+                .get(&command.pickup)
+                .expect("consume operation retained pickup component"),
+        );
         let trigger_receipt = candidate_triggers
             .reconcile(
                 &candidate_session.entities,
@@ -383,6 +430,12 @@ impl PickupService {
             .iter()
             .flat_map(|receipt| receipt.facts.iter().cloned())
             .collect();
+        candidate_session.record_gameplay_outcome(pickup_applied_outcome(
+            program_id,
+            &program,
+            executed_operations,
+            effects,
+        ));
 
         *session = candidate_session;
         *triggers = candidate_triggers;
@@ -391,7 +444,7 @@ impl PickupService {
             before,
             after,
             inventory,
-            entity_facts: entity_receipt.facts,
+            entity_facts,
             trigger_facts,
             facts: vec![PickupFact::Collected {
                 pickup: command.pickup,
@@ -464,6 +517,29 @@ impl PickupService {
             rejected,
         })
     }
+}
+
+fn grant_pickup_inventory_item(
+    session: &mut GameSession,
+    actor: EntityId,
+    item: ItemDefinitionId,
+    quantity: u32,
+) -> Result<InventoryReceipt, PickupRejection> {
+    let sequence = session
+        .inventories
+        .get(&actor)
+        .and_then(|inventory| inventory.last_applied_command_sequence)
+        .map_or(Some(1), |sequence| sequence.checked_add(1))
+        .ok_or(PickupRejection::InventorySequenceOverflow { actor })?;
+    InventoryService::apply(
+        session,
+        actor,
+        InventoryCommand {
+            sequence,
+            action: InventoryAction::Grant { item, quantity },
+        },
+    )
+    .map_err(PickupRejection::Inventory)
 }
 
 /// Pickup trigger definitions are permanent admission-time identities: dormant

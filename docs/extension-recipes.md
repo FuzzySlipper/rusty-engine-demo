@@ -6,6 +6,19 @@ Start at the named owner. Loading Bay is one E1M1 product, so an extension must 
 
 Put new combat, inventory, progression, enemy, door, hazard, or save meaning in the responsible Rust entity/service and fixed game phase. Define the content shape in TypeScript only when it is immutable authoring input, then admit and evaluate it in Rust. Add a closed semantic command only when the product service needs a new player intent; do not add a generic RPC command.
 
+## Add an authored gameplay-program primitive
+
+First add the primitive's fact/predicate or operation meaning and policy handling
+in Rust, including its candidate transaction effects and focused resolver proof.
+Then add the matching closed immutable TypeScript builder/type in
+`gameplay/authoring/src/authoring/` and materialize the package/project. Do not
+add a method-name string, callback, registry, arbitrary expression, or
+TypeScript evaluator. Another downstream should copy this boundary—its own
+Rust-owned vocabulary and authoring builders—not Loading Bay's hitscan names
+or Rusty Dagger's RPG grammar. This is not a universal Engine behavior
+language: keep object references on admitted components, bind named programs to
+those objects, and let the owning Rust service execute/commit the candidate.
+
 ## Add E1M1 content
 
 Author the change in `ts/packages/doom-e1m1-authoring` and materialize the sole canonical project at `content/projects/doom-e1m1.project.json`. Keep collision, navigation, triggers, hitboxes, and gameplay ownership explicit in Rust/project components; a mesh or texture is presentation only. Place new shipped E1M1 source assets under `content/doom-e1m1/`, record their exact provenance in `docs/source-provenance.md`, and extend deterministic content checks.

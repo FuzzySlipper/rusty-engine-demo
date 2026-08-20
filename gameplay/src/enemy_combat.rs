@@ -10,6 +10,9 @@ use rusty_engine::entity_state::EntityState;
 
 use crate::combat::EnemyState;
 use crate::encounter::EncounterService;
+use crate::enemy_program::{
+    execute_enemy_attack_program, EnemyAttackOperation, EnemyAttackPredicate,
+};
 use crate::inventory::ProjectileDefinition;
 use crate::navigation::NavigationPhaseReceipt;
 use crate::projectile::{is_projectile_entity_name, EnemyProjectileSpawn, ProjectileService};
@@ -53,6 +56,10 @@ pub struct EnemyAttackConfig {
 pub struct EnemyCombatConfig {
     pub perception: EnemyPerceptionConfig,
     pub pain_duration_ticks: u64,
+    /// Required closed family binding, resolved during admission.
+    pub attack_program: String,
+    /// Required closed family binding, resolved during admission.
+    pub defeat_program: String,
     pub attack: EnemyAttackConfig,
 }
 
@@ -62,6 +69,10 @@ impl EnemyCombatConfig {
             && self.perception.hearing_range.is_finite()
             && (0.0..=MAX_ENEMY_PERCEPTION_RANGE).contains(&self.perception.hearing_range)
             && self.pain_duration_ticks <= MAX_ENEMY_ATTACK_COOLDOWN_TICKS
+            && !self.attack_program.is_empty()
+            && self.attack_program.len() <= 64
+            && !self.defeat_program.is_empty()
+            && self.defeat_program.len() <= 64
             && (1..=MAX_ENEMY_ATTACK_DAMAGE).contains(&self.attack.damage)
             && finite_positive_bounded(self.attack.range, MAX_ENEMY_ATTACK_RANGE)
             && self.attack.cooldown_ticks <= MAX_ENEMY_ATTACK_COOLDOWN_TICKS
@@ -406,6 +417,19 @@ impl EnemyCombatService {
                 continue;
             }
 
+            let impact_is_hit = kind != EnemyAttackKind::Projectile
+                && line_of_sight(
+                    scene,
+                    &session.entities,
+                    origin,
+                    player_position,
+                    [enemy, player],
+                )?;
+            let program = session
+                .enemy_attack_programs
+                .get(&component.config.attack_program)
+                .expect("enemy attack program was admitted")
+                .clone();
             let cadence_multiplier = EncounterService::attack_cadence_multiplier(session, enemy);
             let ready_at_tick = tick.advance(TickDelta::new(
                 component
@@ -414,51 +438,125 @@ impl EnemyCombatService {
                     .cooldown_ticks
                     .saturating_mul(cadence_multiplier),
             ));
-            session
-                .enemy_combat
-                .get_mut(&enemy)
-                .expect("enemy combat key remains present")
-                .state
-                .ready_at_tick = ready_at_tick;
-            facts.push(EnemyCombatFact::AttackFired {
-                enemy,
-                target: player,
-                kind,
-                presentation: component.config.attack.presentation.clone(),
-                origin,
-                target_position: player_position,
-                distance,
-                ready_at_tick,
-            });
+            let projectile_direction = if kind == EnemyAttackKind::Projectile {
+                Some(player_controller_position(session, player)? - origin)
+            } else {
+                None
+            };
 
-            if kind == EnemyAttackKind::Projectile {
-                let definition = component
-                    .config
-                    .attack
-                    .projectile
-                    .expect("validated projectile enemy attack carries its definition");
-                let direction = player_controller_position(session, player)? - origin;
-                let (projectile, impulse, expires_at) = projectiles
-                    .spawn_enemy(
-                        session,
-                        EnemyProjectileSpawn {
-                            owner: enemy,
+            // Program operations mutate only this candidate. Projectile entity
+            // admission is additionally staged until every operation succeeds,
+            // so a later program rejection cannot leak a live projectile.
+            let mut candidate = session.clone();
+            let mut attempt_facts = Vec::new();
+            let mut attempt_events = Vec::new();
+            let mut staged_projectile = None;
+            execute_enemy_attack_program(
+                &program,
+                &mut |predicate| match predicate {
+                    EnemyAttackPredicate::ImpactIsHit => Ok(impact_is_hit),
+                },
+                &mut |operation| match operation {
+                    EnemyAttackOperation::RecordEnemyAttack => {
+                        attempt_facts.push(EnemyCombatFact::AttackFired {
+                            enemy,
                             target: player,
-                            definition,
-                            damage: component.config.attack.damage,
+                            kind,
+                            presentation: component.config.attack.presentation.clone(),
                             origin,
-                            direction,
-                            tick,
-                            visual_asset: component
-                                .config
-                                .attack
-                                .projectile_visual_asset
-                                .clone()
-                                .unwrap_or_else(|| "mesh/physics-projectile".to_owned()),
-                        },
-                    )
+                            target_position: player_position,
+                            distance,
+                            ready_at_tick,
+                        });
+                        Ok(())
+                    }
+                    EnemyAttackOperation::ApplyEnemyHit => {
+                        if kind == EnemyAttackKind::Projectile {
+                            return Err(RuntimeError::CombatResolutionFailed {
+                                reason: "projectile enemy program cannot apply a hitscan hit"
+                                    .into(),
+                            });
+                        }
+                        attempt_facts.push(EnemyCombatFact::AttackHit {
+                            enemy,
+                            target: player,
+                            kind,
+                            damage: component.config.attack.damage,
+                        });
+                        let damage = DamageService::apply(
+                            &mut candidate,
+                            DamageCommand {
+                                source: DamageSource::EnemyAttack { attacker: enemy },
+                                target: player,
+                                amount: component.config.attack.damage,
+                            },
+                        )
+                        .map_err(RuntimeError::Vitality)?;
+                        attempt_facts
+                            .extend(damage.facts.into_iter().map(EnemyCombatFact::Vitality));
+                        if let Some(event) = damage.event {
+                            attempt_events.push(event);
+                        }
+                        Ok(())
+                    }
+                    EnemyAttackOperation::ApplyEnemyMiss => {
+                        if kind == EnemyAttackKind::Projectile {
+                            return Err(RuntimeError::CombatResolutionFailed {
+                                reason: "projectile enemy program cannot apply a hitscan miss"
+                                    .into(),
+                            });
+                        }
+                        attempt_facts.push(EnemyCombatFact::AttackMissed {
+                            enemy,
+                            target: player,
+                            kind,
+                            reason: EnemyAttackMissReason::WorldBlocked,
+                        });
+                        Ok(())
+                    }
+                    EnemyAttackOperation::SpawnEnemyProjectile => {
+                        if kind != EnemyAttackKind::Projectile || staged_projectile.is_some() {
+                            return Err(RuntimeError::CombatResolutionFailed {
+                                reason: "enemy attack program cannot stage this projectile".into(),
+                            });
+                        }
+                        staged_projectile =
+                            Some(EnemyProjectileSpawn {
+                                owner: enemy,
+                                target: player,
+                                definition: component.config.attack.projectile.expect(
+                                    "validated projectile enemy attack carries its definition",
+                                ),
+                                damage: component.config.attack.damage,
+                                origin,
+                                direction: projectile_direction
+                                    .expect("projectile enemy attack precomputes direction"),
+                                tick,
+                                visual_asset: component
+                                    .config
+                                    .attack
+                                    .projectile_visual_asset
+                                    .clone()
+                                    .unwrap_or_else(|| "mesh/physics-projectile".to_owned()),
+                            });
+                        Ok(())
+                    }
+                    EnemyAttackOperation::SetEnemyCooldown => {
+                        candidate
+                            .enemy_combat
+                            .get_mut(&enemy)
+                            .expect("enemy combat remains in candidate")
+                            .state
+                            .ready_at_tick = ready_at_tick;
+                        Ok(())
+                    }
+                },
+            )?;
+            if let Some(spawn) = staged_projectile {
+                let (projectile, impulse, expires_at) = projectiles
+                    .spawn_enemy(&mut candidate, spawn)
                     .map_err(RuntimeError::Projectile)?;
-                facts.push(EnemyCombatFact::ProjectileSpawned {
+                attempt_facts.push(EnemyCombatFact::ProjectileSpawned {
                     enemy,
                     target: player,
                     projectile,
@@ -466,44 +564,10 @@ impl EnemyCombatService {
                     impulse,
                     expires_at,
                 });
-                continue;
             }
-
-            if !line_of_sight(
-                scene,
-                &session.entities,
-                origin,
-                player_position,
-                [enemy, player],
-            )? {
-                facts.push(EnemyCombatFact::AttackMissed {
-                    enemy,
-                    target: player,
-                    kind,
-                    reason: EnemyAttackMissReason::WorldBlocked,
-                });
-                continue;
-            }
-
-            facts.push(EnemyCombatFact::AttackHit {
-                enemy,
-                target: player,
-                kind,
-                damage: component.config.attack.damage,
-            });
-            let damage = DamageService::apply(
-                session,
-                DamageCommand {
-                    source: DamageSource::EnemyAttack { attacker: enemy },
-                    target: player,
-                    amount: component.config.attack.damage,
-                },
-            )
-            .map_err(RuntimeError::Vitality)?;
-            facts.extend(damage.facts.into_iter().map(EnemyCombatFact::Vitality));
-            if let Some(event) = damage.event {
-                events.push(event);
-            }
+            *session = candidate;
+            facts.extend(attempt_facts);
+            events.extend(attempt_events);
         }
 
         Ok(EnemyAttackPhaseReceipt { facts, events })

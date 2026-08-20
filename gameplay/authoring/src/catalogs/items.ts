@@ -37,16 +37,19 @@ export const items = [
     maximumHealth: 200,
     automaticUse: true,
     consumeAtCap: true,
+    program: "item/health-supply",
   }),
   healthSupply("supply/medikit", {
     restoreHealth: 25,
     maximumHealth: 100,
     automaticUse: true,
+    program: "item/health-supply",
   }),
   healthSupply("supply/stimpack", {
     restoreHealth: 10,
     maximumHealth: 100,
     automaticUse: true,
+    program: "item/health-supply",
   }),
   weapon("weapon/fist", {
     ammunition: "ammo/bullets",
@@ -59,6 +62,7 @@ export const items = [
     ammunitionCost: 0,
     muzzleOffset: [0.0, 0.0, 0.0],
     presentation: "fist",
+    program: "weapon/hitscan-unarmed",
   }),
   weapon("weapon/pistol", {
     ammunition: "ammo/bullets",
@@ -71,6 +75,7 @@ export const items = [
     ammunitionCost: 1,
     muzzleOffset: [0.0, 0.0, 0.0],
     presentation: "pistol",
+    program: "weapon/hitscan-ammunition",
   }),
   weapon("weapon/shotgun", {
     ammunition: "ammo/shells",
@@ -85,5 +90,6 @@ export const items = [
     ammunitionCost: 1,
     muzzleOffset: [0.0, 0.0, 0.0],
     presentation: "shotgun",
+    program: "weapon/spread",
   }),
 ] as const;

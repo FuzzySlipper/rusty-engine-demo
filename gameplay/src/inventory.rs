@@ -222,6 +222,8 @@ pub struct ItemDefinition {
     pub id: ItemDefinitionId,
     pub kind: ItemKind,
     pub max_quantity: u32,
+    /// Closed authored gameplay program selected by this item, when active.
+    pub program: Option<String>,
 }
 
 impl ItemDefinition {
@@ -230,7 +232,13 @@ impl ItemDefinition {
             id,
             kind,
             max_quantity,
+            program: None,
         }
+    }
+
+    pub fn with_program(mut self, program: Option<String>) -> Self {
+        self.program = program;
+        self
     }
 }
 

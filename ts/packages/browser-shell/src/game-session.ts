@@ -7,6 +7,7 @@ export const MAX_PENDING_EDGE_COMMANDS = 32;
 export const MAX_WEBSOCKET_BUFFERED_BYTES = 64 * 1024;
 export const INPUT_SEND_INTERVAL_MILLISECONDS = 1_000 / 60;
 export const MAX_SESSION_LOOK_UNITS = 64;
+const MAX_RUNTIME_ENEMY_PROGRAM_BINDINGS = 64;
 export const SESSION_CONNECT_TIMEOUT_MILLISECONDS = 5_000;
 export const SESSION_CLOSE_TIMEOUT_MILLISECONDS = 5_000;
 
@@ -88,7 +89,19 @@ type StaticStateKey =
   | "animatedMeshes"
   | "visualBindings"
   | "generatedEnvironment"
-  | "applicationContent";
+  | "applicationContent"
+  | "gameplayPrograms"
+  | "pickupPrograms"
+  | "playerSetupPrograms"
+  | "enemyPrograms"
+  | "hazardPrograms"
+  | "explosivePropPrograms"
+  | "encounterPrograms"
+  | "switchPrograms"
+  | "floorActionPrograms"
+  | "liftPrograms"
+  | "secretPrograms"
+  | "levelExitPrograms";
 
 type RuntimeDynamicState = Omit<RuntimeBrowserState, StaticStateKey>;
 type RuntimeStaticResources = Pick<RuntimeBrowserState, StaticStateKey> & {
@@ -1671,6 +1684,18 @@ function isRuntimeStaticResources(
     (value.applicationContent !== undefined &&
       value.applicationContent !== null &&
       !isRuntimeApplicationContent(value.applicationContent)) ||
+    !isRuntimeGameplayPrograms(value.gameplayPrograms) ||
+    !isRuntimePickupPrograms(value.pickupPrograms) ||
+    !isRuntimePlayerSetupPrograms(value.playerSetupPrograms) ||
+    !isRuntimeEnemyPrograms(value.enemyPrograms) ||
+    !isRuntimeHazardPrograms(value.hazardPrograms) ||
+    !isRuntimeExplosivePropPrograms(value.explosivePropPrograms) ||
+    !isRuntimeEncounterPrograms(value.encounterPrograms) ||
+    !isRuntimeSwitchPrograms(value.switchPrograms) ||
+    !isRuntimeFloorActionPrograms(value.floorActionPrograms) ||
+    !isRuntimeLiftPrograms(value.liftPrograms) ||
+    !isRuntimeSecretPrograms(value.secretPrograms) ||
+    !isRuntimeLevelExitPrograms(value.levelExitPrograms) ||
     (value.generatedEnvironment !== null &&
       !isRecord(value.generatedEnvironment))
   ) {
@@ -1963,8 +1988,223 @@ function isRuntimeDynamicState(value: unknown): value is RuntimeDynamicState {
     isRecord(value.presentation) &&
     (value.doomSpriteInspection === null ||
       isRuntimeDoomSpriteInspectionState(value.doomSpriteInspection)) &&
+    (value.gameplayOutcome === null ||
+      isRuntimeGameplayOutcome(value.gameplayOutcome)) &&
     Array.isArray(value.lastEvents) &&
     value.lastEvents.every((event) => typeof event === "string")
+  );
+}
+
+function isRuntimeGameplayPrograms(value: unknown): boolean {
+  if (!isRecord(value) || !Array.isArray(value.programs) || !Array.isArray(value.bindings)) {
+    return false;
+  }
+  return (
+    value.programs.length <= 32 &&
+    value.bindings.length <= 32 &&
+    value.programs.every(
+      (program) =>
+        isRecord(program) &&
+        typeof program.id === "string" &&
+        Array.isArray(program.steps) &&
+        program.steps.length <= 32 &&
+        program.steps.every((step) => typeof step === "string"),
+    ) &&
+    value.bindings.every(
+      (binding) =>
+        isRecord(binding) &&
+        typeof binding.item === "string" &&
+        typeof binding.programId === "string",
+    )
+  );
+}
+
+function isRuntimePickupPrograms(value: unknown): boolean {
+  if (!isRecord(value) || !Array.isArray(value.programs) || !Array.isArray(value.bindings)) {
+    return false;
+  }
+  return (
+    value.programs.length <= 16 &&
+    value.bindings.length <= 128 &&
+    value.programs.every(
+      (program) =>
+        isRecord(program) &&
+        typeof program.id === "string" &&
+        Array.isArray(program.steps) &&
+        program.steps.length <= 16 &&
+        program.steps.every((step) => typeof step === "string"),
+    ) &&
+    value.bindings.every(
+      (binding) =>
+        isRecord(binding) &&
+        typeof binding.pickup === "number" &&
+        Number.isFinite(binding.pickup) &&
+        typeof binding.programId === "string",
+    )
+  );
+}
+
+function isRuntimePlayerSetupPrograms(value: unknown): boolean {
+  if (!isRecord(value) || !Array.isArray(value.programs) || !Array.isArray(value.bindings)) {
+    return false;
+  }
+  return (
+    value.programs.length <= 16 &&
+    value.bindings.length <= 16 &&
+    value.programs.every(
+      (program) =>
+        isRecord(program) &&
+        typeof program.id === "string" &&
+        Array.isArray(program.operations) &&
+        program.operations.length <= 16 &&
+        program.operations.every(
+          (operation) =>
+            isRecord(operation) &&
+            ((operation.kind === "grantItem" &&
+              typeof operation.item === "string" &&
+              isFiniteNumber(operation.quantity)) ||
+              (operation.kind === "equipInitialWeapon" &&
+                typeof operation.item === "string")),
+        ),
+    ) &&
+    value.bindings.every(
+      (binding) =>
+        isRecord(binding) &&
+        isFiniteNumber(binding.player) &&
+        typeof binding.programId === "string",
+    )
+  );
+}
+
+function isRuntimeEnemyPrograms(value: unknown): boolean {
+  if (!isRecord(value) || !isRuntimeEnemyProgramFamily(value.attack) || !isRuntimeEnemyProgramFamily(value.defeat)) {
+    return false;
+  }
+  return true;
+}
+
+function isRuntimeEnemyProgramFamily(value: unknown): boolean {
+  if (!isRecord(value) || !Array.isArray(value.programs) || !Array.isArray(value.bindings)) {
+    return false;
+  }
+  return (
+    value.programs.length <= 16 &&
+    value.bindings.length <= MAX_RUNTIME_ENEMY_PROGRAM_BINDINGS &&
+    value.programs.every(
+      (program) =>
+        isRecord(program) &&
+        typeof program.id === "string" &&
+        Array.isArray(program.steps) &&
+        program.steps.length <= 16 &&
+        program.steps.every((step) => typeof step === "string"),
+    ) &&
+    value.bindings.every(
+      (binding) =>
+        isRecord(binding) &&
+        typeof binding.enemy === "number" &&
+        Number.isFinite(binding.enemy) &&
+        typeof binding.programId === "string",
+    )
+  );
+}
+
+function isRuntimeHazardPrograms(value: unknown): boolean {
+  return isRuntimeEnvironmentalPrograms(value, "hazard");
+}
+
+function isRuntimeExplosivePropPrograms(value: unknown): boolean {
+  return isRuntimeEnvironmentalPrograms(value, "explosiveProp");
+}
+
+function isRuntimeEncounterPrograms(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.programs) &&
+    Array.isArray(value.bindings) &&
+    value.programs.length <= 16 &&
+    value.bindings.length <= 64 &&
+    value.programs.every(
+      (program) =>
+        isRecord(program) &&
+        typeof program.id === "string" &&
+        Array.isArray(program.activationSteps) &&
+        program.activationSteps.length <= 16 &&
+        program.activationSteps.every((step) => typeof step === "string") &&
+        Array.isArray(program.clearSteps) &&
+        program.clearSteps.length <= 16 &&
+        program.clearSteps.every((step) => typeof step === "string"),
+    ) &&
+    value.bindings.every(
+      (binding) =>
+        isRecord(binding) &&
+        isFiniteNumber(binding.encounter) &&
+        typeof binding.programId === "string",
+    )
+  );
+}
+
+function isRuntimeSwitchPrograms(value: unknown): boolean {
+  return isRuntimeEnvironmentalPrograms(value, "switch");
+}
+
+function isRuntimeFloorActionPrograms(value: unknown): boolean {
+  return isRuntimeEnvironmentalPrograms(value, "floorAction");
+}
+
+function isRuntimeLiftPrograms(value: unknown): boolean {
+  return isRuntimeEnvironmentalPrograms(value, "lift");
+}
+
+function isRuntimeSecretPrograms(value: unknown): boolean {
+  return isRuntimeEnvironmentalPrograms(value, "secret");
+}
+
+function isRuntimeLevelExitPrograms(value: unknown): boolean {
+  return isRuntimeEnvironmentalPrograms(value, "exit");
+}
+
+function isRuntimeEnvironmentalPrograms(
+  value: unknown,
+  bindingKey: "hazard" | "explosiveProp" | "switch" | "floorAction" | "lift" | "secret" | "exit",
+): boolean {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.programs) &&
+    Array.isArray(value.bindings) &&
+    value.programs.length <= 16 &&
+    value.bindings.length <= 128 &&
+    value.programs.every(
+      (program) =>
+        isRecord(program) &&
+        typeof program.id === "string" &&
+        Array.isArray(program.steps) &&
+        program.steps.length <= 16 &&
+        program.steps.every((step) => typeof step === "string"),
+    ) &&
+    value.bindings.every(
+      (binding) =>
+        isRecord(binding) &&
+        isFiniteNumber(binding[bindingKey]) &&
+        typeof binding.programId === "string",
+    )
+  );
+}
+
+function isRuntimeGameplayOutcome(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.programId === "string" &&
+    (value.status === "applied" || value.status === "rejected") &&
+    Array.isArray(value.plannedOperations) &&
+    value.plannedOperations.length <= 16 &&
+    value.plannedOperations.every((operation) => typeof operation === "string") &&
+    Array.isArray(value.executedOperations) &&
+    value.executedOperations.length <= 16 &&
+    value.executedOperations.every((operation) => typeof operation === "string") &&
+    Array.isArray(value.effects) &&
+    value.effects.length <= 16 &&
+    value.effects.every((effect) => typeof effect === "string") &&
+    (value.rejectionReason === undefined || typeof value.rejectionReason === "string")
   );
 }
 
@@ -2144,5 +2384,17 @@ function runtimeStateResources(
     ...(resources.applicationContent === undefined
       ? {}
       : { applicationContent: resources.applicationContent }),
+    gameplayPrograms: resources.gameplayPrograms,
+    pickupPrograms: resources.pickupPrograms,
+    playerSetupPrograms: resources.playerSetupPrograms,
+    enemyPrograms: resources.enemyPrograms,
+    hazardPrograms: resources.hazardPrograms,
+    explosivePropPrograms: resources.explosivePropPrograms,
+    encounterPrograms: resources.encounterPrograms,
+    switchPrograms: resources.switchPrograms,
+    floorActionPrograms: resources.floorActionPrograms,
+    liftPrograms: resources.liftPrograms,
+    secretPrograms: resources.secretPrograms,
+    levelExitPrograms: resources.levelExitPrograms,
   };
 }

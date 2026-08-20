@@ -131,6 +131,7 @@ const dynamic = {
   enemies: [],
   presentation: { animationStates: [], cues: [] },
   doomSpriteInspection: null,
+  gameplayOutcome: null,
   lastEvents: [],
 } as const;
 
@@ -152,6 +153,76 @@ const resources = {
   animatedMeshes: [],
   visualBindings: [],
   generatedEnvironment: null,
+  gameplayPrograms: {
+    programs: [
+      { id: "weapon/hitscan-ammunition", steps: ["record-fired", "consume-ammo"] },
+    ],
+    bindings: [{ item: "weapon/arc-pistol", programId: "weapon/hitscan-ammunition" }],
+  },
+  pickupPrograms: {
+    programs: [{ id: "pickup/ammunition", steps: ["grant-picked-item", "consume-pickup"] }],
+    bindings: [{ pickup: 17, programId: "pickup/ammunition" }],
+  },
+  playerSetupPrograms: {
+    programs: [
+      {
+        id: "player/test-start",
+        operations: [
+          { kind: "grantItem", item: "weapon/arc-pistol", quantity: 1 },
+          { kind: "equipInitialWeapon", item: "weapon/arc-pistol" },
+        ],
+      },
+    ],
+    bindings: [{ player: 1, programId: "player/test-start" }],
+  },
+  enemyPrograms: {
+    attack: {
+      programs: [{ id: "enemy-attack/hitscan", steps: ["record-enemy-attack"] }],
+      bindings: [{ enemy: 4, programId: "enemy-attack/hitscan" }],
+    },
+    defeat: {
+      programs: [{ id: "enemy-defeat/without-drop", steps: ["record-enemy-defeat"] }],
+      bindings: [{ enemy: 4, programId: "enemy-defeat/without-drop" }],
+    },
+  },
+  hazardPrograms: {
+    programs: [{ id: "hazard/test", steps: ["apply-hazard-damage"] }],
+    bindings: [{ hazard: 20, programId: "hazard/test" }],
+  },
+  explosivePropPrograms: {
+    programs: [{ id: "explosive-prop/test", steps: ["resolve-explosion"] }],
+    bindings: [{ explosiveProp: 21, programId: "explosive-prop/test" }],
+  },
+  encounterPrograms: {
+    programs: [
+      {
+        id: "encounter/test",
+        activationSteps: ["recordEncounterActivation"],
+        clearSteps: ["recordEncounterCleared"],
+      },
+    ],
+    bindings: [{ encounter: 25, programId: "encounter/test" }],
+  },
+  switchPrograms: {
+    programs: [{ id: "switch/test", steps: ["record-activation"] }],
+    bindings: [{ switch: 22, programId: "switch/test" }],
+  },
+  floorActionPrograms: {
+    programs: [{ id: "floor-action/test", steps: ["advance-lowering"] }],
+    bindings: [{ floorAction: 23, programId: "floor-action/test" }],
+  },
+  liftPrograms: {
+    programs: [{ id: "lift/test", steps: ["advance-lowering"] }],
+    bindings: [{ lift: 24, programId: "lift/test" }],
+  },
+  secretPrograms: {
+    programs: [{ id: "secret/test", steps: ["record-discovery"] }],
+    bindings: [{ secret: 26, programId: "secret/test" }],
+  },
+  levelExitPrograms: {
+    programs: [{ id: "level-exit/test", steps: ["record-completion"] }],
+    bindings: [{ exit: 27, programId: "level-exit/test" }],
+  },
 } as const;
 
 const metrics = {
@@ -193,6 +264,7 @@ test("full session bootstrap composes dynamic state with immutable resources", (
   assert.equal(applied.state.tick, 1);
   assert.equal(applied.state.voxelAuthorityHash, "abc");
   assert.equal(applied.state.voxelMeshes, resources.voxelMeshes);
+  assert.deepEqual(applied.state.playerSetupPrograms, resources.playerSetupPrograms);
 });
 
 test("Tauri IPC bootstrap requires nested dynamic and resource projections", () => {
@@ -201,10 +273,53 @@ test("Tauri IPC bootstrap requires nested dynamic and resource projections", () 
   assert.equal(state.voxelAuthorityHash, resources.voxelAuthorityHash);
 });
 
-test("legacy projects preserve an absent Rust inventory through browser composition", () => {
+test("enemy program static resources retain every admitted E1M1 profile binding", () => {
+  const bindings = Array.from({ length: 29 }, (_, enemy) => ({
+    enemy,
+    programId: "enemy-attack/hitscan",
+  }));
+  const state = decodeTauriProjection({
+    dynamic,
+    resources: {
+      ...resources,
+      enemyPrograms: {
+        attack: { ...resources.enemyPrograms.attack, bindings },
+        defeat: {
+          ...resources.enemyPrograms.defeat,
+          bindings: bindings.map(({ enemy }) => ({
+            enemy,
+            programId: "enemy-defeat/without-drop",
+          })),
+        },
+      },
+    },
+  });
+  assert.equal(state.enemyPrograms.attack.bindings.length, 29);
+  assert.equal(state.enemyPrograms.defeat.bindings.length, 29);
+});
+
+test("pickup program static resources retain all canonical pickup and drop bindings", () => {
+  const bindings = Array.from({ length: 78 }, (_, pickup) => ({
+    pickup,
+    programId: "pickup/ammunition",
+  }));
+  const state = decodeTauriProjection({
+    dynamic,
+    resources: {
+      ...resources,
+      pickupPrograms: {
+        ...resources.pickupPrograms,
+        bindings,
+      },
+    },
+  });
+  assert.equal(state.pickupPrograms.bindings.length, 78);
+});
+
+test("a projection preserves an absent Rust inventory through browser composition", () => {
   const envelope: ServerUpdateEnvelope = {
     protocolVersion: 2,
-    sessionId: "legacy-project-1",
+    sessionId: "inventory-absent-1",
     connectionGeneration: 1,
     serverTick: 1,
     snapshotSequence: 1,

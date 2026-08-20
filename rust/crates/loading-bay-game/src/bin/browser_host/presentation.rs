@@ -192,10 +192,13 @@ impl BrowserFeedbackProjection {
                     weapon: weapon.as_str().to_owned(),
                     presentation: presentation.clone(),
                     attack_mode: match attack_mode {
-                        loading_bay_game::WeaponAttackMode::Hitscan => "hitscan",
+                        // Only hitscan and spread are admitted by the current
+                        // authored project. Legacy snapshot-only modes have no
+                        // distinct current browser contract.
+                        loading_bay_game::WeaponAttackMode::Hitscan
+                        | loading_bay_game::WeaponAttackMode::Automatic
+                        | loading_bay_game::WeaponAttackMode::Projectile => "hitscan",
                         loading_bay_game::WeaponAttackMode::Spread { .. } => "spread",
-                        loading_bay_game::WeaponAttackMode::Automatic => "automatic",
-                        loading_bay_game::WeaponAttackMode::Projectile => "projectile",
                     },
                     ray_count: *ray_count,
                     origin: origin.to_array(),
@@ -256,7 +259,6 @@ impl BrowserFeedbackProjection {
                 | CombatFact::Vitality(_)
                 | CombatFact::ExplosiveProp(_)
                 | CombatFact::ImpactResolved { .. }
-                | CombatFact::ProjectileSpawned { .. }
                 | CombatFact::ProjectileImpacted { .. }
                 | CombatFact::ProjectileExpired { .. } => {}
             }

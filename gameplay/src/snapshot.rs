@@ -2935,6 +2935,10 @@ impl GameRuntime {
                     hearing_range: combat.hearing_range,
                 },
                 pain_duration_ticks: combat.pain_duration_ticks,
+                // Program catalogs are static authored authority, deliberately
+                // reattached by `GameRuntime::reattach_authored_gameplay_programs`.
+                attack_program: "snapshot/reattach-required".to_owned(),
+                defeat_program: "snapshot/reattach-required".to_owned(),
                 attack: EnemyAttackConfig {
                     kind: match combat.attack_kind {
                         SnapshotEnemyAttackKind::Melee => EnemyAttackKind::Melee,
@@ -3492,6 +3496,10 @@ impl GameRuntime {
                     config: PickupConfig {
                         item,
                         quantity: pickup.quantity,
+                        // Pickup catalogs are authored/transient, like the other
+                        // compiled program families, and are restored by the
+                        // existing project reattachment boundary.
+                        program: String::new(),
                         starter_ammunition: pickup
                             .starter_ammunition
                             .map(|starter| {
@@ -3862,6 +3870,35 @@ impl GameRuntime {
                 pickups,
                 secret_regions,
                 level_exits,
+                gameplay_programs: crate::gameplay_program::GameplayProgramCatalog::default(),
+                pickup_programs: crate::pickup_program::PickupProgramCatalog::default(),
+                player_setup_programs: crate::player_program::PlayerSetupProgramCatalog::default(),
+                player_setup_bindings: BTreeMap::new(),
+                enemy_attack_programs: crate::enemy_program::EnemyAttackProgramCatalog::default(),
+                enemy_defeat_programs: crate::enemy_program::EnemyDefeatProgramCatalog::default(),
+                hazard_programs: crate::hazard_program::HazardProgramCatalog::default(),
+                hazard_program_bindings: BTreeMap::new(),
+                encounter_programs: crate::encounter_program::EncounterProgramCatalog::default(),
+                encounter_program_bindings: BTreeMap::new(),
+                explosive_prop_programs:
+                    crate::explosive_prop_program::ExplosivePropProgramCatalog::default(),
+                explosive_prop_program_bindings: BTreeMap::new(),
+                // Snapshot payloads retain live state only. The product
+                // reattaches every authored program catalog and binding.
+                switch_programs: crate::switch_program::SwitchProgramCatalog::default(),
+                switch_program_bindings: BTreeMap::new(),
+                floor_action_programs:
+                    crate::floor_action_program::FloorActionProgramCatalog::default(),
+                floor_action_program_bindings: BTreeMap::new(),
+                lift_programs: crate::lift_program::LiftProgramCatalog::default(),
+                lift_program_bindings: BTreeMap::new(),
+                // Snapshot payloads retain live state only; the product
+                // reattaches authored secret/exit catalogs and bindings.
+                secret_programs: crate::secret_program::SecretProgramCatalog::default(),
+                secret_program_bindings: BTreeMap::new(),
+                level_exit_programs: crate::level_exit_program::LevelExitProgramCatalog::default(),
+                level_exit_program_bindings: BTreeMap::new(),
+                gameplay_outcome: None,
             },
             tick: Tick::new(snapshot.tick),
             scheduler,

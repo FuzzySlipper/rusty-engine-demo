@@ -14,24 +14,33 @@ pub mod authored;
 pub mod combat;
 pub mod combat_resolution;
 pub mod compile;
-pub mod content;
 pub mod definition;
 mod doom_e1m1_materials;
 pub mod door;
 pub mod encounter;
+pub mod encounter_program;
 pub mod enemy_combat;
 pub mod enemy_drop;
+pub mod enemy_program;
 pub mod explosive_prop;
+pub mod explosive_prop_program;
 pub mod extraction_beacon;
 pub mod floor_action;
+pub mod floor_action_program;
+pub mod gameplay_program;
 pub mod hazard;
+pub mod hazard_program;
 pub mod interaction;
 pub mod inventory;
+pub mod level_exit_program;
 pub mod lift;
+pub mod lift_program;
 pub mod mechanics;
 pub mod navigation;
 pub mod pickup;
+pub mod pickup_program;
 pub mod player;
+pub mod player_program;
 pub mod progression;
 pub mod project_admission;
 pub mod project_codec;
@@ -39,27 +48,30 @@ pub mod projectile;
 pub mod runtime;
 pub mod runtime_records;
 pub mod scheduler;
+pub mod secret_program;
 pub mod session;
 pub mod snapshot;
 pub mod stored_project;
+pub mod switch_program;
 pub mod vitality;
 
 pub use combat::{
     CombatFact, CombatImpactKind, CombatMissReason, CombatReceipt, CombatRejectionReason,
-    EnemyComponent, EnemyState, EnemyView, ResolvedAttackAction, WeaponConfig, WeaponState,
-    WeaponView, MAX_WEAPON_AMMO, MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE,
-    MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_RANGE,
-};
-pub use content::{
-    decode_project_content, AdmittedProject, ProjectContentError, PROJECT_CONTENT_SCHEMA_VERSION,
+    EnemyComponent, EnemyState, EnemyView, ResolvedAttackAction, WeaponState, WeaponView,
+    MAX_WEAPON_AMMO, MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET,
+    MAX_WEAPON_RANGE,
 };
 pub use definition::{GameEntityDefinition, GameEntityDefinitionError};
-pub use door::{
-    security_door_definitions, DoorComponent, DoorConfig, DoorState, DoorView, SecurityDoorIds,
-};
+pub use door::{DoorComponent, DoorConfig, DoorState, DoorView};
 pub use encounter::{
     EncounterComponent, EncounterConfig, EncounterState, EncounterView,
     MAX_ENCOUNTER_ACTIVATION_RADIUS,
+};
+pub use encounter_program::{
+    EncounterProgramBinding, EncounterProgramReadout, EncounterProgramShape,
+    StoredEncounterActivationOperation, StoredEncounterActivationPredicate,
+    StoredEncounterActivationProgramNode, StoredEncounterClearOperation,
+    StoredEncounterClearPredicate, StoredEncounterClearProgramNode, StoredEncounterProgram,
 };
 pub use enemy_combat::{
     EnemyAttackConfig, EnemyAttackKind, EnemyAttackMissReason, EnemyAttackPhaseReceipt,
@@ -72,9 +84,19 @@ pub use enemy_drop::{
     EnemyDropComponent, EnemyDropConfig, EnemyDropFact, EnemyDropRejection, EnemyDropState,
     EnemyDropView,
 };
+pub use enemy_program::{
+    EnemyAttackProgramBinding, EnemyAttackProgramReadout, EnemyAttackProgramShape,
+    EnemyDefeatProgramBinding, EnemyDefeatProgramReadout, EnemyDefeatProgramShape,
+    EnemyProgramReadout,
+};
 pub use explosive_prop::{
     ExplosivePropComponent, ExplosivePropConfig, ExplosivePropError, ExplosivePropFact,
     ExplosivePropPhaseReceipt, ExplosivePropState, ExplosivePropView, MAX_EXPLOSION_RADIUS,
+};
+pub use explosive_prop_program::{
+    ExplosivePropProgramBinding, ExplosivePropProgramReadout, ExplosivePropProgramShape,
+    StoredExplosivePropOperation, StoredExplosivePropPredicate, StoredExplosivePropProgram,
+    StoredExplosivePropProgramNode,
 };
 pub use extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconConfig, ExtractionBeaconFact,
@@ -89,14 +111,28 @@ pub use floor_action::{
     MAX_FLOOR_ACTION_MOTION_TICKS, MAX_FLOOR_ACTION_OVERLAP_SUBJECTS,
     MAX_FLOOR_ACTION_PRESENTATION_BYTES, MAX_FLOOR_ACTION_SOURCE_BYTES,
 };
+pub use floor_action_program::{
+    FloorActionProgramBinding, FloorActionProgramReadout, FloorActionProgramShape,
+    StoredFloorActionOperation, StoredFloorActionPredicate, StoredFloorActionProgram,
+    StoredFloorActionProgramNode,
+};
+pub use gameplay_program::{
+    GameplayProgramBinding, GameplayProgramOutcome, GameplayProgramOutcomeStatus,
+    GameplayProgramReadout, GameplayProgramShape,
+};
 pub use hazard::{
     HazardComponent, HazardConfig, HazardFact, HazardPhaseReceipt, HazardRejection, HazardService,
     HazardView, HAZARD_TRIGGER_SCOPE, MAX_HAZARD_COOLDOWN_TICKS, MAX_HAZARD_OVERLAP_SUBJECTS,
 };
+pub use hazard_program::{
+    HazardProgramBinding, HazardProgramReadout, HazardProgramShape, StoredHazardOperation,
+    StoredHazardPredicate, StoredHazardProgram, StoredHazardProgramNode,
+};
 pub use interaction::{
-    SwitchComponent, SwitchConfig, SwitchEffect, SwitchView, DEFAULT_SWITCH_ACTIVATION_RADIUS,
-    DEFAULT_SWITCH_PROMPT, DEFAULT_SWITCH_REPEATABLE, DEFAULT_SWITCH_UNAVAILABLE_PRESENTATION,
-    MAX_SWITCH_ACTIVATION_RADIUS, MAX_SWITCH_EFFECTS, MAX_SWITCH_PRESENTATION_BYTES,
+    SwitchComponent, SwitchConfig, SwitchEffect, SwitchProgramRejection, SwitchView,
+    DEFAULT_SWITCH_ACTIVATION_RADIUS, DEFAULT_SWITCH_PROMPT, DEFAULT_SWITCH_REPEATABLE,
+    DEFAULT_SWITCH_UNAVAILABLE_PRESENTATION, MAX_SWITCH_ACTIVATION_RADIUS, MAX_SWITCH_EFFECTS,
+    MAX_SWITCH_PRESENTATION_BYTES,
 };
 pub use inventory::{
     ArmorGrantMode, ArmorTransition, InventoryAction, InventoryAdmissionError, InventoryCommand,
@@ -107,12 +143,21 @@ pub use inventory::{
     MAX_PROJECTILE_GRAVITY_SCALE, MAX_PROJECTILE_IMPULSE, MAX_PROJECTILE_LIFETIME_TICKS,
     MAX_PROJECTILE_MASS, MAX_PROJECTILE_RADIUS, MAX_PROJECTILE_RESTITUTION,
 };
+pub use level_exit_program::{
+    LevelExitProgramBinding, LevelExitProgramReadout, LevelExitProgramShape,
+    StoredLevelExitOperation, StoredLevelExitPredicate, StoredLevelExitProgram,
+    StoredLevelExitProgramNode,
+};
 pub use lift::{
     LiftActivation, LiftComponent, LiftConfig, LiftPhaseReceipt, LiftRejection, LiftService,
     LiftState, LiftView, DEFAULT_LIFT_MOTION_DURATION_TICKS, DEFAULT_LIFT_PROMPT,
     DEFAULT_LIFT_SOURCE, DEFAULT_LIFT_WAIT_TICKS, LIFT_TRIGGER_SCOPE, MAX_LIFT_MOTION_TICKS,
     MAX_LIFT_OVERLAP_SUBJECTS, MAX_LIFT_PRESENTATION_BYTES, MAX_LIFT_SOURCE_BYTES,
     MAX_LIFT_WAIT_TICKS,
+};
+pub use lift_program::{
+    LiftProgramBinding, LiftProgramReadout, LiftProgramShape, StoredLiftOperation,
+    StoredLiftPredicate, StoredLiftProgram, StoredLiftProgramNode,
 };
 pub use navigation::{
     NavigationComponent, NavigationConfig, NavigationFact, NavigationFailure,
@@ -125,12 +170,17 @@ pub use pickup::{
     PickupRejectedAttempt, PickupRejection, PickupService, PickupState, PickupView,
     MAX_PICKUP_OVERLAP_SUBJECTS, PICKUP_TRIGGER_SCOPE,
 };
+pub use pickup_program::{PickupProgramBinding, PickupProgramReadout, PickupProgramShape};
 pub use player::{
     PlayerControlFact, PlayerControlReceipt, PlayerControllerComponent, PlayerControllerConfig,
     PlayerControllerState, PlayerControllerView, PlayerInputBindings, PlayerTraversalConfig,
     ResolvedPlayerAction, ResolvedPlayerFrame, MAX_GROUND_PROBE_DISTANCE, MAX_INPUT_CONTROL_LENGTH,
     MAX_PLAYER_EYE_HEIGHT, MAX_PLAYER_GRAVITY, MAX_PLAYER_JUMP_IMPULSE,
     MAX_PLAYER_LOOK_DEGREES_PER_UNIT, MAX_PLAYER_SPEED_UNITS_PER_SECOND, MAX_PLAYER_STEP_HEIGHT,
+};
+pub use player_program::{
+    PlayerSetupProgramBinding, PlayerSetupProgramOperationReadout, PlayerSetupProgramReadout,
+    PlayerSetupProgramShape,
 };
 pub use progression::{
     DoorAccessConfig, DoorAccessReceipt, DoorAccessRejection, DoorAccessView, LevelExitComponent,
@@ -143,18 +193,19 @@ pub use progression::{
 };
 pub use project_admission::{
     admit_stored_project, admit_stored_project_with_document, decode_and_admit_stored_project,
-    materialize_stored_project_voxels, AdmittedStoredProject,
+    materialize_stored_project_voxels, AdmittedProject, AdmittedStoredProject,
 };
-pub use project_codec::{
-    decode_project_document, encode_project_document, DecodedProjectDocument,
-    MIGRATED_V6_PROJECT_ID, MIGRATED_V6_SCENE_ID,
-};
+pub use project_codec::{decode_project_document, encode_project_document, DecodedProjectDocument};
 pub use projectile::{ProjectileError, ProjectileFact, ProjectilePhaseReceipt};
 pub use runtime::{
     GameRuntime, RuntimeError, WalkTriggerPhaseReceipt, MAX_EVENT_WAVE, MAX_TICK_ADVANCE,
 };
 pub use runtime_records::{GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
 pub use scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
+pub use secret_program::{
+    SecretProgramBinding, SecretProgramReadout, SecretProgramShape, StoredSecretOperation,
+    StoredSecretPredicate, StoredSecretProgram, StoredSecretProgramNode,
+};
 pub use session::GameSession;
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredArmorGrantMode,
@@ -172,10 +223,14 @@ pub use stored_project::{
     StoredVisualBinding, StoredVisualBindingState, StoredVisualPresentation, StoredVisualState,
     StoredVoxelEnvironment, StoredVoxelInstance, StoredVoxelObjectFrameSelection,
     StoredVoxelObjectInstance, StoredVoxelObjectMaterialOverride, StoredVoxelObjectSurfaceMode,
-    StoredWeapon, StoredWeaponAttackMode, MAX_PROJECT_VOXEL_OBJECTS,
-    MAX_PROJECT_VOXEL_OBJECT_FRAMES, MAX_PROJECT_VOXEL_OBJECT_INSTANCES,
-    MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK, MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS,
-    MAX_STORED_VISUAL_BINDING_STATES, STORED_PROJECT_SCHEMA_VERSION, STORED_VISUAL_BINDING_VERSION,
+    StoredWeaponAttackMode, MAX_PROJECT_VOXEL_OBJECTS, MAX_PROJECT_VOXEL_OBJECT_FRAMES,
+    MAX_PROJECT_VOXEL_OBJECT_INSTANCES, MAX_PROJECT_VOXEL_OBJECT_MESH_FACE_WORK,
+    MAX_PROJECT_VOXEL_OBJECT_RESOLVED_CELLS, MAX_STORED_VISUAL_BINDING_STATES,
+    STORED_PROJECT_SCHEMA_VERSION, STORED_VISUAL_BINDING_VERSION,
+};
+pub use switch_program::{
+    StoredSwitchOperation, StoredSwitchPredicate, StoredSwitchProgram, StoredSwitchProgramNode,
+    SwitchProgramBinding, SwitchProgramReadout, SwitchProgramShape,
 };
 pub use vitality::{
     DamageCommand, DamageDisposition, DamageService, DamageSource, HealthConfig, HealthView,

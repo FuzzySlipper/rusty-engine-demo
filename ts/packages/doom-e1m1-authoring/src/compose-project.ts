@@ -521,20 +521,62 @@ export function buildDoomE1M1Project(
     kind?: unknown;
     domain?: unknown;
     package?: unknown;
-    payload?: { schemaVersion?: unknown; items?: unknown };
+    payload?: {
+      schemaVersion?: unknown;
+      items?: unknown;
+      gameplayPrograms?: unknown;
+      pickupPrograms?: unknown;
+      playerSetupPrograms?: unknown;
+      enemyAttackPrograms?: unknown;
+      enemyDefeatPrograms?: unknown;
+      hazardPrograms?: unknown;
+      explosivePropPrograms?: unknown;
+      encounterPrograms?: unknown;
+      switchPrograms?: unknown;
+      floorActionPrograms?: unknown;
+      liftPrograms?: unknown;
+      secretPrograms?: unknown;
+      levelExitPrograms?: unknown;
+    };
   } = JSON.parse(readFileSync(gameplayPackagePath, "utf8"));
   if (
     gameplayPackage.kind !== "rusty.gameplay-rules.package" ||
     gameplayPackage.domain !== "loading-bay" ||
     gameplayPackage.package !== "e1m1-core" ||
     gameplayPackage.payload?.schemaVersion !== 1 ||
-    !Array.isArray(gameplayPackage.payload?.items)
+    !Array.isArray(gameplayPackage.payload?.items) ||
+    !Array.isArray(gameplayPackage.payload?.gameplayPrograms) ||
+    !Array.isArray(gameplayPackage.payload?.pickupPrograms) ||
+    !Array.isArray(gameplayPackage.payload?.playerSetupPrograms) ||
+    !Array.isArray(gameplayPackage.payload?.enemyAttackPrograms) ||
+    !Array.isArray(gameplayPackage.payload?.enemyDefeatPrograms) ||
+    !Array.isArray(gameplayPackage.payload?.hazardPrograms) ||
+    !Array.isArray(gameplayPackage.payload?.explosivePropPrograms) ||
+    !Array.isArray(gameplayPackage.payload?.encounterPrograms) ||
+    !Array.isArray(gameplayPackage.payload?.switchPrograms)
+    || !Array.isArray(gameplayPackage.payload?.floorActionPrograms)
+    || !Array.isArray(gameplayPackage.payload?.liftPrograms)
+    || !Array.isArray(gameplayPackage.payload?.secretPrograms)
+    || !Array.isArray(gameplayPackage.payload?.levelExitPrograms)
   ) {
     throw new Error(
       `unexpected gameplay package at ${gameplayPackagePath}: run \`pnpm gameplay:build\` to materialize the authored catalog`,
     );
   }
   const itemDefinitions = gameplayPackage.payload.items;
+  const gameplayPrograms = gameplayPackage.payload.gameplayPrograms;
+  const pickupPrograms = gameplayPackage.payload.pickupPrograms;
+  const playerSetupPrograms = gameplayPackage.payload.playerSetupPrograms;
+  const enemyAttackPrograms = gameplayPackage.payload.enemyAttackPrograms;
+  const enemyDefeatPrograms = gameplayPackage.payload.enemyDefeatPrograms;
+  const hazardPrograms = gameplayPackage.payload.hazardPrograms;
+  const explosivePropPrograms = gameplayPackage.payload.explosivePropPrograms;
+  const encounterPrograms = gameplayPackage.payload.encounterPrograms;
+  const switchPrograms = gameplayPackage.payload.switchPrograms;
+  const floorActionPrograms = gameplayPackage.payload.floorActionPrograms;
+  const liftPrograms = gameplayPackage.payload.liftPrograms;
+  const secretPrograms = gameplayPackage.payload.secretPrograms;
+  const levelExitPrograms = gameplayPackage.payload.levelExitPrograms;
 
   // Entities
   const entities: any[] = [];
@@ -599,12 +641,7 @@ export function buildDoomE1M1Project(
     },
     inventory: {
       capacitySlots: 10,
-      startingStacks: [
-        { item: "weapon/fist", quantity: 1 },
-        { item: "weapon/pistol", quantity: 1 },
-        { item: "ammo/bullets", quantity: 50 },
-      ],
-      initiallyEquippedWeapon: "weapon/pistol",
+      setupProgram: "player/e1m1-pistol-start",
       weaponSlots: ["weapon/pistol", "weapon/shotgun", "weapon/fist"],
     },
   });
@@ -627,9 +664,12 @@ export function buildDoomE1M1Project(
         originOffset: [0, 0.25, 0],
         presentation: "doom-shotgun-guy-blast",
       },
+      attackProgram: "enemy-attack/hitscan",
+      defeatProgram: "enemy-defeat/with-drop",
       drop: {
         item: "weapon/shotgun",
         quantity: 1,
+        program: "pickup/weapon-starter",
         spriteFamily: "shot",
         asset: "sprite/doom-pickup-shot",
         starterAmmunition: { item: "ammo/shells", quantity: 4 },
@@ -658,6 +698,8 @@ export function buildDoomE1M1Project(
           visualAsset: "sprite/doom-imp-fireball",
         },
       },
+      attackProgram: "enemy-attack/projectile",
+      defeatProgram: "enemy-defeat/without-drop",
       drop: null,
     },
     3004: {
@@ -674,9 +716,12 @@ export function buildDoomE1M1Project(
         originOffset: [0, 0.25, 0],
         presentation: "doom-zombieman-shot",
       },
+      attackProgram: "enemy-attack/hitscan",
+      defeatProgram: "enemy-defeat/with-drop",
       drop: {
         item: "ammo/bullets",
         quantity: 5,
+        program: "pickup/ammunition",
         spriteFamily: "clip",
         asset: "sprite/doom-pickup-clip",
       },
@@ -687,6 +732,7 @@ export function buildDoomE1M1Project(
     {
       item: string;
       quantity: number;
+      program: string;
       spriteFamily: string;
       asset: string;
       starterAmmunition?: { item: string; quantity: number };
@@ -695,6 +741,7 @@ export function buildDoomE1M1Project(
     2001: {
       item: "weapon/shotgun",
       quantity: 1,
+      program: "pickup/weapon-starter",
       spriteFamily: "shot",
       asset: "sprite/doom-pickup-shot",
       starterAmmunition: { item: "ammo/shells", quantity: 8 },
@@ -702,60 +749,70 @@ export function buildDoomE1M1Project(
     2007: {
       item: "ammo/bullets",
       quantity: 10,
+      program: "pickup/ammunition",
       spriteFamily: "clip",
       asset: "sprite/doom-pickup-clip",
     },
     2008: {
       item: "ammo/shells",
       quantity: 4,
+      program: "pickup/ammunition",
       spriteFamily: "shel",
       asset: "sprite/doom-pickup-shel",
     },
     2048: {
       item: "ammo/bullets",
       quantity: 50,
+      program: "pickup/ammunition",
       spriteFamily: "ammo",
       asset: "sprite/doom-pickup-ammo",
     },
     2049: {
       item: "ammo/shells",
       quantity: 20,
+      program: "pickup/ammunition",
       spriteFamily: "sbox",
       asset: "sprite/doom-pickup-sbox",
     },
     2011: {
       item: "supply/stimpack",
       quantity: 1,
+      program: "pickup/automatic-health",
       spriteFamily: "stim",
       asset: "sprite/doom-pickup-stim",
     },
     2012: {
       item: "supply/medikit",
       quantity: 1,
+      program: "pickup/automatic-health",
       spriteFamily: "medi",
       asset: "sprite/doom-pickup-medi",
     },
     2014: {
       item: "supply/health-bonus",
       quantity: 1,
+      program: "pickup/automatic-health",
       spriteFamily: "bon1",
       asset: "sprite/doom-pickup-bon1",
     },
     2015: {
       item: "armor/bonus",
       quantity: 1,
+      program: "pickup/automatic-armor",
       spriteFamily: "bon2",
       asset: "sprite/doom-pickup-bon2",
     },
     2018: {
       item: "armor/green",
       quantity: 1,
+      program: "pickup/automatic-armor",
       spriteFamily: "arm1",
       asset: "sprite/doom-pickup-arm1",
     },
     2019: {
       item: "armor/blue",
       quantity: 1,
+      program: "pickup/automatic-armor",
       spriteFamily: "arm2",
       asset: "sprite/doom-pickup-arm2",
     },
@@ -917,6 +974,8 @@ export function buildDoomE1M1Project(
         sightRange: 64,
         hearingRange: (thing.options & 8) !== 0 ? 0 : 12,
         painDurationTicks: archetype.painDurationTicks,
+        attackProgram: archetype.attackProgram,
+        defeatProgram: archetype.defeatProgram,
         attack: archetype.attack,
       },
       health: {
@@ -944,6 +1003,7 @@ export function buildDoomE1M1Project(
         pickup: {
           item: archetype.drop.item,
           quantity: archetype.drop.quantity,
+          program: archetype.drop.program,
           ...("starterAmmunition" in archetype.drop
             ? { starterAmmunition: archetype.drop.starterAmmunition }
             : {}),
@@ -974,6 +1034,7 @@ export function buildDoomE1M1Project(
       translation,
       encounter: {
         members,
+        program: "encounter/e1m1",
         activationRadius: name === "central-stairs" ? 24 : 18,
       },
     });
@@ -1003,6 +1064,7 @@ export function buildDoomE1M1Project(
         velocity: [0, 0, 0],
       },
       explosiveProp: {
+        program: "explosive-prop/barrel",
         damage: 128,
         radius: 8,
       },
@@ -1025,6 +1087,7 @@ export function buildDoomE1M1Project(
       pickup: {
         item: mapping.item,
         quantity: mapping.quantity,
+        program: mapping.program,
         ...(mapping.starterAmmunition
           ? { starterAmmunition: mapping.starterAmmunition }
           : {}),
@@ -1118,6 +1181,7 @@ export function buildDoomE1M1Project(
       bounds: { min: [-halfX, -0.6, -halfZ], max: [halfX, 0.6, halfZ] },
       renderable: { asset: "mesh/player-marker", visible: false },
       hazard: {
+        program: "hazard/nukage",
         damage: 5,
         cooldownTicks: 55,
       },
@@ -1213,6 +1277,7 @@ export function buildDoomE1M1Project(
         closeSound: "doom:DSDORCLS",
       },
       switch: {
+        program: "switch/e1m1-door",
         controls: [],
         activationRadius: 6,
         prompt: `Open ${authoredDoor.texture} door`,
@@ -1271,6 +1336,7 @@ export function buildDoomE1M1Project(
     ),
     bounds: { min: [-6, -1, -0.5], max: [6, 3, 0.5] },
     floorAction: {
+      program: "floor-action/e1m1-lower",
       targetPlatform: floorPlatform.id,
       upperTranslation: floorPlatform.raised,
       loweredTranslation: [
@@ -1299,6 +1365,7 @@ export function buildDoomE1M1Project(
     ),
     bounds: { min: [-10, -1, -6], max: [10, 3, 6] },
     lift: {
+      program: "lift/e1m1-cycle",
       targetPlatform: liftPlatform.id,
       raisedTranslation: liftPlatform.raised,
       loweredTranslation: [liftPlatform.raised[0], 6, liftPlatform.raised[2]],
@@ -1351,6 +1418,7 @@ export function buildDoomE1M1Project(
       },
     },
     levelExit: {
+      program: "level-exit/e1m1-completion",
       activationRadius: 4,
       presentation: "Doom E1M1 complete",
       source: "doom1.wad:E1M1:linedef:330:type:11:texture:SW1STRTN",
@@ -1376,6 +1444,7 @@ export function buildDoomE1M1Project(
         translation: pos,
         bounds: { min: [-1.5, -0.8, -1.5], max: [1.5, 0.8, 1.5] },
         secretRegion: {
+          program: "secret/e1m1-discovery",
           presentation: `Secret ${secretIndex + 1} discovered`,
           source: `doom1.wad:E1M1:sector:${secretSectorIdx}:special:9`,
         },
@@ -1388,12 +1457,25 @@ export function buildDoomE1M1Project(
   entities.sort((a, b) => a.id - b.id);
 
   const project = {
-    schemaVersion: 25,
+    schemaVersion: 26,
     projectId: "doom-e1m1",
     name: "Doom E1M1 — Hangar (VoXel Showcase)",
     entryScene: "scene/doom-e1m1",
     assets,
     itemDefinitions,
+    gameplayPrograms,
+    pickupPrograms,
+    playerSetupPrograms,
+    enemyAttackPrograms,
+    enemyDefeatPrograms,
+    hazardPrograms,
+    explosivePropPrograms,
+    encounterPrograms,
+    switchPrograms,
+    floorActionPrograms,
+    liftPrograms,
+    secretPrograms,
+    levelExitPrograms,
     scenes: [
       {
         id: "scene/doom-e1m1",

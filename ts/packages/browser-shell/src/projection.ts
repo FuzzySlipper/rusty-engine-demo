@@ -353,7 +353,7 @@ export type RuntimeFeedbackCue =
       readonly attacker: number;
       readonly weapon: string;
       readonly presentation: string;
-      readonly attackMode: "hitscan" | "spread" | "automatic" | "projectile";
+      readonly attackMode: "hitscan" | "spread";
       readonly rayCount: number;
       readonly origin: readonly [number, number, number];
       readonly direction: readonly [number, number, number];
@@ -529,6 +529,180 @@ export interface RuntimeSaveSlotSummary {
   readonly diagnostic: string | null;
 }
 
+/** Read-only bounded description of Loading Bay's admitted closed programs. */
+export interface RuntimeGameplayPrograms {
+  readonly programs: readonly RuntimeGameplayProgramShape[];
+  readonly bindings: readonly RuntimeGameplayProgramBinding[];
+}
+
+export interface RuntimeGameplayProgramShape {
+  readonly id: string;
+  readonly steps: readonly string[];
+}
+
+export interface RuntimeGameplayProgramBinding {
+  readonly item: string;
+  readonly programId: string;
+}
+
+/** Static, family-specific pickup catalog; it is not a live control path. */
+export interface RuntimePickupPrograms {
+  readonly programs: readonly RuntimePickupProgramShape[];
+  readonly bindings: readonly RuntimePickupProgramBinding[];
+}
+
+export interface RuntimePickupProgramShape {
+  readonly id: string;
+  readonly steps: readonly string[];
+}
+
+export interface RuntimePickupProgramBinding {
+  readonly pickup: number;
+  readonly programId: string;
+}
+
+/** Static player initialization catalog; it is never a live control surface. */
+export interface RuntimePlayerSetupPrograms {
+  readonly programs: readonly RuntimePlayerSetupProgramShape[];
+  readonly bindings: readonly RuntimePlayerSetupProgramBinding[];
+}
+
+export interface RuntimePlayerSetupProgramShape {
+  readonly id: string;
+  readonly operations: readonly RuntimePlayerSetupOperation[];
+}
+
+export type RuntimePlayerSetupOperation =
+  | { readonly kind: "grantItem"; readonly item: string; readonly quantity: number }
+  | { readonly kind: "equipInitialWeapon"; readonly item: string };
+
+export interface RuntimePlayerSetupProgramBinding {
+  readonly player: number;
+  readonly programId: string;
+}
+
+/** Static, family-specific enemy program catalog; never a live control path. */
+export interface RuntimeEnemyPrograms {
+  readonly attack: RuntimeEnemyAttackPrograms;
+  readonly defeat: RuntimeEnemyDefeatPrograms;
+}
+
+/** Static closed hazard programs and placed trigger bindings. */
+export interface RuntimeHazardPrograms {
+  readonly programs: readonly RuntimeEnvironmentalProgramShape[];
+  readonly bindings: readonly RuntimeHazardProgramBinding[];
+}
+
+/** Static closed explosive-prop programs and placed prop bindings. */
+export interface RuntimeExplosivePropPrograms {
+  readonly programs: readonly RuntimeEnvironmentalProgramShape[];
+  readonly bindings: readonly RuntimeExplosivePropProgramBinding[];
+}
+
+/** Static closed encounter lifecycle programs and explicit encounter bindings. */
+export interface RuntimeEncounterPrograms {
+  readonly programs: readonly RuntimeEncounterProgramShape[];
+  readonly bindings: readonly RuntimeEncounterProgramBinding[];
+}
+
+export interface RuntimeEncounterProgramShape {
+  readonly id: string;
+  readonly activationSteps: readonly string[];
+  readonly clearSteps: readonly string[];
+}
+
+export interface RuntimeEncounterProgramBinding {
+  readonly encounter: number;
+  readonly programId: string;
+}
+
+export interface RuntimeSwitchPrograms {
+  readonly programs: readonly RuntimeSwitchProgramShape[];
+  readonly bindings: readonly RuntimeSwitchProgramBinding[];
+}
+
+/** Static closed floor-action programs and trigger bindings. */
+export interface RuntimeFloorActionPrograms {
+  readonly programs: readonly RuntimeEnvironmentalProgramShape[];
+  readonly bindings: readonly RuntimeFloorActionProgramBinding[];
+}
+export interface RuntimeFloorActionProgramBinding { readonly floorAction: number; readonly programId: string; }
+
+/** Static closed lift-cycle programs and trigger bindings. */
+export interface RuntimeLiftPrograms {
+  readonly programs: readonly RuntimeEnvironmentalProgramShape[];
+  readonly bindings: readonly RuntimeLiftProgramBinding[];
+}
+export interface RuntimeLiftProgramBinding { readonly lift: number; readonly programId: string; }
+
+/** Static closed secret-discovery programs and region bindings. */
+export interface RuntimeSecretPrograms {
+  readonly programs: readonly RuntimeEnvironmentalProgramShape[];
+  readonly bindings: readonly RuntimeSecretProgramBinding[];
+}
+export interface RuntimeSecretProgramBinding { readonly secret: number; readonly programId: string; }
+
+/** Static closed level-exit completion programs and exit bindings. */
+export interface RuntimeLevelExitPrograms {
+  readonly programs: readonly RuntimeEnvironmentalProgramShape[];
+  readonly bindings: readonly RuntimeLevelExitProgramBinding[];
+}
+export interface RuntimeLevelExitProgramBinding { readonly exit: number; readonly programId: string; }
+
+export interface RuntimeSwitchProgramShape {
+  readonly id: string;
+  readonly steps: readonly string[];
+}
+
+export interface RuntimeSwitchProgramBinding {
+  readonly switch: number;
+  readonly programId: string;
+}
+
+export interface RuntimeEnvironmentalProgramShape {
+  readonly id: string;
+  readonly steps: readonly string[];
+}
+
+export interface RuntimeHazardProgramBinding {
+  readonly hazard: number;
+  readonly programId: string;
+}
+
+export interface RuntimeExplosivePropProgramBinding {
+  readonly explosiveProp: number;
+  readonly programId: string;
+}
+
+export interface RuntimeEnemyAttackPrograms {
+  readonly programs: readonly RuntimeEnemyProgramShape[];
+  readonly bindings: readonly RuntimeEnemyProgramBinding[];
+}
+
+export interface RuntimeEnemyDefeatPrograms {
+  readonly programs: readonly RuntimeEnemyProgramShape[];
+  readonly bindings: readonly RuntimeEnemyProgramBinding[];
+}
+
+export interface RuntimeEnemyProgramShape {
+  readonly id: string;
+  readonly steps: readonly string[];
+}
+
+export interface RuntimeEnemyProgramBinding {
+  readonly enemy: number;
+  readonly programId: string;
+}
+
+export interface RuntimeGameplayOutcome {
+  readonly programId: string;
+  readonly status: "applied" | "rejected";
+  readonly plannedOperations: readonly string[];
+  readonly executedOperations: readonly string[];
+  readonly effects: readonly string[];
+  readonly rejectionReason?: string;
+}
+
 export interface RuntimeBrowserState {
   readonly hostSessionId: string;
   readonly projectId: string;
@@ -574,9 +748,22 @@ export interface RuntimeBrowserState {
   readonly visualBindings: readonly RuntimeVisualBindingResource[];
   readonly generatedEnvironment: RuntimeGeneratedEnvironment | null;
   readonly applicationContent?: RuntimeApplicationContent | null;
+  readonly gameplayPrograms: RuntimeGameplayPrograms;
+  readonly pickupPrograms: RuntimePickupPrograms;
+  readonly playerSetupPrograms: RuntimePlayerSetupPrograms;
+  readonly enemyPrograms: RuntimeEnemyPrograms;
+  readonly hazardPrograms: RuntimeHazardPrograms;
+  readonly explosivePropPrograms: RuntimeExplosivePropPrograms;
+  readonly encounterPrograms: RuntimeEncounterPrograms;
+  readonly switchPrograms: RuntimeSwitchPrograms;
+  readonly floorActionPrograms: RuntimeFloorActionPrograms;
+  readonly liftPrograms: RuntimeLiftPrograms;
+  readonly secretPrograms: RuntimeSecretPrograms;
+  readonly levelExitPrograms: RuntimeLevelExitPrograms;
   readonly enemies: readonly RuntimeEnemyState[];
   readonly presentation: RuntimePresentationState;
   readonly doomSpriteInspection: RuntimeDoomSpriteInspectionState | null;
+  readonly gameplayOutcome: RuntimeGameplayOutcome | null;
   readonly lastEvents: readonly string[];
   readonly voxelEditReceipt?: RuntimeVoxelEditReceipt;
 }

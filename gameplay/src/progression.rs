@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_time::Tick;
 use rusty_engine::engine_spatial::{
@@ -11,6 +13,10 @@ use crate::inventory::{
     InventoryAction, InventoryCommand, InventoryFact, InventoryReceipt, InventoryRejection,
     InventoryService, ItemDefinitionId,
 };
+use crate::level_exit_program::{
+    execute_level_exit_program, LevelExitOperation, LevelExitPredicate,
+};
+use crate::secret_program::{execute_secret_program, SecretOperation, SecretPredicate};
 use crate::session::GameSession;
 use crate::vitality::DamageService;
 
@@ -195,6 +201,11 @@ pub enum LevelExitRejection {
     ActorMissingTransform { actor: EntityId },
     PlayerDefeated { actor: EntityId },
     OutOfRange { actor: EntityId, exit: EntityId },
+    MissingProgramBinding { exit: EntityId },
+    MissingProgram { exit: EntityId, program_id: String },
+    CompletionAlreadyRecorded { exit: EntityId },
+    CompletionPresentationBeforeRecord { exit: EntityId },
+    CompletionPresentationAlreadyEmitted { exit: EntityId },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -218,6 +229,22 @@ pub struct SecretPhaseReceipt {
 pub enum SecretRejection {
     Trigger {
         diagnostics: Vec<TriggerVolumeDiagnostic>,
+    },
+    MissingProgramBinding {
+        secret: EntityId,
+    },
+    MissingProgram {
+        secret: EntityId,
+        program_id: String,
+    },
+    DiscoveryAlreadyRecorded {
+        secret: EntityId,
+    },
+    SecretPresentationBeforeRecord {
+        secret: EntityId,
+    },
+    SecretPresentationAlreadyEmitted {
+        secret: EntityId,
     },
 }
 
@@ -339,10 +366,14 @@ impl ProgressionService {
         actor: EntityId,
         tick: Tick,
     ) -> Result<SecretPhaseReceipt, SecretRejection> {
+        // Both spatial reconciliation and every program run are candidate
+        // work. A late source-order rejection cannot leak an earlier secret's
+        // once-state or a trigger revision.
+        let mut candidate_session = session.clone();
         let mut candidate_triggers = triggers.clone();
         let trigger_receipt = candidate_triggers
             .reconcile(
-                &session.entities,
+                &candidate_session.entities,
                 tick.raw(),
                 TriggerReconcileCause::Movement,
             )
@@ -350,9 +381,13 @@ impl ProgressionService {
                 diagnostics: error.diagnostics,
             })?;
         let mut facts = Vec::new();
-        let secret_ids = session.secret_regions.keys().copied().collect::<Vec<_>>();
+        let secret_ids = candidate_session
+            .secret_regions
+            .keys()
+            .copied()
+            .collect::<Vec<_>>();
         for secret in secret_ids {
-            let component = session
+            let component = candidate_session
                 .secret_regions
                 .get(&secret)
                 .expect("secret identity came from admitted state");
@@ -367,32 +402,35 @@ impl ProgressionService {
             if !overlaps.subjects.contains(&actor) {
                 continue;
             }
-            facts.push(ProgressionFact::SecretDiscovered {
-                secret,
+            let program_id = candidate_session
+                .secret_program_bindings
+                .get(&secret)
+                .cloned()
+                .ok_or(SecretRejection::MissingProgramBinding { secret })?;
+            let program = candidate_session
+                .secret_programs
+                .get(&program_id)
+                .cloned()
+                .ok_or_else(|| SecretRejection::MissingProgram {
+                    secret,
+                    program_id: program_id.clone(),
+                })?;
+            let context = RefCell::new(SecretProgramContext {
+                session: &mut candidate_session,
+                triggers: &mut candidate_triggers,
                 actor,
-                discovered_at: tick,
-                presentation: component.config.presentation.clone(),
+                secret,
+                tick,
+                discovery_recorded: false,
+                presentation_emitted: false,
+                facts: Vec::new(),
             });
-        }
-        let mut candidate_session = session.clone();
-        for fact in &facts {
-            let ProgressionFact::SecretDiscovered {
-                secret,
-                actor,
-                discovered_at,
-                ..
-            } = fact
-            else {
-                unreachable!("secret reconciliation only stages secret facts");
-            };
-            candidate_session
-                .secret_regions
-                .get_mut(secret)
-                .expect("staged secret remains admitted")
-                .state = SecretRegionState::Discovered {
-                actor: *actor,
-                discovered_at: *discovered_at,
-            };
+            execute_secret_program(
+                &program,
+                &mut |predicate| context.borrow_mut().predicate(predicate),
+                &mut |operation| context.borrow_mut().operation(operation),
+            )?;
+            facts.extend(context.into_inner().facts);
         }
         *session = candidate_session;
         *triggers = candidate_triggers;
@@ -436,20 +474,211 @@ impl ProgressionService {
         {
             return Err(LevelExitRejection::OutOfRange { actor, exit });
         }
-        session
-            .level_exits
-            .get_mut(&exit)
-            .expect("level exit remains admitted")
-            .state = LevelExitState::Completed {
+        let program_id = session
+            .level_exit_program_bindings
+            .get(&exit)
+            .cloned()
+            .ok_or(LevelExitRejection::MissingProgramBinding { exit })?;
+        let program = session
+            .level_exit_programs
+            .get(&program_id)
+            .cloned()
+            .ok_or_else(|| LevelExitRejection::MissingProgram {
+                exit,
+                program_id: program_id.clone(),
+            })?;
+        let mut candidate = session.clone();
+        let context = RefCell::new(LevelExitProgramContext {
+            session: &mut candidate,
             actor,
-            completed_at: tick,
-        };
-        Ok(Some(ProgressionFact::LevelCompleted {
             exit,
-            actor,
-            completed_at: tick,
-            presentation: component.config.presentation,
-        }))
+            tick,
+            completion_recorded: false,
+            presentation_emitted: false,
+            fact: None,
+        });
+        execute_level_exit_program(
+            &program,
+            &mut |predicate| context.borrow_mut().predicate(predicate),
+            &mut |operation| context.borrow_mut().operation(operation),
+        )?;
+        let fact = context.into_inner().fact;
+        *session = candidate;
+        Ok(fact)
+    }
+}
+
+struct SecretProgramContext<'a> {
+    session: &'a mut GameSession,
+    triggers: &'a mut TriggerVolumeSystem,
+    actor: EntityId,
+    secret: EntityId,
+    tick: Tick,
+    discovery_recorded: bool,
+    presentation_emitted: bool,
+    facts: Vec<ProgressionFact>,
+}
+
+impl SecretProgramContext<'_> {
+    fn predicate(&mut self, predicate: SecretPredicate) -> Result<bool, SecretRejection> {
+        match predicate {
+            SecretPredicate::SecretRegionEntered => self
+                .triggers
+                .current_overlaps(self.secret, MAX_SECRET_OVERLAP_SUBJECTS)
+                .map(|overlaps| overlaps.subjects.contains(&self.actor))
+                .map_err(|error| SecretRejection::Trigger {
+                    diagnostics: error.diagnostics,
+                }),
+            SecretPredicate::SecretUndiscovered => Ok(self
+                .session
+                .secret_regions
+                .get(&self.secret)
+                .is_some_and(|component| component.state == SecretRegionState::Undiscovered)),
+        }
+    }
+
+    fn operation(&mut self, operation: SecretOperation) -> Result<(), SecretRejection> {
+        match operation {
+            SecretOperation::RecordDiscovery => {
+                if self.discovery_recorded
+                    || !self
+                        .session
+                        .secret_regions
+                        .get(&self.secret)
+                        .is_some_and(|component| component.state == SecretRegionState::Undiscovered)
+                {
+                    return Err(SecretRejection::DiscoveryAlreadyRecorded {
+                        secret: self.secret,
+                    });
+                }
+                self.session
+                    .secret_regions
+                    .get_mut(&self.secret)
+                    .expect("secret identity came from admitted state")
+                    .state = SecretRegionState::Discovered {
+                    actor: self.actor,
+                    discovered_at: self.tick,
+                };
+                self.discovery_recorded = true;
+                Ok(())
+            }
+            SecretOperation::EmitSecretPresentation => {
+                if !self.discovery_recorded {
+                    return Err(SecretRejection::SecretPresentationBeforeRecord {
+                        secret: self.secret,
+                    });
+                }
+                if self.presentation_emitted {
+                    return Err(SecretRejection::SecretPresentationAlreadyEmitted {
+                        secret: self.secret,
+                    });
+                }
+                let component = self
+                    .session
+                    .secret_regions
+                    .get(&self.secret)
+                    .expect("secret identity came from admitted state");
+                let SecretRegionState::Discovered {
+                    actor,
+                    discovered_at,
+                } = component.state
+                else {
+                    return Err(SecretRejection::SecretPresentationBeforeRecord {
+                        secret: self.secret,
+                    });
+                };
+                self.facts.push(ProgressionFact::SecretDiscovered {
+                    secret: self.secret,
+                    actor,
+                    discovered_at,
+                    presentation: component.config.presentation.clone(),
+                });
+                self.presentation_emitted = true;
+                Ok(())
+            }
+        }
+    }
+}
+
+struct LevelExitProgramContext<'a> {
+    session: &'a mut GameSession,
+    actor: EntityId,
+    exit: EntityId,
+    tick: Tick,
+    completion_recorded: bool,
+    presentation_emitted: bool,
+    fact: Option<ProgressionFact>,
+}
+
+impl LevelExitProgramContext<'_> {
+    fn predicate(&mut self, predicate: LevelExitPredicate) -> Result<bool, LevelExitRejection> {
+        match predicate {
+            LevelExitPredicate::ExitAvailable => Ok(self
+                .session
+                .level_exits
+                .get(&self.exit)
+                .is_some_and(|component| component.state == LevelExitState::Available)),
+        }
+    }
+
+    fn operation(&mut self, operation: LevelExitOperation) -> Result<(), LevelExitRejection> {
+        match operation {
+            LevelExitOperation::RecordCompletion => {
+                if self.completion_recorded
+                    || !self
+                        .session
+                        .level_exits
+                        .get(&self.exit)
+                        .is_some_and(|component| component.state == LevelExitState::Available)
+                {
+                    return Err(LevelExitRejection::CompletionAlreadyRecorded { exit: self.exit });
+                }
+                self.session
+                    .level_exits
+                    .get_mut(&self.exit)
+                    .expect("level exit identity came from admitted state")
+                    .state = LevelExitState::Completed {
+                    actor: self.actor,
+                    completed_at: self.tick,
+                };
+                self.completion_recorded = true;
+                Ok(())
+            }
+            LevelExitOperation::EmitCompletionPresentation => {
+                if !self.completion_recorded {
+                    return Err(LevelExitRejection::CompletionPresentationBeforeRecord {
+                        exit: self.exit,
+                    });
+                }
+                if self.presentation_emitted {
+                    return Err(LevelExitRejection::CompletionPresentationAlreadyEmitted {
+                        exit: self.exit,
+                    });
+                }
+                let component = self
+                    .session
+                    .level_exits
+                    .get(&self.exit)
+                    .expect("level exit identity came from admitted state");
+                let LevelExitState::Completed {
+                    actor,
+                    completed_at,
+                } = component.state
+                else {
+                    return Err(LevelExitRejection::CompletionPresentationBeforeRecord {
+                        exit: self.exit,
+                    });
+                };
+                self.fact = Some(ProgressionFact::LevelCompleted {
+                    exit: self.exit,
+                    actor,
+                    completed_at,
+                    presentation: component.config.presentation.clone(),
+                });
+                self.presentation_emitted = true;
+                Ok(())
+            }
+        }
     }
 }
 

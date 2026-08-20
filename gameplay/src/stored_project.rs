@@ -1,8 +1,8 @@
 //! Static authored-project document shapes and format-level validation.
 //!
 //! This module owns the inspectable candidate format. It deliberately stops
-//! before runtime admission: `content` remains the sole place that can turn a
-//! document into a live [`crate::GameSession`].
+//! before runtime admission, which turns the current stored project into live
+//! Rust-owned session state.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -29,14 +29,10 @@ use crate::combat::{
 };
 use crate::floor_action::FloorActionConfig;
 use crate::interaction::{SwitchConfig, SwitchEffect};
-use crate::inventory::{
-    ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY, MAX_PROJECTILE_GRAVITY_SCALE,
-    MAX_PROJECTILE_IMPULSE, MAX_PROJECTILE_LIFETIME_TICKS, MAX_PROJECTILE_MASS,
-    MAX_PROJECTILE_RADIUS, MAX_PROJECTILE_RESTITUTION,
-};
+use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 use crate::lift::LiftConfig;
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 25;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 26;
 pub const STORED_VISUAL_BINDING_VERSION: u32 = 2;
 const MIN_STORED_VISUAL_BINDING_VERSION: u32 = 1;
 pub const MAX_STORED_VISUAL_BINDING_STATES: usize = 16;
@@ -50,7 +46,6 @@ pub const MAX_PROJECT_VOXEL_OBJECT_INSTANCES: u64 = 4_096;
 pub mod diagnostic_code {
     pub const DECODE: &str = "project.decode";
     pub const ENCODE: &str = "project.encode";
-    pub const MIGRATION: &str = "project.migration";
     pub const UNSUPPORTED_SCHEMA: &str = "project.unsupportedSchema";
     pub const INVALID_PROJECT_ID: &str = "project.invalidProjectId";
     pub const INVALID_VALUE: &str = "project.invalidValue";
@@ -88,6 +83,32 @@ pub struct StoredProject {
     pub assets: Vec<StoredAsset>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub item_definitions: Vec<StoredItemDefinition>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gameplay_programs: Vec<crate::gameplay_program::StoredGameplayProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pickup_programs: Vec<crate::pickup_program::StoredPickupProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub player_setup_programs: Vec<crate::player_program::StoredPlayerSetupProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub enemy_attack_programs: Vec<crate::enemy_program::StoredEnemyAttackProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub enemy_defeat_programs: Vec<crate::enemy_program::StoredEnemyDefeatProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub hazard_programs: Vec<crate::hazard_program::StoredHazardProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub explosive_prop_programs: Vec<crate::explosive_prop_program::StoredExplosivePropProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub encounter_programs: Vec<crate::encounter_program::StoredEncounterProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub switch_programs: Vec<crate::switch_program::StoredSwitchProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub floor_action_programs: Vec<crate::floor_action_program::StoredFloorActionProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub lift_programs: Vec<crate::lift_program::StoredLiftProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub secret_programs: Vec<crate::secret_program::StoredSecretProgram>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub level_exit_programs: Vec<crate::level_exit_program::StoredLevelExitProgram>,
     pub scenes: Vec<StoredScene>,
 }
 
@@ -96,6 +117,8 @@ pub struct StoredProject {
 pub struct StoredItemDefinition {
     pub id: String,
     pub max_quantity: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub program: Option<String>,
     pub kind: StoredItemKind,
 }
 
@@ -131,18 +154,6 @@ pub enum StoredItemKind {
         muzzle_offset: Option<[f32; 3]>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         presentation: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        projectile_mass: Option<f32>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        projectile_radius: Option<f32>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        projectile_impulse: Option<f32>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        projectile_gravity_scale: Option<f32>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        projectile_lifetime_ticks: Option<u64>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        projectile_restitution: Option<f32>,
     },
     Ammunition,
     AccessKey,
@@ -202,8 +213,6 @@ fn is_default_armor_transition(value: &StoredArmorTransition) -> bool {
 pub enum StoredWeaponAttackMode {
     Hitscan,
     Spread,
-    Automatic,
-    Projectile,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -485,8 +494,6 @@ pub struct StoredEntityDefinition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pickup: Option<StoredPickup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub weapon: Option<StoredWeapon>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub secret_region: Option<StoredSecretRegion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub level_exit: Option<StoredLevelExit>,
@@ -515,8 +522,9 @@ pub struct StoredBounds {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredInventory {
     pub capacity_slots: usize,
-    pub starting_stacks: Vec<StoredInventoryStack>,
-    pub initially_equipped_weapon: Option<String>,
+    /// Closed player setup catalog id. The program is the sole initial
+    /// inventory/equipment authority.
+    pub setup_program: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub weapon_slots: Vec<String>,
 }
@@ -533,6 +541,9 @@ pub struct StoredInventoryStack {
 pub struct StoredPickup {
     pub item: String,
     pub quantity: u32,
+    /// Closed pickup-program catalog id. A pickup never infers consequences
+    /// from its item kind at runtime.
+    pub program: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub starter_ammunition: Option<StoredInventoryStack>,
 }
@@ -740,6 +751,8 @@ pub enum StoredRequiredKeyPolicy {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredSwitch {
     #[serde(default)]
+    pub program: String,
+    #[serde(default)]
     pub controls: Vec<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub loading_bay_interlock: Option<StoredLoadingBayInterlock>,
@@ -770,6 +783,8 @@ pub struct StoredSwitch {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredFloorAction {
+    #[serde(default)]
+    pub program: String,
     pub target_platform: u64,
     pub upper_translation: [f32; 3],
     pub lowered_translation: [f32; 3],
@@ -786,6 +801,8 @@ pub struct StoredFloorAction {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredLift {
+    #[serde(default)]
+    pub program: String,
     pub target_platform: u64,
     pub raised_translation: [f32; 3],
     pub lowered_translation: [f32; 3],
@@ -899,6 +916,8 @@ pub struct StoredLoadingBayInterlock {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredSecretRegion {
+    /// Closed Rust secret program selected by this region.
+    pub program: String,
     pub presentation: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<String>,
@@ -907,6 +926,8 @@ pub struct StoredSecretRegion {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredLevelExit {
+    /// Closed Rust exit-completion program selected by this exit.
+    pub program: String,
     pub activation_radius: f32,
     pub presentation: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -917,6 +938,7 @@ pub struct StoredLevelExit {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredEncounter {
     pub members: Vec<u64>,
+    pub program: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub exit: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -948,9 +970,11 @@ pub struct StoredHealth {
     pub armor_absorption_percent: u8,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredExplosiveProp {
+    /// Closed Rust explosive-prop program selected for this placed prop.
+    pub program: String,
     pub damage: u32,
     pub radius: f32,
 }
@@ -965,6 +989,10 @@ pub struct StoredEnemyCombat {
         skip_serializing_if = "enemy_pain_duration_ticks_is_default"
     )]
     pub pain_duration_ticks: u64,
+    #[serde(default)]
+    pub attack_program: String,
+    #[serde(default)]
+    pub defeat_program: String,
     pub attack: StoredEnemyAttack,
 }
 
@@ -1010,9 +1038,11 @@ pub struct StoredEnemyProjectile {
     pub visual_asset: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredHazard {
+    /// Closed Rust hazard program selected for this placed trigger.
+    pub program: String,
     pub damage: u32,
     pub cooldown_ticks: u64,
 }
@@ -1096,16 +1126,6 @@ pub struct StoredPlayerInputBindings {
     pub select_weapon: Vec<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct StoredWeapon {
-    pub damage: u32,
-    pub max_distance: f32,
-    pub cooldown_ticks: u64,
-    pub ammo_capacity: u32,
-    pub muzzle_offset: [f32; 3],
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectDiagnostic {
     pub code: &'static str,
@@ -1176,7 +1196,7 @@ pub fn decode_stored_project(input: &str) -> Result<StoredProject, StoredProject
 /// Validates item definitions against the shared admission invariants:
 /// id grammar, quantity and per-kind effect limits, uniqueness, weapon
 /// shape completeness (attack-mode-consistent optional fields, damage,
-/// range, cadence, cost, muzzle offset, presentation, projectile fields),
+/// range, cadence, cost, muzzle offset, and presentation),
 /// and weapon -> ammunition reference resolution. Both project admission
 /// and the gameplay-package semantic compiler must run this BEFORE
 /// converting candidates, so the `expect` calls in
@@ -1263,45 +1283,18 @@ pub(crate) fn validate_item_definitions(
             ammunition_cost,
             muzzle_offset,
             presentation,
-            projectile_mass,
-            projectile_radius,
-            projectile_impulse,
-            projectile_gravity_scale,
-            projectile_lifetime_ticks,
-            projectile_restitution,
         } = &definition.kind
         else {
             continue;
         };
         let valid_attack_mode = match attack_mode {
-            Some(StoredWeaponAttackMode::Hitscan | StoredWeaponAttackMode::Automatic) => {
+            Some(StoredWeaponAttackMode::Hitscan) => {
                 pellet_count.is_none() && spread_degrees.is_none()
             }
             Some(StoredWeaponAttackMode::Spread) => {
                 pellet_count.is_some_and(|value| (2..=MAX_WEAPON_PELLETS).contains(&value))
                     && spread_degrees.is_some_and(|value| {
                         value.is_finite() && value > 0.0 && value <= MAX_WEAPON_SPREAD_DEGREES
-                    })
-            }
-            Some(StoredWeaponAttackMode::Projectile) => {
-                pellet_count.is_none()
-                    && spread_degrees.is_none()
-                    && projectile_mass.is_some_and(|value| {
-                        value.is_finite() && value > 0.0 && value <= MAX_PROJECTILE_MASS
-                    })
-                    && projectile_radius.is_some_and(|value| {
-                        value.is_finite() && value > 0.0 && value <= MAX_PROJECTILE_RADIUS
-                    })
-                    && projectile_impulse.is_some_and(|value| {
-                        value.is_finite() && value > 0.0 && value <= MAX_PROJECTILE_IMPULSE
-                    })
-                    && projectile_gravity_scale.is_some_and(|value| {
-                        value.is_finite() && (0.0..=MAX_PROJECTILE_GRAVITY_SCALE).contains(&value)
-                    })
-                    && projectile_lifetime_ticks
-                        .is_some_and(|value| (1..=MAX_PROJECTILE_LIFETIME_TICKS).contains(&value))
-                    && projectile_restitution.is_some_and(|value| {
-                        value.is_finite() && (0.0..=MAX_PROJECTILE_RESTITUTION).contains(&value)
                     })
             }
             None => false,
@@ -1324,18 +1317,7 @@ pub(crate) fn validate_item_definitions(
             })
             && presentation
                 .as_ref()
-                .is_some_and(|value| !value.is_empty() && value.len() <= 96)
-            && match attack_mode {
-                Some(StoredWeaponAttackMode::Projectile) => true,
-                _ => {
-                    projectile_mass.is_none()
-                        && projectile_radius.is_none()
-                        && projectile_impulse.is_none()
-                        && projectile_gravity_scale.is_none()
-                        && projectile_lifetime_ticks.is_none()
-                        && projectile_restitution.is_none()
-                }
-            };
+                .is_some_and(|value| !value.is_empty() && value.len() <= 96);
         if !valid_weapon {
             return Err(failure(
                 diagnostic_code::INVALID_VALUE,
@@ -2404,77 +2386,12 @@ fn validate_scene_entities(
                     "inventory capacity must be within the bounded slot limit",
                 ));
             }
-            if inventory.starting_stacks.len() > inventory.capacity_slots {
+            if inventory.setup_program.is_empty() {
                 return Err(failure(
                     diagnostic_code::INVALID_COMPONENT,
-                    format!("{root}.inventory.startingStacks"),
-                    "starting stacks exceed inventory capacity",
+                    format!("{root}.inventory.setupProgram"),
+                    "inventory must name a player setup program",
                 ));
-            }
-            let mut stacks = BTreeSet::new();
-            for (stack_index, stack) in inventory.starting_stacks.iter().enumerate() {
-                let stack_path = format!("{root}.inventory.startingStacks[{stack_index}]");
-                ItemDefinitionId::parse(stack.item.clone()).map_err(|error| {
-                    failure(
-                        diagnostic_code::INVALID_VALUE,
-                        format!("{stack_path}.item"),
-                        error.to_string(),
-                    )
-                })?;
-                let Some(definition_index) = project
-                    .item_definitions
-                    .iter()
-                    .position(|item| item.id == stack.item)
-                else {
-                    return Err(failure(
-                        diagnostic_code::MISSING_ITEM_DEFINITION,
-                        format!("{stack_path}.item"),
-                        format!("starting stack references missing item `{}`", stack.item),
-                    ));
-                };
-                if !stacks.insert(&stack.item) {
-                    return Err(failure(
-                        diagnostic_code::DUPLICATE_INVENTORY_STACK,
-                        format!("{stack_path}.item"),
-                        "an inventory can contain at most one stack per item definition",
-                    ));
-                }
-                let definition = &project.item_definitions[definition_index];
-                if stack.quantity == 0 || stack.quantity > definition.max_quantity {
-                    return Err(failure(
-                        diagnostic_code::INVALID_COMPONENT,
-                        format!("{stack_path}.quantity"),
-                        format!(
-                            "starting quantity must be between 1 and {}",
-                            definition.max_quantity
-                        ),
-                    ));
-                }
-            }
-            if let Some(equipped) = &inventory.initially_equipped_weapon {
-                let Some(definition) = project
-                    .item_definitions
-                    .iter()
-                    .find(|definition| definition.id == *equipped)
-                else {
-                    return Err(failure(
-                        diagnostic_code::MISSING_ITEM_DEFINITION,
-                        format!("{root}.inventory.initiallyEquippedWeapon"),
-                        format!("equipped weapon references missing item `{equipped}`"),
-                    ));
-                };
-                if !matches!(definition.kind, StoredItemKind::Weapon { .. })
-                    || !inventory
-                        .starting_stacks
-                        .iter()
-                        .any(|stack| stack.item == *equipped)
-                {
-                    return Err(failure(
-                        diagnostic_code::INVALID_COMPONENT,
-                        format!("{root}.inventory.initiallyEquippedWeapon"),
-                        "equipped weapon must be an owned weapon item",
-                    ));
-                }
             }
             let mut weapon_slots = BTreeSet::new();
             for (slot_index, item) in inventory.weapon_slots.iter().enumerate() {
@@ -2504,17 +2421,6 @@ fn validate_scene_entities(
                         "weapon slots must reference weapon item definitions",
                     ));
                 }
-            }
-            if inventory
-                .initially_equipped_weapon
-                .as_ref()
-                .is_some_and(|equipped| !inventory.weapon_slots.contains(equipped))
-            {
-                return Err(failure(
-                    diagnostic_code::INVALID_COMPONENT,
-                    format!("{root}.inventory.initiallyEquippedWeapon"),
-                    "equipped weapon must occupy an authored weapon slot",
-                ));
             }
         }
         if let Some(pickup) = &entity.pickup {
@@ -2609,7 +2515,6 @@ fn validate_scene_entities(
                 || entity.navigation.is_some()
                 || entity.player_controller.is_some()
                 || entity.inventory.is_some()
-                || entity.weapon.is_some()
             {
                 return Err(failure(
                     diagnostic_code::INVALID_COMPONENT,
@@ -2863,7 +2768,6 @@ fn has_walk_trigger_gameplay_owner(entity: &StoredEntityDefinition) -> bool {
         || entity.player_controller.is_some()
         || entity.inventory.is_some()
         || entity.pickup.is_some()
-        || entity.weapon.is_some()
         || entity.secret_region.is_some()
         || entity.level_exit.is_some()
 }

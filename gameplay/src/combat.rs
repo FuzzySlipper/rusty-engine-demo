@@ -8,11 +8,14 @@ use rusty_engine::entity_state::EntityView;
 use serde::{Deserialize, Serialize};
 
 use crate::explosive_prop::ExplosivePropFact;
+use crate::gameplay_program::{
+    applied_outcome, execute_program, program_operation_labels, rejected_outcome, DemoOperation,
+    DemoProgram,
+};
 use crate::inventory::{
     InventoryAction, InventoryCommand, InventoryFact, InventoryRejection, InventoryService,
     ItemDefinitionId, ItemKind, WeaponAttackMode, WeaponDefinition,
 };
-use crate::projectile::ProjectileService;
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
@@ -37,32 +40,6 @@ pub const MAX_WEAPON_COOLDOWN_TICKS: u64 = 100_000;
 pub const MAX_WEAPON_MUZZLE_OFFSET: f32 = 100_000.0;
 pub const MAX_WEAPON_PELLETS: u8 = 32;
 pub const MAX_WEAPON_SPREAD_DEGREES: f32 = 45.0;
-
-/// Legacy schema-6/entity authoring shape. Current projects store these
-/// semantics on the responsible weapon item definition instead.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct WeaponConfig {
-    pub damage: u32,
-    pub max_distance: f32,
-    pub cooldown_ticks: u64,
-    pub ammo_capacity: u32,
-    pub muzzle_offset: Vec3,
-}
-
-impl WeaponConfig {
-    pub(crate) fn is_valid(self) -> bool {
-        (1..=MAX_WEAPON_DAMAGE).contains(&self.damage)
-            && self.max_distance.is_finite()
-            && self.max_distance > 0.0
-            && self.max_distance <= MAX_WEAPON_RANGE
-            && self.cooldown_ticks <= MAX_WEAPON_COOLDOWN_TICKS
-            && (1..=MAX_WEAPON_AMMO).contains(&self.ammo_capacity)
-            && vec3_is_finite(self.muzzle_offset)
-            && self.muzzle_offset.x.abs() <= MAX_WEAPON_MUZZLE_OFFSET
-            && self.muzzle_offset.y.abs() <= MAX_WEAPON_MUZZLE_OFFSET
-            && self.muzzle_offset.z.abs() <= MAX_WEAPON_MUZZLE_OFFSET
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WeaponState {
@@ -140,14 +117,6 @@ pub enum CombatFact {
         attacker: EntityId,
         enemy: EntityId,
     },
-    ProjectileSpawned {
-        entity: EntityId,
-        owner: EntityId,
-        weapon: ItemDefinitionId,
-        origin: Vec3,
-        impulse: Vec3,
-        expires_at: Tick,
-    },
     ProjectileImpacted {
         entity: EntityId,
         owner: EntityId,
@@ -199,11 +168,30 @@ pub(crate) struct CombatTargetHit {
     pub(crate) distance: f32,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+struct SpreadImpact {
+    ray_index: u8,
+    direction: Vec3,
+    outcome: SpreadImpactOutcome,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum SpreadImpactOutcome {
+    Hit {
+        target: EntityId,
+        distance: f32,
+        damage: u32,
+    },
+    WorldBlocked {
+        distance: f32,
+    },
+    NoTarget,
+}
+
 impl CombatService {
     pub(crate) fn attack(
         session: &mut GameSession,
         scene: &VoxelCollisionScene,
-        projectiles: &mut ProjectileService,
         tick: Tick,
         attacker: EntityId,
         action: ResolvedAttackAction,
@@ -241,6 +229,30 @@ impl CombatService {
                 item: definition.id.clone(),
             });
         };
+        if matches!(weapon.attack_mode, WeaponAttackMode::Projectile) {
+            return Err(RuntimeError::CombatResolutionFailed {
+                reason: format!(
+                    "weapon `{weapon_item}` uses a retired player projectile attack mode"
+                ),
+            });
+        }
+        let program_id =
+            definition
+                .program
+                .clone()
+                .ok_or_else(|| RuntimeError::CombatResolutionFailed {
+                    reason: format!("weapon `{weapon_item}` has no authored gameplay program"),
+                })?;
+        let program = session
+            .gameplay_programs
+            .get(&program_id)
+            .cloned()
+            .ok_or_else(|| RuntimeError::CombatResolutionFailed {
+                reason: format!(
+                    "weapon `{weapon_item}` references unavailable gameplay program `{program_id}`"
+                ),
+            })?;
+        let outcome_program = program.clone();
         let ready_at_tick = inventory
             .weapon_ready_at
             .get(&weapon_item)
@@ -291,7 +303,7 @@ impl CombatService {
             weapon.attack_mode,
             WeaponAttackMode::Hitscan | WeaponAttackMode::Automatic
         ) {
-            return crate::combat_resolution::resolve_single_hitscan(
+            let result = crate::combat_resolution::resolve_single_hitscan(
                 session,
                 scene,
                 tick,
@@ -305,217 +317,39 @@ impl CombatService {
                 ammo_before,
                 ammo_after,
                 ready_at_tick,
+                program,
             );
+            return record_program_result(session, program_id, &outcome_program, result);
         }
-        let mut candidate_session = session.clone();
-        let ammunition_facts = if weapon.ammunition_cost == 0 {
-            Vec::new()
-        } else {
-            let inventory_sequence = candidate_session
-                .inventories
-                .get(&attacker)
-                .and_then(|inventory| inventory.last_applied_command_sequence)
-                .map_or(Some(1), |sequence| sequence.checked_add(1))
-                .ok_or(RuntimeError::InventorySequenceOverflow { owner: attacker })?;
-            InventoryService::apply(
-                &mut candidate_session,
+        if matches!(weapon.attack_mode, WeaponAttackMode::Spread { .. }) {
+            let impacts = precompute_spread_impacts(
+                session,
+                scene,
                 attacker,
-                InventoryCommand {
-                    sequence: inventory_sequence,
-                    action: InventoryAction::Consume {
-                        item: weapon.ammunition.clone(),
-                        quantity: weapon.ammunition_cost,
-                    },
-                },
-            )
-            .map_err(|rejection| match rejection {
-                InventoryRejection::QuantityUnderflow { .. } => RuntimeError::CombatRejected {
-                    entity: attacker,
-                    reason: CombatRejectionReason::NoAmmo,
-                },
-                other => RuntimeError::Inventory(other),
-            })?
-            .facts
-        };
-        let mut facts = vec![CombatFact::AttackFired {
-            attacker,
-            weapon: weapon_item.clone(),
-            presentation: weapon.presentation.clone(),
-            attack_mode: weapon.attack_mode,
-            ammunition: weapon.ammunition.clone(),
-            origin,
-            direction,
-            ray_count: directions.len() as u8,
-            spread_seed,
-            ammo_before,
-            ammo_after,
-            ready_at_tick,
-        }];
-        facts.extend(ammunition_facts.into_iter().map(CombatFact::Inventory));
-        let mut events = Vec::new();
-        if let WeaponAttackMode::Projectile = weapon.attack_mode {
-            let projectile = weapon
-                .projectile
-                .expect("validated projectile weapon carries projectile definition");
-            let (_, projectile_fact) = projectiles
-                .spawn(
-                    &mut candidate_session,
-                    crate::projectile::ProjectileSpawnRequest {
-                        owner: attacker,
-                        weapon: weapon_item.clone(),
-                        definition: projectile,
-                        damage: rolled_damage(weapon.damage, weapon.damage_rolls, spread_seed, 0),
-                        origin,
-                        direction,
-                        tick,
-                    },
-                )
-                .map_err(RuntimeError::Projectile)?;
-            if let crate::projectile::ProjectileFact::Spawned {
-                entity,
-                owner,
+                origin,
+                &weapon,
+                spread_seed,
+                directions,
+            )?;
+            let result = resolve_spread_program(
+                session,
+                attacker,
+                action,
+                weapon_item,
                 weapon,
                 origin,
-                impulse,
-                expires_at,
-            } = projectile_fact
-            {
-                facts.push(CombatFact::ProjectileSpawned {
-                    entity,
-                    owner,
-                    weapon,
-                    origin,
-                    impulse,
-                    expires_at,
-                });
-            }
-        }
-        for (ray_index, direction) in directions.into_iter().enumerate() {
-            if matches!(weapon.attack_mode, WeaponAttackMode::Projectile) {
-                break;
-            }
-            let ray_index = ray_index as u8;
-            let ray_damage =
-                rolled_damage(weapon.damage, weapon.damage_rolls, spread_seed, ray_index);
-            let target = nearest_combat_target(
-                &candidate_session,
-                attacker,
-                origin,
                 direction,
-                weapon.max_distance,
+                spread_seed,
+                ammo_before,
+                ammo_after,
+                ready_at_tick,
+                program,
+                impacts,
             );
-            let ignored_entities =
-                target.map_or([attacker, attacker], |hit| [attacker, hit.entity]);
-            let ignored_entities = if target.is_some() {
-                &ignored_entities[..]
-            } else {
-                &ignored_entities[..1]
-            };
-            let world_blocker = SpatialOcclusionService
-                .cast_ray(
-                    scene,
-                    &candidate_session.entities,
-                    SpatialOcclusionQuery {
-                        origin: [origin.x as f64, origin.y as f64, origin.z as f64],
-                        direction: [direction.x as f64, direction.y as f64, direction.z as f64],
-                        max_distance: weapon.max_distance as f64,
-                        ignored_entities,
-                    },
-                )
-                .map_err(RuntimeError::SpatialOcclusion)?
-                .map(|hit| hit.distance() as f32);
-            match (target, world_blocker) {
-                (Some(hit), blocker)
-                    if blocker.is_none_or(|distance| hit.distance + 0.000_1 < distance) =>
-                {
-                    facts.push(CombatFact::AttackHit {
-                        attacker,
-                        target: hit.entity,
-                        ray_index,
-                        direction,
-                        distance: hit.distance,
-                        damage: ray_damage,
-                    });
-                    facts.push(CombatFact::ImpactResolved {
-                        attacker,
-                        target: Some(hit.entity),
-                        kind: CombatImpactKind::Blood,
-                        position: origin + direction * hit.distance,
-                        direction,
-                    });
-                    let damage = DamageService::apply(
-                        &mut candidate_session,
-                        DamageCommand {
-                            source: DamageSource::Weapon {
-                                attacker,
-                                weapon: weapon_item.clone(),
-                            },
-                            target: hit.entity,
-                            amount: ray_damage,
-                        },
-                    )
-                    .map_err(RuntimeError::Vitality)?;
-                    facts.extend(damage.facts.into_iter().map(CombatFact::Vitality));
-                    facts.extend(
-                        damage
-                            .explosive_props
-                            .into_iter()
-                            .map(CombatFact::ExplosiveProp),
-                    );
-                    facts.extend(damage.enemy_drops.into_iter().map(CombatFact::EnemyDrop));
-                    facts.extend(
-                        damage
-                            .inventory
-                            .into_iter()
-                            .flat_map(|receipt| receipt.facts)
-                            .map(CombatFact::Inventory),
-                    );
-                    if let Some(event) = damage.event {
-                        if matches!(event, GameEvent::EnemyDefeated { .. }) {
-                            facts.push(CombatFact::EnemyDefeated {
-                                attacker,
-                                enemy: hit.entity,
-                            });
-                        }
-                        events.push(event);
-                    }
-                }
-                (_, Some(distance)) => {
-                    facts.push(CombatFact::AttackMissed {
-                        attacker,
-                        ray_index,
-                        direction,
-                        reason: CombatMissReason::WorldBlocked,
-                    });
-                    facts.push(CombatFact::ImpactResolved {
-                        attacker,
-                        target: None,
-                        kind: CombatImpactKind::BulletPuff,
-                        position: origin + direction * distance,
-                        direction,
-                    });
-                }
-                (None, None) => facts.push(CombatFact::AttackMissed {
-                    attacker,
-                    ray_index,
-                    direction,
-                    reason: CombatMissReason::NoTarget,
-                }),
-                (Some(_), None) => unreachable!("unblocked target is handled above"),
-            }
+            return record_program_result(session, program_id, &outcome_program, result);
         }
-
-        candidate_session
-            .inventories
-            .get_mut(&attacker)
-            .expect("inventory validated above")
-            .weapon_ready_at
-            .insert(weapon_item, ready_at_tick);
-        *session = candidate_session;
-        Ok(CombatResolution {
-            action,
-            facts,
-            events,
+        Err(RuntimeError::CombatResolutionFailed {
+            reason: format!("weapon `{weapon_item}` uses an unsupported legacy player attack mode"),
         })
     }
 
@@ -544,6 +378,348 @@ impl CombatService {
         .map(|receipt| receipt.event)
         .map_err(RuntimeError::Vitality)
     }
+}
+
+fn record_program_result(
+    session: &mut GameSession,
+    program_id: String,
+    program: &DemoProgram,
+    result: Result<CombatResolution, RuntimeError>,
+) -> Result<CombatResolution, RuntimeError> {
+    match result {
+        Ok(resolution) => {
+            let planned = program_operation_labels(program);
+            let has_fired = resolution
+                .facts
+                .iter()
+                .any(|fact| matches!(fact, CombatFact::AttackFired { .. }));
+            let has_ammo = resolution
+                .facts
+                .iter()
+                .any(|fact| matches!(fact, CombatFact::Inventory(_)));
+            let has_hit = resolution
+                .facts
+                .iter()
+                .any(|fact| matches!(fact, CombatFact::AttackHit { .. }));
+            let has_miss = resolution
+                .facts
+                .iter()
+                .any(|fact| matches!(fact, CombatFact::AttackMissed { .. }));
+            let executed_operations = planned
+                .iter()
+                .filter(|label| match label.as_str() {
+                    "record-fired" => has_fired,
+                    "consume-ammo" => has_ammo,
+                    "apply-hit" => has_hit,
+                    "apply-miss" => has_miss,
+                    "apply-spread-impacts" => has_hit || has_miss,
+                    "set-cooldown" => true,
+                    _ => false,
+                })
+                .cloned()
+                .collect();
+            let effects = resolution
+                .facts
+                .iter()
+                .map(combat_effect_label)
+                .chain(resolution.events.iter().map(|_| "event"))
+                .map(str::to_owned)
+                .collect();
+            session.record_gameplay_outcome(applied_outcome(
+                program_id,
+                program,
+                executed_operations,
+                effects,
+            ));
+            Ok(resolution)
+        }
+        Err(error) => {
+            session.record_gameplay_outcome(rejected_outcome(
+                program_id,
+                program,
+                error.to_string(),
+            ));
+            Err(error)
+        }
+    }
+}
+
+fn combat_effect_label(fact: &CombatFact) -> &'static str {
+    match fact {
+        CombatFact::Inventory(_) => "inventory",
+        CombatFact::AttackFired { .. } => "attack-fired",
+        CombatFact::AttackHit { .. } => "attack-hit",
+        CombatFact::AttackMissed { .. } => "attack-missed",
+        CombatFact::ImpactResolved { .. } => "impact-resolved",
+        CombatFact::Vitality(_) => "vitality",
+        CombatFact::ExplosiveProp(_) => "explosive-prop",
+        CombatFact::EnemyDrop(_) => "enemy-drop",
+        CombatFact::EnemyDefeated { .. } => "enemy-defeated",
+        CombatFact::ProjectileImpacted { .. } => "projectile-impacted",
+        CombatFact::ProjectileExpired { .. } => "projectile-expired",
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn precompute_spread_impacts(
+    session: &GameSession,
+    scene: &VoxelCollisionScene,
+    attacker: EntityId,
+    origin: Vec3,
+    weapon: &WeaponDefinition,
+    spread_seed: u64,
+    directions: Vec<Vec3>,
+) -> Result<Vec<SpreadImpact>, RuntimeError> {
+    directions
+        .into_iter()
+        .enumerate()
+        .map(|(index, direction)| {
+            let ray_index = index as u8;
+            let target =
+                nearest_combat_target(session, attacker, origin, direction, weapon.max_distance);
+            let ignored = target.map_or([attacker, attacker], |hit| [attacker, hit.entity]);
+            let ignored = if target.is_some() {
+                &ignored[..]
+            } else {
+                &ignored[..1]
+            };
+            let blocker = SpatialOcclusionService
+                .cast_ray(
+                    scene,
+                    &session.entities,
+                    SpatialOcclusionQuery {
+                        origin: [origin.x as f64, origin.y as f64, origin.z as f64],
+                        direction: [direction.x as f64, direction.y as f64, direction.z as f64],
+                        max_distance: weapon.max_distance as f64,
+                        ignored_entities: ignored,
+                    },
+                )
+                .map_err(RuntimeError::SpatialOcclusion)?
+                .map(|hit| hit.distance() as f32);
+            let outcome = match (target, blocker) {
+                (Some(hit), blocker)
+                    if blocker.is_none_or(|distance| hit.distance + 0.000_1 < distance) =>
+                {
+                    SpreadImpactOutcome::Hit {
+                        target: hit.entity,
+                        distance: hit.distance,
+                        damage: rolled_damage(
+                            weapon.damage,
+                            weapon.damage_rolls,
+                            spread_seed,
+                            ray_index,
+                        ),
+                    }
+                }
+                (_, Some(distance)) => SpreadImpactOutcome::WorldBlocked { distance },
+                (None, None) => SpreadImpactOutcome::NoTarget,
+                (Some(_), None) => SpreadImpactOutcome::NoTarget,
+            };
+            Ok(SpreadImpact {
+                ray_index,
+                direction,
+                outcome,
+            })
+        })
+        .collect()
+}
+
+#[allow(clippy::too_many_arguments)]
+fn resolve_spread_program(
+    session: &mut GameSession,
+    attacker: EntityId,
+    action: ResolvedAttackAction,
+    weapon_item: ItemDefinitionId,
+    weapon: WeaponDefinition,
+    origin: Vec3,
+    direction: Vec3,
+    spread_seed: u64,
+    ammo_before: u32,
+    ammo_after: u32,
+    ready_at_tick: Tick,
+    program: crate::gameplay_program::DemoProgram,
+    impacts: Vec<SpreadImpact>,
+) -> Result<CombatResolution, RuntimeError> {
+    let mut candidate = session.clone();
+    let mut facts = Vec::new();
+    let mut events = Vec::new();
+    execute_program(
+        &program,
+        &mut |_| {
+            Err(RuntimeError::CombatResolutionFailed {
+                reason: "spread program cannot evaluate impact predicate".to_owned(),
+            })
+        },
+        &mut |operation| match operation {
+            DemoOperation::RecordFired => {
+                facts.push(CombatFact::AttackFired {
+                    attacker,
+                    weapon: weapon_item.clone(),
+                    presentation: weapon.presentation.clone(),
+                    attack_mode: weapon.attack_mode,
+                    ammunition: weapon.ammunition.clone(),
+                    origin,
+                    direction,
+                    ray_count: impacts.len() as u8,
+                    spread_seed,
+                    ammo_before,
+                    ammo_after,
+                    ready_at_tick,
+                });
+                Ok(())
+            }
+            DemoOperation::ConsumeAmmo if weapon.ammunition_cost > 0 => {
+                let sequence = candidate
+                    .inventories
+                    .get(&attacker)
+                    .and_then(|inventory| inventory.last_applied_command_sequence)
+                    .map_or(Some(1), |sequence| sequence.checked_add(1))
+                    .ok_or(RuntimeError::InventorySequenceOverflow { owner: attacker })?;
+                let receipt = InventoryService::apply(
+                    &mut candidate,
+                    attacker,
+                    InventoryCommand {
+                        sequence,
+                        action: InventoryAction::Consume {
+                            item: weapon.ammunition.clone(),
+                            quantity: weapon.ammunition_cost,
+                        },
+                    },
+                )
+                .map_err(|rejection| match rejection {
+                    InventoryRejection::QuantityUnderflow { .. } => RuntimeError::CombatRejected {
+                        entity: attacker,
+                        reason: CombatRejectionReason::NoAmmo,
+                    },
+                    other => RuntimeError::Inventory(other),
+                })?;
+                facts.extend(receipt.facts.into_iter().map(CombatFact::Inventory));
+                Ok(())
+            }
+            DemoOperation::ConsumeAmmo => Ok(()),
+            DemoOperation::ApplySpreadImpacts => apply_spread_impacts(
+                &mut candidate,
+                attacker,
+                &weapon_item,
+                origin,
+                &impacts,
+                &mut facts,
+                &mut events,
+            ),
+            DemoOperation::SetCooldown => {
+                candidate
+                    .inventories
+                    .get_mut(&attacker)
+                    .expect("combat preflight retains inventory")
+                    .weapon_ready_at
+                    .insert(weapon_item.clone(), ready_at_tick);
+                Ok(())
+            }
+            _ => Err(RuntimeError::CombatResolutionFailed {
+                reason: format!("unsupported operation {operation:?} in spread context"),
+            }),
+        },
+    )?;
+    *session = candidate;
+    Ok(CombatResolution {
+        action,
+        facts,
+        events,
+    })
+}
+
+fn apply_spread_impacts(
+    session: &mut GameSession,
+    attacker: EntityId,
+    weapon: &ItemDefinitionId,
+    origin: Vec3,
+    impacts: &[SpreadImpact],
+    facts: &mut Vec<CombatFact>,
+    events: &mut Vec<GameEvent>,
+) -> Result<(), RuntimeError> {
+    for impact in impacts {
+        match impact.outcome {
+            SpreadImpactOutcome::Hit {
+                target,
+                distance,
+                damage,
+            } => {
+                facts.push(CombatFact::AttackHit {
+                    attacker,
+                    target,
+                    ray_index: impact.ray_index,
+                    direction: impact.direction,
+                    distance,
+                    damage,
+                });
+                facts.push(CombatFact::ImpactResolved {
+                    attacker,
+                    target: Some(target),
+                    kind: CombatImpactKind::Blood,
+                    position: origin + impact.direction * distance,
+                    direction: impact.direction,
+                });
+                let receipt = DamageService::apply(
+                    session,
+                    DamageCommand {
+                        source: DamageSource::Weapon {
+                            attacker,
+                            weapon: weapon.clone(),
+                        },
+                        target,
+                        amount: damage,
+                    },
+                )
+                .map_err(RuntimeError::Vitality)?;
+                facts.extend(receipt.facts.into_iter().map(CombatFact::Vitality));
+                facts.extend(
+                    receipt
+                        .explosive_props
+                        .into_iter()
+                        .map(CombatFact::ExplosiveProp),
+                );
+                facts.extend(receipt.enemy_drops.into_iter().map(CombatFact::EnemyDrop));
+                facts.extend(
+                    receipt
+                        .inventory
+                        .into_iter()
+                        .flat_map(|receipt| receipt.facts)
+                        .map(CombatFact::Inventory),
+                );
+                if let Some(event) = receipt.event {
+                    if matches!(event, GameEvent::EnemyDefeated { .. }) {
+                        facts.push(CombatFact::EnemyDefeated {
+                            attacker,
+                            enemy: target,
+                        });
+                    }
+                    events.push(event);
+                }
+            }
+            SpreadImpactOutcome::WorldBlocked { distance } => {
+                facts.push(CombatFact::AttackMissed {
+                    attacker,
+                    ray_index: impact.ray_index,
+                    direction: impact.direction,
+                    reason: CombatMissReason::WorldBlocked,
+                });
+                facts.push(CombatFact::ImpactResolved {
+                    attacker,
+                    target: None,
+                    kind: CombatImpactKind::BulletPuff,
+                    position: origin + impact.direction * distance,
+                    direction: impact.direction,
+                });
+            }
+            SpreadImpactOutcome::NoTarget => facts.push(CombatFact::AttackMissed {
+                attacker,
+                ray_index: impact.ray_index,
+                direction: impact.direction,
+                reason: CombatMissReason::NoTarget,
+            }),
+        }
+    }
+    Ok(())
 }
 
 fn attack_directions(
@@ -689,10 +865,6 @@ fn ray_aabb_distance(origin: Vec3, direction: Vec3, min: Vec3, max: Vec3) -> Opt
         }
     }
     (t_max >= 0.0).then_some(t_min.max(0.0))
-}
-
-fn vec3_is_finite(value: Vec3) -> bool {
-    value.x.is_finite() && value.y.is_finite() && value.z.is_finite()
 }
 
 #[cfg(test)]

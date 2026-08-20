@@ -1,11 +1,15 @@
 //! Product-specific static resources and dynamic readouts for the browser shell.
 
 use loading_bay_game::{
-    DoorState, EncounterState, EnemyAttackKind, EnemyCombatPosture, EnemyState,
-    ExtractionBeaconState, FloorActionState, GameRuntime, ItemKind, LevelExitState, LiftState,
-    NavigationState, PickupCollectionCause, PickupState, PlayerInputSessionView, RequiredKeyPolicy,
-    SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretRegionState, StoredLight,
-    StoredVisualAnimationLoopMode, StoredVisualBinding, VitalityState,
+    DoorState, EncounterProgramReadout, EncounterState, EnemyAttackKind, EnemyCombatPosture,
+    EnemyProgramReadout, EnemyState, ExplosivePropProgramReadout, ExtractionBeaconState,
+    FloorActionProgramReadout, FloorActionState, GameRuntime, GameplayProgramOutcome,
+    GameplayProgramReadout, HazardProgramReadout, ItemKind, LevelExitProgramReadout,
+    LevelExitState, LiftProgramReadout, LiftState, NavigationState, PickupCollectionCause,
+    PickupProgramReadout, PickupState, PlayerInputSessionView, PlayerSetupProgramReadout,
+    RequiredKeyPolicy, SaveSlotCompatibility, SaveSlotId, SaveSlotSummary, SecretProgramReadout,
+    SecretRegionState, StoredLight, StoredVisualAnimationLoopMode, StoredVisualBinding,
+    SwitchProgramReadout, VitalityState,
 };
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
@@ -329,6 +333,7 @@ pub struct BrowserDynamicState {
     enemies: Vec<BrowserEnemyState>,
     presentation: BrowserPresentation,
     doom_sprite_inspection: Option<BrowserDoomSpriteInspectionState>,
+    gameplay_outcome: Option<GameplayProgramOutcome>,
     pub(super) last_events: Vec<String>,
 }
 
@@ -370,6 +375,18 @@ pub struct BrowserStaticResources {
     animated_meshes: Vec<BrowserAnimatedMeshResource>,
     visual_bindings: Vec<BrowserVisualBindingResource>,
     application_content: Option<BrowserApplicationContent>,
+    gameplay_programs: GameplayProgramReadout,
+    pickup_programs: PickupProgramReadout,
+    player_setup_programs: PlayerSetupProgramReadout,
+    enemy_programs: EnemyProgramReadout,
+    hazard_programs: HazardProgramReadout,
+    explosive_prop_programs: ExplosivePropProgramReadout,
+    encounter_programs: EncounterProgramReadout,
+    switch_programs: SwitchProgramReadout,
+    floor_action_programs: FloorActionProgramReadout,
+    lift_programs: LiftProgramReadout,
+    secret_programs: SecretProgramReadout,
+    level_exit_programs: LevelExitProgramReadout,
 }
 
 #[derive(Debug, Serialize)]
@@ -980,6 +997,7 @@ pub fn browser_dynamic_state_with_gameplay_frame(
                     },
                 })
         }),
+        gameplay_outcome: runtime.session().gameplay_outcome().cloned(),
         last_events,
     }
 }
@@ -1257,6 +1275,18 @@ pub fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticResources
         animated_meshes,
         visual_bindings,
         application_content,
+        gameplay_programs: runtime.session().gameplay_programs(),
+        pickup_programs: runtime.session().pickup_programs(),
+        player_setup_programs: runtime.session().player_setup_programs(),
+        enemy_programs: runtime.session().enemy_programs(),
+        hazard_programs: runtime.session().hazard_programs(),
+        explosive_prop_programs: runtime.session().explosive_prop_programs(),
+        encounter_programs: runtime.session().encounter_programs(),
+        switch_programs: runtime.session().switch_programs(),
+        floor_action_programs: runtime.session().floor_action_programs(),
+        lift_programs: runtime.session().lift_programs(),
+        secret_programs: runtime.session().secret_programs(),
+        level_exit_programs: runtime.session().level_exit_programs(),
     }
 }
 

@@ -1,9 +1,8 @@
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
 use rusty_engine::core_time::TickDelta;
-use rusty_engine::entity_state::{EntityCommand, EntityCommandBatch, EntityDefinition, EntityView};
+use rusty_engine::entity_state::{EntityCommand, EntityCommandBatch, EntityView};
 
-use crate::definition::GameEntityDefinition;
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
@@ -343,48 +342,4 @@ fn motion_translation(config: DoorConfig, direction: DoorState, elapsed: u64) ->
         }
         DoorState::Closed | DoorState::Open => config.closed_translation,
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SecurityDoorIds {
-    pub actor: EntityId,
-    pub switch: EntityId,
-    pub door: EntityId,
-}
-
-impl SecurityDoorIds {
-    pub const fn standard() -> Self {
-        Self {
-            actor: EntityId::new(1),
-            switch: EntityId::new(2),
-            door: EntityId::new(3),
-        }
-    }
-}
-
-pub fn security_door_definitions(
-    auto_close_after: Option<TickDelta>,
-) -> (SecurityDoorIds, Vec<GameEntityDefinition>) {
-    let ids = SecurityDoorIds::standard();
-    let door_config = DoorConfig::new(Vec3::ZERO, Vec3::new(0.0, 3.0, 0.0), auto_close_after);
-    (
-        ids,
-        vec![
-            GameEntityDefinition::new(
-                EntityDefinition::new(ids.actor, "player").with_transform(Vec3::ZERO),
-            ),
-            GameEntityDefinition::new(
-                EntityDefinition::new(ids.switch, "security-switch").with_transform(Vec3::ZERO),
-            )
-            .as_switch()
-            .controls([ids.door]),
-            GameEntityDefinition::new(
-                EntityDefinition::new(ids.door, "security-door")
-                    .with_transform(door_config.closed_translation)
-                    .with_collision(true, false)
-                    .with_renderable("mesh/security-door", true),
-            )
-            .as_door(door_config),
-        ],
-    )
 }

@@ -31,6 +31,161 @@ fn e1m1_authored_inventory_is_read_only_and_uses_doom_item_vocabulary() {
 }
 
 #[test]
+fn player_setup_program_preserves_e1m1_loadout_slots_and_first_command_sequence() {
+    let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let health = runtime.session().health(PLAYER).unwrap();
+    assert_eq!(health.current, 100);
+    assert_eq!(health.config.max, 200);
+    assert_eq!(health.config.max_armor, 200);
+    assert_eq!(health.config.armor_absorption_percent, 33);
+    let controls = runtime.session().player_controller(PLAYER).unwrap();
+    assert_eq!(controls.config.bindings.move_forward, "KeyW");
+    assert_eq!(controls.config.bindings.primary_fire, "Mouse0");
+    assert_eq!(
+        controls.config.bindings.select_weapon,
+        vec!["Digit1", "Digit2", "Digit3"]
+    );
+    let inventory = runtime.session().inventory(PLAYER).unwrap();
+    assert_eq!(inventory.capacity_slots, 10);
+    assert_eq!(
+        inventory
+            .stacks
+            .iter()
+            .map(|stack| (stack.item.as_str(), stack.quantity))
+            .collect::<Vec<_>>(),
+        vec![
+            ("weapon/fist", 1),
+            ("weapon/pistol", 1),
+            ("ammo/bullets", 50),
+        ]
+    );
+    assert_eq!(inventory.equipped_weapon.unwrap().as_str(), "weapon/pistol");
+    assert_eq!(
+        inventory
+            .weapon_slots
+            .iter()
+            .map(|item| item.as_str())
+            .collect::<Vec<_>>(),
+        vec!["weapon/pistol", "weapon/shotgun", "weapon/fist"]
+    );
+    let programs = runtime.session().player_setup_programs();
+    assert_eq!(programs.programs.len(), 2);
+    assert_eq!(
+        programs.bindings,
+        vec![loading_bay_game::PlayerSetupProgramBinding {
+            player: PLAYER.raw(),
+            program_id: "player/e1m1-pistol-start".to_owned(),
+        }]
+    );
+
+    // Admission applies setup directly to mechanics; it is not a ceremonial
+    // inventory command and therefore leaves sequence one for the first live
+    // mutation.
+    let receipt = runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: ItemDefinitionId::parse("ammo/bullets").unwrap(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    assert_eq!(receipt.sequence, 1);
+}
+
+#[test]
+fn changing_only_the_player_setup_binding_changes_rust_owned_initial_state() {
+    let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    project["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity["id"] == 1)
+        .unwrap()["inventory"]["setupProgram"] = serde_json::json!("player/shotgun-start");
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let inventory = runtime.session().inventory(PLAYER).unwrap();
+    assert_eq!(
+        inventory
+            .stacks
+            .iter()
+            .map(|stack| (stack.item.as_str(), stack.quantity))
+            .collect::<Vec<_>>(),
+        vec!["weapon/fist", "weapon/shotgun", "ammo/shells"]
+            .into_iter()
+            .zip([1, 1, 8])
+            .collect::<Vec<_>>(),
+    );
+    assert_eq!(
+        inventory.equipped_weapon.unwrap().as_str(),
+        "weapon/shotgun"
+    );
+    assert_eq!(
+        runtime.session().player_setup_programs().bindings[0].program_id,
+        "player/shotgun-start"
+    );
+}
+
+#[test]
+fn malformed_player_setup_programs_fail_admission_before_a_session_exists() {
+    let mut unknown_item: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    unknown_item["playerSetupPrograms"][0]["program"][0]["item"] =
+        serde_json::json!("ammo/not-authored");
+    assert!(GameRuntime::from_stored_project(&unknown_item.to_string()).is_err());
+
+    let mut zero_quantity: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    zero_quantity["playerSetupPrograms"][0]["program"][0]["quantity"] = serde_json::json!(0);
+    assert!(GameRuntime::from_stored_project(&zero_quantity.to_string()).is_err());
+
+    let mut quantity_overflow: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    quantity_overflow["playerSetupPrograms"][0]["program"][2]["quantity"] = serde_json::json!(201);
+    assert!(GameRuntime::from_stored_project(&quantity_overflow.to_string()).is_err());
+
+    let mut equip_before_grant: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    let operations = equip_before_grant["playerSetupPrograms"][0]["program"]
+        .as_array_mut()
+        .unwrap();
+    operations.swap(0, 3);
+    assert!(GameRuntime::from_stored_project(&equip_before_grant.to_string()).is_err());
+
+    let mut non_weapon_equip: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    non_weapon_equip["playerSetupPrograms"][0]["program"][3]["item"] =
+        serde_json::json!("ammo/bullets");
+    assert!(GameRuntime::from_stored_project(&non_weapon_equip.to_string()).is_err());
+
+    let mut unknown_equipment: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    unknown_equipment["playerSetupPrograms"][0]["program"][3]["item"] =
+        serde_json::json!("weapon/not-authored");
+    assert!(GameRuntime::from_stored_project(&unknown_equipment.to_string()).is_err());
+
+    let mut capacity_overflow: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    capacity_overflow["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity["id"] == 1)
+        .unwrap()["inventory"]["capacitySlots"] = serde_json::json!(1);
+    assert!(GameRuntime::from_stored_project(&capacity_overflow.to_string()).is_err());
+
+    let mut weapon_outside_slots: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    weapon_outside_slots["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity["id"] == 1)
+        .unwrap()["inventory"]["weaponSlots"] = serde_json::json!(["weapon/pistol", "weapon/fist"]);
+    weapon_outside_slots["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity["id"] == 1)
+        .unwrap()["inventory"]["setupProgram"] = serde_json::json!("player/shotgun-start");
+    assert!(GameRuntime::from_stored_project(&weapon_outside_slots.to_string()).is_err());
+}
+
+#[test]
 fn e1m1_inventory_commands_are_atomic_and_preserve_rejected_sequences() {
     let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
     let bullets = ItemDefinitionId::parse("ammo/bullets").unwrap();

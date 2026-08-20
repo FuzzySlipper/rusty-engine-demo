@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 25,
+  "schemaVersion": 26,
   "projectId": "doom-e1m1",
   "name": "Doom E1M1 — Hangar (VoXel Showcase)",
   "entryScene": "scene/doom-e1m1",
@@ -161074,6 +161074,7 @@
     {
       "id": "supply/health-bonus",
       "maxQuantity": 1,
+      "program": "item/health-supply",
       "kind": {
         "kind": "healthSupply",
         "restoreHealth": 1,
@@ -161085,6 +161086,7 @@
     {
       "id": "supply/medikit",
       "maxQuantity": 1,
+      "program": "item/health-supply",
       "kind": {
         "kind": "healthSupply",
         "restoreHealth": 25,
@@ -161095,6 +161097,7 @@
     {
       "id": "supply/stimpack",
       "maxQuantity": 1,
+      "program": "item/health-supply",
       "kind": {
         "kind": "healthSupply",
         "restoreHealth": 10,
@@ -161105,6 +161108,7 @@
     {
       "id": "weapon/fist",
       "maxQuantity": 1,
+      "program": "weapon/hitscan-unarmed",
       "kind": {
         "kind": "weapon",
         "ammunition": "ammo/bullets",
@@ -161126,6 +161130,7 @@
     {
       "id": "weapon/pistol",
       "maxQuantity": 1,
+      "program": "weapon/hitscan-ammunition",
       "kind": {
         "kind": "weapon",
         "ammunition": "ammo/bullets",
@@ -161147,6 +161152,7 @@
     {
       "id": "weapon/shotgun",
       "maxQuantity": 1,
+      "program": "weapon/spread",
       "kind": {
         "kind": "weapon",
         "ammunition": "ammo/shells",
@@ -161165,6 +161171,592 @@
           0.0
         ],
         "presentation": "shotgun"
+      }
+    }
+  ],
+  "gameplayPrograms": [
+    {
+      "id": "weapon/hitscan-ammunition",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "recordFired"
+          },
+          {
+            "kind": "operation",
+            "operation": "consumeAmmo"
+          },
+          {
+            "kind": "when",
+            "predicate": "impactIsHit",
+            "thenProgram": {
+              "kind": "operation",
+              "operation": "applyHit"
+            },
+            "otherwiseProgram": {
+              "kind": "operation",
+              "operation": "applyMiss"
+            }
+          },
+          {
+            "kind": "operation",
+            "operation": "setCooldown"
+          }
+        ]
+      }
+    },
+    {
+      "id": "weapon/hitscan-unarmed",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "recordFired"
+          },
+          {
+            "kind": "when",
+            "predicate": "impactIsHit",
+            "thenProgram": {
+              "kind": "operation",
+              "operation": "applyHit"
+            },
+            "otherwiseProgram": {
+              "kind": "operation",
+              "operation": "applyMiss"
+            }
+          },
+          {
+            "kind": "operation",
+            "operation": "setCooldown"
+          }
+        ]
+      }
+    },
+    {
+      "id": "weapon/spread",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "recordFired"
+          },
+          {
+            "kind": "operation",
+            "operation": "consumeAmmo"
+          },
+          {
+            "kind": "operation",
+            "operation": "applySpreadImpacts"
+          },
+          {
+            "kind": "operation",
+            "operation": "setCooldown"
+          }
+        ]
+      }
+    },
+    {
+      "id": "item/health-supply",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "useHealthSupply"
+          }
+        ]
+      }
+    }
+  ],
+  "pickupPrograms": [
+    {
+      "id": "pickup/ammunition",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "grantPickedItem"
+          },
+          {
+            "kind": "operation",
+            "operation": "consumePickup"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pickup/weapon-starter",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "when",
+            "predicate": "weaponAlreadyOwnedWithStarterAmmunition",
+            "thenProgram": {
+              "kind": "operation",
+              "operation": "grantStarterAmmunition"
+            },
+            "otherwiseProgram": {
+              "kind": "sequence",
+              "steps": [
+                {
+                  "kind": "operation",
+                  "operation": "grantPickedItem"
+                },
+                {
+                  "kind": "operation",
+                  "operation": "grantStarterAmmunition"
+                }
+              ]
+            }
+          },
+          {
+            "kind": "operation",
+            "operation": "consumePickup"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pickup/automatic-health",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "grantPickedItem"
+          },
+          {
+            "kind": "operation",
+            "operation": "useGrantedHealthSupply"
+          },
+          {
+            "kind": "operation",
+            "operation": "consumePickup"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pickup/automatic-armor",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "grantPickedItem"
+          },
+          {
+            "kind": "operation",
+            "operation": "applyGrantedArmor"
+          },
+          {
+            "kind": "operation",
+            "operation": "consumePickup"
+          }
+        ]
+      }
+    }
+  ],
+  "playerSetupPrograms": [
+    {
+      "id": "player/e1m1-pistol-start",
+      "program": [
+        {
+          "kind": "grantItem",
+          "item": "weapon/fist",
+          "quantity": 1
+        },
+        {
+          "kind": "grantItem",
+          "item": "weapon/pistol",
+          "quantity": 1
+        },
+        {
+          "kind": "grantItem",
+          "item": "ammo/bullets",
+          "quantity": 50
+        },
+        {
+          "kind": "equipInitialWeapon",
+          "item": "weapon/pistol"
+        }
+      ]
+    },
+    {
+      "id": "player/shotgun-start",
+      "program": [
+        {
+          "kind": "grantItem",
+          "item": "weapon/fist",
+          "quantity": 1
+        },
+        {
+          "kind": "grantItem",
+          "item": "weapon/shotgun",
+          "quantity": 1
+        },
+        {
+          "kind": "grantItem",
+          "item": "ammo/shells",
+          "quantity": 8
+        },
+        {
+          "kind": "equipInitialWeapon",
+          "item": "weapon/shotgun"
+        }
+      ]
+    }
+  ],
+  "enemyAttackPrograms": [
+    {
+      "id": "enemy-attack/hitscan",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "recordEnemyAttack"
+          },
+          {
+            "kind": "when",
+            "predicate": "impactIsHit",
+            "thenProgram": {
+              "kind": "operation",
+              "operation": "applyEnemyHit"
+            },
+            "otherwiseProgram": {
+              "kind": "operation",
+              "operation": "applyEnemyMiss"
+            }
+          },
+          {
+            "kind": "operation",
+            "operation": "setEnemyCooldown"
+          }
+        ]
+      }
+    },
+    {
+      "id": "enemy-attack/projectile",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "recordEnemyAttack"
+          },
+          {
+            "kind": "operation",
+            "operation": "spawnEnemyProjectile"
+          },
+          {
+            "kind": "operation",
+            "operation": "setEnemyCooldown"
+          }
+        ]
+      }
+    }
+  ],
+  "enemyDefeatPrograms": [
+    {
+      "id": "enemy-defeat/with-drop",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "recordEnemyDefeat"
+          },
+          {
+            "kind": "operation",
+            "operation": "activateBoundDrop"
+          }
+        ]
+      }
+    },
+    {
+      "id": "enemy-defeat/without-drop",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "operation",
+            "operation": "recordEnemyDefeat"
+          }
+        ]
+      }
+    }
+  ],
+  "hazardPrograms": [
+    {
+      "id": "hazard/nukage",
+      "program": {
+        "kind": "when",
+        "predicate": "playerOverlapping",
+        "thenProgram": {
+          "kind": "when",
+          "predicate": "playerEligible",
+          "thenProgram": {
+            "kind": "when",
+            "predicate": "cooldownReady",
+            "thenProgram": {
+              "kind": "sequence",
+              "steps": [
+                {
+                  "kind": "operation",
+                  "operation": "applyHazardDamage"
+                },
+                {
+                  "kind": "operation",
+                  "operation": "scheduleHazardCooldown"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "explosivePropPrograms": [
+    {
+      "id": "explosive-prop/barrel",
+      "program": {
+        "kind": "when",
+        "predicate": "explosionPending",
+        "thenProgram": {
+          "kind": "sequence",
+          "steps": [
+            {
+              "kind": "operation",
+              "operation": "selectRadialTargets"
+            },
+            {
+              "kind": "operation",
+              "operation": "applyScaledDamage"
+            },
+            {
+              "kind": "operation",
+              "operation": "resolveExplosion"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "encounterPrograms": [
+    {
+      "id": "encounter/e1m1",
+      "activation": {
+        "kind": "when",
+        "predicate": "activationEligible",
+        "thenProgram": {
+          "kind": "sequence",
+          "steps": [
+            {
+              "kind": "operation",
+              "operation": "recordEncounterActivation"
+            },
+            {
+              "kind": "operation",
+              "operation": "activateBoundMembers"
+            },
+            {
+              "kind": "operation",
+              "operation": "emitEncounterFeedback"
+            }
+          ]
+        }
+      },
+      "clear": {
+        "kind": "when",
+        "predicate": "membersDefeated",
+        "thenProgram": {
+          "kind": "sequence",
+          "steps": [
+            {
+              "kind": "operation",
+              "operation": "recordEncounterCleared"
+            },
+            {
+              "kind": "operation",
+              "operation": "openBoundExit"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "switchPrograms": [
+    {
+      "id": "switch/e1m1-door",
+      "program": {
+        "kind": "when",
+        "predicate": "switchAvailable",
+        "thenProgram": {
+          "kind": "sequence",
+          "steps": [
+            {
+              "kind": "operation",
+              "operation": "recordActivation"
+            },
+            {
+              "kind": "operation",
+              "operation": "emitInteractionFeedback"
+            },
+            {
+              "kind": "operation",
+              "operation": "requestOpenBoundDoor"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "floorActionPrograms": [
+    {
+      "id": "floor-action/e1m1-lower",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "when",
+            "predicate": "activationEntered",
+            "thenProgram": {
+              "kind": "sequence",
+              "steps": [
+                {
+                  "kind": "operation",
+                  "operation": "recordActivation"
+                },
+                {
+                  "kind": "operation",
+                  "operation": "emitFloorFeedback"
+                },
+                {
+                  "kind": "operation",
+                  "operation": "requestLowerBoundPlatform"
+                }
+              ]
+            }
+          },
+          {
+            "kind": "when",
+            "predicate": "loweringMotionTick",
+            "thenProgram": {
+              "kind": "operation",
+              "operation": "advanceLowering"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "liftPrograms": [
+    {
+      "id": "lift/e1m1-cycle",
+      "program": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "when",
+            "predicate": "activationEntered",
+            "thenProgram": {
+              "kind": "sequence",
+              "steps": [
+                {
+                  "kind": "operation",
+                  "operation": "recordActivation"
+                },
+                {
+                  "kind": "operation",
+                  "operation": "emitLiftFeedback"
+                },
+                {
+                  "kind": "operation",
+                  "operation": "requestLowerBoundPlatform"
+                }
+              ]
+            }
+          },
+          {
+            "kind": "when",
+            "predicate": "loweringMotionTick",
+            "thenProgram": {
+              "kind": "operation",
+              "operation": "advanceLowering"
+            }
+          },
+          {
+            "kind": "when",
+            "predicate": "waitingTick",
+            "thenProgram": {
+              "kind": "operation",
+              "operation": "advanceWait"
+            }
+          },
+          {
+            "kind": "when",
+            "predicate": "raisingMotionTick",
+            "thenProgram": {
+              "kind": "operation",
+              "operation": "advanceRaising"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "secretPrograms": [
+    {
+      "id": "secret/e1m1-discovery",
+      "program": {
+        "kind": "when",
+        "predicate": "secretRegionEntered",
+        "thenProgram": {
+          "kind": "when",
+          "predicate": "secretUndiscovered",
+          "thenProgram": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "operation",
+                "operation": "recordDiscovery"
+              },
+              {
+                "kind": "operation",
+                "operation": "emitSecretPresentation"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "levelExitPrograms": [
+    {
+      "id": "level-exit/e1m1-completion",
+      "program": {
+        "kind": "when",
+        "predicate": "exitAvailable",
+        "thenProgram": {
+          "kind": "sequence",
+          "steps": [
+            {
+              "kind": "operation",
+              "operation": "recordCompletion"
+            },
+            {
+              "kind": "operation",
+              "operation": "emitCompletionPresentation"
+            }
+          ]
+        }
       }
     }
   ],
@@ -161287,21 +161879,7 @@
           },
           "inventory": {
             "capacitySlots": 10,
-            "startingStacks": [
-              {
-                "item": "weapon/fist",
-                "quantity": 1
-              },
-              {
-                "item": "weapon/pistol",
-                "quantity": 1
-              },
-              {
-                "item": "ammo/bullets",
-                "quantity": 50
-              }
-            ],
-            "initiallyEquippedWeapon": "weapon/pistol",
+            "setupProgram": "player/e1m1-pistol-start",
             "weaponSlots": [
               "weapon/pistol",
               "weapon/shotgun",
@@ -161354,6 +161932,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 7,
+            "attackProgram": "enemy-attack/projectile",
+            "defeatProgram": "enemy-defeat/without-drop",
             "attack": {
               "kind": "projectile",
               "damage": 12,
@@ -161451,6 +162031,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 7,
+            "attackProgram": "enemy-attack/projectile",
+            "defeatProgram": "enemy-defeat/without-drop",
             "attack": {
               "kind": "projectile",
               "damage": 12,
@@ -161548,6 +162130,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 9,
@@ -161638,7 +162222,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 5
+            "quantity": 5,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -161686,6 +162271,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 9,
@@ -161776,7 +162363,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 5
+            "quantity": 5,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -161824,6 +162412,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 9,
@@ -161914,7 +162504,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 5
+            "quantity": 5,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -161956,6 +162547,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 9,
@@ -162046,7 +162639,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 5
+            "quantity": 5,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -162094,6 +162688,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 9,
@@ -162184,7 +162780,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 5
+            "quantity": 5,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -162232,6 +162829,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 7,
+            "attackProgram": "enemy-attack/projectile",
+            "defeatProgram": "enemy-defeat/without-drop",
             "attack": {
               "kind": "projectile",
               "damage": 12,
@@ -162329,6 +162928,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 9,
@@ -162419,7 +163020,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 5
+            "quantity": 5,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -162461,6 +163063,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 9,
@@ -162551,7 +163155,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 5
+            "quantity": 5,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -162599,6 +163204,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 7,
+            "attackProgram": "enemy-attack/projectile",
+            "defeatProgram": "enemy-defeat/without-drop",
             "attack": {
               "kind": "projectile",
               "damage": 12,
@@ -162696,6 +163303,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 9,
@@ -162786,7 +163395,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 5
+            "quantity": 5,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -162834,6 +163444,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 9,
@@ -162924,7 +163536,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 5
+            "quantity": 5,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -162972,6 +163585,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -163063,6 +163678,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -163114,6 +163730,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -163205,6 +163823,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -163250,6 +163869,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -163341,6 +163962,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -163386,6 +164008,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -163477,6 +164101,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -163528,6 +164153,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -163619,6 +164246,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -163670,6 +164298,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -163761,6 +164391,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -163812,6 +164443,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -163903,6 +164536,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -163954,6 +164588,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -164045,6 +164681,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -164096,6 +164733,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -164187,6 +164826,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -164238,6 +164878,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -164329,6 +164971,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -164380,6 +165023,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -164471,6 +165116,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -164516,6 +165162,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -164607,6 +165255,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -164652,6 +165301,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -164743,6 +165394,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -164788,6 +165440,8 @@
             "sightRange": 64.0,
             "hearingRange": 12.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -164879,6 +165533,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -164930,6 +165585,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -165021,6 +165678,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -165066,6 +165724,8 @@
             "sightRange": 64.0,
             "hearingRange": 0.0,
             "painDurationTicks": 10,
+            "attackProgram": "enemy-attack/hitscan",
+            "defeatProgram": "enemy-defeat/with-drop",
             "attack": {
               "kind": "rangedHitscan",
               "damage": 12,
@@ -165157,6 +165817,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 4
@@ -165184,6 +165845,7 @@
               44,
               46
             ],
+            "program": "encounter/e1m1",
             "activationRadius": 18.0
           }
         },
@@ -165207,6 +165869,7 @@
               50,
               52
             ],
+            "program": "encounter/e1m1",
             "activationRadius": 18.0
           }
         },
@@ -165227,6 +165890,7 @@
               36,
               38
             ],
+            "program": "encounter/e1m1",
             "activationRadius": 24.0
           }
         },
@@ -165245,6 +165909,7 @@
               34,
               54
             ],
+            "program": "encounter/e1m1",
             "activationRadius": 18.0
           }
         },
@@ -165279,6 +165944,7 @@
             ]
           },
           "explosiveProp": {
+            "program": "explosive-prop/barrel",
             "damage": 128,
             "radius": 8.0
           },
@@ -165326,6 +165992,7 @@
             ]
           },
           "explosiveProp": {
+            "program": "explosive-prop/barrel",
             "damage": 128,
             "radius": 8.0
           },
@@ -165373,6 +166040,7 @@
             ]
           },
           "explosiveProp": {
+            "program": "explosive-prop/barrel",
             "damage": 128,
             "radius": 8.0
           },
@@ -165420,6 +166088,7 @@
             ]
           },
           "explosiveProp": {
+            "program": "explosive-prop/barrel",
             "damage": 128,
             "radius": 8.0
           },
@@ -165467,6 +166136,7 @@
             ]
           },
           "explosiveProp": {
+            "program": "explosive-prop/barrel",
             "damage": 128,
             "radius": 8.0
           },
@@ -165514,6 +166184,7 @@
             ]
           },
           "explosiveProp": {
+            "program": "explosive-prop/barrel",
             "damage": 128,
             "radius": 8.0
           },
@@ -165574,7 +166245,8 @@
           },
           "pickup": {
             "item": "armor/blue",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -165621,7 +166293,8 @@
           },
           "pickup": {
             "item": "supply/medikit",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -165668,7 +166341,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 10
+            "quantity": 10,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -165715,7 +166389,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 10
+            "quantity": 10,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -165762,7 +166437,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -165809,7 +166485,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -165856,7 +166533,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -165903,7 +166581,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -165950,7 +166629,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -165997,7 +166677,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -166044,7 +166725,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -166091,7 +166773,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -166138,7 +166821,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -166185,7 +166869,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -166232,7 +166917,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -166279,7 +166965,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -166326,7 +167013,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -166373,7 +167061,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -166420,7 +167109,8 @@
           },
           "pickup": {
             "item": "ammo/shells",
-            "quantity": 4
+            "quantity": 4,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -166467,7 +167157,8 @@
           },
           "pickup": {
             "item": "ammo/shells",
-            "quantity": 4
+            "quantity": 4,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -166514,7 +167205,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -166561,7 +167253,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -166608,7 +167301,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -166655,7 +167349,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -166702,7 +167397,8 @@
           },
           "pickup": {
             "item": "supply/health-bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -166749,7 +167445,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -166796,7 +167493,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -166843,7 +167541,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -166890,7 +167589,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -166937,7 +167637,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -166984,7 +167685,8 @@
           },
           "pickup": {
             "item": "supply/stimpack",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -167031,7 +167733,8 @@
           },
           "pickup": {
             "item": "supply/medikit",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -167078,7 +167781,8 @@
           },
           "pickup": {
             "item": "ammo/shells",
-            "quantity": 20
+            "quantity": 20,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -167125,7 +167829,8 @@
           },
           "pickup": {
             "item": "ammo/bullets",
-            "quantity": 50
+            "quantity": 50,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -167172,7 +167877,8 @@
           },
           "pickup": {
             "item": "armor/green",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167219,7 +167925,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167266,7 +167973,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167313,7 +168021,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167360,7 +168069,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167407,7 +168117,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167454,7 +168165,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167501,7 +168213,8 @@
           },
           "pickup": {
             "item": "ammo/shells",
-            "quantity": 20
+            "quantity": 20,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -167549,6 +168262,7 @@
           "pickup": {
             "item": "weapon/shotgun",
             "quantity": 1,
+            "program": "pickup/weapon-starter",
             "starterAmmunition": {
               "item": "ammo/shells",
               "quantity": 8
@@ -167599,7 +168313,8 @@
           },
           "pickup": {
             "item": "supply/medikit",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-health"
           }
         },
         {
@@ -167646,7 +168361,8 @@
           },
           "pickup": {
             "item": "ammo/shells",
-            "quantity": 20
+            "quantity": 20,
+            "program": "pickup/ammunition"
           }
         },
         {
@@ -167693,7 +168409,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167740,7 +168457,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167787,7 +168505,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167834,7 +168553,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167881,7 +168601,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167928,7 +168649,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -167975,7 +168697,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -168022,7 +168745,8 @@
           },
           "pickup": {
             "item": "armor/bonus",
-            "quantity": 1
+            "quantity": 1,
+            "program": "pickup/automatic-armor"
           }
         },
         {
@@ -224264,6 +224988,7 @@
             "visible": false
           },
           "hazard": {
+            "program": "hazard/nukage",
             "damage": 5,
             "cooldownTicks": 55
           }
@@ -224293,6 +225018,7 @@
             "visible": false
           },
           "hazard": {
+            "program": "hazard/nukage",
             "damage": 5,
             "cooldownTicks": 55
           }
@@ -224322,6 +225048,7 @@
             "visible": false
           },
           "hazard": {
+            "program": "hazard/nukage",
             "damage": 5,
             "cooldownTicks": 55
           }
@@ -224351,6 +225078,7 @@
             "visible": false
           },
           "hazard": {
+            "program": "hazard/nukage",
             "damage": 5,
             "cooldownTicks": 55
           }
@@ -224467,6 +225195,7 @@
             "closeSound": "doom:DSDORCLS"
           },
           "switch": {
+            "program": "switch/e1m1-door",
             "controls": [],
             "activationRadius": 6.0,
             "prompt": "Open BIGDOOR2 door",
@@ -224603,6 +225332,7 @@
             "closeSound": "doom:DSDORCLS"
           },
           "switch": {
+            "program": "switch/e1m1-door",
             "controls": [],
             "activationRadius": 6.0,
             "prompt": "Open BROWN96 door",
@@ -224739,6 +225469,7 @@
             "closeSound": "doom:DSDORCLS"
           },
           "switch": {
+            "program": "switch/e1m1-door",
             "controls": [],
             "activationRadius": 6.0,
             "prompt": "Open EXITDOOR door",
@@ -224875,6 +225606,7 @@
             "closeSound": "doom:DSDORCLS"
           },
           "switch": {
+            "program": "switch/e1m1-door",
             "controls": [],
             "activationRadius": 6.0,
             "prompt": "Open BIGDOOR4 door",
@@ -224957,6 +225689,7 @@
             ]
           },
           "floorAction": {
+            "program": "floor-action/e1m1-lower",
             "targetPlatform": 145,
             "upperTranslation": [
               260.0,
@@ -225032,6 +225765,7 @@
             ]
           },
           "lift": {
+            "program": "lift/e1m1-cycle",
             "targetPlatform": 147,
             "raisedTranslation": [
               270.0,
@@ -225100,6 +225834,7 @@
             }
           },
           "levelExit": {
+            "program": "level-exit/e1m1-completion",
             "activationRadius": 4.0,
             "presentation": "Doom E1M1 complete",
             "source": "doom1.wad:E1M1:linedef:330:type:11:texture:SW1STRTN"
@@ -225126,6 +225861,7 @@
             ]
           },
           "secretRegion": {
+            "program": "secret/e1m1-discovery",
             "presentation": "Secret 1 discovered",
             "source": "doom1.wad:E1M1:sector:68:special:9"
           }
@@ -225151,6 +225887,7 @@
             ]
           },
           "secretRegion": {
+            "program": "secret/e1m1-discovery",
             "presentation": "Secret 2 discovered",
             "source": "doom1.wad:E1M1:sector:69:special:9"
           }
@@ -225176,6 +225913,7 @@
             ]
           },
           "secretRegion": {
+            "program": "secret/e1m1-discovery",
             "presentation": "Secret 3 discovered",
             "source": "doom1.wad:E1M1:sector:70:special:9"
           }

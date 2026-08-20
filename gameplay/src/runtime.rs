@@ -11,10 +11,9 @@ use rusty_engine::engine_spatial::{
 };
 
 use crate::combat::{CombatReceipt, CombatRejectionReason, CombatService, ResolvedAttackAction};
-use crate::content::{decode_project_content, AdmittedProject, ProjectContentError};
 use crate::definition::GameEntityDefinitionError;
-use crate::door::{security_door_definitions, DoorService, DoorTransition, SecurityDoorIds};
-use crate::encounter::EncounterService;
+use crate::door::{DoorService, DoorTransition};
+use crate::encounter::{EncounterProgramRejection, EncounterService};
 use crate::enemy_combat::{
     EnemyAttackPhaseReceipt, EnemyCombatService, EnemyIntentAndMotionReceipt,
 };
@@ -22,7 +21,7 @@ use crate::explosive_prop::{ExplosivePropError, ExplosivePropPhaseReceipt, Explo
 use crate::extraction_beacon::{ExtractionBeaconReceipt, ExtractionBeaconService};
 use crate::floor_action::{FloorActionPhaseReceipt, FloorActionRejection, FloorActionService};
 use crate::hazard::{HazardPhaseReceipt, HazardRejection, HazardService};
-use crate::interaction::InteractionService;
+use crate::interaction::{InteractionService, SwitchProgramRejection};
 use crate::inventory::{InventoryCommand, InventoryReceipt, InventoryRejection, InventoryService};
 use crate::lift::{LiftPhaseReceipt, LiftRejection, LiftService};
 use crate::navigation::{EnemyNavigationSystem, NavigationPhaseReceipt};
@@ -38,19 +37,19 @@ use crate::progression::{
     DoorAccessReceipt, DoorAccessRejection, LevelExitRejection, LoadingBayInterlockRejection,
     ProgressionFact, ProgressionService, SecretPhaseReceipt, SecretRejection,
 };
-use crate::project_admission::decode_and_admit_stored_project;
+use crate::project_admission::{decode_and_admit_stored_project, AdmittedProject};
 use crate::projectile::{ProjectileError, ProjectilePhaseReceipt, ProjectileService};
 use crate::runtime_records::{readout, GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::VitalityRejection;
+use crate::vitality::{DamageDisposition, DamageService, VitalityReceipt};
 
 pub const MAX_EVENT_WAVE: usize = 256;
 pub const MAX_TICK_ADVANCE: u64 = 100_000;
 
 #[derive(Debug)]
 pub enum RuntimeError {
-    Content(ProjectContentError),
     StoredProject(crate::StoredProjectError),
     Definition(GameEntityDefinitionError),
     UnknownActor {
@@ -79,6 +78,22 @@ pub enum RuntimeError {
         switch: EntityId,
         presentation: String,
     },
+    MissingSwitchProgramBinding {
+        switch: EntityId,
+    },
+    MissingSwitchProgram {
+        switch: EntityId,
+        program_id: String,
+    },
+    SwitchProgram(SwitchProgramRejection),
+    MissingEncounterProgramBinding {
+        encounter: EntityId,
+    },
+    MissingEncounterProgram {
+        encounter: EntityId,
+        program_id: String,
+    },
+    EncounterProgram(EncounterProgramRejection),
     InvalidDoorMotionDuration {
         door: EntityId,
         motion_duration: u64,
@@ -99,6 +114,10 @@ pub enum RuntimeError {
     },
     CombatResolutionFailed {
         reason: String,
+    },
+    GameplayProgramRejected {
+        item: crate::ItemDefinitionId,
+        context: &'static str,
     },
     UnknownPlayerController {
         player: EntityId,
@@ -241,21 +260,6 @@ impl GameRuntime {
         }
     }
 
-    pub fn security_door(
-        auto_close_after: Option<TickDelta>,
-    ) -> Result<(SecurityDoorIds, Self), RuntimeError> {
-        let (ids, definitions) = security_door_definitions(auto_close_after);
-        let session =
-            GameSession::from_definitions(definitions).map_err(RuntimeError::Definition)?;
-        Ok((ids, Self::new(session)))
-    }
-
-    pub fn from_project_content(input: &str) -> Result<Self, RuntimeError> {
-        Ok(Self::from_admitted_project(
-            decode_project_content(input).map_err(RuntimeError::Content)?,
-        ))
-    }
-
     pub fn from_stored_project(input: &str) -> Result<Self, RuntimeError> {
         Ok(Self::from_admitted_project(
             decode_and_admit_stored_project(input).map_err(RuntimeError::StoredProject)?,
@@ -284,6 +288,12 @@ impl GameRuntime {
         &mut self.session
     }
 
+    /// A new product connection must not inherit a diagnostic result that was
+    /// observed by a retired connection generation.
+    pub fn clear_gameplay_outcome(&mut self) {
+        self.session.clear_gameplay_outcome();
+    }
+
     pub fn readout(&self) -> RuntimeReadout {
         readout(self.tick, &self.session, &self.scheduler, &self.journal)
     }
@@ -309,6 +319,361 @@ impl GameRuntime {
         command: InventoryCommand,
     ) -> Result<InventoryReceipt, RuntimeError> {
         InventoryService::apply(&mut self.session, owner, command).map_err(RuntimeError::Inventory)
+    }
+
+    /// Explicit item use is a product operation.  The program only selects the
+    /// closed Rust vitality primitive; all inventory and health mutation stays
+    /// in `DamageService`'s candidate transaction.
+    pub fn use_health_supply(
+        &mut self,
+        player: EntityId,
+        item: crate::ItemDefinitionId,
+    ) -> Result<VitalityReceipt, RuntimeError> {
+        let program_id = self
+            .session
+            .item_definitions
+            .get(&item)
+            .and_then(|definition| definition.program.clone())
+            .ok_or_else(|| RuntimeError::GameplayProgramRejected {
+                item: item.clone(),
+                context: "explicit-health-use-missing-program",
+            })?;
+        let program = self
+            .session
+            .gameplay_programs
+            .get(&program_id)
+            .cloned()
+            .ok_or_else(|| RuntimeError::GameplayProgramRejected {
+                item: item.clone(),
+                context: "explicit-health-use",
+            })?;
+        let outcome_program = program.clone();
+        let mut candidate = self.session.clone();
+        let mut receipts = Vec::new();
+        let mut executed = false;
+        if let Err(error) = crate::gameplay_program::execute_program(
+            &program,
+            &mut |_| {
+                Err(RuntimeError::GameplayProgramRejected {
+                    item: item.clone(),
+                    context: "explicit-health-predicate",
+                })
+            },
+            &mut |operation| match operation {
+                crate::gameplay_program::DemoOperation::UseHealthSupply => {
+                    executed = true;
+                    receipts.push(
+                        DamageService::use_health_supply(&mut candidate, player, item.clone())
+                            .map_err(RuntimeError::Vitality)?,
+                    );
+                    Ok(())
+                }
+                _ => Err(RuntimeError::GameplayProgramRejected {
+                    item: item.clone(),
+                    context: "explicit-health-use",
+                }),
+            },
+        ) {
+            self.session
+                .record_gameplay_outcome(crate::gameplay_program::rejected_outcome(
+                    program_id.clone(),
+                    &outcome_program,
+                    error.to_string(),
+                ));
+            return Err(error);
+        }
+        if !executed {
+            let error = RuntimeError::GameplayProgramRejected {
+                item,
+                context: "explicit-health-use",
+            };
+            self.session
+                .record_gameplay_outcome(crate::gameplay_program::rejected_outcome(
+                    program_id.clone(),
+                    &outcome_program,
+                    error.to_string(),
+                ));
+            return Err(error);
+        }
+        let mut result = VitalityReceipt {
+            disposition: DamageDisposition::Applied,
+            facts: Vec::new(),
+            enemy_drops: Vec::new(),
+            explosive_props: Vec::new(),
+            inventory: Vec::new(),
+            event: None,
+        };
+        for receipt in receipts {
+            result.facts.extend(receipt.facts);
+            result.enemy_drops.extend(receipt.enemy_drops);
+            result.explosive_props.extend(receipt.explosive_props);
+            result.inventory.extend(receipt.inventory);
+            result.event = result.event.or(receipt.event);
+        }
+        self.session = candidate;
+        self.session
+            .record_gameplay_outcome(crate::gameplay_program::applied_outcome(
+                program_id,
+                &outcome_program,
+                vec!["use-health-supply".to_owned()],
+                vec!["vitality".to_owned()],
+            ));
+        Ok(result)
+    }
+
+    /// Reattach transient compiled programs after a runtime snapshot load.
+    /// Snapshots intentionally persist no compiled catalog or authored binding.
+    pub fn reattach_authored_gameplay_programs(
+        &mut self,
+        authored: &crate::StoredProject,
+    ) -> Result<(), RuntimeError> {
+        let catalog =
+            crate::gameplay_program::compile_gameplay_programs(&authored.gameplay_programs)
+                .map_err(|error| RuntimeError::CombatResolutionFailed {
+                    reason: error.to_string(),
+                })?;
+        let pickup_catalog = crate::pickup_program::compile_pickup_programs(
+            &authored.pickup_programs,
+        )
+        .map_err(|error| RuntimeError::CombatResolutionFailed {
+            reason: error.to_string(),
+        })?;
+        let player_setup_catalog =
+            crate::player_program::compile_player_setup_programs(&authored.player_setup_programs)
+                .map_err(|error| RuntimeError::CombatResolutionFailed {
+                reason: error.to_string(),
+            })?;
+        let enemy_attack_catalog =
+            crate::enemy_program::compile_enemy_attack_programs(&authored.enemy_attack_programs)
+                .map_err(|error| RuntimeError::CombatResolutionFailed {
+                    reason: error.to_string(),
+                })?;
+        let enemy_defeat_catalog =
+            crate::enemy_program::compile_enemy_defeat_programs(&authored.enemy_defeat_programs)
+                .map_err(|error| RuntimeError::CombatResolutionFailed {
+                    reason: error.to_string(),
+                })?;
+        let hazard_catalog = crate::hazard_program::compile_hazard_programs(
+            &authored.hazard_programs,
+        )
+        .map_err(|error| RuntimeError::CombatResolutionFailed {
+            reason: error.to_string(),
+        })?;
+        let explosive_prop_catalog =
+            crate::explosive_prop_program::compile_explosive_prop_programs(
+                &authored.explosive_prop_programs,
+            )
+            .map_err(|error| RuntimeError::CombatResolutionFailed {
+                reason: error.to_string(),
+            })?;
+        let switch_catalog = crate::switch_program::compile_switch_programs(
+            &authored.switch_programs,
+        )
+        .map_err(|error| RuntimeError::CombatResolutionFailed {
+            reason: error.to_string(),
+        })?;
+        let encounter_catalog =
+            crate::encounter_program::compile_encounter_programs(&authored.encounter_programs)
+                .map_err(|error| RuntimeError::CombatResolutionFailed {
+                    reason: error.to_string(),
+                })?;
+        let floor_action_catalog = crate::floor_action_program::compile_floor_action_programs(
+            &authored.floor_action_programs,
+        )
+        .map_err(|error| RuntimeError::CombatResolutionFailed {
+            reason: error.to_string(),
+        })?;
+        let lift_catalog = crate::lift_program::compile_lift_programs(&authored.lift_programs)
+            .map_err(|error| RuntimeError::CombatResolutionFailed {
+                reason: error.to_string(),
+            })?;
+        let secret_catalog = crate::secret_program::compile_secret_programs(
+            &authored.secret_programs,
+        )
+        .map_err(|error| RuntimeError::CombatResolutionFailed {
+            reason: error.to_string(),
+        })?;
+        let level_exit_catalog =
+            crate::level_exit_program::compile_level_exit_programs(&authored.level_exit_programs)
+                .map_err(|error| RuntimeError::CombatResolutionFailed {
+                reason: error.to_string(),
+            })?;
+        for definition in self.session.item_definitions.values_mut() {
+            definition.program = authored
+                .item_definitions
+                .iter()
+                .find(|authored_definition| authored_definition.id == definition.id.as_str())
+                .and_then(|authored_definition| authored_definition.program.clone());
+        }
+        self.session.gameplay_programs = catalog;
+        self.session.pickup_programs = pickup_catalog;
+        self.session.player_setup_programs = player_setup_catalog;
+        self.session.player_setup_bindings = authored
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                entity
+                    .inventory
+                    .as_ref()
+                    .map(|inventory| inventory.setup_program.clone())
+                    .filter(|_| {
+                        self.session
+                            .inventories
+                            .contains_key(&EntityId::new(entity.id))
+                    })
+                    .map(|program| (EntityId::new(entity.id), program))
+            })
+            .collect();
+        self.session.enemy_attack_programs = enemy_attack_catalog;
+        self.session.enemy_defeat_programs = enemy_defeat_catalog;
+        self.session.hazard_programs = hazard_catalog;
+        self.session.hazard_program_bindings = authored
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                entity
+                    .hazard
+                    .as_ref()
+                    .filter(|_| self.session.hazards.contains_key(&EntityId::new(entity.id)))
+                    .map(|hazard| (EntityId::new(entity.id), hazard.program.clone()))
+            })
+            .collect();
+        self.session.explosive_prop_programs = explosive_prop_catalog;
+        self.session.explosive_prop_program_bindings = authored
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                entity
+                    .explosive_prop
+                    .as_ref()
+                    .filter(|_| {
+                        self.session
+                            .explosive_props
+                            .contains_key(&EntityId::new(entity.id))
+                    })
+                    .map(|prop| (EntityId::new(entity.id), prop.program.clone()))
+            })
+            .collect();
+        self.session.encounter_programs = encounter_catalog;
+        self.session.encounter_program_bindings = authored
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                entity
+                    .encounter
+                    .as_ref()
+                    .filter(|_| {
+                        self.session
+                            .encounters
+                            .contains_key(&EntityId::new(entity.id))
+                    })
+                    .map(|encounter| (EntityId::new(entity.id), encounter.program.clone()))
+            })
+            .collect();
+        self.session.switch_programs = switch_catalog;
+        self.session.switch_program_bindings = authored
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                entity
+                    .switch
+                    .as_ref()
+                    .filter(|_| {
+                        self.session
+                            .switches
+                            .contains_key(&EntityId::new(entity.id))
+                    })
+                    .map(|switch| (EntityId::new(entity.id), switch.program.clone()))
+            })
+            .collect();
+        self.session.floor_action_programs = floor_action_catalog;
+        self.session.floor_action_program_bindings = authored
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                entity
+                    .floor_action
+                    .as_ref()
+                    .filter(|_| {
+                        self.session
+                            .floor_actions
+                            .contains_key(&EntityId::new(entity.id))
+                    })
+                    .map(|floor_action| (EntityId::new(entity.id), floor_action.program.clone()))
+            })
+            .collect();
+        self.session.lift_programs = lift_catalog;
+        self.session.lift_program_bindings = authored
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                entity
+                    .lift
+                    .as_ref()
+                    .filter(|_| self.session.lifts.contains_key(&EntityId::new(entity.id)))
+                    .map(|lift| (EntityId::new(entity.id), lift.program.clone()))
+            })
+            .collect();
+        self.session.secret_programs = secret_catalog;
+        self.session.secret_program_bindings = authored
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                entity
+                    .secret_region
+                    .as_ref()
+                    .filter(|_| {
+                        self.session
+                            .secret_regions
+                            .contains_key(&EntityId::new(entity.id))
+                    })
+                    .map(|secret| (EntityId::new(entity.id), secret.program.clone()))
+            })
+            .collect();
+        self.session.level_exit_programs = level_exit_catalog;
+        self.session.level_exit_program_bindings = authored
+            .scenes
+            .iter()
+            .flat_map(|scene| &scene.entities)
+            .filter_map(|entity| {
+                entity
+                    .level_exit
+                    .as_ref()
+                    .filter(|_| {
+                        self.session
+                            .level_exits
+                            .contains_key(&EntityId::new(entity.id))
+                    })
+                    .map(|exit| (EntityId::new(entity.id), exit.program.clone()))
+            })
+            .collect();
+        for entity in authored.scenes.iter().flat_map(|scene| &scene.entities) {
+            if let Some(pickup) = &entity.pickup {
+                if let Some(runtime_pickup) =
+                    self.session.pickups.get_mut(&EntityId::new(entity.id))
+                {
+                    runtime_pickup.config.program = pickup.program.clone();
+                }
+            }
+            let Some(combat) = &entity.enemy_combat else {
+                continue;
+            };
+            let Some(runtime_combat) = self.session.enemy_combat.get_mut(&EntityId::new(entity.id))
+            else {
+                continue;
+            };
+            runtime_combat.config.attack_program = combat.attack_program.clone();
+            runtime_combat.config.defeat_program = combat.defeat_program.clone();
+        }
+        Ok(())
     }
 
     pub fn collect_pickup(
@@ -383,8 +748,11 @@ impl GameRuntime {
     }
 
     pub fn run_walk_trigger_motion_phase(&mut self) -> Result<(), RuntimeError> {
-        FloorActionService::run_motion_phase(&mut self.session)?;
-        LiftService::run_motion_phase(&mut self.session)
+        let mut candidate_session = self.session.clone();
+        FloorActionService::run_motion_phase(&mut candidate_session)?;
+        LiftService::run_motion_phase(&mut candidate_session)?;
+        self.session = candidate_session;
+        Ok(())
     }
 
     pub fn run_walk_trigger_phase(
@@ -437,23 +805,39 @@ impl GameRuntime {
         player: EntityId,
     ) -> Result<Vec<GameEvent>, RuntimeError> {
         let candidates = EncounterService::activation_candidates(&self.session, player);
-        if self
-            .events
-            .len()
-            .checked_add(candidates.len())
-            .is_none_or(|pending| pending > MAX_EVENT_WAVE)
-        {
-            return Err(RuntimeError::EventWaveLimit {
-                limit: MAX_EVENT_WAVE,
-            });
+        // Activation plus any consequent event delivery is one candidate
+        // transaction. A malformed late authored operation cannot leak an
+        // earlier encounter activation, enemy readiness change, journal fact,
+        // or door schedule.
+        let mut candidate_session = self.session.clone();
+        let mut candidate_scheduler = self.scheduler.clone();
+        let mut candidate_events = self.events.clone();
+        let mut candidate_journal = self.journal.clone();
+        for encounter in candidates {
+            let Some(activation) =
+                EncounterService::prepare_activation(&candidate_session, player, encounter)
+            else {
+                continue;
+            };
+            EncounterService::run_activation_program(
+                &mut candidate_session,
+                &mut candidate_events,
+                self.tick,
+                activation,
+            )?;
         }
-        self.events.extend(EncounterService::activate(
-            &mut self.session,
-            player,
-            &candidates,
+        let events = drain_events_state(
+            &mut candidate_session,
+            &mut candidate_scheduler,
+            &mut candidate_events,
+            &mut candidate_journal,
             self.tick,
-        ));
-        self.drain_events()
+        )?;
+        self.session = candidate_session;
+        self.scheduler = candidate_scheduler;
+        self.events = candidate_events;
+        self.journal = candidate_journal;
+        Ok(events)
     }
 
     pub fn run_enemy_intent_and_motion_phase(
@@ -512,13 +896,21 @@ impl GameRuntime {
             .as_ref()
             .ok_or(RuntimeError::MissingCollisionScene)?;
         let mut candidate = self.session.clone();
-        let mut receipt = EnemyCombatService::attack(
+        let projectile_checkpoint = self.projectiles.spawn_checkpoint();
+        let mut receipt = match EnemyCombatService::attack(
             &mut candidate,
             scene,
             self.tick,
             player,
             &mut self.projectiles,
-        )?;
+        ) {
+            Ok(receipt) => receipt,
+            Err(error) => {
+                self.projectiles
+                    .restore_spawn_checkpoint(projectile_checkpoint);
+                return Err(error);
+            }
+        };
         self.session = candidate;
         for event in receipt.events.drain(..) {
             self.events.push_back(event);
@@ -578,9 +970,51 @@ impl GameRuntime {
         actor: EntityId,
         target: EntityId,
     ) -> Result<RuntimeReceipt, RuntimeError> {
-        let event = InteractionService::interact(&mut self.session, actor, target)?;
-        self.events.push_back(event);
-        let events = self.drain_events()?;
+        let interaction = InteractionService::prepare(&self.session, actor, target)?;
+        let program_id = self
+            .session
+            .switch_program_bindings
+            .get(&target)
+            .cloned()
+            .ok_or(RuntimeError::MissingSwitchProgramBinding { switch: target })?;
+        let program = self
+            .session
+            .switch_programs
+            .get(&program_id)
+            .cloned()
+            .ok_or_else(|| RuntimeError::MissingSwitchProgram {
+                switch: target,
+                program_id: program_id.clone(),
+            })?;
+
+        // A switch program owns one complete interaction transaction. Door
+        // transitions can schedule auto-close work, so the candidate includes
+        // scheduler, queued events, and journal as well as gameplay state.
+        let mut candidate_session = self.session.clone();
+        let mut candidate_scheduler = self.scheduler.clone();
+        let mut candidate_events = self.events.clone();
+        let mut candidate_journal = self.journal.clone();
+        let mut staged_events = Vec::new();
+        InteractionService::execute_program(
+            &mut candidate_session,
+            &mut candidate_scheduler,
+            &mut staged_events,
+            self.tick,
+            interaction,
+            &program,
+        )?;
+        candidate_events.extend(staged_events);
+        let events = drain_events_state(
+            &mut candidate_session,
+            &mut candidate_scheduler,
+            &mut candidate_events,
+            &mut candidate_journal,
+            self.tick,
+        )?;
+        self.session = candidate_session;
+        self.scheduler = candidate_scheduler;
+        self.events = candidate_events;
+        self.journal = candidate_journal;
         Ok(self.receipt(events))
     }
 
@@ -603,33 +1037,30 @@ impl GameRuntime {
         actor: EntityId,
         switch: EntityId,
     ) -> Result<RuntimeReceipt, RuntimeError> {
-        let event =
-            InteractionService::interact(&mut self.session, actor, switch).map_err(|error| {
-                RuntimeError::LoadingBayInterlock(match error {
-                    RuntimeError::UnknownActor { actor } => {
-                        LoadingBayInterlockRejection::UnknownActor { actor }
-                    }
-                    RuntimeError::PlayerDefeated { player } => {
-                        LoadingBayInterlockRejection::PlayerDefeated { actor: player }
-                    }
-                    RuntimeError::SwitchActorMissingTransform { actor } => {
-                        LoadingBayInterlockRejection::ActorMissingTransform { actor }
-                    }
-                    RuntimeError::SwitchMissingTransform { switch } => {
-                        LoadingBayInterlockRejection::InterlockMissingTransform { switch }
-                    }
-                    RuntimeError::SwitchOutOfRange { actor, switch, .. } => {
-                        LoadingBayInterlockRejection::OutOfRange { actor, switch }
-                    }
-                    RuntimeError::NotInteractable { entity } => {
-                        LoadingBayInterlockRejection::UnknownInterlock { switch: entity }
-                    }
-                    _ => LoadingBayInterlockRejection::InteractionFailed { switch },
-                })
-            })?;
-        self.events.push_back(event);
-        let events = self.drain_events()?;
-        Ok(self.receipt(events))
+        let receipt = self.interact(actor, switch).map_err(|error| {
+            RuntimeError::LoadingBayInterlock(match error {
+                RuntimeError::UnknownActor { actor } => {
+                    LoadingBayInterlockRejection::UnknownActor { actor }
+                }
+                RuntimeError::PlayerDefeated { player } => {
+                    LoadingBayInterlockRejection::PlayerDefeated { actor: player }
+                }
+                RuntimeError::SwitchActorMissingTransform { actor } => {
+                    LoadingBayInterlockRejection::ActorMissingTransform { actor }
+                }
+                RuntimeError::SwitchMissingTransform { switch } => {
+                    LoadingBayInterlockRejection::InterlockMissingTransform { switch }
+                }
+                RuntimeError::SwitchOutOfRange { actor, switch, .. } => {
+                    LoadingBayInterlockRejection::OutOfRange { actor, switch }
+                }
+                RuntimeError::NotInteractable { entity } => {
+                    LoadingBayInterlockRejection::UnknownInterlock { switch: entity }
+                }
+                _ => LoadingBayInterlockRejection::InteractionFailed { switch },
+            })
+        })?;
+        Ok(receipt)
     }
 
     pub fn complete_level(
@@ -681,14 +1112,8 @@ impl GameRuntime {
             .collision_scene
             .as_ref()
             .ok_or(RuntimeError::MissingCollisionScene)?;
-        let resolution = CombatService::attack(
-            &mut self.session,
-            scene,
-            &mut self.projectiles,
-            self.tick,
-            attacker,
-            action,
-        )?;
+        let resolution =
+            CombatService::attack(&mut self.session, scene, self.tick, attacker, action)?;
         for event in resolution.events {
             self.events.push_back(event);
         }
@@ -775,80 +1200,35 @@ impl GameRuntime {
     }
 
     fn drain_events(&mut self) -> Result<Vec<GameEvent>, RuntimeError> {
-        let mut processed = Vec::new();
-        while let Some(event) = self.events.pop_front() {
-            if processed.len() >= MAX_EVENT_WAVE {
-                self.events.clear();
-                return Err(RuntimeError::EventWaveLimit {
-                    limit: MAX_EVENT_WAVE,
-                });
-            }
-            self.journal.push(JournalEntry {
-                tick: self.tick,
-                event: event.clone(),
-            });
-            match &event {
-                GameEvent::SwitchActivated { switch, .. } => {
-                    let effects = self
-                        .session
-                        .switches
-                        .get(switch)
-                        .map(|component| component.config.effects.clone())
-                        .unwrap_or_default();
-                    for effect in effects {
-                        match effect {
-                            crate::SwitchEffect::OpenDoor(door) => {
-                                if let Some(transition) =
-                                    DoorService::open(&mut self.session, door)?
-                                {
-                                    self.queue_door_transition(door, transition);
-                                }
-                            }
-                            crate::SwitchEffect::CloseDoor(door) => {
-                                self.scheduler
-                                    .cancel(ScheduledIntentKind::CloseDoor { door });
-                                if let Some(event) = DoorService::close(&mut self.session, door)? {
-                                    self.events.push_back(event);
-                                }
-                            }
-                        }
-                    }
-                }
-                GameEvent::EnemyDefeated { enemy, .. } => {
-                    self.events.extend(EncounterService::observe_enemy_defeat(
-                        &mut self.session,
-                        *enemy,
-                    ));
-                }
-                GameEvent::EncounterCleared { exit, .. } => {
-                    if let Some(exit) = *exit {
-                        if let Some(transition) = DoorService::open(&mut self.session, exit)? {
-                            self.queue_door_transition(exit, transition);
-                        }
-                    }
-                }
-                GameEvent::DoorOpened { .. }
-                | GameEvent::DoorClosed { .. }
-                | GameEvent::EncounterActivated { .. }
-                | GameEvent::PlayerDied { .. } => {}
-            }
-            processed.push(event);
-        }
-        Ok(processed)
+        // An event wave can select a late encounter clear program. Preserve
+        // the preceding primary mutation (for example enemy damage), but make
+        // the wave's encounter/door/schedule/journal consequences atomic.
+        let mut candidate_session = self.session.clone();
+        let mut candidate_scheduler = self.scheduler.clone();
+        let mut candidate_events = self.events.clone();
+        let mut candidate_journal = self.journal.clone();
+        let events = drain_events_state(
+            &mut candidate_session,
+            &mut candidate_scheduler,
+            &mut candidate_events,
+            &mut candidate_journal,
+            self.tick,
+        )?;
+        self.session = candidate_session;
+        self.scheduler = candidate_scheduler;
+        self.events = candidate_events;
+        self.journal = candidate_journal;
+        Ok(events)
     }
 
     fn queue_door_transition(&mut self, door: EntityId, transition: DoorTransition) {
-        let scheduled_kind = ScheduledIntentKind::CloseDoor { door };
-        self.scheduler.cancel(scheduled_kind);
-        if let Some(delay) = transition.auto_close_after {
-            let delay =
-                TickDelta::new(transition.motion_duration.raw().saturating_add(delay.raw()));
-            self.scheduler.schedule(ScheduledIntent {
-                due: self.tick.advance(delay),
-                kind: scheduled_kind,
-            });
-        }
-        self.events.push_back(transition.event);
+        queue_door_transition_state(
+            &mut self.scheduler,
+            &mut self.events,
+            self.tick,
+            door,
+            transition,
+        );
     }
 
     fn receipt(&self, events: Vec<GameEvent>) -> RuntimeReceipt {
@@ -857,5 +1237,254 @@ impl GameRuntime {
             events,
             projection: self.session.entities.projection(),
         }
+    }
+}
+
+fn drain_events_state(
+    session: &mut GameSession,
+    scheduler: &mut Scheduler,
+    events: &mut VecDeque<GameEvent>,
+    journal: &mut Vec<JournalEntry>,
+    tick: Tick,
+) -> Result<Vec<GameEvent>, RuntimeError> {
+    let mut processed = Vec::new();
+    while let Some(event) = events.pop_front() {
+        if processed.len() >= MAX_EVENT_WAVE {
+            events.clear();
+            return Err(RuntimeError::EventWaveLimit {
+                limit: MAX_EVENT_WAVE,
+            });
+        }
+        journal.push(JournalEntry {
+            tick,
+            event: event.clone(),
+        });
+        match &event {
+            // Switch program operations have already performed every bound
+            // door request inside the candidate transaction. The event is
+            // presentation/fact delivery only, never a fixed-effect trigger.
+            GameEvent::SwitchActivated { .. } => {}
+            GameEvent::EnemyDefeated { enemy, .. } => {
+                EncounterService::run_clear_programs_for_enemy_defeat(
+                    session, scheduler, events, tick, *enemy,
+                )?
+            }
+            // Encounter programs perform explicit bound-exit requests while
+            // this event remains a causal presentation/fact record.
+            GameEvent::EncounterCleared { .. } => {}
+            GameEvent::DoorOpened { .. }
+            | GameEvent::DoorClosed { .. }
+            | GameEvent::EncounterActivated { .. }
+            | GameEvent::PlayerDied { .. } => {}
+        }
+        processed.push(event);
+    }
+    Ok(processed)
+}
+
+fn queue_door_transition_state(
+    scheduler: &mut Scheduler,
+    events: &mut VecDeque<GameEvent>,
+    tick: Tick,
+    door: EntityId,
+    transition: DoorTransition,
+) {
+    let scheduled_kind = ScheduledIntentKind::CloseDoor { door };
+    scheduler.cancel(scheduled_kind);
+    if let Some(delay) = transition.auto_close_after {
+        let delay = TickDelta::new(transition.motion_duration.raw().saturating_add(delay.raw()));
+        scheduler.schedule(ScheduledIntent {
+            due: tick.advance(delay),
+            kind: scheduled_kind,
+        });
+    }
+    events.push_back(transition.event);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::door::DoorState;
+    use crate::switch_program::{
+        compile_switch_programs, StoredSwitchOperation, StoredSwitchPredicate, StoredSwitchProgram,
+        StoredSwitchProgramNode,
+    };
+    use serde_json::Value;
+
+    const E1M1: &str = include_str!("../../content/projects/doom-e1m1.project.json");
+    const E1M1_PLAYER: EntityId = EntityId::new(1);
+    const E1M1_DOOR_SWITCH: EntityId = EntityId::new(141);
+
+    fn authored_door_runtime(auto_close_after_ticks: Option<u64>) -> GameRuntime {
+        let mut project: Value = serde_json::from_str(E1M1).expect("E1M1 project");
+        let entities = project["scenes"][0]["entities"]
+            .as_array_mut()
+            .expect("entry entities");
+        let door = entities
+            .iter_mut()
+            .find(|entity| entity["id"] == E1M1_DOOR_SWITCH.raw())
+            .expect("canonical E1M1 door/switch");
+        let translation = door["translation"].clone();
+        door["door"]["motionDurationTicks"] = 1.into();
+        match auto_close_after_ticks {
+            Some(ticks) => door["door"]["autoCloseAfterTicks"] = ticks.into(),
+            None => {
+                door["door"]
+                    .as_object_mut()
+                    .expect("door object")
+                    .remove("autoCloseAfterTicks");
+            }
+        }
+        let player = entities
+            .iter_mut()
+            .find(|entity| entity["id"] == E1M1_PLAYER.raw())
+            .expect("player");
+        player["translation"] = translation;
+        GameRuntime::from_stored_project(&project.to_string()).expect("current authored fixture")
+    }
+
+    fn program(id: &str, operations: &[StoredSwitchOperation]) -> StoredSwitchProgram {
+        StoredSwitchProgram {
+            id: id.to_owned(),
+            program: StoredSwitchProgramNode::When {
+                predicate: StoredSwitchPredicate::SwitchAvailable,
+                then_program: Box::new(StoredSwitchProgramNode::Sequence {
+                    steps: operations
+                        .iter()
+                        .copied()
+                        .map(|operation| StoredSwitchProgramNode::Operation { operation })
+                        .collect(),
+                }),
+                otherwise_program: None,
+            },
+        }
+    }
+
+    fn install_switch_program(
+        runtime: &mut GameRuntime,
+        switch: EntityId,
+        authored: StoredSwitchProgram,
+    ) {
+        let id = authored.id.clone();
+        runtime.session.switch_programs = compile_switch_programs(&[authored]).unwrap();
+        runtime.session.switch_program_bindings.insert(switch, id);
+    }
+
+    #[test]
+    fn authored_switch_program_changes_the_door_transition_without_taking_rust_authority() {
+        let mut canonical = authored_door_runtime(Some(4));
+        let canonical_receipt = canonical.interact(E1M1_PLAYER, E1M1_DOOR_SWITCH).unwrap();
+        assert!(matches!(
+            canonical_receipt.events.as_slice(),
+            [
+                GameEvent::SwitchActivated { .. },
+                GameEvent::DoorOpened { .. },
+            ]
+        ));
+        assert_eq!(
+            canonical.session().door(E1M1_DOOR_SWITCH).unwrap().state,
+            DoorState::Opening
+        );
+        assert_eq!(canonical.scheduler.len(), 1);
+
+        let mut variant = authored_door_runtime(Some(4));
+        install_switch_program(
+            &mut variant,
+            E1M1_DOOR_SWITCH,
+            program(
+                "switch/feedback-only",
+                &[
+                    StoredSwitchOperation::RecordActivation,
+                    StoredSwitchOperation::EmitInteractionFeedback,
+                ],
+            ),
+        );
+        let variant_receipt = variant.interact(E1M1_PLAYER, E1M1_DOOR_SWITCH).unwrap();
+        assert!(matches!(
+            variant_receipt.events.as_slice(),
+            [GameEvent::SwitchActivated { .. }]
+        ));
+        assert_eq!(
+            variant.session().door(E1M1_DOOR_SWITCH).unwrap().state,
+            DoorState::Closed
+        );
+        assert_eq!(variant.scheduler.len(), 0);
+        assert!(variant.session().gameplay_outcome().is_none());
+    }
+
+    #[test]
+    fn late_switch_program_failure_rolls_back_door_schedule_events_and_journal() {
+        let mut runtime = authored_door_runtime(Some(4));
+        install_switch_program(
+            &mut runtime,
+            E1M1_DOOR_SWITCH,
+            program(
+                "switch/late-failure",
+                &[
+                    StoredSwitchOperation::RecordActivation,
+                    StoredSwitchOperation::EmitInteractionFeedback,
+                    StoredSwitchOperation::RequestOpenBoundDoor,
+                    StoredSwitchOperation::RecordActivation,
+                ],
+            ),
+        );
+
+        assert!(matches!(
+            runtime.interact(E1M1_PLAYER, E1M1_DOOR_SWITCH),
+            Err(RuntimeError::SwitchProgram(
+                SwitchProgramRejection::DuplicateActivation { .. }
+            ))
+        ));
+        assert_eq!(
+            runtime.session().door(E1M1_DOOR_SWITCH).unwrap().state,
+            DoorState::Closed
+        );
+        assert_eq!(
+            runtime
+                .session()
+                .switch(E1M1_DOOR_SWITCH)
+                .unwrap()
+                .activation_count,
+            0
+        );
+        assert!(runtime.scheduler.is_empty());
+        assert!(runtime.events.is_empty());
+        assert!(runtime.journal.is_empty());
+    }
+
+    #[test]
+    fn switch_program_binding_rejects_wrong_family_and_missing_without_mutation() {
+        let mut runtime = authored_door_runtime(None);
+        runtime
+            .session
+            .switch_program_bindings
+            .insert(E1M1_DOOR_SWITCH, "hazard/nukage".to_owned());
+        assert!(matches!(
+            runtime.interact(E1M1_PLAYER, E1M1_DOOR_SWITCH),
+            Err(RuntimeError::MissingSwitchProgram { .. })
+        ));
+        runtime
+            .session
+            .switch_program_bindings
+            .remove(&E1M1_DOOR_SWITCH);
+        assert!(matches!(
+            runtime.interact(E1M1_PLAYER, E1M1_DOOR_SWITCH),
+            Err(RuntimeError::MissingSwitchProgramBinding { .. })
+        ));
+        assert_eq!(
+            runtime.session().door(E1M1_DOOR_SWITCH).unwrap().state,
+            DoorState::Closed
+        );
+        assert_eq!(
+            runtime
+                .session()
+                .switch(E1M1_DOOR_SWITCH)
+                .unwrap()
+                .activation_count,
+            0
+        );
+        assert!(runtime.scheduler.is_empty());
+        assert!(runtime.events.is_empty());
+        assert!(runtime.journal.is_empty());
     }
 }

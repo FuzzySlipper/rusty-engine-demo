@@ -369,9 +369,6 @@ impl GameplayApplicationProjector {
                 GameLoopFact::EnemyCombat(EnemyCombatFact::ProjectileSpawned {
                     projectile,
                     ..
-                })
-                | GameLoopFact::Combat(CombatFact::ProjectileSpawned {
-                    entity: projectile, ..
                 }) => {
                     self.active_projectiles
                         .insert(projectile.raw(), runtime.tick().raw());

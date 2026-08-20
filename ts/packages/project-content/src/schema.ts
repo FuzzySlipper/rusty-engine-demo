@@ -97,6 +97,7 @@ export interface DoorAccessDefinition {
 }
 
 export interface SwitchDefinition {
+  readonly program: string;
   readonly controls: readonly number[];
   readonly activationRadius?: number;
   readonly prompt?: string;
@@ -113,11 +114,13 @@ export interface SwitchDefinition {
 }
 
 export interface SecretRegionDefinition {
+  readonly program: string;
   readonly presentation: string;
   readonly source?: string;
 }
 
 export interface FloorActionDefinition {
+  readonly program: string;
   readonly targetPlatform: number;
   readonly upperTranslation: Vec3;
   readonly loweredTranslation: Vec3;
@@ -128,6 +131,7 @@ export interface FloorActionDefinition {
 }
 
 export interface LiftDefinition {
+  readonly program: string;
   readonly targetPlatform: number;
   readonly raisedTranslation: Vec3;
   readonly loweredTranslation: Vec3;
@@ -139,6 +143,7 @@ export interface LiftDefinition {
 }
 
 export interface LevelExitDefinition {
+  readonly program: string;
   readonly activationRadius: number;
   readonly presentation: string;
   readonly source?: string;
@@ -146,6 +151,8 @@ export interface LevelExitDefinition {
 
 export interface EncounterDefinition {
   readonly members: readonly number[];
+  /** Closed encounter lifecycle catalog id; Rust executes it against these explicit members. */
+  readonly program: string;
   readonly exit?: number;
   readonly activationRadius?: number;
 }
@@ -167,6 +174,8 @@ export interface HealthDefinition {
 }
 
 export interface ExplosivePropDefinition {
+  /** Closed Rust explosive-prop program selected for this placed prop. */
+  readonly program: string;
   readonly damage: number;
   readonly radius: number;
 }
@@ -175,6 +184,10 @@ export interface EnemyCombatDefinition {
   readonly sightRange: number;
   readonly hearingRange: number;
   readonly painDurationTicks?: number;
+  /** Closed enemy-attack catalog id; Rust evaluates the admitted program. */
+  readonly attackProgram: string;
+  /** Closed enemy-defeat catalog id; Rust owns death and applies consequences. */
+  readonly defeatProgram: string;
   readonly attack: {
     readonly kind: "melee" | "rangedHitscan" | "projectile";
     readonly damage: number;
@@ -195,6 +208,8 @@ export interface EnemyCombatDefinition {
 }
 
 export interface HazardDefinition {
+  /** Closed Rust hazard program selected for this placed trigger. */
+  readonly program: string;
   readonly damage: number;
   readonly cooldownTicks: number;
 }
@@ -241,18 +256,10 @@ export interface PlayerControllerDefinition {
   readonly bindings: PlayerInputBindingsDefinition;
 }
 
-export interface WeaponDefinition {
-  readonly damage: number;
-  readonly maxDistance: number;
-  readonly cooldownTicks: number;
-  readonly ammoCapacity: number;
-  readonly muzzleOffset: Vec3;
-}
-
 export type ItemKindDefinition =
   | {
       readonly kind: "weapon";
-      readonly attackMode: "hitscan" | "automatic";
+      readonly attackMode: "hitscan";
       readonly repeatWhileHeld?: boolean;
       readonly damageRolls?: number;
       readonly pelletCount?: never;
@@ -280,27 +287,6 @@ export type ItemKindDefinition =
       readonly muzzleOffset: Vec3;
       readonly presentation: string;
     }
-  | {
-      readonly kind: "weapon";
-      readonly attackMode: "projectile";
-      readonly repeatWhileHeld?: boolean;
-      readonly damageRolls?: number;
-      readonly pelletCount?: never;
-      readonly spreadDegrees?: never;
-      readonly damage: number;
-      readonly maxDistance: number;
-      readonly cooldownTicks: number;
-      readonly ammunition: string;
-      readonly ammunitionCost: number;
-      readonly muzzleOffset: Vec3;
-      readonly presentation: string;
-      readonly projectileMass: number;
-      readonly projectileRadius: number;
-      readonly projectileImpulse: number;
-      readonly projectileGravityScale: number;
-      readonly projectileLifetimeTicks: number;
-      readonly projectileRestitution: number;
-    }
   | { readonly kind: "ammunition" }
   | { readonly kind: "accessKey" }
   | {
@@ -324,6 +310,7 @@ export type ItemKindDefinition =
 export interface ItemDefinition {
   readonly id: string;
   readonly maxQuantity: number;
+  readonly program?: string;
   readonly kind: ItemKindDefinition;
 }
 
@@ -334,14 +321,16 @@ export interface InventoryStackDefinition {
 
 export interface InventoryDefinition {
   readonly capacitySlots: number;
-  readonly startingStacks: readonly InventoryStackDefinition[];
-  readonly initiallyEquippedWeapon: string | null;
+  /** Closed player setup program; Rust owns its admission and execution. */
+  readonly setupProgram: string;
   readonly weaponSlots: readonly string[];
 }
 
 export interface PickupDefinition {
   readonly item: string;
   readonly quantity: number;
+  /** Closed pickup catalog id; Rust owns its execution against this pickup. */
+  readonly program: string;
   readonly starterAmmunition?: InventoryStackDefinition;
 }
 
@@ -404,7 +393,6 @@ export interface EntityDefinition {
   readonly playerController?: PlayerControllerDefinition;
   readonly inventory?: InventoryDefinition;
   readonly pickup?: PickupDefinition;
-  readonly weapon?: WeaponDefinition;
   readonly secretRegion?: SecretRegionDefinition;
   readonly levelExit?: LevelExitDefinition;
   readonly doomSpriteInspection?: DoomSpriteInspectionDefinition;
@@ -453,13 +441,6 @@ export type LightDefinition =
       readonly penumbra: number;
       readonly shadows: boolean;
     };
-
-export interface ProjectContent {
-  readonly schemaVersion: 6;
-  readonly entities: readonly EntityDefinition[];
-  readonly voxelCollision?: VoxelCollisionDefinition;
-  readonly generatedVoxelEnvironment?: GeneratedVoxelEnvironmentDefinition;
-}
 
 export interface StoredAssetDefinition {
   readonly id: string;
@@ -606,12 +587,215 @@ export interface StoredSceneDefinition {
   readonly entities: readonly EntityDefinition[];
 }
 
+export type GameplayProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly GameplayProgramDefinition[] }
+  | {
+      readonly kind: "when";
+      readonly predicate: "impactIsHit";
+      readonly thenProgram: GameplayProgramDefinition;
+      readonly otherwiseProgram?: GameplayProgramDefinition;
+    }
+  | {
+      readonly kind: "operation";
+      readonly operation:
+        | "recordFired"
+        | "consumeAmmo"
+        | "applyHit"
+        | "applyMiss"
+        | "applySpreadImpacts"
+        | "setCooldown"
+        | "useHealthSupply";
+    };
+export interface GameplayProgramCatalogEntry {
+  readonly id: string;
+  readonly program: GameplayProgramDefinition;
+}
+
+export type PickupProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly PickupProgramDefinition[] }
+  | {
+      readonly kind: "when";
+      readonly predicate: "weaponAlreadyOwnedWithStarterAmmunition";
+      readonly thenProgram: PickupProgramDefinition;
+      readonly otherwiseProgram?: PickupProgramDefinition;
+    }
+  | {
+      readonly kind: "operation";
+      readonly operation:
+        | "grantPickedItem"
+        | "grantStarterAmmunition"
+        | "useGrantedHealthSupply"
+        | "applyGrantedArmor"
+        | "consumePickup";
+    };
+
+export interface PickupProgramCatalogEntry {
+  readonly id: string;
+  readonly program: PickupProgramDefinition;
+}
+
+export type PlayerSetupProgramOperation =
+  | { readonly kind: "grantItem"; readonly item: string; readonly quantity: number }
+  | { readonly kind: "equipInitialWeapon"; readonly item: string };
+
+export interface PlayerSetupProgramCatalogEntry {
+  readonly id: string;
+  readonly program: readonly PlayerSetupProgramOperation[];
+}
+
+export type EnemyAttackProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly EnemyAttackProgramDefinition[] }
+  | {
+      readonly kind: "when";
+      readonly predicate: "impactIsHit";
+      readonly thenProgram: EnemyAttackProgramDefinition;
+      readonly otherwiseProgram?: EnemyAttackProgramDefinition;
+    }
+  | {
+      readonly kind: "operation";
+      readonly operation:
+        | "recordEnemyAttack"
+        | "applyEnemyHit"
+        | "applyEnemyMiss"
+        | "spawnEnemyProjectile"
+        | "setEnemyCooldown";
+    };
+
+export interface EnemyAttackProgramCatalogEntry {
+  readonly id: string;
+  readonly program: EnemyAttackProgramDefinition;
+}
+
+export type EnemyDefeatProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly EnemyDefeatProgramDefinition[] }
+  | {
+      readonly kind: "operation";
+      readonly operation: "recordEnemyDefeat" | "activateBoundDrop";
+    };
+
+export interface EnemyDefeatProgramCatalogEntry {
+  readonly id: string;
+  readonly program: EnemyDefeatProgramDefinition;
+}
+
+export type HazardProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly HazardProgramDefinition[] }
+  | {
+      readonly kind: "when";
+      readonly predicate: "playerOverlapping" | "playerEligible" | "cooldownReady";
+      readonly thenProgram: HazardProgramDefinition;
+      readonly otherwiseProgram?: HazardProgramDefinition;
+    }
+  | {
+      readonly kind: "operation";
+      readonly operation: "applyHazardDamage" | "scheduleHazardCooldown";
+    };
+
+export interface HazardProgramCatalogEntry {
+  readonly id: string;
+  readonly program: HazardProgramDefinition;
+}
+
+export type ExplosivePropProgramDefinition =
+  | {
+      readonly kind: "sequence";
+      readonly steps: readonly ExplosivePropProgramDefinition[];
+    }
+  | {
+      readonly kind: "when";
+      readonly predicate: "explosionPending";
+      readonly thenProgram: ExplosivePropProgramDefinition;
+      readonly otherwiseProgram?: ExplosivePropProgramDefinition;
+    }
+  | {
+      readonly kind: "operation";
+      readonly operation: "selectRadialTargets" | "applyScaledDamage" | "resolveExplosion";
+    };
+
+export interface ExplosivePropProgramCatalogEntry {
+  readonly id: string;
+  readonly program: ExplosivePropProgramDefinition;
+}
+
+export type SwitchProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly SwitchProgramDefinition[] }
+  | {
+      readonly kind: "when";
+      readonly predicate: "switchAvailable";
+      readonly thenProgram: SwitchProgramDefinition;
+      readonly otherwiseProgram?: SwitchProgramDefinition;
+    }
+  | {
+      readonly kind: "operation";
+      readonly operation:
+        | "recordActivation"
+        | "requestOpenBoundDoor"
+        | "requestCloseBoundDoor"
+        | "emitInteractionFeedback";
+    };
+
+export interface SwitchProgramCatalogEntry {
+  readonly id: string;
+  readonly program: SwitchProgramDefinition;
+}
+
+export type FloorActionProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly FloorActionProgramDefinition[] }
+  | { readonly kind: "when"; readonly predicate: "activationEntered" | "loweringMotionTick"; readonly thenProgram: FloorActionProgramDefinition; readonly otherwiseProgram?: FloorActionProgramDefinition }
+  | { readonly kind: "operation"; readonly operation: "recordActivation" | "requestLowerBoundPlatform" | "advanceLowering" | "emitFloorFeedback" };
+export interface FloorActionProgramCatalogEntry { readonly id: string; readonly program: FloorActionProgramDefinition; }
+
+export type LiftProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly LiftProgramDefinition[] }
+  | { readonly kind: "when"; readonly predicate: "activationEntered" | "loweringMotionTick" | "waitingTick" | "raisingMotionTick"; readonly thenProgram: LiftProgramDefinition; readonly otherwiseProgram?: LiftProgramDefinition }
+  | { readonly kind: "operation"; readonly operation: "recordActivation" | "requestLowerBoundPlatform" | "advanceLowering" | "advanceWait" | "advanceRaising" | "emitLiftFeedback" };
+export interface LiftProgramCatalogEntry { readonly id: string; readonly program: LiftProgramDefinition; }
+
+export type EncounterActivationProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly EncounterActivationProgramDefinition[] }
+  | { readonly kind: "when"; readonly predicate: "activationEligible"; readonly thenProgram: EncounterActivationProgramDefinition; readonly otherwiseProgram?: EncounterActivationProgramDefinition }
+  | { readonly kind: "operation"; readonly operation: "recordEncounterActivation" | "activateBoundMembers" | "emitEncounterFeedback" };
+export type EncounterClearProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly EncounterClearProgramDefinition[] }
+  | { readonly kind: "when"; readonly predicate: "membersDefeated"; readonly thenProgram: EncounterClearProgramDefinition; readonly otherwiseProgram?: EncounterClearProgramDefinition }
+  | { readonly kind: "operation"; readonly operation: "recordEncounterCleared" | "openBoundExit" };
+export interface EncounterProgramCatalogEntry {
+  readonly id: string;
+  readonly activation: EncounterActivationProgramDefinition;
+  readonly clear: EncounterClearProgramDefinition;
+}
+
+export type SecretProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly SecretProgramDefinition[] }
+  | { readonly kind: "when"; readonly predicate: "secretRegionEntered" | "secretUndiscovered"; readonly thenProgram: SecretProgramDefinition; readonly otherwiseProgram?: SecretProgramDefinition }
+  | { readonly kind: "operation"; readonly operation: "recordDiscovery" | "emitSecretPresentation" };
+export interface SecretProgramCatalogEntry { readonly id: string; readonly program: SecretProgramDefinition; }
+
+export type LevelExitProgramDefinition =
+  | { readonly kind: "sequence"; readonly steps: readonly LevelExitProgramDefinition[] }
+  | { readonly kind: "when"; readonly predicate: "exitAvailable"; readonly thenProgram: LevelExitProgramDefinition; readonly otherwiseProgram?: LevelExitProgramDefinition }
+  | { readonly kind: "operation"; readonly operation: "recordCompletion" | "emitCompletionPresentation" };
+export interface LevelExitProgramCatalogEntry { readonly id: string; readonly program: LevelExitProgramDefinition; }
+
 export interface StoredProjectContent {
-  readonly schemaVersion: 25;
+  readonly schemaVersion: 26;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;
   readonly assets: readonly StoredAssetDefinition[];
   readonly itemDefinitions: readonly ItemDefinition[];
+  readonly gameplayPrograms: readonly GameplayProgramCatalogEntry[];
+  readonly pickupPrograms: readonly PickupProgramCatalogEntry[];
+  readonly playerSetupPrograms: readonly PlayerSetupProgramCatalogEntry[];
+  readonly enemyAttackPrograms: readonly EnemyAttackProgramCatalogEntry[];
+  readonly enemyDefeatPrograms: readonly EnemyDefeatProgramCatalogEntry[];
+  readonly hazardPrograms: readonly HazardProgramCatalogEntry[];
+  readonly explosivePropPrograms: readonly ExplosivePropProgramCatalogEntry[];
+  readonly encounterPrograms: readonly EncounterProgramCatalogEntry[];
+  readonly switchPrograms: readonly SwitchProgramCatalogEntry[];
+  readonly floorActionPrograms: readonly FloorActionProgramCatalogEntry[];
+  readonly liftPrograms: readonly LiftProgramCatalogEntry[];
+  readonly secretPrograms: readonly SecretProgramCatalogEntry[];
+  readonly levelExitPrograms: readonly LevelExitProgramCatalogEntry[];
   readonly scenes: readonly StoredSceneDefinition[];
 }

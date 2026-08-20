@@ -13,34 +13,52 @@ use crate::encounter::{
     EncounterComponent, EncounterService, EncounterState, EncounterView,
     MAX_ENCOUNTER_ACTIVATION_RADIUS,
 };
+use crate::encounter_program::{EncounterProgramCatalog, EncounterProgramReadout};
 use crate::enemy_combat::{
     EnemyCombatComponent, EnemyCombatPosture, EnemyCombatState, EnemyCombatView,
 };
 use crate::enemy_drop::{EnemyDropComponent, EnemyDropState, EnemyDropView};
+use crate::enemy_program::{
+    attack_program_operations, defeat_program_activates_bound_drop, enemy_program_readout,
+    EnemyAttackOperation, EnemyAttackProgramCatalog, EnemyDefeatProgramCatalog,
+    EnemyProgramReadout,
+};
 use crate::explosive_prop::{ExplosivePropComponent, ExplosivePropState, ExplosivePropView};
+use crate::explosive_prop_program::{ExplosivePropProgramCatalog, ExplosivePropProgramReadout};
 use crate::extraction_beacon::{
     ExtractionBeaconComponent, ExtractionBeaconState, ExtractionBeaconView,
 };
 use crate::floor_action::{FloorActionComponent, FloorActionState, FloorActionView};
+use crate::floor_action_program::{FloorActionProgramCatalog, FloorActionProgramReadout};
+use crate::gameplay_program::{
+    GameplayProgramCatalog, GameplayProgramOutcome, GameplayProgramReadout,
+};
 use crate::hazard::{HazardComponent, HazardView};
+use crate::hazard_program::{HazardProgramCatalog, HazardProgramReadout};
 use crate::interaction::{switch_is_available, SwitchComponent, SwitchEffect, SwitchView};
 use crate::inventory::{
     admit_item_definitions, inventory_from_config, inventory_view, InventoryView, ItemDefinition,
     ItemDefinitionId, ItemDefinitionView,
 };
+use crate::level_exit_program::{LevelExitProgramCatalog, LevelExitProgramReadout};
 use crate::lift::{LiftComponent, LiftState, LiftView};
+use crate::lift_program::{LiftProgramCatalog, LiftProgramReadout};
 use crate::mechanics::{self, InventoryRuntime, MechanicsRuntime};
 use crate::navigation::{
     NavigationComponent, NavigationState, NavigationView, MAX_NAVIGATION_QUERY_BUDGET,
     MAX_NAVIGATION_SPEED_UNITS_PER_SECOND,
 };
 use crate::pickup::{pickup_view, PickupComponent, PickupState, PickupView};
+use crate::pickup_program::{PickupProgramCatalog, PickupProgramReadout};
 use crate::player::{PlayerControllerComponent, PlayerControllerView};
+use crate::player_program::{PlayerSetupProgramCatalog, PlayerSetupProgramReadout};
 use crate::progression::{
     DoorAccessConfig, DoorAccessView, LevelExitComponent, LevelExitState, LevelExitView,
     LoadingBayInterlockConfig, LoadingBayInterlockView, SecretRegionComponent, SecretRegionState,
     SecretRegionView,
 };
+use crate::secret_program::{SecretProgramCatalog, SecretProgramReadout};
+use crate::switch_program::{SwitchProgramCatalog, SwitchProgramReadout};
 use crate::vitality::{HealthConfig, HealthView, VitalityState};
 
 #[derive(Debug, Clone)]
@@ -69,19 +87,91 @@ pub struct GameSession {
     pub(crate) pickups: BTreeMap<EntityId, PickupComponent>,
     pub(crate) secret_regions: BTreeMap<EntityId, SecretRegionComponent>,
     pub(crate) level_exits: BTreeMap<EntityId, LevelExitComponent>,
+    pub(crate) gameplay_programs: GameplayProgramCatalog,
+    pub(crate) pickup_programs: PickupProgramCatalog,
+    pub(crate) player_setup_programs: PlayerSetupProgramCatalog,
+    pub(crate) player_setup_bindings: BTreeMap<EntityId, String>,
+    pub(crate) enemy_attack_programs: EnemyAttackProgramCatalog,
+    pub(crate) enemy_defeat_programs: EnemyDefeatProgramCatalog,
+    pub(crate) hazard_programs: HazardProgramCatalog,
+    pub(crate) hazard_program_bindings: BTreeMap<EntityId, String>,
+    pub(crate) encounter_programs: EncounterProgramCatalog,
+    pub(crate) encounter_program_bindings: BTreeMap<EntityId, String>,
+    pub(crate) explosive_prop_programs: ExplosivePropProgramCatalog,
+    pub(crate) explosive_prop_program_bindings: BTreeMap<EntityId, String>,
+    pub(crate) switch_programs: SwitchProgramCatalog,
+    pub(crate) switch_program_bindings: BTreeMap<EntityId, String>,
+    pub(crate) floor_action_programs: FloorActionProgramCatalog,
+    pub(crate) floor_action_program_bindings: BTreeMap<EntityId, String>,
+    pub(crate) lift_programs: LiftProgramCatalog,
+    pub(crate) lift_program_bindings: BTreeMap<EntityId, String>,
+    pub(crate) secret_programs: SecretProgramCatalog,
+    pub(crate) secret_program_bindings: BTreeMap<EntityId, String>,
+    pub(crate) level_exit_programs: LevelExitProgramCatalog,
+    pub(crate) level_exit_program_bindings: BTreeMap<EntityId, String>,
+    /// One latest-value product readout; intentionally absent in a new session
+    /// and never persisted as a history or replay spine.
+    pub(crate) gameplay_outcome: Option<GameplayProgramOutcome>,
+}
+
+/// The already-compiled closed catalogs attached to one independent session.
+/// This groups fixed family fields only; it is not a dynamic registry.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct SessionProgramCatalogs {
+    pub(crate) gameplay: GameplayProgramCatalog,
+    pub(crate) pickup: PickupProgramCatalog,
+    pub(crate) player_setup: PlayerSetupProgramCatalog,
+    pub(crate) player_setup_bindings: BTreeMap<EntityId, String>,
+    pub(crate) enemy_attack: EnemyAttackProgramCatalog,
+    pub(crate) enemy_defeat: EnemyDefeatProgramCatalog,
+    pub(crate) hazard: HazardProgramCatalog,
+    pub(crate) hazard_bindings: BTreeMap<EntityId, String>,
+    pub(crate) encounter: EncounterProgramCatalog,
+    pub(crate) encounter_bindings: BTreeMap<EntityId, String>,
+    pub(crate) explosive_prop: ExplosivePropProgramCatalog,
+    pub(crate) explosive_prop_bindings: BTreeMap<EntityId, String>,
+    pub(crate) switch: SwitchProgramCatalog,
+    pub(crate) switch_bindings: BTreeMap<EntityId, String>,
+    pub(crate) floor_action: FloorActionProgramCatalog,
+    pub(crate) floor_action_bindings: BTreeMap<EntityId, String>,
+    pub(crate) lift: LiftProgramCatalog,
+    pub(crate) lift_bindings: BTreeMap<EntityId, String>,
+    pub(crate) secret: SecretProgramCatalog,
+    pub(crate) secret_bindings: BTreeMap<EntityId, String>,
+    pub(crate) level_exit: LevelExitProgramCatalog,
+    pub(crate) level_exit_bindings: BTreeMap<EntityId, String>,
 }
 
 impl GameSession {
-    pub fn from_definitions(
-        definitions: impl IntoIterator<Item = GameEntityDefinition>,
-    ) -> Result<Self, GameEntityDefinitionError> {
-        Self::from_item_and_entity_definitions([], definitions)
-    }
-
-    pub fn from_item_and_entity_definitions(
+    pub(crate) fn from_item_entity_and_gameplay_programs(
         item_definitions: impl IntoIterator<Item = ItemDefinition>,
         definitions: impl IntoIterator<Item = GameEntityDefinition>,
+        program_catalogs: SessionProgramCatalogs,
     ) -> Result<Self, GameEntityDefinitionError> {
+        let SessionProgramCatalogs {
+            gameplay: gameplay_programs,
+            pickup: pickup_programs,
+            player_setup: player_setup_programs,
+            player_setup_bindings,
+            enemy_attack: enemy_attack_programs,
+            enemy_defeat: enemy_defeat_programs,
+            hazard: hazard_programs,
+            hazard_bindings: hazard_program_bindings,
+            encounter: encounter_programs,
+            encounter_bindings: encounter_program_bindings,
+            explosive_prop: explosive_prop_programs,
+            explosive_prop_bindings: explosive_prop_program_bindings,
+            switch: switch_programs,
+            switch_bindings: switch_program_bindings,
+            floor_action: floor_action_programs,
+            floor_action_bindings: floor_action_program_bindings,
+            lift: lift_programs,
+            lift_bindings: lift_program_bindings,
+            secret: secret_programs,
+            secret_bindings: secret_program_bindings,
+            level_exit: level_exit_programs,
+            level_exit_bindings: level_exit_program_bindings,
+        } = program_catalogs;
         let definitions: Vec<GameEntityDefinition> = definitions.into_iter().collect();
         let trigger_count = definitions
             .iter()
@@ -347,6 +437,37 @@ impl GameSession {
                 if !config.is_valid() {
                     return Err(GameEntityDefinitionError::InvalidEnemyCombatConfig { entity });
                 }
+                let attack_program = enemy_attack_programs
+                    .get(&config.attack_program)
+                    .ok_or(GameEntityDefinitionError::MissingEnemyAttackProgram { entity })?;
+                let defeat_program = enemy_defeat_programs
+                    .get(&config.defeat_program)
+                    .ok_or(GameEntityDefinitionError::MissingEnemyDefeatProgram { entity })?;
+                let attack_operations = attack_program_operations(attack_program);
+                let has_projectile_spawn =
+                    attack_operations.contains(&EnemyAttackOperation::SpawnEnemyProjectile);
+                let has_hitscan_impact = attack_operations.iter().any(|operation| {
+                    matches!(
+                        operation,
+                        EnemyAttackOperation::ApplyEnemyHit | EnemyAttackOperation::ApplyEnemyMiss
+                    )
+                });
+                if matches!(config.attack.kind, crate::EnemyAttackKind::Projectile)
+                    && has_hitscan_impact
+                    || !matches!(config.attack.kind, crate::EnemyAttackKind::Projectile)
+                        && has_projectile_spawn
+                {
+                    return Err(GameEntityDefinitionError::EnemyAttackProgramIncompatible {
+                        entity,
+                    });
+                }
+                if defeat_program_activates_bound_drop(defeat_program)
+                    && definition.enemy_drop.is_none()
+                {
+                    return Err(GameEntityDefinitionError::EnemyDefeatProgramRequiresDrop {
+                        entity,
+                    });
+                }
                 enemy_combat.insert(
                     entity,
                     EnemyCombatComponent {
@@ -446,7 +567,6 @@ impl GameSession {
                     || definition.player_controller.is_some()
                     || definition.inventory.is_some()
                     || definition.pickup.is_some()
-                    || definition.weapon.is_some()
                 {
                     return Err(
                         GameEntityDefinitionError::HazardConflictsWithGameplayOwner { entity },
@@ -559,7 +679,6 @@ impl GameSession {
                     || definition.navigation.is_some()
                     || definition.player_controller.is_some()
                     || definition.inventory.is_some()
-                    || definition.weapon.is_some()
                 {
                     return Err(
                         GameEntityDefinitionError::PickupConflictsWithGameplayOwner { entity },
@@ -636,9 +755,6 @@ impl GameSession {
                         state: LevelExitState::Available,
                     },
                 );
-            }
-            if definition.weapon.is_some() {
-                return Err(GameEntityDefinitionError::LegacyEntityWeapon { entity });
             }
             if let Some(config) = &definition.encounter {
                 if config.members.is_empty() {
@@ -932,11 +1048,165 @@ impl GameSession {
             pickups,
             secret_regions,
             level_exits,
+            gameplay_programs,
+            pickup_programs,
+            player_setup_programs,
+            player_setup_bindings,
+            enemy_attack_programs,
+            enemy_defeat_programs,
+            hazard_programs,
+            hazard_program_bindings,
+            encounter_programs,
+            encounter_program_bindings,
+            explosive_prop_programs,
+            explosive_prop_program_bindings,
+            switch_programs,
+            switch_program_bindings,
+            floor_action_programs,
+            floor_action_program_bindings,
+            lift_programs,
+            lift_program_bindings,
+            secret_programs,
+            secret_program_bindings,
+            level_exit_programs,
+            level_exit_program_bindings,
+            gameplay_outcome: None,
         })
     }
 
     pub fn entities(&self) -> &EntityState {
         &self.entities
+    }
+
+    /// Read-only compiled program catalog and item selection bindings for
+    /// product adapters. The catalog has already passed admission bounds.
+    pub fn gameplay_programs(&self) -> GameplayProgramReadout {
+        self.gameplay_programs
+            .readout(self.item_definitions.values().filter_map(|definition| {
+                definition
+                    .program
+                    .as_ref()
+                    .map(|program_id| (definition.id.as_str().to_owned(), program_id.clone()))
+            }))
+    }
+
+    /// Read-only pickup-family catalog and all authored pickup bindings.
+    pub fn pickup_programs(&self) -> PickupProgramReadout {
+        self.pickup_programs.readout(
+            self.pickups
+                .iter()
+                .map(|(entity, pickup)| (entity.raw(), pickup.config.program.clone())),
+        )
+    }
+
+    /// Read-only player initialization catalog and explicit player bindings.
+    /// Setup never re-executes for a running or restored session.
+    pub fn player_setup_programs(&self) -> PlayerSetupProgramReadout {
+        self.player_setup_programs.readout(
+            self.player_setup_bindings
+                .iter()
+                .map(|(player, program_id)| (player.raw(), program_id.clone())),
+        )
+    }
+
+    /// Read-only family-specific enemy program catalogs and per-enemy bindings.
+    pub fn enemy_programs(&self) -> EnemyProgramReadout {
+        enemy_program_readout(
+            &self.enemy_attack_programs,
+            &self.enemy_defeat_programs,
+            self.enemy_combat
+                .iter()
+                .map(|(entity, component)| (entity.raw(), component.config.attack_program.clone())),
+            self.enemy_combat
+                .iter()
+                .map(|(entity, component)| (entity.raw(), component.config.defeat_program.clone())),
+        )
+    }
+
+    /// Read-only hazard catalog and placed-trigger bindings for product tooling.
+    pub fn hazard_programs(&self) -> HazardProgramReadout {
+        self.hazard_programs.readout(
+            self.hazard_program_bindings
+                .iter()
+                .map(|(hazard, program_id)| (hazard.raw(), program_id.clone())),
+        )
+    }
+
+    /// Read-only encounter lifecycle catalog and explicit encounter bindings.
+    pub fn encounter_programs(&self) -> EncounterProgramReadout {
+        self.encounter_programs.readout(
+            self.encounter_program_bindings
+                .iter()
+                .map(|(encounter, program_id)| (encounter.raw(), program_id.clone())),
+        )
+    }
+
+    /// Read-only explosive-prop catalog and placed-prop bindings for product tooling.
+    pub fn explosive_prop_programs(&self) -> ExplosivePropProgramReadout {
+        self.explosive_prop_programs.readout(
+            self.explosive_prop_program_bindings
+                .iter()
+                .map(|(prop, program_id)| (prop.raw(), program_id.clone())),
+        )
+    }
+
+    /// Read-only switch interaction program catalog and explicit switch bindings.
+    pub fn switch_programs(&self) -> SwitchProgramReadout {
+        self.switch_programs.readout(
+            self.switch_program_bindings
+                .iter()
+                .map(|(switch, program_id)| (switch.raw(), program_id.clone())),
+        )
+    }
+
+    /// Read-only floor-action catalog and explicit placed-trigger bindings.
+    pub fn floor_action_programs(&self) -> FloorActionProgramReadout {
+        self.floor_action_programs.readout(
+            self.floor_action_program_bindings
+                .iter()
+                .map(|(action, program_id)| (action.raw(), program_id.clone())),
+        )
+    }
+
+    /// Read-only lift catalog and explicit placed-trigger bindings.
+    pub fn lift_programs(&self) -> LiftProgramReadout {
+        self.lift_programs.readout(
+            self.lift_program_bindings
+                .iter()
+                .map(|(lift, program_id)| (lift.raw(), program_id.clone())),
+        )
+    }
+
+    /// Read-only secret-discovery catalog and placed-region bindings.
+    pub fn secret_programs(&self) -> SecretProgramReadout {
+        self.secret_programs.readout(
+            self.secret_program_bindings
+                .iter()
+                .map(|(secret, program_id)| (secret.raw(), program_id.clone())),
+        )
+    }
+
+    /// Read-only level-exit completion catalog and placed-exit bindings.
+    pub fn level_exit_programs(&self) -> LevelExitProgramReadout {
+        self.level_exit_programs.readout(
+            self.level_exit_program_bindings
+                .iter()
+                .map(|(exit, program_id)| (exit.raw(), program_id.clone())),
+        )
+    }
+
+    /// At most one most-recent selected-program result. Session replacement
+    /// constructs this field as `None`, so no old result crosses a boundary.
+    pub fn gameplay_outcome(&self) -> Option<&GameplayProgramOutcome> {
+        self.gameplay_outcome.as_ref()
+    }
+
+    pub(crate) fn record_gameplay_outcome(&mut self, outcome: GameplayProgramOutcome) {
+        self.gameplay_outcome = Some(outcome);
+    }
+
+    pub(crate) fn clear_gameplay_outcome(&mut self) {
+        self.gameplay_outcome = None;
     }
 
     pub fn entity(
@@ -1400,7 +1670,6 @@ fn conflicts_with_walk_trigger(definition: &GameEntityDefinition) -> bool {
         || definition.player_controller.is_some()
         || definition.inventory.is_some()
         || definition.pickup.is_some()
-        || definition.weapon.is_some()
         || definition.secret_region.is_some()
         || definition.level_exit.is_some()
 }

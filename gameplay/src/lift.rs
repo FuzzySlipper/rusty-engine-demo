@@ -9,6 +9,7 @@ use rusty_engine::entity_state::{
     EntityCommand, EntityCommandBatch, EntityFact, EntityView, MAX_ABS_TRANSLATION,
 };
 
+use crate::lift_program::{execute_lift_program, LiftOperation, LiftPredicate};
 use crate::runtime::RuntimeError;
 use crate::session::GameSession;
 
@@ -175,6 +176,17 @@ pub enum LiftRejection {
         lift: EntityId,
         target_platform: EntityId,
     },
+    MissingProgramBinding {
+        lift: EntityId,
+    },
+    UnknownProgram {
+        lift: EntityId,
+        program_id: String,
+    },
+    InvalidProgramOperation {
+        lift: EntityId,
+        operation: &'static str,
+    },
 }
 
 impl std::fmt::Display for LiftRejection {
@@ -209,14 +221,8 @@ impl LiftService {
             return Err(LiftRejection::PlayerDefeated { actor });
         }
 
-        let mut candidate_session = session.clone();
-        let mut candidate_triggers = triggers.clone();
-        let trigger_receipt = candidate_triggers
-            .reconcile(
-                &candidate_session.entities,
-                tick,
-                TriggerReconcileCause::Movement,
-            )
+        let trigger_receipt = triggers
+            .reconcile(&session.entities, tick, TriggerReconcileCause::Movement)
             .map_err(|error| LiftRejection::Trigger {
                 diagnostics: error.diagnostics,
             })?;
@@ -225,62 +231,123 @@ impl LiftService {
             fact.kind == TriggerOverlapFactKind::Enter && fact.pair.subject_id() == actor
         }) {
             let lift = fact.pair.trigger_id();
-            let Some(component) = candidate_session.lifts.get(&lift).cloned() else {
+            let Some(component) = session.lifts.get(&lift).cloned() else {
                 continue;
             };
-            if component.state != LiftState::Raised {
-                continue;
-            }
-            let target_platform = component.config.target_platform;
-            let Some(target_view) = candidate_session.entities.view(target_platform).ok() else {
-                return Err(LiftRejection::UnknownTarget {
+            let program_id = session
+                .lift_program_bindings
+                .get(&lift)
+                .ok_or(LiftRejection::MissingProgramBinding { lift })?;
+            let program = session.lift_programs.get(program_id).ok_or_else(|| {
+                LiftRejection::UnknownProgram {
                     lift,
-                    target_platform,
+                    program_id: program_id.clone(),
+                }
+            })?;
+            let entered = component.state == LiftState::Raised;
+            let mut recorded = false;
+            let mut feedback = false;
+            let mut entity_facts = Vec::new();
+            execute_lift_program(
+                program,
+                &mut |predicate| {
+                    Ok(match predicate {
+                        LiftPredicate::ActivationEntered => entered,
+                        LiftPredicate::LoweringMotionTick
+                        | LiftPredicate::WaitingTick
+                        | LiftPredicate::RaisingMotionTick => false,
+                    })
+                },
+                &mut |operation| match operation {
+                    LiftOperation::RecordActivation => {
+                        if !entered {
+                            return Err(LiftRejection::InvalidProgramOperation {
+                                lift,
+                                operation: "recordActivation",
+                            });
+                        }
+                        recorded = true;
+                        Ok(())
+                    }
+                    LiftOperation::EmitLiftFeedback => {
+                        if !recorded {
+                            return Err(LiftRejection::InvalidProgramOperation {
+                                lift,
+                                operation: "emitLiftFeedback",
+                            });
+                        }
+                        feedback = true;
+                        Ok(())
+                    }
+                    LiftOperation::RequestLowerBoundPlatform => {
+                        if !entered || !recorded {
+                            return Err(LiftRejection::InvalidProgramOperation {
+                                lift,
+                                operation: "requestLowerBoundPlatform",
+                            });
+                        }
+                        let target_platform = component.config.target_platform;
+                        let Some(target_view) = session.entities.view(target_platform).ok() else {
+                            return Err(LiftRejection::UnknownTarget {
+                                lift,
+                                target_platform,
+                            });
+                        };
+                        if target_view
+                            .collision
+                            .is_none_or(|collision| collision.static_collider)
+                        {
+                            return Err(LiftRejection::TargetMissingCollision {
+                                lift,
+                                target_platform,
+                            });
+                        }
+                        if !component.config.is_valid() {
+                            return Err(LiftRejection::InvalidConfig { lift });
+                        }
+                        let receipt = session
+                            .entities
+                            .apply_batch(EntityCommandBatch::new([
+                                EntityCommand::SetCollisionEnabled {
+                                    entity: target_platform,
+                                    enabled: true,
+                                },
+                            ]))
+                            .map_err(|_| LiftRejection::WorldMutationFailed {
+                                lift,
+                                target_platform,
+                            })?;
+                        let component =
+                            session.lifts.get_mut(&lift).expect("lift remains attached");
+                        component.state = LiftState::Lowering;
+                        component.motion_elapsed = TickDelta::ZERO;
+                        component.wait_elapsed = TickDelta::ZERO;
+                        entity_facts.extend(receipt.facts);
+                        Ok(())
+                    }
+                    LiftOperation::AdvanceLowering
+                    | LiftOperation::AdvanceWait
+                    | LiftOperation::AdvanceRaising => {
+                        Err(LiftRejection::InvalidProgramOperation {
+                            lift,
+                            operation: "motion operation during activation",
+                        })
+                    }
+                },
+            )?;
+            if feedback {
+                let component = session.lifts.get(&lift).expect("lift remains attached");
+                activations.push(LiftActivation {
+                    lift,
+                    target_platform: component.config.target_platform,
+                    actor,
+                    prompt: component.config.prompt.clone(),
+                    presentation: component.config.presentation.clone(),
+                    source: component.config.source.clone(),
+                    entity_facts,
                 });
-            };
-            if target_view
-                .collision
-                .is_none_or(|collision| collision.static_collider)
-            {
-                return Err(LiftRejection::TargetMissingCollision {
-                    lift,
-                    target_platform,
-                });
             }
-            if !component.config.is_valid() {
-                return Err(LiftRejection::InvalidConfig { lift });
-            }
-            let entity_receipt = candidate_session
-                .entities
-                .apply_batch(EntityCommandBatch::new([
-                    EntityCommand::SetCollisionEnabled {
-                        entity: target_platform,
-                        enabled: true,
-                    },
-                ]))
-                .map_err(|_| LiftRejection::WorldMutationFailed {
-                    lift,
-                    target_platform,
-                })?;
-            let component = candidate_session
-                .lifts
-                .get_mut(&lift)
-                .expect("lift was validated above");
-            component.state = LiftState::Lowering;
-            component.motion_elapsed = TickDelta::ZERO;
-            component.wait_elapsed = TickDelta::ZERO;
-            activations.push(LiftActivation {
-                lift,
-                target_platform,
-                actor,
-                prompt: component.config.prompt.clone(),
-                presentation: component.config.presentation.clone(),
-                source: component.config.source.clone(),
-                entity_facts: entity_receipt.facts,
-            });
         }
-        *session = candidate_session;
-        *triggers = candidate_triggers;
         Ok(LiftPhaseReceipt {
             trigger_facts: trigger_receipt.facts,
             activations,
@@ -293,112 +360,214 @@ impl LiftService {
             .iter()
             .map(|(lift, component)| (*lift, component.clone()))
             .collect::<Vec<_>>();
-        for (lift, component) in lifts {
-            if !component.config.is_valid() {
+        for (lift, start) in lifts {
+            if !start.config.is_valid() {
                 return Err(RuntimeError::InvalidLiftConfig { lift });
             }
-            let duration = component.config.motion_duration.raw();
-            let (state, motion_elapsed, wait_elapsed, translation) = match component.state {
-                LiftState::Raised => continue,
-                LiftState::Lowering => {
-                    let elapsed = component
-                        .motion_elapsed
-                        .raw()
-                        .saturating_add(1)
-                        .min(duration);
-                    if elapsed == duration {
-                        (
-                            LiftState::Waiting,
-                            TickDelta::ZERO,
-                            TickDelta::ZERO,
-                            component.config.lowered_translation,
-                        )
-                    } else {
-                        (
-                            LiftState::Lowering,
-                            TickDelta::new(elapsed),
-                            TickDelta::ZERO,
-                            interpolate(
-                                component.config.raised_translation,
-                                component.config.lowered_translation,
-                                elapsed,
-                                duration,
-                            ),
-                        )
+            let program_id = session
+                .lift_program_bindings
+                .get(&lift)
+                .ok_or(RuntimeError::Lift(LiftRejection::MissingProgramBinding {
+                    lift,
+                }))?;
+            let program = session
+                .lift_programs
+                .get(program_id)
+                .ok_or_else(|| {
+                    RuntimeError::Lift(LiftRejection::UnknownProgram {
+                        lift,
+                        program_id: program_id.clone(),
+                    })
+                })?
+                .clone();
+            execute_lift_program(
+                &program,
+                &mut |predicate| {
+                    Ok::<_, LiftRejection>(matches!(
+                        (predicate, start.state),
+                        (LiftPredicate::LoweringMotionTick, LiftState::Lowering)
+                            | (LiftPredicate::WaitingTick, LiftState::Waiting)
+                            | (LiftPredicate::RaisingMotionTick, LiftState::Raising)
+                    ))
+                },
+                &mut |operation| match operation {
+                    LiftOperation::AdvanceLowering if start.state == LiftState::Lowering => {
+                        advance_lowering(session, lift, &start)
                     }
-                }
-                LiftState::Waiting => {
-                    if component.config.lowered_wait.raw() == 0 {
-                        (
-                            LiftState::Raising,
-                            TickDelta::ZERO,
-                            TickDelta::ZERO,
-                            component.config.lowered_translation,
-                        )
-                    } else {
-                        let elapsed = component
-                            .wait_elapsed
-                            .raw()
-                            .saturating_add(1)
-                            .min(component.config.lowered_wait.raw());
-                        if elapsed == component.config.lowered_wait.raw() {
-                            (
-                                LiftState::Raising,
-                                TickDelta::ZERO,
-                                TickDelta::ZERO,
-                                component.config.lowered_translation,
-                            )
-                        } else {
-                            (
-                                LiftState::Waiting,
-                                TickDelta::ZERO,
-                                TickDelta::new(elapsed),
-                                component.config.lowered_translation,
-                            )
-                        }
+                    LiftOperation::AdvanceWait if start.state == LiftState::Waiting => {
+                        advance_wait(session, lift, &start)
                     }
-                }
-                LiftState::Raising => {
-                    let elapsed = component
-                        .motion_elapsed
-                        .raw()
-                        .saturating_add(1)
-                        .min(duration);
-                    if elapsed == duration {
-                        (
-                            LiftState::Raised,
-                            TickDelta::ZERO,
-                            TickDelta::ZERO,
-                            component.config.raised_translation,
-                        )
-                    } else {
-                        (
-                            LiftState::Raising,
-                            TickDelta::new(elapsed),
-                            TickDelta::ZERO,
-                            interpolate(
-                                component.config.lowered_translation,
-                                component.config.raised_translation,
-                                elapsed,
-                                duration,
-                            ),
-                        )
+                    LiftOperation::AdvanceRaising if start.state == LiftState::Raising => {
+                        advance_raising(session, lift, &start)
                     }
-                }
-            };
-            session
-                .entities
-                .apply_batch(EntityCommandBatch::new([EntityCommand::SetTranslation {
-                    entity: component.config.target_platform,
-                    translation,
-                }]))
-                .map_err(RuntimeError::EntityBatch)?;
-            let component = session.lifts.get_mut(&lift).expect("lift remains attached");
-            component.state = state;
-            component.motion_elapsed = motion_elapsed;
-            component.wait_elapsed = wait_elapsed;
+                    LiftOperation::AdvanceLowering
+                    | LiftOperation::AdvanceWait
+                    | LiftOperation::AdvanceRaising => {
+                        Err(LiftRejection::InvalidProgramOperation {
+                            lift,
+                            operation: "motion operation outside captured state",
+                        })
+                    }
+                    LiftOperation::RecordActivation => {
+                        Err(LiftRejection::InvalidProgramOperation {
+                            lift,
+                            operation: "recordActivation",
+                        })
+                    }
+                    LiftOperation::RequestLowerBoundPlatform => {
+                        Err(LiftRejection::InvalidProgramOperation {
+                            lift,
+                            operation: "requestLowerBoundPlatform",
+                        })
+                    }
+                    LiftOperation::EmitLiftFeedback => {
+                        Err(LiftRejection::InvalidProgramOperation {
+                            lift,
+                            operation: "emitLiftFeedback",
+                        })
+                    }
+                },
+            )
+            .map_err(RuntimeError::Lift)?;
         }
         Ok(())
+    }
+}
+
+fn set_motion(
+    session: &mut GameSession,
+    lift: EntityId,
+    start: &LiftComponent,
+    state: LiftState,
+    motion_elapsed: TickDelta,
+    wait_elapsed: TickDelta,
+    translation: Vec3,
+) -> Result<(), LiftRejection> {
+    session
+        .entities
+        .apply_batch(EntityCommandBatch::new([EntityCommand::SetTranslation {
+            entity: start.config.target_platform,
+            translation,
+        }]))
+        .map_err(|_| LiftRejection::WorldMutationFailed {
+            lift,
+            target_platform: start.config.target_platform,
+        })?;
+    let component = session.lifts.get_mut(&lift).expect("lift remains attached");
+    component.state = state;
+    component.motion_elapsed = motion_elapsed;
+    component.wait_elapsed = wait_elapsed;
+    Ok(())
+}
+fn advance_lowering(
+    session: &mut GameSession,
+    lift: EntityId,
+    start: &LiftComponent,
+) -> Result<(), LiftRejection> {
+    let duration = start.config.motion_duration.raw();
+    let elapsed = start.motion_elapsed.raw().saturating_add(1).min(duration);
+    if elapsed == duration {
+        set_motion(
+            session,
+            lift,
+            start,
+            LiftState::Waiting,
+            TickDelta::ZERO,
+            TickDelta::ZERO,
+            start.config.lowered_translation,
+        )
+    } else {
+        set_motion(
+            session,
+            lift,
+            start,
+            LiftState::Lowering,
+            TickDelta::new(elapsed),
+            TickDelta::ZERO,
+            interpolate(
+                start.config.raised_translation,
+                start.config.lowered_translation,
+                elapsed,
+                duration,
+            ),
+        )
+    }
+}
+fn advance_wait(
+    session: &mut GameSession,
+    lift: EntityId,
+    start: &LiftComponent,
+) -> Result<(), LiftRejection> {
+    if start.config.lowered_wait.raw() == 0 {
+        return set_motion(
+            session,
+            lift,
+            start,
+            LiftState::Raising,
+            TickDelta::ZERO,
+            TickDelta::ZERO,
+            start.config.lowered_translation,
+        );
+    }
+    let elapsed = start
+        .wait_elapsed
+        .raw()
+        .saturating_add(1)
+        .min(start.config.lowered_wait.raw());
+    if elapsed == start.config.lowered_wait.raw() {
+        set_motion(
+            session,
+            lift,
+            start,
+            LiftState::Raising,
+            TickDelta::ZERO,
+            TickDelta::ZERO,
+            start.config.lowered_translation,
+        )
+    } else {
+        set_motion(
+            session,
+            lift,
+            start,
+            LiftState::Waiting,
+            TickDelta::ZERO,
+            TickDelta::new(elapsed),
+            start.config.lowered_translation,
+        )
+    }
+}
+fn advance_raising(
+    session: &mut GameSession,
+    lift: EntityId,
+    start: &LiftComponent,
+) -> Result<(), LiftRejection> {
+    let duration = start.config.motion_duration.raw();
+    let elapsed = start.motion_elapsed.raw().saturating_add(1).min(duration);
+    if elapsed == duration {
+        set_motion(
+            session,
+            lift,
+            start,
+            LiftState::Raised,
+            TickDelta::ZERO,
+            TickDelta::ZERO,
+            start.config.raised_translation,
+        )
+    } else {
+        set_motion(
+            session,
+            lift,
+            start,
+            LiftState::Raising,
+            TickDelta::new(elapsed),
+            TickDelta::ZERO,
+            interpolate(
+                start.config.lowered_translation,
+                start.config.raised_translation,
+                elapsed,
+                duration,
+            ),
+        )
     }
 }
 

@@ -12,39 +12,61 @@ use rusty_engine::engine_spatial::{
 };
 use rusty_engine::entity_state::{EntityDefinition, EntityTransform, Quat, MAX_ABS_TRANSLATION};
 
-use crate::combat::WeaponConfig;
-use crate::content::AdmittedProject;
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::DoorConfig;
+use crate::encounter_program::compile_encounter_programs;
 use crate::enemy_combat::{
     EnemyAttackConfig, EnemyAttackKind, EnemyCombatConfig, EnemyPerceptionConfig,
 };
 use crate::enemy_drop::EnemyDropConfig;
+use crate::enemy_program::{compile_enemy_attack_programs, compile_enemy_defeat_programs};
 use crate::explosive_prop::ExplosivePropConfig;
+use crate::explosive_prop_program::compile_explosive_prop_programs;
 use crate::extraction_beacon::ExtractionBeaconConfig;
 use crate::floor_action::FloorActionConfig;
+use crate::floor_action_program::compile_floor_action_programs;
+use crate::gameplay_program::compile_gameplay_programs;
 use crate::hazard::HazardConfig;
+use crate::hazard_program::compile_hazard_programs;
 use crate::interaction::{SwitchConfig, SwitchEffect};
 use crate::inventory::{
-    ArmorGrantMode, ArmorTransition, InventoryConfig, InventoryStack, ItemDefinition,
-    ItemDefinitionId, ItemKind, ProjectileDefinition, WeaponAttackMode, WeaponDefinition,
+    ArmorGrantMode, ArmorTransition, InventoryStack, ItemDefinition, ItemDefinitionId, ItemKind,
+    ProjectileDefinition, WeaponAttackMode, WeaponDefinition,
 };
+use crate::level_exit_program::compile_level_exit_programs;
 use crate::lift::LiftConfig;
+use crate::lift_program::compile_lift_programs;
 use crate::navigation::NavigationConfig;
 use crate::pickup::PickupConfig;
+use crate::pickup_program::{
+    compile_pickup_programs, pickup_program_is_compatible, PickupProgramCatalog,
+};
 use crate::player::{PlayerControllerConfig, PlayerInputBindings};
+use crate::player_program::{
+    compile_player_setup_programs, resolve_player_setup_program, PlayerSetupProgramCatalog,
+};
 use crate::progression::{
     DoorAccessConfig, LevelExitConfig, LoadingBayInterlockConfig, RequiredKeyPolicy,
     SecretRegionConfig,
 };
 use crate::project_codec::decode_project_document;
-use crate::session::GameSession;
+use crate::secret_program::compile_secret_programs;
+use crate::session::{GameSession, SessionProgramCatalogs};
 use crate::stored_project::{
     diagnostic_code, validate_stored_project, StoredAsset, StoredEntityDefinition,
     StoredItemDefinition, StoredItemKind, StoredMaterialVoxel, StoredMaterialVoxelEnvironment,
     StoredProject, StoredProjectError, StoredScene, StoredVoxelEnvironment,
 };
+use crate::switch_program::compile_switch_programs;
 use crate::vitality::HealthConfig;
+
+/// Static project data admitted into Rust-owned runtime state. It is the
+/// construction token shared by current project decode and product load.
+#[derive(Debug)]
+pub struct AdmittedProject {
+    pub session: GameSession,
+    pub collision_scene: Option<VoxelCollisionScene>,
+}
 
 /// Static project data that has passed the same complete semantic admission as
 /// runtime construction. The persistence service accepts only this token and
@@ -114,10 +136,132 @@ pub fn admit_stored_project_with_document(
         .enumerate()
         .map(|(index, definition)| authored_item_definition(definition, index))
         .collect::<Result<Vec<_>, _>>()?;
+    let gameplay_programs =
+        compile_gameplay_programs(&document.gameplay_programs).map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::INVALID_VALUE,
+                "gameplayPrograms",
+                error.to_string(),
+            )
+        })?;
+    let pickup_programs = compile_pickup_programs(&document.pickup_programs).map_err(|error| {
+        StoredProjectError::new(
+            diagnostic_code::INVALID_VALUE,
+            "pickupPrograms",
+            error.to_string(),
+        )
+    })?;
+    let player_setup_programs = compile_player_setup_programs(&document.player_setup_programs)
+        .map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::INVALID_VALUE,
+                "playerSetupPrograms",
+                error.to_string(),
+            )
+        })?;
+    let enemy_attack_programs = compile_enemy_attack_programs(&document.enemy_attack_programs)
+        .map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::INVALID_VALUE,
+                "enemyAttackPrograms",
+                error.to_string(),
+            )
+        })?;
+    let enemy_defeat_programs = compile_enemy_defeat_programs(&document.enemy_defeat_programs)
+        .map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::INVALID_VALUE,
+                "enemyDefeatPrograms",
+                error.to_string(),
+            )
+        })?;
+    let hazard_programs = compile_hazard_programs(&document.hazard_programs).map_err(|error| {
+        StoredProjectError::new(
+            diagnostic_code::INVALID_VALUE,
+            "hazardPrograms",
+            error.to_string(),
+        )
+    })?;
+    let explosive_prop_programs =
+        compile_explosive_prop_programs(&document.explosive_prop_programs).map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::INVALID_VALUE,
+                "explosivePropPrograms",
+                error.to_string(),
+            )
+        })?;
+    let encounter_programs =
+        compile_encounter_programs(&document.encounter_programs).map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::INVALID_VALUE,
+                "encounterPrograms",
+                error.to_string(),
+            )
+        })?;
+    let switch_programs = compile_switch_programs(&document.switch_programs).map_err(|error| {
+        StoredProjectError::new(
+            diagnostic_code::INVALID_VALUE,
+            "switchPrograms",
+            error.to_string(),
+        )
+    })?;
+    let floor_action_programs = compile_floor_action_programs(&document.floor_action_programs)
+        .map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::INVALID_VALUE,
+                "floorActionPrograms",
+                error.to_string(),
+            )
+        })?;
+    let lift_programs = compile_lift_programs(&document.lift_programs).map_err(|error| {
+        StoredProjectError::new(
+            diagnostic_code::INVALID_VALUE,
+            "liftPrograms",
+            error.to_string(),
+        )
+    })?;
+    let secret_programs = compile_secret_programs(&document.secret_programs).map_err(|error| {
+        StoredProjectError::new(
+            diagnostic_code::INVALID_VALUE,
+            "secretPrograms",
+            error.to_string(),
+        )
+    })?;
+    let level_exit_programs =
+        compile_level_exit_programs(&document.level_exit_programs).map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::INVALID_VALUE,
+                "levelExitPrograms",
+                error.to_string(),
+            )
+        })?;
+    let program_catalogs = AdmissionProgramCatalogs {
+        gameplay: gameplay_programs,
+        pickup: pickup_programs,
+        player_setup: player_setup_programs,
+        enemy_attack: enemy_attack_programs,
+        enemy_defeat: enemy_defeat_programs,
+        hazard: hazard_programs,
+        explosive_prop: explosive_prop_programs,
+        encounter: encounter_programs,
+        switch: switch_programs,
+        floor_action: floor_action_programs,
+        lift: lift_programs,
+        secret: secret_programs,
+        level_exit: level_exit_programs,
+    };
+
+    validate_program_bindings(&document, &item_definitions, &program_catalogs)?;
 
     let mut entry_scene = None;
     for (scene_index, scene) in document.scenes.iter().enumerate() {
-        let admitted = admit_scene(scene, scene_index, &catalog, &item_definitions)?;
+        let admitted = admit_scene(
+            scene,
+            scene_index,
+            &catalog,
+            &item_definitions,
+            &program_catalogs,
+        )?;
         if scene_index == entry_scene_index {
             entry_scene = Some(admitted);
         }
@@ -138,26 +282,173 @@ struct AdmittedScene {
     collision_scene: Option<VoxelCollisionScene>,
 }
 
+/// Program families compiled once for project admission, then cloned only when
+/// constructing an independent runtime scene.
+struct AdmissionProgramCatalogs {
+    gameplay: crate::gameplay_program::GameplayProgramCatalog,
+    pickup: PickupProgramCatalog,
+    player_setup: PlayerSetupProgramCatalog,
+    enemy_attack: crate::enemy_program::EnemyAttackProgramCatalog,
+    enemy_defeat: crate::enemy_program::EnemyDefeatProgramCatalog,
+    hazard: crate::hazard_program::HazardProgramCatalog,
+    explosive_prop: crate::explosive_prop_program::ExplosivePropProgramCatalog,
+    encounter: crate::encounter_program::EncounterProgramCatalog,
+    switch: crate::switch_program::SwitchProgramCatalog,
+    floor_action: crate::floor_action_program::FloorActionProgramCatalog,
+    lift: crate::lift_program::LiftProgramCatalog,
+    secret: crate::secret_program::SecretProgramCatalog,
+    level_exit: crate::level_exit_program::LevelExitProgramCatalog,
+}
+
 fn admit_scene(
     scene: &StoredScene,
     scene_index: usize,
     catalog: &ProjectAssetCatalog<'_>,
     item_definitions: &[ItemDefinition],
+    program_catalogs: &AdmissionProgramCatalogs,
 ) -> Result<AdmittedScene, StoredProjectError> {
     catalog.validate_scene(scene, scene_index)?;
 
     let entity_indexes = index_entities(scene, scene_index)?;
     require_spatial_source(scene, scene_index)?;
     let collision_scene = build_collision_scene(scene, scene_index, catalog)?;
+    let item_definition_map = item_definitions
+        .iter()
+        .cloned()
+        .map(|definition| (definition.id.clone(), definition))
+        .collect::<BTreeMap<_, _>>();
     let definitions = scene
         .entities
         .iter()
         .enumerate()
-        .map(|(entity_index, entity)| authored_definition(entity, scene_index, entity_index))
+        .map(|(entity_index, entity)| {
+            authored_definition(
+                entity,
+                scene_index,
+                entity_index,
+                &item_definition_map,
+                &program_catalogs.player_setup,
+            )
+        })
         .collect::<Result<Vec<_>, _>>()?;
-    let session = GameSession::from_item_and_entity_definitions(
+    let player_setup_bindings = scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            entity
+                .inventory
+                .as_ref()
+                .map(|inventory| inventory.setup_program.clone())
+                .map(|program| (EntityId::new(entity.id), program))
+        })
+        .collect();
+    let hazard_bindings = scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            entity
+                .hazard
+                .as_ref()
+                .map(|hazard| (EntityId::new(entity.id), hazard.program.clone()))
+        })
+        .collect();
+    let explosive_prop_bindings = scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            entity
+                .explosive_prop
+                .as_ref()
+                .map(|prop| (EntityId::new(entity.id), prop.program.clone()))
+        })
+        .collect();
+    let encounter_bindings = scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            entity
+                .encounter
+                .as_ref()
+                .map(|encounter| (EntityId::new(entity.id), encounter.program.clone()))
+        })
+        .collect();
+    let switch_bindings = scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            entity
+                .switch
+                .as_ref()
+                .map(|switch| (EntityId::new(entity.id), switch.program.clone()))
+        })
+        .collect();
+    let floor_action_bindings = scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            entity
+                .floor_action
+                .as_ref()
+                .map(|floor_action| (EntityId::new(entity.id), floor_action.program.clone()))
+        })
+        .collect();
+    let lift_bindings = scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            entity
+                .lift
+                .as_ref()
+                .map(|lift| (EntityId::new(entity.id), lift.program.clone()))
+        })
+        .collect();
+    let secret_bindings = scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            entity
+                .secret_region
+                .as_ref()
+                .map(|secret| (EntityId::new(entity.id), secret.program.clone()))
+        })
+        .collect();
+    let level_exit_bindings = scene
+        .entities
+        .iter()
+        .filter_map(|entity| {
+            entity
+                .level_exit
+                .as_ref()
+                .map(|exit| (EntityId::new(entity.id), exit.program.clone()))
+        })
+        .collect();
+    let session = GameSession::from_item_entity_and_gameplay_programs(
         item_definitions.iter().cloned(),
         definitions,
+        SessionProgramCatalogs {
+            gameplay: program_catalogs.gameplay.clone(),
+            pickup: program_catalogs.pickup.clone(),
+            player_setup: program_catalogs.player_setup.clone(),
+            player_setup_bindings,
+            enemy_attack: program_catalogs.enemy_attack.clone(),
+            enemy_defeat: program_catalogs.enemy_defeat.clone(),
+            hazard: program_catalogs.hazard.clone(),
+            hazard_bindings,
+            explosive_prop: program_catalogs.explosive_prop.clone(),
+            explosive_prop_bindings,
+            encounter: program_catalogs.encounter.clone(),
+            encounter_bindings,
+            switch: program_catalogs.switch.clone(),
+            switch_bindings,
+            floor_action: program_catalogs.floor_action.clone(),
+            floor_action_bindings,
+            lift: program_catalogs.lift.clone(),
+            lift_bindings,
+            secret: program_catalogs.secret.clone(),
+            secret_bindings,
+            level_exit: program_catalogs.level_exit.clone(),
+            level_exit_bindings,
+        },
     )
     .map_err(|error| definition_error(error, scene_index, &entity_indexes))?;
 
@@ -187,12 +478,6 @@ pub fn authored_item_definition(
             ammunition_cost,
             muzzle_offset,
             presentation,
-            projectile_mass,
-            projectile_radius,
-            projectile_impulse,
-            projectile_gravity_scale,
-            projectile_lifetime_ticks,
-            projectile_restitution,
         } => ItemKind::Weapon(WeaponDefinition {
             attack_mode: match attack_mode.expect("validated current weapon attack mode") {
                 crate::StoredWeaponAttackMode::Hitscan => WeaponAttackMode::Hitscan,
@@ -200,8 +485,6 @@ pub fn authored_item_definition(
                     pellet_count: pellet_count.expect("validated current weapon pellet count"),
                     spread_degrees: spread_degrees.expect("validated current weapon spread angle"),
                 },
-                crate::StoredWeaponAttackMode::Automatic => WeaponAttackMode::Automatic,
-                crate::StoredWeaponAttackMode::Projectile => WeaponAttackMode::Projectile,
             },
             repeat_while_held: *repeat_while_held,
             damage_rolls: *damage_rolls,
@@ -216,19 +499,9 @@ pub fn authored_item_definition(
             presentation: presentation
                 .clone()
                 .expect("validated current weapon presentation"),
-            projectile: match attack_mode.expect("validated current weapon attack mode") {
-                crate::StoredWeaponAttackMode::Projectile => Some(crate::ProjectileDefinition {
-                    mass: projectile_mass.expect("validated projectile mass"),
-                    radius: projectile_radius.expect("validated projectile radius"),
-                    impulse: projectile_impulse.expect("validated projectile impulse"),
-                    gravity_scale: projectile_gravity_scale
-                        .expect("validated projectile gravity scale"),
-                    lifetime_ticks: projectile_lifetime_ticks
-                        .expect("validated projectile lifetime"),
-                    restitution: projectile_restitution.expect("validated projectile restitution"),
-                }),
-                _ => None,
-            },
+            // Current project admission has no player-projectile route. This
+            // field remains solely for retained legacy snapshot decoding.
+            projectile: None,
         }),
         StoredItemKind::Ammunition => ItemKind::Ammunition,
         StoredItemKind::AccessKey => ItemKind::AccessKey,
@@ -268,7 +541,265 @@ pub fn authored_item_definition(
             consume_at_cap: *consume_at_cap,
         },
     };
-    Ok(ItemDefinition::new(id, kind, authored.max_quantity))
+    Ok(ItemDefinition::new(id, kind, authored.max_quantity).with_program(authored.program.clone()))
+}
+
+fn validate_program_bindings(
+    document: &StoredProject,
+    item_definitions: &[ItemDefinition],
+    program_catalogs: &AdmissionProgramCatalogs,
+) -> Result<(), StoredProjectError> {
+    for (index, item) in document.item_definitions.iter().enumerate() {
+        if let Some(program) = &item.program {
+            if program_catalogs.gameplay.get(program).is_none() {
+                return Err(StoredProjectError::new(
+                    diagnostic_code::INVALID_VALUE,
+                    format!("itemDefinitions[{index}].program"),
+                    format!(
+                        "item `{}` references unknown gameplay program `{program}`",
+                        item.id
+                    ),
+                ));
+            }
+        }
+    }
+    for (scene_index, scene) in document.scenes.iter().enumerate() {
+        for (entity_index, entity) in scene.entities.iter().enumerate() {
+            if let Some(inventory) = &entity.inventory {
+                let path = format!(
+                    "scenes[{scene_index}].entities[{entity_index}].inventory.setupProgram"
+                );
+                if program_catalogs
+                    .player_setup
+                    .get(&inventory.setup_program)
+                    .is_none()
+                {
+                    return Err(StoredProjectError::new(
+                        diagnostic_code::INVALID_VALUE,
+                        path,
+                        format!(
+                            "inventory `{}` references missing or wrong-family player setup program `{}`",
+                            entity.name, inventory.setup_program
+                        ),
+                    ));
+                }
+            }
+            if let Some(pickup) = &entity.pickup {
+                let path = format!("scenes[{scene_index}].entities[{entity_index}].pickup.program");
+                let program = program_catalogs
+                    .pickup
+                    .get(&pickup.program)
+                    .ok_or_else(|| {
+                        StoredProjectError::new(
+                            diagnostic_code::INVALID_VALUE,
+                            &path,
+                            format!(
+                            "pickup `{}` references missing or wrong-family pickup program `{}`",
+                            entity.name, pickup.program
+                        ),
+                        )
+                    })?;
+                let item = item_definitions
+                    .iter()
+                    .find(|item| item.id.as_str() == pickup.item)
+                    .ok_or_else(|| {
+                        StoredProjectError::new(
+                            diagnostic_code::INVALID_VALUE,
+                            &path,
+                            format!(
+                                "pickup `{}` references missing item `{}`",
+                                entity.name, pickup.item
+                            ),
+                        )
+                    })?;
+                if !pickup_program_is_compatible(
+                    program,
+                    &item.kind,
+                    pickup.starter_ammunition.is_some(),
+                ) {
+                    return Err(StoredProjectError::new(
+                        diagnostic_code::INVALID_VALUE,
+                        path,
+                        format!(
+                            "pickup `{}` program `{}` is incompatible with `{}`",
+                            entity.name, pickup.program, pickup.item
+                        ),
+                    ));
+                }
+            }
+            if let Some(hazard) = &entity.hazard {
+                let path = format!("scenes[{scene_index}].entities[{entity_index}].hazard.program");
+                if program_catalogs.hazard.get(&hazard.program).is_none() {
+                    return Err(StoredProjectError::new(
+                        diagnostic_code::INVALID_VALUE,
+                        path,
+                        format!(
+                            "hazard `{}` references missing or wrong-family hazard program `{}`",
+                            entity.name, hazard.program
+                        ),
+                    ));
+                }
+            }
+            if let Some(prop) = &entity.explosive_prop {
+                let path =
+                    format!("scenes[{scene_index}].entities[{entity_index}].explosiveProp.program");
+                if program_catalogs.explosive_prop.get(&prop.program).is_none() {
+                    return Err(StoredProjectError::new(
+                        diagnostic_code::INVALID_VALUE,
+                        path,
+                        format!(
+                            "explosive prop `{}` references missing or wrong-family explosive-prop program `{}`",
+                            entity.name, prop.program
+                        ),
+                    ));
+                }
+            }
+            if let Some(encounter) = &entity.encounter {
+                let path =
+                    format!("scenes[{scene_index}].entities[{entity_index}].encounter.program");
+                if program_catalogs.encounter.get(&encounter.program).is_none() {
+                    return Err(StoredProjectError::new(
+                        diagnostic_code::INVALID_VALUE,
+                        path,
+                        format!(
+                            "encounter `{}` references missing or wrong-family encounter program `{}`",
+                            entity.name, encounter.program
+                        ),
+                    ));
+                }
+            }
+            if let Some(switch) = &entity.switch {
+                let path = format!("scenes[{scene_index}].entities[{entity_index}].switch.program");
+                if program_catalogs.switch.get(&switch.program).is_none() {
+                    return Err(StoredProjectError::new(
+                        diagnostic_code::INVALID_VALUE,
+                        path,
+                        format!(
+                            "switch `{}` references missing or wrong-family switch program `{}`",
+                            entity.name, switch.program
+                        ),
+                    ));
+                }
+            }
+            if let Some(floor_action) = &entity.floor_action {
+                let path =
+                    format!("scenes[{scene_index}].entities[{entity_index}].floorAction.program");
+                if program_catalogs
+                    .floor_action
+                    .get(&floor_action.program)
+                    .is_none()
+                {
+                    return Err(StoredProjectError::new(diagnostic_code::INVALID_VALUE, path, format!("floor action `{}` references missing or wrong-family floor-action program `{}`", entity.name, floor_action.program)));
+                }
+            }
+            if let Some(lift) = &entity.lift {
+                let path = format!("scenes[{scene_index}].entities[{entity_index}].lift.program");
+                if program_catalogs.lift.get(&lift.program).is_none() {
+                    return Err(StoredProjectError::new(
+                        diagnostic_code::INVALID_VALUE,
+                        path,
+                        format!(
+                            "lift `{}` references missing or wrong-family lift program `{}`",
+                            entity.name, lift.program
+                        ),
+                    ));
+                }
+            }
+            if let Some(secret) = &entity.secret_region {
+                let path =
+                    format!("scenes[{scene_index}].entities[{entity_index}].secretRegion.program");
+                if program_catalogs.secret.get(&secret.program).is_none() {
+                    return Err(StoredProjectError::new(
+                        diagnostic_code::INVALID_VALUE,
+                        path,
+                        format!(
+                            "secret region `{}` references missing or wrong-family secret program `{}`",
+                            entity.name, secret.program
+                        ),
+                    ));
+                }
+            }
+            if let Some(exit) = &entity.level_exit {
+                let path =
+                    format!("scenes[{scene_index}].entities[{entity_index}].levelExit.program");
+                if program_catalogs.level_exit.get(&exit.program).is_none() {
+                    return Err(StoredProjectError::new(
+                        diagnostic_code::INVALID_VALUE,
+                        path,
+                        format!(
+                            "level exit `{}` references missing or wrong-family level-exit program `{}`",
+                            entity.name, exit.program
+                        ),
+                    ));
+                }
+            }
+            let Some(combat) = &entity.enemy_combat else {
+                continue;
+            };
+            if program_catalogs
+                .enemy_attack
+                .get(&combat.attack_program)
+                .is_none()
+            {
+                return Err(StoredProjectError::new(
+                    diagnostic_code::INVALID_VALUE,
+                    format!(
+                        "scenes[{scene_index}].entities[{entity_index}].enemyCombat.attackProgram"
+                    ),
+                    format!(
+                        "enemy `{}` references missing or wrong-family attack program `{}`",
+                        entity.name, combat.attack_program
+                    ),
+                ));
+            }
+            if program_catalogs
+                .enemy_defeat
+                .get(&combat.defeat_program)
+                .is_none()
+            {
+                return Err(StoredProjectError::new(
+                    diagnostic_code::INVALID_VALUE,
+                    format!(
+                        "scenes[{scene_index}].entities[{entity_index}].enemyCombat.defeatProgram"
+                    ),
+                    format!(
+                        "enemy `{}` references missing or wrong-family defeat program `{}`",
+                        entity.name, combat.defeat_program
+                    ),
+                ));
+            }
+        }
+    }
+    if document.project_id == "doom-e1m1" {
+        for id in [
+            "weapon/fist",
+            "weapon/pistol",
+            "weapon/shotgun",
+            "supply/health-bonus",
+            "supply/medikit",
+            "supply/stimpack",
+        ] {
+            let item = document
+                .item_definitions
+                .iter()
+                .find(|item| item.id == id)
+                .ok_or_else(|| {
+                    StoredProjectError::new(
+                        diagnostic_code::INVALID_VALUE,
+                        "itemDefinitions",
+                        format!("E1M1 is missing required item `{id}`"),
+                    )
+                })?;
+            if item.program.is_none() {
+                return Err(StoredProjectError::new(
+                    diagnostic_code::INVALID_VALUE,
+                    "itemDefinitions",
+                    format!("E1M1 item `{id}` must bind a gameplay program"),
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Materialize the runtime's accepted voxel authority into one explicit static
@@ -583,6 +1114,8 @@ fn authored_definition(
     authored: &StoredEntityDefinition,
     scene_index: usize,
     entity_index: usize,
+    item_definitions: &BTreeMap<ItemDefinitionId, ItemDefinition>,
+    player_setup_programs: &PlayerSetupProgramCatalog,
 ) -> Result<GameEntityDefinition, StoredProjectError> {
     let entity = EntityId::new(authored.id);
     let path =
@@ -764,6 +1297,8 @@ fn authored_definition(
                 hearing_range: combat.hearing_range,
             },
             pain_duration_ticks: combat.pain_duration_ticks,
+            attack_program: combat.attack_program.clone(),
+            defeat_program: combat.defeat_program.clone(),
             attack: EnemyAttackConfig {
                 kind: match combat.attack.kind {
                     crate::StoredEnemyAttackKind::Melee => EnemyAttackKind::Melee,
@@ -807,13 +1342,13 @@ fn authored_definition(
             armor_absorption_percent: health.armor_absorption_percent,
         });
     }
-    if let Some(explosive_prop) = authored.explosive_prop {
+    if let Some(explosive_prop) = &authored.explosive_prop {
         definition = definition.with_explosive_prop(ExplosivePropConfig {
             damage: explosive_prop.damage,
             radius: explosive_prop.radius,
         });
     }
-    if let Some(hazard) = authored.hazard {
+    if let Some(hazard) = &authored.hazard {
         definition = definition.as_hazard(HazardConfig {
             damage: hazard.damage,
             cooldown_ticks: hazard.cooldown_ticks,
@@ -871,50 +1406,50 @@ fn authored_definition(
         });
     }
     if let Some(inventory) = &authored.inventory {
-        definition = definition.with_inventory(InventoryConfig::new(
+        let weapon_slots = inventory
+            .weapon_slots
+            .iter()
+            .enumerate()
+            .map(|(slot_index, item)| {
+                parse_item_id(
+                    item,
+                    &format!("{}.weaponSlots[{slot_index}]", path("inventory")),
+                )
+            })
+            .collect::<Result<Vec<_>, StoredProjectError>>()?;
+        let program = player_setup_programs
+            .get(&inventory.setup_program)
+            .ok_or_else(|| {
+                StoredProjectError::new(
+                    diagnostic_code::INVALID_VALUE,
+                    format!("{}.setupProgram", path("inventory")),
+                    format!(
+                        "missing admitted player setup program `{}`",
+                        inventory.setup_program
+                    ),
+                )
+            })?;
+        let config = resolve_player_setup_program(
+            program,
             inventory.capacity_slots,
-            inventory
-                .starting_stacks
-                .iter()
-                .enumerate()
-                .map(|(stack_index, stack)| {
-                    Ok(InventoryStack::new(
-                        parse_item_id(
-                            &stack.item,
-                            &format!("{}.startingStacks[{stack_index}].item", path("inventory")),
-                        )?,
-                        stack.quantity,
-                    ))
-                })
-                .collect::<Result<Vec<_>, StoredProjectError>>()?,
-            inventory
-                .initially_equipped_weapon
-                .as_deref()
-                .map(|item| {
-                    parse_item_id(
-                        item,
-                        &format!("{}.initiallyEquippedWeapon", path("inventory")),
-                    )
-                })
-                .transpose()?,
-            inventory
-                .weapon_slots
-                .iter()
-                .enumerate()
-                .map(|(slot_index, item)| {
-                    parse_item_id(
-                        item,
-                        &format!("{}.weaponSlots[{slot_index}]", path("inventory")),
-                    )
-                })
-                .collect::<Result<Vec<_>, StoredProjectError>>()?,
-        ));
+            weapon_slots,
+            item_definitions,
+        )
+        .map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::INVALID_COMPONENT,
+                format!("{}.setupProgram", path("inventory")),
+                error.to_string(),
+            )
+        })?;
+        definition = definition.with_inventory(config);
     }
     if let Some(pickup) = &authored.pickup {
         definition = definition.as_pickup(
             PickupConfig::new(
                 parse_item_id(&pickup.item, &format!("{}.item", path("pickup")))?,
                 pickup.quantity,
+                pickup.program.clone(),
             )
             .with_starter_ammunition(
                 pickup
@@ -942,15 +1477,6 @@ fn authored_definition(
         definition = definition.as_level_exit(LevelExitConfig {
             activation_radius: exit.activation_radius,
             presentation: exit.presentation.clone(),
-        });
-    }
-    if let Some(weapon) = authored.weapon {
-        definition = definition.with_weapon(WeaponConfig {
-            damage: weapon.damage,
-            max_distance: weapon.max_distance,
-            cooldown_ticks: weapon.cooldown_ticks,
-            ammo_capacity: weapon.ammo_capacity,
-            muzzle_offset: array_vec3(weapon.muzzle_offset),
         });
     }
     Ok(definition)
@@ -1120,7 +1646,11 @@ fn definition_error(
         | Error::EnemyCombatMissingTransform { entity }
         | Error::EnemyCombatMissingHealth { entity }
         | Error::EnemyCombatMissingNavigation { entity }
-        | Error::InvalidEnemyCombatConfig { entity } => (
+        | Error::InvalidEnemyCombatConfig { entity }
+        | Error::MissingEnemyAttackProgram { entity }
+        | Error::MissingEnemyDefeatProgram { entity }
+        | Error::EnemyAttackProgramIncompatible { entity }
+        | Error::EnemyDefeatProgramRequiresDrop { entity } => (
             diagnostic_code::INVALID_COMPONENT,
             entity_path(scene_index, indexes, *entity, "enemyCombat"),
         ),
@@ -1178,12 +1708,6 @@ fn definition_error(
         Error::TooManyPickups { .. } => (
             diagnostic_code::INVALID_COMPONENT,
             format!("scenes[{scene_index}].entities"),
-        ),
-        Error::WeaponWithoutPlayerController { entity }
-        | Error::InvalidWeaponConfig { entity }
-        | Error::LegacyEntityWeapon { entity } => (
-            diagnostic_code::INVALID_COMPONENT,
-            entity_path(scene_index, indexes, *entity, "weapon"),
         ),
         Error::InvalidPickupStarterAmmunition { entity } => (
             diagnostic_code::INVALID_COMPONENT,

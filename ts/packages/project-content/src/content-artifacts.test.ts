@@ -48,12 +48,25 @@ test("canonical project reads decode without rewriting authored bytes", () => {
 
 function canonicalProject() {
   return {
-    schemaVersion: 25,
+    schemaVersion: 26,
     projectId: "doom-e1m1",
     name: "Doom E1M1",
     entryScene: "scene/doom-e1m1",
     assets: [],
     itemDefinitions: [],
+    gameplayPrograms: [],
+    pickupPrograms: [],
+    playerSetupPrograms: [],
+    enemyAttackPrograms: [],
+    enemyDefeatPrograms: [],
+    hazardPrograms: [],
+    explosivePropPrograms: [],
+    encounterPrograms: [],
+    switchPrograms: [],
+    floorActionPrograms: [],
+    liftPrograms: [],
+    secretPrograms: [],
+    levelExitPrograms: [],
     weaponEntities: [],
     scenes: [
       {

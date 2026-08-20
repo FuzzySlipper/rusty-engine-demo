@@ -958,8 +958,7 @@ impl LoadingBayGameLoop {
                         continue;
                     }
                 };
-                match DamageService::use_health_supply(&mut self.runtime.session, self.player, item)
-                {
+                match self.runtime.use_health_supply(self.player, item) {
                     Ok(receipt) => {
                         facts.extend(receipt.facts.into_iter().map(GameLoopFact::Vitality));
                         facts.extend(
@@ -972,17 +971,23 @@ impl LoadingBayGameLoop {
                     }
                     Err(rejection) => {
                         let reason = match rejection {
-                            VitalityRejection::PlayerDead { .. } => {
-                                EdgeCommandRejection::PlayerDefeated
+                            RuntimeError::GameplayProgramRejected { .. } => {
+                                EdgeCommandRejection::ItemNotUsable
                             }
-                            VitalityRejection::HealthFull { .. } => {
-                                EdgeCommandRejection::HealthFull
-                            }
-                            VitalityRejection::ItemNotOwned { .. }
-                            | VitalityRejection::Inventory(
-                                InventoryRejection::QuantityUnderflow { .. },
-                            ) => EdgeCommandRejection::ItemNotOwned,
-                            _ => EdgeCommandRejection::ItemNotUsable,
+                            RuntimeError::Vitality(rejection) => match rejection {
+                                VitalityRejection::PlayerDead { .. } => {
+                                    EdgeCommandRejection::PlayerDefeated
+                                }
+                                VitalityRejection::HealthFull { .. } => {
+                                    EdgeCommandRejection::HealthFull
+                                }
+                                VitalityRejection::ItemNotOwned { .. }
+                                | VitalityRejection::Inventory(
+                                    InventoryRejection::QuantityUnderflow { .. },
+                                ) => EdgeCommandRejection::ItemNotOwned,
+                                _ => EdgeCommandRejection::ItemNotUsable,
+                            },
+                            _ => return Err(rejection),
                         };
                         facts.push(GameLoopFact::EdgeCommandRejected {
                             sequence: command.sequence,
@@ -1208,21 +1213,6 @@ impl LoadingBayGameLoop {
 
 fn projectile_fact_to_combat_fact(fact: crate::ProjectileFact) -> CombatFact {
     match fact {
-        crate::ProjectileFact::Spawned {
-            entity,
-            owner,
-            weapon,
-            origin,
-            impulse,
-            expires_at,
-        } => CombatFact::ProjectileSpawned {
-            entity,
-            owner,
-            weapon,
-            origin,
-            impulse,
-            expires_at,
-        },
         crate::ProjectileFact::Impacted {
             entity,
             owner,

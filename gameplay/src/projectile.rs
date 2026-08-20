@@ -13,21 +13,16 @@ use rusty_engine::entity_state::{
 };
 
 use crate::combat::CombatFact;
-use crate::inventory::{ItemDefinitionId, ProjectileDefinition};
+use crate::inventory::ProjectileDefinition;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
 use crate::vitality::{DamageCommand, DamageService, DamageSource, VitalityRejection};
 
-const PROJECTILE_ASSET: &str = "mesh/physics-projectile";
 const MAX_PROJECTILE_ENTITIES: usize = 256;
-const PLAYER_PROJECTILE_ENTITY_NAME: &str = "physics projectile";
 const ENEMY_PROJECTILE_ENTITY_NAME: &str = "enemy projectile";
 
 pub(crate) fn is_projectile_entity_name(name: &str) -> bool {
-    matches!(
-        name,
-        PLAYER_PROJECTILE_ENTITY_NAME | ENEMY_PROJECTILE_ENTITY_NAME
-    )
+    name == ENEMY_PROJECTILE_ENTITY_NAME
 }
 
 #[derive(Debug)]
@@ -57,14 +52,6 @@ impl std::error::Error for ProjectileError {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProjectileFact {
-    Spawned {
-        entity: EntityId,
-        owner: EntityId,
-        weapon: ItemDefinitionId,
-        origin: Vec3,
-        impulse: Vec3,
-        expires_at: Tick,
-    },
     Impacted {
         entity: EntityId,
         owner: EntityId,
@@ -90,7 +77,6 @@ pub struct ProjectilePhaseReceipt {
 #[derive(Debug, Clone, PartialEq)]
 struct ActiveProjectile {
     owner: EntityId,
-    weapon: Option<ItemDefinitionId>,
     target: Option<EntityId>,
     definition: ProjectileDefinition,
     damage: u32,
@@ -109,16 +95,6 @@ pub(crate) struct EnemyProjectileSpawn {
     pub visual_asset: String,
 }
 
-pub(crate) struct ProjectileSpawnRequest {
-    pub(crate) owner: EntityId,
-    pub(crate) weapon: ItemDefinitionId,
-    pub(crate) definition: ProjectileDefinition,
-    pub(crate) damage: u32,
-    pub(crate) origin: Vec3,
-    pub(crate) direction: Vec3,
-    pub(crate) tick: Tick,
-}
-
 #[derive(Debug, Default)]
 pub(crate) struct ProjectileService {
     next_entity_raw: u64,
@@ -126,81 +102,27 @@ pub(crate) struct ProjectileService {
     rigid_bodies: RigidBodyService,
 }
 
+/// The spawn-only portion of [`ProjectileService`] that an attack phase may
+/// mutate before its enclosing session transaction commits. Spawning does not
+/// touch `rigid_bodies`, so phase rollback deliberately avoids cloning Engine
+/// physics state.
+#[derive(Debug, Clone)]
+pub(crate) struct ProjectileSpawnCheckpoint {
+    next_entity_raw: u64,
+    active: BTreeMap<EntityId, ActiveProjectile>,
+}
+
 impl ProjectileService {
-    pub(crate) fn spawn(
-        &mut self,
-        session: &mut GameSession,
-        request: ProjectileSpawnRequest,
-    ) -> Result<(EntityId, ProjectileFact), ProjectileError> {
-        let ProjectileSpawnRequest {
-            owner,
-            weapon,
-            definition,
-            damage,
-            origin,
-            direction,
-            tick,
-        } = request;
-        if self.active.len() >= MAX_PROJECTILE_ENTITIES {
-            return Err(ProjectileError::EntityLimit {
-                limit: MAX_PROJECTILE_ENTITIES,
-            });
+    pub(crate) fn spawn_checkpoint(&self) -> ProjectileSpawnCheckpoint {
+        ProjectileSpawnCheckpoint {
+            next_entity_raw: self.next_entity_raw,
+            active: self.active.clone(),
         }
-        let entity = self.allocate_entity(session)?;
-        let radius = definition.radius;
-        let definition_entity = EntityDefinition::new(entity, PLAYER_PROJECTILE_ENTITY_NAME)
-            .with_full_transform(EntityTransform::at(origin))
-            .with_bounds(
-                Vec3::new(-radius, -radius, -radius),
-                Vec3::new(radius, radius, radius),
-            )
-            .with_collision(true, false)
-            .with_renderable(PROJECTILE_ASSET, true);
-        let authoring = EntityAuthoringService;
-        let entity_revision = session.entities.revision();
-        authoring
-            .admit(&mut session.entities, entity_revision, [definition_entity])
-            .map_err(ProjectileError::EntityAuthoring)?;
-        let body = RigidBodyComponent {
-            gravity_scale: definition.gravity_scale,
-            restitution: definition.restitution,
-            continuous_collision: true,
-            ..RigidBodyComponent::dynamic(RigidBodyShape::Sphere { radius }, definition.mass)
-        };
-        let component_revision = session
-            .entities
-            .component_revision::<RigidBodyComponent>(entity)
-            .expect("rigid-body component is registered by mechanics registry");
-        authoring
-            .attach_component(&mut session.entities, component_revision, entity, body)
-            .map_err(ProjectileError::EntityAuthoring)?;
-        let impulse = normalize(direction) * definition.impulse;
-        let expires_at = tick.advance(rusty_engine::core_time::TickDelta::new(
-            definition.lifetime_ticks,
-        ));
-        self.active.insert(
-            entity,
-            ActiveProjectile {
-                owner,
-                weapon: Some(weapon.clone()),
-                target: None,
-                definition,
-                damage,
-                expires_at,
-                pending_impulse: impulse,
-            },
-        );
-        Ok((
-            entity,
-            ProjectileFact::Spawned {
-                entity,
-                owner,
-                weapon,
-                origin,
-                impulse,
-                expires_at,
-            },
-        ))
+    }
+
+    pub(crate) fn restore_spawn_checkpoint(&mut self, checkpoint: ProjectileSpawnCheckpoint) {
+        self.next_entity_raw = checkpoint.next_entity_raw;
+        self.active = checkpoint.active;
     }
 
     pub(crate) fn spawn_enemy(
@@ -259,7 +181,6 @@ impl ProjectileService {
             entity,
             ActiveProjectile {
                 owner,
-                weapon: None,
                 target: Some(target),
                 definition,
                 damage,
@@ -338,15 +259,9 @@ impl ProjectileService {
                     let damage = DamageService::apply(
                         &mut candidate_session,
                         DamageCommand {
-                            source: projectile.weapon.as_ref().map_or(
-                                DamageSource::EnemyAttack {
-                                    attacker: projectile.owner,
-                                },
-                                |weapon| DamageSource::Weapon {
-                                    attacker: projectile.owner,
-                                    weapon: weapon.clone(),
-                                },
-                            ),
+                            source: DamageSource::EnemyAttack {
+                                attacker: projectile.owner,
+                            },
                             target,
                             amount: projectile.damage,
                         },

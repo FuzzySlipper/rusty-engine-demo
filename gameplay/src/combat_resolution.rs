@@ -13,8 +13,8 @@ use rusty_engine::engine_spatial::{
     SpatialOcclusionQuery, SpatialOcclusionService, VoxelCollisionScene,
 };
 use rusty_engine::gameplay_resolution::{
-    CommitStatus, CorrelationId, PolicyResult, Program, ResolutionId, ResolutionIdentity,
-    ResolutionMode, ResolutionPlan, ResolutionPolicy, ResolutionRequest, ResolutionTraceSink,
+    CommitStatus, CorrelationId, PolicyResult, ResolutionId, ResolutionIdentity, ResolutionMode,
+    ResolutionPlan, ResolutionPolicy, ResolutionRequest, ResolutionTraceSink,
     ResolutionTransaction, StandardResolver,
 };
 
@@ -22,6 +22,7 @@ use crate::combat::{
     nearest_combat_target, CombatFact, CombatImpactKind, CombatMissReason, CombatResolution,
     ResolvedAttackAction,
 };
+use crate::gameplay_program::{DemoOperation, DemoPredicate, DemoProgram};
 use crate::inventory::{
     InventoryAction, InventoryCommand, InventoryRejection, InventoryService, ItemDefinitionId,
     WeaponAttackMode, WeaponDefinition,
@@ -70,20 +71,6 @@ struct HitscanContext {
     ready_at_tick: Tick,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum HitscanPredicate {
-    ImpactIsHit,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum HitscanOperation {
-    RecordFired,
-    ConsumeAmmo,
-    ApplyHit,
-    ApplyMiss,
-    SetCooldown,
-}
-
 #[derive(Debug, Clone, PartialEq)]
 enum HitscanEffect {
     Fact(CombatFact),
@@ -123,18 +110,20 @@ enum HitscanRejection {
     MissingEvidence,
     ConflictingEvidence,
     IntentMismatch,
+    UnsupportedOperation,
 }
 
 struct HitscanPolicy {
     context: HitscanContext,
+    program: DemoProgram,
 }
 
 impl ResolutionPolicy for HitscanPolicy {
     type RawIntent = HitscanIntent;
     type Intent = HitscanIntent;
     type Facts = HitscanFacts;
-    type Predicate = HitscanPredicate;
-    type Operation = HitscanOperation;
+    type Predicate = DemoPredicate;
+    type Operation = DemoOperation;
     type Effect = HitscanEffect;
     type Event = HitscanSemanticEvent;
     type Evidence = HitscanEvidence;
@@ -209,31 +198,20 @@ impl ResolutionPolicy for HitscanPolicy {
         Self::Fault,
         Self::Suspension,
     > {
-        Ok(Program::Sequence {
-            steps: vec![
-                Program::Operation(HitscanOperation::RecordFired),
-                Program::Operation(HitscanOperation::ConsumeAmmo),
-                Program::When {
-                    predicate: HitscanPredicate::ImpactIsHit,
-                    then_program: Box::new(Program::Operation(HitscanOperation::ApplyHit)),
-                    otherwise_program: Some(Box::new(Program::Operation(
-                        HitscanOperation::ApplyMiss,
-                    ))),
-                },
-                Program::Operation(HitscanOperation::SetCooldown),
-            ],
-        })
+        Ok(self.program.clone())
     }
 
     fn evaluate_predicate(
         &mut self,
-        _predicate: &Self::Predicate,
+        predicate: &Self::Predicate,
         _intent: &Self::Intent,
         facts: &Self::Facts,
         _evidence: &[Self::Evidence],
         _trace: &mut dyn ResolutionTraceSink<Self::TraceDetail>,
     ) -> PolicyResult<bool, Self::Rejection, Self::Fault, Self::Suspension> {
-        Ok(matches!(facts.evidence, HitscanEvidence::Hit { .. }))
+        match predicate {
+            DemoPredicate::ImpactIsHit => Ok(matches!(facts.evidence, HitscanEvidence::Hit { .. })),
+        }
     }
 
     fn plan_operation(
@@ -252,17 +230,19 @@ impl ResolutionPolicy for HitscanPolicy {
         let context = &facts.context;
         let mut plan = ResolutionPlan::new();
         let operation_name = match operation {
-            HitscanOperation::RecordFired => "record-fired",
-            HitscanOperation::ConsumeAmmo => "consume-ammo",
-            HitscanOperation::ApplyHit => "apply-hit",
-            HitscanOperation::ApplyMiss => "apply-miss",
-            HitscanOperation::SetCooldown => "set-cooldown",
+            DemoOperation::RecordFired => "record-fired",
+            DemoOperation::ConsumeAmmo => "consume-ammo",
+            DemoOperation::ApplyHit => "apply-hit",
+            DemoOperation::ApplyMiss => "apply-miss",
+            DemoOperation::ApplySpreadImpacts => "apply-spread-impacts",
+            DemoOperation::SetCooldown => "set-cooldown",
+            DemoOperation::UseHealthSupply => "use-health-supply",
         };
         trace.record(HitscanTraceDetail::Operation {
             name: operation_name,
         });
         match operation {
-            HitscanOperation::RecordFired => {
+            DemoOperation::RecordFired => {
                 plan.push_event(HitscanSemanticEvent::Fired);
                 plan.push_effect(HitscanEffect::Fact(CombatFact::AttackFired {
                     attacker: context.attacker,
@@ -279,15 +259,15 @@ impl ResolutionPolicy for HitscanPolicy {
                     ready_at_tick: context.ready_at_tick,
                 }));
             }
-            HitscanOperation::ConsumeAmmo if context.weapon.ammunition_cost > 0 => {
+            DemoOperation::ConsumeAmmo if context.weapon.ammunition_cost > 0 => {
                 plan.push_effect(HitscanEffect::ConsumeAmmo {
                     owner: context.attacker,
                     item: context.weapon.ammunition.clone(),
                     quantity: context.weapon.ammunition_cost,
                 });
             }
-            HitscanOperation::ConsumeAmmo => {}
-            HitscanOperation::ApplyHit => {
+            DemoOperation::ConsumeAmmo => {}
+            DemoOperation::ApplyHit => {
                 let HitscanEvidence::Hit {
                     target,
                     distance,
@@ -319,7 +299,7 @@ impl ResolutionPolicy for HitscanPolicy {
                     amount: damage,
                 });
             }
-            HitscanOperation::ApplyMiss => match facts.evidence {
+            DemoOperation::ApplyMiss => match facts.evidence {
                 HitscanEvidence::WorldBlocked { distance } => {
                     plan.push_event(HitscanSemanticEvent::Missed {
                         reason: CombatMissReason::WorldBlocked,
@@ -353,12 +333,15 @@ impl ResolutionPolicy for HitscanPolicy {
                     unreachable!("miss operation is selected only for non-hit evidence")
                 }
             },
-            HitscanOperation::SetCooldown => {
-                plan.push_effect(HitscanEffect::SetReady {
-                    owner: context.attacker,
-                    weapon: context.weapon_item.clone(),
-                    tick: context.ready_at_tick,
-                });
+            DemoOperation::SetCooldown => plan.push_effect(HitscanEffect::SetReady {
+                owner: context.attacker,
+                weapon: context.weapon_item.clone(),
+                tick: context.ready_at_tick,
+            }),
+            DemoOperation::ApplySpreadImpacts | DemoOperation::UseHealthSupply => {
+                return Err(rusty_engine::gameplay_resolution::PolicyFailure::Rejected(
+                    HitscanRejection::UnsupportedOperation,
+                ));
             }
         }
         Ok(plan)
@@ -506,6 +489,7 @@ pub(crate) fn resolve_single_hitscan(
     ammo_before: u32,
     ammo_after: u32,
     ready_at_tick: Tick,
+    program: DemoProgram,
 ) -> Result<CombatResolution, RuntimeError> {
     debug_assert!(matches!(
         weapon.attack_mode,
@@ -564,6 +548,7 @@ pub(crate) fn resolve_single_hitscan(
     };
     let mut policy = HitscanPolicy {
         context: context.clone(),
+        program,
     };
     let resolution_id = ResolutionId::new(tick.raw().saturating_add(1)).expect("tick plus one");
     let correlation_id = CorrelationId::new(spread_seed.max(1)).expect("non-zero shot seed");
@@ -594,5 +579,107 @@ pub(crate) fn resolve_single_hitscan(
                 "unexpected hitscan resolution outcome: {other:?}; events={semantic_events:?}"
             ),
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::compile::compile_gameplay_package;
+
+    #[derive(Default)]
+    struct RecordingTransaction {
+        staged: Vec<HitscanEffect>,
+    }
+
+    impl ResolutionTransaction for RecordingTransaction {
+        type Effect = HitscanEffect;
+        type Error = Infallible;
+
+        fn stage(&mut self, effect: &Self::Effect) -> Result<(), Self::Error> {
+            self.staged.push(effect.clone());
+            Ok(())
+        }
+
+        fn commit(&mut self) -> Result<(), Self::Error> {
+            Ok(())
+        }
+        fn abort(&mut self) {
+            self.staged.clear();
+        }
+    }
+
+    fn resolve(program: DemoProgram) -> Vec<HitscanEffect> {
+        let attacker = EntityId::new(1);
+        let target = EntityId::new(2);
+        let weapon_item = ItemDefinitionId::parse("weapon/test").expect("valid item id");
+        let ammunition = ItemDefinitionId::parse("ammo/test").expect("valid item id");
+        let weapon = WeaponDefinition {
+            attack_mode: WeaponAttackMode::Hitscan,
+            repeat_while_held: false,
+            damage_rolls: 1,
+            damage: 5,
+            max_distance: 128.0,
+            cooldown_ticks: 1,
+            ammunition,
+            ammunition_cost: 1,
+            muzzle_offset: Vec3::ZERO,
+            presentation: "test".into(),
+            projectile: None,
+        };
+        let context = HitscanContext {
+            attacker,
+            action: ResolvedAttackAction::Attack,
+            weapon_item,
+            weapon,
+            origin: Vec3::ZERO,
+            direction: Vec3::new(0.0, 0.0, 1.0),
+            spread_seed: 1,
+            ammo_before: 2,
+            ammo_after: 1,
+            ready_at_tick: Tick::new(1),
+        };
+        let mut policy = HitscanPolicy { context, program };
+        let mut transaction = RecordingTransaction::default();
+        let request = ResolutionRequest::new(
+            ResolutionIdentity::root(
+                ResolutionId::new(1).unwrap(),
+                CorrelationId::new(1).unwrap(),
+            ),
+            ResolutionMode::Apply,
+            HitscanIntent {
+                attacker,
+                action: ResolvedAttackAction::Attack,
+            },
+            vec![HitscanEvidence::Hit {
+                target,
+                distance: 1.0,
+                damage: 5,
+            }],
+        );
+        let receipt = StandardResolver::default().resolve(&mut policy, &mut transaction, request);
+        assert!(matches!(receipt.into_commit(), CommitStatus::Applied));
+        transaction.staged
+    }
+
+    #[test]
+    fn authored_programs_execute_with_distinct_inventory_effects() {
+        let package_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../data/gameplay/loading-bay-e1m1-core.package.json");
+        let package = std::fs::read(package_path).expect("committed TypeScript package exists");
+        let catalog = compile_gameplay_package(&package, "e1m1-core")
+            .expect("TypeScript-authored program catalog compiles")
+            .gameplay_programs;
+        let ammunition = resolve(catalog.get("weapon/hitscan-ammunition").unwrap().clone());
+        let unarmed = resolve(catalog.get("weapon/hitscan-unarmed").unwrap().clone());
+        assert!(ammunition
+            .iter()
+            .any(|effect| matches!(effect, HitscanEffect::ConsumeAmmo { .. })));
+        assert!(!unarmed
+            .iter()
+            .any(|effect| matches!(effect, HitscanEffect::ConsumeAmmo { .. })));
+        assert!(unarmed
+            .iter()
+            .any(|effect| matches!(effect, HitscanEffect::Damage { .. })));
     }
 }

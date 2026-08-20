@@ -1,8 +1,14 @@
-use rusty_engine::core_ids::EntityId;
+use std::cell::RefCell;
 
+use rusty_engine::core_ids::EntityId;
+use rusty_engine::core_time::{Tick, TickDelta};
+
+use crate::door::{DoorService, DoorTransition};
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
+use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
+use crate::switch_program::{execute_switch_program, SwitchOperation, SwitchPredicate};
 
 pub const DEFAULT_SWITCH_ACTIVATION_RADIUS: f32 = 2.0;
 pub const DEFAULT_SWITCH_PROMPT: &str = "Activate switch";
@@ -166,12 +172,32 @@ pub(crate) fn switch_is_available(session: &GameSession, entity: EntityId) -> bo
 
 pub(crate) struct InteractionService;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PreparedSwitchInteraction {
+    pub(crate) actor: EntityId,
+    pub(crate) switch: EntityId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SwitchProgramRejection {
+    OperationBeforeActivation {
+        switch: EntityId,
+        operation: &'static str,
+    },
+    DuplicateActivation {
+        switch: EntityId,
+    },
+    DuplicateFeedback {
+        switch: EntityId,
+    },
+}
+
 impl InteractionService {
-    pub(crate) fn interact(
-        session: &mut GameSession,
+    pub(crate) fn prepare(
+        session: &GameSession,
         actor: EntityId,
         target: EntityId,
-    ) -> Result<GameEvent, RuntimeError> {
+    ) -> Result<PreparedSwitchInteraction, RuntimeError> {
         if !session.entities.contains(actor) {
             return Err(RuntimeError::UnknownActor { actor });
         }
@@ -182,7 +208,6 @@ impl InteractionService {
             return Err(RuntimeError::NotInteractable { entity: target });
         };
         let config = switch.config.clone();
-        let activation_count = switch.activation_count;
         let available = switch_is_available(session, target);
         let actor_translation = session
             .gameplay_translation(actor)
@@ -220,14 +245,170 @@ impl InteractionService {
                 presentation: config.unavailable_presentation,
             });
         }
-        session
-            .switches
-            .get_mut(&target)
-            .expect("switch was validated above")
-            .activation_count = activation_count.saturating_add(1);
-        Ok(GameEvent::SwitchActivated {
-            switch: target,
+        Ok(PreparedSwitchInteraction {
             actor,
+            switch: target,
         })
     }
+
+    pub(crate) fn execute_program(
+        session: &mut GameSession,
+        scheduler: &mut Scheduler,
+        events: &mut Vec<GameEvent>,
+        tick: Tick,
+        interaction: PreparedSwitchInteraction,
+        program: &crate::switch_program::SwitchProgram,
+    ) -> Result<(), RuntimeError> {
+        let context = RefCell::new(SwitchProgramContext {
+            session,
+            scheduler,
+            events,
+            tick,
+            interaction,
+            activation_recorded: false,
+            feedback_emitted: false,
+        });
+        execute_switch_program(
+            program,
+            &mut |predicate| context.borrow_mut().predicate(predicate),
+            &mut |operation| context.borrow_mut().operation(operation),
+        )
+    }
+}
+
+struct SwitchProgramContext<'a> {
+    session: &'a mut GameSession,
+    scheduler: &'a mut Scheduler,
+    events: &'a mut Vec<GameEvent>,
+    tick: Tick,
+    interaction: PreparedSwitchInteraction,
+    activation_recorded: bool,
+    feedback_emitted: bool,
+}
+
+impl SwitchProgramContext<'_> {
+    fn predicate(&mut self, predicate: SwitchPredicate) -> Result<bool, RuntimeError> {
+        match predicate {
+            SwitchPredicate::SwitchAvailable => {
+                Ok(switch_is_available(self.session, self.interaction.switch))
+            }
+        }
+    }
+
+    fn operation(&mut self, operation: SwitchOperation) -> Result<(), RuntimeError> {
+        match operation {
+            SwitchOperation::RecordActivation => self.record_activation(),
+            SwitchOperation::RequestOpenBoundDoor => self.request_open_bound_doors(),
+            SwitchOperation::RequestCloseBoundDoor => self.request_close_bound_doors(),
+            SwitchOperation::EmitInteractionFeedback => self.emit_interaction_feedback(),
+        }
+    }
+
+    fn record_activation(&mut self) -> Result<(), RuntimeError> {
+        if self.activation_recorded {
+            return Err(RuntimeError::SwitchProgram(
+                SwitchProgramRejection::DuplicateActivation {
+                    switch: self.interaction.switch,
+                },
+            ));
+        }
+        let component = self
+            .session
+            .switches
+            .get_mut(&self.interaction.switch)
+            .expect("prepared switch remains attached to candidate session");
+        component.activation_count = component.activation_count.saturating_add(1);
+        self.activation_recorded = true;
+        Ok(())
+    }
+
+    fn request_open_bound_doors(&mut self) -> Result<(), RuntimeError> {
+        self.require_activation("request-open-bound-door")?;
+        let doors = self.bound_doors(|effect| match effect {
+            SwitchEffect::OpenDoor(door) => Some(*door),
+            SwitchEffect::CloseDoor(_) => None,
+        });
+        for door in doors {
+            if let Some(transition) = DoorService::open(self.session, door)? {
+                queue_door_transition(self.tick, self.scheduler, self.events, door, transition);
+            }
+        }
+        Ok(())
+    }
+
+    fn request_close_bound_doors(&mut self) -> Result<(), RuntimeError> {
+        self.require_activation("request-close-bound-door")?;
+        let doors = self.bound_doors(|effect| match effect {
+            SwitchEffect::OpenDoor(_) => None,
+            SwitchEffect::CloseDoor(door) => Some(*door),
+        });
+        for door in doors {
+            self.scheduler
+                .cancel(ScheduledIntentKind::CloseDoor { door });
+            if let Some(event) = DoorService::close(self.session, door)? {
+                self.events.push(event);
+            }
+        }
+        Ok(())
+    }
+
+    fn emit_interaction_feedback(&mut self) -> Result<(), RuntimeError> {
+        self.require_activation("emit-interaction-feedback")?;
+        if self.feedback_emitted {
+            return Err(RuntimeError::SwitchProgram(
+                SwitchProgramRejection::DuplicateFeedback {
+                    switch: self.interaction.switch,
+                },
+            ));
+        }
+        self.events.push(GameEvent::SwitchActivated {
+            switch: self.interaction.switch,
+            actor: self.interaction.actor,
+        });
+        self.feedback_emitted = true;
+        Ok(())
+    }
+
+    fn require_activation(&self, operation: &'static str) -> Result<(), RuntimeError> {
+        if self.activation_recorded {
+            return Ok(());
+        }
+        Err(RuntimeError::SwitchProgram(
+            SwitchProgramRejection::OperationBeforeActivation {
+                switch: self.interaction.switch,
+                operation,
+            },
+        ))
+    }
+
+    fn bound_doors(&self, select: impl Fn(&SwitchEffect) -> Option<EntityId>) -> Vec<EntityId> {
+        self.session
+            .switches
+            .get(&self.interaction.switch)
+            .expect("prepared switch remains attached to candidate session")
+            .config
+            .effects
+            .iter()
+            .filter_map(select)
+            .collect()
+    }
+}
+
+fn queue_door_transition(
+    tick: Tick,
+    scheduler: &mut Scheduler,
+    events: &mut Vec<GameEvent>,
+    door: EntityId,
+    transition: DoorTransition,
+) {
+    let scheduled_kind = ScheduledIntentKind::CloseDoor { door };
+    scheduler.cancel(scheduled_kind);
+    if let Some(delay) = transition.auto_close_after {
+        let delay = TickDelta::new(transition.motion_duration.raw().saturating_add(delay.raw()));
+        scheduler.schedule(ScheduledIntent {
+            due: tick.advance(delay),
+            kind: scheduled_kind,
+        });
+    }
+    events.push(transition.event);
 }

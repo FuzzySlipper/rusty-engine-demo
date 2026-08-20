@@ -1,7 +1,6 @@
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::entity_state::EntityDefinition;
 
-use crate::combat::WeaponConfig;
 use crate::door::DoorConfig;
 use crate::encounter::EncounterConfig;
 use crate::enemy_combat::EnemyCombatConfig;
@@ -44,7 +43,6 @@ pub struct GameEntityDefinition {
     pub player_controller: Option<PlayerControllerConfig>,
     pub inventory: Option<InventoryConfig>,
     pub pickup: Option<PickupConfig>,
-    pub weapon: Option<WeaponConfig>,
     pub secret_region: Option<SecretRegionConfig>,
     pub level_exit: Option<LevelExitConfig>,
 }
@@ -73,7 +71,6 @@ impl GameEntityDefinition {
             player_controller: None,
             inventory: None,
             pickup: None,
-            weapon: None,
             secret_region: None,
             level_exit: None,
         }
@@ -200,11 +197,6 @@ impl GameEntityDefinition {
 
     pub fn as_pickup(mut self, config: PickupConfig) -> Self {
         self.pickup = Some(config);
-        self
-    }
-
-    pub fn with_weapon(mut self, config: WeaponConfig) -> Self {
-        self.weapon = Some(config);
         self
     }
 
@@ -372,6 +364,18 @@ pub enum GameEntityDefinitionError {
     InvalidEnemyCombatConfig {
         entity: EntityId,
     },
+    MissingEnemyAttackProgram {
+        entity: EntityId,
+    },
+    MissingEnemyDefeatProgram {
+        entity: EntityId,
+    },
+    EnemyAttackProgramIncompatible {
+        entity: EntityId,
+    },
+    EnemyDefeatProgramRequiresDrop {
+        entity: EntityId,
+    },
     HealthMissingTransform {
         entity: EntityId,
     },
@@ -496,15 +500,6 @@ pub enum GameEntityDefinitionError {
         entity: EntityId,
     },
     PickupConflictsWithGameplayOwner {
-        entity: EntityId,
-    },
-    WeaponWithoutPlayerController {
-        entity: EntityId,
-    },
-    InvalidWeaponConfig {
-        entity: EntityId,
-    },
-    LegacyEntityWeapon {
         entity: EntityId,
     },
     EmptyEncounter {

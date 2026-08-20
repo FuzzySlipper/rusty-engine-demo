@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_time::{Tick, TickDelta};
 use rusty_engine::engine_spatial::{
@@ -5,11 +7,11 @@ use rusty_engine::engine_spatial::{
     TriggerVolumeDiagnostic, TriggerVolumeSystem,
 };
 
+use crate::hazard_program::{execute_hazard_program, HazardOperation, HazardPredicate};
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
 use crate::vitality::{
-    DamageCommand, DamageDisposition, DamageService, DamageSource, VitalityFact, VitalityRejection,
-    MAX_DAMAGE,
+    DamageCommand, DamageService, DamageSource, VitalityFact, VitalityRejection, MAX_DAMAGE,
 };
 
 pub const HAZARD_TRIGGER_SCOPE: &str = "loading-bay.hazard";
@@ -59,6 +61,13 @@ pub enum HazardRejection {
         diagnostics: Vec<TriggerVolumeDiagnostic>,
     },
     Vitality(VitalityRejection),
+    MissingProgramBinding {
+        hazard: EntityId,
+    },
+    MissingProgram {
+        hazard: EntityId,
+        program_id: String,
+    },
 }
 
 impl std::fmt::Display for HazardRejection {
@@ -86,9 +95,14 @@ impl HazardService {
         player: EntityId,
         tick: Tick,
     ) -> Result<HazardPhaseReceipt, HazardRejection> {
-        let trigger_receipt = triggers
+        // Trigger reconciliation and every selected program run are evaluated
+        // on candidates. A later program failure therefore cannot leak an
+        // earlier damage/cooldown mutation or trigger revision.
+        let mut candidate_session = session.clone();
+        let mut candidate_triggers = triggers.clone();
+        let trigger_receipt = candidate_triggers
             .reconcile(
-                &session.entities,
+                &candidate_session.entities,
                 tick.raw(),
                 TriggerReconcileCause::Movement,
             )
@@ -97,49 +111,124 @@ impl HazardService {
             })?;
         let mut facts = Vec::new();
         let mut events = Vec::new();
-        let hazard_ids = session.hazards.keys().copied().collect::<Vec<_>>();
+        let hazard_ids = candidate_session
+            .hazards
+            .keys()
+            .copied()
+            .collect::<Vec<_>>();
         for hazard in hazard_ids {
-            let overlaps = triggers
-                .current_overlaps(hazard, MAX_HAZARD_OVERLAP_SUBJECTS)
-                .map_err(|error| HazardRejection::Trigger {
-                    diagnostics: error.diagnostics,
-                })?;
-            if !overlaps.subjects.contains(&player) {
-                continue;
-            }
-            let component = session
-                .hazards
+            let program_id = candidate_session
+                .hazard_program_bindings
                 .get(&hazard)
-                .copied()
-                .expect("hazard identity came from admitted state");
-            if tick.raw() < component.ready_at_tick.raw() {
-                continue;
-            }
-            let receipt = DamageService::apply(
-                session,
-                DamageCommand {
-                    source: DamageSource::Hazard { hazard },
-                    target: player,
-                    amount: component.config.damage,
-                },
-            )
-            .map_err(HazardRejection::Vitality)?;
-            if receipt.disposition == DamageDisposition::Applied {
-                session
-                    .hazards
-                    .get_mut(&hazard)
-                    .expect("hazard remains attached")
-                    .ready_at_tick = tick.advance(TickDelta::new(component.config.cooldown_ticks));
-            }
-            facts.extend(receipt.facts.into_iter().map(HazardFact::Damage));
-            if let Some(event) = receipt.event {
-                events.push(event);
-            }
+                .cloned()
+                .ok_or(HazardRejection::MissingProgramBinding { hazard })?;
+            let program = candidate_session
+                .hazard_programs
+                .get(&program_id)
+                .cloned()
+                .ok_or_else(|| HazardRejection::MissingProgram {
+                    hazard,
+                    program_id: program_id.clone(),
+                })?;
+            let context = RefCell::new(HazardProgramContext {
+                session: &mut candidate_session,
+                triggers: &mut candidate_triggers,
+                player,
+                hazard,
+                tick,
+                facts: Vec::new(),
+                events: Vec::new(),
+            });
+            execute_hazard_program(
+                &program,
+                &mut |predicate| context.borrow_mut().predicate(predicate),
+                &mut |operation| context.borrow_mut().operation(operation),
+            )?;
+            let context = context.into_inner();
+            facts.extend(context.facts);
+            events.extend(context.events);
         }
+        *session = candidate_session;
+        *triggers = candidate_triggers;
         Ok(HazardPhaseReceipt {
             trigger_facts: trigger_receipt.facts,
             facts,
             events,
         })
+    }
+}
+
+struct HazardProgramContext<'a> {
+    session: &'a mut GameSession,
+    triggers: &'a mut TriggerVolumeSystem,
+    player: EntityId,
+    hazard: EntityId,
+    tick: Tick,
+    facts: Vec<HazardFact>,
+    events: Vec<GameEvent>,
+}
+
+impl HazardProgramContext<'_> {
+    fn predicate(&mut self, predicate: HazardPredicate) -> Result<bool, HazardRejection> {
+        match predicate {
+            HazardPredicate::PlayerOverlapping => self
+                .triggers
+                .current_overlaps(self.hazard, MAX_HAZARD_OVERLAP_SUBJECTS)
+                .map(|overlaps| overlaps.subjects.contains(&self.player))
+                .map_err(|error| HazardRejection::Trigger {
+                    diagnostics: error.diagnostics,
+                }),
+            HazardPredicate::PlayerEligible => Ok(self
+                .session
+                .health(self.player)
+                .is_some_and(|health| health.state == crate::vitality::VitalityState::Alive)),
+            HazardPredicate::CooldownReady => Ok(self
+                .session
+                .hazards
+                .get(&self.hazard)
+                .is_some_and(|component| self.tick.raw() >= component.ready_at_tick.raw())),
+        }
+    }
+
+    fn operation(&mut self, operation: HazardOperation) -> Result<(), HazardRejection> {
+        match operation {
+            HazardOperation::ApplyHazardDamage => {
+                let damage = self
+                    .session
+                    .hazards
+                    .get(&self.hazard)
+                    .expect("hazard identity came from admitted state")
+                    .config
+                    .damage;
+                let receipt = DamageService::apply(
+                    self.session,
+                    DamageCommand {
+                        source: DamageSource::Hazard {
+                            hazard: self.hazard,
+                        },
+                        target: self.player,
+                        amount: damage,
+                    },
+                )
+                .map_err(HazardRejection::Vitality)?;
+                self.facts
+                    .extend(receipt.facts.into_iter().map(HazardFact::Damage));
+                if let Some(event) = receipt.event {
+                    self.events.push(event);
+                }
+                Ok(())
+            }
+            HazardOperation::ScheduleHazardCooldown => {
+                let component = self
+                    .session
+                    .hazards
+                    .get_mut(&self.hazard)
+                    .expect("hazard identity came from admitted state");
+                component.ready_at_tick = self
+                    .tick
+                    .advance(TickDelta::new(component.config.cooldown_ticks));
+                Ok(())
+            }
+        }
     }
 }

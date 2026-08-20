@@ -8,7 +8,19 @@
 
 use serde::Deserialize;
 
+use crate::encounter_program::StoredEncounterProgram;
+use crate::enemy_program::{StoredEnemyAttackProgram, StoredEnemyDefeatProgram};
+use crate::explosive_prop_program::StoredExplosivePropProgram;
+use crate::floor_action_program::StoredFloorActionProgram;
+use crate::gameplay_program::StoredGameplayProgram;
+use crate::hazard_program::StoredHazardProgram;
+use crate::level_exit_program::StoredLevelExitProgram;
+use crate::lift_program::StoredLiftProgram;
+use crate::pickup_program::StoredPickupProgram;
+use crate::player_program::StoredPlayerSetupProgram;
+use crate::secret_program::StoredSecretProgram;
 use crate::stored_project::StoredItemDefinition;
+use crate::switch_program::StoredSwitchProgram;
 
 pub const LOADING_BAY_GAMEPLAY_SCHEMA_VERSION: u64 = 1;
 pub const LOADING_BAY_GAMEPLAY_DOMAIN: &str = "loading-bay";
@@ -22,6 +34,29 @@ pub const MAX_AUTHORED_ITEMS: usize = 64;
 pub struct AuthoredGameplayPayload {
     pub schema_version: u64,
     pub items: Vec<StoredItemDefinition>,
+    pub gameplay_programs: Vec<StoredGameplayProgram>,
+    #[serde(default)]
+    pub pickup_programs: Vec<StoredPickupProgram>,
+    #[serde(default)]
+    pub player_setup_programs: Vec<StoredPlayerSetupProgram>,
+    pub enemy_attack_programs: Vec<StoredEnemyAttackProgram>,
+    pub enemy_defeat_programs: Vec<StoredEnemyDefeatProgram>,
+    #[serde(default)]
+    pub hazard_programs: Vec<StoredHazardProgram>,
+    #[serde(default)]
+    pub explosive_prop_programs: Vec<StoredExplosivePropProgram>,
+    #[serde(default)]
+    pub encounter_programs: Vec<StoredEncounterProgram>,
+    #[serde(default)]
+    pub switch_programs: Vec<StoredSwitchProgram>,
+    #[serde(default)]
+    pub floor_action_programs: Vec<StoredFloorActionProgram>,
+    #[serde(default)]
+    pub lift_programs: Vec<StoredLiftProgram>,
+    #[serde(default)]
+    pub secret_programs: Vec<StoredSecretProgram>,
+    #[serde(default)]
+    pub level_exit_programs: Vec<StoredLevelExitProgram>,
 }
 
 /// The schema-2 binary64 wire spells EVERY number as a double (`200.0`), while

@@ -52,6 +52,59 @@ fn main() {
             exit(1);
         });
 
+    if decoded.project.gameplay_programs != compiled.gameplay_program_definitions {
+        eprintln!("PARITY FAILURE: package and project gameplay program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.pickup_programs != compiled.pickup_program_definitions {
+        eprintln!("PARITY FAILURE: package and project pickup program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.player_setup_programs != compiled.player_setup_program_definitions {
+        eprintln!("PARITY FAILURE: package and project player setup program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.enemy_attack_programs != compiled.enemy_attack_program_definitions {
+        eprintln!("PARITY FAILURE: package and project enemy attack program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.enemy_defeat_programs != compiled.enemy_defeat_program_definitions {
+        eprintln!("PARITY FAILURE: package and project enemy defeat program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.hazard_programs != compiled.hazard_program_definitions {
+        eprintln!("PARITY FAILURE: package and project hazard program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.explosive_prop_programs != compiled.explosive_prop_program_definitions {
+        eprintln!("PARITY FAILURE: package and project explosive-prop program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.encounter_programs != compiled.encounter_program_definitions {
+        eprintln!("PARITY FAILURE: package and project encounter program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.switch_programs != compiled.switch_program_definitions {
+        eprintln!("PARITY FAILURE: package and project switch program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.floor_action_programs != compiled.floor_action_program_definitions {
+        eprintln!("PARITY FAILURE: package and project floor-action program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.lift_programs != compiled.lift_program_definitions {
+        eprintln!("PARITY FAILURE: package and project lift program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.secret_programs != compiled.secret_program_definitions {
+        eprintln!("PARITY FAILURE: package and project secret program catalogs differ");
+        exit(1);
+    }
+    if decoded.project.level_exit_programs != compiled.level_exit_program_definitions {
+        eprintln!("PARITY FAILURE: package and project level-exit program catalogs differ");
+        exit(1);
+    }
+
     if compiled.items != admitted {
         eprintln!(
             "PARITY FAILURE: package and project item definitions differ (package {}, project {})",
@@ -72,8 +125,21 @@ fn main() {
     }
 
     println!(
-        "gameplay package ok: {} items, fingerprint {} — parity with project admission confirmed",
+        "gameplay package ok: {} items, {} item programs, {} pickup programs, {} player setup programs, {} enemy attack programs, {} enemy defeat programs, {} hazard programs, {} explosive-prop programs, {} encounter programs, {} switch programs, {} floor-action programs, {} lift programs, {} secret programs, {} level-exit programs, fingerprint {} — parity with project admission confirmed",
         compiled.items.len(),
+        compiled.gameplay_program_count,
+        compiled.pickup_program_count,
+        compiled.player_setup_program_count,
+        compiled.enemy_attack_program_count,
+        compiled.enemy_defeat_program_count,
+        compiled.hazard_program_count,
+        compiled.explosive_prop_program_count,
+        compiled.encounter_program_count,
+        compiled.switch_program_count,
+        compiled.floor_action_program_count,
+        compiled.lift_program_count,
+        compiled.secret_program_count,
+        compiled.level_exit_program_count,
         compiled.fingerprint
     );
 }

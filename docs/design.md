@@ -8,6 +8,90 @@ Loading Bay is one Rusty Engine downstream game. Its supported content is the au
 
 Rust owns runtime state, validation, mutation, scheduling, persistence, and projection. TypeScript owns immutable content composition, browser semantic-input capture, and disposable HUD/product-shell presentation. It does not become a second gameplay evaluator.
 
+### Authored gameplay programs
+
+The E1M1 gameplay package and canonical project carry small, family-specific
+closed program catalogs. TypeScript composes immutable trees or flat sequences
+from each family's named predicates and operations; Rust compiles them once at
+project admission and executes them through the owning service's candidate
+transaction. Facts, evidence, inventory mutation, damage, scheduling, and
+events remain Rust-owned. Program catalog readouts describe that admitted
+composition; they neither replay it nor give TypeScript a runtime evaluator.
+
+Pickup collection is a separate, family-local catalog. Each placement binds a
+closed pickup program; its only predicate is whether that pickup's starter
+weapon is already owned, and its only operations grant the placement's item or
+starter ammunition, apply that granted health/armor item, or consume the
+pickup. Rust traverses the authored tree in source order inside the existing
+candidate-session/trigger transaction. Enemy defeat may materialize a dormant
+drop, but never runs its pickup collection program.
+
+Player initialization is a third, independent family: a flat source-ordered
+sequence of `grantItem` and `equipInitialWeapon`. Admission resolves the
+selected `inventory.setupProgram` atomically into the Rust-owned inventory,
+hidden weapon containment, and equipment state before a session exists. An
+inventory always names its setup program. Snapshot restore persists the
+resulting live state and never reruns setup.
+
+Hazards and explosive props are two further closed families. Each hazard binds
+`playerOverlapping`, `playerEligible`, and `cooldownReady` around
+`applyHazardDamage` and optional `scheduleHazardCooldown`; each explosive prop
+binds `explosionPending` around radial target selection, scaled damage, and
+resolution. Rust executes both in source order against a candidate phase, so a
+failed later operation cannot commit damage, cooldowns, trigger revisions, or
+prop state. Static catalog/binding readouts are descriptive only; these
+automatic environmental runs never overwrite the player-action outcome.
+
+Switch interaction is another closed family. A switch program may gate on
+`switchAvailable`, record activation, request open/close only for the switch's
+already-admitted bound door effects, and emit interaction feedback. Programs
+never carry door IDs or selectors. Rust owns actor/range/repeatability checks,
+door motion/collision/auto-close scheduling, and commits session, scheduler,
+events, and journal together only after the full program succeeds.
+
+Floor actions and lift cycles are separate closed walk-trigger families rather
+than a general state-machine language. Their programs may select source order
+over activation feedback/request and phase-specific lower, wait, and raise
+primitives; the only target remains the component's admitted `targetPlatform`.
+Rust captures the component state at the beginning of each motion invocation,
+so a program cannot chain a newly reached phase in one pass. Rust also owns
+the WAD-derived translations/durations, trigger reconciliation, collision,
+facts, and the one candidate transaction spanning the floor and lift phases.
+
+Encounters are a closed lifecycle family with distinct typed activation and
+clear trees. `activationEligible` may order activation recording, the explicit
+encounter members' Rust-owned readiness cadence, and feedback;
+`membersDefeated` may order clear recording and an optional already-admitted
+exit-door request. Programs carry neither member nor door IDs. Rust owns
+spatial admission, member lifecycle, door motion and scheduling, facts, and
+event order. Event draining evaluates clear programs on a candidate
+session/scheduler/queue/journal, so a late authored error cannot leak an
+encounter state, exit transition, event, or journal entry; an upstream enemy
+defeat remains the separate committed damage consequence.
+
+Secrets and level exits complete the same pattern with their own tiny families:
+secret entry/once/discovery/presentation and exit availability/completion. Their
+programs contain no region, entity, or selector language. Rust owns WAD-derived
+regions and IDs, overlap and range checks, once-only state, mutation, facts,
+and presentation events.
+
+### Repeating the pattern downstream
+
+This is a downstream authoring pattern, not a portable behavior language.
+Another game first defines a small sealed Rust vocabulary of responsible
+predicates, operations, facts, and service transaction. It then exposes
+matching immutable TypeScript builders, compiles named family programs at
+admission, binds them to already-admitted game objects, and executes them in
+Rust against a candidate state before committing. Values and object references
+remain in authored components; behavior order lives only in the relevant
+family's program.
+
+Rusty Dagger may use richer RPG-specific vocabulary where that product needs
+it. Loading Bay deliberately does not inherit that grammar, nor does it define
+a universal Engine behavior IR. A future downstream should author its own
+bounded vocabulary rather than import Dagger semantics or add a registry,
+selector language, generic bridge, or live TypeScript authority.
+
 ## Adapters
 
 `browser-host` is the normal development adapter: it translates bounded `loading-bay.v2` WebSocket messages to the service and exposes read-only diagnostics. The Angular shell consumes the projected content through Rusty Engine's public application-host.
@@ -25,3 +109,8 @@ Game-owned semantics belong here first. A reusable Engine seam requires evidence
 ## Content and evidence
 
 `content/projects/doom-e1m1.project.json` is the sole canonical project. E1M1 textures, sprites, voxel data, and the eight-prop closure live under `content/doom-e1m1/`; exact source boundaries are in [source-provenance.md](source-provenance.md). Historical campaign material belongs in Den, not as active repository documentation or proof.
+
+Project admission accepts only the current stored-project schema. Loading Bay
+does not reconstruct predecessor content or install inferred behavior during
+migration; older experiments must be re-authored through the current immutable
+content builders.

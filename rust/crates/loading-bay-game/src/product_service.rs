@@ -14,10 +14,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     admit_stored_project_with_document, encode_project_document, AdmittedStoredProject,
-    GameLoopAdvanceReceipt, GameLoopEdgeCommand, GameLoopEdgeCommandKind, GameRuntime,
-    InputCommandReceipt, LoadingBayGameLoop, PlayerInputCommand, PlayerInputIntent, ProjectStore,
-    SaveGameStore, SaveLoadRequest, SaveProjectIdentity, SaveSlotId, SaveSlotSummary,
-    SaveWriteRequest,
+    EncounterProgramReadout, EnemyProgramReadout, ExplosivePropProgramReadout,
+    FloorActionProgramReadout, GameLoopAdvanceReceipt, GameLoopEdgeCommand,
+    GameLoopEdgeCommandKind, GameRuntime, GameplayProgramOutcome, GameplayProgramReadout,
+    HazardProgramReadout, InputCommandReceipt, LevelExitProgramReadout, LiftProgramReadout,
+    LoadingBayGameLoop, PickupProgramReadout, PlayerInputCommand, PlayerInputIntent,
+    PlayerSetupProgramReadout, ProjectStore, SaveGameStore, SaveLoadRequest, SaveProjectIdentity,
+    SaveSlotId, SaveSlotSummary, SaveWriteRequest, SecretProgramReadout, SwitchProgramReadout,
 };
 
 /// The player entity used by the authored Loading Bay product.
@@ -266,6 +269,69 @@ impl LoadingBayProductService {
         &self.runtime
     }
 
+    /// Read-only admitted program catalog for ordinary product/tooling readout.
+    pub fn gameplay_programs(&self) -> GameplayProgramReadout {
+        self.runtime.runtime().session().gameplay_programs()
+    }
+
+    /// Read-only admitted pickup program catalog and placement bindings.
+    pub fn pickup_programs(&self) -> PickupProgramReadout {
+        self.runtime.runtime().session().pickup_programs()
+    }
+
+    /// Read-only admitted player setup catalog and player-to-program binding.
+    pub fn player_setup_programs(&self) -> PlayerSetupProgramReadout {
+        self.runtime.runtime().session().player_setup_programs()
+    }
+
+    /// Read-only admitted enemy program catalogs and bindings for product tooling.
+    pub fn enemy_programs(&self) -> EnemyProgramReadout {
+        self.runtime.runtime().session().enemy_programs()
+    }
+
+    /// Read-only admitted hazard program catalog and placed-trigger bindings.
+    pub fn hazard_programs(&self) -> HazardProgramReadout {
+        self.runtime.runtime().session().hazard_programs()
+    }
+
+    /// Read-only admitted explosive-prop catalog and placed-prop bindings.
+    pub fn explosive_prop_programs(&self) -> ExplosivePropProgramReadout {
+        self.runtime.runtime().session().explosive_prop_programs()
+    }
+
+    /// Read-only admitted encounter lifecycle catalog and placement bindings.
+    pub fn encounter_programs(&self) -> EncounterProgramReadout {
+        self.runtime.runtime().session().encounter_programs()
+    }
+
+    /// Read-only admitted switch program catalog and placement bindings.
+    pub fn switch_programs(&self) -> SwitchProgramReadout {
+        self.runtime.runtime().session().switch_programs()
+    }
+
+    pub fn floor_action_programs(&self) -> FloorActionProgramReadout {
+        self.runtime.runtime().session().floor_action_programs()
+    }
+
+    pub fn lift_programs(&self) -> LiftProgramReadout {
+        self.runtime.runtime().session().lift_programs()
+    }
+
+    /// Read-only admitted secret-discovery programs and region bindings.
+    pub fn secret_programs(&self) -> SecretProgramReadout {
+        self.runtime.runtime().session().secret_programs()
+    }
+
+    /// Read-only admitted level-exit completion programs and exit bindings.
+    pub fn level_exit_programs(&self) -> LevelExitProgramReadout {
+        self.runtime.runtime().session().level_exit_programs()
+    }
+
+    /// Latest-value selected-program result, if the current session has one.
+    pub fn gameplay_outcome(&self) -> Option<&GameplayProgramOutcome> {
+        self.runtime.runtime().session().gameplay_outcome()
+    }
+
     pub fn authored_project(&self) -> &AdmittedStoredProject {
         &self.authored
     }
@@ -295,6 +361,7 @@ impl LoadingBayProductService {
         self.clear_pending_operations();
         self.pending_outcomes.clear();
         self.runtime.drain_pending_facts();
+        self.runtime.runtime_mut().clear_gameplay_outcome();
         self.runtime.start_connection().connection_generation
     }
 
@@ -585,7 +652,18 @@ impl LoadingBayProductService {
                             },
                         )
                         .map_err(save_error)
-                        .and_then(|loaded| self.replace_runtime(loaded.runtime));
+                        .and_then(|mut loaded| {
+                            loaded
+                                .runtime
+                                .reattach_authored_gameplay_programs(self.authored.document())
+                                .map_err(|error| LoadingBayServiceError {
+                                    code: "runtimeProgramRestoreFailed",
+                                    message: format!(
+                                        "could not reattach authored gameplay programs: {error}"
+                                    ),
+                                })?;
+                            self.replace_runtime(loaded.runtime)
+                        });
                     self.record_operation_result(
                         pending.connection_generation,
                         sequence,
@@ -925,6 +1003,11 @@ mod tests {
             .iter()
             .any(|outcome| outcome.kind == "GameLoaded" && outcome.session_replaced));
         assert_eq!(service.runtime.runtime().tick(), saved_tick);
+        service
+            .runtime
+            .runtime_mut()
+            .attack(LOADING_BAY_PLAYER, crate::ResolvedAttackAction::Attack)
+            .expect("loaded runtime reattaches the authored weapon program catalog");
 
         let restarted_generation = service.runtime.input_session().connection_generation;
         assert!(restarted_generation > generation);
@@ -1035,6 +1118,36 @@ mod tests {
             .expect("produce replacement-session facts");
         assert!(!service.drain_game_loop_facts().is_empty());
 
+        let _ = std::fs::remove_dir_all(save_root);
+    }
+
+    #[test]
+    fn reconnect_clears_the_latest_gameplay_program_outcome() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-program-outcome-reconnect-{}-{unique}",
+            std::process::id()
+        ));
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let mut service = LoadingBayProductService::admit(&project, &save_root)
+            .expect("admit E1M1 product service");
+        let first_generation = service.start_session();
+        service
+            .runtime
+            .runtime_mut()
+            .attack(LOADING_BAY_PLAYER, crate::ResolvedAttackAction::Attack)
+            .expect("record a live gameplay-program outcome");
+        assert!(service.gameplay_outcome().is_some());
+
+        service.disconnect_session(first_generation);
+        let replacement_generation = service.start_session();
+
+        assert!(replacement_generation > first_generation);
+        assert!(service.gameplay_outcome().is_none());
         let _ = std::fs::remove_dir_all(save_root);
     }
 

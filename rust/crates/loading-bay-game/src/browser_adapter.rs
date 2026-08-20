@@ -211,7 +211,6 @@ fn combat_fact_name(fact: &crate::CombatFact) -> &'static str {
         crate::CombatFact::EnemyDefeated { .. } => "CombatEnemyDefeated",
         crate::CombatFact::EnemyDrop(_) => "EnemyDropMaterialized",
         crate::CombatFact::ExplosiveProp(_) => "ExplosivePropTriggered",
-        crate::CombatFact::ProjectileSpawned { .. } => "ProjectileSpawned",
         crate::CombatFact::ProjectileImpacted { .. } => "ProjectileImpacted",
         crate::CombatFact::ProjectileExpired { .. } => "ProjectileExpired",
     }
@@ -221,6 +220,7 @@ fn vitality_fact_name(fact: &crate::VitalityFact) -> &'static str {
     match fact {
         crate::VitalityFact::DamageApplied { .. } => "DamageApplied",
         crate::VitalityFact::Died { .. } => "EntityDied",
+        crate::VitalityFact::EnemyDefeatProgramRecorded { .. } => "EnemyDefeatProgramRecorded",
         crate::VitalityFact::ArmorGranted { .. } => "ArmorGranted",
         crate::VitalityFact::HealthRestored { .. } => "HealthRestored",
     }
@@ -697,6 +697,154 @@ mod tests {
         let value = serde_json::to_value(projection).expect("serialize nested IPC projection");
         assert!(value["dynamic"].get("tick").is_some());
         assert!(value["resources"].get("applicationContent").is_some());
+        assert_eq!(
+            value["resources"]["gameplayPrograms"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(4)
+        );
+        assert!(value["resources"]["gameplayPrograms"]["bindings"]
+            .as_array()
+            .is_some_and(|bindings| !bindings.is_empty()));
+        assert_eq!(
+            value["resources"]["pickupPrograms"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(4)
+        );
+        assert_eq!(
+            value["resources"]["pickupPrograms"]["bindings"]
+                .as_array()
+                .map(Vec::len),
+            Some(78)
+        );
+        assert_eq!(
+            value["resources"]["playerSetupPrograms"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(2)
+        );
+        assert_eq!(
+            value["resources"]["playerSetupPrograms"]["bindings"][0]["player"],
+            1
+        );
+        assert_eq!(
+            value["resources"]["playerSetupPrograms"]["bindings"][0]["programId"],
+            "player/e1m1-pistol-start"
+        );
+        assert_eq!(
+            value["resources"]["enemyPrograms"]["attack"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(2)
+        );
+        assert_eq!(
+            value["resources"]["enemyPrograms"]["defeat"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(2)
+        );
+        assert_eq!(
+            value["resources"]["enemyPrograms"]["attack"]["bindings"]
+                .as_array()
+                .map(Vec::len),
+            Some(29)
+        );
+        assert_eq!(
+            value["resources"]["enemyPrograms"]["defeat"]["bindings"]
+                .as_array()
+                .map(Vec::len),
+            Some(29)
+        );
+        assert_eq!(
+            value["resources"]["hazardPrograms"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(1)
+        );
+        assert_eq!(
+            value["resources"]["hazardPrograms"]["bindings"]
+                .as_array()
+                .map(Vec::len),
+            Some(4)
+        );
+        assert_eq!(
+            value["resources"]["explosivePropPrograms"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(1)
+        );
+        assert_eq!(
+            value["resources"]["explosivePropPrograms"]["bindings"]
+                .as_array()
+                .map(Vec::len),
+            Some(6)
+        );
+        assert_eq!(
+            value["resources"]["encounterPrograms"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(1)
+        );
+        assert_eq!(
+            value["resources"]["encounterPrograms"]["bindings"]
+                .as_array()
+                .map(Vec::len),
+            Some(4)
+        );
+        assert_eq!(
+            value["resources"]["encounterPrograms"]["bindings"][0]["programId"],
+            "encounter/e1m1"
+        );
+        assert_eq!(
+            value["resources"]["switchPrograms"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(1)
+        );
+        assert_eq!(
+            value["resources"]["switchPrograms"]["bindings"]
+                .as_array()
+                .map(Vec::len),
+            Some(4)
+        );
+        assert_eq!(
+            value["resources"]["switchPrograms"]["bindings"][0]["programId"],
+            "switch/e1m1-door"
+        );
+        assert_eq!(
+            value["resources"]["secretPrograms"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(1)
+        );
+        assert_eq!(
+            value["resources"]["secretPrograms"]["bindings"]
+                .as_array()
+                .map(Vec::len),
+            Some(3)
+        );
+        assert_eq!(
+            value["resources"]["secretPrograms"]["bindings"][0]["programId"],
+            "secret/e1m1-discovery"
+        );
+        assert_eq!(
+            value["resources"]["levelExitPrograms"]["programs"]
+                .as_array()
+                .map(Vec::len),
+            Some(1)
+        );
+        assert_eq!(
+            value["resources"]["levelExitPrograms"]["bindings"]
+                .as_array()
+                .map(Vec::len),
+            Some(1)
+        );
+        assert_eq!(
+            value["resources"]["levelExitPrograms"]["bindings"][0]["programId"],
+            "level-exit/e1m1-completion"
+        );
+        assert!(value["dynamic"]["gameplayOutcome"].is_null());
         let _ = std::fs::remove_dir_all(root);
     }
 
