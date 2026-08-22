@@ -96,15 +96,17 @@ selector language, generic bridge, or live TypeScript authority.
 
 Loading Bay uses the public `gameplay-standard` actor and destructible catalog
 fragments as ordinary `gameplay-mechanics` definitions. The Demo visibly
-merges those fragments with its armor, inventory, and damage definitions; the
-presets do not create a world, registry, scheduler, or hidden evaluator. The
+composes those configured fragments with its armor, inventory, and damage
+definitions; the presets do not create a world, registry, scheduler, or hidden
+evaluator. The
 actor vitality track is used by player/enemy health; explosive props select the
 standard destructible integrity track through the same Doom damage, health
-projection, and snapshot paths. The current public destructible preset has a
-fixed integrity capacity, so Loading Bay rejects a future prop that exceeds it
-instead of silently recreating or widening that preset. Health/armor policy,
-damage sources, hitboxes, pickups, enemy defeat/drop behavior, and explosive
-consequences remain named Doom adapters in Rust.
+projection, and snapshot paths. The compatibility 50-point capacity remains
+for current E1M1 content, while a future valid prop explicitly raises the
+admitted standard catalog bound rather than being rejected or locally
+reconstructed. Health/armor policy, damage sources, hitboxes, pickups, enemy
+defeat/drop behavior, and explosive consequences remain named Doom adapters in
+Rust.
 
 `gameplay/authoring/src/packages/e1m1-standard-vitality.ts` is the companion
 generated-TypeScript DSL example. It authors one narrow `loading-bay.vitality`

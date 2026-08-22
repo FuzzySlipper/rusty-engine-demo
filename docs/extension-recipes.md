@@ -27,13 +27,13 @@ Author the change in `ts/packages/doom-e1m1-authoring` and materialize the sole 
 
 Use a `gameplay-standard` preset when the product needs its ordinary mechanics
 shape and can compose its public catalog/component fragments directly. Loading
-Bay's vitality setup is the example: the standard actor fragment is merged
+Bay's vitality setup is the example: the standard actor fragment is composed
 with Doom's armor/item entries in `gameplay/src/mechanics.rs`, and explosive
 props use the standard destructible integrity track through the same named
-damage/health/snapshot services. The current destructible preset is
-fixed-capacity; admission rejects an incompatible future prop rather than
-locally widening it. Do not wrap preset fragments in a local generic preset
-framework.
+damage/health/snapshot services. Current E1M1 content keeps the compatibility
+capacity, while a valid future prop configures a larger admitted standard bound
+instead of locally widening a fragment. Do not wrap preset fragments in a local
+generic preset framework.
 
 Use a typed standard extension when the product has a small immutable policy
 that Engine must carry but not interpret. The `e1m1-standard-vitality`

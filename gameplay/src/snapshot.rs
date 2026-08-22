@@ -2069,8 +2069,21 @@ impl GameRuntime {
         )
         .map_err(GameSnapshotError::Inventory)?;
         let vitality_policy = crate::DoomVitalityPolicy::doom_compatibility();
-        let mechanics = crate::mechanics::build_runtime(&item_definitions, vitality_policy)
-            .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
+        let destructible_integrity_maximum = crate::mechanics::destructible_integrity_capacity(
+            snapshot.health.iter().filter_map(|health| {
+                snapshot
+                    .explosive_props
+                    .iter()
+                    .any(|prop| prop.entity == health.entity)
+                    .then_some(health.max)
+            }),
+        );
+        let mechanics = crate::mechanics::build_runtime(
+            &item_definitions,
+            vitality_policy,
+            destructible_integrity_maximum,
+        )
+        .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
         if source_schema_version >= GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION {
             rusty_engine::gameplay_mechanics::validate_state_against_catalog(
                 &entities,
@@ -2707,6 +2720,7 @@ impl GameRuntime {
                     health_snapshot.armor,
                     armor_item.as_ref(),
                     preset,
+                    vitality_policy,
                 )
                 .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
             } else {

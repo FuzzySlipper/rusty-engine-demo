@@ -1077,8 +1077,7 @@ mod tests {
     }
 
     #[test]
-    fn normal_gameplay_admission_rejects_destructible_health_above_the_standard_integrity_capacity()
-    {
+    fn normal_gameplay_admission_configures_destructible_capacity_for_a_valid_future_prop() {
         let project_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../../content/projects/doom-e1m1.project.json");
         let mut project = ProjectStore::default().load(&project_path).unwrap().project;
@@ -1086,20 +1085,42 @@ mod tests {
             .join("../../../data/gameplay/loading-bay-e1m1-standard-vitality.package.json");
         let policy = crate::admit_doom_vitality_policy(&std::fs::read(policy_path).unwrap())
             .expect("admit generated standard vitality extension");
-        let health = project
-            .scenes
-            .iter_mut()
-            .flat_map(|scene| &mut scene.entities)
-            .find_map(|entity| entity.explosive_prop.as_ref().and(entity.health.as_mut()))
-            .expect("canonical E1M1 explosive prop health");
-        health.max = 51;
+        let prop_entity = {
+            let (entity, health) = project
+                .scenes
+                .iter_mut()
+                .flat_map(|scene| &mut scene.entities)
+                .find_map(|entity| {
+                    if entity.explosive_prop.is_some() {
+                        let id = EntityId::new(entity.id);
+                        entity.health.as_mut().map(|health| (id, health))
+                    } else {
+                        None
+                    }
+                })
+                .expect("canonical E1M1 explosive prop health");
+            health.max = 51;
+            entity
+        };
 
-        let error =
+        let (_, admitted) =
             admit_stored_project_with_document_and_vitality_policy(project, policy.policy())
-                .expect_err(
-                    "fixed standard destructible integrity must reject an incompatible prop",
-                );
-        assert!(error.diagnostic().path.ends_with(".health"));
+                .expect("valid future prop must configure the standard integrity capacity");
+        assert_eq!(
+            admitted
+                .session
+                .health(prop_entity)
+                .expect("prop health")
+                .config
+                .max,
+            51
+        );
+        let inspection = admitted
+            .session
+            .developer_inspect_mechanics(prop_entity)
+            .expect("configured prop is inspectable through the standard mechanics surface");
+        assert_eq!(inspection.catalog_version, "loading-bay-v1");
+        assert!(inspection.catalog_fingerprint.starts_with("sha256:"));
     }
 
     #[test]

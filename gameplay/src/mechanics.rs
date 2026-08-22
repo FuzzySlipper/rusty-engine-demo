@@ -11,11 +11,14 @@ use rusty_engine::gameplay_mechanics::{
     EquipmentComponent, EquipmentExclusivityId, EquipmentSlotDefinition, EquipmentSlotId,
     InventoryComponent, ItemClassificationId, ItemComponent, ItemDefinition as MechanicsItem,
     ItemEquipmentPolicy, ItemKind as MechanicsItemKind, ItemStack as MechanicsStack,
-    MechanicsCatalog, MechanicsScalar, SourceDefinition, SourceDefinitionId, StackingGroupId,
-    StatDefinition, StatId, StatValue, StatsComponent, TrackDefinition, TrackId, TrackMaximum,
-    TrackValue, TracksComponent,
+    MechanicsCatalog, MechanicsCatalogDefinition, MechanicsScalar, SourceDefinition,
+    SourceDefinitionId, StackingGroupId, StatDefinition, StatId, StatValue, StatsComponent,
+    TrackDefinition, TrackId, TrackMaximum, TrackValue, TracksComponent,
 };
-use rusty_engine::gameplay_standard::{ActionActorPreset, DestructibleResourcePreset};
+use rusty_engine::gameplay_standard::{
+    compose_action_actor_and_destructible_resource_catalog, ActionActorPreset,
+    ActionActorPresetConfig, DestructibleResourcePreset, DestructibleResourcePresetConfig,
+};
 
 use crate::inventory::{InventoryConfig, ItemDefinition, ItemDefinitionId, ItemKind};
 use crate::vitality::HealthConfig;
@@ -72,10 +75,9 @@ pub(crate) fn mechanics_registry() -> Result<ComponentRegistry, String> {
 pub(crate) fn build_runtime(
     definitions: &BTreeMap<ItemDefinitionId, ItemDefinition>,
     vitality_policy: crate::DoomVitalityPolicy,
+    destructible_integrity_maximum: u32,
 ) -> Result<MechanicsRuntime, String> {
     let version = catalog_version();
-    let maximum_health = MechanicsScalar::new(i64::from(vitality_policy.maximum_health))
-        .map_err(|error| error.to_string())?;
     let maximum_armor = MechanicsScalar::new(i64::from(vitality_policy.maximum_armor))
         .map_err(|error| error.to_string())?;
     let mut sources = Vec::new();
@@ -134,44 +136,54 @@ pub(crate) fn build_runtime(
             armor.insert(definition.id.clone(), ArmorMechanics { effect });
         }
     }
-    // The standard actor and object presets are only ordinary catalog fragments.
-    // Loading Bay composes them explicitly with its Doom armor/items below; it
-    // does not acquire a second runtime, registry, or evaluation route.
-    let mut definition = ActionActorPreset::catalog_fragment(version.clone());
-    let vitality_maximum = definition
-        .stats
-        .iter_mut()
-        .find(|stat| stat.id == health_stat())
-        .expect("standard action-actor vitality maximum");
-    vitality_maximum.maximum = maximum_health;
-    let destructible = DestructibleResourcePreset::catalog_fragment(version.clone());
-    definition.tracks.extend(destructible.tracks);
-    definition.damage_kinds.extend(destructible.damage_kinds);
-    definition.stats.push(StatDefinition {
-        id: armor_stat(),
-        minimum: MechanicsScalar::zero(),
-        maximum: maximum_armor,
-    });
-    definition.tracks.push(TrackDefinition {
-        id: armor_track(),
-        minimum: MechanicsScalar::zero(),
-        maximum: TrackMaximum::Stat { stat: armor_stat() },
-    });
-    definition.sources = sources;
-    definition.damage_kinds.extend([
-        DamageKindDefinition {
-            id: direct_damage_kind(),
+    // The standard actor and object presets remain ordinary catalog fragments.
+    // Loading Bay supplies its admitted vitality bound and the largest authored
+    // explosive prop, then deliberately composes them with its Doom armor/items.
+    // There is no product registry, generic merge, or second evaluation route.
+    let action_actor = action_actor_preset_config(
+        vitality_policy,
+        vitality_policy.maximum_health,
+        vitality_policy.maximum_health,
+    )?;
+    let destructible_resource = destructible_resource_preset_config(
+        destructible_integrity_maximum,
+        destructible_integrity_maximum,
+    )?;
+    let definition = compose_action_actor_and_destructible_resource_catalog(
+        version.clone(),
+        MechanicsCatalogDefinition {
+            version: version.clone(),
+            stats: vec![StatDefinition {
+                id: armor_stat(),
+                minimum: MechanicsScalar::zero(),
+                maximum: maximum_armor,
+            }],
+            tracks: vec![TrackDefinition {
+                id: armor_track(),
+                minimum: MechanicsScalar::zero(),
+                maximum: TrackMaximum::Stat { stat: armor_stat() },
+            }],
+            sources,
+            damage_kinds: vec![
+                DamageKindDefinition {
+                    id: direct_damage_kind(),
+                },
+                DamageKindDefinition {
+                    id: armor_eligible_damage_kind(),
+                },
+            ],
+            effects,
+            capacity_metrics: Vec::new(),
+            items,
+            equipment_slots: vec![EquipmentSlotDefinition {
+                id: weapon_slot(),
+                allowed_classifications: vec![weapon_classification()],
+            }],
         },
-        DamageKindDefinition {
-            id: armor_eligible_damage_kind(),
-        },
-    ]);
-    definition.effects = effects;
-    definition.items = items;
-    definition.equipment_slots = vec![EquipmentSlotDefinition {
-        id: weapon_slot(),
-        allowed_classifications: vec![weapon_classification()],
-    }];
+        Some(&action_actor),
+        Some(&destructible_resource),
+    )
+    .map_err(|error| error.to_string())?;
     let catalog = MechanicsCatalog::admit(definition).map_err(|error| error.to_string())?;
     Ok(MechanicsRuntime { catalog, armor })
 }
@@ -218,47 +230,27 @@ pub(crate) fn attach_health(
     entity: EntityId,
     config: HealthConfig,
     preset: VitalityPreset,
+    vitality_policy: crate::DoomVitalityPolicy,
 ) -> Result<(), String> {
     let version = catalog_version();
-    let actor = ActionActorPreset::components(version.clone());
-    attach(
-        state,
-        entity,
-        StatsComponent::new(
-            version.clone(),
-            actor
-                .stats
-                .values()
-                .iter()
-                .map(|value| {
-                    if value.stat() == &health_stat() {
-                        StatValue::new(health_stat(), scalar(config.max).expect("validated health"))
-                    } else {
-                        value.clone()
-                    }
-                })
-                .chain(std::iter::once(StatValue::new(
-                    armor_stat(),
-                    scalar(config.max_armor)?,
-                )))
-                .collect(),
-        )
-        .map_err(|error| error.to_string())?,
+    let (mut stats, mut tracks) = vitality_preset_values(
+        version.clone(),
+        config,
+        config.starting,
+        preset,
+        vitality_policy,
     )?;
+    stats.push(StatValue::new(armor_stat(), scalar(config.max_armor)?));
     attach(
         state,
         entity,
-        TracksComponent::new(
-            version.clone(),
-            vitality_track_values(version.clone(), config.starting, preset)
-                .into_iter()
-                .chain(std::iter::once(TrackValue::new(
-                    armor_track(),
-                    MechanicsScalar::zero(),
-                )))
-                .collect(),
-        )
-        .map_err(|error| error.to_string())?,
+        StatsComponent::new(version.clone(), stats).map_err(|error| error.to_string())?,
+    )?;
+    tracks.push(TrackValue::new(armor_track(), MechanicsScalar::zero()));
+    attach(
+        state,
+        entity,
+        TracksComponent::new(version.clone(), tracks).map_err(|error| error.to_string())?,
     )?;
     attach(
         state,
@@ -277,47 +269,22 @@ pub(crate) fn attach_restored_health(
     armor: u32,
     armor_item: Option<&ItemDefinitionId>,
     preset: VitalityPreset,
+    vitality_policy: crate::DoomVitalityPolicy,
 ) -> Result<(), String> {
     let version = catalog_version();
-    let actor = ActionActorPreset::components(version.clone());
+    let (mut stats, mut tracks) =
+        vitality_preset_values(version.clone(), config, current, preset, vitality_policy)?;
+    stats.push(StatValue::new(armor_stat(), scalar(config.max_armor)?));
     attach(
         state,
         entity,
-        StatsComponent::new(
-            version.clone(),
-            actor
-                .stats
-                .values()
-                .iter()
-                .map(|value| {
-                    if value.stat() == &health_stat() {
-                        StatValue::new(health_stat(), scalar(config.max).expect("validated health"))
-                    } else {
-                        value.clone()
-                    }
-                })
-                .chain(std::iter::once(StatValue::new(
-                    armor_stat(),
-                    scalar(config.max_armor)?,
-                )))
-                .collect(),
-        )
-        .map_err(|error| error.to_string())?,
+        StatsComponent::new(version.clone(), stats).map_err(|error| error.to_string())?,
     )?;
+    tracks.push(TrackValue::new(armor_track(), scalar(armor)?));
     attach(
         state,
         entity,
-        TracksComponent::new(
-            version.clone(),
-            vitality_track_values(version.clone(), current, preset)
-                .into_iter()
-                .chain(std::iter::once(TrackValue::new(
-                    armor_track(),
-                    scalar(armor)?,
-                )))
-                .collect(),
-        )
-        .map_err(|error| error.to_string())?,
+        TracksComponent::new(version.clone(), tracks).map_err(|error| error.to_string())?,
     )?;
     let effects = armor_item
         .map(|item| {
@@ -461,10 +428,6 @@ pub(crate) fn mechanics_item_id(
         .map_err(|error| error.to_string())
 }
 
-pub(crate) fn health_stat() -> StatId {
-    StatId::parse(ActionActorPreset::VITALITY_MAX_STAT).expect("fixed standard preset identity")
-}
-
 pub(crate) fn armor_stat() -> StatId {
     StatId::parse(ARMOR_STAT).expect("fixed mechanics identity")
 }
@@ -478,19 +441,81 @@ pub(crate) fn destructible_integrity_track() -> TrackId {
         .expect("fixed standard preset identity")
 }
 
-/// The standard destructible preset currently publishes a fixed integrity
-/// capacity. Read it from its public components so product admission never
-/// mirrors that value as a second local preset.
-pub(crate) fn destructible_integrity_capacity() -> u32 {
-    let components = DestructibleResourcePreset::components(catalog_version());
-    u32::try_from(
-        components
-            .tracks
-            .current(&destructible_integrity_track())
-            .expect("standard destructible integrity track")
+/// Keep established authored content on the compatibility capacity while a
+/// future valid prop raises the ordinary configured catalog bound.
+pub(crate) fn destructible_integrity_capacity(
+    authored_maxima: impl IntoIterator<Item = u32>,
+) -> u32 {
+    let compatibility_capacity = u32::try_from(
+        DestructibleResourcePreset::default_config()
+            .integrity_maximum()
             .get(),
     )
-    .expect("standard destructible integrity capacity is non-negative u32")
+    .expect("standard destructible integrity capacity is non-negative u32");
+    authored_maxima
+        .into_iter()
+        .max()
+        .unwrap_or(compatibility_capacity)
+        .max(compatibility_capacity)
+}
+
+fn action_actor_preset_config(
+    vitality_policy: crate::DoomVitalityPolicy,
+    vitality_maximum: u32,
+    vitality_initial: u32,
+) -> Result<ActionActorPresetConfig, String> {
+    let default = ActionActorPreset::default_config();
+    ActionActorPresetConfig::try_new(
+        scalar(vitality_policy.maximum_health)?,
+        scalar(vitality_maximum)?,
+        scalar(vitality_initial)?,
+        default.resource_maximum(),
+        default.resource_initial(),
+    )
+    .map_err(|error| error.to_string())
+}
+
+fn destructible_resource_preset_config(
+    integrity_maximum: u32,
+    integrity_initial: u32,
+) -> Result<DestructibleResourcePresetConfig, String> {
+    let default = DestructibleResourcePreset::default_config();
+    DestructibleResourcePresetConfig::try_new(
+        scalar(integrity_maximum)?,
+        scalar(integrity_initial)?,
+        default.resource_maximum(),
+        default.resource_initial(),
+    )
+    .map_err(|error| error.to_string())
+}
+
+fn vitality_preset_values(
+    version: CatalogVersion,
+    config: HealthConfig,
+    current: u32,
+    preset: VitalityPreset,
+    vitality_policy: crate::DoomVitalityPolicy,
+) -> Result<(Vec<StatValue>, Vec<TrackValue>), String> {
+    let actor = ActionActorPreset::components_with_config(
+        version.clone(),
+        &action_actor_preset_config(vitality_policy, config.max, current)?,
+    );
+    match preset {
+        VitalityPreset::ActionActor => Ok((
+            actor.stats.values().to_vec(),
+            actor.tracks.values().to_vec(),
+        )),
+        VitalityPreset::DestructibleObject => {
+            let destructible = DestructibleResourcePreset::components_with_config(
+                version.clone(),
+                &destructible_resource_preset_config(config.max, current)?,
+            );
+            Ok((
+                actor.stats.values().to_vec(),
+                destructible.tracks.values().to_vec(),
+            ))
+        }
+    }
 }
 
 pub(crate) fn vitality_track(preset: VitalityPreset) -> TrackId {
@@ -542,33 +567,6 @@ fn attach<T: rusty_engine::entity_state::EntityComponent>(
     Ok(())
 }
 
-fn vitality_track_values(
-    version: CatalogVersion,
-    current: u32,
-    preset: VitalityPreset,
-) -> Vec<TrackValue> {
-    let components = match preset {
-        VitalityPreset::ActionActor => ActionActorPreset::components(version).tracks,
-        VitalityPreset::DestructibleObject => {
-            DestructibleResourcePreset::components(version).tracks
-        }
-    };
-    components
-        .values()
-        .iter()
-        .map(|value| {
-            if value.track() == &vitality_track(preset) {
-                TrackValue::new(
-                    vitality_track(preset),
-                    scalar(current).expect("validated vitality"),
-                )
-            } else {
-                value.clone()
-            }
-        })
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -578,6 +576,7 @@ mod tests {
         let runtime = build_runtime(
             &BTreeMap::new(),
             crate::DoomVitalityPolicy::doom_compatibility(),
+            destructible_integrity_capacity(std::iter::empty()),
         )
         .expect("compose standard fragments");
         assert!(runtime.catalog.track(&health_track()).is_some());
@@ -593,5 +592,56 @@ mod tests {
             .catalog
             .damage_kind(&DamageKindId::parse(DestructibleResourcePreset::DAMAGE_KIND).unwrap())
             .is_some());
+    }
+
+    #[test]
+    fn configured_prop_capacity_changes_only_the_admitted_standard_catalog_bound() {
+        let compatibility = build_runtime(
+            &BTreeMap::new(),
+            crate::DoomVitalityPolicy::doom_compatibility(),
+            destructible_integrity_capacity(std::iter::empty()),
+        )
+        .expect("compose compatibility capacity");
+        let raised = build_runtime(
+            &BTreeMap::new(),
+            crate::DoomVitalityPolicy::doom_compatibility(),
+            destructible_integrity_capacity([51]),
+        )
+        .expect("compose raised prop capacity");
+        let raised_again = build_runtime(
+            &BTreeMap::new(),
+            crate::DoomVitalityPolicy::doom_compatibility(),
+            destructible_integrity_capacity([51]),
+        )
+        .expect("compose deterministic raised prop capacity");
+
+        assert_eq!(
+            compatibility
+                .catalog
+                .track(&destructible_integrity_track())
+                .expect("compatibility integrity track")
+                .maximum,
+            TrackMaximum::Fixed {
+                value: scalar(50).unwrap()
+            }
+        );
+        assert_eq!(
+            raised
+                .catalog
+                .track(&destructible_integrity_track())
+                .expect("raised integrity track")
+                .maximum,
+            TrackMaximum::Fixed {
+                value: scalar(51).unwrap()
+            }
+        );
+        assert_ne!(
+            compatibility.catalog.fingerprint(),
+            raised.catalog.fingerprint()
+        );
+        assert_eq!(
+            raised.catalog.fingerprint(),
+            raised_again.catalog.fingerprint()
+        );
     }
 }

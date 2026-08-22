@@ -192,8 +192,18 @@ impl GameSession {
         }
         let item_definitions = admit_item_definitions(item_definitions)
             .map_err(GameEntityDefinitionError::Inventory)?;
-        let mechanics = mechanics::build_runtime(&item_definitions, vitality_policy)
-            .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
+        let destructible_integrity_maximum = mechanics::destructible_integrity_capacity(
+            definitions
+                .iter()
+                .filter(|definition| definition.explosive_prop.is_some())
+                .filter_map(|definition| definition.health.map(|config| config.max)),
+        );
+        let mechanics = mechanics::build_runtime(
+            &item_definitions,
+            vitality_policy,
+            destructible_integrity_maximum,
+        )
+        .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
         let inventory_configs = definitions
             .iter()
             .filter_map(|definition| {
@@ -506,14 +516,11 @@ impl GameSession {
                     return Err(GameEntityDefinitionError::InvalidHealthConfig { entity });
                 }
                 let preset = if definition.explosive_prop.is_some() {
-                    if config.max > mechanics::destructible_integrity_capacity() {
-                        return Err(GameEntityDefinitionError::InvalidHealthConfig { entity });
-                    }
                     mechanics::VitalityPreset::DestructibleObject
                 } else {
                     mechanics::VitalityPreset::ActionActor
                 };
-                mechanics::attach_health(&mut entities, entity, config, preset)
+                mechanics::attach_health(&mut entities, entity, config, preset, vitality_policy)
                     .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
                 health.insert(entity, config);
             }
