@@ -16,7 +16,7 @@ Loading Bay is the external game and reference consumer of Rusty Engine. It is o
 - `browser-host` is the lightweight HTTP/WebSocket development adapter. Tauri is one product WebView using typed in-process IPC over the same service; it has no browser-host sidecar.
 - Rusty Engine alone owns rendering and the canvas. Use its public application-host surface and its Rust webview adapter; never reach a private bridge or packaged renderer artifact.
 - Keep one unconditional Cargo path dependency on the complete adjacent `rusty-engine` facade. Preserve explicit `rusty_engine::<owner>` namespaces. Do not pin, manage, or select Engine subcrates downstream.
-- Add game-specific semantics here. Promote a smaller Engine seam only after another real consumer proves it reusable. Do not add a plugin registry, service locator, generic bridge, behavior IR, replay spine, or TypeScript gameplay authority.
+- Add game-specific semantics here. Promote a neutral Engine seam when one concrete downstream need, proof, or architecture decision shows that central ownership prevents duplicate authority or correctness drift; consumer count is useful evidence, not a gate. Do not add a plugin registry, service locator, generic bridge, behavior IR, replay spine, or TypeScript gameplay authority.
 - Keep authored content, live runtime state, and transient presentation distinct. Preserve exact E1M1 source and asset provenance in `docs/source-provenance.md`.
 
 ## Proof

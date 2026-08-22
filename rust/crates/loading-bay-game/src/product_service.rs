@@ -9,18 +9,24 @@ use std::collections::{BTreeMap, VecDeque};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::developer_command::{
+    create_bindings, developer_runtime_identity, LoadingBayDeveloperCommandResponse,
+    PendingDeveloperCommand, PendingDeveloperPlay,
+};
 use rusty_engine::core_ids::EntityId;
+use rusty_engine::developer_command::CommandBindings;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    admit_stored_project_with_document, encode_project_document, AdmittedStoredProject,
-    EncounterProgramReadout, EnemyProgramReadout, ExplosivePropProgramReadout,
-    FloorActionProgramReadout, GameLoopAdvanceReceipt, GameLoopEdgeCommand,
-    GameLoopEdgeCommandKind, GameRuntime, GameplayProgramOutcome, GameplayProgramReadout,
-    HazardProgramReadout, InputCommandReceipt, LevelExitProgramReadout, LiftProgramReadout,
-    LoadingBayGameLoop, PickupProgramReadout, PlayerInputCommand, PlayerInputIntent,
-    PlayerSetupProgramReadout, ProjectStore, SaveGameStore, SaveLoadRequest, SaveProjectIdentity,
-    SaveSlotId, SaveSlotSummary, SaveWriteRequest, SecretProgramReadout, SwitchProgramReadout,
+    admit_stored_project_with_document_and_vitality_policy, encode_project_document,
+    AdmittedDoomVitalityPolicy, AdmittedStoredProject, DoomVitalityPolicy, EncounterProgramReadout,
+    EnemyProgramReadout, ExplosivePropProgramReadout, FloorActionProgramReadout,
+    GameLoopAdvanceReceipt, GameLoopEdgeCommand, GameLoopEdgeCommandKind, GameRuntime,
+    GameplayProgramOutcome, GameplayProgramReadout, HazardProgramReadout, InputCommandReceipt,
+    LevelExitProgramReadout, LiftProgramReadout, LoadingBayGameLoop, PickupProgramReadout,
+    PlayerInputCommand, PlayerInputIntent, PlayerSetupProgramReadout, ProjectStore, SaveGameStore,
+    SaveLoadRequest, SaveProjectIdentity, SaveSlotId, SaveSlotSummary, SaveWriteRequest,
+    SecretProgramReadout, SwitchProgramReadout,
 };
 
 /// The player entity used by the authored Loading Bay product.
@@ -136,10 +142,11 @@ impl std::error::Error for LoadingBayServiceError {}
 /// Transport-neutral Loading Bay runtime authority.
 #[derive(Debug)]
 pub struct LoadingBayProductService {
-    runtime: LoadingBayGameLoop,
+    pub(crate) runtime: LoadingBayGameLoop,
     authored: AdmittedStoredProject,
     project_path: PathBuf,
-    project: LoadingBayProjectReadout,
+    pub(crate) project: LoadingBayProjectReadout,
+    standard_vitality: Option<AdmittedDoomVitalityPolicy>,
     save_store: SaveGameStore,
     save_root: PathBuf,
     save_identity: SaveProjectIdentity,
@@ -148,8 +155,13 @@ pub struct LoadingBayProductService {
     pending_loads: BTreeMap<u64, PendingLoad>,
     pending_restarts: BTreeMap<u64, PendingRestart>,
     pending_commands: BTreeMap<u64, PendingCommand>,
-    pending_outcomes: VecDeque<LoadingBayServiceOutcome>,
+    pub(crate) pending_outcomes: VecDeque<LoadingBayServiceOutcome>,
     dropped_outcome_count: u64,
+    pub(crate) developer_generation: Option<u64>,
+    pub(crate) developer_bindings: Option<CommandBindings>,
+    pub(crate) pending_developer_commands: VecDeque<PendingDeveloperCommand>,
+    pub(crate) pending_developer_plays: BTreeMap<String, PendingDeveloperPlay>,
+    pub(crate) developer_results: VecDeque<LoadingBayDeveloperCommandResponse>,
 }
 
 #[derive(Debug)]
@@ -217,13 +229,49 @@ impl LoadingBayProductService {
                 .sum(),
             content_hash: rusty_engine::voxel_convert::source_sha256(canonical_project.as_bytes()),
         };
-        let (authored, admitted) =
-            admit_stored_project_with_document(decoded.project).map_err(|error| {
-                LoadingBayServiceError {
-                    code: "projectAdmissionFailed",
-                    message: format!("project admission failed: {error}"),
-                }
+        // The same canonical package TypeScript materialized is admitted before
+        // runtime construction. Its payload is a named Doom extension; the
+        // standard actor/destructible mechanics themselves remain public Engine
+        // preset fragments composed by gameplay admission.
+        let standard_vitality = if decoded.project.project_id == "doom-e1m1" {
+            let root = canonical_path
+                .parent()
+                .and_then(Path::parent)
+                .and_then(Path::parent)
+                .ok_or_else(|| LoadingBayServiceError {
+                    code: "standardVitalityPathUnavailable",
+                    message: format!(
+                        "could not resolve standard vitality artifact from {}",
+                        canonical_path.display()
+                    ),
+                })?;
+            let artifact =
+                root.join("data/gameplay/loading-bay-e1m1-standard-vitality.package.json");
+            let bytes = std::fs::read(&artifact).map_err(|error| LoadingBayServiceError {
+                code: "standardVitalityLoadFailed",
+                message: format!("could not read {}: {error}", artifact.display()),
             })?;
+            Some(crate::admit_doom_vitality_policy(&bytes).map_err(|error| {
+                LoadingBayServiceError {
+                    code: "standardVitalityAdmissionFailed",
+                    message: error.to_string(),
+                }
+            })?)
+        } else {
+            None
+        };
+        let vitality_policy = standard_vitality
+            .as_ref()
+            .map(AdmittedDoomVitalityPolicy::policy)
+            .unwrap_or_else(DoomVitalityPolicy::doom_compatibility);
+        let (authored, admitted) = admit_stored_project_with_document_and_vitality_policy(
+            decoded.project,
+            vitality_policy,
+        )
+        .map_err(|error| LoadingBayServiceError {
+            code: "projectAdmissionFailed",
+            message: format!("project admission failed: {error}"),
+        })?;
         let runtime = LoadingBayGameLoop::new(
             GameRuntime::from_admitted_project(admitted),
             LOADING_BAY_PLAYER,
@@ -241,11 +289,16 @@ impl LoadingBayProductService {
             )?;
         let save_store = SaveGameStore::new(save_root);
         let save_slots = save_store.inspect_all(&save_identity);
+        let developer_bindings = create_bindings(
+            developer_runtime_identity(&project),
+            runtime.input_session().connection_generation,
+        )?;
         Ok(Self {
             runtime,
             authored,
             project_path: canonical_path,
             project,
+            standard_vitality,
             save_store,
             save_root: save_root.to_path_buf(),
             save_identity,
@@ -256,11 +309,22 @@ impl LoadingBayProductService {
             pending_commands: BTreeMap::new(),
             pending_outcomes: VecDeque::new(),
             dropped_outcome_count: 0,
+            developer_generation: None,
+            developer_bindings: Some(developer_bindings),
+            pending_developer_commands: VecDeque::new(),
+            pending_developer_plays: BTreeMap::new(),
+            developer_results: VecDeque::new(),
         })
     }
 
     pub fn project(&self) -> &LoadingBayProjectReadout {
         &self.project
+    }
+
+    /// Read-only proof that this E1M1 instance admitted the generated standard
+    /// authoring artifact. It is not live gameplay state or a mutation route.
+    pub fn standard_vitality(&self) -> Option<&AdmittedDoomVitalityPolicy> {
+        self.standard_vitality.as_ref()
     }
 
     /// Read-only access for product projections. Runtime mutation is confined
@@ -362,14 +426,31 @@ impl LoadingBayProductService {
         self.pending_outcomes.clear();
         self.runtime.drain_pending_facts();
         self.runtime.runtime_mut().clear_gameplay_outcome();
-        self.runtime.start_connection().connection_generation
+        self.retire_developer_commands(
+            "developer request was retired by a gameplay session replacement",
+        );
+        let generation = self.runtime.start_connection().connection_generation;
+        self.developer_generation = Some(generation);
+        self.developer_bindings = Some(
+            create_bindings(developer_runtime_identity(&self.project), generation)
+                .expect("admitted product always rebuilds its fixed developer bindings"),
+        );
+        generation
     }
 
     pub fn disconnect_session(&mut self, connection_generation: u64) {
+        if self.developer_generation == Some(connection_generation) {
+            self.retire_developer_commands(
+                "developer request was retired because the gameplay session disconnected",
+            );
+        }
         self.runtime.disconnect(connection_generation);
         self.clear_pending_operations();
         self.pending_outcomes.clear();
         self.runtime.drain_pending_facts();
+        if self.developer_generation == Some(connection_generation) {
+            self.developer_generation = None;
+        }
     }
 
     pub fn submit(
@@ -489,6 +570,11 @@ impl LoadingBayProductService {
                 })?;
         self.apply_consumed_operations(&receipt);
         self.record_consumed_commands(&receipt);
+        self.resolve_developer_plays();
+        self.consume_developer_commands();
+        if self.developer_generation.is_some() {
+            self.refresh_developer_facts();
+        }
         Ok(receipt)
     }
 
@@ -531,11 +617,16 @@ impl LoadingBayProductService {
                 message: format!("could not restore Loading Bay game loop: {error}"),
             }
         })?;
+        let developer_bindings = create_bindings(
+            developer_runtime_identity(&self.project),
+            runtime.input_session().connection_generation,
+        )?;
         Ok(Self {
             runtime,
             authored: self.authored.clone(),
             project_path: self.project_path.clone(),
             project: self.project.clone(),
+            standard_vitality: self.standard_vitality.clone(),
             save_store: self.save_store.clone(),
             save_root: self.save_root.clone(),
             save_identity: self.save_identity.clone(),
@@ -546,6 +637,11 @@ impl LoadingBayProductService {
             pending_commands: BTreeMap::new(),
             pending_outcomes: VecDeque::new(),
             dropped_outcome_count: 0,
+            developer_generation: None,
+            developer_bindings: Some(developer_bindings),
+            pending_developer_commands: VecDeque::new(),
+            pending_developer_plays: BTreeMap::new(),
+            developer_results: VecDeque::new(),
         })
     }
 
@@ -799,7 +895,7 @@ enum PendingOperation {
     Restart(PendingRestart),
 }
 
-fn command_identity(command: &LoadingBayServiceCommand) -> (u64, u64, bool) {
+pub(crate) fn command_identity(command: &LoadingBayServiceCommand) -> (u64, u64, bool) {
     match command {
         LoadingBayServiceCommand::SetInputIntent {
             connection_generation,
@@ -914,6 +1010,97 @@ fn edge_rejection_code(rejection: &crate::EdgeCommandRejection) -> &'static str 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::developer_command::{
+        LoadingBayDeveloperCommandRequest, MAX_PENDING_DEVELOPER_COMMANDS,
+    };
+    use serde_json::Value;
+
+    fn developer_request(
+        service: &LoadingBayProductService,
+        command: &str,
+        correlation: &str,
+        payload: Value,
+    ) -> LoadingBayDeveloperCommandRequest {
+        let discovery = service.discover_developer_commands().unwrap();
+        LoadingBayDeveloperCommandRequest {
+            protocol_version: discovery.protocol_version,
+            command: rusty_engine::developer_command::CommandId::parse(command).unwrap(),
+            correlation: rusty_engine::developer_command::CorrelationId::parse(correlation)
+                .unwrap(),
+            runtime: discovery.runtime,
+            expected: rusty_engine::developer_command::HostExpectedFacts {
+                profile: discovery.profile,
+                revision: discovery.revision,
+                catalog_epoch: discovery.catalog_epoch,
+            },
+            payload,
+        }
+    }
+
+    #[test]
+    fn e1m1_admits_the_generated_standard_vitality_extension_before_runtime_construction() {
+        let project = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-standard-vitality-{}",
+            std::process::id()
+        ));
+        let service = LoadingBayProductService::admit(&project, &save_root)
+            .expect("admit canonical E1M1 with standard vitality artifact");
+        let policy = service.standard_vitality().expect("E1M1 standard vitality");
+        assert_eq!(policy.policy().maximum_health, 1_000_000);
+        assert_eq!(policy.policy().maximum_armor, 1_000_000);
+        let _ = std::fs::remove_dir_all(save_root);
+    }
+
+    #[test]
+    fn admitted_standard_vitality_policy_bounds_normal_gameplay_admission() {
+        let project_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let mut project = ProjectStore::default().load(&project_path).unwrap().project;
+        let policy_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../data/gameplay/loading-bay-e1m1-standard-vitality.package.json");
+        let policy = crate::admit_doom_vitality_policy(&std::fs::read(policy_path).unwrap())
+            .expect("admit generated standard vitality extension");
+        let health = project
+            .scenes
+            .iter_mut()
+            .flat_map(|scene| &mut scene.entities)
+            .find_map(|entity| entity.health.as_mut())
+            .expect("canonical E1M1 health entity");
+        health.max = policy.policy().maximum_health + 1;
+
+        let error =
+            admit_stored_project_with_document_and_vitality_policy(project, policy.policy())
+                .expect_err("policy must reject oversized authored health before a runtime exists");
+        assert!(error.diagnostic().path.ends_with(".health"));
+    }
+
+    #[test]
+    fn normal_gameplay_admission_rejects_destructible_health_above_the_standard_integrity_capacity()
+    {
+        let project_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let mut project = ProjectStore::default().load(&project_path).unwrap().project;
+        let policy_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../data/gameplay/loading-bay-e1m1-standard-vitality.package.json");
+        let policy = crate::admit_doom_vitality_policy(&std::fs::read(policy_path).unwrap())
+            .expect("admit generated standard vitality extension");
+        let health = project
+            .scenes
+            .iter_mut()
+            .flat_map(|scene| &mut scene.entities)
+            .find_map(|entity| entity.explosive_prop.as_ref().and(entity.health.as_mut()))
+            .expect("canonical E1M1 explosive prop health");
+        health.max = 51;
+
+        let error =
+            admit_stored_project_with_document_and_vitality_policy(project, policy.policy())
+                .expect_err(
+                    "fixed standard destructible integrity must reject an incompatible prop",
+                );
+        assert!(error.diagnostic().path.ends_with(".health"));
+    }
 
     #[test]
     fn semantic_command_serializes_without_transport_details() {
@@ -939,6 +1126,301 @@ mod tests {
         })
         .expect("serialize successful outcome");
         assert!(success.get("message").is_none());
+    }
+
+    #[test]
+    fn developer_play_waits_for_the_existing_service_command_to_complete() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-developer-command-{}-{unique}",
+            std::process::id()
+        ));
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let mut service = LoadingBayProductService::admit(&project, &save_root).unwrap();
+        let generation = service.start_session();
+        let discovery = service.discover_developer_commands().unwrap();
+        let request = LoadingBayDeveloperCommandRequest {
+            protocol_version: discovery.protocol_version,
+            command: rusty_engine::developer_command::CommandId::parse(
+                "loading-bay.play.service-command",
+            )
+            .unwrap(),
+            correlation: rusty_engine::developer_command::CorrelationId::parse("play-fixed-step")
+                .unwrap(),
+            runtime: discovery.runtime,
+            expected: rusty_engine::developer_command::HostExpectedFacts {
+                profile: discovery.profile,
+                revision: discovery.revision,
+                catalog_epoch: discovery.catalog_epoch,
+            },
+            payload: serde_json::to_value(LoadingBayServiceCommand::SetInputIntent {
+                connection_generation: generation,
+                sequence: 91,
+                movement: [1.0, 0.0],
+                look_delta: [0.0, 0.0],
+                jump_held: false,
+                primary_fire_held: false,
+            })
+            .unwrap(),
+        };
+        service.submit_developer_command(request).unwrap();
+        assert!(service.poll_developer_command("play-fixed-step").is_none());
+
+        // First tick reaches the developer safe point and only stages the
+        // existing semantic input command; it is not a play completion yet.
+        service.advance(crate::FIXED_STEP_DURATION).unwrap();
+        assert!(service.poll_developer_command("play-fixed-step").is_none());
+
+        // The following ordinary fixed step consumes the staged command and
+        // produces the product result bridged back to the developer request.
+        service.advance(crate::FIXED_STEP_DURATION).unwrap();
+        let response = service
+            .poll_developer_command("play-fixed-step")
+            .expect("ordinary service completion returns developer result");
+        assert!(matches!(
+            response.outcome,
+            rusty_engine::developer_command::HostCommandOutcome::Success { .. }
+        ));
+        let _ = std::fs::remove_dir_all(save_root);
+    }
+
+    #[test]
+    fn developer_admin_mutates_only_at_the_safe_point_and_returns_owner_projection() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-developer-admin-{}-{unique}",
+            std::process::id()
+        ));
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let mut service = LoadingBayProductService::admit(&project, &save_root).unwrap();
+        service.start_session();
+        let before = service
+            .runtime()
+            .runtime()
+            .session()
+            .health(LOADING_BAY_PLAYER)
+            .unwrap()
+            .current;
+        let after = before.saturating_sub(1);
+        let request = developer_request(
+            &service,
+            "standard.admin.track.set",
+            "admin-safe-point",
+            serde_json::json!({
+                "operation": "loading-bay.developer.track-set",
+                "source": {
+                    "kind": "request",
+                    "operation": "loading-bay.developer.track-set",
+                    "instance": "loading-bay.developer"
+                },
+                "entity": LOADING_BAY_PLAYER.raw().to_string(),
+                "track": rusty_engine::gameplay_standard::ActionActorPreset::VITALITY_TRACK,
+                "value": after,
+                "policy": "rejectOutOfBounds",
+                "expectedRevision": null
+            }),
+        );
+        service.submit_developer_command(request).unwrap();
+        assert_eq!(
+            service
+                .runtime()
+                .runtime()
+                .session()
+                .health(LOADING_BAY_PLAYER)
+                .unwrap()
+                .current,
+            before,
+            "queue admission must not mutate gameplay"
+        );
+        assert!(service.poll_developer_command("admin-safe-point").is_none());
+
+        service.advance(crate::FIXED_STEP_DURATION).unwrap();
+        assert_eq!(
+            service
+                .runtime()
+                .runtime()
+                .session()
+                .health(LOADING_BAY_PLAYER)
+                .unwrap()
+                .current,
+            after
+        );
+        let response = service
+            .poll_developer_command("admin-safe-point")
+            .expect("safe point publishes admin result");
+        match response.outcome {
+            rusty_engine::developer_command::HostCommandOutcome::Success { value, .. } => {
+                assert_eq!(value["after"], after);
+                assert!(value["committedTracksRevision"].is_string());
+            }
+            outcome => panic!("unexpected developer outcome: {outcome:?}"),
+        }
+        let _ = std::fs::remove_dir_all(save_root);
+    }
+
+    #[test]
+    fn developer_queue_honors_cancel_saturation_and_engine_stale_context() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-developer-queue-{}-{unique}",
+            std::process::id()
+        ));
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let mut service = LoadingBayProductService::admit(&project, &save_root).unwrap();
+        service.start_session();
+
+        let cancelled = developer_request(
+            &service,
+            "standard.inspect.entity",
+            "cancel-before-safe-point",
+            serde_json::json!({ "entity": "1" }),
+        );
+        service.submit_developer_command(cancelled).unwrap();
+        assert!(service.cancel_developer_command("cancel-before-safe-point"));
+        service.advance(crate::FIXED_STEP_DURATION).unwrap();
+        assert!(service
+            .poll_developer_command("cancel-before-safe-point")
+            .is_none());
+
+        for index in 0..MAX_PENDING_DEVELOPER_COMMANDS {
+            let request = developer_request(
+                &service,
+                "standard.inspect.entity",
+                &format!("saturated-{index}"),
+                serde_json::json!({ "entity": "1" }),
+            );
+            service.submit_developer_command(request).unwrap();
+        }
+        let overflow = developer_request(
+            &service,
+            "standard.inspect.entity",
+            "saturated-overflow",
+            serde_json::json!({ "entity": "1" }),
+        );
+        assert_eq!(
+            service.submit_developer_command(overflow).unwrap_err().code,
+            "queueSaturated"
+        );
+        service.advance(crate::FIXED_STEP_DURATION).unwrap();
+
+        let mut stale = developer_request(
+            &service,
+            "standard.inspect.entity",
+            "stale-context",
+            serde_json::json!({ "entity": "1" }),
+        );
+        stale.expected.revision = rusty_engine::developer_command::HostDecimalU64::new(u64::MAX);
+        service.submit_developer_command(stale).unwrap();
+        service.advance(crate::FIXED_STEP_DURATION).unwrap();
+        let response = service
+            .poll_developer_command("stale-context")
+            .expect("Engine returns stale pre-dispatch rejection");
+        assert!(matches!(
+            response.outcome,
+            rusty_engine::developer_command::HostCommandOutcome::Error { .. }
+        ));
+        let _ = std::fs::remove_dir_all(save_root);
+    }
+
+    #[test]
+    fn developer_discovery_rotates_with_the_gameplay_generation() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-developer-generation-{}-{unique}",
+            std::process::id()
+        ));
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let mut service = LoadingBayProductService::admit(&project, &save_root).unwrap();
+        service.start_session();
+        let first = service.discover_developer_commands().unwrap();
+        let pending = developer_request(
+            &service,
+            "standard.inspect.entity",
+            "retired-with-generation",
+            serde_json::json!({ "entity": "1" }),
+        );
+        service.submit_developer_command(pending).unwrap();
+        service.start_session();
+        let second = service.discover_developer_commands().unwrap();
+        assert_eq!(first.runtime, second.runtime);
+        assert!(second.revision.get() > first.revision.get());
+        let retired = service
+            .poll_developer_command("retired-with-generation")
+            .expect("replacement returns an immediate terminal response");
+        match retired.outcome {
+            rusty_engine::developer_command::HostCommandOutcome::Error { code, .. } => {
+                assert_eq!(code.as_str(), "retired-generation");
+            }
+            outcome => panic!("unexpected replacement outcome: {outcome:?}"),
+        }
+        let _ = std::fs::remove_dir_all(save_root);
+    }
+
+    #[test]
+    fn developer_disconnect_retires_an_in_flight_play_without_transport_timeout() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-developer-disconnect-{}-{unique}",
+            std::process::id()
+        ));
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let mut service = LoadingBayProductService::admit(&project, &save_root).unwrap();
+        let generation = service.start_session();
+        let request = developer_request(
+            &service,
+            "loading-bay.play.service-command",
+            "retired-on-disconnect",
+            serde_json::to_value(LoadingBayServiceCommand::SetInputIntent {
+                connection_generation: generation,
+                sequence: 92,
+                movement: [1.0, 0.0],
+                look_delta: [0.0, 0.0],
+                jump_held: false,
+                primary_fire_held: false,
+            })
+            .unwrap(),
+        );
+        service.submit_developer_command(request).unwrap();
+        service.advance(crate::FIXED_STEP_DURATION).unwrap();
+        assert!(service
+            .poll_developer_command("retired-on-disconnect")
+            .is_none());
+
+        service.disconnect_session(generation);
+        let retired = service
+            .poll_developer_command("retired-on-disconnect")
+            .expect("disconnect returns an immediate terminal response");
+        match retired.outcome {
+            rusty_engine::developer_command::HostCommandOutcome::Error { code, .. } => {
+                assert_eq!(code.as_str(), "retired-generation");
+            }
+            outcome => panic!("unexpected disconnect outcome: {outcome:?}"),
+        }
+        assert_eq!(
+            service.discover_developer_commands().unwrap_err().code,
+            "gameplayUnavailable"
+        );
+        let _ = std::fs::remove_dir_all(save_root);
     }
 
     #[test]

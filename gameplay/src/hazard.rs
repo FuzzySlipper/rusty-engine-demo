@@ -11,7 +11,7 @@ use crate::hazard_program::{execute_hazard_program, HazardOperation, HazardPredi
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
 use crate::vitality::{
-    DamageCommand, DamageService, DamageSource, VitalityFact, VitalityRejection, MAX_DAMAGE,
+    DamageCommand, DamageService, DamageSource, VitalityFact, VitalityRejection, MAX_DOOM_DAMAGE,
 };
 
 pub const HAZARD_TRIGGER_SCOPE: &str = "loading-bay.hazard";
@@ -26,7 +26,8 @@ pub struct HazardConfig {
 
 impl HazardConfig {
     pub(crate) fn is_valid(self) -> bool {
-        (1..=MAX_DAMAGE).contains(&self.damage) && self.cooldown_ticks <= MAX_HAZARD_COOLDOWN_TICKS
+        (1..=MAX_DOOM_DAMAGE).contains(&self.damage)
+            && self.cooldown_ticks <= MAX_HAZARD_COOLDOWN_TICKS
     }
 }
 

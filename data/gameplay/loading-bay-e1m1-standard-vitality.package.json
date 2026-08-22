@@ -1,0 +1,2 @@
+{"kind":"rusty.gameplay-rules.package","schemaVersion":1,"domain":"loading-bay","package":"e1m1-standard-vitality","version":1,"dependencies":[],"sources":[{"id":"doom-vitality","path":"gameplay/authoring/src/packages/e1m1-standard-vitality.ts"}],"provenance":[{"subject":"doom-e1m1-vitality","source":"doom-vitality"}],"payload":{"family":"standardExtension","kind":"doom.vitality-policy","namespace":"loading-bay.vitality","payload":{"maximumArmor":1000000,"maximumHealth":1000000},"schemaVersion":1,"source":"doom-vitality","subject":"doom-e1m1-vitality"}}
+

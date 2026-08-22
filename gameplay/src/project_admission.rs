@@ -52,6 +52,7 @@ use crate::progression::{
 use crate::project_codec::decode_project_document;
 use crate::secret_program::compile_secret_programs;
 use crate::session::{GameSession, SessionProgramCatalogs};
+use crate::standard_vitality::DoomVitalityPolicy;
 use crate::stored_project::{
     diagnostic_code, validate_stored_project, StoredAsset, StoredEntityDefinition,
     StoredItemDefinition, StoredItemKind, StoredMaterialVoxel, StoredMaterialVoxelEnvironment,
@@ -100,6 +101,20 @@ pub fn admit_stored_project(
 /// resulting concrete session. Storage sees only the first value.
 pub fn admit_stored_project_with_document(
     document: StoredProject,
+) -> Result<(AdmittedStoredProject, AdmittedProject), StoredProjectError> {
+    admit_stored_project_with_document_and_vitality_policy(
+        document,
+        DoomVitalityPolicy::doom_compatibility(),
+    )
+}
+
+/// Product hosts with an admitted standard vitality extension pass the typed
+/// policy through this single construction route. The compatibility policy is
+/// deliberately reserved for direct gameplay construction and old snapshots
+/// that have no package-admission edge.
+pub fn admit_stored_project_with_document_and_vitality_policy(
+    document: StoredProject,
+    vitality_policy: DoomVitalityPolicy,
 ) -> Result<(AdmittedStoredProject, AdmittedProject), StoredProjectError> {
     validate_stored_project(&document)?;
     if document.project_id == "doom-e1m1" {
@@ -261,6 +276,7 @@ pub fn admit_stored_project_with_document(
             &catalog,
             &item_definitions,
             &program_catalogs,
+            vitality_policy,
         )?;
         if scene_index == entry_scene_index {
             entry_scene = Some(admitted);
@@ -306,6 +322,7 @@ fn admit_scene(
     catalog: &ProjectAssetCatalog<'_>,
     item_definitions: &[ItemDefinition],
     program_catalogs: &AdmissionProgramCatalogs,
+    vitality_policy: DoomVitalityPolicy,
 ) -> Result<AdmittedScene, StoredProjectError> {
     catalog.validate_scene(scene, scene_index)?;
 
@@ -449,6 +466,7 @@ fn admit_scene(
             level_exit: program_catalogs.level_exit.clone(),
             level_exit_bindings,
         },
+        vitality_policy,
     )
     .map_err(|error| definition_error(error, scene_index, &entity_indexes))?;
 

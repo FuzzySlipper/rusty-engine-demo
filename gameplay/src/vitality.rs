@@ -18,9 +18,7 @@ use crate::inventory::{
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
 
-pub const MAX_HEALTH: u32 = 1_000_000;
-pub const MAX_ARMOR: u32 = 1_000_000;
-pub const MAX_DAMAGE: u32 = 1_000_000;
+pub const MAX_DOOM_DAMAGE: u32 = 1_000_000;
 pub const MAX_COMBAT_HITBOX_HALF_EXTENT: f32 = 100_000.0;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -43,8 +41,8 @@ impl HealthConfig {
         }
     }
 
-    pub(crate) fn is_valid(self) -> bool {
-        (1..=MAX_HEALTH).contains(&self.max)
+    pub(crate) fn is_valid(self, policy: crate::DoomVitalityPolicy) -> bool {
+        (1..=policy.maximum_health).contains(&self.max)
             && (1..=self.max).contains(&self.starting)
             && vec3_is_finite(self.hitbox_half_extents)
             && self.hitbox_half_extents.x > 0.0
@@ -53,7 +51,7 @@ impl HealthConfig {
             && self.hitbox_half_extents.x <= MAX_COMBAT_HITBOX_HALF_EXTENT
             && self.hitbox_half_extents.y <= MAX_COMBAT_HITBOX_HALF_EXTENT
             && self.hitbox_half_extents.z <= MAX_COMBAT_HITBOX_HALF_EXTENT
-            && self.max_armor <= MAX_ARMOR
+            && self.max_armor <= policy.maximum_armor
             && match self.max_armor {
                 0 => self.armor_absorption_percent == 0,
                 _ => (1..=100).contains(&self.armor_absorption_percent),
@@ -237,7 +235,7 @@ impl DamageService {
         if !session.entities.contains(source) {
             return Err(VitalityRejection::UnknownSource { source });
         }
-        if command.amount == 0 || command.amount > MAX_DAMAGE {
+        if command.amount == 0 || command.amount > MAX_DOOM_DAMAGE {
             return Err(VitalityRejection::InvalidDamage {
                 amount: command.amount,
             });
@@ -291,7 +289,13 @@ impl DamageService {
                 source: request_source(operation.clone(), "damage")?,
                 actor: Some(source),
                 target: command.target,
-                target_track: crate::mechanics::health_track(),
+                target_track: crate::mechanics::vitality_track(
+                    if candidate.explosive_props.contains_key(&command.target) {
+                        crate::mechanics::VitalityPreset::DestructibleObject
+                    } else {
+                        crate::mechanics::VitalityPreset::ActionActor
+                    },
+                ),
                 parts: [
                     (
                         armor_eligible,

@@ -35,6 +35,8 @@
     "@angular/platform-browser": "~21.2.0",
     "@angular/router": "~21.2.0",
     "@rusty-engine/application-host": "file:../rusty-engine/render/artifacts/application-host",
+    "@rusty-engine/gameplay-standard-authoring": "file:../rusty-engine/rules/packages/gameplay-standard-authoring",
+    "@rusty-engine/gameplay-standard-contracts": "file:../rusty-engine/rules/packages/gameplay-standard-contracts",
     "@rusty-engine/gameplay-rules-authoring": "file:../rusty-engine/rules/packages/gameplay-rules-authoring",
     "@rusty-engine/gameplay-rules-contracts": "file:../rusty-engine/rules/packages/gameplay-rules-contracts",
     "rxjs": "~7.8.0",

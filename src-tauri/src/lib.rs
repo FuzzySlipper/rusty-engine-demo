@@ -10,8 +10,9 @@ use loading_bay_game::browser_adapter::{
     BrowserDynamicState, InProcessLoadingBayAdapter, InProcessProjection,
 };
 use loading_bay_game::{
-    LoadingBayProjectReadout, LoadingBayServiceCommand, LoadingBayServiceOutcome,
-    LoadingBayServiceReceipt,
+    LoadingBayDeveloperCommandRequest, LoadingBayDeveloperCommandResponse,
+    LoadingBayDeveloperDiscovery, LoadingBayProjectReadout, LoadingBayServiceCommand,
+    LoadingBayServiceOutcome, LoadingBayServiceReceipt,
 };
 use serde::Serialize;
 use tauri::{Manager, State, WebviewUrl, WebviewWindowBuilder};
@@ -152,6 +153,53 @@ fn loading_bay_service_application_resource(
         .application_resource(index)
 }
 
+#[tauri::command]
+fn loading_bay_developer_discover(
+    service: State<'_, DesktopProductService>,
+) -> Result<LoadingBayDeveloperDiscovery, String> {
+    service
+        .adapter
+        .lock()
+        .map_err(|_| "Loading Bay service lock poisoned")?
+        .discover_developer_commands()
+}
+
+#[tauri::command]
+fn loading_bay_developer_submit(
+    request: LoadingBayDeveloperCommandRequest,
+    service: State<'_, DesktopProductService>,
+) -> Result<(), String> {
+    service
+        .adapter
+        .lock()
+        .map_err(|_| "Loading Bay service lock poisoned")?
+        .submit_developer_command(request)
+}
+
+#[tauri::command]
+fn loading_bay_developer_poll(
+    correlation: String,
+    service: State<'_, DesktopProductService>,
+) -> Result<Option<LoadingBayDeveloperCommandResponse>, String> {
+    Ok(service
+        .adapter
+        .lock()
+        .map_err(|_| "Loading Bay service lock poisoned")?
+        .poll_developer_command(&correlation))
+}
+
+#[tauri::command]
+fn loading_bay_developer_cancel(
+    correlation: String,
+    service: State<'_, DesktopProductService>,
+) -> Result<bool, String> {
+    Ok(service
+        .adapter
+        .lock()
+        .map_err(|_| "Loading Bay service lock poisoned")?
+        .cancel_developer_command(&correlation))
+}
+
 pub fn run() {
     let app = tauri::Builder::default()
         .setup(|app| {
@@ -194,6 +242,10 @@ pub fn run() {
             loading_bay_service_submit,
             loading_bay_service_command_outcome,
             loading_bay_service_application_resource,
+            loading_bay_developer_discover,
+            loading_bay_developer_submit,
+            loading_bay_developer_poll,
+            loading_bay_developer_cancel,
         ])
         .build(tauri::generate_context!())
         .expect("could not build Loading Bay desktop application");
@@ -282,6 +334,48 @@ mod tests {
         let command = serde_json::to_value(command).expect("serialize desktop command readout");
         assert!(command.get("connectionGeneration").is_none());
 
+        let _ = std::fs::remove_dir_all(save_root);
+    }
+
+    #[test]
+    fn desktop_developer_port_waits_for_the_existing_ticker_safe_point() {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-desktop-developer-{}-{unique}",
+            std::process::id()
+        ));
+        let project = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../content/projects/doom-e1m1.project.json");
+        let mut adapter =
+            InProcessLoadingBayAdapter::admit(&project, &save_root).expect("admit desktop project");
+        adapter.begin_session();
+        let discovery = adapter.discover_developer_commands().unwrap();
+        let discovery = serde_json::to_value(discovery).unwrap();
+        adapter
+            .submit_developer_command(
+                serde_json::from_value(serde_json::json!({
+                    "protocolVersion": discovery["protocolVersion"],
+                    "command": "standard.inspect.entity",
+                    "correlation": "tauri-safe-point",
+                    "runtime": discovery["runtime"],
+                    "expected": {
+                        "profile": discovery["profile"],
+                        "revision": discovery["revision"],
+                        "catalogEpoch": discovery["catalogEpoch"]
+                    },
+                    "payload": { "entity": "1" }
+                }))
+                .unwrap(),
+            )
+            .unwrap();
+        assert!(adapter.poll_developer_command("tauri-safe-point").is_none());
+        adapter
+            .tick_if_session_active(loading_bay_game::FIXED_STEP_DURATION)
+            .unwrap();
+        assert!(adapter.poll_developer_command("tauri-safe-point").is_some());
         let _ = std::fs::remove_dir_all(save_root);
     }
 }

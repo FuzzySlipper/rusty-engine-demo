@@ -32,6 +32,12 @@ importers:
       '@rusty-engine/gameplay-rules-contracts':
         specifier: file:../rusty-engine/rules/packages/gameplay-rules-contracts
         version: file:../rusty-engine/rules/packages/gameplay-rules-contracts
+      '@rusty-engine/gameplay-standard-authoring':
+        specifier: file:../rusty-engine/rules/packages/gameplay-standard-authoring
+        version: file:../rusty-engine/rules/packages/gameplay-standard-authoring(@rusty-engine/gameplay-rules-authoring@file:../rusty-engine/rules/packages/gameplay-rules-authoring(@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts))(@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts)(@rusty-engine/gameplay-standard-contracts@file:../rusty-engine/rules/packages/gameplay-standard-contracts)
+      '@rusty-engine/gameplay-standard-contracts':
+        specifier: file:../rusty-engine/rules/packages/gameplay-standard-contracts
+        version: file:../rusty-engine/rules/packages/gameplay-standard-contracts
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -2271,6 +2277,16 @@ packages:
   '@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts':
     resolution: {directory: ../rusty-engine/rules/packages/gameplay-rules-contracts, type: directory}
 
+  '@rusty-engine/gameplay-standard-authoring@file:../rusty-engine/rules/packages/gameplay-standard-authoring':
+    resolution: {directory: ../rusty-engine/rules/packages/gameplay-standard-authoring, type: directory}
+    peerDependencies:
+      '@rusty-engine/gameplay-rules-authoring': 0.1.0
+      '@rusty-engine/gameplay-rules-contracts': 0.1.0
+      '@rusty-engine/gameplay-standard-contracts': 0.1.0
+
+  '@rusty-engine/gameplay-standard-contracts@file:../rusty-engine/rules/packages/gameplay-standard-contracts':
+    resolution: {directory: ../rusty-engine/rules/packages/gameplay-standard-contracts, type: directory}
+
   '@schematics/angular@21.2.19':
     resolution: {integrity: sha512-eL+UU9eizoadhDB4YEctRmmo0A5iwrSmGzeuEa6akrq8nLGVWM8zO91HTJutkPqGQjelF+UOiOShsQSZAU9SIQ==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0, npm: ^6.11.0 || ^7.5.6 || >=8.0.0, yarn: '>= 1.13.0'}
@@ -3340,6 +3356,7 @@ packages:
   eslint@9.39.5:
     resolution: {integrity: sha512-DgZS62aPLXKlnxILS/AYCoRvHaZeXceIzlXPkkGGzJWSow1aEk0lbTlxUSlyjC8jcaKxAdOnTDz+o1JFSBsyjw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -8085,6 +8102,14 @@ snapshots:
       '@rusty-engine/gameplay-rules-contracts': file:../rusty-engine/rules/packages/gameplay-rules-contracts
 
   '@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts': {}
+
+  '@rusty-engine/gameplay-standard-authoring@file:../rusty-engine/rules/packages/gameplay-standard-authoring(@rusty-engine/gameplay-rules-authoring@file:../rusty-engine/rules/packages/gameplay-rules-authoring(@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts))(@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts)(@rusty-engine/gameplay-standard-contracts@file:../rusty-engine/rules/packages/gameplay-standard-contracts)':
+    dependencies:
+      '@rusty-engine/gameplay-rules-authoring': file:../rusty-engine/rules/packages/gameplay-rules-authoring(@rusty-engine/gameplay-rules-contracts@file:../rusty-engine/rules/packages/gameplay-rules-contracts)
+      '@rusty-engine/gameplay-rules-contracts': file:../rusty-engine/rules/packages/gameplay-rules-contracts
+      '@rusty-engine/gameplay-standard-contracts': file:../rusty-engine/rules/packages/gameplay-standard-contracts
+
+  '@rusty-engine/gameplay-standard-contracts@file:../rusty-engine/rules/packages/gameplay-standard-contracts': {}
 
   '@schematics/angular@21.2.19(chokidar@5.0.0)':
     dependencies:

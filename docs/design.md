@@ -92,6 +92,51 @@ a universal Engine behavior IR. A future downstream should author its own
 bounded vocabulary rather than import Dagger semantics or add a registry,
 selector language, generic bridge, or live TypeScript authority.
 
+### Standard gameplay adoption
+
+Loading Bay uses the public `gameplay-standard` actor and destructible catalog
+fragments as ordinary `gameplay-mechanics` definitions. The Demo visibly
+merges those fragments with its armor, inventory, and damage definitions; the
+presets do not create a world, registry, scheduler, or hidden evaluator. The
+actor vitality track is used by player/enemy health; explosive props select the
+standard destructible integrity track through the same Doom damage, health
+projection, and snapshot paths. The current public destructible preset has a
+fixed integrity capacity, so Loading Bay rejects a future prop that exceeds it
+instead of silently recreating or widening that preset. Health/armor policy,
+damage sources, hitboxes, pickups, enemy defeat/drop behavior, and explosive
+consequences remain named Doom adapters in Rust.
+
+`gameplay/authoring/src/packages/e1m1-standard-vitality.ts` is the companion
+generated-TypeScript DSL example. It authors one narrow `loading-bay.vitality`
+extension containing E1M1's cap policy. `LoadingBayProductService` admits and
+compiles that canonical package before constructing the runtime, then passes
+its typed health/armor bounds through normal gameplay admission. The extension
+is deliberately not mixed into Doom's closed encounter/pickup/program trees:
+those remain product-specific typed Rust vocabularies.
+
+The developer-command client is a host surface, not gameplay authority. When a
+product adapter exposes it, it must call a product-owned command queue at a
+selected fixed-step safe point, obtain receipts from existing mechanics owners,
+and keep discovery, profiles, and schemas explicit. Loading Bay does not add a
+generic HTTP mutation endpoint or console-local health state for convenience.
+Its `LoadingBayProductService` exposes Engine's borrowed safe-point bindings for
+standard entity/mechanics inspection, standard track mutation, and one typed
+Loading Bay play command. Browser development uses a separate bounded
+`/api/developer-command` WebSocket that cannot create or disconnect the game
+session; Tauri uses typed discover/submit/poll/cancel IPC while the existing
+desktop ticker reaches the same safe point. The product TypeScript adapter
+selects those transports and injects the generated public client into the
+Engine application-host console. A request is unavailable without an active
+gameplay generation, cancellation drops only queued work, and a Loading Bay
+play result is published only after its ordinary service outcome is observed.
+Session replacement or disconnect converts every queued or in-flight request
+into an immediate `retired-generation` result retained for transport polling;
+callers never wait for their adapter timeout to discover retirement.
+The runtime identity remains stable for the admitted project while discovery's
+revision advances with each gameplay generation, so the long-lived application
+client can reacquire the live context without mistaking an ordinary restart for
+a different product runtime.
+
 ## Adapters
 
 `browser-host` is the normal development adapter: it translates bounded `loading-bay.v2` WebSocket messages to the service and exposes read-only diagnostics. The Angular shell consumes the projected content through Rusty Engine's public application-host.
@@ -104,7 +149,12 @@ Rusty Engine alone owns renderer and canvas lifetime. This repository neither im
 
 The only Rust provider dependency is the complete adjacent `rusty-engine` facade, through one unconditional path dependency. Owner namespaces remain explicit. This repo does not pin or manage the sibling checkout, and it does not select Engine subcrates.
 
-Game-owned semantics belong here first. A reusable Engine seam requires evidence from another real consumer. Do not introduce a plugin registry, service locator, generic method-name bridge, behavior IR, replay/certification framework, or live TypeScript authority.
+Game-owned semantics belong here first. Promote a neutral Engine seam whenever
+one concrete product need, proof, or architecture decision shows that shared
+ownership prevents duplicate authority or correctness drift; consumer count is
+not a gate. Do not introduce a plugin registry, service locator, generic
+method-name bridge, behavior IR, replay/certification framework, or live
+TypeScript authority.
 
 ## Content and evidence
 

@@ -2068,7 +2068,8 @@ impl GameRuntime {
                 .collect::<Result<Vec<_>, _>>()?,
         )
         .map_err(GameSnapshotError::Inventory)?;
-        let mechanics = crate::mechanics::build_runtime(&item_definitions)
+        let vitality_policy = crate::DoomVitalityPolicy::doom_compatibility();
+        let mechanics = crate::mechanics::build_runtime(&item_definitions, vitality_policy)
             .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
         if source_schema_version >= GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION {
             rusty_engine::gameplay_mechanics::validate_state_against_catalog(
@@ -2632,6 +2633,11 @@ impl GameRuntime {
             );
         }
 
+        let explosive_prop_entities = snapshot
+            .explosive_props
+            .iter()
+            .map(|prop| EntityId::new(prop.entity))
+            .collect::<BTreeSet<_>>();
         let mut health = BTreeMap::new();
         let mut health_ids = BTreeSet::new();
         for health_snapshot in snapshot.health {
@@ -2641,6 +2647,11 @@ impl GameRuntime {
                 });
             }
             let entity = EntityId::new(health_snapshot.entity);
+            let preset = if explosive_prop_entities.contains(&entity) {
+                crate::mechanics::VitalityPreset::DestructibleObject
+            } else {
+                crate::mechanics::VitalityPreset::ActionActor
+            };
             let view =
                 entities
                     .view(entity)
@@ -2676,7 +2687,7 @@ impl GameRuntime {
                     .is_some_and(|definition| matches!(definition.kind, ItemKind::Armor { .. })),
                 _ => false,
             };
-            if !config.is_valid()
+            if !config.is_valid(vitality_policy)
                 || health_snapshot.current > config.max
                 || health_snapshot.armor > config.max_armor
                 || !armor_item_is_valid
@@ -2695,6 +2706,7 @@ impl GameRuntime {
                     health_snapshot.current,
                     health_snapshot.armor,
                     armor_item.as_ref(),
+                    preset,
                 )
                 .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
             } else {
@@ -2707,7 +2719,7 @@ impl GameRuntime {
                         reason: format!("health entity {entity} has no canonical tracks"),
                     })?;
                 let canonical_health = tracks
-                    .current(&crate::mechanics::health_track())
+                    .current(&crate::mechanics::vitality_track(preset))
                     .and_then(|value| u32::try_from(value.get()).ok());
                 let canonical_armor = tracks
                     .current(&crate::mechanics::armor_track())
@@ -2745,7 +2757,11 @@ impl GameRuntime {
                 .component::<rusty_engine::gameplay_mechanics::TracksComponent>(*entity)
                 .ok()
                 .flatten()
-                .and_then(|tracks| tracks.current(&crate::mechanics::health_track()))
+                .and_then(|tracks| {
+                    tracks.current(&crate::mechanics::vitality_track(
+                        crate::mechanics::VitalityPreset::ActionActor,
+                    ))
+                })
                 .and_then(|value| u32::try_from(value.get()).ok())
                 .unwrap_or(0);
             let consistent = match enemy.state {
@@ -2785,7 +2801,11 @@ impl GameRuntime {
                 .component::<rusty_engine::gameplay_mechanics::TracksComponent>(entity)
                 .ok()
                 .flatten()
-                .and_then(|tracks| tracks.current(&crate::mechanics::health_track()))
+                .and_then(|tracks| {
+                    tracks.current(&crate::mechanics::vitality_track(
+                        crate::mechanics::VitalityPreset::DestructibleObject,
+                    ))
+                })
                 .and_then(|value| u32::try_from(value.get()).ok())
                 .unwrap_or(0);
             if !config.is_valid()

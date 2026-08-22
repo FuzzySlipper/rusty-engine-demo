@@ -407,6 +407,34 @@ impl BrowserRuntime {
             .map_err(|error| error.to_string())
     }
 
+    pub fn discover_developer_commands(
+        &self,
+    ) -> Result<rusty_engine::developer_command::HostCommandDiscovery, String> {
+        self.service
+            .discover_developer_commands()
+            .map_err(|error| error.to_string())
+    }
+
+    pub fn submit_developer_command(
+        &mut self,
+        request: crate::LoadingBayDeveloperCommandRequest,
+    ) -> Result<(), String> {
+        self.service
+            .submit_developer_command(request)
+            .map_err(|error| error.to_string())
+    }
+
+    pub fn poll_developer_command(
+        &mut self,
+        correlation: &str,
+    ) -> Option<crate::LoadingBayDeveloperCommandResponse> {
+        self.service.poll_developer_command(correlation)
+    }
+
+    pub fn cancel_developer_command(&mut self, correlation: &str) -> bool {
+        self.service.cancel_developer_command(correlation)
+    }
+
     pub fn advance(&mut self, elapsed: Duration) -> Result<GameLoopAdvanceReceipt, String> {
         self.service
             .advance(elapsed)
@@ -555,6 +583,30 @@ impl InProcessLoadingBayAdapter {
         self.runtime.submit(command)
     }
 
+    pub fn discover_developer_commands(
+        &self,
+    ) -> Result<rusty_engine::developer_command::HostCommandDiscovery, String> {
+        self.runtime.discover_developer_commands()
+    }
+
+    pub fn submit_developer_command(
+        &mut self,
+        request: crate::LoadingBayDeveloperCommandRequest,
+    ) -> Result<(), String> {
+        self.runtime.submit_developer_command(request)
+    }
+
+    pub fn poll_developer_command(
+        &mut self,
+        correlation: &str,
+    ) -> Option<crate::LoadingBayDeveloperCommandResponse> {
+        self.runtime.poll_developer_command(correlation)
+    }
+
+    pub fn cancel_developer_command(&mut self, correlation: &str) -> bool {
+        self.runtime.cancel_developer_command(correlation)
+    }
+
     pub fn advance(&mut self, elapsed: Duration) -> Result<u64, String> {
         let receipt = self.runtime.advance(elapsed)?;
         self.pending_projection_facts
@@ -682,6 +734,14 @@ mod tests {
             &project,
         )
         .expect("copy admitted project");
+        let vitality = root.join("data/gameplay/loading-bay-e1m1-standard-vitality.package.json");
+        std::fs::create_dir_all(vitality.parent().expect("vitality artifact parent"))
+            .expect("create gameplay artifact root");
+        std::fs::copy(
+            source_root.join("data/gameplay/loading-bay-e1m1-standard-vitality.package.json"),
+            vitality,
+        )
+        .expect("copy admitted standard vitality artifact");
         copy_directory(
             &source_root.join("content/doom-e1m1/textures"),
             &root.join("content/doom-e1m1/textures"),

@@ -237,10 +237,9 @@ for (const [label, packageJson] of [
   for (const section of ["dependencies", "devDependencies"]) {
     for (const dependencyName of Object.keys(packageJson[section] ?? {})) {
       // The Engine's public downstream surfaces only: the bundled web
-      // application host, and the gameplay-rules authoring packages the
-      // downstream-adoption guide's TS authoring step is built on (the
-      // rusty-dagger worked example depends on exactly these). Renderer and
-      // Private Engine internals stay banned in downstream TS.
+      // application host, semantic-neutral rules authoring, and standard
+      // gameplay authoring/contracts used to materialize this product's typed
+      // vitality extension. Renderer and private Engine internals stay banned.
       const allowedEnginePackages =
         label === "package.json" &&
         section === "dependencies" &&
@@ -248,13 +247,15 @@ for (const [label, packageJson] of [
           "@rusty-engine/application-host",
           "@rusty-engine/gameplay-rules-authoring",
           "@rusty-engine/gameplay-rules-contracts",
+          "@rusty-engine/gameplay-standard-authoring",
+          "@rusty-engine/gameplay-standard-contracts",
         ].includes(dependencyName);
       if (
         dependencyName.startsWith("@rusty-engine/") &&
         !allowedEnginePackages
       ) {
         violations.push(
-          `${label}: downstream ${section} must contain only the public Engine application host and gameplay-rules authoring packages, not ${dependencyName}`,
+          `${label}: downstream ${section} must contain only public Engine application-host and gameplay authoring packages, not ${dependencyName}`,
         );
       }
     }
@@ -298,7 +299,7 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `downstream boundary audit passed: ${String(files.length)} operational files, one adjacent Rust facade, one bundled Engine application host, no private downstream or renderer internals`,
+  `downstream boundary audit passed: ${String(files.length)} operational files, one adjacent Rust facade, public Engine application-host/gameplay authoring packages, no private downstream or renderer internals`,
 );
 
 function collect(path) {

@@ -19,9 +19,12 @@ use loading_bay_game::{
     GameEvent, GameLoopFact, ProjectStore,
 };
 
+#[path = "browser_host/developer_command.rs"]
+mod developer_command;
 #[path = "browser_host/session.rs"]
 mod session;
 
+use developer_command::{developer_upgrade_requested, run_developer_session};
 use session::{run_game_session, session_upgrade_requested};
 
 const DEFAULT_ADDRESS: &str = "127.0.0.1:8787";
@@ -245,6 +248,10 @@ fn default_save_root() -> PathBuf {
 
 fn handle_connection(mut stream: TcpStream, runtime: &Arc<SharedBrowserRuntime>, dist: &Path) {
     let _ = stream.set_read_timeout(Some(Duration::from_secs(3)));
+    if developer_upgrade_requested(&stream) {
+        run_developer_session(stream, Arc::clone(runtime));
+        return;
+    }
     if session_upgrade_requested(&stream) {
         run_game_session(stream, Arc::clone(runtime));
         return;
@@ -629,6 +636,15 @@ mod tests {
             &directory_for_test_resources().join("content/doom-e1m1/sprites"),
             &directory.join("content/doom-e1m1/sprites"),
         );
+        let vitality =
+            directory.join("data/gameplay/loading-bay-e1m1-standard-vitality.package.json");
+        fs::create_dir_all(vitality.parent().unwrap()).unwrap();
+        fs::copy(
+            directory_for_test_resources()
+                .join("data/gameplay/loading-bay-e1m1-standard-vitality.package.json"),
+            vitality,
+        )
+        .unwrap();
         let pending = ProjectStore::pending_path(&target).unwrap();
         let source = fs::read_to_string(default_project_path()).unwrap();
         let document = loading_bay_game::decode_project_document(&source)
@@ -655,6 +671,7 @@ mod tests {
             .expect("tick");
 
         for path in [
+            "/api/developer-command",
             "/api/input/connect",
             "/api/input/disconnect",
             "/api/input-intent",

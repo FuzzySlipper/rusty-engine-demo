@@ -14,6 +14,7 @@ pub use loading_bay_gameplay::*;
 
 mod application_content_projection;
 pub mod browser_adapter;
+mod developer_command;
 mod game_loop;
 mod product_service;
 mod project_store;
@@ -25,6 +26,9 @@ pub use application_content_projection::{
     doom_sky_projection, doom_texture_projection, externalize_frame_meshes,
     project_doom_e1m1_application_content, GameplayApplicationProjector,
     ProjectedApplicationContent,
+};
+pub use developer_command::{
+    LoadingBayDeveloperCommandRequest, LoadingBayDeveloperCommandResponse,
 };
 pub use game_loop::{
     EdgeCommandRejection, GameLoopAdvanceReceipt, GameLoopEdgeCommand, GameLoopEdgeCommandKind,
@@ -43,6 +47,7 @@ pub use project_store::{
     LoadedProjectSource, ProjectSaveMode, ProjectStore, ProjectStoreError,
     DEFAULT_MAX_PROJECT_FILE_BYTES,
 };
+pub use rusty_engine::developer_command::HostCommandDiscovery as LoadingBayDeveloperDiscovery;
 pub use rusty_engine::engine_spatial::{
     MaterialVoxel, VoxelEdit, VoxelEditApplyError, VoxelEditFact, VoxelEditReceipt,
     VoxelEditRejection, VoxelEditTransaction, VoxelProjectionRevisions, VoxelSourceRevision,

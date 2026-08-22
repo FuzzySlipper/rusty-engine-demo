@@ -674,6 +674,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "developer-command"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "developer-command-standard"
+version = "0.1.0"
+dependencies = [
+ "core-ids",
+ "developer-command",
+ "engine-inspector",
+ "entity-state",
+ "gameplay-mechanics",
+ "gameplay-resolution",
+ "gameplay-standard",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -884,7 +907,9 @@ dependencies = [
  "core-ids",
  "engine-spatial",
  "entity-state",
+ "gameplay-continuous-mechanics",
  "gameplay-mechanics",
+ "gameplay-standard",
  "serde",
  "serde_json",
  "voxel-asset",
@@ -1114,6 +1139,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "gameplay-continuous-mechanics"
+version = "0.1.0"
+dependencies = [
+ "core-ids",
+ "entity-state",
+ "gameplay-mechanics",
+ "gameplay-standard",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "gameplay-mechanics"
 version = "0.1.0"
 dependencies = [
@@ -1135,6 +1173,18 @@ dependencies = [
  "ryu-js",
  "serde_json",
  "sha2",
+]
+
+[[package]]
+name = "gameplay-standard"
+version = "0.1.0"
+dependencies = [
+ "core-ids",
+ "entity-state",
+ "gameplay-mechanics",
+ "gameplay-resolution",
+ "gameplay-rules",
+ "serde_json",
 ]
 
 [[package]]
@@ -3159,13 +3209,17 @@ dependencies = [
  "core-space",
  "core-time",
  "core-voxel",
+ "developer-command",
+ "developer-command-standard",
  "engine-inspector",
  "engine-spatial",
  "entity-state",
  "environment-authoring",
+ "gameplay-continuous-mechanics",
  "gameplay-mechanics",
  "gameplay-resolution",
  "gameplay-rules",
+ "gameplay-standard",
  "render-host-contracts",
  "render-model",
  "render-presentation",

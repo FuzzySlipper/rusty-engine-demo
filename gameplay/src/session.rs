@@ -147,6 +147,7 @@ impl GameSession {
         item_definitions: impl IntoIterator<Item = ItemDefinition>,
         definitions: impl IntoIterator<Item = GameEntityDefinition>,
         program_catalogs: SessionProgramCatalogs,
+        vitality_policy: crate::DoomVitalityPolicy,
     ) -> Result<Self, GameEntityDefinitionError> {
         let SessionProgramCatalogs {
             gameplay: gameplay_programs,
@@ -191,7 +192,7 @@ impl GameSession {
         }
         let item_definitions = admit_item_definitions(item_definitions)
             .map_err(GameEntityDefinitionError::Inventory)?;
-        let mechanics = mechanics::build_runtime(&item_definitions)
+        let mechanics = mechanics::build_runtime(&item_definitions, vitality_policy)
             .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
         let inventory_configs = definitions
             .iter()
@@ -501,10 +502,18 @@ impl GameSession {
                 if view.collision.is_none() {
                     return Err(GameEntityDefinitionError::HealthMissingCollision { entity });
                 }
-                if !config.is_valid() {
+                if !config.is_valid(vitality_policy) {
                     return Err(GameEntityDefinitionError::InvalidHealthConfig { entity });
                 }
-                mechanics::attach_health(&mut entities, entity, config)
+                let preset = if definition.explosive_prop.is_some() {
+                    if config.max > mechanics::destructible_integrity_capacity() {
+                        return Err(GameEntityDefinitionError::InvalidHealthConfig { entity });
+                    }
+                    mechanics::VitalityPreset::DestructibleObject
+                } else {
+                    mechanics::VitalityPreset::ActionActor
+                };
+                mechanics::attach_health(&mut entities, entity, config, preset)
                     .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
                 health.insert(entity, config);
             }
@@ -1397,8 +1406,17 @@ impl GameSession {
             .entities
             .component::<rusty_engine::gameplay_mechanics::TracksComponent>(entity)
             .ok()??;
-        let current =
-            u32::try_from(tracks.current(&crate::mechanics::health_track())?.get()).ok()?;
+        let preset = if self.explosive_props.contains_key(&entity) {
+            crate::mechanics::VitalityPreset::DestructibleObject
+        } else {
+            crate::mechanics::VitalityPreset::ActionActor
+        };
+        let current = u32::try_from(
+            tracks
+                .current(&crate::mechanics::vitality_track(preset))?
+                .get(),
+        )
+        .ok()?;
         let armor = u32::try_from(tracks.current(&crate::mechanics::armor_track())?.get()).ok()?;
         let armor_item = self
             .entities
@@ -1423,6 +1441,54 @@ impl GameSession {
                 VitalityState::Alive
             },
         })
+    }
+
+    /// Maps the public standard host DTO against the exact live component
+    /// revision immediately before borrowed command dispatch.
+    pub fn developer_map_track_set(
+        &self,
+        request: rusty_engine::developer_command_standard::HostTrackSetRequest,
+    ) -> Result<rusty_engine::gameplay_mechanics::TrackSetRequest, String> {
+        request
+            .map_live(&self.entities)
+            .map_err(|error| error.to_string())
+    }
+
+    /// Applies an admitted exact standard track request through its named
+    /// Engine mechanics owner.
+    pub fn developer_set_track(
+        &mut self,
+        request: rusty_engine::gameplay_mechanics::TrackSetRequest,
+    ) -> Result<
+        rusty_engine::gameplay_mechanics::TrackSetReceipt,
+        rusty_engine::gameplay_mechanics::MechanicsError,
+    > {
+        rusty_engine::developer_command_standard::admin_set_track(
+            &mut self.entities,
+            &self.mechanics.catalog,
+            request,
+        )
+    }
+
+    pub fn developer_inspect_entity(
+        &self,
+        entity: EntityId,
+    ) -> Option<rusty_engine::engine_inspector::EntityInspection> {
+        rusty_engine::developer_command_standard::inspect_entity(&self.entities, entity)
+    }
+
+    pub fn developer_inspect_mechanics(
+        &self,
+        entity: EntityId,
+    ) -> Result<
+        rusty_engine::engine_inspector::MechanicsStructuralEntityInspection,
+        rusty_engine::gameplay_mechanics::MechanicsError,
+    > {
+        rusty_engine::developer_command_standard::inspect_mechanics(
+            &self.entities,
+            &self.mechanics.catalog,
+            entity,
+        )
     }
 
     pub fn explosive_prop(&self, entity: EntityId) -> Option<ExplosivePropView> {

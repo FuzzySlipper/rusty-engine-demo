@@ -51,6 +51,7 @@ pub mod scheduler;
 pub mod secret_program;
 pub mod session;
 pub mod snapshot;
+pub mod standard_vitality;
 pub mod stored_project;
 pub mod switch_program;
 pub mod vitality;
@@ -192,7 +193,8 @@ pub use progression::{
     MAX_SECRET_OVERLAP_SUBJECTS, SECRET_TRIGGER_SCOPE,
 };
 pub use project_admission::{
-    admit_stored_project, admit_stored_project_with_document, decode_and_admit_stored_project,
+    admit_stored_project, admit_stored_project_with_document,
+    admit_stored_project_with_document_and_vitality_policy, decode_and_admit_stored_project,
     materialize_stored_project_voxels, AdmittedProject, AdmittedStoredProject,
 };
 pub use project_codec::{decode_project_document, encode_project_document, DecodedProjectDocument};
@@ -207,6 +209,10 @@ pub use secret_program::{
     StoredSecretPredicate, StoredSecretProgram, StoredSecretProgramNode,
 };
 pub use session::GameSession;
+pub use standard_vitality::{
+    admit_doom_vitality_policy, AdmittedDoomVitalityPolicy, DoomVitalityPolicy,
+    DoomVitalityPolicyError,
+};
 pub use stored_project::{
     decode_stored_project, diagnostic_code, ProjectDiagnostic, StoredArmorGrantMode,
     StoredArmorTransition, StoredAsset, StoredAssetCatalogMetadata, StoredAssetImport,
@@ -234,8 +240,8 @@ pub use switch_program::{
 };
 pub use vitality::{
     DamageCommand, DamageDisposition, DamageService, DamageSource, HealthConfig, HealthView,
-    VitalityFact, VitalityReceipt, VitalityRejection, VitalityState, MAX_ARMOR,
-    MAX_COMBAT_HITBOX_HALF_EXTENT, MAX_DAMAGE, MAX_HEALTH,
+    VitalityFact, VitalityReceipt, VitalityRejection, VitalityState, MAX_COMBAT_HITBOX_HALF_EXTENT,
+    MAX_DOOM_DAMAGE,
 };
 
 pub use doom_e1m1_materials::{

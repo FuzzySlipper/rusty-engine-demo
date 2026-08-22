@@ -23,9 +23,45 @@ those objects, and let the owning Rust service execute/commit the candidate.
 
 Author the change in `ts/packages/doom-e1m1-authoring` and materialize the sole canonical project at `content/projects/doom-e1m1.project.json`. Keep collision, navigation, triggers, hitboxes, and gameplay ownership explicit in Rust/project components; a mesh or texture is presentation only. Place new shipped E1M1 source assets under `content/doom-e1m1/`, record their exact provenance in `docs/source-provenance.md`, and extend deterministic content checks.
 
+## Choose a standard route
+
+Use a `gameplay-standard` preset when the product needs its ordinary mechanics
+shape and can compose its public catalog/component fragments directly. Loading
+Bay's vitality setup is the example: the standard actor fragment is merged
+with Doom's armor/item entries in `gameplay/src/mechanics.rs`, and explosive
+props use the standard destructible integrity track through the same named
+damage/health/snapshot services. The current destructible preset is
+fixed-capacity; admission rejects an incompatible future prop rather than
+locally widening it. Do not wrap preset fragments in a local generic preset
+framework.
+
+Use a typed standard extension when the product has a small immutable policy
+that Engine must carry but not interpret. The `e1m1-standard-vitality`
+TypeScript package and `gameplay/src/standard_vitality.rs` show the full path:
+generated DSL, canonical package, standard admission, product compiler, named
+Rust policy consumed by normal gameplay admission. Keep hitscan, drops,
+encounters, pickups, and consequences as
+product-specific typed vocabularies rather than forcing them into this artifact.
+
 ## Extend a shell
 
 Browser changes belong in the Angular shell or `browser-shell`, translating semantic input to the existing service/session contract. Tauri changes belong in the typed in-process adapter. Both must use the public Engine application-host; neither may import a private renderer bridge, create a canvas, or own a frame loop.
+
+For developer commands, expose the public Engine marker through
+`CommandBindings::expose_borrowed`, enqueue the generated host request, and
+call `dispatch_borrowed` only where the live Rust owner is already available at
+the product safe point. Use `HostCommandDiscovery::from_bindings` and
+`map_command_response`; do not recreate envelope validation, correlation
+history, discovery descriptors, or response DTOs locally. Keep only typed
+product payload/result adapters and bounded transport queues. Loading Bay's
+browser WebSocket and Tauri IPC are examples of thin adapters over that same
+port, while `ts/packages/browser-shell/src/developer-command.ts` shows public
+generated-client schemas, cancellation, and application-host shell wiring.
+Loading Bay supplies its product command schema in the base schema map because
+that executable command already appears in authoritative host discovery; adding
+the same descriptor again as a client extension would create a duplicate
+command identity. A developer play command must await the normal product
+outcome rather than reporting queue admission as gameplay completion.
 
 ## Proof
 

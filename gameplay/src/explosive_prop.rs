@@ -11,7 +11,7 @@ use crate::explosive_prop_program::{
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
 use crate::vitality::{
-    DamageCommand, DamageService, DamageSource, VitalityReceipt, VitalityRejection, MAX_DAMAGE,
+    DamageCommand, DamageService, DamageSource, VitalityReceipt, VitalityRejection, MAX_DOOM_DAMAGE,
 };
 
 pub const MAX_EXPLOSION_RADIUS: f32 = 100_000.0;
@@ -25,7 +25,7 @@ pub struct ExplosivePropConfig {
 
 impl ExplosivePropConfig {
     pub(crate) fn is_valid(self) -> bool {
-        (1..=MAX_DAMAGE).contains(&self.damage)
+        (1..=MAX_DOOM_DAMAGE).contains(&self.damage)
             && self.radius.is_finite()
             && self.radius > 0.0
             && self.radius <= MAX_EXPLOSION_RADIUS
