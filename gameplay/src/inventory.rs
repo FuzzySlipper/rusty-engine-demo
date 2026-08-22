@@ -4,10 +4,8 @@ use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
 use rusty_engine::core_time::Tick;
 use rusty_engine::gameplay_mechanics::{
-    EquipmentEquipRequest, EquipmentService as MechanicsEquipmentService, EquipmentSwapRequest,
-    EquipmentUnequipRequest, InventoryMutationRequest,
-    InventoryService as MechanicsInventoryService, OperationId, SourceInstanceId,
-    SourceInstanceIdentity,
+    InventoryMutationRequest, InventoryService as MechanicsInventoryService, OperationId,
+    SourceInstanceId, SourceInstanceIdentity,
 };
 use rusty_engine::gameplay_standard::{
     CapabilityRequirementId, CapabilityRoleBinding, CapabilityRoleBindings, CapabilityRoleId,
@@ -660,7 +658,7 @@ pub(crate) fn apply_standard_stack(
     let plan = operation
         .plan(
             &bindings,
-        &ExactInputBundle::empty(),
+            &ExactInputBundle::empty(),
             &session.entities,
             &session.mechanics.catalog,
             &context,
@@ -715,6 +713,96 @@ pub(crate) fn apply_standard_stack(
             before: before_quantity,
             after: after_quantity,
         }],
+    })
+}
+
+/// Plans and applies selected unique-equipment leaves inside the caller's private session
+/// candidate. Product code selects the weapon and slot first; this adapter owns only the
+/// neutral role binding, source validation, and candidate effect application.
+///
+/// Every leaf is planned and source-validated against the same authoritative candidate state
+/// before any effect runs. Effects then execute in order against that one candidate. A later
+/// failure is never published because `InventoryService::apply` owns the enclosing candidate and
+/// is its only publication point. This permits a product-owned follow-up (weapon disposal after
+/// unequip) to remain atomic with the standard equipment mutation without creating a second
+/// candidate or an invented inventory endpoint.
+fn apply_standard_unique_equipment_operations(
+    session: &mut crate::session::GameSession,
+    owner: EntityId,
+    sequence: u64,
+    operations: impl IntoIterator<Item = StandardOperation>,
+) -> Result<(), InventoryRejection> {
+    let operation_id = operation_id(sequence)?;
+    let source = source_identity(operation_id.clone())?;
+    let role = equipment_role()?;
+    let mut plans = Vec::new();
+
+    for operation in operations {
+        let requirements = operation.requirements();
+        let required_capabilities = requirements
+            .iter()
+            .find(|requirement| requirement.role() == &role)
+            .map(|requirement| requirement.capabilities().to_vec())
+            .ok_or_else(|| InventoryRejection::Mechanics {
+                reason: "standard unique equipment operation lacks the product equipment role"
+                    .to_string(),
+            })?;
+        let bindings = CapabilityRoleBindings::admit(
+            &requirements,
+            vec![
+                CapabilityRoleBinding::new(role.clone(), owner, required_capabilities).map_err(
+                    |error| InventoryRejection::Mechanics {
+                        reason: error.to_string(),
+                    },
+                )?,
+            ],
+        )
+        .map_err(|error| InventoryRejection::Mechanics {
+            reason: error.to_string(),
+        })?;
+        let context = StandardOperationContext::new(operation_id.clone(), source.clone()).map_err(
+            |error| InventoryRejection::Mechanics {
+                reason: error.to_string(),
+            },
+        )?;
+        let plan = operation
+            .plan(
+                &bindings,
+                &ExactInputBundle::empty(),
+                &session.entities,
+                &session.mechanics.catalog,
+                &context,
+            )
+            .map_err(|error| InventoryRejection::Mechanics {
+                reason: error.to_string(),
+            })?;
+        plan.validate_source_state(&session.entities, &session.mechanics.catalog)
+            .map_err(|error| InventoryRejection::Mechanics {
+                reason: error.to_string(),
+            })?;
+        plans.push(plan);
+    }
+
+    for plan in plans {
+        let receipt = plan
+            .effect()
+            .apply_to_candidate(&mut session.entities, &session.mechanics.catalog)
+            .map_err(mechanics_rejection)?;
+        if !matches!(receipt, StandardMechanicsReceipt::Equipment(_)) {
+            return Err(InventoryRejection::Mechanics {
+                reason: "standard unique equipment operation returned a non-equipment receipt"
+                    .to_string(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn equipment_role() -> Result<CapabilityRoleId, InventoryRejection> {
+    CapabilityRoleId::parse("inventory-equipment-owner").map_err(|error| {
+        InventoryRejection::Mechanics {
+            reason: error.to_string(),
+        }
     })
 }
 
@@ -997,6 +1085,9 @@ fn apply_action(
                     .ok_or_else(|| InventoryRejection::IncompatibleSelection {
                         item: item.clone(),
                     })?;
+                // This is not a standard transfer: player setup already materialized the
+                // weapon, so this product pickup/grant crosses the None-to-owner containment
+                // boundary. TransferUniqueItem deliberately requires two inventory owners.
                 crate::mechanics::set_weapon_containment(&mut session.entities, weapon, owner)
                     .map_err(|reason| InventoryRejection::Mechanics { reason })?;
             } else {
@@ -1070,26 +1161,24 @@ fn apply_action(
                         item: item.clone(),
                     })?;
                 if before_view.equipped_weapon.as_ref() == Some(item) {
-                    let state_revision = session.entities.revision();
-                    MechanicsEquipmentService::unequip(
-                        &mut session.entities,
-                        &session.mechanics.catalog,
-                        EquipmentUnequipRequest {
-                            operation: operation.clone(),
-                            source: source.clone(),
-                            owner,
+                    apply_standard_unique_equipment_operations(
+                        session,
+                        owner,
+                        sequence,
+                        [StandardOperation::UnequipUniqueItem {
+                            role: equipment_role()?,
                             item: weapon,
-                            expected_equipment_revision: None,
-                            expected_state_revision: state_revision,
-                        },
-                    )
-                    .map_err(mechanics_rejection)?;
+                        }],
+                    )?;
                     facts.push(InventoryFact::EquippedWeaponChanged {
                         owner,
                         before: Some(item.clone()),
                         after: None,
                     });
                 }
+                // Standard unequip above has removed every equipment assignment. The remaining
+                // owner-to-None containment change is Loading Bay disposal policy, not a
+                // TransferUniqueItem (which has two required inventory endpoints).
                 crate::mechanics::clear_weapon_containment(&mut session.entities, weapon)
                     .map_err(|reason| InventoryRejection::Mechanics { reason })?;
             } else {
@@ -1174,7 +1263,6 @@ fn apply_action(
                 runtime.weapon_entities.get(item).copied().ok_or_else(|| {
                     InventoryRejection::IncompatibleSelection { item: item.clone() }
                 })?;
-            let state_revision = session.entities.revision();
             if let Some(before_item) = &before_view.equipped_weapon {
                 let outgoing = runtime
                     .weapon_entities
@@ -1183,36 +1271,28 @@ fn apply_action(
                     .ok_or_else(|| InventoryRejection::Mechanics {
                         reason: format!("missing unique entity for equipped weapon {before_item}"),
                     })?;
-                MechanicsEquipmentService::swap(
-                    &mut session.entities,
-                    &session.mechanics.catalog,
-                    EquipmentSwapRequest {
-                        operation,
-                        source,
-                        owner,
+                apply_standard_unique_equipment_operations(
+                    session,
+                    owner,
+                    sequence,
+                    [StandardOperation::SwapUniqueItem {
+                        role: equipment_role()?,
                         outgoing_item: outgoing,
                         incoming_item: incoming,
                         incoming_slots: vec![weapon_slot()],
-                        expected_equipment_revision: None,
-                        expected_state_revision: state_revision,
-                    },
-                )
-                .map_err(mechanics_rejection)?;
+                    }],
+                )?;
             } else {
-                MechanicsEquipmentService::equip(
-                    &mut session.entities,
-                    &session.mechanics.catalog,
-                    EquipmentEquipRequest {
-                        operation,
-                        source,
-                        owner,
+                apply_standard_unique_equipment_operations(
+                    session,
+                    owner,
+                    sequence,
+                    [StandardOperation::EquipUniqueItem {
+                        role: equipment_role()?,
                         item: incoming,
                         slots: vec![weapon_slot()],
-                        expected_equipment_revision: None,
-                        expected_state_revision: state_revision,
-                    },
-                )
-                .map_err(mechanics_rejection)?;
+                    }],
+                )?;
             }
             let before = before_view.equipped_weapon;
             Ok(vec![InventoryFact::EquippedWeaponChanged {

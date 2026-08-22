@@ -3,6 +3,7 @@ use loading_bay_game::{
     InventoryRejection, ItemDefinitionId,
 };
 use rusty_engine::core_ids::EntityId;
+use rusty_engine::gameplay_mechanics::{EquipmentComponent, ItemComponent};
 
 const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const PLAYER: EntityId = EntityId::new(1);
@@ -256,6 +257,134 @@ fn e1m1_inventory_snapshot_round_trips_without_command_history() {
     let encoded = encode_game_snapshot(&runtime).unwrap();
     let reopened = decode_game_snapshot(&encoded).unwrap();
     assert_eq!(encode_game_snapshot(&reopened).unwrap(), encoded);
+}
+
+#[test]
+fn weapon_selection_uses_standard_equipment_and_selected_weapon_disposal_is_atomic() {
+    let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let shotgun = ItemDefinitionId::parse("weapon/shotgun").unwrap();
+
+    // Loading Bay retains this None-to-owner containment step because the item was authored and
+    // materialized with player setup, not transferred from another inventory owner.
+    runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: shotgun.clone(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    let shotgun_entity = unique_item_entity(&runtime, "weapon.shotgun");
+    assert_eq!(
+        runtime.session().entities().contained_in(shotgun_entity),
+        Some(PLAYER)
+    );
+
+    // An occupied selection is a standard SwapUniqueItem: the canonical equipment component
+    // moves from pistol to shotgun and survives the normal save/reopen path.
+    runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 2,
+                action: InventoryAction::SelectWeapon {
+                    item: shotgun.clone(),
+                },
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        runtime.session().inventory(PLAYER).unwrap().equipped_weapon,
+        Some(shotgun.clone())
+    );
+    assert_eq!(
+        runtime
+            .session()
+            .entities()
+            .component::<EquipmentComponent>(PLAYER)
+            .unwrap()
+            .unwrap()
+            .assignments()
+            .iter()
+            .map(|assignment| assignment.item)
+            .collect::<Vec<_>>(),
+        vec![shotgun_entity]
+    );
+    let reopened = decode_game_snapshot(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    assert_eq!(
+        reopened
+            .session()
+            .inventory(PLAYER)
+            .unwrap()
+            .equipped_weapon,
+        Some(shotgun.clone())
+    );
+
+    // Consume first performs standard UnequipUniqueItem, then the product's owner-to-None
+    // disposal containment step in the same private inventory-command candidate. A successful
+    // receipt therefore cannot leave a deleted weapon equipped.
+    runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 3,
+                action: InventoryAction::Consume {
+                    item: shotgun.clone(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        runtime.session().entities().contained_in(shotgun_entity),
+        None
+    );
+    assert!(runtime
+        .session()
+        .entities()
+        .component::<EquipmentComponent>(PLAYER)
+        .unwrap()
+        .unwrap()
+        .assignments()
+        .is_empty());
+    assert_eq!(
+        runtime.session().inventory(PLAYER).unwrap().equipped_weapon,
+        None
+    );
+
+    // A rejected repeat leaves the saved product state untouched, including both the equipment
+    // result and product disposal containment.
+    let before_rejection = encode_game_snapshot(&runtime).unwrap();
+    assert!(matches!(
+        runtime.apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 3,
+                action: InventoryAction::Consume {
+                    item: shotgun,
+                    quantity: 1,
+                },
+            },
+        ),
+        Err(loading_bay_game::RuntimeError::Inventory(
+            InventoryRejection::RepeatedCommand { sequence: 3 }
+        ))
+    ));
+    assert_eq!(encode_game_snapshot(&runtime).unwrap(), before_rejection);
+}
+
+fn unique_item_entity(runtime: &GameRuntime, definition: &str) -> EntityId {
+    runtime
+        .session()
+        .entities()
+        .components::<ItemComponent>()
+        .unwrap()
+        .find_map(|(entity, item)| (item.definition().as_str() == definition).then_some(entity))
+        .expect("authored unique weapon entity")
 }
 
 fn quantity(stacks: &[loading_bay_game::InventoryStack], item: &ItemDefinitionId) -> u32 {
