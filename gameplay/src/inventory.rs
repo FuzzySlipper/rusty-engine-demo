@@ -9,6 +9,11 @@ use rusty_engine::gameplay_mechanics::{
     InventoryService as MechanicsInventoryService, OperationId, SourceInstanceId,
     SourceInstanceIdentity,
 };
+use rusty_engine::gameplay_standard::{
+    CapabilityRequirementId, CapabilityRoleBinding, CapabilityRoleBindings, CapabilityRoleId,
+    ExactInputBundle, StandardMechanicsReceipt, StandardOperation, StandardOperationContext,
+    STANDARD_INVENTORY_CAPABILITY,
+};
 
 use crate::combat::{
     MAX_WEAPON_COOLDOWN_TICKS, MAX_WEAPON_DAMAGE, MAX_WEAPON_MUZZLE_OFFSET, MAX_WEAPON_PELLETS,
@@ -553,6 +558,164 @@ impl InventoryService {
             },
         )
     }
+}
+
+/// Applies one selected fungible stack leaf through the Engine standard operation path.
+///
+/// Loading Bay retains its stack-order presentation and one-slot-per-distinct-item policy. That
+/// product capacity is intentionally checked before planning because Engine capacity costs are
+/// quantity-based and cannot represent a distinct-stack slot without changing Doom semantics.
+/// Catalog admission, revision capture, candidate mutation, and the canonical inventory receipt
+/// otherwise belong to the standard operation. Callers must already have selected the product
+/// action and own the enclosing candidate/publication boundary.
+pub(crate) fn apply_standard_stack(
+    session: &mut crate::session::GameSession,
+    owner: EntityId,
+    sequence: u64,
+    action: InventoryAction,
+) -> Result<InventoryReceipt, InventoryRejection> {
+    let runtime = session
+        .inventories
+        .get(&owner)
+        .ok_or(InventoryRejection::UnknownInventory { owner })?;
+    if let Some(last_applied) = runtime.last_applied_command_sequence {
+        if sequence == last_applied {
+            return Err(InventoryRejection::RepeatedCommand { sequence });
+        }
+        if sequence < last_applied {
+            return Err(InventoryRejection::StaleCommand {
+                sequence,
+                last_applied,
+            });
+        }
+    }
+
+    let (item, quantity, grant) = match &action {
+        InventoryAction::Grant { item, quantity } => (item.clone(), *quantity, true),
+        InventoryAction::Consume { item, quantity } => (item.clone(), *quantity, false),
+        _ => {
+            return Err(InventoryRejection::Mechanics {
+                reason: "standard stack application requires grant or consume".to_string(),
+            });
+        }
+    };
+    let before = inventory_view(session, owner)?;
+    let existing_quantity = before
+        .stacks
+        .iter()
+        .find(|stack| stack.item == item)
+        .map_or(0, |stack| stack.quantity);
+    if grant && existing_quantity == 0 && before.stacks.len() == before.capacity_slots {
+        return Err(InventoryRejection::InventoryFull {
+            capacity_slots: before.capacity_slots,
+        });
+    }
+
+    let role = CapabilityRoleId::parse("inventory-owner").map_err(|error| {
+        InventoryRejection::Mechanics {
+            reason: error.to_string(),
+        }
+    })?;
+    let item_id =
+        mechanics_item_id(&item).map_err(|reason| InventoryRejection::Mechanics { reason })?;
+    let operation = if grant {
+        StandardOperation::GrantStack {
+            role: role.clone(),
+            item: item_id,
+            quantity: u64::from(quantity),
+        }
+    } else {
+        StandardOperation::ConsumeStack {
+            role: role.clone(),
+            item: item_id,
+            quantity: u64::from(quantity),
+        }
+    };
+    let capability =
+        CapabilityRequirementId::parse(STANDARD_INVENTORY_CAPABILITY).map_err(|error| {
+            InventoryRejection::Mechanics {
+                reason: error.to_string(),
+            }
+        })?;
+    let bindings = CapabilityRoleBindings::admit(
+        &operation.requirements(),
+        vec![
+            CapabilityRoleBinding::new(role, owner, vec![capability]).map_err(|error| {
+                InventoryRejection::Mechanics {
+                    reason: error.to_string(),
+                }
+            })?,
+        ],
+    )
+    .map_err(|error| InventoryRejection::Mechanics {
+        reason: error.to_string(),
+    })?;
+    let operation_id = operation_id(sequence)?;
+    let source = source_identity(operation_id.clone())?;
+    let context = StandardOperationContext::new(operation_id, source).map_err(|error| {
+        InventoryRejection::Mechanics {
+            reason: error.to_string(),
+        }
+    })?;
+    let plan = operation
+        .plan(
+            &bindings,
+        &ExactInputBundle::empty(),
+            &session.entities,
+            &session.mechanics.catalog,
+            &context,
+        )
+        .map_err(|error| InventoryRejection::Mechanics {
+            reason: error.to_string(),
+        })?;
+    plan.validate_source_state(&session.entities, &session.mechanics.catalog)
+        .map_err(|error| InventoryRejection::Mechanics {
+            reason: error.to_string(),
+        })?;
+
+    let mut candidate = session.clone();
+    let receipt = plan
+        .effect()
+        .apply_to_candidate(&mut candidate.entities, &candidate.mechanics.catalog)
+        .map_err(|error| standard_stack_rejection(error, owner, &item))?;
+    let StandardMechanicsReceipt::Inventory(receipt) = receipt else {
+        return Err(InventoryRejection::Mechanics {
+            reason: "standard stack operation returned a non-inventory receipt".to_string(),
+        });
+    };
+    let before_quantity =
+        u32::try_from(receipt.before_quantity).map_err(|_| InventoryRejection::Mechanics {
+            reason: "standard inventory quantity exceeds product representation".to_string(),
+        })?;
+    let after_quantity =
+        u32::try_from(receipt.after_quantity).map_err(|_| InventoryRejection::Mechanics {
+            reason: "standard inventory quantity exceeds product representation".to_string(),
+        })?;
+    let runtime = candidate
+        .inventories
+        .get_mut(&owner)
+        .expect("standard inventory owner remains attached");
+    if grant && before_quantity == 0 {
+        runtime.stack_order.push(item.clone());
+    }
+    if !grant && after_quantity == 0 {
+        runtime.stack_order.retain(|candidate| candidate != &item);
+    }
+    runtime.last_applied_command_sequence = Some(sequence);
+    let after = inventory_view(&candidate, owner)?;
+    *session = candidate;
+    Ok(InventoryReceipt {
+        sequence,
+        action,
+        before,
+        after,
+        facts: vec![InventoryFact::QuantityChanged {
+            owner,
+            item,
+            before: before_quantity,
+            after: after_quantity,
+        }],
+    })
 }
 
 pub(crate) fn admit_item_definitions(
@@ -1111,6 +1274,39 @@ fn mechanics_rejection(
 ) -> InventoryRejection {
     InventoryRejection::Mechanics {
         reason: error.to_string(),
+    }
+}
+
+fn standard_stack_rejection(
+    error: rusty_engine::gameplay_mechanics::MechanicsError,
+    owner: EntityId,
+    item: &ItemDefinitionId,
+) -> InventoryRejection {
+    match error {
+        rusty_engine::gameplay_mechanics::MechanicsError::InventoryInsufficientQuantity {
+            requested,
+            available,
+            ..
+        } => match (u32::try_from(requested), u32::try_from(available)) {
+            (Ok(requested), Ok(current)) => InventoryRejection::QuantityUnderflow {
+                item: item.clone(),
+                current,
+                requested,
+            },
+            _ => InventoryRejection::Mechanics {
+                reason: "standard inventory underflow exceeds product representation".to_string(),
+            },
+        },
+        rusty_engine::gameplay_mechanics::MechanicsError::InventoryCapacityExceeded { .. } => {
+            // Engine capacity limits are not part of Loading Bay's catalog. The product's
+            // distinct-stack capacity is checked before planning; preserve any future Engine
+            // capacity error as an explicit mechanics boundary failure rather than mislabeling
+            // it as the product's different slot policy.
+            InventoryRejection::Mechanics {
+                reason: format!("unexpected Engine inventory capacity rejection for owner {owner}"),
+            }
+        }
+        other => mechanics_rejection(other),
     }
 }
 

@@ -6,8 +6,8 @@ use rusty_engine::engine_spatial::{
 use rusty_engine::entity_state::{EntityAuthoringFact, EntityAuthoringService};
 
 use crate::inventory::{
-    InventoryAction, InventoryCommand, InventoryFact, InventoryReceipt, InventoryRejection,
-    InventoryService, ItemDefinitionId,
+    apply_standard_stack, InventoryAction, InventoryCommand, InventoryFact, InventoryReceipt,
+    InventoryRejection, InventoryService, ItemDefinitionId, ItemKind,
 };
 use crate::pickup_program::{
     execute_pickup_program, pickup_applied_outcome, pickup_operation_label,
@@ -531,14 +531,22 @@ fn grant_pickup_inventory_item(
         .and_then(|inventory| inventory.last_applied_command_sequence)
         .map_or(Some(1), |sequence| sequence.checked_add(1))
         .ok_or(PickupRejection::InventorySequenceOverflow { actor })?;
-    InventoryService::apply(
-        session,
-        actor,
-        InventoryCommand {
-            sequence,
-            action: InventoryAction::Grant { item, quantity },
-        },
-    )
+    // The standard #7204 leaf owns only fungible stacks. Weapon pickups still
+    // enter Loading Bay through its existing unique-item/materialization path;
+    // #7206 will decide whether that product allocation seam can be promoted.
+    let action = InventoryAction::Grant {
+        item: item.clone(),
+        quantity,
+    };
+    if session
+        .item_definitions
+        .get(&item)
+        .is_some_and(|definition| matches!(definition.kind, ItemKind::Weapon(_)))
+    {
+        InventoryService::apply(session, actor, InventoryCommand { sequence, action })
+    } else {
+        apply_standard_stack(session, actor, sequence, action)
+    }
     .map_err(PickupRejection::Inventory)
 }
 

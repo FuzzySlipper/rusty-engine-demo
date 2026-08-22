@@ -338,10 +338,23 @@ fn weapon_starter_program_grants_first_shotgun_then_only_drop_starter_ammunition
     let first_pickup = available_pickup_for_item(&runtime, &shotgun);
     let mut runtime = with_overlap(runtime, first_pickup);
 
-    runtime.collect_pickup(PLAYER, first_pickup, 11, 1).unwrap();
+    let first_receipt = runtime.collect_pickup(PLAYER, first_pickup, 11, 1).unwrap();
 
     assert_eq!(inventory_quantity(&runtime, &shotgun), 1);
     assert_eq!(inventory_quantity(&runtime, &shells), 8);
+    assert!(matches!(
+        first_receipt.inventory.as_slice(),
+        [
+            loading_bay_game::InventoryReceipt {
+                action: loading_bay_game::InventoryAction::Grant { item, quantity: 1 },
+                ..
+            },
+            loading_bay_game::InventoryReceipt {
+                action: loading_bay_game::InventoryAction::Grant { item: ammunition, quantity: 8 },
+                ..
+            }
+        ] if *item == shotgun && *ammunition == shells
+    ));
     assert_eq!(
         runtime
             .session()
@@ -383,10 +396,17 @@ fn weapon_starter_program_grants_first_shotgun_then_only_drop_starter_ammunition
     .unwrap();
     let mut runtime = with_overlap(runtime, drop);
 
-    runtime.collect_pickup(PLAYER, drop, 11, 2).unwrap();
+    let repeat_receipt = runtime.collect_pickup(PLAYER, drop, 11, 2).unwrap();
 
     assert_eq!(inventory_quantity(&runtime, &shotgun), 1);
     assert_eq!(inventory_quantity(&runtime, &shells), 12);
+    assert!(matches!(
+        repeat_receipt.inventory.as_slice(),
+        [loading_bay_game::InventoryReceipt {
+            action: loading_bay_game::InventoryAction::Grant { item, quantity: 4 },
+            ..
+        }] if *item == shells
+    ));
     assert_eq!(
         runtime
             .session()
@@ -439,6 +459,36 @@ fn later_pickup_operation_failure_rolls_back_inventory_vitality_lifecycle_and_tr
     assert_eq!(
         after_triggers["pickupTriggers"],
         before_triggers["pickupTriggers"]
+    );
+}
+
+#[test]
+fn distinct_stack_capacity_rejects_before_standard_pickup_grant_and_publishes_nothing() {
+    let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
+    project["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|entity| entity["id"] == PLAYER.raw())
+        .unwrap()["inventory"]["capacitySlots"] = serde_json::json!(3);
+    let project_source = project.to_string();
+    let runtime = GameRuntime::from_stored_project(&project_source).unwrap();
+    let supply = ItemDefinitionId::parse("supply/medikit").unwrap();
+    let pickup = available_pickup_for_item(&runtime, &supply);
+    let mut runtime = with_overlap_for_project(runtime, pickup, &project_source);
+    let before = encode_game_snapshot(&runtime).unwrap();
+
+    assert!(matches!(
+        runtime.collect_pickup(PLAYER, pickup, 13, 1),
+        Err(RuntimeError::Pickup(PickupRejection::Inventory(
+            loading_bay_game::InventoryRejection::InventoryFull { capacity_slots: 3 }
+        )))
+    ));
+
+    assert_eq!(encode_game_snapshot(&runtime).unwrap(), before);
+    assert_eq!(
+        runtime.session().pickup(pickup).unwrap().state,
+        PickupState::Available
     );
 }
 

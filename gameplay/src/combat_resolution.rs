@@ -24,8 +24,8 @@ use crate::combat::{
 };
 use crate::gameplay_program::{DemoOperation, DemoPredicate, DemoProgram};
 use crate::inventory::{
-    InventoryAction, InventoryCommand, InventoryRejection, InventoryService, ItemDefinitionId,
-    WeaponAttackMode, WeaponDefinition,
+    apply_standard_stack, InventoryAction, InventoryRejection, ItemDefinitionId, WeaponAttackMode,
+    WeaponDefinition,
 };
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
@@ -382,15 +382,13 @@ impl ResolutionTransaction for HitscanTransaction<'_> {
                         .and_then(|inventory| inventory.last_applied_command_sequence)
                         .map_or(Some(1), |sequence| sequence.checked_add(1))
                         .ok_or(RuntimeError::InventorySequenceOverflow { owner: *owner })?;
-                    let receipt = InventoryService::apply(
+                    let receipt = apply_standard_stack(
                         &mut candidate,
                         *owner,
-                        InventoryCommand {
-                            sequence,
-                            action: InventoryAction::Consume {
-                                item: item.clone(),
-                                quantity: *quantity,
-                            },
+                        sequence,
+                        InventoryAction::Consume {
+                            item: item.clone(),
+                            quantity: *quantity,
                         },
                     )
                     .map_err(|rejection| match rejection {

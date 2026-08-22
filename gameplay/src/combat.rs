@@ -13,8 +13,8 @@ use crate::gameplay_program::{
     DemoProgram,
 };
 use crate::inventory::{
-    InventoryAction, InventoryCommand, InventoryFact, InventoryRejection, InventoryService,
-    ItemDefinitionId, ItemKind, WeaponAttackMode, WeaponDefinition,
+    apply_standard_stack, InventoryAction, InventoryFact, InventoryRejection, ItemDefinitionId,
+    ItemKind, WeaponAttackMode, WeaponDefinition,
 };
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
@@ -575,15 +575,13 @@ fn resolve_spread_program(
                     .and_then(|inventory| inventory.last_applied_command_sequence)
                     .map_or(Some(1), |sequence| sequence.checked_add(1))
                     .ok_or(RuntimeError::InventorySequenceOverflow { owner: attacker })?;
-                let receipt = InventoryService::apply(
+                let receipt = apply_standard_stack(
                     &mut candidate,
                     attacker,
-                    InventoryCommand {
-                        sequence,
-                        action: InventoryAction::Consume {
-                            item: weapon.ammunition.clone(),
-                            quantity: weapon.ammunition_cost,
-                        },
+                    sequence,
+                    InventoryAction::Consume {
+                        item: weapon.ammunition.clone(),
+                        quantity: weapon.ammunition_cost,
                     },
                 )
                 .map_err(|rejection| match rejection {

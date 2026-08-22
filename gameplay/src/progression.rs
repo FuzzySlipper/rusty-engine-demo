@@ -10,8 +10,8 @@ use rusty_engine::entity_state::EntityView;
 
 use crate::door::{DoorService, DoorState, DoorTransition};
 use crate::inventory::{
-    InventoryAction, InventoryCommand, InventoryFact, InventoryReceipt, InventoryRejection,
-    InventoryService, ItemDefinitionId,
+    apply_standard_stack, InventoryAction, InventoryFact, InventoryReceipt, InventoryRejection,
+    ItemDefinitionId,
 };
 use crate::level_exit_program::{
     execute_level_exit_program, LevelExitOperation, LevelExitPredicate,
@@ -323,15 +323,13 @@ impl ProgressionService {
                 .map_or(Some(1), |sequence| sequence.checked_add(1))
                 .ok_or(DoorAccessRejection::InventorySequenceOverflow { actor })?;
             Some(
-                InventoryService::apply(
+                apply_standard_stack(
                     &mut candidate,
                     actor,
-                    InventoryCommand {
-                        sequence,
-                        action: InventoryAction::Consume {
-                            item: access.required_key.clone(),
-                            quantity: 1,
-                        },
+                    sequence,
+                    InventoryAction::Consume {
+                        item: access.required_key.clone(),
+                        quantity: 1,
                     },
                 )
                 .map_err(DoorAccessRejection::Inventory)?,

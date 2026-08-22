@@ -12,8 +12,8 @@ use crate::enemy_drop::{EnemyDropFact, EnemyDropRejection, EnemyDropService};
 use crate::enemy_program::{execute_enemy_defeat_program, EnemyDefeatOperation};
 use crate::explosive_prop::{ExplosivePropFact, ExplosivePropState};
 use crate::inventory::{
-    ArmorGrantMode, ArmorTransition, InventoryAction, InventoryCommand, InventoryReceipt,
-    InventoryRejection, InventoryService, ItemDefinitionId, ItemKind,
+    apply_standard_stack, ArmorGrantMode, ArmorTransition, InventoryAction, InventoryReceipt,
+    InventoryRejection, ItemDefinitionId, ItemKind,
 };
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
@@ -536,15 +536,13 @@ impl DamageService {
         };
         let mut candidate = session.clone();
         let sequence = next_inventory_sequence(&candidate, player)?;
-        let inventory = InventoryService::apply(
+        let inventory = apply_standard_stack(
             &mut candidate,
             player,
-            InventoryCommand {
-                sequence,
-                action: InventoryAction::Consume {
-                    item: item.clone(),
-                    quantity: 1,
-                },
+            sequence,
+            InventoryAction::Consume {
+                item: item.clone(),
+                quantity: 1,
             },
         )
         .map_err(|rejection| match rejection {
@@ -649,15 +647,13 @@ impl DamageService {
         let restored = restore_health.min(maximum_health.saturating_sub(before.current));
         let mut candidate = session.clone();
         let sequence = next_inventory_sequence(&candidate, player)?;
-        let inventory = InventoryService::apply(
+        let inventory = apply_standard_stack(
             &mut candidate,
             player,
-            InventoryCommand {
-                sequence,
-                action: InventoryAction::Consume {
-                    item: item.clone(),
-                    quantity: 1,
-                },
+            sequence,
+            InventoryAction::Consume {
+                item: item.clone(),
+                quantity: 1,
             },
         )
         .map_err(VitalityRejection::Inventory)?;
