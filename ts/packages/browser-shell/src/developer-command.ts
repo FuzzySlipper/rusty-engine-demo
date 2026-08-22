@@ -1,9 +1,10 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import {
   createRustyDeveloperCommandClient,
-  RUSTY_STANDARD_ADMIN_WIRE_SCHEMAS,
+  RUSTY_STANDARD_HOST_WIRE_SCHEMAS,
   type RustyDeveloperCommandAdapter,
   type RustyDeveloperCommandClient,
+  type RustyDeveloperCommandExtension,
   type RustyDeveloperCommandValueSchema,
   type RustyDeveloperCommandWireSchema,
 } from "@rusty-engine/application-host";
@@ -17,49 +18,62 @@ const opaque: RustyDeveloperCommandValueSchema = {
   maximumBytes: 32_768,
   maximumNodes: 512,
 };
-const entityRequest: RustyDeveloperCommandValueSchema = {
-  kind: "object",
-  fields: {
-    entity: { required: true, value: { kind: "decimalU64" } },
-  },
-};
-const inspectSchema: RustyDeveloperCommandWireSchema = {
-  request: entityRequest,
-  result: opaque,
-  error: opaque,
-};
 const playSchema: RustyDeveloperCommandWireSchema = {
   request: opaque,
-  result: opaque,
+  result: {
+    kind: "object",
+    fields: {
+      kind: { required: true, value: { kind: "string", maximumBytes: 96 } },
+      connectionGeneration: {
+        required: true,
+        value: { kind: "integer", minimum: 0 },
+      },
+      commandSequence: {
+        required: true,
+        value: { kind: "integer", minimum: 0 },
+      },
+    },
+  },
   error: opaque,
 };
 
-const standardSchemas: Readonly<Record<string, RustyDeveloperCommandWireSchema>> = {
-  ...RUSTY_STANDARD_ADMIN_WIRE_SCHEMAS,
-  "standard.inspect.entity": inspectSchema,
-  "standard.inspect.mechanics": inspectSchema,
-  "loading-bay.play.service-command": playSchema,
-};
+/**
+ * This attaches a codec to the command the Rust discovery already exposes.
+ * It deliberately contributes no descriptor or executable route.
+ */
+export const LOADING_BAY_DEVELOPER_COMMAND_EXTENSION: RustyDeveloperCommandExtension =
+  {
+    namespace: "loading-bay",
+    schemas: [
+      {
+        command: "loading-bay.play.service-command",
+        lane: "play",
+        profile: "loading-bay.developer",
+        schema: playSchema,
+      },
+    ],
+  };
 
 export function createLoadingBayDeveloperCommandClient(): RustyDeveloperCommandClient {
   return createRustyDeveloperCommandClient({
     adapter: isTauri() ? tauriAdapter : browserAdapter,
-    schemas: standardSchemas,
+    schemas: RUSTY_STANDARD_HOST_WIRE_SCHEMAS,
+    extensions: [LOADING_BAY_DEVELOPER_COMMAND_EXTENSION],
   });
 }
 
 const browserAdapter: RustyDeveloperCommandAdapter = {
   discover: (signal) => socketRequest({ kind: "discover" }, signal),
   execute: (request, signal) =>
-    socketRequest(
-      { kind: "execute", request },
-      signal,
-      { kind: "cancel", correlation: request.correlation },
-    ),
+    socketRequest({ kind: "execute", request }, signal, {
+      kind: "cancel",
+      correlation: request.correlation,
+    }),
 };
 
 const tauriAdapter: RustyDeveloperCommandAdapter = {
-  discover: (signal) => invokeWithSignal("loading_bay_developer_discover", undefined, signal),
+  discover: (signal) =>
+    invokeWithSignal("loading_bay_developer_discover", undefined, signal),
   execute: async (request, signal) => {
     throwIfAborted(signal);
     await invoke("loading_bay_developer_submit", { request });
@@ -69,11 +83,17 @@ const tauriAdapter: RustyDeveloperCommandAdapter = {
         await invoke("loading_bay_developer_cancel", {
           correlation: request.correlation,
         }).catch(() => undefined);
-        throw signal.reason ?? new DOMException("Developer command cancelled", "AbortError");
+        throw (
+          signal.reason ??
+          new DOMException("Developer command cancelled", "AbortError")
+        );
       }
-      const response = await invoke<unknown | null>("loading_bay_developer_poll", {
-        correlation: request.correlation,
-      });
+      const response = await invoke<unknown | null>(
+        "loading_bay_developer_poll",
+        {
+          correlation: request.correlation,
+        },
+      );
       if (response !== null) return response;
       await delay(POLL_INTERVAL_MS);
     }
@@ -104,30 +124,62 @@ function socketRequest(
       if (cancellation !== undefined && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(cancellation));
       }
-      finish(() => reject(signal?.reason ?? new DOMException("Developer command cancelled", "AbortError")));
+      finish(() =>
+        reject(
+          signal?.reason ??
+            new DOMException("Developer command cancelled", "AbortError"),
+        ),
+      );
     };
     signal?.addEventListener("abort", abort, { once: true });
-    socket.addEventListener("open", () => socket.send(JSON.stringify(payload)), { once: true });
+    socket.addEventListener(
+      "open",
+      () => socket.send(JSON.stringify(payload)),
+      { once: true },
+    );
     socket.addEventListener("message", (event) => {
       try {
         const response: unknown = JSON.parse(String(event.data));
-        if (!isRecord(response) || (response.kind !== "success" && response.kind !== "error")) {
-          throw new Error("developer-command host returned a malformed response");
+        if (
+          !isRecord(response) ||
+          (response.kind !== "success" && response.kind !== "error")
+        ) {
+          throw new Error(
+            "developer-command host returned a malformed response",
+          );
         }
         if (response.kind === "error") {
-          throw new Error(typeof response.message === "string" ? response.message : "developer command failed");
+          throw new Error(
+            typeof response.message === "string"
+              ? response.message
+              : "developer command failed",
+          );
         }
         finish(() => resolve(response.value));
       } catch (cause) {
         finish(() => reject(cause));
       }
     });
-    socket.addEventListener("error", () => {
-      finish(() => reject(new Error("developer-command WebSocket is unavailable")));
-    }, { once: true });
-    socket.addEventListener("close", () => {
-      finish(() => reject(new Error("developer-command WebSocket closed before a response")));
-    }, { once: true });
+    socket.addEventListener(
+      "error",
+      () => {
+        finish(() =>
+          reject(new Error("developer-command WebSocket is unavailable")),
+        );
+      },
+      { once: true },
+    );
+    socket.addEventListener(
+      "close",
+      () => {
+        finish(() =>
+          reject(
+            new Error("developer-command WebSocket closed before a response"),
+          ),
+        );
+      },
+      { once: true },
+    );
   });
 }
 
@@ -149,7 +201,10 @@ function developerSocketUrl(): string {
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted === true) {
-    throw signal.reason ?? new DOMException("Developer command cancelled", "AbortError");
+    throw (
+      signal.reason ??
+      new DOMException("Developer command cancelled", "AbortError")
+    );
   }
 }
 

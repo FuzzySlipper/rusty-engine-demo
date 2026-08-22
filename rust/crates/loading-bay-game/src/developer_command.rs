@@ -15,7 +15,7 @@ use rusty_engine::developer_command::{
     HostReceiptRefs, HostResponseContext, ParameterDescriptor, ProfileId, RuntimeInstanceId,
     TypeDescriptor,
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
 
 use crate::product_service::{
@@ -62,16 +62,6 @@ pub struct LoadingBayPlayCompletion {
     pub command_sequence: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct HostTrackSetReceipt {
-    pub entity: String,
-    pub track: String,
-    pub before: i64,
-    pub after: i64,
-    pub committed_tracks_revision: String,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoadingBayDeveloperOwnerError {
     pub code: &'static str,
@@ -103,21 +93,6 @@ impl DeveloperCommand for LoadingBayPlayServiceCommand {
             TypeDescriptor::Record { fields: Vec::new() },
         )
         .expect("fixed Loading Bay developer command descriptor")
-    }
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct HostEntityRequest {
-    entity: String,
-}
-
-impl HostEntityRequest {
-    pub fn into_entity(self) -> Result<rusty_engine::core_ids::EntityId, String> {
-        self.entity
-            .parse::<u64>()
-            .map(rusty_engine::core_ids::EntityId::new)
-            .map_err(|_| "developer inspect entity must be a decimal u64".to_owned())
     }
 }
 
@@ -172,8 +147,12 @@ pub fn decode_payload<T: DeserializeOwned>(
 pub fn decode_entity_payload(
     request: CommandRequest<Value>,
 ) -> Result<CommandRequest<rusty_engine::core_ids::EntityId>, String> {
-    let request = decode_payload::<HostEntityRequest>(request)?;
-    let entity = request.payload.into_entity()?;
+    let request =
+        decode_payload::<rusty_engine::developer_command_standard::HostEntityRequest>(request)?;
+    let entity = request
+        .payload
+        .into_entity()
+        .map_err(|error| error.to_string())?;
     Ok(CommandRequest {
         protocol_version: request.protocol_version,
         command: request.command,
@@ -224,19 +203,18 @@ pub fn project_track_response(
         rusty_engine::gameplay_mechanics::TrackSetReceipt,
         rusty_engine::gameplay_mechanics::MechanicsError,
     >,
-) -> CommandResponse<HostTrackSetReceipt, rusty_engine::gameplay_mechanics::MechanicsError> {
+) -> CommandResponse<
+    rusty_engine::developer_command_standard::HostTrackSetReceipt,
+    rusty_engine::gameplay_mechanics::MechanicsError,
+> {
     CommandResponse {
         protocol_version: response.protocol_version,
         provenance: response.provenance,
         facts: response.facts,
         result: match response.result {
-            HandlerResult::Success(receipt) => HandlerResult::Success(HostTrackSetReceipt {
-                entity: receipt.entity.raw().to_string(),
-                track: receipt.track.as_str().to_owned(),
-                before: receipt.before.get(),
-                after: receipt.after.get(),
-                committed_tracks_revision: receipt.committed_tracks_revision.to_string(),
-            }),
+            HandlerResult::Success(receipt) => HandlerResult::Success(
+                rusty_engine::developer_command_standard::HostTrackSetReceipt::from_owner(receipt),
+            ),
             HandlerResult::Rejected(error) => HandlerResult::Rejected(error),
         },
     }

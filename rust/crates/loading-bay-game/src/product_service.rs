@@ -1259,9 +1259,86 @@ mod tests {
         match response.outcome {
             rusty_engine::developer_command::HostCommandOutcome::Success { value, .. } => {
                 assert_eq!(value["after"], after);
+                assert!(value["catalogVersion"].is_string());
+                assert!(value["observedRevisions"].is_array());
+                assert!(value["sourceCost"].is_object());
                 assert!(value["committedTracksRevision"].is_string());
             }
             outcome => panic!("unexpected developer outcome: {outcome:?}"),
+        }
+        let _ = std::fs::remove_dir_all(save_root);
+    }
+
+    #[test]
+    fn developer_admin_rejects_invalid_stale_and_absent_entities_without_mutation() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-developer-admin-rejections-{}-{unique}",
+            std::process::id()
+        ));
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let mut service = LoadingBayProductService::admit(&project, &save_root).unwrap();
+        service.start_session();
+        let before = service
+            .runtime()
+            .runtime()
+            .session()
+            .health(LOADING_BAY_PLAYER)
+            .unwrap()
+            .current;
+        let player_entity = LOADING_BAY_PLAYER.raw().to_string();
+
+        for (correlation, entity, expected_revision) in [
+            ("invalid-decimal", "1.0", None),
+            ("absent-entity", "18446744073709551615", None),
+            (
+                "stale-component",
+                player_entity.as_str(),
+                Some("18446744073709551615"),
+            ),
+        ] {
+            let request = developer_request(
+                &service,
+                "standard.admin.track.set",
+                correlation,
+                serde_json::json!({
+                    "operation": "loading-bay.developer.track-set",
+                    "source": {
+                        "kind": "request",
+                        "operation": "loading-bay.developer.track-set",
+                        "instance": "loading-bay.developer"
+                    },
+                    "entity": entity,
+                    "track": rusty_engine::gameplay_standard::ActionActorPreset::VITALITY_TRACK,
+                    "value": before.saturating_sub(1),
+                    "policy": "rejectOutOfBounds",
+                    "expectedRevision": expected_revision
+                }),
+            );
+            service.submit_developer_command(request).unwrap();
+            service.advance(crate::FIXED_STEP_DURATION).unwrap();
+            let response = service
+                .poll_developer_command(correlation)
+                .expect("invalid host request must produce a terminal result");
+            assert!(matches!(
+                response.outcome,
+                rusty_engine::developer_command::HostCommandOutcome::Error { .. }
+            ));
+            assert_eq!(
+                service
+                    .runtime()
+                    .runtime()
+                    .session()
+                    .health(LOADING_BAY_PLAYER)
+                    .unwrap()
+                    .current,
+                before,
+                "{correlation} must not mutate gameplay",
+            );
         }
         let _ = std::fs::remove_dir_all(save_root);
     }

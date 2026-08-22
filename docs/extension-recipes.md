@@ -57,11 +57,12 @@ product payload/result adapters and bounded transport queues. Loading Bay's
 browser WebSocket and Tauri IPC are examples of thin adapters over that same
 port, while `ts/packages/browser-shell/src/developer-command.ts` shows public
 generated-client schemas, cancellation, and application-host shell wiring.
-Loading Bay supplies its product command schema in the base schema map because
-that executable command already appears in authoritative host discovery; adding
-the same descriptor again as a client extension would create a duplicate
-command identity. A developer play command must await the normal product
-outcome rather than reporting queue admission as gameplay completion.
+Loading Bay attaches its product command codec through a schema-only client
+extension. The command is already present in Rust-owned discovery, so the
+extension reconciles its command identity, lane, and profile against that
+snapshot instead of repeating a descriptor or creating an executable route. A
+developer play command must await the normal product outcome rather than
+reporting queue admission as gameplay completion.
 
 ## Proof
 
