@@ -5,6 +5,10 @@ use loading_bay_game::{
     ItemDefinitionId, RuntimeError, VitalityFact, VitalityState,
 };
 use rusty_engine::core_ids::EntityId;
+use rusty_engine::gameplay_mechanics::{
+    ActiveEffectInstance, ActiveEffectsComponent, EffectInstanceId, OperationId, SourceInstanceId,
+    SourceInstanceIdentity,
+};
 use serde_json::{json, Value};
 
 const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
@@ -63,6 +67,84 @@ fn e1m1_armor_absorbs_damage_and_lethal_damage_is_exactly_once() {
         1
     );
     assert!(matches!(lethal.event, Some(GameEvent::PlayerDied { .. })));
+}
+
+#[test]
+fn armor_replace_uses_the_standard_effect_path_and_survives_reopen_exactly() {
+    let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let mut session = runtime.session().clone();
+    let green = ItemDefinitionId::parse("armor/green").unwrap();
+    let blue = ItemDefinitionId::parse("armor/blue").unwrap();
+    let bonus = ItemDefinitionId::parse("armor/bonus").unwrap();
+
+    grant_inventory(&mut session, 1, green.clone());
+    DamageService::grant_armor(&mut session, PLAYER, green.clone()).unwrap();
+    let green_effect = active_armor_effect(&session);
+
+    grant_inventory(&mut session, 3, bonus.clone());
+    DamageService::grant_armor(&mut session, PLAYER, bonus.clone()).unwrap();
+    let preserved_effect = active_armor_effect(&session);
+    assert_eq!(
+        session.health(PLAYER).unwrap().armor_item.as_ref(),
+        Some(&green)
+    );
+    assert_eq!(preserved_effect.definition(), green_effect.definition());
+    assert_eq!(
+        preserved_effect.provenance(),
+        &SourceInstanceIdentity::Request {
+            operation: OperationId::parse("grant-armor-1-4").unwrap(),
+            instance: SourceInstanceId::parse("armor-effect").unwrap(),
+        }
+    );
+
+    grant_inventory(&mut session, 5, blue.clone());
+    DamageService::grant_armor(&mut session, PLAYER, blue).unwrap();
+    let blue_effect = active_armor_effect(&session);
+    assert_eq!(blue_effect.instance().as_str(), "armor");
+    assert_ne!(blue_effect.definition(), green_effect.definition());
+    assert_eq!(blue_effect.stacks(), 1);
+    assert_eq!(
+        blue_effect.provenance(),
+        &SourceInstanceIdentity::Request {
+            operation: OperationId::parse("grant-armor-1-6").unwrap(),
+            instance: SourceInstanceId::parse("armor-effect").unwrap(),
+        }
+    );
+
+    grant_inventory(&mut session, 7, bonus.clone());
+    DamageService::grant_armor(&mut session, PLAYER, bonus).unwrap();
+    assert_eq!(session.health(PLAYER).unwrap().armor, 200);
+    assert_eq!(active_armor_effect(&session), blue_effect);
+
+    let mut runtime = runtime;
+    *runtime.session_mut() = session;
+    let reopened = decode_game_snapshot(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    assert_eq!(active_armor_effect(reopened.session()), blue_effect);
+}
+
+#[test]
+fn reject_different_armor_transition_leaves_the_product_session_unchanged() {
+    let mut project: Value = serde_json::from_str(PROJECT).unwrap();
+    project["itemDefinitions"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|item| item["id"] == "armor/bonus")
+        .unwrap()["kind"]["transition"] = json!("rejectDifferent");
+    let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let green = ItemDefinitionId::parse("armor/green").unwrap();
+    let bonus = ItemDefinitionId::parse("armor/bonus").unwrap();
+
+    grant_inventory(runtime.session_mut(), 1, green.clone());
+    DamageService::grant_armor(runtime.session_mut(), PLAYER, green).unwrap();
+    grant_inventory(runtime.session_mut(), 3, bonus.clone());
+    let before = encode_game_snapshot(&runtime).unwrap();
+
+    assert!(matches!(
+        DamageService::grant_armor(runtime.session_mut(), PLAYER, bonus),
+        Err(loading_bay_game::VitalityRejection::ArmorItemConflict { .. })
+    ));
+    assert_eq!(encode_game_snapshot(&runtime).unwrap(), before);
 }
 
 #[test]
@@ -458,4 +540,34 @@ fn set_environment_program(project: &mut Value, component: &str, program: &str) 
         .iter_mut()
         .find(|entity| entity.get(component).is_some())
         .unwrap()[component]["program"] = json!(program);
+}
+
+fn grant_inventory(
+    session: &mut loading_bay_game::GameSession,
+    sequence: u64,
+    item: ItemDefinitionId,
+) {
+    InventoryService::apply(
+        session,
+        PLAYER,
+        InventoryCommand {
+            sequence,
+            action: InventoryAction::Grant { item, quantity: 1 },
+        },
+    )
+    .unwrap();
+}
+
+fn active_armor_effect(session: &loading_bay_game::GameSession) -> ActiveEffectInstance {
+    let armor = EffectInstanceId::parse("armor").unwrap();
+    session
+        .entities()
+        .component::<ActiveEffectsComponent>(PLAYER)
+        .unwrap()
+        .unwrap()
+        .effects()
+        .iter()
+        .find(|effect| effect.instance() == &armor)
+        .cloned()
+        .expect("admitted armor effect remains active")
 }
