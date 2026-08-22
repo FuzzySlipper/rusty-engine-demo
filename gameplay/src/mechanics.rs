@@ -7,13 +7,14 @@ use rusty_engine::entity_state::{
 use rusty_engine::gameplay_mechanics::{
     register_gameplay_components, ActiveEffectsComponent, CatalogVersion, DamageKindDefinition,
     DamageKindId, DamageKindSelector, DamageResponseDefinition, EffectDefinition,
-    EffectDefinitionId, EffectInstanceId, EffectStackingPolicy, EquipmentAssignment,
-    EquipmentComponent, EquipmentExclusivityId, EquipmentSlotDefinition, EquipmentSlotId,
-    InventoryComponent, ItemClassificationId, ItemComponent, ItemDefinition as MechanicsItem,
-    ItemEquipmentPolicy, ItemKind as MechanicsItemKind, ItemStack as MechanicsStack,
-    MechanicsCatalog, MechanicsCatalogDefinition, MechanicsScalar, SourceDefinition,
-    SourceDefinitionId, StackingGroupId, StatDefinition, StatId, StatValue, StatsComponent,
-    TrackDefinition, TrackId, TrackMaximum, TrackValue, TracksComponent,
+    EffectDefinitionId, EffectInstanceId, EffectStackingPolicy, EquipmentComponent,
+    EquipmentExclusivityId, EquipmentSlotDefinition, EquipmentSlotId, InventoryComponent,
+    ItemClassificationId, ItemComponent, ItemDefinition as MechanicsItem, ItemEquipmentPolicy,
+    ItemKind as MechanicsItemKind, ItemService, ItemStack as MechanicsStack, MechanicsCatalog,
+    MechanicsCatalogDefinition, MechanicsScalar, SourceDefinition, SourceDefinitionId,
+    StackingGroupId, StatDefinition, StatId, StatValue, StatsComponent, TrackDefinition, TrackId,
+    TrackMaximum, TrackValue, TracksComponent, UniqueItemMaterializationReceipt,
+    UniqueItemMaterializationRequest,
 };
 use rusty_engine::gameplay_standard::{
     compose_action_actor_and_destructible_resource_catalog, ActionActorPreset,
@@ -188,10 +189,15 @@ pub(crate) fn build_runtime(
     Ok(MechanicsRuntime { catalog, armor })
 }
 
-pub(crate) fn allocate_weapon_entities(
+/// Reserve one collision-safe identity for every authored weapon slot.
+///
+/// Reservations deliberately do not admit an Engine entity. A weapon becomes an Engine item only
+/// when Loading Bay owns it (at setup or first pickup); this preserves the product's slot/readout
+/// policy without manufacturing hidden inventory containers or unowned item facts.
+pub(crate) fn reserve_weapon_entities(
     definitions: &[crate::GameEntityDefinition],
     inventories: &BTreeMap<EntityId, InventoryConfig>,
-) -> Result<(Vec<EntityDefinition>, WeaponEntityMappings), String> {
+) -> Result<WeaponEntityMappings, String> {
     let mut next = definitions
         .iter()
         .map(|definition| definition.entity.id.raw())
@@ -199,7 +205,6 @@ pub(crate) fn allocate_weapon_entities(
         .unwrap_or(0)
         .checked_add(1)
         .ok_or_else(|| "weapon item entity identity overflow".to_string())?;
-    let mut hidden = Vec::new();
     let mut mappings = BTreeMap::new();
     for (owner, config) in inventories {
         let mut owner_mappings = BTreeMap::new();
@@ -208,21 +213,11 @@ pub(crate) fn allocate_weapon_entities(
             next = next
                 .checked_add(1)
                 .ok_or_else(|| "weapon item entity identity overflow".to_string())?;
-            let owned = config
-                .starting_stacks
-                .iter()
-                .any(|stack| stack.item == *item && stack.quantity > 0);
-            let mut definition =
-                EntityDefinition::new(entity, format!("Inventory weapon {}", item.as_str()));
-            if owned {
-                definition = definition.with_containment(*owner);
-            }
-            hidden.push(definition);
             owner_mappings.insert(item.clone(), entity);
         }
         mappings.insert(*owner, owner_mappings);
     }
-    Ok((hidden, mappings))
+    Ok(mappings)
 }
 
 pub(crate) fn attach_health(
@@ -340,34 +335,11 @@ pub(crate) fn attach_inventory(
         owner,
         InventoryComponent::new(version.clone(), stacks).map_err(|error| error.to_string())?,
     )?;
-    let assignments = config
-        .initially_equipped_weapon
-        .as_ref()
-        .map(|item| {
-            weapon_entities
-                .get(item)
-                .copied()
-                .map(|item| EquipmentAssignment {
-                    slot: weapon_slot(),
-                    item,
-                })
-                .ok_or_else(|| format!("missing unique weapon entity for {item}"))
-        })
-        .transpose()?
-        .into_iter()
-        .collect();
     attach(
         state,
         owner,
-        EquipmentComponent::new(version.clone(), assignments).map_err(|error| error.to_string())?,
+        EquipmentComponent::new(version.clone(), Vec::new()).map_err(|error| error.to_string())?,
     )?;
-    for (item, entity) in weapon_entities {
-        attach(
-            state,
-            *entity,
-            ItemComponent::new(version.clone(), mechanics_item_id(item)?),
-        )?;
-    }
     Ok(InventoryRuntime {
         capacity_slots: config.capacity_slots,
         stack_order: config
@@ -385,6 +357,45 @@ pub(crate) fn attach_inventory(
             .collect(),
         last_applied_command_sequence: None,
     })
+}
+
+/// Materialize one owned/reserved product weapon through the Engine's atomic unique-item path.
+/// Loading Bay retains the allocated identity and readable name; the Engine owns the admitted
+/// item fact and explicit containment publication. The receipt is intentionally returned so a
+/// caller can retain authoritative catalog and revision provenance when composition needs it.
+pub(crate) fn materialize_weapon(
+    state: &mut EntityState,
+    catalog: &MechanicsCatalog,
+    owner: EntityId,
+    item: &ItemDefinitionId,
+    entity: EntityId,
+) -> Result<UniqueItemMaterializationReceipt, String> {
+    ItemService::materialize_unique(
+        state,
+        catalog,
+        UniqueItemMaterializationRequest {
+            entity: EntityDefinition::new(entity, format!("Inventory weapon {}", item.as_str())),
+            item: mechanics_item_id(item)?,
+            container: owner,
+            expected_state_revision: state.revision(),
+        },
+    )
+    .map_err(|error| error.to_string())
+}
+
+/// Compatibility-only attachment for snapshots from before reserved-absent slot identities.
+/// Those schemas encoded every weapon slot as an admitted hidden placeholder, so their migration
+/// must preserve that historic shape rather than reinterpret an old snapshot as a new reservation.
+pub(crate) fn attach_legacy_weapon_item(
+    state: &mut EntityState,
+    item: &ItemDefinitionId,
+    entity: EntityId,
+) -> Result<(), String> {
+    attach(
+        state,
+        entity,
+        ItemComponent::new(catalog_version(), mechanics_item_id(item)?),
+    )
 }
 
 pub(crate) fn set_weapon_containment(

@@ -4,8 +4,8 @@ use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
 use rusty_engine::core_time::Tick;
 use rusty_engine::gameplay_mechanics::{
-    InventoryMutationRequest, InventoryService as MechanicsInventoryService, OperationId,
-    SourceInstanceId, SourceInstanceIdentity,
+    InventoryMutationRequest, InventoryService as MechanicsInventoryService, ItemComponent,
+    OperationId, SourceInstanceId, SourceInstanceIdentity,
 };
 use rusty_engine::gameplay_standard::{
     CapabilityRequirementId, CapabilityRoleBinding, CapabilityRoleBindings, CapabilityRoleId,
@@ -726,8 +726,9 @@ pub(crate) fn apply_standard_stack(
 /// is its only publication point. This permits a product-owned follow-up (weapon disposal after
 /// unequip) to remain atomic with the standard equipment mutation without creating a second
 /// candidate or an invented inventory endpoint.
-fn apply_standard_unique_equipment_operations(
-    session: &mut crate::session::GameSession,
+pub(crate) fn apply_standard_unique_equipment_operations(
+    state: &mut rusty_engine::entity_state::EntityState,
+    catalog: &rusty_engine::gameplay_mechanics::MechanicsCatalog,
     owner: EntityId,
     sequence: u64,
     operations: impl IntoIterator<Item = StandardOperation>,
@@ -769,14 +770,14 @@ fn apply_standard_unique_equipment_operations(
             .plan(
                 &bindings,
                 &ExactInputBundle::empty(),
-                &session.entities,
-                &session.mechanics.catalog,
+                state,
+                catalog,
                 &context,
             )
             .map_err(|error| InventoryRejection::Mechanics {
                 reason: error.to_string(),
             })?;
-        plan.validate_source_state(&session.entities, &session.mechanics.catalog)
+        plan.validate_source_state(state, catalog)
             .map_err(|error| InventoryRejection::Mechanics {
                 reason: error.to_string(),
             })?;
@@ -786,7 +787,7 @@ fn apply_standard_unique_equipment_operations(
     for plan in plans {
         let receipt = plan
             .effect()
-            .apply_to_candidate(&mut session.entities, &session.mechanics.catalog)
+            .apply_to_candidate(state, catalog)
             .map_err(mechanics_rejection)?;
         if !matches!(receipt, StandardMechanicsReceipt::Equipment(_)) {
             return Err(InventoryRejection::Mechanics {
@@ -796,6 +797,28 @@ fn apply_standard_unique_equipment_operations(
         }
     }
     Ok(())
+}
+
+/// Apply the initially selected weapon after the caller has materialized it. Planning here
+/// observes the post-materialization component revisions, so materialization itself remains a
+/// no-implicit-equip operation.
+pub(crate) fn equip_initial_weapon(
+    state: &mut rusty_engine::entity_state::EntityState,
+    catalog: &rusty_engine::gameplay_mechanics::MechanicsCatalog,
+    owner: EntityId,
+    weapon: EntityId,
+) -> Result<(), InventoryRejection> {
+    apply_standard_unique_equipment_operations(
+        state,
+        catalog,
+        owner,
+        0,
+        [StandardOperation::EquipUniqueItem {
+            role: equipment_role()?,
+            item: weapon,
+            slots: vec![weapon_slot()],
+        }],
+    )
 }
 
 fn equipment_role() -> Result<CapabilityRoleId, InventoryRejection> {
@@ -1085,11 +1108,56 @@ fn apply_action(
                     .ok_or_else(|| InventoryRejection::IncompatibleSelection {
                         item: item.clone(),
                     })?;
-                // This is not a standard transfer: player setup already materialized the
-                // weapon, so this product pickup/grant crosses the None-to-owner containment
-                // boundary. TransferUniqueItem deliberately requires two inventory owners.
-                crate::mechanics::set_weapon_containment(&mut session.entities, weapon, owner)
+                if !session.entities.contains(weapon) {
+                    // A reserved-absent slot becomes a real Engine item only when this pickup
+                    // succeeds inside InventoryService's existing private session candidate.
+                    // The typed receipt preserves catalog/revision provenance for this atomic
+                    // product composition; materialization deliberately does not equip it.
+                    let receipt = crate::mechanics::materialize_weapon(
+                        &mut session.entities,
+                        &session.mechanics.catalog,
+                        owner,
+                        item,
+                        weapon,
+                    )
                     .map_err(|reason| InventoryRejection::Mechanics { reason })?;
+                    debug_assert_eq!(receipt.entity, weapon);
+                    debug_assert_eq!(receipt.container, owner);
+                } else if session.entities.contained_in(weapon).is_none() {
+                    let expected = mechanics_item_id(item)
+                        .map_err(|reason| InventoryRejection::Mechanics { reason })?;
+                    let existing = session
+                        .entities
+                        .component::<ItemComponent>(weapon)
+                        .map_err(|error| InventoryRejection::Mechanics {
+                            reason: error.to_string(),
+                        })?
+                        .ok_or_else(|| InventoryRejection::Mechanics {
+                            reason: format!(
+                                "reserved weapon {weapon} for {item} has no canonical item component"
+                            ),
+                        })?;
+                    if existing.definition() != &expected
+                        || existing.catalog_version() != session.mechanics.catalog.version()
+                    {
+                        return Err(InventoryRejection::Mechanics {
+                            reason: format!(
+                                "reserved weapon {weapon} does not match the admitted catalog item {item}"
+                            ),
+                        });
+                    }
+                    // Existing consumed/disposed weapons retain their identity and ItemComponent.
+                    // Reacquisition is only the explicit product None-to-owner relationship step;
+                    // it neither rematerializes nor destroys the item.
+                    crate::mechanics::set_weapon_containment(&mut session.entities, weapon, owner)
+                        .map_err(|reason| InventoryRejection::Mechanics { reason })?;
+                } else {
+                    return Err(InventoryRejection::Mechanics {
+                        reason: format!(
+                            "reserved weapon {weapon} for {item} is already contained by another owner"
+                        ),
+                    });
+                }
             } else {
                 MechanicsInventoryService::grant(
                     &mut session.entities,
@@ -1162,7 +1230,8 @@ fn apply_action(
                     })?;
                 if before_view.equipped_weapon.as_ref() == Some(item) {
                     apply_standard_unique_equipment_operations(
-                        session,
+                        &mut session.entities,
+                        &session.mechanics.catalog,
                         owner,
                         sequence,
                         [StandardOperation::UnequipUniqueItem {
@@ -1272,7 +1341,8 @@ fn apply_action(
                         reason: format!("missing unique entity for equipped weapon {before_item}"),
                     })?;
                 apply_standard_unique_equipment_operations(
-                    session,
+                    &mut session.entities,
+                    &session.mechanics.catalog,
                     owner,
                     sequence,
                     [StandardOperation::SwapUniqueItem {
@@ -1284,7 +1354,8 @@ fn apply_action(
                 )?;
             } else {
                 apply_standard_unique_equipment_operations(
-                    session,
+                    &mut session.entities,
+                    &session.mechanics.catalog,
                     owner,
                     sequence,
                     [StandardOperation::EquipUniqueItem {
@@ -1398,4 +1469,66 @@ fn is_kebab_segment(value: &str) -> bool {
         && bytes
             .iter()
             .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-')
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusty_engine::entity_state::{EntityAuthoringService, EntityDefinition};
+
+    const E1M1: &str = include_str!("../../content/projects/doom-e1m1.project.json");
+    const PLAYER: EntityId = EntityId::new(1);
+
+    #[test]
+    fn unrelated_admitted_entity_at_a_reserved_weapon_id_rejects_without_publication() {
+        let mut runtime =
+            crate::runtime::GameRuntime::from_stored_project(E1M1).expect("current E1M1 admission");
+        let shotgun = ItemDefinitionId::parse("weapon/shotgun").unwrap();
+        let reserved = runtime
+            .session()
+            .inventories
+            .get(&PLAYER)
+            .unwrap()
+            .weapon_entities
+            .get(&shotgun)
+            .copied()
+            .unwrap();
+        let session = runtime.session_mut();
+        let authoring_revision = session.entities.revision();
+        EntityAuthoringService
+            .admit(
+                &mut session.entities,
+                authoring_revision,
+                [EntityDefinition::new(reserved, "unrelated transient")],
+            )
+            .unwrap();
+        let before_revision = session.entities.revision();
+
+        assert!(matches!(
+            InventoryService::apply(
+                session,
+                PLAYER,
+                InventoryCommand {
+                    sequence: 1,
+                    action: InventoryAction::Grant {
+                        item: shotgun,
+                        quantity: 1,
+                    },
+                },
+            ),
+            Err(InventoryRejection::Mechanics { .. })
+        ));
+        assert_eq!(session.entities.revision(), before_revision);
+        assert!(session.entities.contains(reserved));
+        assert!(session
+            .entities
+            .component::<ItemComponent>(reserved)
+            .unwrap()
+            .is_none());
+        assert!(!inventory_view(session, PLAYER)
+            .unwrap()
+            .stacks
+            .iter()
+            .any(|stack| stack.item.as_str() == "weapon/shotgun"));
+    }
 }

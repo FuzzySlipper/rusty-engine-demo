@@ -143,6 +143,18 @@ pub(crate) struct SessionProgramCatalogs {
 }
 
 impl GameSession {
+    /// Product-reserved weapon identities are not always admitted Engine entities. Live product
+    /// allocators must still treat them as occupied so a transient entity can never be mistaken
+    /// later for a reserved unique weapon.
+    pub(crate) fn is_reserved_weapon_entity(&self, entity: EntityId) -> bool {
+        self.inventories.values().any(|inventory| {
+            inventory
+                .weapon_entities
+                .values()
+                .any(|reserved| *reserved == entity)
+        })
+    }
+
     pub(crate) fn from_item_entity_and_gameplay_programs(
         item_definitions: impl IntoIterator<Item = ItemDefinition>,
         definitions: impl IntoIterator<Item = GameEntityDefinition>,
@@ -217,9 +229,8 @@ impl GameSession {
             inventory_from_config(*owner, config, &item_definitions)
                 .map_err(GameEntityDefinitionError::Inventory)?;
         }
-        let (hidden_weapons, weapon_entities) =
-            mechanics::allocate_weapon_entities(&definitions, &inventory_configs)
-                .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
+        let weapon_entities = mechanics::reserve_weapon_entities(&definitions, &inventory_configs)
+            .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
         let mut entity_definitions = definitions
             .iter()
             .map(|definition| definition.entity.clone())
@@ -249,7 +260,6 @@ impl GameSession {
                 );
             }
         }
-        entity_definitions.extend(hidden_weapons);
         let registry = mechanics::mechanics_registry()
             .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
         let mut entities =
@@ -672,6 +682,40 @@ impl GameSession {
                         .expect("weapon entities allocated for every inventory"),
                 )
                 .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
+                for stack in config
+                    .starting_stacks
+                    .iter()
+                    .filter(|stack| runtime.weapon_entities.contains_key(&stack.item))
+                {
+                    let weapon = runtime.weapon_entities[&stack.item];
+                    let receipt = mechanics::materialize_weapon(
+                        &mut entities,
+                        &mechanics.catalog,
+                        entity,
+                        &stack.item,
+                        weapon,
+                    )
+                    .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
+                    debug_assert_eq!(receipt.entity, weapon);
+                    debug_assert_eq!(receipt.container, entity);
+                    debug_assert_eq!(receipt.containment_after, Some(entity));
+                }
+                if let Some(item) = &config.initially_equipped_weapon {
+                    let weapon = runtime.weapon_entities.get(item).copied().ok_or_else(|| {
+                        GameEntityDefinitionError::Mechanics {
+                            reason: format!("missing reserved weapon entity for {item}"),
+                        }
+                    })?;
+                    crate::inventory::equip_initial_weapon(
+                        &mut entities,
+                        &mechanics.catalog,
+                        entity,
+                        weapon,
+                    )
+                    .map_err(|error| GameEntityDefinitionError::Mechanics {
+                        reason: format!("initial weapon equipment rejected: {error:?}"),
+                    })?;
+                }
                 inventories.insert(entity, runtime);
             }
             if let Some(config) = &definition.pickup {

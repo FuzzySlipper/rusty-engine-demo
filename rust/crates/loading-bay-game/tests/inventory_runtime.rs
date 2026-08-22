@@ -4,6 +4,9 @@ use loading_bay_game::{
 };
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::gameplay_mechanics::{EquipmentComponent, ItemComponent};
+use serde_json::Value;
+
+mod support;
 
 const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const PLAYER: EntityId = EntityId::new(1);
@@ -260,6 +263,234 @@ fn e1m1_inventory_snapshot_round_trips_without_command_history() {
 }
 
 #[test]
+fn unowned_weapon_slots_stay_reserved_absent_until_the_first_pickup_materializes_them() {
+    let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let encoded = encode_game_snapshot(&runtime).unwrap();
+    let snapshot: Value = serde_json::from_str(&encoded).unwrap();
+    let mapping = snapshot["inventories"][0]["weaponEntities"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|mapping| mapping["item"] == "weapon/shotgun")
+        .unwrap();
+    let shotgun = EntityId::new(mapping["entity"].as_u64().unwrap());
+    assert_eq!(mapping["materialized"], false);
+    assert!(!runtime.session().entities().contains(shotgun));
+    assert_eq!(
+        runtime
+            .session()
+            .entities()
+            .components::<ItemComponent>()
+            .unwrap()
+            .count(),
+        2,
+        "only the owned fist and pistol are Engine items at startup"
+    );
+    assert_eq!(
+        encode_game_snapshot(&decode_game_snapshot(&encoded).unwrap()).unwrap(),
+        encoded
+    );
+
+    runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: ItemDefinitionId::parse("weapon/shotgun").unwrap(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    assert!(runtime.session().entities().contains(shotgun));
+    assert_eq!(
+        runtime.session().entities().contained_in(shotgun),
+        Some(PLAYER)
+    );
+    assert_eq!(
+        runtime
+            .session()
+            .entities()
+            .component::<ItemComponent>(shotgun)
+            .unwrap()
+            .unwrap()
+            .definition()
+            .as_str(),
+        "weapon.shotgun"
+    );
+    assert_eq!(
+        runtime.session().inventory(PLAYER).unwrap().equipped_weapon,
+        Some(ItemDefinitionId::parse("weapon/pistol").unwrap()),
+        "materializing a pickup never implicitly equips it"
+    );
+}
+
+#[test]
+fn snapshot_distinguishes_reserved_absence_from_missing_materialized_weapon_mappings() {
+    let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let mut snapshot: Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    let reserved = snapshot["inventories"][0]["weaponEntities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|mapping| mapping["item"] == "weapon/shotgun")
+        .unwrap();
+    reserved["materialized"] = serde_json::json!(true);
+    assert!(decode_game_snapshot(&snapshot.to_string()).is_err());
+}
+
+#[test]
+fn snapshot_rejects_one_reserved_weapon_entity_mapping_shared_by_two_inventory_owners() {
+    let mut project: Value = serde_json::from_str(PROJECT).unwrap();
+    let player = project["scenes"][0]["entities"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|entity| entity["id"] == PLAYER.raw())
+        .unwrap()
+        .clone();
+    let mut second_player = player;
+    second_player["id"] = serde_json::json!(999);
+    second_player["translation"] = serde_json::json!([0.0, 2.0, 0.0]);
+    project["scenes"][0]["entities"]
+        .as_array_mut()
+        .unwrap()
+        .push(second_player);
+    let runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
+    let mut snapshot: Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    let inventories = snapshot["inventories"].as_array_mut().unwrap();
+    let first_pistol = inventories[0]["weaponEntities"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|mapping| mapping["item"] == "weapon/pistol")
+        .unwrap()["entity"]
+        .clone();
+    let second_pistol = inventories[1]["weaponEntities"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|mapping| mapping["item"] == "weapon/pistol")
+        .unwrap();
+    second_pistol["entity"] = first_pistol;
+    assert!(decode_game_snapshot(&snapshot.to_string()).is_err());
+}
+
+#[test]
+fn pre_reserved_absence_current_snapshots_with_hidden_unowned_placeholders_still_reopen() {
+    let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let shotgun = ItemDefinitionId::parse("weapon/shotgun").unwrap();
+    runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: shotgun.clone(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 2,
+                action: InventoryAction::Consume {
+                    item: shotgun,
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    let mut snapshot: Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    snapshot["schemaVersion"] = serde_json::json!(23);
+    for mapping in snapshot["inventories"][0]["weaponEntities"]
+        .as_array_mut()
+        .unwrap()
+    {
+        mapping.as_object_mut().unwrap().remove("materialized");
+    }
+    let reopened = decode_game_snapshot(&snapshot.to_string()).unwrap();
+    assert_eq!(
+        reopened
+            .session()
+            .inventory(PLAYER)
+            .unwrap()
+            .stacks
+            .iter()
+            .find(|stack| stack.item.as_str() == "weapon/shotgun"),
+        None
+    );
+    assert_eq!(
+        reopened
+            .session()
+            .entities()
+            .components::<ItemComponent>()
+            .unwrap()
+            .count(),
+        3,
+        "legacy hidden placeholder remains admitted for compatibility"
+    );
+}
+
+#[test]
+fn pre_mechanics_snapshot_migration_keeps_legacy_hidden_weapon_placeholders() {
+    let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let mut snapshot: Value =
+        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
+    support::strip_future_gameplay_mechanics_state(&mut snapshot);
+    for health in snapshot["health"].as_array_mut().unwrap() {
+        let health = health.as_object_mut().unwrap();
+        health.remove("starting");
+        health.remove("maxArmor");
+        health.remove("armorAbsorptionPercent");
+        health.remove("armor");
+        health.remove("armorItem");
+        health.remove("state");
+    }
+    for definition in snapshot["itemDefinitions"].as_array_mut().unwrap() {
+        let Some(kind) = definition["kind"].as_object_mut() else {
+            continue;
+        };
+        kind.remove("maximumHealth");
+        kind.remove("automaticUse");
+        kind.remove("consumeAtCap");
+        kind.remove("maximumArmor");
+        kind.remove("absorptionPercent");
+        kind.remove("absorptionDivisor");
+        kind.remove("grantMode");
+        kind.remove("transition");
+    }
+    snapshot["schemaVersion"] = serde_json::json!(18);
+    let reopened = decode_game_snapshot(&snapshot.to_string()).unwrap();
+    assert_eq!(
+        reopened
+            .session()
+            .inventory(PLAYER)
+            .unwrap()
+            .equipped_weapon
+            .unwrap()
+            .as_str(),
+        "weapon/pistol"
+    );
+    assert_eq!(
+        reopened
+            .session()
+            .entities()
+            .components::<ItemComponent>()
+            .unwrap()
+            .count(),
+        3
+    );
+}
+
+#[test]
 fn weapon_selection_uses_standard_equipment_and_selected_weapon_disposal_is_atomic() {
     let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
     let shotgun = ItemDefinitionId::parse("weapon/shotgun").unwrap();
@@ -375,6 +606,36 @@ fn weapon_selection_uses_standard_equipment_and_selected_weapon_disposal_is_atom
         ))
     ));
     assert_eq!(encode_game_snapshot(&runtime).unwrap(), before_rejection);
+
+    // Reacquisition only restores the explicit containment edge. The same admitted unique item
+    // and ItemComponent remain authoritative; the product never rematerializes or destroys it.
+    runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 4,
+                action: InventoryAction::Grant {
+                    item: ItemDefinitionId::parse("weapon/shotgun").unwrap(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        runtime.session().entities().contained_in(shotgun_entity),
+        Some(PLAYER)
+    );
+    assert_eq!(
+        runtime
+            .session()
+            .entities()
+            .component::<ItemComponent>(shotgun_entity)
+            .unwrap()
+            .unwrap()
+            .definition()
+            .as_str(),
+        "weapon.shotgun"
+    );
 }
 
 fn unique_item_entity(runtime: &GameRuntime, definition: &str) -> EntityId {

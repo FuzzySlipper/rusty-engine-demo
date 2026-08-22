@@ -4,6 +4,7 @@ use loading_bay_game::{
     RuntimeError,
 };
 use rusty_engine::core_ids::EntityId;
+use std::collections::BTreeSet;
 
 const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const PLAYER: EntityId = EntityId::new(1);
@@ -241,15 +242,32 @@ fn failed_later_enemy_rolls_back_the_whole_attack_phase_and_projectile_service()
     let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
     ready_enemies_to_attack(&mut runtime, [first, rejecting]);
     let before = encode_game_snapshot(&runtime).unwrap();
-    let expected_first_projectile = EntityId::new(
-        runtime
-            .session()
-            .entities()
-            .entities()
-            .map(|entity| entity.id.raw())
-            .max()
+    let admitted = runtime
+        .session()
+        .entities()
+        .entities()
+        .map(|entity| entity.id)
+        .collect::<BTreeSet<_>>();
+    let reserved =
+        serde_json::from_str::<serde_json::Value>(&encode_game_snapshot(&runtime).unwrap())
+            .unwrap()["inventories"]
+            .as_array()
             .unwrap()
-            + 1,
+            .iter()
+            .flat_map(|inventory| inventory["weaponEntities"].as_array().unwrap())
+            .map(|mapping| EntityId::new(mapping["entity"].as_u64().unwrap()))
+            .collect::<BTreeSet<_>>();
+    let first_unreserved = (1..)
+        .map(EntityId::new)
+        .find(|entity| !admitted.contains(entity) && !reserved.contains(entity))
+        .unwrap();
+    let first_absent = (1..)
+        .map(EntityId::new)
+        .find(|entity| !admitted.contains(entity))
+        .unwrap();
+    assert!(
+        reserved.contains(&first_absent),
+        "E1M1's first ordinary free ID is a reserved-absent weapon slot"
     );
 
     assert!(matches!(
@@ -275,7 +293,7 @@ fn failed_later_enemy_rolls_back_the_whole_attack_phase_and_projectile_service()
     assert!(receipt.facts.iter().any(|fact| matches!(
         fact,
         EnemyCombatFact::ProjectileSpawned { enemy, projectile, .. }
-            if *enemy == first && *projectile == expected_first_projectile
+            if *enemy == first && *projectile == first_unreserved
     )));
 }
 

@@ -62,8 +62,9 @@ use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::{HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 23;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 24;
 const CANONICAL_PLAYER_CONTROLLER_SNAPSHOT_SCHEMA_VERSION: u32 = 23;
+const RESERVED_ABSENT_WEAPON_SNAPSHOT_SCHEMA_VERSION: u32 = 24;
 const VITALITY_ITEM_SNAPSHOT_SCHEMA_VERSION: u32 = 22;
 const SWITCH_CONFIG_SNAPSHOT_SCHEMA_VERSION: u32 = 21;
 const GAMEPLAY_MECHANICS_SNAPSHOT_SCHEMA_VERSION: u32 = 19;
@@ -268,6 +269,14 @@ pub struct InventorySnapshot {
 pub struct WeaponEntitySnapshot {
     pub item: String,
     pub entity: u64,
+    /// `false` is a deliberate reserved-but-not-yet-materialized slot. Missing preserves the
+    /// pre-v24 shape, where every mapping referred to an admitted hidden item placeholder.
+    #[serde(default = "weapon_entity_was_materialized")]
+    pub materialized: bool,
+}
+
+const fn weapon_entity_was_materialized() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -1731,6 +1740,7 @@ impl GameRuntime {
                             .map(|(item, entity)| WeaponEntitySnapshot {
                                 item: item.as_str().to_string(),
                                 entity: entity.raw(),
+                                materialized: self.session.entities.contains(*entity),
                             })
                             .collect(),
                     }
@@ -3170,6 +3180,7 @@ impl GameRuntime {
         }
 
         let mut inventories = BTreeMap::new();
+        let mut weapon_entity_mappings = BTreeSet::new();
         let mut next_hidden_entity = entities
             .entities()
             .map(|entity| entity.id.raw())
@@ -3285,6 +3296,26 @@ impl GameRuntime {
                 runtime =
                     crate::mechanics::attach_inventory(&mut entities, owner, &config, &mappings)
                         .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
+                for (item, entity) in &mappings {
+                    crate::mechanics::attach_legacy_weapon_item(&mut entities, item, *entity)
+                        .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
+                }
+                if let Some(item) = &config.initially_equipped_weapon {
+                    let weapon = mappings.get(item).copied().ok_or_else(|| {
+                        GameSnapshotError::Mechanics {
+                            reason: format!("missing legacy weapon entity for {item}"),
+                        }
+                    })?;
+                    crate::inventory::equip_initial_weapon(
+                        &mut entities,
+                        &mechanics.catalog,
+                        owner,
+                        weapon,
+                    )
+                    .map_err(|error| GameSnapshotError::Mechanics {
+                        reason: format!("legacy initial weapon equipment rejected: {error:?}"),
+                    })?;
+                }
                 mappings
             } else {
                 if persisted_weapon_entities.len() != runtime.weapon_slots.len() {
@@ -3305,6 +3336,37 @@ impl GameRuntime {
                             reason: format!(
                                 "inventory {owner} has invalid weapon entity mapping for {item}"
                             ),
+                        });
+                    }
+                    if !weapon_entity_mappings.insert(entity) {
+                        return Err(GameSnapshotError::Mechanics {
+                            reason: format!(
+                                "weapon entity {entity} is mapped by more than one inventory"
+                            ),
+                        });
+                    }
+                    let entity_exists = entities.contains(entity);
+                    if source_schema_version >= RESERVED_ABSENT_WEAPON_SNAPSHOT_SCHEMA_VERSION
+                        && !mapping.materialized
+                    {
+                        if entity_exists {
+                            return Err(GameSnapshotError::Mechanics {
+                                reason: format!(
+                                    "reserved-absent weapon {entity} for {item} is unexpectedly admitted"
+                                ),
+                            });
+                        }
+                        continue;
+                    }
+                    if !entity_exists {
+                        return Err(GameSnapshotError::Mechanics {
+                            reason: if source_schema_version
+                                < RESERVED_ABSENT_WEAPON_SNAPSHOT_SCHEMA_VERSION
+                            {
+                                format!("weapon entity {entity} has no canonical item")
+                            } else {
+                                format!("materialized weapon entity {entity} has no canonical item")
+                            },
                         });
                     }
                     let component = entities

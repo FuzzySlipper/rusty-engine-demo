@@ -28,10 +28,18 @@ drop, but never runs its pickup collection program.
 
 Player initialization is a third, independent family: a flat source-ordered
 sequence of `grantItem` and `equipInitialWeapon`. Admission resolves the
-selected `inventory.setupProgram` atomically into the Rust-owned inventory,
-hidden weapon containment, and equipment state before a session exists. An
-inventory always names its setup program. Snapshot restore persists the
-resulting live state and never reruns setup.
+selected `inventory.setupProgram` into Rust-owned inventory facts, collision-safe
+reserved weapon identities, and owned weapon materialization before a session
+exists. The owner inventory is attached first; the Engine atomically admits an
+owned unique weapon, attaches its item fact, and establishes containment, then
+the separate initial-equipment operation plans against those fresh facts.
+Unowned weapon slots reserve an identity but admit no hidden Engine entity or
+item component. First pickup materializes that reserved identity in the existing
+product candidate, while a previously disposed item is explicitly recontained
+without rematerialization. An inventory always names its setup program.
+Snapshots persist whether each reserved identity is materialized; older
+snapshots with pre-admitted hidden placeholders remain readable, and restore
+never reruns setup.
 
 Hazards and explosive props are two further closed families. Each hazard binds
 `playerOverlapping`, `playerEligible`, and `cooldownReady` around

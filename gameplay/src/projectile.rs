@@ -357,7 +357,7 @@ impl ProjectileService {
             raw = raw.checked_add(1).ok_or(ProjectileError::EntityLimit {
                 limit: MAX_PROJECTILE_ENTITIES,
             })?;
-            if !session.entities.contains(entity) {
+            if !session.entities.contains(entity) && !session.is_reserved_weapon_entity(entity) {
                 self.next_entity_raw = raw;
                 return Ok(entity);
             }
