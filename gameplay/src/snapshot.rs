@@ -2169,14 +2169,14 @@ impl GameRuntime {
         let mut controls = BTreeMap::new();
         for control in snapshot.controls {
             let switch = EntityId::new(control.switch);
-            if !legacy_or_store::<SwitchComponent>(&entities, &switches, switch).is_some() {
+            if legacy_or_store::<SwitchComponent>(&entities, &switches, switch).is_none() {
                 return Err(GameSnapshotError::UnknownSwitchEntity {
                     entity: control.switch,
                 });
             }
             let targets: Vec<EntityId> = control.targets.into_iter().map(EntityId::new).collect();
             for target in &targets {
-                if !legacy_or_store::<DoorComponent>(&entities, &doors, *target).is_some() {
+                if legacy_or_store::<DoorComponent>(&entities, &doors, *target).is_none() {
                     return Err(GameSnapshotError::UnknownControlTarget {
                         switch: control.switch,
                         target: target.raw(),
@@ -2206,7 +2206,7 @@ impl GameRuntime {
                     activation_radius: access.activation_radius,
                     denied_presentation: access.denied_presentation,
                 };
-                if !legacy_or_store::<DoorComponent>(&entities, &doors, door).is_some()
+                if legacy_or_store::<DoorComponent>(&entities, &doors, door).is_none()
                     || !config.is_valid()
                     || item_definitions
                         .get(&required_key)
@@ -2224,12 +2224,12 @@ impl GameRuntime {
                     close_door: EntityId::new(interlock.close_door),
                     open_door: EntityId::new(interlock.open_door),
                 };
-                if !legacy_or_store::<SwitchComponent>(&entities, &switches, switch).is_some()
+                if legacy_or_store::<SwitchComponent>(&entities, &switches, switch).is_none()
                     || config.close_door == config.open_door
-                    || !legacy_or_store::<DoorComponent>(&entities, &doors, config.close_door)
-                        .is_some()
-                    || !legacy_or_store::<DoorComponent>(&entities, &doors, config.open_door)
-                        .is_some()
+                    || legacy_or_store::<DoorComponent>(&entities, &doors, config.close_door)
+                        .is_none()
+                    || legacy_or_store::<DoorComponent>(&entities, &doors, config.open_door)
+                        .is_none()
                     || loading_bay_interlocks.insert(switch, config).is_some()
                 {
                     return Err(GameSnapshotError::InvalidProgressionState);
@@ -2519,8 +2519,8 @@ impl GameRuntime {
                 });
             }
             let entity = EntityId::new(prop.entity);
-            if !legacy_or_store::<crate::vitality::HealthConfig>(&entities, &health, entity)
-                .is_some()
+            if legacy_or_store::<crate::vitality::HealthConfig>(&entities, &health, entity)
+                .is_none()
             {
                 return Err(GameSnapshotError::InvalidHealthConfig {
                     entity: prop.entity,
@@ -2619,7 +2619,7 @@ impl GameRuntime {
                     .map_err(|_| GameSnapshotError::UnknownNavigationEntity {
                         entity: navigation.entity,
                     })?;
-            if !legacy_or_store::<EnemyComponent>(&entities, &enemies, entity).is_some()
+            if legacy_or_store::<EnemyComponent>(&entities, &enemies, entity).is_none()
                 || view.transform.is_none()
                 || view.collision.is_none()
                 || view.kinematic.is_none()
@@ -2681,9 +2681,9 @@ impl GameRuntime {
                     entity: combat.entity,
                 });
             };
-            if !legacy_or_store::<crate::vitality::HealthConfig>(&entities, &health, entity)
-                .is_some()
-                || !legacy_or_store::<NavigationComponent>(&entities, &navigators, entity).is_some()
+            if legacy_or_store::<crate::vitality::HealthConfig>(&entities, &health, entity)
+                .is_none()
+                || legacy_or_store::<NavigationComponent>(&entities, &navigators, entity).is_none()
             {
                 return Err(GameSnapshotError::MissingEnemyCombatCapability {
                     entity: combat.entity,
@@ -3189,9 +3189,19 @@ impl GameRuntime {
             inventories.insert(owner, runtime);
         }
 
-        if snapshot.pickups.len() > rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS {
+        // Called before the legacy pickup map exists: the drained vector and
+        // the restored durable facts are the only possible sources.
+        let live_pickup_count = if snapshot.pickups.is_empty() {
+            entities
+                .components::<crate::pickup::PickupComponent>()
+                .expect("downstream fact component is registered")
+                .len()
+        } else {
+            snapshot.pickups.len()
+        };
+        if live_pickup_count > rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS {
             return Err(GameSnapshotError::TooManyPickups {
-                count: snapshot.pickups.len(),
+                count: live_pickup_count,
                 limit: rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS,
             });
         }
@@ -3420,6 +3430,9 @@ impl GameRuntime {
         };
         let mut expected_trigger_entities = legacy_or_store_keys(&entities, &pickups);
         expected_trigger_entities.extend(collected_pickups.keys().copied());
+        // Live facts are identity-ordered; retired receipts append out of
+        // order. Compare as sets, matching definition identity not sequence.
+        expected_trigger_entities.sort_unstable();
         let actual_trigger_entities = pickup_triggers
             .definitions()
             .map(|definition| {
@@ -3430,17 +3443,17 @@ impl GameRuntime {
                 (definition.trigger_id(), valid)
             })
             .collect::<Vec<_>>();
-        if actual_trigger_entities.len() != expected_trigger_entities.len()
+        let mismatched = actual_trigger_entities.len() != expected_trigger_entities.len()
             || actual_trigger_entities
                 .iter()
-                .zip(expected_trigger_entities)
-                .any(|((actual, valid), expected)| !valid || *actual != expected)
-            || pickup_triggers.active_overlaps().any(|pair| {
-                !legacy_or_store(&entities, &pickups, pair.trigger_id())
-                    .is_some_and(|pickup| pickup.state == PickupState::Available)
-                    || !entities.contains(pair.subject_id())
-            })
-        {
+                .zip(&expected_trigger_entities)
+                .any(|((actual, valid), expected)| !valid || *actual != *expected);
+        let bad_overlap = pickup_triggers.active_overlaps().find(|pair| {
+            !legacy_or_store(&entities, &pickups, pair.trigger_id())
+                .is_some_and(|pickup| pickup.state == PickupState::Available)
+                || !entities.contains(pair.subject_id())
+        });
+        if mismatched || bad_overlap.is_some() {
             return Err(GameSnapshotError::InvalidPickupTriggerDefinitions);
         }
         if legacy_or_store_len::<PickupComponent>(&entities, &pickups)
@@ -3481,8 +3494,7 @@ impl GameRuntime {
                 .zip(expected_hazard_entities)
                 .any(|((actual, valid), expected)| !valid || *actual != expected)
             || hazard_triggers.active_overlaps().any(|pair| {
-                !legacy_or_store::<HazardComponent>(&entities, &hazards, pair.trigger_id())
-                    .is_some()
+                legacy_or_store::<HazardComponent>(&entities, &hazards, pair.trigger_id()).is_none()
                     || !entities.contains(pair.subject_id())
             })
         {
@@ -3510,12 +3522,12 @@ impl GameRuntime {
                 .zip(expected_secret_entities)
                 .any(|((actual, valid), expected)| !valid || *actual != expected)
             || secret_triggers.active_overlaps().any(|pair| {
-                !legacy_or_store::<SecretRegionComponent>(
+                legacy_or_store::<SecretRegionComponent>(
                     &entities,
                     &secret_regions,
                     pair.trigger_id(),
                 )
-                .is_some()
+                .is_none()
                     || !entities.contains(pair.subject_id())
             })
         {
@@ -3544,12 +3556,12 @@ impl GameRuntime {
                 .zip(expected_floor_action_entities)
                 .any(|((actual, valid), expected)| !valid || *actual != expected)
             || floor_action_triggers.active_overlaps().any(|pair| {
-                !legacy_or_store::<FloorActionComponent>(
+                legacy_or_store::<FloorActionComponent>(
                     &entities,
                     &floor_actions,
                     pair.trigger_id(),
                 )
-                .is_some()
+                .is_none()
                     || !entities.contains(pair.subject_id())
             })
         {
@@ -3578,7 +3590,7 @@ impl GameRuntime {
                 .zip(expected_lift_entities)
                 .any(|((actual, valid), expected)| !valid || *actual != expected)
             || lift_triggers.active_overlaps().any(|pair| {
-                !legacy_or_store::<LiftComponent>(&entities, &lifts, pair.trigger_id()).is_some()
+                legacy_or_store::<LiftComponent>(&entities, &lifts, pair.trigger_id()).is_none()
                     || !entities.contains(pair.subject_id())
             })
         {
@@ -3677,8 +3689,8 @@ impl GameRuntime {
                 });
             }
             if let Some(exit) = encounter.exit {
-                if !legacy_or_store::<DoorComponent>(&entities, &doors, EntityId::new(exit))
-                    .is_some()
+                if legacy_or_store::<DoorComponent>(&entities, &doors, EntityId::new(exit))
+                    .is_none()
                 {
                     return Err(GameSnapshotError::UnknownEncounterExit {
                         encounter: encounter.entity,
@@ -3695,8 +3707,8 @@ impl GameRuntime {
                         member,
                     });
                 }
-                if !legacy_or_store::<EnemyComponent>(&entities, &enemies, EntityId::new(member))
-                    .is_some()
+                if legacy_or_store::<EnemyComponent>(&entities, &enemies, EntityId::new(member))
+                    .is_none()
                 {
                     return Err(GameSnapshotError::UnknownEncounterMember {
                         encounter: encounter.entity,
@@ -3734,8 +3746,8 @@ impl GameRuntime {
         for entry in snapshot.scheduled {
             let kind = match entry.kind {
                 ScheduledSnapshotKind::CloseDoor { door } => {
-                    if !legacy_or_store::<DoorComponent>(&entities, &doors, EntityId::new(door))
-                        .is_some()
+                    if legacy_or_store::<DoorComponent>(&entities, &doors, EntityId::new(door))
+                        .is_none()
                     {
                         return Err(GameSnapshotError::UnknownDoorEntity { entity: door });
                     }

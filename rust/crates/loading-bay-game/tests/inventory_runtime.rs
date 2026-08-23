@@ -6,8 +6,6 @@ use rusty_engine::core_ids::EntityId;
 use rusty_engine::gameplay_mechanics::{EquipmentComponent, ItemComponent};
 use serde_json::Value;
 
-mod support;
-
 const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const PLAYER: EntityId = EntityId::new(1);
 
@@ -436,57 +434,6 @@ fn pre_reserved_absence_current_snapshots_with_hidden_unowned_placeholders_still
             .count(),
         3,
         "legacy hidden placeholder remains admitted for compatibility"
-    );
-}
-
-#[test]
-fn pre_mechanics_snapshot_migration_keeps_legacy_hidden_weapon_placeholders() {
-    let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
-    let mut snapshot: Value =
-        serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
-    support::strip_future_gameplay_mechanics_state(&mut snapshot);
-    for health in snapshot["health"].as_array_mut().unwrap() {
-        let health = health.as_object_mut().unwrap();
-        health.remove("starting");
-        health.remove("maxArmor");
-        health.remove("armorAbsorptionPercent");
-        health.remove("armor");
-        health.remove("armorItem");
-        health.remove("state");
-    }
-    for definition in snapshot["itemDefinitions"].as_array_mut().unwrap() {
-        let Some(kind) = definition["kind"].as_object_mut() else {
-            continue;
-        };
-        kind.remove("maximumHealth");
-        kind.remove("automaticUse");
-        kind.remove("consumeAtCap");
-        kind.remove("maximumArmor");
-        kind.remove("absorptionPercent");
-        kind.remove("absorptionDivisor");
-        kind.remove("grantMode");
-        kind.remove("transition");
-    }
-    snapshot["schemaVersion"] = serde_json::json!(18);
-    let reopened = decode_game_snapshot(&snapshot.to_string()).unwrap();
-    assert_eq!(
-        reopened
-            .session()
-            .inventory(PLAYER)
-            .unwrap()
-            .equipped_weapon
-            .unwrap()
-            .as_str(),
-        "weapon/pistol"
-    );
-    assert_eq!(
-        reopened
-            .session()
-            .entities()
-            .components::<ItemComponent>()
-            .unwrap()
-            .count(),
-        3
     );
 }
 

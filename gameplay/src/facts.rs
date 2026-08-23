@@ -102,12 +102,14 @@ fn parse_type_id(value: &'static str) -> ComponentTypeId {
     ComponentTypeId::parse(value).expect("downstream fact component identity is valid")
 }
 
+type FactValidator<T> = Option<fn(&T) -> Result<(), String>>;
+
 fn durable_registration<T: EntityComponent>(
     type_id: &'static str,
     codec_id: &'static str,
     encode: fn(&T) -> serde_json::Value,
     decode: fn(serde_json::Value) -> Result<T, String>,
-    validator: Option<fn(&T) -> Result<(), String>>,
+    validator: FactValidator<T>,
 ) -> Result<ComponentRegistration<T>, String> {
     let codec = ComponentCodec::new(codec_id, CODEC_VERSION, encode, decode)
         .map_err(|error| error.to_string())?;

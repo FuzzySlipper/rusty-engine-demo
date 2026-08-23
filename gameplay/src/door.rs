@@ -217,7 +217,7 @@ impl DoorService {
         for (door, component) in session.facts::<DoorComponent>() {
             if !component.config.is_valid() {
                 return Err(RuntimeError::InvalidDoorMotionDuration {
-                    door: door,
+                    door,
                     motion_duration: component.config.motion_duration.raw(),
                 });
             }

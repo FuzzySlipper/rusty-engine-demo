@@ -213,7 +213,12 @@ impl PickupService {
                 actor: command.actor,
             });
         }
-        let Some(component) = session.fact::<PickupComponent>(command.pickup) else {
+        // A collected pickup is a retired entity whose fact is gone; its
+        // collection receipt in the product ledger still answers repeats.
+        let Some(component) = session
+            .fact::<PickupComponent>(command.pickup)
+            .or_else(|| session.collected_pickups.get(&command.pickup).cloned())
+        else {
             return Err(PickupRejection::UnknownPickup {
                 pickup: command.pickup,
             });
@@ -493,7 +498,7 @@ impl PickupService {
                 fact.kind == rusty_engine::engine_spatial::TriggerOverlapFactKind::Enter
                     && fact.pair.subject_id() == actor
                     && session
-                        .fact::<PickupComponent>(fact.pair.trigger_id())
+                        .pickup(fact.pair.trigger_id())
                         .is_some_and(|pickup| pickup.state == PickupState::Available)
             })
             .map(|fact| fact.pair.trigger_id())
@@ -568,11 +573,14 @@ fn prune_unavailable_pickup_overlaps(
     triggers: &mut TriggerVolumeSystem,
     facts: Vec<TriggerOverlapFact>,
 ) -> Vec<TriggerOverlapFact> {
-    let unavailable = session
+    let mut unavailable = session
         .facts::<PickupComponent>()
         .into_iter()
         .filter_map(|(entity, pickup)| (pickup.state != PickupState::Available).then_some(entity))
         .collect::<std::collections::BTreeSet<_>>();
+    // Every collection receipt belongs to a retired entity: permanently
+    // unavailable, with no live fact left to say so.
+    unavailable.extend(session.collected_pickups.keys().copied());
     if unavailable.is_empty() {
         return facts;
     }

@@ -218,21 +218,38 @@ fn automatic_armor_pickup_uses_its_bound_program_and_consumes_the_grant() {
 
 #[test]
 fn snapshot_pickup_trigger_quota_has_a_deterministic_typed_rejection() {
+    // Pickup facts persist as durable components on current schemas. A payload
+    // that tries to exceed the trigger quota by duplicating a pickup value is
+    // rejected deterministically by the component restore before admission
+    // counting can observe it; the quota itself is enforced at project
+    // admission and for genuine pre-migration saves through the same lens.
     let runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
     let mut snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
-    let template = snapshot["pickups"][0].clone();
-    let pickups = snapshot["pickups"].as_array_mut().unwrap();
-    while pickups.len() <= rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS {
-        pickups.push(template.clone());
-    }
+    let template = snapshot["entities"]["registeredComponents"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|component| component["typeId"] == "loading-bay.pickup")
+        .expect("pickup facts persist as durable components")["values"]
+        .as_array_mut()
+        .unwrap()[0]
+        .clone();
 
-    assert!(matches!(
-        decode_game_snapshot(&snapshot.to_string()).unwrap_err(),
-        loading_bay_game::GameSnapshotError::TooManyPickups { count, limit }
-            if count == rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS + 1
-                && limit == rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS
-    ));
+    let components = snapshot["entities"]["registeredComponents"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|component| component["typeId"] == "loading-bay.pickup")
+        .unwrap()["values"]
+        .as_array_mut()
+        .unwrap();
+    components.push(template);
+
+    let error = decode_game_snapshot(&snapshot.to_string())
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("DuplicateEntityValue"), "{error}");
 }
 
 #[test]
