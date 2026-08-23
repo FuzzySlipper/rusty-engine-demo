@@ -8,6 +8,17 @@ use serde_json::{json, Value};
 const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const PLAYER: EntityId = EntityId::new(1);
 
+/// Generic scene transforms live only on authored scene nodes.
+fn authored_translation(project: &Value, id: EntityId) -> Value {
+    project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array()
+        .expect("authored scene nodes")
+        .iter()
+        .find(|node| node["id"] == id.raw())
+        .expect("authored scene node for entity")["transform"]["translation"]
+        .clone()
+}
+
 fn sync_authored_translation(project: &mut Value, id: EntityId, translation: &Value) {
     let nodes = project["scenes"][0]["authoredScene"]["nodes"]
         .as_array_mut()
@@ -193,7 +204,7 @@ fn secret_and_exit_bindings_reject_missing_or_wrong_family_ids() {
 
 fn project_with_secret_and_exit_at_player() -> (Value, EntityId, EntityId) {
     let mut project: Value = serde_json::from_str(PROJECT).unwrap();
-    let player_translation = entity_mut(&mut project, PLAYER)["translation"].clone();
+    let player_translation = authored_translation(&project, PLAYER);
     let secret = project["scenes"][0]["entities"]
         .as_array()
         .unwrap()
@@ -208,8 +219,6 @@ fn project_with_secret_and_exit_at_player() -> (Value, EntityId, EntityId) {
         .find(|entity| entity.get("levelExit").is_some())
         .unwrap();
     let exit_id = EntityId::new(exit["id"].as_u64().unwrap());
-    entity_mut(&mut project, secret_id)["translation"] = player_translation.clone();
-    entity_mut(&mut project, exit_id)["translation"] = player_translation.clone();
     sync_authored_translation(&mut project, secret_id, &player_translation);
     sync_authored_translation(&mut project, exit_id, &player_translation);
     (project, secret_id, exit_id)

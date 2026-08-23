@@ -494,16 +494,22 @@ fn first_environment_position(project: &Value, component: &str) -> Value {
 }
 
 fn first_environment_id_and_position(project: &Value, component: &str) -> (u64, Value) {
+    // Generic scene transforms live only on authored scene nodes.
+    let nodes = project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array()
+        .unwrap();
     project["scenes"][0]["entities"]
         .as_array()
         .unwrap()
         .iter()
         .find(|entity| entity.get(component).is_some())
         .map(|entity| {
-            (
-                entity["id"].as_u64().unwrap(),
-                entity["translation"].clone(),
-            )
+            let position = nodes
+                .iter()
+                .find(|node| node["id"] == entity["id"])
+                .expect("authored scene node for entity")["transform"]["translation"]
+                .clone();
+            (entity["id"].as_u64().unwrap(), position)
         })
         .unwrap()
 }
@@ -525,12 +531,6 @@ fn set_player_translation(project: &mut Value, position: Value) {
 }
 
 fn set_entity_translation(project: &mut Value, entity_id: u64, position: Value) {
-    project["scenes"][0]["entities"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .find(|entity| entity["id"].as_u64() == Some(entity_id))
-        .unwrap()["translation"] = position.clone();
     let node = project["scenes"][0]["authoredScene"]["nodes"]
         .as_array_mut()
         .unwrap()

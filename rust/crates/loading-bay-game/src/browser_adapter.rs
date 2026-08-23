@@ -254,14 +254,25 @@ const FIRST_ENEMY: u64 = 4;
 const MOTION_PROBE: rusty_engine::core_ids::EntityId = rusty_engine::core_ids::EntityId::new(10);
 
 fn browser_animated_mesh_assets(document: &StoredProject) -> Vec<&StoredAsset> {
+    // Renderable asset identities live on Engine scene nodes.
     let referenced_assets = document
         .scenes
         .iter()
-        .find(|scene| scene.id == document.entry_scene)
+        .enumerate()
+        .find(|(_, scene)| scene.id == document.entry_scene)
         .into_iter()
-        .flat_map(|scene| &scene.entities)
-        .filter_map(|entity| entity.renderable.as_ref())
-        .map(|renderable| renderable.asset.as_str())
+        .filter_map(|(scene_index, scene)| {
+            loading_bay_game::decoded_authored_scene(scene, scene_index).ok()
+        })
+        .flat_map(|authored| authored.nodes)
+        .filter_map(|node| match &node.kind {
+            rusty_engine::authored_scene::SceneNodeKind::StaticMesh(asset)
+            | rusty_engine::authored_scene::SceneNodeKind::AnimatedMesh(asset)
+            | rusty_engine::authored_scene::SceneNodeKind::Sprite(asset) => {
+                Some(asset.id().as_str().to_owned())
+            }
+            _ => None,
+        })
         .collect::<std::collections::BTreeSet<_>>();
     document
         .assets

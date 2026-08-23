@@ -7,24 +7,25 @@ const PLAYER: EntityId = EntityId::new(1);
 
 fn activated_runtime() -> (GameRuntime, EntityId, EntityId) {
     let mut project: Value = serde_json::from_str(PROJECT).unwrap();
-    let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
-    let player_translation = entities
-        .iter()
-        .find(|entity| entity["id"] == PLAYER.raw())
-        .unwrap()["translation"]
-        .clone();
-    let floor = entities
-        .iter_mut()
-        .find(|entity| entity.get("floorAction").is_some())
-        .unwrap();
-    let floor_id = EntityId::new(floor["id"].as_u64().unwrap());
-    floor["translation"] = player_translation.clone();
-    let lift = entities
-        .iter_mut()
-        .find(|entity| entity.get("lift").is_some())
-        .unwrap();
-    let lift_id = EntityId::new(lift["id"].as_u64().unwrap());
-    lift["translation"] = player_translation.clone();
+    // Generic scene transforms live only on authored scene nodes.
+    let entities = project["scenes"][0]["entities"].as_array().unwrap();
+    let floor_id = EntityId::new(
+        entities
+            .iter()
+            .find(|entity| entity.get("floorAction").is_some())
+            .unwrap()["id"]
+            .as_u64()
+            .unwrap(),
+    );
+    let lift_id = EntityId::new(
+        entities
+            .iter()
+            .find(|entity| entity.get("lift").is_some())
+            .unwrap()["id"]
+            .as_u64()
+            .unwrap(),
+    );
+    let player_translation = authored_translation(&project, PLAYER);
     for id in [floor_id, lift_id] {
         sync_authored_translation(&mut project, id, &player_translation);
     }
@@ -33,6 +34,16 @@ fn activated_runtime() -> (GameRuntime, EntityId, EntityId) {
         floor_id,
         lift_id,
     )
+}
+
+fn authored_translation(project: &Value, id: EntityId) -> Value {
+    project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array()
+        .expect("authored scene nodes")
+        .iter()
+        .find(|node| node["id"] == id.raw())
+        .expect("authored scene node for entity")["transform"]["translation"]
+        .clone()
 }
 
 fn sync_authored_translation(project: &mut Value, id: EntityId, translation: &Value) {
@@ -126,15 +137,17 @@ fn changing_only_floor_program_composition_changes_rust_owned_transition() {
         .as_array_mut()
         .unwrap();
     activation_steps.retain(|step| step["operation"] != "requestLowerBoundPlatform");
-    let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
-    let player_translation =
-        entities.iter().find(|entity| entity["id"] == 1).unwrap()["translation"].clone();
-    let floor = entities
-        .iter_mut()
-        .find(|entity| entity.get("floorAction").is_some())
-        .unwrap();
-    let floor_id = EntityId::new(floor["id"].as_u64().unwrap());
-    floor["translation"] = player_translation.clone();
+    let floor_id = EntityId::new(
+        project["scenes"][0]["entities"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|entity| entity.get("floorAction").is_some())
+            .unwrap()["id"]
+            .as_u64()
+            .unwrap(),
+    );
+    let player_translation = authored_translation(&project, PLAYER);
     sync_authored_translation(&mut project, floor_id, &player_translation);
     let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
 
@@ -166,15 +179,17 @@ fn lift_return_is_program_selected_and_motion_predicates_use_frozen_state() {
         .as_array_mut()
         .unwrap();
     root_steps.retain(|step| step["thenProgram"]["operation"] != "advanceRaising");
-    let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
-    let player_translation =
-        entities.iter().find(|entity| entity["id"] == 1).unwrap()["translation"].clone();
-    let lift = entities
-        .iter_mut()
-        .find(|entity| entity.get("lift").is_some())
-        .unwrap();
-    let lift_id = EntityId::new(lift["id"].as_u64().unwrap());
-    lift["translation"] = player_translation.clone();
+    let lift_id = EntityId::new(
+        project["scenes"][0]["entities"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|entity| entity.get("lift").is_some())
+            .unwrap()["id"]
+            .as_u64()
+            .unwrap(),
+    );
+    let player_translation = authored_translation(&project, PLAYER);
     sync_authored_translation(&mut project, lift_id, &player_translation);
     let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
 
@@ -203,21 +218,24 @@ fn late_floor_program_failure_rolls_back_both_walk_trigger_families_and_trigger_
         .as_array_mut()
         .unwrap()
         .push(serde_json::json!({ "kind": "operation", "operation": "advanceLowering" }));
-    let entities = project["scenes"][0]["entities"].as_array_mut().unwrap();
-    let player_translation =
-        entities.iter().find(|entity| entity["id"] == 1).unwrap()["translation"].clone();
-    let floor = entities
-        .iter_mut()
-        .find(|entity| entity.get("floorAction").is_some())
-        .unwrap();
-    let floor_id = EntityId::new(floor["id"].as_u64().unwrap());
-    floor["translation"] = player_translation.clone();
-    let lift = entities
-        .iter_mut()
-        .find(|entity| entity.get("lift").is_some())
-        .unwrap();
-    let lift_id = EntityId::new(lift["id"].as_u64().unwrap());
-    lift["translation"] = player_translation.clone();
+    let entities = project["scenes"][0]["entities"].as_array().unwrap();
+    let floor_id = EntityId::new(
+        entities
+            .iter()
+            .find(|entity| entity.get("floorAction").is_some())
+            .unwrap()["id"]
+            .as_u64()
+            .unwrap(),
+    );
+    let lift_id = EntityId::new(
+        entities
+            .iter()
+            .find(|entity| entity.get("lift").is_some())
+            .unwrap()["id"]
+            .as_u64()
+            .unwrap(),
+    );
+    let player_translation = authored_translation(&project, PLAYER);
     for id in [floor_id, lift_id] {
         sync_authored_translation(&mut project, id, &player_translation);
     }

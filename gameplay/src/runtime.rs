@@ -1332,6 +1332,13 @@ mod tests {
 
     fn authored_door_runtime(auto_close_after_ticks: Option<u64>) -> GameRuntime {
         let mut project: Value = serde_json::from_str(E1M1).expect("E1M1 project");
+        let translation = project["scenes"][0]["authoredScene"]["nodes"]
+            .as_array()
+            .expect("authored scene nodes")
+            .iter()
+            .find(|node| node["id"] == E1M1_DOOR_SWITCH.raw())
+            .expect("canonical E1M1 door/switch node")["transform"]["translation"]
+            .clone();
         let entities = project["scenes"][0]["entities"]
             .as_array_mut()
             .expect("entry entities");
@@ -1339,7 +1346,6 @@ mod tests {
             .iter_mut()
             .find(|entity| entity["id"] == E1M1_DOOR_SWITCH.raw())
             .expect("canonical E1M1 door/switch");
-        let translation = door["translation"].clone();
         door["door"]["motionDurationTicks"] = 1.into();
         match auto_close_after_ticks {
             Some(ticks) => door["door"]["autoCloseAfterTicks"] = ticks.into(),
@@ -1350,11 +1356,6 @@ mod tests {
                     .remove("autoCloseAfterTicks");
             }
         }
-        let player = entities
-            .iter_mut()
-            .find(|entity| entity["id"] == E1M1_PLAYER.raw())
-            .expect("player");
-        player["translation"] = translation.clone();
         for node in project["scenes"][0]["authoredScene"]["nodes"]
             .as_array_mut()
             .expect("authored scene nodes")

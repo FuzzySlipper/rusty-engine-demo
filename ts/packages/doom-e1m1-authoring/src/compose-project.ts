@@ -1456,10 +1456,13 @@ export function buildDoomE1M1Project(
   assets.sort((a, b) => a.id.localeCompare(b.id));
   entities.sort((a, b) => a.id - b.id);
 
-  // Derive the Engine authored-scene document from the same entity data the
-  // admission payload uses: every entity maps to one scene node, node asset
-  // ids are collected (distinct, sorted by id) into dependencies, and nodes
-  // are sorted by id ascending per the canonical authored-scene contract.
+  // Derive the Engine authored-scene document from the same authoring
+  // records the bindings use: every authored entity maps to one scene node,
+  // node asset ids are collected (distinct, sorted by id) into
+  // dependencies, and nodes are sorted by id ascending per the canonical
+  // authored-scene contract. The published scene document is the SOLE
+  // carrier of generic fields (label, hierarchy, transform, renderable
+  // asset, light); binding records below never duplicate them.
   const authoredNode = (entity: any) => {
     const translation = entity.translation ?? [0, 0, 0];
     const rotation = entity.rotation ?? [0, 0, 0, 1];
@@ -1562,8 +1565,42 @@ export function buildDoomE1M1Project(
     nodes: [...authoredNodes].sort((a, b) => a.id - b.id),
   };
 
+  // Publish binding-only entity records: strip every generic scene field
+  // (they live in the Engine document above keyed by the same id), keep
+  // gameplay bindings plus presentation overrides, and drop records with no
+  // downstream content at all (unbound structural nodes).
+  const bindingEntities = entities.map((entity) => {
+    const {
+      name: _name,
+      parent: _parent,
+      childOrder: _childOrder,
+      translation: _translation,
+      rotation: _rotation,
+      scale: _scale,
+      light: _light,
+      ...binding
+    } = entity;
+    if (binding.renderable) {
+      const presentation: any = {};
+      if (binding.renderable.visible === false) {
+        presentation.visible = false;
+      }
+      if (binding.renderable.initialClip !== undefined) {
+        presentation.initialClip = binding.renderable.initialClip;
+      }
+      if (binding.renderable.visualBinding !== undefined) {
+        presentation.visualBinding = binding.renderable.visualBinding;
+      }
+      binding.renderable = presentation;
+      if (Object.keys(presentation).length === 0) {
+        delete binding.renderable;
+      }
+    }
+    return binding;
+  }).filter((entity) => Object.keys(entity).length > 1);
+
   const project = {
-    schemaVersion: 27,
+    schemaVersion: 28,
     projectId: "doom-e1m1",
     name: "Doom E1M1 — Hangar (VoXel Showcase)",
     entryScene: "scene/doom-e1m1",
@@ -1604,7 +1641,7 @@ export function buildDoomE1M1Project(
         ],
         voxelObjectInstances: [],
         authoredScene,
-        entities,
+        entities: bindingEntities,
       },
     ],
   };
@@ -1645,7 +1682,7 @@ export function buildDoomE1M1Project(
     unlinkSync(canonicalOut);
   } catch {}
   console.log(
-    `Wrote ${outPath} entities=${entities.length} assets=${assets.length} bytes=${canonBytes.length}`,
+    `Wrote ${outPath} nodes=${authoredScene.nodes.length} entities=${bindingEntities.length} assets=${assets.length} bytes=${canonBytes.length}`,
   );
   return project;
 }

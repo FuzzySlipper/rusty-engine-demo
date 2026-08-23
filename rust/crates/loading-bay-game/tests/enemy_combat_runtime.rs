@@ -10,6 +10,17 @@ use std::collections::BTreeSet;
 const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const PLAYER: EntityId = EntityId::new(1);
 
+/// Generic scene transforms live only on authored scene nodes.
+fn authored_translation(project: &serde_json::Value, id: EntityId) -> serde_json::Value {
+    project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array()
+        .expect("authored scene nodes")
+        .iter()
+        .find(|node| node["id"] == id.raw())
+        .expect("authored scene node for entity")["transform"]["translation"]
+        .clone()
+}
+
 fn sync_authored_translation(project: &mut Value, id: EntityId, translation: &Value) {
     let nodes = project["scenes"][0]["authoredScene"]["nodes"]
         .as_array_mut()
@@ -525,19 +536,12 @@ fn runtime_with_immediately_attacking_enemy(kind: &str) -> (GameRuntime, EntityI
 
 fn project_with_isolated_enemy(kind: &str) -> (serde_json::Value, EntityId) {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
-    let player_position = project["scenes"][0]["entities"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|entity| entity["id"] == PLAYER.raw())
-        .unwrap()["translation"]
-        .clone();
+    let player_position = authored_translation(&project, PLAYER);
     let enemy = enemy_with_attack_kind_in_project(&project, kind);
     let mut moved = Vec::new();
     for entity in project["scenes"][0]["entities"].as_array_mut().unwrap() {
         entity.as_object_mut().unwrap().remove("encounter");
         if entity["id"] == enemy.raw() {
-            entity["translation"] = player_position.clone();
             moved.push(enemy);
             entity["enemyCombat"]["sightRange"] = 100_000.into();
             entity["enemyCombat"]["hearingRange"] = 0.into();
@@ -554,13 +558,7 @@ fn project_with_isolated_enemy(kind: &str) -> (serde_json::Value, EntityId) {
 
 fn project_with_two_projectile_enemies() -> (serde_json::Value, [EntityId; 2]) {
     let mut project: serde_json::Value = serde_json::from_str(PROJECT).unwrap();
-    let player_position = project["scenes"][0]["entities"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|entity| entity["id"] == PLAYER.raw())
-        .unwrap()["translation"]
-        .clone();
+    let player_position = authored_translation(&project, PLAYER);
     let mut enemies = project["scenes"][0]["entities"]
         .as_array()
         .unwrap()
@@ -578,7 +576,6 @@ fn project_with_two_projectile_enemies() -> (serde_json::Value, [EntityId; 2]) {
         entity.as_object_mut().unwrap().remove("encounter");
         if [*first, *rejecting].contains(&EntityId::new(entity["id"].as_u64().unwrap())) {
             moved.push(EntityId::new(entity["id"].as_u64().unwrap()));
-            entity["translation"] = player_position.clone();
             entity["enemyCombat"]["sightRange"] = 100_000.into();
             entity["enemyCombat"]["hearingRange"] = 0.into();
         } else if entity.get("enemyCombat").is_some() {

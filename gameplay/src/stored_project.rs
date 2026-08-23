@@ -32,7 +32,7 @@ use crate::interaction::{SwitchConfig, SwitchEffect};
 use crate::inventory::{ItemDefinitionId, MAX_INVENTORY_SLOTS, MAX_ITEM_QUANTITY};
 use crate::lift::LiftConfig;
 
-pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 27;
+pub const STORED_PROJECT_SCHEMA_VERSION: u32 = 28;
 pub const STORED_VISUAL_BINDING_VERSION: u32 = 2;
 const MIN_STORED_VISUAL_BINDING_VERSION: u32 = 1;
 pub const MAX_STORED_VISUAL_BINDING_STATES: usize = 16;
@@ -291,10 +291,12 @@ pub struct StoredScene {
     pub name: String,
     /// Engine authored-scene document in its published JSON codec
     /// (`rusty_engine::authored_scene`): the Engine-owned representation of
-    /// node hierarchy, transforms, renderable assets, and lights. Decoded and
-    /// validated by the Engine owner; Loading Bay keeps no parallel generic
-    /// validation. Node ids equal entity ids, and every generic entity field
-    /// below must correspond exactly (see `validate_authored_scene`).
+    /// node hierarchy, labels, transforms, renderable assets, and lights.
+    /// Decoded and validated by the Engine owner; Loading Bay keeps no
+    /// parallel generic scene model. Node ids equal entity ids, and every
+    /// runtime entity is built from its node; `entities` carries only the
+    /// downstream bindings (gameplay behavior, spatial tuning) and
+    /// presentation overrides that the Engine scene model cannot express.
     pub authored_scene: serde_json::Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voxel_environment: Option<StoredVoxelEnvironment>,
@@ -440,32 +442,25 @@ pub struct StoredGeneratedVoxelEnvironment {
     pub gameplay_proxy: bool,
 }
 
+/// Downstream binding record for one authored scene node. Generic scene
+/// structure (label, hierarchy, transform, renderable asset, light) lives
+/// only in the Engine `authored_scene` document keyed by the same node id;
+/// this record adds what the Engine model cannot express: gameplay behavior,
+/// spatial tuning, and presentation overrides.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct StoredEntityDefinition {
     pub id: u64,
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent: Option<u64>,
-    #[serde(default, skip_serializing_if = "is_zero_u32")]
-    pub child_order: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub translation: Option<[f32; 3]>,
-    #[serde(
-        default = "identity_rotation",
-        skip_serializing_if = "is_identity_rotation"
-    )]
-    pub rotation: [f32; 4],
-    #[serde(default = "unit_scale", skip_serializing_if = "is_unit_scale")]
-    pub scale: [f32; 3],
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub light: Option<StoredLight>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bounds: Option<StoredBounds>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub collision: Option<StoredCollision>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub renderable: Option<StoredRenderable>,
+    /// Presentation overrides for this node's Engine-declared renderable.
+    /// The asset identity and local transform live on the scene node kind;
+    /// only visibility, initial clip selection, and visual bindings are
+    /// binding-owned because the Engine scene model cannot express them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub renderable: Option<StoredEntityPresentation>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub door: Option<StoredDoor>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -602,25 +597,39 @@ pub struct StoredCollision {
     pub static_collider: bool,
 }
 
+/// Binding-owned presentation overrides for an authored scene node. The
+/// Engine node kind owns the renderable asset identity and its local
+/// transform; this record only overrides what the scene model cannot carry.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct StoredRenderable {
-    pub asset: String,
+pub struct StoredEntityPresentation {
+    #[serde(
+        default = "default_presentation_visible",
+        skip_serializing_if = "is_presentation_visible"
+    )]
     pub visible: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub local_transform: Option<StoredRenderableTransform>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub initial_clip: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visual_binding: Option<StoredVisualBinding>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct StoredRenderableTransform {
-    pub translation: [f32; 3],
-    pub rotation: [f32; 4],
-    pub scale: [f32; 3],
+impl Default for StoredEntityPresentation {
+    fn default() -> Self {
+        Self {
+            visible: true,
+            initial_clip: None,
+            visual_binding: None,
+        }
+    }
+}
+
+fn default_presentation_visible() -> bool {
+    true
+}
+
+fn is_presentation_visible(value: &bool) -> bool {
+    *value
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1772,8 +1781,8 @@ pub(crate) fn validate_stored_project(document: &StoredProject) -> Result<(), St
             };
             validate_voxel_object_instance(instance, object, &assets, document, &instance_path)?;
         }
-        validate_authored_scene(scene, index)?;
-        validate_scene_entities(scene, index, document, &assets)?;
+        let scene_nodes = validate_authored_scene(scene, index)?;
+        validate_scene_entities(scene, index, document, &assets, &scene_nodes)?;
     }
     if !scenes.contains_key(entry_scene.as_str()) {
         return Err(failure(
@@ -2234,18 +2243,12 @@ fn validate_scene_entities(
     scene_index: usize,
     project: &StoredProject,
     assets: &BTreeMap<String, usize>,
+    scene_nodes: &BTreeMap<u64, rusty_engine::authored_scene::SceneNodeRecord>,
 ) -> Result<(), StoredProjectError> {
     let mut entities = BTreeMap::new();
     let mut doom_sprite_inspection_orders = BTreeSet::new();
     for (entity_index, entity) in scene.entities.iter().enumerate() {
         let root = format!("scenes[{scene_index}].entities[{entity_index}]");
-        if entity.name.trim().is_empty() {
-            return Err(failure(
-                diagnostic_code::INVALID_VALUE,
-                format!("{root}.name"),
-                "entity name must not be empty",
-            ));
-        }
         if let Some(first) = entities.insert(entity.id, entity_index) {
             return Err(failure(
                 diagnostic_code::DUPLICATE_ENTITY,
@@ -2313,17 +2316,39 @@ fn validate_scene_entities(
                 ));
             }
         }
-        if let Some(renderable) = &entity.renderable {
-            let Some(asset_index) = assets.get(&renderable.asset).copied() else {
+        if let Some(presentation) = &entity.renderable {
+            // The renderable asset itself is owned by the Engine scene node
+            // kind; the binding only tunes its presentation.
+            let Some(node) = scene_nodes.get(&entity.id) else {
+                return Err(failure(
+                    diagnostic_code::INVALID_RELATIONSHIP,
+                    format!("{root}.id"),
+                    format!("entity {} has no authored scene node", entity.id),
+                ));
+            };
+            let (rusty_engine::authored_scene::SceneNodeKind::StaticMesh(asset_reference)
+            | rusty_engine::authored_scene::SceneNodeKind::AnimatedMesh(asset_reference)
+            | rusty_engine::authored_scene::SceneNodeKind::Sprite(asset_reference)) = &node.kind
+            else {
+                return Err(failure(
+                    diagnostic_code::INVALID_COMPONENT,
+                    format!("{root}.renderable"),
+                    "presentation bindings require an authored mesh or sprite node",
+                ));
+            };
+            let Some(asset_index) = assets.get(asset_reference.id().as_str()).copied() else {
                 return Err(failure(
                     diagnostic_code::MISSING_ASSET,
-                    format!("{root}.renderable.asset"),
-                    format!("renderable references missing asset `{}`", renderable.asset),
+                    format!("{root}.renderable"),
+                    format!(
+                        "node renderable references missing asset `{}`",
+                        asset_reference.id().as_str()
+                    ),
                 ));
             };
             let asset = &project.assets[asset_index];
             if let Some(animated) = &asset.animated_mesh {
-                let clip = renderable
+                let clip = presentation
                     .initial_clip
                     .as_ref()
                     .or(animated.default_clip.as_ref());
@@ -2342,10 +2367,10 @@ fn validate_scene_entities(
                     ));
                 }
             } else if matches!(
-                parse_asset_id(&asset.id, &format!("{root}.renderable.asset"))?.kind(),
+                parse_asset_id(&asset.id, &format!("{root}.renderable"))?.kind(),
                 AssetKind::StaticMesh | AssetKind::Sprite
             ) {
-                if renderable.initial_clip.is_some() {
+                if presentation.initial_clip.is_some() {
                     return Err(failure(
                         diagnostic_code::INVALID_COMPONENT,
                         format!("{root}.renderable.initialClip"),
@@ -2355,11 +2380,11 @@ fn validate_scene_entities(
             } else {
                 return Err(failure(
                     diagnostic_code::WRONG_ASSET_KIND,
-                    format!("{root}.renderable.asset"),
+                    format!("{root}.renderable"),
                     "renderable must reference a static mesh, animated mesh, or sprite asset",
                 ));
             }
-            if let Some(binding) = &renderable.visual_binding {
+            if let Some(binding) = &presentation.visual_binding {
                 validate_visual_binding(
                     binding,
                     asset,
@@ -2479,14 +2504,24 @@ fn validate_scene_entities(
                     ));
                 }
             }
-            if entity.translation.is_none()
-                || entity.bounds.is_none()
-                || entity.renderable.is_none()
+            let node = scene_nodes.get(&entity.id);
+            let node_has_renderable = node.is_some_and(|node| {
+                matches!(
+                    &node.kind,
+                    rusty_engine::authored_scene::SceneNodeKind::StaticMesh(_)
+                        | rusty_engine::authored_scene::SceneNodeKind::AnimatedMesh(_)
+                        | rusty_engine::authored_scene::SceneNodeKind::Sprite(_)
+                )
+            });
+            if node.is_none_or(|node| {
+                node.transform == rusty_engine::authored_scene::SceneTransform::IDENTITY
+            }) || entity.bounds.is_none()
+                || !node_has_renderable
             {
                 return Err(failure(
                     diagnostic_code::INVALID_COMPONENT,
                     format!("{root}.pickup"),
-                    "pickup entities require an authored translation, bounds, and renderable",
+                    "pickup entities require an authored scene transform, bounds, and mesh or sprite node",
                 ));
             }
             if entity.collision.is_some() || entity.kinematic.is_some() {
@@ -2514,11 +2549,14 @@ fn validate_scene_entities(
             }
         }
         if let Some(floor_action) = &entity.floor_action {
-            if entity.translation.is_none() || entity.bounds.is_none() {
+            if !scene_nodes.get(&entity.id).is_some_and(|node| {
+                node.transform != rusty_engine::authored_scene::SceneTransform::IDENTITY
+            }) || entity.bounds.is_none()
+            {
                 return Err(failure(
                     diagnostic_code::INVALID_COMPONENT,
                     format!("{root}.floorAction"),
-                    "floor action triggers require an authored translation and bounds",
+                    "floor action triggers require an authored scene transform and bounds",
                 ));
             }
             if entity.collision.is_some() || entity.kinematic.is_some() {
@@ -2553,11 +2591,14 @@ fn validate_scene_entities(
             }
         }
         if let Some(lift) = &entity.lift {
-            if entity.translation.is_none() || entity.bounds.is_none() {
+            if !scene_nodes.get(&entity.id).is_some_and(|node| {
+                node.transform != rusty_engine::authored_scene::SceneTransform::IDENTITY
+            }) || entity.bounds.is_none()
+            {
                 return Err(failure(
                     diagnostic_code::INVALID_COMPONENT,
                     format!("{root}.lift"),
-                    "lift triggers require an authored translation and bounds",
+                    "lift triggers require an authored scene transform and bounds",
                 ));
             }
             if entity.collision.is_some() || entity.kinematic.is_some() {
@@ -2603,6 +2644,7 @@ fn validate_scene_entities(
             validate_walk_trigger_target(
                 scene,
                 &entities,
+                scene_nodes,
                 &mut moving_platform_owners,
                 entity.id,
                 floor_action.target_platform,
@@ -2613,6 +2655,7 @@ fn validate_scene_entities(
             validate_walk_trigger_target(
                 scene,
                 &entities,
+                scene_nodes,
                 &mut moving_platform_owners,
                 entity.id,
                 lift.target_platform,
@@ -2742,6 +2785,7 @@ fn has_walk_trigger_gameplay_owner(entity: &StoredEntityDefinition) -> bool {
 fn validate_walk_trigger_target(
     scene: &StoredScene,
     entities: &BTreeMap<u64, usize>,
+    scene_nodes: &BTreeMap<u64, rusty_engine::authored_scene::SceneNodeRecord>,
     moving_platform_owners: &mut BTreeMap<u64, u64>,
     owner: u64,
     target: u64,
@@ -2762,11 +2806,13 @@ fn validate_walk_trigger_target(
             format!("moving platform target {target} cannot also be a walk trigger"),
         ));
     }
-    if target_entity.translation.is_none() {
+    if !scene_nodes.get(&target).is_some_and(|node| {
+        node.transform != rusty_engine::authored_scene::SceneTransform::IDENTITY
+    }) {
         return Err(failure(
             diagnostic_code::INVALID_RELATIONSHIP,
             path,
-            format!("moving platform target {target} requires a translation"),
+            format!("moving platform target {target} requires an authored scene transform"),
         ));
     }
     let Some(collision) = target_entity.collision else {
@@ -3115,236 +3161,147 @@ fn json_path(path: &str) -> String {
     }
 }
 
-/// Validates the Engine authored-scene document and its correspondence with
-/// the game-binding entity records.
-///
-/// The document is decoded through the Engine owner, which rejects every
-/// generic invariant (duplicate node ids, unknown parents, cycles, transform
-/// validity, light rules, asset-kind/dependency agreement). This function then
-/// pins each entity record to its node so the two representations cannot
-/// drift: the scene document is the Engine-authored truth for generic scene
-/// structure, while the entity records own gameplay bindings plus the
-/// presentation state the scene model does not carry (renderable visibility,
-/// initial clip, visual bindings).
-fn validate_authored_scene(
+/// Decodes a stored scene's Engine authored-scene document through the
+/// Engine owner's codec, which rejects every generic invariant (duplicate
+/// node ids, unknown parents, cycles, transform validity, light rules,
+/// asset-kind/dependency agreement). This is the only generic-scene
+/// authority: callers read node structure from this document, never from
+/// entity records, which carry only gameplay bindings and the presentation
+/// state the scene model does not express (visibility, initial clip,
+/// visual bindings).
+pub fn decoded_authored_scene(
     scene: &StoredScene,
     scene_index: usize,
-) -> Result<(), StoredProjectError> {
+) -> Result<rusty_engine::authored_scene::FlatSceneDocument, StoredProjectError> {
     let root = format!("scenes[{scene_index}].authoredScene");
     let encoded = serde_json::to_string(&scene.authored_scene)
         .map_err(|error| failure(diagnostic_code::DECODE, &root, error.to_string()))?;
-    let document = rusty_engine::authored_scene::decode_scene(&encoded).map_err(|error| {
+    rusty_engine::authored_scene::decode_scene(&encoded).map_err(|error| {
         failure(
             diagnostic_code::INVALID_COMPONENT,
             format!("{root}{}", error.path),
             error.to_string(),
         )
-    })?;
+    })
+}
 
-    let mut nodes = std::collections::BTreeMap::new();
-    for node in &document.nodes {
-        nodes.insert(node.id.raw(), node);
-    }
-    if nodes.len() != scene.entities.len() {
-        return Err(failure(
-            diagnostic_code::INVALID_COMPONENT,
-            &root,
-            format!(
-                "authored scene declares {} nodes but the scene binds {} entities",
-                nodes.len(),
-                scene.entities.len()
-            ),
-        ));
-    }
+/// Engine scene-node generic fields joined by entity id for presentation
+/// consumers. Labels and renderable asset identities live on nodes; this
+/// join is read-side only and never stored.
+#[derive(Debug, Clone)]
+pub struct AuthoredNodeFields {
+    pub label: Option<String>,
+    pub asset: Option<String>,
+}
 
+/// Joins every stored scene's entity bindings with their Engine node
+/// generic fields, keyed by entity id.
+pub fn authored_node_fields(
+    project: &StoredProject,
+) -> Result<BTreeMap<u64, AuthoredNodeFields>, StoredProjectError> {
+    let mut fields = BTreeMap::new();
+    for (scene_index, scene) in project.scenes.iter().enumerate() {
+        let document = decoded_authored_scene(scene, scene_index)?;
+        for node in document.nodes {
+            let asset = match &node.kind {
+                rusty_engine::authored_scene::SceneNodeKind::StaticMesh(asset)
+                | rusty_engine::authored_scene::SceneNodeKind::AnimatedMesh(asset)
+                | rusty_engine::authored_scene::SceneNodeKind::Sprite(asset) => {
+                    Some(asset.id().as_str().to_owned())
+                }
+                _ => None,
+            };
+            fields.insert(
+                node.id.raw(),
+                AuthoredNodeFields {
+                    label: node.metadata.label,
+                    asset,
+                },
+            );
+        }
+    }
+    Ok(fields)
+}
+
+fn validate_authored_scene(
+    scene: &StoredScene,
+    scene_index: usize,
+) -> Result<BTreeMap<u64, rusty_engine::authored_scene::SceneNodeRecord>, StoredProjectError> {
+    let document = decoded_authored_scene(scene, scene_index)?;
+    let mut nodes = BTreeMap::new();
+    for node in document.nodes {
+        let node_id = node.id.raw();
+        if nodes.insert(node_id, node).is_some() {
+            return Err(failure(
+                diagnostic_code::DUPLICATE_ENTITY,
+                format!("scenes[{scene_index}].authoredScene.nodes"),
+                format!("node {node_id} was already declared"),
+            ));
+        }
+    }
+    // Entity records are bindings for Engine nodes: every record must key an
+    // existing node id. Nodes without a record simply have no downstream
+    // bindings; there is nothing to correspond against because entity
+    // records carry no generic scene fields at all.
     for (entity_index, entity) in scene.entities.iter().enumerate() {
-        let path = format!("scenes[{scene_index}].entities[{entity_index}]");
-        let Some(node) = nodes.get(&entity.id) else {
+        if !nodes.contains_key(&entity.id) {
             return Err(failure(
                 diagnostic_code::INVALID_RELATIONSHIP,
-                format!("{path}.id"),
+                format!("scenes[{scene_index}].entities[{entity_index}].id"),
                 format!(
                     "entity {} has no node in the authored scene document",
                     entity.id
                 ),
             ));
-        };
-        if node.metadata.label.as_deref() != Some(entity.name.as_str()) {
-            return Err(correspondence_failure(
-                &format!("{path}.name"),
-                node.id.raw(),
-                "label",
-            ));
-        }
-        let expected_parent = entity.parent.map(rusty_engine::core_ids::SceneNodeId::new);
-        if node.parent != expected_parent {
-            return Err(correspondence_failure(
-                &format!("{path}.parent"),
-                entity.id,
-                "parent",
-            ));
-        }
-        if node.child_order != entity.child_order {
-            return Err(correspondence_failure(
-                &format!("{path}.childOrder"),
-                entity.id,
-                "child order",
-            ));
-        }
-        let expected_transform = rusty_engine::authored_scene::SceneTransform {
-            translation: rusty_engine::core_math::Vec3::new(
-                entity.translation.unwrap_or([0.0, 0.0, 0.0])[0],
-                entity.translation.unwrap_or([0.0, 0.0, 0.0])[1],
-                entity.translation.unwrap_or([0.0, 0.0, 0.0])[2],
-            ),
-            rotation: rusty_engine::entity_state::Quat::new(
-                entity.rotation[0],
-                entity.rotation[1],
-                entity.rotation[2],
-                entity.rotation[3],
-            ),
-            scale: rusty_engine::core_math::Vec3::new(
-                entity.scale[0],
-                entity.scale[1],
-                entity.scale[2],
-            ),
-        };
-        if node.transform.translation != expected_transform.translation
-            || node.transform.rotation != expected_transform.rotation
-            || node.transform.scale != expected_transform.scale
-        {
-            return Err(correspondence_failure(
-                &format!("{path}.translation"),
-                entity.id,
-                "transform",
-            ));
-        }
-        match (&entity.renderable, &entity.light, &node.kind) {
-            (
-                Some(renderable),
-                None,
-                rusty_engine::authored_scene::SceneNodeKind::StaticMesh(asset)
-                | rusty_engine::authored_scene::SceneNodeKind::Sprite(asset),
-            ) => {
-                if asset.id().as_str() != renderable.asset {
-                    return Err(correspondence_failure(
-                        &format!("{path}.renderable.asset"),
-                        entity.id,
-                        "renderable asset",
-                    ));
-                }
-                let expected_renderable_transform = renderable.local_transform.map_or(
-                    rusty_engine::authored_scene::SceneTransform::IDENTITY,
-                    |local| rusty_engine::authored_scene::SceneTransform {
-                        translation: rusty_engine::core_math::Vec3::new(
-                            local.translation[0],
-                            local.translation[1],
-                            local.translation[2],
-                        ),
-                        rotation: rusty_engine::entity_state::Quat::new(
-                            local.rotation[0],
-                            local.rotation[1],
-                            local.rotation[2],
-                            local.rotation[3],
-                        ),
-                        scale: rusty_engine::core_math::Vec3::new(
-                            local.scale[0],
-                            local.scale[1],
-                            local.scale[2],
-                        ),
-                    },
-                );
-                let actual = node.renderable_transform;
-                let matches = actual.translation == expected_renderable_transform.translation
-                    && actual.rotation == expected_renderable_transform.rotation
-                    && actual.scale == expected_renderable_transform.scale;
-                if !matches {
-                    return Err(correspondence_failure(
-                        &format!("{path}.renderable.localTransform"),
-                        entity.id,
-                        "renderable transform",
-                    ));
-                }
-            }
-            (None, Some(light), rusty_engine::authored_scene::SceneNodeKind::Light(actual)) => {
-                if actual != &authored_light(light) {
-                    return Err(correspondence_failure(
-                        &format!("{path}.light"),
-                        entity.id,
-                        "light",
-                    ));
-                }
-            }
-            (None, None, rusty_engine::authored_scene::SceneNodeKind::EmptyGroup) => {}
-            _ => {
-                return Err(failure(
-                    diagnostic_code::INVALID_COMPONENT,
-                    format!("{path}.id"),
-                    "entity bindings do not correspond to its authored scene node kind",
-                ));
-            }
         }
     }
-    Ok(())
+    Ok(nodes)
 }
 
-fn correspondence_failure(path: &str, entity: u64, subject: &str) -> StoredProjectError {
-    failure(
-        diagnostic_code::INVALID_COMPONENT,
-        path,
-        format!("entity {entity} does not correspond to its authored scene node {subject}"),
-    )
-}
-
-/// Maps the Loading Bay light authoring shape onto the Engine scene light.
-fn authored_light(light: &StoredLight) -> rusty_engine::authored_scene::SceneLight {
+/// Maps an Engine scene light onto the Loading Bay light transport shape
+/// used by the browser host's static resources.
+pub fn stored_light(light: &rusty_engine::authored_scene::SceneLight) -> StoredLight {
     use rusty_engine::authored_scene::{SceneLight, SceneLightShadowIntent};
-    let shadow_intent = |shadows: bool| {
-        if shadows {
-            SceneLightShadowIntent::Requested
-        } else {
-            SceneLightShadowIntent::Disabled
-        }
-    };
+    let shadows = |intent: SceneLightShadowIntent| intent == SceneLightShadowIntent::Requested;
     match *light {
-        StoredLight::Ambient {
+        SceneLight::Ambient {
             color,
             intensity,
             enabled,
-            shadows,
-        } => SceneLight::Ambient {
+            shadow_intent,
+        } => StoredLight::Ambient {
             color,
             intensity,
             enabled,
-            shadow_intent: shadow_intent(shadows),
+            shadows: shadows(shadow_intent),
         },
-        StoredLight::Directional {
+        SceneLight::Directional {
             color,
             intensity,
             enabled,
-            shadows,
-        } => SceneLight::Directional {
+            shadow_intent,
+        } => StoredLight::Directional {
             color,
             intensity,
             enabled,
-            shadow_intent: shadow_intent(shadows),
+            shadows: shadows(shadow_intent),
         },
-        StoredLight::Point {
+        SceneLight::Point {
             color,
             intensity,
             enabled,
             range,
             decay,
-            shadows,
-        } => SceneLight::Point {
+            shadow_intent,
+        } => StoredLight::Point {
             color,
             intensity,
             enabled,
             range,
             decay,
-            shadow_intent: shadow_intent(shadows),
+            shadows: shadows(shadow_intent),
         },
-        StoredLight::Spot {
+        SceneLight::Spot {
             color,
             intensity,
             enabled,
@@ -3352,8 +3309,8 @@ fn authored_light(light: &StoredLight) -> rusty_engine::authored_scene::SceneLig
             decay,
             outer_angle_radians,
             penumbra,
-            shadows,
-        } => SceneLight::Spot {
+            shadow_intent,
+        } => StoredLight::Spot {
             color,
             intensity,
             enabled,
@@ -3361,7 +3318,7 @@ fn authored_light(light: &StoredLight) -> rusty_engine::authored_scene::SceneLig
             decay,
             outer_angle_radians,
             penumbra,
-            shadow_intent: shadow_intent(shadows),
+            shadows: shadows(shadow_intent),
         },
     }
 }
@@ -3384,22 +3341,6 @@ fn is_zero_u32(value: &u32) -> bool {
 
 fn is_zero_u8(value: &u8) -> bool {
     *value == 0
-}
-
-const fn identity_rotation() -> [f32; 4] {
-    [0.0, 0.0, 0.0, 1.0]
-}
-
-fn is_identity_rotation(value: &[f32; 4]) -> bool {
-    *value == identity_rotation()
-}
-
-const fn unit_scale() -> [f32; 3] {
-    [1.0; 3]
-}
-
-fn is_unit_scale(value: &[f32; 3]) -> bool {
-    *value == unit_scale()
 }
 
 fn is_kebab_segment(value: &str) -> bool {

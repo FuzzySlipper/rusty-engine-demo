@@ -17,6 +17,7 @@ fn door_runtime(
     repeatable: Option<bool>,
 ) -> GameRuntime {
     let mut project: Value = serde_json::from_str(E1M1).expect("E1M1 project");
+    let door_translation = authored_translation(&project, DOOR_SWITCH);
     let entities = project["scenes"][0]["entities"]
         .as_array_mut()
         .expect("entry entities");
@@ -24,7 +25,6 @@ fn door_runtime(
         .iter_mut()
         .find(|entity| entity["id"] == DOOR_SWITCH.raw())
         .expect("canonical E1M1 door/switch");
-    let door_translation = door["translation"].clone();
     door["door"]["motionDurationTicks"] = motion_duration.into();
     match auto_close_after {
         Some(ticks) => door["door"]["autoCloseAfterTicks"] = ticks.into(),
@@ -38,13 +38,20 @@ fn door_runtime(
     if let Some(repeatable) = repeatable {
         door["switch"]["repeatable"] = repeatable.into();
     }
-    let player = entities
-        .iter_mut()
-        .find(|entity| entity["id"] == PLAYER.raw())
-        .expect("player");
-    player["translation"] = door_translation.clone();
     sync_authored_translation(&mut project, PLAYER, &door_translation);
     GameRuntime::from_stored_project(&project.to_string()).expect("current authored fixture")
+}
+
+/// Reads an authored scene-node transform; generic scene fields live only
+/// on nodes, so fixture mutations target nodes exclusively.
+fn authored_translation(project: &Value, id: EntityId) -> Value {
+    project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array()
+        .expect("authored scene nodes")
+        .iter()
+        .find(|node| node["id"] == id.raw())
+        .expect("authored scene node for entity")["transform"]["translation"]
+        .clone()
 }
 
 fn sync_authored_translation(project: &mut Value, id: EntityId, translation: &Value) {

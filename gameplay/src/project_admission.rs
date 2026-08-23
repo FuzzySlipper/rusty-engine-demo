@@ -10,7 +10,7 @@ use rusty_engine::engine_spatial::{
     validate_material_voxel, GeneratedRoomConfig, MaterialVoxel, VoxelAuthorityValidationError,
     VoxelCollisionScene,
 };
-use rusty_engine::entity_state::{EntityDefinition, EntityTransform, Quat, MAX_ABS_TRANSLATION};
+use rusty_engine::entity_state::{EntityDefinition, EntityTransform, MAX_ABS_TRANSLATION};
 
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::DoorConfig;
@@ -54,9 +54,9 @@ use crate::secret_program::compile_secret_programs;
 use crate::session::{GameSession, SessionProgramCatalogs};
 use crate::standard_vitality::DoomVitalityPolicy;
 use crate::stored_project::{
-    diagnostic_code, validate_stored_project, StoredAsset, StoredEntityDefinition,
-    StoredItemDefinition, StoredItemKind, StoredMaterialVoxel, StoredMaterialVoxelEnvironment,
-    StoredProject, StoredProjectError, StoredScene, StoredVoxelEnvironment,
+    diagnostic_code, validate_stored_project, StoredAsset, StoredItemDefinition, StoredItemKind,
+    StoredMaterialVoxel, StoredMaterialVoxelEnvironment, StoredProject, StoredProjectError,
+    StoredScene, StoredVoxelEnvironment,
 };
 use crate::switch_program::compile_switch_programs;
 use crate::vitality::HealthConfig;
@@ -329,20 +329,35 @@ fn admit_scene(
     let entity_indexes = index_entities(scene, scene_index)?;
     require_spatial_source(scene, scene_index)?;
     let collision_scene = build_collision_scene(scene, scene_index, catalog)?;
+    // The Engine authored-scene document is the sole generic-scene source:
+    // every node becomes a runtime entity, and each entity record overlays
+    // downstream bindings onto its node by id.
+    let document = crate::stored_project::decoded_authored_scene(scene, scene_index)?;
     let item_definition_map = item_definitions
         .iter()
         .cloned()
         .map(|definition| (definition.id.clone(), definition))
         .collect::<BTreeMap<_, _>>();
-    let definitions = scene
-        .entities
+    let mut bindings = BTreeMap::new();
+    for (entity_index, entity) in scene.entities.iter().enumerate() {
+        if bindings.insert(entity.id, entity_index).is_some() {
+            return Err(StoredProjectError::new(
+                diagnostic_code::DUPLICATE_ENTITY,
+                format!("scenes[{scene_index}].entities[{entity_index}].id"),
+                format!("entity {} was already declared", entity.id),
+            ));
+        }
+    }
+    let definitions = document
+        .nodes
         .iter()
-        .enumerate()
-        .map(|(entity_index, entity)| {
+        .map(|node| {
+            let binding_index = bindings.get(&node.id.raw()).copied();
             authored_definition(
-                entity,
+                node,
+                binding_index.map(|index| &scene.entities[index]),
                 scene_index,
-                entity_index,
+                binding_index.unwrap_or(0),
                 &item_definition_map,
                 &program_catalogs.player_setup,
             )
@@ -582,6 +597,23 @@ fn validate_program_bindings(
         }
     }
     for (scene_index, scene) in document.scenes.iter().enumerate() {
+        // Labels live on Engine scene nodes; resolve them for diagnostics.
+        let node_labels = crate::stored_project::decoded_authored_scene(scene, scene_index)
+            .map(|document| {
+                document
+                    .nodes
+                    .iter()
+                    .map(|node| (node.id.raw(), node.metadata.label.clone()))
+                    .collect::<BTreeMap<u64, Option<String>>>()
+            })
+            .unwrap_or_default();
+        let label_of = |entity_id: u64| -> String {
+            node_labels
+                .get(&entity_id)
+                .cloned()
+                .flatten()
+                .unwrap_or_else(|| format!("entity {entity_id}"))
+        };
         for (entity_index, entity) in scene.entities.iter().enumerate() {
             if let Some(inventory) = &entity.inventory {
                 let path = format!(
@@ -597,7 +629,7 @@ fn validate_program_bindings(
                         path,
                         format!(
                             "inventory `{}` references missing or wrong-family player setup program `{}`",
-                            entity.name, inventory.setup_program
+                            label_of(entity.id), inventory.setup_program
                         ),
                     ));
                 }
@@ -613,7 +645,7 @@ fn validate_program_bindings(
                             &path,
                             format!(
                             "pickup `{}` references missing or wrong-family pickup program `{}`",
-                            entity.name, pickup.program
+                            label_of(entity.id), pickup.program
                         ),
                         )
                     })?;
@@ -626,7 +658,8 @@ fn validate_program_bindings(
                             &path,
                             format!(
                                 "pickup `{}` references missing item `{}`",
-                                entity.name, pickup.item
+                                label_of(entity.id),
+                                pickup.item
                             ),
                         )
                     })?;
@@ -640,7 +673,9 @@ fn validate_program_bindings(
                         path,
                         format!(
                             "pickup `{}` program `{}` is incompatible with `{}`",
-                            entity.name, pickup.program, pickup.item
+                            label_of(entity.id),
+                            pickup.program,
+                            pickup.item
                         ),
                     ));
                 }
@@ -653,7 +688,8 @@ fn validate_program_bindings(
                         path,
                         format!(
                             "hazard `{}` references missing or wrong-family hazard program `{}`",
-                            entity.name, hazard.program
+                            label_of(entity.id),
+                            hazard.program
                         ),
                     ));
                 }
@@ -667,7 +703,7 @@ fn validate_program_bindings(
                         path,
                         format!(
                             "explosive prop `{}` references missing or wrong-family explosive-prop program `{}`",
-                            entity.name, prop.program
+                            label_of(entity.id), prop.program
                         ),
                     ));
                 }
@@ -681,7 +717,7 @@ fn validate_program_bindings(
                         path,
                         format!(
                             "encounter `{}` references missing or wrong-family encounter program `{}`",
-                            entity.name, encounter.program
+                            label_of(entity.id), encounter.program
                         ),
                     ));
                 }
@@ -694,7 +730,8 @@ fn validate_program_bindings(
                         path,
                         format!(
                             "switch `{}` references missing or wrong-family switch program `{}`",
-                            entity.name, switch.program
+                            label_of(entity.id),
+                            switch.program
                         ),
                     ));
                 }
@@ -707,7 +744,7 @@ fn validate_program_bindings(
                     .get(&floor_action.program)
                     .is_none()
                 {
-                    return Err(StoredProjectError::new(diagnostic_code::INVALID_VALUE, path, format!("floor action `{}` references missing or wrong-family floor-action program `{}`", entity.name, floor_action.program)));
+                    return Err(StoredProjectError::new(diagnostic_code::INVALID_VALUE, path, format!("floor action `{}` references missing or wrong-family floor-action program `{}`", label_of(entity.id), floor_action.program)));
                 }
             }
             if let Some(lift) = &entity.lift {
@@ -718,7 +755,8 @@ fn validate_program_bindings(
                         path,
                         format!(
                             "lift `{}` references missing or wrong-family lift program `{}`",
-                            entity.name, lift.program
+                            label_of(entity.id),
+                            lift.program
                         ),
                     ));
                 }
@@ -732,7 +770,7 @@ fn validate_program_bindings(
                         path,
                         format!(
                             "secret region `{}` references missing or wrong-family secret program `{}`",
-                            entity.name, secret.program
+                            label_of(entity.id), secret.program
                         ),
                     ));
                 }
@@ -746,7 +784,7 @@ fn validate_program_bindings(
                         path,
                         format!(
                             "level exit `{}` references missing or wrong-family level-exit program `{}`",
-                            entity.name, exit.program
+                            label_of(entity.id), exit.program
                         ),
                     ));
                 }
@@ -766,7 +804,8 @@ fn validate_program_bindings(
                     ),
                     format!(
                         "enemy `{}` references missing or wrong-family attack program `{}`",
-                        entity.name, combat.attack_program
+                        label_of(entity.id),
+                        combat.attack_program
                     ),
                 ));
             }
@@ -782,7 +821,8 @@ fn validate_program_bindings(
                     ),
                     format!(
                         "enemy `{}` references missing or wrong-family defeat program `{}`",
-                        entity.name, combat.defeat_program
+                        label_of(entity.id),
+                        combat.defeat_program
                     ),
                 ));
             }
@@ -874,17 +914,27 @@ impl<'a> ProjectAssetCatalog<'a> {
         Self { assets }
     }
 
+    /// Validates every renderable asset declared by the scene's Engine
+    /// authored-scene nodes: the node kind owns the asset identity, so this
+    /// walks nodes rather than entity binding records.
     fn validate_scene(
         &self,
         scene: &StoredScene,
         scene_index: usize,
     ) -> Result<(), StoredProjectError> {
-        for (entity_index, entity) in scene.entities.iter().enumerate() {
-            let Some(renderable) = &entity.renderable else {
+        let document = crate::stored_project::decoded_authored_scene(scene, scene_index)?;
+        for node in &document.nodes {
+            let (rusty_engine::authored_scene::SceneNodeKind::StaticMesh(asset_reference)
+            | rusty_engine::authored_scene::SceneNodeKind::AnimatedMesh(asset_reference)
+            | rusty_engine::authored_scene::SceneNodeKind::Sprite(asset_reference)) = &node.kind
+            else {
                 continue;
             };
-            let path = format!("scenes[{scene_index}].entities[{entity_index}].renderable.asset");
-            let id = AssetId::parse(&renderable.asset).map_err(|error| {
+            let path = format!(
+                "scenes[{scene_index}].authoredScene.nodes[{}].kind.asset",
+                node.id.raw()
+            );
+            let id = AssetId::parse(asset_reference.id().as_str()).map_err(|error| {
                 StoredProjectError::new(diagnostic_code::INVALID_ASSET_ID, &path, error.to_string())
             })?;
             if !matches!(
@@ -1128,81 +1178,89 @@ fn expand_material_voxels(
     Ok(voxels)
 }
 
+/// Builds one runtime entity from its Engine scene node (the sole generic
+/// source: label, hierarchy, transform, renderable asset) overlaid with the
+/// downstream binding record keyed by the same id.
 fn authored_definition(
-    authored: &StoredEntityDefinition,
+    node: &rusty_engine::authored_scene::SceneNodeRecord,
+    binding: Option<&crate::StoredEntityDefinition>,
     scene_index: usize,
-    entity_index: usize,
+    binding_index: usize,
     item_definitions: &BTreeMap<ItemDefinitionId, ItemDefinition>,
     player_setup_programs: &PlayerSetupProgramCatalog,
 ) -> Result<GameEntityDefinition, StoredProjectError> {
-    let entity = EntityId::new(authored.id);
+    use rusty_engine::authored_scene::SceneNodeKind;
+
+    let entity = EntityId::new(node.id.raw());
     let path =
-        |component: &str| format!("scenes[{scene_index}].entities[{entity_index}].{component}");
-    let initial_translation = authored.translation.map(array_vec3);
-    let mut entity_definition = EntityDefinition::new(entity, authored.name.clone());
-    if initial_translation.is_some()
-        || authored.parent.is_some()
-        || authored.rotation != [0.0, 0.0, 0.0, 1.0]
-        || authored.scale != [1.0; 3]
-        || authored.light.is_some()
-        || authored.bounds.is_some()
-        || authored.pickup.is_some()
-    {
-        entity_definition = entity_definition.with_full_transform(EntityTransform {
-            translation: initial_translation.unwrap_or(Vec3::ZERO),
-            rotation: Quat::new(
-                authored.rotation[0],
-                authored.rotation[1],
-                authored.rotation[2],
-                authored.rotation[3],
-            ),
-            scale: array_vec3(authored.scale),
-        });
+        |component: &str| format!("scenes[{scene_index}].entities[{binding_index}].{component}");
+    let presentation = binding.and_then(|entity| entity.renderable.as_ref());
+    // The Engine codec rejects blank labels, so admission only supplies a
+    // fallback for nodes the Engine allowed to omit a label entirely.
+    let label = node
+        .metadata
+        .label
+        .clone()
+        .unwrap_or_else(|| format!("scene-node-{}", node.id.raw()));
+    let mut entity_definition = EntityDefinition::new(entity, label);
+    // Every Engine scene node declares a transform, so every runtime entity
+    // carries one — including identity transforms for origin nodes.
+    let transform = &node.transform;
+    entity_definition = entity_definition.with_full_transform(EntityTransform {
+        translation: transform.translation,
+        rotation: transform.rotation,
+        scale: transform.scale,
+    });
+    if let Some(parent) = node.parent {
+        entity_definition = entity_definition.with_transform_parent(EntityId::new(parent.raw()));
     }
-    if let Some(parent) = authored.parent {
-        entity_definition = entity_definition.with_transform_parent(EntityId::new(parent));
-    }
-    if let Some(bounds) = authored.bounds {
+    if let Some(bounds) = binding.and_then(|entity| entity.bounds) {
         entity_definition =
             entity_definition.with_bounds(array_vec3(bounds.min), array_vec3(bounds.max));
     }
-    if let Some(collision) = authored.collision {
+    if let Some(collision) = binding.and_then(|entity| entity.collision) {
         entity_definition =
             entity_definition.with_collision(collision.enabled, collision.static_collider);
     }
-    if let Some(renderable) = &authored.renderable {
-        entity_definition =
-            entity_definition.with_renderable(renderable.asset.clone(), renderable.visible);
-        if let Some(transform) = renderable.local_transform {
-            entity_definition =
-                entity_definition.with_renderable_local_transform(EntityTransform {
-                    translation: array_vec3(transform.translation),
-                    rotation: Quat::new(
-                        transform.rotation[0],
-                        transform.rotation[1],
-                        transform.rotation[2],
-                        transform.rotation[3],
-                    ),
-                    scale: array_vec3(transform.scale),
-                });
+    match &node.kind {
+        SceneNodeKind::StaticMesh(asset) | SceneNodeKind::Sprite(asset) => {
+            entity_definition = entity_definition.with_renderable(
+                asset.id().as_str().to_owned(),
+                presentation.is_none_or(|presentation| presentation.visible),
+            );
         }
+        SceneNodeKind::AnimatedMesh(asset) => {
+            entity_definition = entity_definition.with_renderable(
+                asset.id().as_str().to_owned(),
+                presentation.is_none_or(|presentation| presentation.visible),
+            );
+        }
+        // Lights, markers, voxel volumes, instances, and bootstrap nodes
+        // carry no runtime renderable; lights are consumed by presentation
+        // transports directly from the decoded document.
+        _ => {}
     }
-    if let Some(kinematic) = authored.kinematic {
+    if let Some(local_transform) = non_identity_renderable_transform(node.renderable_transform) {
+        entity_definition = entity_definition.with_renderable_local_transform(EntityTransform {
+            translation: local_transform.translation,
+            rotation: local_transform.rotation,
+            scale: local_transform.scale,
+        });
+    }
+    if let Some(kinematic) = binding.and_then(|entity| entity.kinematic) {
         entity_definition = entity_definition.with_kinematic(
             array_vec3(kinematic.half_extents),
             array_vec3(kinematic.velocity),
         );
     }
 
+    let Some(authored) = binding else {
+        // A node without a binding record carries only generic scene
+        // structure: label, transform, and any Engine-declared renderable.
+        return Ok(GameEntityDefinition::new(entity_definition));
+    };
     let mut definition = GameEntityDefinition::new(entity_definition);
     if let Some(door) = &authored.door {
-        let Some(closed_translation) = initial_translation else {
-            return Err(StoredProjectError::new(
-                diagnostic_code::INVALID_COMPONENT,
-                path("door"),
-                "door requires an initial translation",
-            ));
-        };
         let open_translation = array_vec3(door.open_translation);
         if !translation_is_valid(open_translation) {
             return Err(StoredProjectError::new(
@@ -1230,7 +1288,7 @@ fn authored_definition(
             ));
         }
         definition = definition.as_door(
-            DoorConfig::new(closed_translation, open_translation, auto_close_after)
+            DoorConfig::new(transform.translation, open_translation, auto_close_after)
                 .with_motion_duration(TickDelta::new(door.motion_duration_ticks)),
         );
         if let Some(access) = &door.access {
@@ -1498,6 +1556,16 @@ fn authored_definition(
         });
     }
     Ok(definition)
+}
+
+/// Returns the node's renderable transform when it is not the identity, so
+/// runtime entities only attach an explicit local transform component when
+/// the authored scene declares one.
+fn non_identity_renderable_transform(
+    renderable_transform: rusty_engine::authored_scene::SceneTransform,
+) -> Option<rusty_engine::authored_scene::SceneTransform> {
+    (renderable_transform != rusty_engine::authored_scene::SceneTransform::IDENTITY)
+        .then_some(renderable_transform)
 }
 
 fn definition_error(

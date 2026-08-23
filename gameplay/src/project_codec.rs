@@ -216,12 +216,9 @@ fn normalize_numbers(document: &mut StoredProject) -> Result<(), StoredProjectEr
         }
         for (entity_index, entity) in scene.entities.iter_mut().enumerate() {
             let root = format!("scenes[{scene_index}].entities[{entity_index}]");
-            normalize_optional_vec3(&mut entity.translation, format!("{root}.translation"))?;
-            normalize_vec4(&mut entity.rotation, format!("{root}.rotation"))?;
-            normalize_vec3(&mut entity.scale, format!("{root}.scale"))?;
-            if let Some(light) = &mut entity.light {
-                normalize_light(light, format!("{root}.light"))?;
-            }
+            // Generic transforms and lights are normalized inside the
+            // embedded Engine authored-scene document above; entity records
+            // carry only downstream bindings.
             if let Some(bounds) = &mut entity.bounds {
                 normalize_vec3(&mut bounds.min, format!("{root}.bounds.min"))?;
                 normalize_vec3(&mut bounds.max, format!("{root}.bounds.max"))?;
@@ -346,67 +343,6 @@ fn normalize_numbers(document: &mut StoredProject) -> Result<(), StoredProjectEr
             normalize_vec4(&mut instance.rotation, format!("{root}.rotation"))?;
             normalize_vec3(&mut instance.scale, format!("{root}.scale"))?;
         }
-    }
-    Ok(())
-}
-
-fn normalize_light(light: &mut crate::StoredLight, root: String) -> Result<(), StoredProjectError> {
-    use crate::StoredLight;
-    match light {
-        StoredLight::Ambient {
-            color, intensity, ..
-        }
-        | StoredLight::Directional {
-            color, intensity, ..
-        } => {
-            normalize_vec3(color, format!("{root}.color"))?;
-            normalize_f32(intensity, format!("{root}.intensity"))?;
-        }
-        StoredLight::Point {
-            color,
-            intensity,
-            range,
-            decay,
-            ..
-        } => {
-            normalize_vec3(color, format!("{root}.color"))?;
-            normalize_f32(intensity, format!("{root}.intensity"))?;
-            normalize_optional_f32(range, format!("{root}.range"))?;
-            normalize_f32(decay, format!("{root}.decay"))?;
-        }
-        StoredLight::Spot {
-            color,
-            intensity,
-            range,
-            decay,
-            outer_angle_radians,
-            penumbra,
-            ..
-        } => {
-            normalize_vec3(color, format!("{root}.color"))?;
-            normalize_f32(intensity, format!("{root}.intensity"))?;
-            normalize_optional_f32(range, format!("{root}.range"))?;
-            normalize_f32(decay, format!("{root}.decay"))?;
-            normalize_f32(outer_angle_radians, format!("{root}.outerAngleRadians"))?;
-            normalize_f32(penumbra, format!("{root}.penumbra"))?;
-        }
-    }
-    Ok(())
-}
-
-fn normalize_optional_f32(value: &mut Option<f32>, path: String) -> Result<(), StoredProjectError> {
-    if let Some(value) = value {
-        normalize_f32(value, path)?;
-    }
-    Ok(())
-}
-
-fn normalize_optional_vec3(
-    value: &mut Option<[f32; 3]>,
-    path: String,
-) -> Result<(), StoredProjectError> {
-    if let Some(value) = value {
-        normalize_vec3(value, path)?;
     }
     Ok(())
 }

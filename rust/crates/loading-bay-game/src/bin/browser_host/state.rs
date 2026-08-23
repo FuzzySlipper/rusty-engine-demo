@@ -1155,20 +1155,36 @@ pub fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticResources
         }
     });
     let document = host.authored_project().document();
-    let authored_scene = document
+    let entry_scene_index = document
         .scenes
         .iter()
-        .find(|scene| scene.id == document.entry_scene)
+        .position(|scene| scene.id == document.entry_scene)
         .expect("admitted browser entry scene");
-    let lights = authored_scene
-        .entities
-        .iter()
-        .filter_map(|entity| {
-            entity.light.map(|light| BrowserAuthoredLight {
-                id: entity.id,
-                translation: entity.translation,
-                rotation: entity.rotation,
-                light,
+    let entry_scene = &document.scenes[entry_scene_index];
+    // Lights are Engine scene nodes; read them from the decoded authored
+    // scene rather than any downstream record.
+    let lights = loading_bay_game::decoded_authored_scene(entry_scene, entry_scene_index)
+        .expect("admitted authored scene decodes")
+        .nodes
+        .into_iter()
+        .filter_map(|node| {
+            let rusty_engine::authored_scene::SceneNodeKind::Light(light) = node.kind else {
+                return None;
+            };
+            Some(BrowserAuthoredLight {
+                id: node.id.raw(),
+                translation: Some([
+                    node.transform.translation.x,
+                    node.transform.translation.y,
+                    node.transform.translation.z,
+                ]),
+                rotation: [
+                    node.transform.rotation.x,
+                    node.transform.rotation.y,
+                    node.transform.rotation.z,
+                    node.transform.rotation.w,
+                ],
+                light: loading_bay_game::stored_light(&light),
             })
         })
         .collect();
@@ -1217,7 +1233,7 @@ pub fn browser_static_resources(host: &BrowserRuntime) -> BrowserStaticResources
             resource_url: format!("/api/animated-mesh/{index}"),
         })
         .collect();
-    let visual_bindings = authored_scene
+    let visual_bindings = entry_scene
         .entities
         .iter()
         .filter_map(|entity| {

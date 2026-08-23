@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 27,
+  "schemaVersion": 28,
   "projectId": "doom-e1m1",
   "name": "Doom E1M1 — Hangar (VoXel Showcase)",
   "entryScene": "scene/doom-e1m1",
@@ -168173,12 +168173,6 @@
       "entities": [
         {
           "id": 1,
-          "name": "player",
-          "translation": [
-            114.0,
-            9.5,
-            78.0
-          ],
           "bounds": {
             "min": [
               -0.25,
@@ -168194,10 +168188,6 @@
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh/player-marker",
-            "visible": true
           },
           "health": {
             "max": 200,
@@ -168264,43 +168254,9 @@
         },
         {
           "id": 2,
-          "name": "doom-imp-1",
-          "translation": [
-            263.0,
-            16.25,
-            87.0
-          ],
-          "rotation": [
-            0.0,
-            -0.9238795,
-            0.0,
-            0.38268343
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-imp",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -168363,43 +168319,9 @@
         },
         {
           "id": 3,
-          "name": "doom-imp-2",
-          "translation": [
-            258.0,
-            16.25,
-            85.0
-          ],
-          "rotation": [
-            0.0,
-            -0.9238795,
-            0.0,
-            0.38268343
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-imp",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -168462,43 +168384,9 @@
         },
         {
           "id": 4,
-          "name": "doom-zombieman-3",
-          "translation": [
-            230.0,
-            8.75,
-            128.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-zombieman",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -168555,12 +168443,6 @@
         },
         {
           "id": 5,
-          "name": "doom-drop-zombieman-3",
-          "translation": [
-            230.0,
-            8.75,
-            128.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -168574,26 +168456,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -168603,43 +168466,9 @@
         },
         {
           "id": 6,
-          "name": "doom-zombieman-4",
-          "translation": [
-            239.0,
-            8.75,
-            80.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-zombieman",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -168696,12 +168525,6 @@
         },
         {
           "id": 7,
-          "name": "doom-drop-zombieman-4",
-          "translation": [
-            239.0,
-            8.75,
-            80.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -168715,26 +168538,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -168744,43 +168548,9 @@
         },
         {
           "id": 8,
-          "name": "doom-zombieman-5",
-          "translation": [
-            244.0,
-            8.75,
-            91.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-zombieman",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -168837,12 +168607,6 @@
         },
         {
           "id": 9,
-          "name": "doom-drop-zombieman-5",
-          "translation": [
-            244.0,
-            8.75,
-            91.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -168856,26 +168620,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -168885,37 +168630,9 @@
         },
         {
           "id": 10,
-          "name": "doom-zombieman-6",
-          "translation": [
-            219.0,
-            8.75,
-            38.0
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-zombieman",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -168972,12 +168689,6 @@
         },
         {
           "id": 11,
-          "name": "doom-drop-zombieman-6",
-          "translation": [
-            219.0,
-            8.75,
-            38.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -168991,26 +168702,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -169020,43 +168712,9 @@
         },
         {
           "id": 12,
-          "name": "doom-zombieman-7",
-          "translation": [
-            253.0,
-            8.75,
-            38.0
-          ],
-          "rotation": [
-            0.0,
-            -1.0,
-            0.0,
-            6.123234e-17
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-zombieman",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -169113,12 +168771,6 @@
         },
         {
           "id": 13,
-          "name": "doom-drop-zombieman-7",
-          "translation": [
-            253.0,
-            8.75,
-            38.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -169132,26 +168784,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -169161,43 +168794,9 @@
         },
         {
           "id": 14,
-          "name": "doom-imp-8",
-          "translation": [
-            236.0,
-            8.75,
-            28.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-imp",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -169260,43 +168859,9 @@
         },
         {
           "id": 15,
-          "name": "doom-zombieman-9",
-          "translation": [
-            253.0,
-            8.75,
-            35.0
-          ],
-          "rotation": [
-            0.0,
-            -1.0,
-            0.0,
-            6.123234e-17
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-zombieman",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -169353,12 +168918,6 @@
         },
         {
           "id": 16,
-          "name": "doom-drop-zombieman-9",
-          "translation": [
-            253.0,
-            8.75,
-            35.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -169372,26 +168931,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -169401,37 +168941,9 @@
         },
         {
           "id": 17,
-          "name": "doom-zombieman-10",
-          "translation": [
-            219.0,
-            8.75,
-            35.0
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-zombieman",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -169488,12 +169000,6 @@
         },
         {
           "id": 18,
-          "name": "doom-drop-zombieman-10",
-          "translation": [
-            219.0,
-            8.75,
-            35.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -169507,26 +169013,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -169536,43 +169023,9 @@
         },
         {
           "id": 19,
-          "name": "doom-imp-11",
-          "translation": [
-            236.0,
-            8.75,
-            3.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-imp",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -169635,43 +169088,9 @@
         },
         {
           "id": 20,
-          "name": "doom-zombieman-12",
-          "translation": [
-            190.0,
-            11.75,
-            152.0
-          ],
-          "rotation": [
-            0.0,
-            -1.0,
-            0.0,
-            6.123234e-17
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-zombieman",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -169728,12 +169147,6 @@
         },
         {
           "id": 21,
-          "name": "doom-drop-zombieman-12",
-          "translation": [
-            190.0,
-            11.75,
-            152.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -169747,26 +169160,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -169776,43 +169170,9 @@
         },
         {
           "id": 22,
-          "name": "doom-zombieman-13",
-          "translation": [
-            190.0,
-            11.75,
-            157.0
-          ],
-          "rotation": [
-            0.0,
-            -1.0,
-            0.0,
-            6.123234e-17
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-zombieman",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -169869,12 +169229,6 @@
         },
         {
           "id": 23,
-          "name": "doom-drop-zombieman-13",
-          "translation": [
-            190.0,
-            11.75,
-            157.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -169888,26 +169242,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -169917,43 +169252,9 @@
         },
         {
           "id": 24,
-          "name": "doom-shotgun-guy-14",
-          "translation": [
-            190.0,
-            11.75,
-            147.0
-          ],
-          "rotation": [
-            0.0,
-            -1.0,
-            0.0,
-            6.123234e-17
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -170010,12 +169311,6 @@
         },
         {
           "id": 25,
-          "name": "doom-drop-shotgun-guy-14",
-          "translation": [
-            190.0,
-            11.75,
-            147.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -170029,26 +169324,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -170062,43 +169338,9 @@
         },
         {
           "id": 26,
-          "name": "doom-shotgun-guy-15",
-          "translation": [
-            202.0,
-            10.25,
-            152.0
-          ],
-          "rotation": [
-            0.0,
-            -1.0,
-            0.0,
-            6.123234e-17
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -170155,12 +169397,6 @@
         },
         {
           "id": 27,
-          "name": "doom-drop-shotgun-guy-15",
-          "translation": [
-            202.0,
-            10.25,
-            152.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -170174,26 +169410,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -170207,37 +169424,9 @@
         },
         {
           "id": 28,
-          "name": "doom-shotgun-guy-16",
-          "translation": [
-            249.0,
-            7.25,
-            61.0
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -170294,12 +169483,6 @@
         },
         {
           "id": 29,
-          "name": "doom-drop-shotgun-guy-16",
-          "translation": [
-            249.0,
-            7.25,
-            61.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -170313,26 +169496,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -170346,37 +169510,9 @@
         },
         {
           "id": 30,
-          "name": "doom-shotgun-guy-17",
-          "translation": [
-            38.0,
-            16.75,
-            102.0
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -170433,12 +169569,6 @@
         },
         {
           "id": 31,
-          "name": "doom-drop-shotgun-guy-17",
-          "translation": [
-            38.0,
-            16.75,
-            102.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -170452,26 +169582,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -170485,43 +169596,9 @@
         },
         {
           "id": 32,
-          "name": "doom-shotgun-guy-18",
-          "translation": [
-            63.0,
-            9.75,
-            93.0
-          ],
-          "rotation": [
-            0.0,
-            -0.9238795,
-            0.0,
-            0.38268343
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -170578,12 +169655,6 @@
         },
         {
           "id": 33,
-          "name": "doom-drop-shotgun-guy-18",
-          "translation": [
-            63.0,
-            9.75,
-            93.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -170597,26 +169668,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -170630,43 +169682,9 @@
         },
         {
           "id": 34,
-          "name": "doom-shotgun-guy-19",
-          "translation": [
-            63.0,
-            9.75,
-            111.0
-          ],
-          "rotation": [
-            0.0,
-            -0.9238795,
-            0.0,
-            -0.38268343
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -170723,12 +169741,6 @@
         },
         {
           "id": 35,
-          "name": "doom-drop-shotgun-guy-19",
-          "translation": [
-            63.0,
-            9.75,
-            111.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -170742,26 +169754,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -170775,43 +169768,9 @@
         },
         {
           "id": 36,
-          "name": "doom-shotgun-guy-20",
-          "translation": [
-            154.0,
-            10.25,
-            136.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -170868,12 +169827,6 @@
         },
         {
           "id": 37,
-          "name": "doom-drop-shotgun-guy-20",
-          "translation": [
-            154.0,
-            10.25,
-            136.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -170887,26 +169840,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -170920,43 +169854,9 @@
         },
         {
           "id": 38,
-          "name": "doom-shotgun-guy-21",
-          "translation": [
-            168.0,
-            10.25,
-            168.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            -0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -171013,12 +169913,6 @@
         },
         {
           "id": 39,
-          "name": "doom-drop-shotgun-guy-21",
-          "translation": [
-            168.0,
-            10.25,
-            168.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -171032,26 +169926,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -171065,43 +169940,9 @@
         },
         {
           "id": 40,
-          "name": "doom-shotgun-guy-22",
-          "translation": [
-            234.0,
-            8.75,
-            100.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -171158,12 +169999,6 @@
         },
         {
           "id": 41,
-          "name": "doom-drop-shotgun-guy-22",
-          "translation": [
-            234.0,
-            8.75,
-            100.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -171177,26 +170012,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -171210,43 +170026,9 @@
         },
         {
           "id": 42,
-          "name": "doom-shotgun-guy-23",
-          "translation": [
-            236.0,
-            8.75,
-            84.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -171303,12 +170085,6 @@
         },
         {
           "id": 43,
-          "name": "doom-drop-shotgun-guy-23",
-          "translation": [
-            236.0,
-            8.75,
-            84.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -171322,26 +170098,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -171355,43 +170112,9 @@
         },
         {
           "id": 44,
-          "name": "doom-shotgun-guy-24",
-          "translation": [
-            236.0,
-            8.75,
-            112.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -171448,12 +170171,6 @@
         },
         {
           "id": 45,
-          "name": "doom-drop-shotgun-guy-24",
-          "translation": [
-            236.0,
-            8.75,
-            112.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -171467,26 +170184,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -171500,37 +170198,9 @@
         },
         {
           "id": 46,
-          "name": "doom-shotgun-guy-25",
-          "translation": [
-            224.0,
-            9.25,
-            136.0
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -171587,12 +170257,6 @@
         },
         {
           "id": 47,
-          "name": "doom-drop-shotgun-guy-25",
-          "translation": [
-            224.0,
-            9.25,
-            136.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -171606,26 +170270,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -171639,37 +170284,9 @@
         },
         {
           "id": 48,
-          "name": "doom-shotgun-guy-26",
-          "translation": [
-            204.0,
-            1.75,
-            56.0
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -171726,12 +170343,6 @@
         },
         {
           "id": 49,
-          "name": "doom-drop-shotgun-guy-26",
-          "translation": [
-            204.0,
-            1.75,
-            56.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -171745,26 +170356,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -171778,37 +170370,9 @@
         },
         {
           "id": 50,
-          "name": "doom-shotgun-guy-27",
-          "translation": [
-            189.0,
-            1.75,
-            50.0
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -171865,12 +170429,6 @@
         },
         {
           "id": 51,
-          "name": "doom-drop-shotgun-guy-27",
-          "translation": [
-            189.0,
-            1.75,
-            50.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -171884,26 +170442,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -171917,43 +170456,9 @@
         },
         {
           "id": 52,
-          "name": "doom-shotgun-guy-28",
-          "translation": [
-            240.0,
-            8.75,
-            38.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -172010,12 +170515,6 @@
         },
         {
           "id": 53,
-          "name": "doom-drop-shotgun-guy-28",
-          "translation": [
-            240.0,
-            8.75,
-            38.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172029,26 +170528,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -172062,37 +170542,9 @@
         },
         {
           "id": 54,
-          "name": "doom-shotgun-guy-29",
-          "translation": [
-            36.0,
-            16.75,
-            98.0
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "enemy": true,
           "enemyCombat": {
@@ -172149,12 +170601,6 @@
         },
         {
           "id": 55,
-          "name": "doom-drop-shotgun-guy-29",
-          "translation": [
-            36.0,
-            16.75,
-            98.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172168,26 +170614,7 @@
             ]
           },
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
+            "visible": false
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -172201,12 +170628,6 @@
         },
         {
           "id": 56,
-          "name": "doom-encounter-east-lift",
-          "translation": [
-            241.3,
-            10.15,
-            96.4
-          ],
           "encounter": {
             "members": [
               2,
@@ -172226,12 +170647,6 @@
         },
         {
           "id": 57,
-          "name": "doom-encounter-exit-annex",
-          "translation": [
-            227.66667,
-            7.1944447,
-            35.666668
-          ],
           "encounter": {
             "members": [
               10,
@@ -172250,12 +170665,6 @@
         },
         {
           "id": 58,
-          "name": "doom-encounter-central-stairs",
-          "translation": [
-            182.33333,
-            11.0,
-            152.0
-          ],
           "encounter": {
             "members": [
               20,
@@ -172271,12 +170680,6 @@
         },
         {
           "id": 59,
-          "name": "doom-encounter-west-court",
-          "translation": [
-            50.0,
-            13.25,
-            101.0
-          ],
           "encounter": {
             "members": [
               30,
@@ -172290,25 +170693,9 @@
         },
         {
           "id": 60,
-          "name": "doom-explosive-barrel-1",
-          "translation": [
-            130.0,
-            8.8125,
-            100.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/hazard-marker",
-            "visible": true
           },
           "health": {
             "max": 20,
@@ -172338,25 +170725,9 @@
         },
         {
           "id": 61,
-          "name": "doom-explosive-barrel-2",
-          "translation": [
-            120.0,
-            9.8125,
-            122.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/hazard-marker",
-            "visible": true
           },
           "health": {
             "max": 20,
@@ -172386,25 +170757,9 @@
         },
         {
           "id": 62,
-          "name": "doom-explosive-barrel-3",
-          "translation": [
-            102.0,
-            9.8125,
-            96.0
-          ],
-          "rotation": [
-            0.0,
-            -0.70710677,
-            0.0,
-            0.70710677
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/hazard-marker",
-            "visible": true
           },
           "health": {
             "max": 20,
@@ -172434,25 +170789,9 @@
         },
         {
           "id": 63,
-          "name": "doom-explosive-barrel-4",
-          "translation": [
-            232.0,
-            8.3125,
-            34.0
-          ],
-          "rotation": [
-            0.0,
-            -1.0,
-            0.0,
-            6.123234e-17
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/hazard-marker",
-            "visible": true
           },
           "health": {
             "max": 20,
@@ -172482,25 +170821,9 @@
         },
         {
           "id": 64,
-          "name": "doom-explosive-barrel-5",
-          "translation": [
-            247.0,
-            8.3125,
-            40.0
-          ],
-          "rotation": [
-            0.0,
-            -1.0,
-            0.0,
-            6.123234e-17
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/hazard-marker",
-            "visible": true
           },
           "health": {
             "max": 20,
@@ -172530,25 +170853,9 @@
         },
         {
           "id": 65,
-          "name": "doom-explosive-barrel-6",
-          "translation": [
-            225.0,
-            8.3125,
-            39.0
-          ],
-          "rotation": [
-            0.0,
-            -1.0,
-            0.0,
-            6.123234e-17
-          ],
           "collision": {
             "enabled": true,
             "staticCollider": false
-          },
-          "renderable": {
-            "asset": "mesh/prop-kit/hazard-marker",
-            "visible": true
           },
           "health": {
             "max": 20,
@@ -172578,12 +170885,6 @@
         },
         {
           "id": 66,
-          "name": "doom-pickup-2019-1",
-          "translation": [
-            162.0,
-            4.0,
-            99.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172595,28 +170896,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-arm2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/blue",
@@ -172626,12 +170905,6 @@
         },
         {
           "id": 67,
-          "name": "doom-pickup-2012-2",
-          "translation": [
-            228.0,
-            7.5,
-            28.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172643,28 +170916,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-medi",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/medikit",
@@ -172674,12 +170925,6 @@
         },
         {
           "id": 68,
-          "name": "doom-pickup-2007-3",
-          "translation": [
-            219.0,
-            7.5,
-            44.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172691,28 +170936,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -172722,12 +170945,6 @@
         },
         {
           "id": 69,
-          "name": "doom-pickup-2007-4",
-          "translation": [
-            253.0,
-            7.5,
-            44.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172739,28 +170956,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-clip",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -172770,12 +170965,6 @@
         },
         {
           "id": 70,
-          "name": "doom-pickup-2014-5",
-          "translation": [
-            57.0,
-            8.5,
-            108.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172787,28 +170976,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -172818,12 +170985,6 @@
         },
         {
           "id": 71,
-          "name": "doom-pickup-2014-6",
-          "translation": [
-            57.0,
-            8.5,
-            96.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172835,28 +170996,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -172866,12 +171005,6 @@
         },
         {
           "id": 72,
-          "name": "doom-pickup-2014-7",
-          "translation": [
-            54.0,
-            8.5,
-            92.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172883,28 +171016,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -172914,12 +171025,6 @@
         },
         {
           "id": 73,
-          "name": "doom-pickup-2014-8",
-          "translation": [
-            54.0,
-            8.5,
-            112.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172931,28 +171036,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -172962,12 +171045,6 @@
         },
         {
           "id": 74,
-          "name": "doom-pickup-2015-9",
-          "translation": [
-            75.0,
-            8.5,
-            114.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -172979,28 +171056,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -173010,12 +171065,6 @@
         },
         {
           "id": 75,
-          "name": "doom-pickup-2015-10",
-          "translation": [
-            75.0,
-            8.5,
-            90.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173027,28 +171076,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -173058,12 +171085,6 @@
         },
         {
           "id": 76,
-          "name": "doom-pickup-2015-11",
-          "translation": [
-            50.0,
-            15.5,
-            102.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173075,28 +171096,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -173106,12 +171105,6 @@
         },
         {
           "id": 77,
-          "name": "doom-pickup-2015-12",
-          "translation": [
-            46.0,
-            15.5,
-            102.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173123,28 +171116,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -173154,12 +171125,6 @@
         },
         {
           "id": 78,
-          "name": "doom-pickup-2014-13",
-          "translation": [
-            130.0,
-            9.0,
-            84.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173171,28 +171136,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -173202,12 +171145,6 @@
         },
         {
           "id": 79,
-          "name": "doom-pickup-2014-14",
-          "translation": [
-            94.0,
-            9.0,
-            84.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173219,28 +171156,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -173250,12 +171165,6 @@
         },
         {
           "id": 80,
-          "name": "doom-pickup-2015-15",
-          "translation": [
-            94.0,
-            9.0,
-            118.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173267,28 +171176,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -173298,12 +171185,6 @@
         },
         {
           "id": 81,
-          "name": "doom-pickup-2015-16",
-          "translation": [
-            109.0,
-            9.0,
-            122.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173315,28 +171196,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -173346,12 +171205,6 @@
         },
         {
           "id": 82,
-          "name": "doom-pickup-2014-17",
-          "translation": [
-            215.0,
-            8.0,
-            132.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173363,28 +171216,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -173394,12 +171225,6 @@
         },
         {
           "id": 83,
-          "name": "doom-pickup-2014-18",
-          "translation": [
-            220.0,
-            8.0,
-            139.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173411,28 +171236,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -173442,12 +171245,6 @@
         },
         {
           "id": 84,
-          "name": "doom-pickup-2008-19",
-          "translation": [
-            226.0,
-            7.5,
-            80.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173459,28 +171256,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-shel",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "ammo/shells",
@@ -173490,12 +171265,6 @@
         },
         {
           "id": 85,
-          "name": "doom-pickup-2008-20",
-          "translation": [
-            236.0,
-            7.5,
-            56.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173507,28 +171276,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-shel",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "ammo/shells",
@@ -173538,12 +171285,6 @@
         },
         {
           "id": 86,
-          "name": "doom-pickup-2014-21",
-          "translation": [
-            247.0,
-            7.5,
-            43.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173555,28 +171296,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -173586,12 +171305,6 @@
         },
         {
           "id": 87,
-          "name": "doom-pickup-2014-22",
-          "translation": [
-            225.0,
-            7.5,
-            43.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173603,28 +171316,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -173634,12 +171325,6 @@
         },
         {
           "id": 88,
-          "name": "doom-pickup-2014-23",
-          "translation": [
-            219.0,
-            7.5,
-            42.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173651,28 +171336,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -173682,12 +171345,6 @@
         },
         {
           "id": 89,
-          "name": "doom-pickup-2014-24",
-          "translation": [
-            253.0,
-            7.5,
-            42.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173699,28 +171356,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -173730,12 +171365,6 @@
         },
         {
           "id": 90,
-          "name": "doom-pickup-2014-25",
-          "translation": [
-            253.0,
-            7.5,
-            26.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173747,28 +171376,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/health-bonus",
@@ -173778,12 +171385,6 @@
         },
         {
           "id": 91,
-          "name": "doom-pickup-2015-26",
-          "translation": [
-            219.0,
-            7.5,
-            26.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173795,28 +171396,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -173826,12 +171405,6 @@
         },
         {
           "id": 92,
-          "name": "doom-pickup-2015-27",
-          "translation": [
-            240.0,
-            7.5,
-            2.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173843,28 +171416,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -173874,12 +171425,6 @@
         },
         {
           "id": 93,
-          "name": "doom-pickup-2015-28",
-          "translation": [
-            232.0,
-            7.5,
-            2.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173891,28 +171436,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -173922,12 +171445,6 @@
         },
         {
           "id": 94,
-          "name": "doom-pickup-2015-29",
-          "translation": [
-            240.0,
-            7.5,
-            10.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173939,28 +171456,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -173970,12 +171465,6 @@
         },
         {
           "id": 95,
-          "name": "doom-pickup-2015-30",
-          "translation": [
-            232.0,
-            7.5,
-            10.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -173987,28 +171476,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174018,12 +171485,6 @@
         },
         {
           "id": 96,
-          "name": "doom-pickup-2011-31",
-          "translation": [
-            240.0,
-            7.5,
-            6.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174035,28 +171496,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-stim",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/stimpack",
@@ -174066,12 +171505,6 @@
         },
         {
           "id": 97,
-          "name": "doom-pickup-2012-32",
-          "translation": [
-            192.0,
-            0.5,
-            52.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174083,28 +171516,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-medi",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/medikit",
@@ -174114,12 +171525,6 @@
         },
         {
           "id": 98,
-          "name": "doom-pickup-2049-33",
-          "translation": [
-            184.0,
-            0.5,
-            54.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174131,28 +171536,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-sbox",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "ammo/shells",
@@ -174162,12 +171545,6 @@
         },
         {
           "id": 99,
-          "name": "doom-pickup-2048-34",
-          "translation": [
-            200.0,
-            0.5,
-            54.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174179,28 +171556,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-ammo",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "ammo/bullets",
@@ -174210,12 +171565,6 @@
         },
         {
           "id": 100,
-          "name": "doom-pickup-2018-35",
-          "translation": [
-            34.0,
-            17.0,
-            102.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174227,28 +171576,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-arm1",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/green",
@@ -174258,12 +171585,6 @@
         },
         {
           "id": 101,
-          "name": "doom-pickup-2015-36",
-          "translation": [
-            187.0,
-            10.5,
-            159.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174275,28 +171596,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174306,12 +171605,6 @@
         },
         {
           "id": 102,
-          "name": "doom-pickup-2015-37",
-          "translation": [
-            187.0,
-            10.5,
-            145.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174323,28 +171616,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174354,12 +171625,6 @@
         },
         {
           "id": 103,
-          "name": "doom-pickup-2015-38",
-          "translation": [
-            191.0,
-            10.5,
-            145.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174371,28 +171636,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174402,12 +171645,6 @@
         },
         {
           "id": 104,
-          "name": "doom-pickup-2015-39",
-          "translation": [
-            191.0,
-            10.5,
-            159.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174419,28 +171656,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174450,12 +171665,6 @@
         },
         {
           "id": 105,
-          "name": "doom-pickup-2015-40",
-          "translation": [
-            155.0,
-            9.0,
-            170.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174467,28 +171676,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174498,12 +171685,6 @@
         },
         {
           "id": 106,
-          "name": "doom-pickup-2015-41",
-          "translation": [
-            188.0,
-            9.0,
-            163.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174515,28 +171696,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174546,12 +171705,6 @@
         },
         {
           "id": 107,
-          "name": "doom-pickup-2049-42",
-          "translation": [
-            252.0,
-            6.0,
-            63.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174563,28 +171716,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-sbox",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "ammo/shells",
@@ -174594,12 +171725,6 @@
         },
         {
           "id": 108,
-          "name": "doom-pickup-2001-43",
-          "translation": [
-            252.0,
-            6.0,
-            58.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174611,28 +171736,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-shot",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "weapon/shotgun",
@@ -174646,12 +171749,6 @@
         },
         {
           "id": 109,
-          "name": "doom-pickup-2012-44",
-          "translation": [
-            250.0,
-            6.0,
-            66.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174663,28 +171760,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-medi",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "supply/medikit",
@@ -174694,12 +171769,6 @@
         },
         {
           "id": 110,
-          "name": "doom-pickup-2049-45",
-          "translation": [
-            276.0,
-            15.5,
-            76.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174711,28 +171780,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-sbox",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "ammo/shells",
@@ -174742,12 +171789,6 @@
         },
         {
           "id": 111,
-          "name": "doom-pickup-2015-46",
-          "translation": [
-            274.0,
-            15.5,
-            92.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174759,28 +171800,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174790,12 +171809,6 @@
         },
         {
           "id": 112,
-          "name": "doom-pickup-2015-47",
-          "translation": [
-            280.0,
-            15.5,
-            100.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174807,28 +171820,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174838,12 +171829,6 @@
         },
         {
           "id": 113,
-          "name": "doom-pickup-2015-48",
-          "translation": [
-            265.0,
-            15.5,
-            119.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174855,28 +171840,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174886,12 +171849,6 @@
         },
         {
           "id": 114,
-          "name": "doom-pickup-2015-49",
-          "translation": [
-            259.0,
-            15.5,
-            115.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174903,28 +171860,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174934,12 +171869,6 @@
         },
         {
           "id": 115,
-          "name": "doom-pickup-2015-50",
-          "translation": [
-            271.0,
-            15.5,
-            117.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174951,28 +171880,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -174982,12 +171889,6 @@
         },
         {
           "id": 116,
-          "name": "doom-pickup-2015-51",
-          "translation": [
-            274.0,
-            15.5,
-            111.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -174999,28 +171900,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -175030,12 +171909,6 @@
         },
         {
           "id": 117,
-          "name": "doom-pickup-2015-52",
-          "translation": [
-            277.0,
-            15.5,
-            106.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -175047,28 +171920,6 @@
               0.65,
               0.71428573
             ]
-          },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
           },
           "pickup": {
             "item": "armor/bonus",
@@ -175078,12 +171929,6 @@
         },
         {
           "id": 118,
-          "name": "doom-pickup-2015-53",
-          "translation": [
-            276.0,
-            15.5,
-            64.0
-          ],
           "bounds": {
             "min": [
               -0.71428573,
@@ -175096,28 +171941,6 @@
               0.71428573
             ]
           },
-          "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
-            "visible": true,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            }
-          },
           "pickup": {
             "item": "armor/bonus",
             "quantity": 1,
@@ -175126,33 +171949,8 @@
         },
         {
           "id": 119,
-          "name": "doom-visual-template-zombieman",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-zombieman",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -184339,33 +181137,8 @@
         },
         {
           "id": 120,
-          "name": "doom-visual-template-shotgun-guy",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-shotgun-guy",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -193224,33 +189997,8 @@
         },
         {
           "id": 121,
-          "name": "doom-visual-template-imp",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-imp",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -202027,33 +198775,8 @@
         },
         {
           "id": 122,
-          "name": "doom-visual-template-pickup-shot",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-shot",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -202408,33 +199131,8 @@
         },
         {
           "id": 123,
-          "name": "doom-visual-template-pickup-clip",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-clip",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -202789,33 +199487,8 @@
         },
         {
           "id": 124,
-          "name": "doom-visual-template-pickup-shel",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-shel",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -203170,33 +199843,8 @@
         },
         {
           "id": 125,
-          "name": "doom-visual-template-pickup-ammo",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-ammo",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -203551,33 +200199,8 @@
         },
         {
           "id": 126,
-          "name": "doom-visual-template-pickup-sbox",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-sbox",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -203932,33 +200555,8 @@
         },
         {
           "id": 127,
-          "name": "doom-visual-template-pickup-stim",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-stim",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -204313,33 +200911,8 @@
         },
         {
           "id": 128,
-          "name": "doom-visual-template-pickup-medi",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-medi",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -204694,33 +201267,8 @@
         },
         {
           "id": 129,
-          "name": "doom-visual-template-pickup-bon1",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-bon1",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -212578,33 +209126,8 @@
         },
         {
           "id": 130,
-          "name": "doom-visual-template-pickup-bon2",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-bon2",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -220462,33 +216985,8 @@
         },
         {
           "id": 131,
-          "name": "doom-visual-template-pickup-arm1",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-arm1",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -223426,33 +219924,8 @@
         },
         {
           "id": 132,
-          "name": "doom-visual-template-pickup-arm2",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-pickup-arm2",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -226267,33 +222740,8 @@
         },
         {
           "id": 133,
-          "name": "doom-fx-template-blood",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-blood",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -228058,33 +224506,8 @@
         },
         {
           "id": 134,
-          "name": "doom-fx-template-bullet-puff",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-puff",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -229275,33 +225698,8 @@
         },
         {
           "id": 135,
-          "name": "doom-fx-template-projectile-flight",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-imp-fireball",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -229959,33 +226357,8 @@
         },
         {
           "id": 136,
-          "name": "doom-fx-template-projectile-impact",
-          "translation": [
-            0.0,
-            0.0,
-            0.0
-          ],
           "renderable": {
-            "asset": "sprite/doom-imp-fireball",
             "visible": false,
-            "localTransform": {
-              "translation": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "rotation": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
-              ],
-              "scale": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
             "visualBinding": {
               "version": 2,
               "states": [
@@ -231340,12 +227713,6 @@
         },
         {
           "id": 137,
-          "name": "doom-damaging-sector-13",
-          "translation": [
-            162.0,
-            4.0,
-            99.25
-          ],
           "bounds": {
             "min": [
               -18.95,
@@ -231359,7 +227726,6 @@
             ]
           },
           "renderable": {
-            "asset": "mesh/player-marker",
             "visible": false
           },
           "hazard": {
@@ -231370,12 +227736,6 @@
         },
         {
           "id": 138,
-          "name": "doom-damaging-sector-55",
-          "translation": [
-            226.0,
-            6.0,
-            87.0
-          ],
           "bounds": {
             "min": [
               -5.95,
@@ -231389,7 +227749,6 @@
             ]
           },
           "renderable": {
-            "asset": "mesh/player-marker",
             "visible": false
           },
           "hazard": {
@@ -231400,12 +227759,6 @@
         },
         {
           "id": 139,
-          "name": "doom-damaging-sector-57",
-          "translation": [
-            249.75,
-            6.0,
-            96.0
-          ],
           "bounds": {
             "min": [
               -15.2,
@@ -231419,7 +227772,6 @@
             ]
           },
           "renderable": {
-            "asset": "mesh/player-marker",
             "visible": false
           },
           "hazard": {
@@ -231430,12 +227782,6 @@
         },
         {
           "id": 140,
-          "name": "doom-damaging-sector-61",
-          "translation": [
-            231.25,
-            6.0,
-            98.25
-          ],
           "bounds": {
             "min": [
               -11.2,
@@ -231449,7 +227795,6 @@
             ]
           },
           "renderable": {
-            "asset": "mesh/player-marker",
             "visible": false
           },
           "hazard": {
@@ -231460,12 +227805,6 @@
         },
         {
           "id": 141,
-          "name": "doom-manual-door-sector-4",
-          "translation": [
-            144.5,
-            9.0,
-            148.0
-          ],
           "bounds": {
             "min": [
               -0.8,
@@ -231483,8 +227822,6 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/prop-kit/security-door",
-            "visible": true,
             "visualBinding": {
               "version": 1,
               "states": [
@@ -231597,12 +227934,6 @@
         },
         {
           "id": 142,
-          "name": "doom-manual-door-sector-68",
-          "translation": [
-            231.0,
-            7.5,
-            64.0
-          ],
           "bounds": {
             "min": [
               -0.8,
@@ -231620,8 +227951,6 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/prop-kit/security-door",
-            "visible": true,
             "visualBinding": {
               "version": 1,
               "states": [
@@ -231734,12 +228063,6 @@
         },
         {
           "id": 143,
-          "name": "doom-manual-door-sector-81",
-          "translation": [
-            236.0,
-            7.5,
-            14.0
-          ],
           "bounds": {
             "min": [
               -0.8,
@@ -231757,8 +228080,6 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/prop-kit/security-door",
-            "visible": true,
             "visualBinding": {
               "version": 1,
               "states": [
@@ -231871,12 +228192,6 @@
         },
         {
           "id": 144,
-          "name": "doom-manual-door-sector-76",
-          "translation": [
-            236.0,
-            7.5,
-            52.5
-          ],
           "bounds": {
             "min": [
               -0.8,
@@ -231894,8 +228209,6 @@
             "staticCollider": false
           },
           "renderable": {
-            "asset": "mesh/prop-kit/security-door",
-            "visible": true,
             "visualBinding": {
               "version": 1,
               "states": [
@@ -232008,12 +228321,6 @@
         },
         {
           "id": 145,
-          "name": "doom-floor-platform-sector-59",
-          "translation": [
-            260.0,
-            15.0,
-            85.25
-          ],
           "bounds": {
             "min": [
               -5.0,
@@ -232045,12 +228352,6 @@
         },
         {
           "id": 146,
-          "name": "doom-walk-floor-action-linedef-308",
-          "translation": [
-            236.0,
-            7.5,
-            44.0
-          ],
           "bounds": {
             "min": [
               -6.0,
@@ -232084,12 +228385,6 @@
         },
         {
           "id": 147,
-          "name": "doom-lift-platform-sector-70",
-          "translation": [
-            270.0,
-            15.5,
-            62.0
-          ],
           "bounds": {
             "min": [
               -2.0,
@@ -232121,12 +228416,6 @@
         },
         {
           "id": 148,
-          "name": "doom-repeatable-lift-linedef-195",
-          "translation": [
-            229.25,
-            7.5,
-            118.75
-          ],
           "bounds": {
             "min": [
               -10.0,
@@ -232161,15 +228450,7 @@
         },
         {
           "id": 149,
-          "name": "doom-exit",
-          "translation": [
-            230.0,
-            7.5,
-            6.0
-          ],
           "renderable": {
-            "asset": "mesh/prop-kit/level-exit",
-            "visible": true,
             "visualBinding": {
               "version": 1,
               "states": [
@@ -232217,12 +228498,6 @@
         },
         {
           "id": 150,
-          "name": "doom-secret-sector-68",
-          "translation": [
-            231.0,
-            7.5,
-            64.0
-          ],
           "bounds": {
             "min": [
               -1.5,
@@ -232243,12 +228518,6 @@
         },
         {
           "id": 151,
-          "name": "doom-secret-sector-69",
-          "translation": [
-            252.0,
-            6.0,
-            63.0
-          ],
           "bounds": {
             "min": [
               -1.5,
@@ -232269,12 +228538,6 @@
         },
         {
           "id": 152,
-          "name": "doom-secret-sector-70",
-          "translation": [
-            270.0,
-            15.5,
-            62.0
-          ],
           "bounds": {
             "min": [
               -1.5,

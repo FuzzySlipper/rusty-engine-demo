@@ -48,7 +48,7 @@ test("canonical project reads decode without rewriting authored bytes", () => {
 
 function canonicalProject() {
   return {
-    schemaVersion: 27,
+    schemaVersion: 28,
     projectId: "doom-e1m1",
     name: "Doom E1M1",
     entryScene: "scene/doom-e1m1",

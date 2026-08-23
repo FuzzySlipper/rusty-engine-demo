@@ -351,7 +351,8 @@ fn snapshot_rejects_one_reserved_weapon_entity_mapping_shared_by_two_inventory_o
         .clone();
     let mut second_player = player;
     second_player["id"] = serde_json::json!(999);
-    second_player["translation"] = serde_json::json!([0.0, 2.0, 0.0]);
+    // The second player's position lives on its authored scene node below;
+    // binding records carry no generic scene fields.
     {
         let player_node = project["scenes"][0]["authoredScene"]["nodes"]
             .as_array()

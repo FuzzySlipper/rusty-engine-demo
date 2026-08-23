@@ -149,6 +149,15 @@ impl GameplayApplicationProjector {
                 ))
             })
             .collect();
+        // Labels and renderable asset identities are Engine scene-node
+        // fields; join them read-side with the binding records.
+        let node_fields =
+            loading_bay_gameplay::authored_node_fields(project).expect("admitted project decodes");
+        let node_asset = |entity_id: u64| -> Option<String> {
+            node_fields
+                .get(&entity_id)
+                .and_then(|fields| fields.asset.clone())
+        };
         let shared_doom_bindings: BTreeMap<
             String,
             BTreeMap<StoredVisualState, StoredVisualPresentation>,
@@ -156,12 +165,17 @@ impl GameplayApplicationProjector {
             .scenes
             .iter()
             .flat_map(|scene| &scene.entities)
-            .filter(|entity| entity.name.starts_with("doom-visual-template-"))
+            .filter(|entity| {
+                node_fields
+                    .get(&entity.id)
+                    .and_then(|fields| fields.label.as_deref())
+                    .is_some_and(|label| label.starts_with("doom-visual-template-"))
+            })
             .filter_map(|entity| {
                 let renderable = entity.renderable.as_ref()?;
                 let binding = renderable.visual_binding.as_ref()?;
                 Some((
-                    renderable.asset.clone(),
+                    node_asset(entity.id)?,
                     binding
                         .states
                         .iter()
@@ -170,15 +184,22 @@ impl GameplayApplicationProjector {
                 ))
             })
             .collect();
-        let bindings = project
+        // Visual states resolve per Engine scene-node renderable; binding
+        // records only override or supply the family-shared presentation.
+        let entities_by_id = project
             .scenes
             .iter()
             .flat_map(|scene| &scene.entities)
-            .filter_map(|entity| {
-                let renderable = entity.renderable.as_ref()?;
-                let states = renderable
-                    .visual_binding
+            .map(|entity| (entity.id, entity))
+            .collect::<BTreeMap<u64, _>>();
+        let bindings = node_fields
+            .iter()
+            .filter_map(|(entity_id, fields)| {
+                let record = entities_by_id.get(entity_id)?;
+                let states = record
+                    .renderable
                     .as_ref()
+                    .and_then(|presentation| presentation.visual_binding.as_ref())
                     .map(|binding| {
                         binding
                             .states
@@ -186,8 +207,8 @@ impl GameplayApplicationProjector {
                             .map(|state| (state.state, state.presentation.clone()))
                             .collect()
                     })
-                    .or_else(|| shared_doom_bindings.get(&renderable.asset).cloned())?;
-                Some((entity.id, states))
+                    .or_else(|| shared_doom_bindings.get(fields.asset.as_ref()?).cloned())?;
+                Some((*entity_id, states))
             })
             .collect();
         let camera_entity = project
@@ -219,7 +240,7 @@ impl GameplayApplicationProjector {
             .scenes
             .iter()
             .flat_map(|scene| &scene.entities)
-            .filter_map(doom_effect_clip)
+            .filter_map(|entity| doom_effect_clip(entity, node_fields.get(&entity.id)?))
             .collect();
         let weapon_viewmodels = doom_weapon_viewmodels(project);
         Self {
@@ -1402,8 +1423,9 @@ fn camera_relative_sprite_translation(
 
 fn doom_effect_clip(
     entity: &crate::StoredEntityDefinition,
+    node_fields: &loading_bay_gameplay::AuthoredNodeFields,
 ) -> Option<(DoomEffectClipKind, DoomEffectClip)> {
-    let kind = match entity.name.as_str() {
+    let kind = match node_fields.label.as_deref()? {
         "doom-fx-template-blood" => DoomEffectClipKind::Blood,
         "doom-fx-template-bullet-puff" => DoomEffectClipKind::BulletPuff,
         "doom-fx-template-projectile-flight" => DoomEffectClipKind::ProjectileFlight,
@@ -1411,6 +1433,7 @@ fn doom_effect_clip(
         _ => return None,
     };
     let renderable = entity.renderable.as_ref()?;
+    let asset = node_fields.asset.clone()?;
     let binding = renderable.visual_binding.as_ref()?;
     let presentation = binding
         .states
@@ -1436,7 +1459,7 @@ fn doom_effect_clip(
     Some((
         kind,
         DoomEffectClip {
-            asset: renderable.asset.clone(),
+            asset,
             frames: frames.clone(),
             source_origin_offsets,
         },
@@ -1794,11 +1817,20 @@ mod tests {
         let projector = GameplayApplicationProjector::new(&project);
         let entities = &project.scenes[0].entities;
 
+        let node_fields = loading_bay_gameplay::authored_node_fields(&project).unwrap();
+        let label_of = |entity_id: u64| -> String {
+            node_fields
+                .get(&entity_id)
+                .and_then(|fields| fields.label.clone())
+                .unwrap_or_default()
+        };
         let actor = entities
             .iter()
-            .find(|entity| entity.name == "doom-zombieman-12")
+            .find(|entity| label_of(entity.id) == "doom-zombieman-12")
             .unwrap();
-        assert!(actor.renderable.as_ref().unwrap().visual_binding.is_none());
+        // No binding-owned presentation: states resolve from the family
+        // template through the Engine node asset.
+        assert!(actor.renderable.is_none());
         let actor_states = &projector.bindings[&actor.id];
         assert!(matches!(
             actor_states.get(&StoredVisualState::Attacking),
@@ -1810,9 +1842,9 @@ mod tests {
 
         let pickup = entities
             .iter()
-            .find(|entity| entity.name == "doom-pickup-2014-5")
+            .find(|entity| label_of(entity.id) == "doom-pickup-2014-5")
             .unwrap();
-        assert!(pickup.renderable.as_ref().unwrap().visual_binding.is_none());
+        assert!(pickup.renderable.is_none());
         assert!(matches!(
             projector.bindings[&pickup.id].get(&StoredVisualState::Available),
             Some(StoredVisualPresentation::SpriteFrames {

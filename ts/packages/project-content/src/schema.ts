@@ -12,9 +12,9 @@ export interface BoundsDefinition {
   readonly max: Vec3;
 }
 
+/** Presentation overrides for a node's Engine-declared renderable. */
 export interface RenderableDefinition {
-  readonly asset: string;
-  readonly visible: boolean;
+  readonly visible?: false;
   readonly initialClip?: string;
   readonly visualBinding?: VisualBindingDefinition;
 }
@@ -364,15 +364,13 @@ export interface MaterialVoxelEnvironmentDefinition {
   readonly gameplayProxy?: boolean;
 }
 
+/**
+ * Downstream binding record for one authored scene node. Generic scene
+ * structure (label, hierarchy, transform, renderable asset, light) lives
+ * only in the Engine `authoredScene` document keyed by the same node id.
+ */
 export interface EntityDefinition {
   readonly id: number;
-  readonly name: string;
-  readonly parent?: number;
-  readonly childOrder?: number;
-  readonly translation?: Vec3;
-  readonly rotation?: Quat;
-  readonly scale?: Vec3;
-  readonly light?: LightDefinition;
   readonly bounds?: BoundsDefinition;
   readonly collision?: CollisionDefinition;
   readonly renderable?: RenderableDefinition;
@@ -858,7 +856,7 @@ export type LevelExitProgramDefinition =
 export interface LevelExitProgramCatalogEntry { readonly id: string; readonly program: LevelExitProgramDefinition; }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 27;
+  readonly schemaVersion: 28;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

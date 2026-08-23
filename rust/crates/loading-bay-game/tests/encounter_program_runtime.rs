@@ -18,6 +18,17 @@ fn sync_authored_translation(project: &mut Value, id: EntityId, translation: &Va
     node["transform"]["translation"] = translation.clone();
 }
 
+/// Generic scene transforms live only on authored scene nodes.
+fn authored_translation(project: &Value, id: EntityId) -> Value {
+    project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array()
+        .expect("authored scene nodes")
+        .iter()
+        .find(|node| node["id"] == id.raw())
+        .expect("authored scene node for entity")["transform"]["translation"]
+        .clone()
+}
+
 #[test]
 fn canonical_e1m1_encounter_program_activates_members_in_rust() {
     let (project, encounter, member, _) = project_with_one_member_and_optional_exit();
@@ -238,7 +249,7 @@ fn project_with_one_member_and_optional_exit() -> (Value, EntityId, EntityId, En
         .expect("E1M1 has an authored encounter");
     let encounter_id = EntityId::new(encounter["id"].as_u64().unwrap());
     let member = EntityId::new(encounter["encounter"]["members"][0].as_u64().unwrap());
-    let position = encounter["translation"].clone();
+    let position = authored_translation(&project, encounter_id);
     let exit = EntityId::new(
         entities
             .iter()
@@ -247,7 +258,6 @@ fn project_with_one_member_and_optional_exit() -> (Value, EntityId, EntityId, En
             .expect("E1M1 has a door usable as an encounter fixture exit"),
     );
 
-    entity_mut(&mut project, PLAYER)["translation"] = position.clone();
     sync_authored_translation(&mut project, PLAYER, &position);
     let encounter_component = &mut entity_mut(&mut project, encounter_id)["encounter"];
     encounter_component["members"] = json!([member.raw()]);
