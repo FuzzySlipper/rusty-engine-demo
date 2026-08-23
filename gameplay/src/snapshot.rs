@@ -62,7 +62,10 @@ use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
 use crate::session::GameSession;
 use crate::vitality::{HealthConfig, VitalityState};
 
-pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 24;
+pub const GAME_SNAPSHOT_SCHEMA_VERSION: u32 = 25;
+/// First schema whose downstream gameplay facts ride inside the embedded
+/// [`EntityStateSnapshot`] as registered durable components.
+pub const FACT_COMPONENT_SNAPSHOT_SCHEMA_VERSION: u32 = 25;
 const CANONICAL_PLAYER_CONTROLLER_SNAPSHOT_SCHEMA_VERSION: u32 = 23;
 const RESERVED_ABSENT_WEAPON_SNAPSHOT_SCHEMA_VERSION: u32 = 24;
 const VITALITY_ITEM_SNAPSHOT_SCHEMA_VERSION: u32 = 22;
@@ -83,35 +86,77 @@ pub struct GameSnapshot {
     #[serde(default)]
     pub item_definitions: Vec<ItemDefinitionSnapshot>,
     pub voxel_collision: Option<VoxelCollisionSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub doors: Vec<DoorSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub switches: Vec<SwitchSnapshot>,
-    #[serde(default)]
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub floor_actions: Vec<FloorActionSnapshot>,
-    #[serde(default)]
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub lifts: Vec<LiftSnapshot>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub floor_action_triggers: Option<TriggerVolumeSnapshot>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub lift_triggers: Option<TriggerVolumeSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub extraction_beacons: Vec<ExtractionBeaconSnapshot>,
     pub controls: Vec<ControlsSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub enemies: Vec<EnemySnapshot>,
-    #[serde(default)]
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub enemy_combat: Vec<EnemyCombatSnapshot>,
-    #[serde(default)]
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub enemy_drops: Vec<EnemyDropSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub health: Vec<HealthSnapshot>,
-    #[serde(default)]
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub explosive_props: Vec<ExplosivePropSnapshot>,
-    #[serde(default)]
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub hazards: Vec<HazardSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub encounters: Vec<EncounterSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub navigations: Vec<NavigationSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub player_controllers: Vec<PlayerControllerSnapshot>,
     #[serde(default)]
     pub inventories: Vec<InventorySnapshot>,
-    #[serde(default)]
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pickups: Vec<PickupSnapshot>,
+    /// Collection receipts for retired pickup entities. This is product
+    /// consequence history, not an entity fact, so it persists downstream.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub collected_pickups: Vec<PickupSnapshot>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pickup_triggers: Option<TriggerVolumeSnapshot>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -834,9 +879,21 @@ pub enum ScheduledSnapshotKind {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ProgressionSnapshot {
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub door_access: Vec<DoorAccessSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub loading_bay_interlocks: Vec<LoadingBayInterlockSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub secret_regions: Vec<SecretRegionSnapshot>,
+    /// Drained legacy carrier: current schemas persist this family as
+    /// durable components inside `entities`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub level_exits: Vec<LevelExitSnapshot>,
     pub secret_triggers: TriggerVolumeSnapshot,
 }
@@ -1004,6 +1061,7 @@ pub enum GameSnapshotError {
     FuturePickupStateInLegacySnapshot,
     FutureWeaponStateInLegacySnapshot,
     FutureVitalityStateInLegacySnapshot,
+    LegacyFactSideTablesInCurrentSchema,
     FutureProgressionStateInLegacySnapshot,
     FutureEnemyCombatStateInLegacySnapshot,
     FutureEnemyArchetypeStateInLegacySnapshot,
@@ -1217,14 +1275,75 @@ impl GameRuntime {
                 .entities
                 .retain(|entity| !stripped_projectiles.contains(&EntityId::new(entity.id)));
         }
-        let has_progression = !self.session.door_access.is_empty()
-            || !self.session.loading_bay_interlocks.is_empty()
-            || !self.session.secret_regions.is_empty()
-            || !self.session.level_exits.is_empty();
+        let has_progression = self.session.fact_count::<DoorAccessConfig>() > 0
+            || self.session.fact_count::<LoadingBayInterlockConfig>() > 0
+            || self.session.fact_count::<SecretRegionComponent>() > 0
+            || self.session.fact_count::<LevelExitComponent>() > 0;
         GameSnapshot {
             schema_version: GAME_SNAPSHOT_SCHEMA_VERSION,
             tick: self.tick.raw(),
             entities: entity_snapshot,
+            collected_pickups: self
+                .session
+                .collected_pickups
+                .iter()
+                .map(|(entity, component)| PickupSnapshot {
+                    entity: entity.raw(),
+                    item: component.config.item.as_str().to_string(),
+                    quantity: component.config.quantity,
+                    starter_ammunition: component.config.starter_ammunition.as_ref().map(|stack| {
+                        InventoryStackSnapshot {
+                            item: stack.item.as_str().to_string(),
+                            quantity: stack.quantity,
+                        }
+                    }),
+                    state: match &component.state {
+                        PickupState::Collected {
+                            actor,
+                            collected_at_tick,
+                            cause,
+                        } => SnapshotPickupState::Collected {
+                            actor: actor.raw(),
+                            collected_at_tick: *collected_at_tick,
+                            cause: match cause {
+                                crate::pickup::PickupCollectionCause::Overlap {
+                                    trigger_revision,
+                                } => SnapshotPickupCollectionCause::Overlap {
+                                    trigger_revision: *trigger_revision,
+                                },
+                                crate::pickup::PickupCollectionCause::Interaction {
+                                    connection_generation,
+                                    command_sequence,
+                                } => SnapshotPickupCollectionCause::Interaction {
+                                    connection_generation: *connection_generation,
+                                    command_sequence: *command_sequence,
+                                },
+                            },
+                        },
+                        other => match other {
+                            PickupState::Dormant => SnapshotPickupState::Dormant,
+                            PickupState::Available => SnapshotPickupState::Available,
+                            PickupState::Collected { .. } => unreachable!(),
+                        },
+                    },
+                })
+                .collect(),
+            // Legacy side-table carriers are always drained on current writes.
+            doors: Vec::new(),
+            switches: Vec::new(),
+            floor_actions: Vec::new(),
+            lifts: Vec::new(),
+            extraction_beacons: Vec::new(),
+            enemies: Vec::new(),
+            enemy_combat: Vec::new(),
+            enemy_drops: Vec::new(),
+            health: Vec::new(),
+            explosive_props: Vec::new(),
+            hazards: Vec::new(),
+            encounters: Vec::new(),
+            navigations: Vec::new(),
+            player_controllers: Vec::new(),
+            pickups: Vec::new(),
             item_definitions: self
                 .session
                 .item_definitions
@@ -1355,117 +1474,8 @@ impl GameRuntime {
                         }
                     }),
                 }),
-            doors: self
-                .session
-                .doors
-                .iter()
-                .map(|(entity, component)| DoorSnapshot {
-                    entity: entity.raw(),
-                    state: match component.state {
-                        DoorState::Closed => SnapshotDoorState::Closed,
-                        DoorState::Opening => SnapshotDoorState::Opening,
-                        DoorState::Open => SnapshotDoorState::Open,
-                        DoorState::Closing => SnapshotDoorState::Closing,
-                    },
-                    closed_translation: component.config.closed_translation.to_array(),
-                    open_translation: component.config.open_translation.to_array(),
-                    motion_duration_ticks: component.config.motion_duration.raw(),
-                    motion_elapsed_ticks: component.motion_elapsed.raw(),
-                    auto_close_after_ticks: component.config.auto_close_after.map(TickDelta::raw),
-                })
-                .collect(),
-            switches: self
-                .session
-                .switches
-                .iter()
-                .map(|(entity, component)| SwitchSnapshot {
-                    entity: entity.raw(),
-                    activation_count: component.activation_count,
-                    activation_radius: component.config.activation_radius,
-                    prompt: component.config.prompt.clone(),
-                    unavailable_presentation: component.config.unavailable_presentation.clone(),
-                    repeatable: component.config.repeatable,
-                    effects: component
-                        .config
-                        .effects
-                        .iter()
-                        .map(|effect| match effect {
-                            SwitchEffect::OpenDoor(door) => {
-                                SnapshotSwitchEffect::OpenDoor { door: door.raw() }
-                            }
-                            SwitchEffect::CloseDoor(door) => {
-                                SnapshotSwitchEffect::CloseDoor { door: door.raw() }
-                            }
-                        })
-                        .collect(),
-                })
-                .collect(),
-            floor_actions: self
-                .session
-                .floor_actions
-                .iter()
-                .map(|(entity, component)| FloorActionSnapshot {
-                    entity: entity.raw(),
-                    target_platform: component.config.target_platform.raw(),
-                    state: match component.state {
-                        FloorActionState::Armed => SnapshotFloorActionState::Armed,
-                        FloorActionState::Lowering => SnapshotFloorActionState::Lowering,
-                        FloorActionState::Lowered => SnapshotFloorActionState::Lowered,
-                    },
-                    upper_translation: component.config.upper_translation.to_array(),
-                    lowered_translation: component.config.lowered_translation.to_array(),
-                    motion_duration_ticks: component.config.motion_duration.raw(),
-                    motion_elapsed_ticks: component.motion_elapsed.raw(),
-                    prompt: component.config.prompt.clone(),
-                    presentation: component.config.presentation.clone(),
-                    source: component.config.source.clone(),
-                })
-                .collect(),
-            lifts: self
-                .session
-                .lifts
-                .iter()
-                .map(|(entity, component)| LiftSnapshot {
-                    entity: entity.raw(),
-                    target_platform: component.config.target_platform.raw(),
-                    state: match component.state {
-                        LiftState::Raised => SnapshotLiftState::Raised,
-                        LiftState::Lowering => SnapshotLiftState::Lowering,
-                        LiftState::Waiting => SnapshotLiftState::Waiting,
-                        LiftState::Raising => SnapshotLiftState::Raising,
-                    },
-                    raised_translation: component.config.raised_translation.to_array(),
-                    lowered_translation: component.config.lowered_translation.to_array(),
-                    motion_duration_ticks: component.config.motion_duration.raw(),
-                    motion_elapsed_ticks: component.motion_elapsed.raw(),
-                    lowered_wait_ticks: component.config.lowered_wait.raw(),
-                    wait_elapsed_ticks: component.wait_elapsed.raw(),
-                    prompt: component.config.prompt.clone(),
-                    presentation: component.config.presentation.clone(),
-                    source: component.config.source.clone(),
-                })
-                .collect(),
             floor_action_triggers: Some(self.floor_action_triggers.snapshot()),
             lift_triggers: Some(self.lift_triggers.snapshot()),
-            extraction_beacons: self
-                .session
-                .extraction_beacons
-                .iter()
-                .map(|(entity, component)| ExtractionBeaconSnapshot {
-                    entity: entity.raw(),
-                    activation_radius: component.config.activation_radius,
-                    state: match component.state {
-                        ExtractionBeaconState::Standby => SnapshotExtractionBeaconState::Standby,
-                        ExtractionBeaconState::Active {
-                            actor,
-                            activated_at,
-                        } => SnapshotExtractionBeaconState::Active {
-                            actor: actor.raw(),
-                            activated_at_tick: activated_at.raw(),
-                        },
-                    },
-                })
-                .collect(),
             controls: self
                 .session
                 .controls
@@ -1473,228 +1483,6 @@ impl GameRuntime {
                 .map(|(switch, targets)| ControlsSnapshot {
                     switch: switch.raw(),
                     targets: targets.iter().map(|target| target.raw()).collect(),
-                })
-                .collect(),
-            enemies: self
-                .session
-                .enemies
-                .iter()
-                .map(|(entity, component)| EnemySnapshot {
-                    entity: entity.raw(),
-                    state: match component.state {
-                        EnemyState::Alive => SnapshotEnemyState::Alive,
-                        EnemyState::Defeated => SnapshotEnemyState::Defeated,
-                    },
-                })
-                .collect(),
-            enemy_combat: self
-                .session
-                .enemy_combat
-                .iter()
-                .map(|(entity, component)| EnemyCombatSnapshot {
-                    entity: entity.raw(),
-                    sight_range: component.config.perception.sight_range,
-                    hearing_range: component.config.perception.hearing_range,
-                    pain_duration_ticks: component.config.pain_duration_ticks,
-                    attack_kind: match component.config.attack.kind {
-                        EnemyAttackKind::Melee => SnapshotEnemyAttackKind::Melee,
-                        EnemyAttackKind::RangedHitscan => SnapshotEnemyAttackKind::RangedHitscan,
-                        EnemyAttackKind::Projectile => SnapshotEnemyAttackKind::Projectile,
-                    },
-                    damage: component.config.attack.damage,
-                    range: component.config.attack.range,
-                    cooldown_ticks: component.config.attack.cooldown_ticks,
-                    origin_offset: component.config.attack.origin_offset.to_array(),
-                    presentation: component.config.attack.presentation.clone(),
-                    projectile: component.config.attack.projectile.map(|projectile| {
-                        SnapshotEnemyProjectile {
-                            mass: projectile.mass,
-                            radius: projectile.radius,
-                            impulse: projectile.impulse,
-                            gravity_scale: projectile.gravity_scale,
-                            lifetime_ticks: projectile.lifetime_ticks,
-                            restitution: projectile.restitution,
-                        }
-                    }),
-                    projectile_visual_asset: component
-                        .config
-                        .attack
-                        .projectile_visual_asset
-                        .clone(),
-                    posture: match component.state.posture {
-                        EnemyCombatPosture::Sleeping => SnapshotEnemyCombatPosture::Sleeping,
-                        EnemyCombatPosture::Alert => SnapshotEnemyCombatPosture::Alert,
-                        EnemyCombatPosture::Pursuing => SnapshotEnemyCombatPosture::Pursuing,
-                        EnemyCombatPosture::Attacking => SnapshotEnemyCombatPosture::Attacking,
-                        EnemyCombatPosture::Dead => SnapshotEnemyCombatPosture::Dead,
-                    },
-                    ready_at_tick: component.state.ready_at_tick.raw(),
-                    pain_ticks_remaining: component.state.pain_ticks_remaining,
-                    last_known_target_position: component
-                        .state
-                        .last_known_target_position
-                        .map(Vec3::to_array),
-                })
-                .collect(),
-            enemy_drops: self
-                .session
-                .enemy_drops
-                .iter()
-                .map(|(enemy, component)| EnemyDropSnapshot {
-                    enemy: enemy.raw(),
-                    pickup: component.config.pickup.raw(),
-                    state: match component.state {
-                        EnemyDropState::Armed => SnapshotEnemyDropState::Armed,
-                        EnemyDropState::Materialized => SnapshotEnemyDropState::Materialized,
-                    },
-                })
-                .collect(),
-            health: self
-                .session
-                .health
-                .iter()
-                .map(|(entity, config)| {
-                    let vitality = self
-                        .session
-                        .health(*entity)
-                        .expect("admitted vitality remains readable");
-                    HealthSnapshot {
-                        entity: entity.raw(),
-                        current: vitality.current,
-                        max: config.max,
-                        starting: (config.starting != config.max).then_some(config.starting),
-                        hitbox_half_extents: config.hitbox_half_extents.to_array(),
-                        max_armor: config.max_armor,
-                        armor_absorption_percent: config.armor_absorption_percent,
-                        armor: vitality.armor,
-                        armor_item: vitality
-                            .armor_item
-                            .as_ref()
-                            .map(|item| item.as_str().to_owned()),
-                        state: Some(match vitality.state {
-                            VitalityState::Alive => SnapshotVitalityState::Alive,
-                            VitalityState::Dead => SnapshotVitalityState::Dead,
-                        }),
-                    }
-                })
-                .collect(),
-            explosive_props: self
-                .session
-                .explosive_props
-                .iter()
-                .map(|(entity, component)| ExplosivePropSnapshot {
-                    entity: entity.raw(),
-                    damage: component.config.damage,
-                    radius: component.config.radius,
-                    state: match component.state {
-                        ExplosivePropState::Armed => SnapshotExplosivePropState::Armed,
-                        ExplosivePropState::Exploded => SnapshotExplosivePropState::Exploded,
-                    },
-                    pending: component.pending,
-                })
-                .collect(),
-            hazards: self
-                .session
-                .hazards
-                .iter()
-                .map(|(entity, component)| HazardSnapshot {
-                    entity: entity.raw(),
-                    damage: component.config.damage,
-                    cooldown_ticks: component.config.cooldown_ticks,
-                    ready_at_tick: component.ready_at_tick.raw(),
-                })
-                .collect(),
-            encounters: self
-                .session
-                .encounters
-                .iter()
-                .map(|(entity, component)| EncounterSnapshot {
-                    entity: entity.raw(),
-                    state: match component.state {
-                        EncounterState::Dormant => SnapshotEncounterState::Dormant,
-                        EncounterState::Active => SnapshotEncounterState::Active,
-                        EncounterState::Cleared => SnapshotEncounterState::Cleared,
-                    },
-                    members: component
-                        .config
-                        .members
-                        .iter()
-                        .map(|member| member.raw())
-                        .collect(),
-                    exit: component.config.exit.map(EntityId::raw),
-                    activation_radius: component.config.activation_radius,
-                })
-                .collect(),
-            navigations: self
-                .session
-                .navigators
-                .iter()
-                .map(|(entity, component)| NavigationSnapshot {
-                    entity: entity.raw(),
-                    state: match component.state {
-                        NavigationState::Following => SnapshotNavigationState::Following,
-                        NavigationState::Arrived => SnapshotNavigationState::Arrived,
-                        NavigationState::Blocked => SnapshotNavigationState::Blocked,
-                        NavigationState::Unreachable => SnapshotNavigationState::Unreachable,
-                    },
-                    goal: component.config.goal.to_array(),
-                    speed_units_per_second: component.config.speed_units_per_second,
-                    max_visited: component.config.max_visited,
-                })
-                .collect(),
-            player_controllers: self
-                .session
-                .player_controllers
-                .iter()
-                .map(|(entity, component)| {
-                    let state = component.state(
-                        self.session
-                            .entities
-                            .character_motion(*entity)
-                            .expect("player controller retains character motion"),
-                    );
-                    PlayerControllerSnapshot {
-                        entity: entity.raw(),
-                        move_speed_units_per_second: component.config.move_speed_units_per_second,
-                        move_step_seconds: component.config.move_step_seconds,
-                        look_degrees_per_unit: component.config.look_degrees_per_unit,
-                        initial_yaw_degrees: component.config.initial_yaw_degrees,
-                        initial_pitch_degrees: component.config.initial_pitch_degrees,
-                        traversal: PlayerTraversalSnapshot {
-                            max_step_height: component.config.traversal.max_step_height,
-                            gravity_units_per_second_squared: component
-                                .config
-                                .traversal
-                                .gravity_units_per_second_squared,
-                            jump_impulse_units_per_second: component
-                                .config
-                                .traversal
-                                .jump_impulse_units_per_second,
-                            ground_probe_distance: component.config.traversal.ground_probe_distance,
-                            eye_height: component.config.traversal.eye_height,
-                            manual_jump_enabled: component.config.traversal.manual_jump_enabled,
-                            max_air_jumps: component.config.traversal.max_air_jumps,
-                        },
-                        canonical_standing_height: Some(component.engine.shape.standing_height),
-                        canonical_crouched_height: Some(component.engine.shape.crouched_height),
-                        canonical_radius: Some(component.engine.shape.radius),
-                        eye_offset_from_center: Some(component.eye_offset_from_center),
-                        yaw_degrees: state.yaw_degrees,
-                        pitch_degrees: state.pitch_degrees,
-                        vertical_velocity: state.vertical_velocity,
-                        grounded: state.grounded,
-                        remaining_air_jumps: state.remaining_air_jumps,
-                        bindings: PlayerInputBindingsSnapshot {
-                            move_forward: component.config.bindings.move_forward.clone(),
-                            move_backward: component.config.bindings.move_backward.clone(),
-                            move_left: component.config.bindings.move_left.clone(),
-                            move_right: component.config.bindings.move_right.clone(),
-                            mouse_look: component.config.bindings.mouse_look.clone(),
-                            primary_fire: component.config.bindings.primary_fire.clone(),
-                            jump: component.config.bindings.jump.clone(),
-                            select_weapon: component.config.bindings.select_weapon.clone(),
-                        },
-                    }
                 })
                 .collect(),
             inventories: self
@@ -1746,118 +1534,16 @@ impl GameRuntime {
                     }
                 })
                 .collect(),
-            pickups: self
-                .session
-                .pickups
-                .iter()
-                .map(|(entity, component)| PickupSnapshot {
-                    entity: entity.raw(),
-                    item: component.config.item.as_str().to_string(),
-                    quantity: component.config.quantity,
-                    starter_ammunition: component.config.starter_ammunition.as_ref().map(
-                        |starter| InventoryStackSnapshot {
-                            item: starter.item.as_str().to_string(),
-                            quantity: starter.quantity,
-                        },
-                    ),
-                    state: match &component.state {
-                        PickupState::Dormant => SnapshotPickupState::Dormant,
-                        PickupState::Available => SnapshotPickupState::Available,
-                        PickupState::Collected {
-                            actor,
-                            collected_at_tick,
-                            cause,
-                        } => SnapshotPickupState::Collected {
-                            actor: actor.raw(),
-                            collected_at_tick: *collected_at_tick,
-                            cause: match cause {
-                                PickupCollectionCause::Overlap { trigger_revision } => {
-                                    SnapshotPickupCollectionCause::Overlap {
-                                        trigger_revision: *trigger_revision,
-                                    }
-                                }
-                                PickupCollectionCause::Interaction {
-                                    connection_generation,
-                                    command_sequence,
-                                } => SnapshotPickupCollectionCause::Interaction {
-                                    connection_generation: *connection_generation,
-                                    command_sequence: *command_sequence,
-                                },
-                            },
-                        },
-                    },
-                })
-                .collect(),
             pickup_triggers: Some(self.pickup_triggers.snapshot()),
             hazard_triggers: Some(self.hazard_triggers.snapshot()),
             weapons: Vec::new(),
             progression: has_progression.then(|| ProgressionSnapshot {
-                door_access: self
-                    .session
-                    .door_access
-                    .iter()
-                    .map(|(door, config)| DoorAccessSnapshot {
-                        door: door.raw(),
-                        required_key: config.required_key.as_str().to_owned(),
-                        key_policy: match config.key_policy {
-                            RequiredKeyPolicy::Retain => SnapshotRequiredKeyPolicy::Retain,
-                            RequiredKeyPolicy::Consume => SnapshotRequiredKeyPolicy::Consume,
-                        },
-                        activation_radius: config.activation_radius,
-                        denied_presentation: config.denied_presentation.clone(),
-                    })
-                    .collect(),
-                loading_bay_interlocks: self
-                    .session
-                    .loading_bay_interlocks
-                    .iter()
-                    .map(|(switch, config)| LoadingBayInterlockSnapshot {
-                        switch: switch.raw(),
-                        close_door: config.close_door.raw(),
-                        open_door: config.open_door.raw(),
-                    })
-                    .collect(),
-                secret_regions: self
-                    .session
-                    .secret_regions
-                    .iter()
-                    .map(|(entity, component)| SecretRegionSnapshot {
-                        entity: entity.raw(),
-                        presentation: component.config.presentation.clone(),
-                        state: match component.state {
-                            SecretRegionState::Undiscovered => {
-                                SnapshotSecretRegionState::Undiscovered
-                            }
-                            SecretRegionState::Discovered {
-                                actor,
-                                discovered_at,
-                            } => SnapshotSecretRegionState::Discovered {
-                                actor: actor.raw(),
-                                discovered_at_tick: discovered_at.raw(),
-                            },
-                        },
-                    })
-                    .collect(),
-                level_exits: self
-                    .session
-                    .level_exits
-                    .iter()
-                    .map(|(entity, component)| LevelExitSnapshot {
-                        entity: entity.raw(),
-                        activation_radius: component.config.activation_radius,
-                        presentation: component.config.presentation.clone(),
-                        state: match component.state {
-                            LevelExitState::Available => SnapshotLevelExitState::Available,
-                            LevelExitState::Completed {
-                                actor,
-                                completed_at,
-                            } => SnapshotLevelExitState::Completed {
-                                actor: actor.raw(),
-                                completed_at_tick: completed_at.raw(),
-                            },
-                        },
-                    })
-                    .collect(),
+                // Legacy side-table vectors stay empty; the facts ride inside
+                // `entities` as durable components on current schemas.
+                door_access: Vec::new(),
+                loading_bay_interlocks: Vec::new(),
+                secret_regions: Vec::new(),
+                level_exits: Vec::new(),
                 secret_triggers: self.secret_triggers.snapshot(),
             }),
             scheduled: self
@@ -1882,6 +1568,11 @@ impl GameRuntime {
             });
         }
         let source_schema_version = snapshot.schema_version;
+        if source_schema_version >= FACT_COMPONENT_SNAPSHOT_SCHEMA_VERSION
+            && legacy_fact_side_tables_populated(&snapshot)
+        {
+            return Err(GameSnapshotError::LegacyFactSideTablesInCurrentSchema);
+        }
         if source_schema_version < VITALITY_ITEM_SNAPSHOT_SCHEMA_VERSION
             && snapshot
                 .health
@@ -2066,7 +1757,7 @@ impl GameRuntime {
                 }
             })
             .transpose()?;
-        let registry = crate::mechanics::mechanics_registry()
+        let registry = crate::facts::gameplay_fact_registry()
             .map_err(|reason| GameSnapshotError::Mechanics { reason })?;
         let mut entities = EntityState::from_snapshot_with_registry(snapshot.entities, registry)
             .map_err(GameSnapshotError::EntityState)?;
@@ -2079,14 +1770,32 @@ impl GameRuntime {
         )
         .map_err(GameSnapshotError::Inventory)?;
         let vitality_policy = crate::DoomVitalityPolicy::doom_compatibility();
+        // Legacy schemas carry vitality configuration in side-table vectors;
+        // current schemas restore them as durable components before this point.
         let destructible_integrity_maximum = crate::mechanics::destructible_integrity_capacity(
-            snapshot.health.iter().filter_map(|health| {
-                snapshot
-                    .explosive_props
-                    .iter()
-                    .any(|prop| prop.entity == health.entity)
-                    .then_some(health.max)
-            }),
+            snapshot
+                .health
+                .iter()
+                .filter(|health| {
+                    snapshot
+                        .explosive_props
+                        .iter()
+                        .any(|prop| prop.entity == health.entity)
+                })
+                .map(|health| health.max)
+                .chain(
+                    entities
+                        .components::<crate::vitality::HealthConfig>()
+                        .expect("downstream fact component is registered")
+                        .filter_map(|(entity, config)| {
+                            entities
+                                .has_component::<crate::explosive_prop::ExplosivePropComponent>(
+                                    entity,
+                                )
+                                .expect("downstream fact component is registered")
+                                .then_some(config.max)
+                        }),
+                ),
         );
         let mechanics = crate::mechanics::build_runtime(
             &item_definitions,
@@ -2460,14 +2169,14 @@ impl GameRuntime {
         let mut controls = BTreeMap::new();
         for control in snapshot.controls {
             let switch = EntityId::new(control.switch);
-            if !switches.contains_key(&switch) {
+            if !legacy_or_store::<SwitchComponent>(&entities, &switches, switch).is_some() {
                 return Err(GameSnapshotError::UnknownSwitchEntity {
                     entity: control.switch,
                 });
             }
             let targets: Vec<EntityId> = control.targets.into_iter().map(EntityId::new).collect();
             for target in &targets {
-                if !doors.contains_key(target) {
+                if !legacy_or_store::<DoorComponent>(&entities, &doors, *target).is_some() {
                     return Err(GameSnapshotError::UnknownControlTarget {
                         switch: control.switch,
                         target: target.raw(),
@@ -2497,7 +2206,7 @@ impl GameRuntime {
                     activation_radius: access.activation_radius,
                     denied_presentation: access.denied_presentation,
                 };
-                if !doors.contains_key(&door)
+                if !legacy_or_store::<DoorComponent>(&entities, &doors, door).is_some()
                     || !config.is_valid()
                     || item_definitions
                         .get(&required_key)
@@ -2515,10 +2224,12 @@ impl GameRuntime {
                     close_door: EntityId::new(interlock.close_door),
                     open_door: EntityId::new(interlock.open_door),
                 };
-                if !switches.contains_key(&switch)
+                if !legacy_or_store::<SwitchComponent>(&entities, &switches, switch).is_some()
                     || config.close_door == config.open_door
-                    || !doors.contains_key(&config.close_door)
-                    || !doors.contains_key(&config.open_door)
+                    || !legacy_or_store::<DoorComponent>(&entities, &doors, config.close_door)
+                        .is_some()
+                    || !legacy_or_store::<DoorComponent>(&entities, &doors, config.open_door)
+                        .is_some()
                     || loading_bay_interlocks.insert(switch, config).is_some()
                 {
                     return Err(GameSnapshotError::InvalidProgressionState);
@@ -2808,7 +2519,9 @@ impl GameRuntime {
                 });
             }
             let entity = EntityId::new(prop.entity);
-            if !health.contains_key(&entity) {
+            if !legacy_or_store::<crate::vitality::HealthConfig>(&entities, &health, entity)
+                .is_some()
+            {
                 return Err(GameSnapshotError::InvalidHealthConfig {
                     entity: prop.entity,
                 });
@@ -2906,7 +2619,7 @@ impl GameRuntime {
                     .map_err(|_| GameSnapshotError::UnknownNavigationEntity {
                         entity: navigation.entity,
                     })?;
-            if !enemies.contains_key(&entity)
+            if !legacy_or_store::<EnemyComponent>(&entities, &enemies, entity).is_some()
                 || view.transform.is_none()
                 || view.collision.is_none()
                 || view.kinematic.is_none()
@@ -2968,7 +2681,10 @@ impl GameRuntime {
                     entity: combat.entity,
                 });
             };
-            if !health.contains_key(&entity) || !navigators.contains_key(&entity) {
+            if !legacy_or_store::<crate::vitality::HealthConfig>(&entities, &health, entity)
+                .is_some()
+                || !legacy_or_store::<NavigationComponent>(&entities, &navigators, entity).is_some()
+            {
                 return Err(GameSnapshotError::MissingEnemyCombatCapability {
                     entity: combat.entity,
                 });
@@ -3204,16 +2920,24 @@ impl GameRuntime {
             if inventories.contains_key(&owner) {
                 return Err(GameSnapshotError::DuplicateInventory { owner: raw_owner });
             }
-            if !entities.contains(owner) || !player_controllers.contains_key(&owner) {
+            if !entities.contains(owner)
+                || !entities
+                    .has_component::<crate::player::PlayerControllerComponent>(owner)
+                    .expect("downstream fact component is registered")
+            {
                 return Err(GameSnapshotError::UnknownInventoryEntity { owner: raw_owner });
             }
             let weapon_slots = weapon_slots
                 .into_iter()
                 .map(parse_snapshot_item_id)
                 .collect::<Result<Vec<_>, _>>()?;
-            if player_controllers.get(&owner).is_none_or(|controller| {
-                controller.config.bindings.select_weapon.len() != weapon_slots.len()
-            }) {
+            if entities
+                .component::<crate::player::PlayerControllerComponent>(owner)
+                .expect("downstream fact component is registered")
+                .is_none_or(|controller| {
+                    controller.config.bindings.select_weapon.len() != weapon_slots.len()
+                })
+            {
                 return Err(GameSnapshotError::InvalidPlayerControllerConfig { entity: raw_owner });
             }
             let config = InventoryConfig::new(
@@ -3474,7 +3198,7 @@ impl GameRuntime {
         let mut pickups = BTreeMap::new();
         for pickup in snapshot.pickups {
             let entity = EntityId::new(pickup.entity);
-            if pickups.contains_key(&entity) {
+            if legacy_or_store::<PickupComponent>(&entities, &pickups, entity).is_some() {
                 return Err(GameSnapshotError::DuplicatePickup {
                     entity: pickup.entity,
                 });
@@ -3610,6 +3334,79 @@ impl GameRuntime {
                 },
             );
         }
+        // Collection receipts for retired pickup entities: product consequence
+        // history validated against the entity lifecycle, not entity facts.
+        let mut collected_pickups = std::collections::BTreeMap::new();
+        for record in snapshot.collected_pickups {
+            let entity = EntityId::new(record.entity);
+            let view =
+                entities
+                    .view(entity)
+                    .map_err(|_| GameSnapshotError::UnknownPickupEntity {
+                        entity: record.entity,
+                    })?;
+            let SnapshotPickupState::Collected {
+                actor,
+                collected_at_tick,
+                cause,
+            } = record.state
+            else {
+                return Err(GameSnapshotError::InvalidPickup {
+                    entity: record.entity,
+                });
+            };
+            if view.lifecycle != EntityLifecycle::Tombstoned
+                || !entities.contains(EntityId::new(actor))
+            {
+                return Err(GameSnapshotError::InvalidPickup {
+                    entity: record.entity,
+                });
+            }
+            if collected_at_tick > snapshot.tick {
+                return Err(GameSnapshotError::PickupCollectionFromFuture {
+                    entity: record.entity,
+                    collected_at_tick,
+                    snapshot_tick: snapshot.tick,
+                });
+            }
+            let component = crate::pickup::PickupComponent {
+                config: crate::pickup::PickupConfig {
+                    item: parse_snapshot_item_id(record.item)?,
+                    quantity: record.quantity,
+                    program: String::new(),
+                    starter_ammunition: record
+                        .starter_ammunition
+                        .map(|starter| {
+                            Ok(crate::inventory::InventoryStack::new(
+                                parse_snapshot_item_id(starter.item)?,
+                                starter.quantity,
+                            ))
+                        })
+                        .transpose()?,
+                },
+                state: PickupState::Collected {
+                    actor: EntityId::new(actor),
+                    collected_at_tick,
+                    cause: match cause {
+                        SnapshotPickupCollectionCause::Overlap { trigger_revision } => {
+                            PickupCollectionCause::Overlap { trigger_revision }
+                        }
+                        SnapshotPickupCollectionCause::Interaction {
+                            connection_generation,
+                            command_sequence,
+                        } => PickupCollectionCause::Interaction {
+                            connection_generation,
+                            command_sequence,
+                        },
+                    },
+                },
+            };
+            if collected_pickups.insert(entity, component).is_some() {
+                return Err(GameSnapshotError::DuplicatePickup {
+                    entity: record.entity,
+                });
+            }
+        }
         let pickup_triggers = if source_schema_version >= 12 {
             TriggerVolumeSystem::from_snapshot(
                 snapshot
@@ -3621,7 +3418,8 @@ impl GameRuntime {
         } else {
             TriggerVolumeSystem::default()
         };
-        let expected_trigger_entities = pickups.keys().copied().collect::<Vec<_>>();
+        let mut expected_trigger_entities = legacy_or_store_keys(&entities, &pickups);
+        expected_trigger_entities.extend(collected_pickups.keys().copied());
         let actual_trigger_entities = pickup_triggers
             .definitions()
             .map(|definition| {
@@ -3638,18 +3436,19 @@ impl GameRuntime {
                 .zip(expected_trigger_entities)
                 .any(|((actual, valid), expected)| !valid || *actual != expected)
             || pickup_triggers.active_overlaps().any(|pair| {
-                !pickups
-                    .get(&pair.trigger_id())
+                !legacy_or_store(&entities, &pickups, pair.trigger_id())
                     .is_some_and(|pickup| pickup.state == PickupState::Available)
                     || !entities.contains(pair.subject_id())
             })
         {
             return Err(GameSnapshotError::InvalidPickupTriggerDefinitions);
         }
-        if pickups
-            .len()
-            .saturating_add(hazards.len())
-            .saturating_add(secret_regions.len())
+        if legacy_or_store_len::<PickupComponent>(&entities, &pickups)
+            .saturating_add(legacy_or_store_len::<HazardComponent>(&entities, &hazards))
+            .saturating_add(legacy_or_store_len::<SecretRegionComponent>(
+                &entities,
+                &secret_regions,
+            ))
             > rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS
         {
             return Err(GameSnapshotError::InvalidSecretTriggerDefinitions);
@@ -3665,7 +3464,7 @@ impl GameRuntime {
         } else {
             TriggerVolumeSystem::default()
         };
-        let expected_hazard_entities = hazards.keys().copied().collect::<Vec<_>>();
+        let expected_hazard_entities = legacy_or_store_keys(&entities, &hazards);
         let actual_hazard_entities = hazard_triggers
             .definitions()
             .map(|definition| {
@@ -3682,7 +3481,9 @@ impl GameRuntime {
                 .zip(expected_hazard_entities)
                 .any(|((actual, valid), expected)| !valid || *actual != expected)
             || hazard_triggers.active_overlaps().any(|pair| {
-                !hazards.contains_key(&pair.trigger_id()) || !entities.contains(pair.subject_id())
+                !legacy_or_store::<HazardComponent>(&entities, &hazards, pair.trigger_id())
+                    .is_some()
+                    || !entities.contains(pair.subject_id())
             })
         {
             return Err(GameSnapshotError::InvalidHazardTriggerDefinitions);
@@ -3692,7 +3493,7 @@ impl GameRuntime {
                 .map_err(GameSnapshotError::TriggerVolume)?,
             None => TriggerVolumeSystem::default(),
         };
-        let expected_secret_entities = secret_regions.keys().copied().collect::<Vec<_>>();
+        let expected_secret_entities = legacy_or_store_keys(&entities, &secret_regions);
         let actual_secret_entities = secret_triggers
             .definitions()
             .map(|definition| {
@@ -3709,7 +3510,12 @@ impl GameRuntime {
                 .zip(expected_secret_entities)
                 .any(|((actual, valid), expected)| !valid || *actual != expected)
             || secret_triggers.active_overlaps().any(|pair| {
-                !secret_regions.contains_key(&pair.trigger_id())
+                !legacy_or_store::<SecretRegionComponent>(
+                    &entities,
+                    &secret_regions,
+                    pair.trigger_id(),
+                )
+                .is_some()
                     || !entities.contains(pair.subject_id())
             })
         {
@@ -3722,7 +3528,7 @@ impl GameRuntime {
             None if floor_actions.is_empty() => TriggerVolumeSystem::default(),
             None => return Err(GameSnapshotError::InvalidFloorActionTriggerDefinitions),
         };
-        let expected_floor_action_entities = floor_actions.keys().copied().collect::<Vec<_>>();
+        let expected_floor_action_entities = legacy_or_store_keys(&entities, &floor_actions);
         let actual_floor_action_entities = floor_action_triggers
             .definitions()
             .map(|definition| {
@@ -3738,7 +3544,12 @@ impl GameRuntime {
                 .zip(expected_floor_action_entities)
                 .any(|((actual, valid), expected)| !valid || *actual != expected)
             || floor_action_triggers.active_overlaps().any(|pair| {
-                !floor_actions.contains_key(&pair.trigger_id())
+                !legacy_or_store::<FloorActionComponent>(
+                    &entities,
+                    &floor_actions,
+                    pair.trigger_id(),
+                )
+                .is_some()
                     || !entities.contains(pair.subject_id())
             })
         {
@@ -3751,7 +3562,7 @@ impl GameRuntime {
             None if lifts.is_empty() => TriggerVolumeSystem::default(),
             None => return Err(GameSnapshotError::InvalidLiftTriggerDefinitions),
         };
-        let expected_lift_entities = lifts.keys().copied().collect::<Vec<_>>();
+        let expected_lift_entities = legacy_or_store_keys(&entities, &lifts);
         let actual_lift_entities = lift_triggers
             .definitions()
             .map(|definition| {
@@ -3767,7 +3578,8 @@ impl GameRuntime {
                 .zip(expected_lift_entities)
                 .any(|((actual, valid), expected)| !valid || *actual != expected)
             || lift_triggers.active_overlaps().any(|pair| {
-                !lifts.contains_key(&pair.trigger_id()) || !entities.contains(pair.subject_id())
+                !legacy_or_store::<LiftComponent>(&entities, &lifts, pair.trigger_id()).is_some()
+                    || !entities.contains(pair.subject_id())
             })
         {
             return Err(GameSnapshotError::InvalidLiftTriggerDefinitions);
@@ -3778,7 +3590,7 @@ impl GameRuntime {
         for drop in snapshot.enemy_drops {
             let enemy = EntityId::new(drop.enemy);
             let pickup = EntityId::new(drop.pickup);
-            if enemy_drops.contains_key(&enemy) {
+            if legacy_or_store::<EnemyDropComponent>(&entities, &enemy_drops, enemy).is_some() {
                 return Err(GameSnapshotError::DuplicateEnemyDrop { enemy: drop.enemy });
             }
             if !drop_pickups.insert(pickup) {
@@ -3865,7 +3677,9 @@ impl GameRuntime {
                 });
             }
             if let Some(exit) = encounter.exit {
-                if !doors.contains_key(&EntityId::new(exit)) {
+                if !legacy_or_store::<DoorComponent>(&entities, &doors, EntityId::new(exit))
+                    .is_some()
+                {
                     return Err(GameSnapshotError::UnknownEncounterExit {
                         encounter: encounter.entity,
                         exit,
@@ -3881,7 +3695,9 @@ impl GameRuntime {
                         member,
                     });
                 }
-                if !enemies.contains_key(&EntityId::new(member)) {
+                if !legacy_or_store::<EnemyComponent>(&entities, &enemies, EntityId::new(member))
+                    .is_some()
+                {
                     return Err(GameSnapshotError::UnknownEncounterMember {
                         encounter: encounter.entity,
                         member,
@@ -3918,7 +3734,9 @@ impl GameRuntime {
         for entry in snapshot.scheduled {
             let kind = match entry.kind {
                 ScheduledSnapshotKind::CloseDoor { door } => {
-                    if !doors.contains_key(&EntityId::new(door)) {
+                    if !legacy_or_store::<DoorComponent>(&entities, &doors, EntityId::new(door))
+                        .is_some()
+                    {
                         return Err(GameSnapshotError::UnknownDoorEntity { entity: door });
                     }
                     if !scheduled_doors.insert(door) {
@@ -3935,37 +3753,176 @@ impl GameRuntime {
             });
         }
 
-        let player_controller_services = player_controllers
-            .keys()
-            .copied()
-            .map(|entity| (entity, CharacterControllerService::default()))
+        let player_controller_services = entities
+            .components::<crate::player::PlayerControllerComponent>()
+            .expect("downstream fact component is registered")
+            .map(|(entity, _)| (entity, CharacterControllerService::default()))
             .collect();
+        // Authored-cadence invariant, re-homed: current schemas persist
+        // enemy-combat state as durable components, so the cooldown ceiling is
+        // validated against restored facts rather than drained side tables.
+        {
+            let combatants: Vec<(EntityId, crate::enemy_combat::EnemyCombatComponent)> =
+                if enemy_combat.is_empty() {
+                    entities
+                        .components::<EnemyCombatComponent>()
+                        .expect("downstream fact component is registered")
+                        .map(|(entity, combat)| (entity, combat.clone()))
+                        .collect()
+                } else {
+                    enemy_combat
+                        .iter()
+                        .map(|(entity, combat)| (*entity, combat.clone()))
+                        .collect()
+                };
+            let encounters_dual: Vec<(EntityId, EncounterComponent)> = if encounters.is_empty() {
+                entities
+                    .components::<EncounterComponent>()
+                    .expect("downstream fact component is registered")
+                    .map(|(entity, encounter)| (entity, encounter.clone()))
+                    .collect()
+            } else {
+                encounters
+                    .iter()
+                    .map(|(entity, encounter)| (*entity, encounter.clone()))
+                    .collect()
+            };
+            for (entity, combat) in combatants {
+                let maximum_ready_cadences = encounters_dual
+                    .iter()
+                    .find(|(_, encounter)| {
+                        encounter.state != crate::encounter::EncounterState::Dormant
+                            && encounter.config.members.contains(&entity)
+                    })
+                    .map_or(1, |(_, encounter)| {
+                        (encounter.config.members.len() as u64).saturating_mul(2)
+                    })
+                    .max(1);
+                if combat.state.ready_at_tick.raw()
+                    > snapshot.tick.saturating_add(
+                        combat
+                            .config
+                            .attack
+                            .cooldown_ticks
+                            .saturating_mul(maximum_ready_cadences),
+                    )
+                {
+                    return Err(GameSnapshotError::InvalidEnemyCombatState {
+                        entity: entity.raw(),
+                    });
+                }
+            }
+        }
+        // Legacy schemas persisted downstream gameplay facts as side-table
+        // vectors; current schemas persist them inside `entities` as durable
+        // components. Attach every restored family exactly once. Entries for
+        // entities destroyed before an old save was written are dropped here
+        // because the legacy side tables tolerated such orphans.
+        for (entity, component) in doors {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, config) in door_access {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, config);
+            }
+        }
+        for (entity, component) in switches {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in floor_actions {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in lifts {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, config) in loading_bay_interlocks {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, config);
+            }
+        }
+        for (entity, component) in enemies {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in enemy_combat {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in enemy_drops {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, config) in health {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, config);
+            }
+        }
+        for (entity, component) in explosive_props {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in hazards {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in encounters {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in extraction_beacons {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in navigators {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in player_controllers {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in pickups {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            } else if matches!(component.state, PickupState::Collected { .. }) {
+                collected_pickups.insert(entity, component);
+            }
+        }
+        for (entity, component) in secret_regions {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
+        for (entity, component) in level_exits {
+            if entities.is_alive(entity) {
+                attach_restored_fact(&mut entities, entity, component);
+            }
+        }
         Ok(Self {
             session: GameSession {
                 entities,
-                doors,
-                door_access,
-                switches,
-                floor_actions,
-                lifts,
                 controls,
-                loading_bay_interlocks,
-                enemies,
-                enemy_combat,
-                enemy_drops,
-                health,
-                explosive_props,
-                hazards,
-                encounters,
-                extraction_beacons,
-                navigators,
-                player_controllers,
                 item_definitions,
                 inventories,
                 mechanics,
-                pickups,
-                secret_regions,
-                level_exits,
+                collected_pickups,
                 gameplay_programs: crate::gameplay_program::GameplayProgramCatalog::default(),
                 pickup_programs: crate::pickup_program::PickupProgramCatalog::default(),
                 player_setup_programs: crate::player_program::PlayerSetupProgramCatalog::default(),
@@ -4588,4 +4545,90 @@ fn is_one_u8(value: &u8) -> bool {
 fn parse_snapshot_item_id(value: String) -> Result<ItemDefinitionId, GameSnapshotError> {
     ItemDefinitionId::parse(value.clone())
         .map_err(|_| GameSnapshotError::InvalidItemDefinitionId { value })
+}
+
+/// Reads one gameplay fact from either the drained legacy side table or the
+/// restored Engine component store, so pre-component saves and current saves
+/// validate identically.
+fn legacy_or_store<T: rusty_engine::entity_state::EntityComponent + Clone>(
+    entities: &EntityState,
+    legacy: &std::collections::BTreeMap<EntityId, T>,
+    entity: EntityId,
+) -> Option<T> {
+    legacy.get(&entity).cloned().or_else(|| {
+        entities
+            .component::<T>(entity)
+            .expect("downstream fact component is registered")
+            .cloned()
+    })
+}
+
+/// Enumerates gameplay-fact identities from the drained legacy side table or,
+/// for current saves, from the restored Engine component store.
+fn legacy_or_store_keys<T: rusty_engine::entity_state::EntityComponent>(
+    entities: &EntityState,
+    legacy: &std::collections::BTreeMap<EntityId, T>,
+) -> Vec<EntityId> {
+    if !legacy.is_empty() {
+        legacy.keys().copied().collect()
+    } else {
+        entities
+            .components::<T>()
+            .expect("downstream fact component is registered")
+            .map(|(entity, _)| entity)
+            .collect()
+    }
+}
+
+fn legacy_or_store_len<T: rusty_engine::entity_state::EntityComponent>(
+    entities: &EntityState,
+    legacy: &std::collections::BTreeMap<EntityId, T>,
+) -> usize {
+    if !legacy.is_empty() {
+        legacy.len()
+    } else {
+        entities
+            .components::<T>()
+            .expect("downstream fact component is registered")
+            .len()
+    }
+}
+
+/// True when any drained legacy side-table carrier still carries values in a
+/// current-schema snapshot, which would otherwise be silently double-applied.
+fn legacy_fact_side_tables_populated(snapshot: &GameSnapshot) -> bool {
+    !snapshot.doors.is_empty()
+        || !snapshot.switches.is_empty()
+        || !snapshot.floor_actions.is_empty()
+        || !snapshot.lifts.is_empty()
+        || !snapshot.extraction_beacons.is_empty()
+        || !snapshot.enemies.is_empty()
+        || !snapshot.enemy_combat.is_empty()
+        || !snapshot.enemy_drops.is_empty()
+        || !snapshot.health.is_empty()
+        || !snapshot.explosive_props.is_empty()
+        || !snapshot.hazards.is_empty()
+        || !snapshot.encounters.is_empty()
+        || !snapshot.navigations.is_empty()
+        || !snapshot.player_controllers.is_empty()
+        || !snapshot.pickups.is_empty()
+        || snapshot.progression.as_ref().is_some_and(|progression| {
+            !progression.door_access.is_empty()
+                || !progression.loading_bay_interlocks.is_empty()
+                || !progression.secret_regions.is_empty()
+                || !progression.level_exits.is_empty()
+        })
+}
+
+fn attach_restored_fact<T: rusty_engine::entity_state::EntityComponent>(
+    entities: &mut EntityState,
+    entity: rusty_engine::core_ids::EntityId,
+    value: T,
+) {
+    let revision = entities
+        .component_revision::<T>(entity)
+        .expect("downstream fact component is registered");
+    rusty_engine::entity_state::EntityAuthoringService
+        .attach_component(entities, revision, entity, value)
+        .expect("restored gameplay fact attaches exactly once");
 }

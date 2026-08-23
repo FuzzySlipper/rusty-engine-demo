@@ -414,8 +414,7 @@ pub(crate) fn apply_player_action(
                 return Err(RuntimeError::InvalidPlayerAction { action });
             }
             let step_seconds = session
-                .player_controllers
-                .get(&player)
+                .fact::<PlayerControllerComponent>(player)
                 .ok_or(RuntimeError::UnknownPlayerController { player })?
                 .config
                 .move_step_seconds;
@@ -442,8 +441,7 @@ pub(crate) fn apply_player_action(
         }
         ResolvedPlayerAction::Jump => {
             let step_seconds = session
-                .player_controllers
-                .get(&player)
+                .fact::<PlayerControllerComponent>(player)
                 .ok_or(RuntimeError::UnknownPlayerController { player })?
                 .config
                 .move_step_seconds;
@@ -481,9 +479,8 @@ fn apply_look(
     if !look_delta_is_valid(yaw_delta, pitch_delta, 1.0) {
         return Err(RuntimeError::InvalidPlayerAction { action });
     }
-    let component = session
-        .player_controllers
-        .get_mut(&player)
+    let mut component = session
+        .fact::<PlayerControllerComponent>(player)
         .ok_or(RuntimeError::UnknownPlayerController { player })?;
     let before = component.look_state;
     component.look_state = integrate_bounded_look(
@@ -492,11 +489,11 @@ fn apply_look(
         yaw_delta,
         pitch_delta,
     )?;
+    let after = component.look_state;
+    session.store_fact(player, component);
     Ok(PlayerControlReceipt {
         action,
-        facts: look_fact(player, before, component.look_state)
-            .into_iter()
-            .collect(),
+        facts: look_fact(player, before, after).into_iter().collect(),
         motion: None,
     })
 }
@@ -515,9 +512,7 @@ pub(crate) fn apply_player_frame(
         return Err(RuntimeError::PlayerDefeated { player });
     }
     let component = session
-        .player_controllers
-        .get(&player)
-        .cloned()
+        .fact::<PlayerControllerComponent>(player)
         .ok_or(RuntimeError::UnknownPlayerController { player })?;
     let look_after = integrate_bounded_look(
         &component.look,
@@ -587,11 +582,11 @@ pub(crate) fn apply_player_frame(
         motion = Some(receipt);
     }
     let motion = motion.expect("a valid sampled frame always has one canonical substep");
-    session
-        .player_controllers
-        .get_mut(&player)
-        .expect("player controller remains attached")
-        .look_state = look_after;
+    let mut controller = session
+        .fact::<PlayerControllerComponent>(player)
+        .expect("player controller remains attached");
+    controller.look_state = look_after;
+    session.store_fact(player, controller);
 
     let mut facts = Vec::new();
     if let Some(fact) = look_fact(player, component.look_state, look_after) {

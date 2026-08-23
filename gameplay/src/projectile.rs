@@ -16,7 +16,9 @@ use crate::combat::CombatFact;
 use crate::inventory::ProjectileDefinition;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
-use crate::vitality::{DamageCommand, DamageService, DamageSource, VitalityRejection};
+use crate::vitality::{
+    DamageCommand, DamageService, DamageSource, HealthConfig, VitalityRejection,
+};
 
 const MAX_PROJECTILE_ENTITIES: usize = 256;
 const ENEMY_PROJECTILE_ENTITY_NAME: &str = "enemy projectile";
@@ -385,9 +387,9 @@ fn nearest_target(
             .then_some(target);
     }
     session
-        .health
-        .keys()
-        .copied()
+        .facts::<HealthConfig>()
+        .into_iter()
+        .map(|(entity, _)| entity)
         .filter(|entity| *entity != owner && session.is_player_attack_target(*entity))
         .filter_map(|entity| {
             let health = session.health(entity)?;

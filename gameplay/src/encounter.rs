@@ -4,6 +4,7 @@ use std::collections::VecDeque;
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_time::{Tick, TickDelta};
 
+use crate::combat::EnemyComponent;
 use crate::combat::EnemyState;
 use crate::door::{DoorService, DoorTransition};
 use crate::encounter_program::{
@@ -11,6 +12,7 @@ use crate::encounter_program::{
     EncounterActivationOperation, EncounterActivationPredicate, EncounterClearOperation,
     EncounterClearPredicate,
 };
+use crate::enemy_combat::EnemyCombatComponent;
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
@@ -93,11 +95,11 @@ impl EncounterService {
             return Vec::new();
         };
         let candidates = session
-            .encounters
-            .iter()
+            .facts::<EncounterComponent>()
+            .into_iter()
             .filter_map(|(entity, encounter)| {
                 let radius = encounter.config.activation_radius?;
-                (encounter.state == EncounterState::Dormant).then_some((*entity, radius))
+                (encounter.state == EncounterState::Dormant).then_some((entity, radius))
             })
             .collect::<Vec<_>>();
         candidates
@@ -166,13 +168,13 @@ impl EncounterService {
         enemy: EntityId,
     ) -> Result<(), RuntimeError> {
         let candidates = session
-            .encounters
-            .iter()
+            .facts::<EncounterComponent>()
+            .into_iter()
             .filter(|(_, encounter)| {
                 encounter.state == EncounterState::Active
                     && encounter.config.members.contains(&enemy)
             })
-            .map(|(entity, _)| *entity)
+            .map(|(entity, _)| entity)
             .collect::<Vec<_>>();
         for encounter in candidates {
             let program_id = session
@@ -207,26 +209,26 @@ impl EncounterService {
 
     pub(crate) fn enemy_is_active(session: &GameSession, enemy: EntityId) -> bool {
         session
-            .encounters
-            .values()
-            .find(|encounter| encounter.config.members.contains(&enemy))
-            .is_none_or(|encounter| encounter.state == EncounterState::Active)
+            .facts::<EncounterComponent>()
+            .iter()
+            .find(|(_, encounter)| encounter.config.members.contains(&enemy))
+            .is_none_or(|(_, encounter)| encounter.state == EncounterState::Active)
     }
 
     pub(crate) fn attack_cadence_multiplier(session: &GameSession, enemy: EntityId) -> u64 {
         session
-            .encounters
-            .values()
-            .find(|encounter| {
+            .facts::<EncounterComponent>()
+            .iter()
+            .find(|(_, encounter)| {
                 encounter.state == EncounterState::Active
                     && encounter.config.members.contains(&enemy)
             })
-            .map_or(1, |encounter| encounter.config.members.len() as u64)
+            .map_or(1, |(_, encounter)| encounter.config.members.len() as u64)
             .max(1)
     }
 
     fn activation_eligible(session: &GameSession, player: EntityId, encounter: EntityId) -> bool {
-        let Some(component) = session.encounters.get(&encounter) else {
+        let Some(component) = session.fact::<EncounterComponent>(encounter) else {
             return false;
         };
         if component.state != EncounterState::Dormant {
@@ -305,10 +307,9 @@ impl EncounterActivationContext<'_> {
             ));
         }
         self.session
-            .encounters
-            .get_mut(&self.activation.encounter)
-            .expect("prepared encounter remains attached to candidate session")
-            .state = EncounterState::Active;
+            .update_fact::<EncounterComponent>(self.activation.encounter, |component| {
+                component.state = EncounterState::Active
+            });
         self.activation_recorded = true;
         Ok(())
     }
@@ -317,15 +318,14 @@ impl EncounterActivationContext<'_> {
         self.require_activation("activate-bound-members")?;
         let members = self
             .session
-            .encounters
-            .get(&self.activation.encounter)
+            .fact::<EncounterComponent>(self.activation.encounter)
             .expect("prepared encounter remains attached to candidate session")
             .config
             .members
             .clone();
         let member_count = members.len() as u64;
         for (index, member) in members.into_iter().enumerate() {
-            let Some(combat) = self.session.enemy_combat.get_mut(&member) else {
+            let Some(mut combat) = self.session.fact::<EnemyCombatComponent>(member) else {
                 continue;
             };
             // Give the player one full group cadence to react, then spread
@@ -339,6 +339,7 @@ impl EncounterActivationContext<'_> {
             let ready_at = self.tick.advance(TickDelta::new(delay));
             if combat.state.ready_at_tick.raw() < ready_at.raw() {
                 combat.state.ready_at_tick = ready_at;
+                self.session.store_fact(member, combat);
             }
         }
         Ok(())
@@ -399,14 +400,12 @@ impl EncounterClearContext<'_> {
 
     fn members_defeated(&self) -> bool {
         self.session
-            .encounters
-            .get(&self.encounter)
+            .fact::<EncounterComponent>(self.encounter)
             .is_some_and(|component| {
                 component.state == EncounterState::Active
                     && component.config.members.iter().all(|member| {
                         self.session
-                            .enemies
-                            .get(member)
+                            .fact::<EnemyComponent>(*member)
                             .is_some_and(|enemy| enemy.state == EnemyState::Defeated)
                     })
             })
@@ -428,13 +427,14 @@ impl EncounterClearContext<'_> {
             ));
         }
         let exit = {
-            let component = self
+            let mut component = self
                 .session
-                .encounters
-                .get_mut(&self.encounter)
+                .fact::<EncounterComponent>(self.encounter)
                 .expect("clearing encounter remains attached to candidate session");
             component.state = EncounterState::Cleared;
-            component.config.exit
+            let exit = component.config.exit;
+            self.session.store_fact(self.encounter, component);
+            exit
         };
         self.events.push_back(GameEvent::EncounterCleared {
             encounter: self.encounter,
@@ -448,8 +448,7 @@ impl EncounterClearContext<'_> {
         self.require_clear("open-bound-exit")?;
         let exit = self
             .session
-            .encounters
-            .get(&self.encounter)
+            .fact::<EncounterComponent>(self.encounter)
             .expect("clearing encounter remains attached to candidate session")
             .config
             .exit;

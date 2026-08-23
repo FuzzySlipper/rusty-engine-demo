@@ -201,10 +201,16 @@ pub struct LiftService;
 
 impl LiftService {
     pub(crate) fn trigger_system(session: &GameSession) -> TriggerVolumeSystem {
-        TriggerVolumeSystem::new(session.lifts.keys().copied().map(|lift| {
-            KinematicTriggerDefinition::new(lift, LIFT_TRIGGER_SCOPE, ["lift"])
-                .with_geometry_source(TriggerGeometrySource::EntityBounds)
-        }))
+        TriggerVolumeSystem::new(
+            session
+                .facts::<LiftComponent>()
+                .into_iter()
+                .map(|(lift, _)| lift)
+                .map(|lift| {
+                    KinematicTriggerDefinition::new(lift, LIFT_TRIGGER_SCOPE, ["lift"])
+                        .with_geometry_source(TriggerGeometrySource::EntityBounds)
+                }),
+        )
         .expect("admitted lift trigger identities are fixed and valid")
     }
 
@@ -231,25 +237,27 @@ impl LiftService {
             fact.kind == TriggerOverlapFactKind::Enter && fact.pair.subject_id() == actor
         }) {
             let lift = fact.pair.trigger_id();
-            let Some(component) = session.lifts.get(&lift).cloned() else {
+            let Some(component) = session.fact::<LiftComponent>(lift) else {
                 continue;
             };
             let program_id = session
                 .lift_program_bindings
                 .get(&lift)
                 .ok_or(LiftRejection::MissingProgramBinding { lift })?;
-            let program = session.lift_programs.get(program_id).ok_or_else(|| {
-                LiftRejection::UnknownProgram {
+            let program = session
+                .lift_programs
+                .get(program_id)
+                .ok_or_else(|| LiftRejection::UnknownProgram {
                     lift,
                     program_id: program_id.clone(),
-                }
-            })?;
+                })?
+                .clone();
             let entered = component.state == LiftState::Raised;
             let mut recorded = false;
             let mut feedback = false;
             let mut entity_facts = Vec::new();
             execute_lift_program(
-                program,
+                &program,
                 &mut |predicate| {
                     Ok(match predicate {
                         LiftPredicate::ActivationEntered => entered,
@@ -317,11 +325,13 @@ impl LiftService {
                                 lift,
                                 target_platform,
                             })?;
-                        let component =
-                            session.lifts.get_mut(&lift).expect("lift remains attached");
+                        let mut component = session
+                            .fact::<LiftComponent>(lift)
+                            .expect("lift remains attached");
                         component.state = LiftState::Lowering;
                         component.motion_elapsed = TickDelta::ZERO;
                         component.wait_elapsed = TickDelta::ZERO;
+                        session.store_fact(lift, component);
                         entity_facts.extend(receipt.facts);
                         Ok(())
                     }
@@ -336,7 +346,9 @@ impl LiftService {
                 },
             )?;
             if feedback {
-                let component = session.lifts.get(&lift).expect("lift remains attached");
+                let component = session
+                    .fact::<LiftComponent>(lift)
+                    .expect("lift remains attached");
                 activations.push(LiftActivation {
                     lift,
                     target_platform: component.config.target_platform,
@@ -355,11 +367,7 @@ impl LiftService {
     }
 
     pub(crate) fn run_motion_phase(session: &mut GameSession) -> Result<(), RuntimeError> {
-        let lifts = session
-            .lifts
-            .iter()
-            .map(|(lift, component)| (*lift, component.clone()))
-            .collect::<Vec<_>>();
+        let lifts = session.facts::<LiftComponent>();
         for (lift, start) in lifts {
             if !start.config.is_valid() {
                 return Err(RuntimeError::InvalidLiftConfig { lift });
@@ -453,10 +461,13 @@ fn set_motion(
             lift,
             target_platform: start.config.target_platform,
         })?;
-    let component = session.lifts.get_mut(&lift).expect("lift remains attached");
+    let mut component = session
+        .fact::<LiftComponent>(lift)
+        .expect("lift remains attached");
     component.state = state;
     component.motion_elapsed = motion_elapsed;
     component.wait_elapsed = wait_elapsed;
+    session.store_fact(lift, component);
     Ok(())
 }
 fn advance_lowering(

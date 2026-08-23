@@ -8,7 +8,8 @@ use rusty_engine::engine_spatial::{
 };
 use rusty_engine::entity_state::{EntityCommand, EntityCommandBatch, EntityView};
 
-use crate::combat::EnemyState;
+use crate::combat::{EnemyComponent, EnemyState};
+use crate::enemy_combat::EnemyCombatComponent;
 use crate::runtime::RuntimeError;
 use crate::session::GameSession;
 
@@ -130,27 +131,26 @@ impl EnemyNavigationSystem {
         }
 
         let active: Vec<_> = session
-            .navigators
-            .iter()
+            .facts::<NavigationComponent>()
+            .into_iter()
             .filter_map(|(entity, navigation)| {
                 if !session
-                    .enemies
-                    .get(entity)
+                    .fact::<EnemyComponent>(entity)
                     .is_some_and(|enemy| enemy.state == EnemyState::Alive)
                 {
                     return None;
                 }
-                if session.enemy_combat.contains_key(entity) {
+                if session.has_fact::<EnemyCombatComponent>(entity) {
                     let goal = combat_goals
-                        .and_then(|goals| goals.get(entity).copied())
+                        .and_then(|goals| goals.get(&entity).copied())
                         .or_else(|| combat_goals.is_none().then_some(navigation.config.goal))?;
-                    return Some((*entity, navigation.config, goal));
+                    return Some((entity, navigation.config, goal));
                 }
                 matches!(
                     navigation.state,
                     NavigationState::Following | NavigationState::Blocked
                 )
-                .then_some((*entity, navigation.config, navigation.config.goal))
+                .then_some((entity, navigation.config, navigation.config.goal))
             })
             .collect();
         let agents_considered = active.len();
@@ -158,14 +158,21 @@ impl EnemyNavigationSystem {
         let mut plans = BTreeMap::new();
         let mut velocity_commands = Vec::new();
         if let Some(combat_goals) = combat_goals {
-            for entity in session.enemy_combat.keys().copied() {
-                if session.navigators.contains_key(&entity) && !combat_goals.contains_key(&entity) {
+            for entity in session
+                .facts::<EnemyCombatComponent>()
+                .into_iter()
+                .map(|(entity, _)| entity)
+            {
+                if session.has_fact::<NavigationComponent>(entity)
+                    && !combat_goals.contains_key(&entity)
+                {
                     velocity_commands.push(EntityCommand::SetKinematicVelocity {
                         entity,
                         velocity: Vec3::ZERO,
                     });
-                    if let Some(navigation) = session.navigators.get_mut(&entity) {
+                    if let Some(mut navigation) = session.fact::<NavigationComponent>(entity) {
                         navigation.state = NavigationState::Arrived;
+                        session.store_fact(entity, navigation);
                     }
                 }
             }
@@ -223,11 +230,11 @@ impl EnemyNavigationSystem {
                             });
                         }
                     };
-                    session
-                        .navigators
-                        .get_mut(&entity)
-                        .expect("active navigation component")
-                        .state = NavigationState::Unreachable;
+                    let mut navigation = session
+                        .fact::<NavigationComponent>(entity)
+                        .expect("active navigation component");
+                    navigation.state = NavigationState::Unreachable;
+                    session.store_fact(entity, navigation);
                     velocity_commands.push(EntityCommand::SetKinematicVelocity {
                         entity,
                         velocity: Vec3::ZERO,
@@ -280,9 +287,8 @@ impl EnemyNavigationSystem {
         let mut arrived_agents = 0usize;
         let mut stop_commands = Vec::new();
         for (entity, plan) in plans {
-            let navigation = session
-                .navigators
-                .get_mut(&entity)
+            let mut navigation = session
+                .fact::<NavigationComponent>(entity)
                 .expect("planned navigation component");
             if blocked.contains(&entity) {
                 navigation.state = NavigationState::Blocked;
@@ -308,6 +314,7 @@ impl EnemyNavigationSystem {
             } else {
                 navigation.state = NavigationState::Following;
             }
+            session.store_fact(entity, navigation);
         }
         if !stop_commands.is_empty() {
             session

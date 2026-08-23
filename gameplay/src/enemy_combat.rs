@@ -8,7 +8,7 @@ use rusty_engine::engine_spatial::{
 };
 use rusty_engine::entity_state::EntityState;
 
-use crate::combat::EnemyState;
+use crate::combat::{EnemyComponent, EnemyState};
 use crate::encounter::EncounterService;
 use crate::enemy_program::{
     execute_enemy_attack_program, EnemyAttackOperation, EnemyAttackPredicate,
@@ -213,24 +213,26 @@ impl EnemyCombatService {
     pub(crate) fn idle_without_player_awareness(
         session: &mut GameSession,
     ) -> EnemyIntentPhaseReceipt {
-        let enemies: Vec<EntityId> = session.enemy_combat.keys().copied().collect();
+        let enemies: Vec<EntityId> = session
+            .facts::<EnemyCombatComponent>()
+            .into_iter()
+            .map(|(entity, _)| entity)
+            .collect();
         let mut facts = Vec::new();
 
         for enemy in enemies {
             let defeated = session
-                .enemies
-                .get(&enemy)
+                .fact::<EnemyComponent>(enemy)
                 .is_none_or(|enemy| enemy.state == EnemyState::Defeated);
-            let component = session
-                .enemy_combat
-                .get_mut(&enemy)
+            let mut component = session
+                .fact::<EnemyCombatComponent>(enemy)
                 .expect("enemy combat key remains present");
             component.state.pain_ticks_remaining =
                 component.state.pain_ticks_remaining.saturating_sub(1);
             component.state.last_known_target_position = None;
             transition_posture(
                 enemy,
-                component,
+                &mut component,
                 if defeated {
                     EnemyCombatPosture::Dead
                 } else {
@@ -238,6 +240,7 @@ impl EnemyCombatService {
                 },
                 &mut facts,
             );
+            session.store_fact(enemy, component);
         }
 
         EnemyIntentPhaseReceipt {
@@ -253,30 +256,34 @@ impl EnemyCombatService {
     ) -> Result<EnemyIntentPhaseReceipt, RuntimeError> {
         let player_position = player_gameplay_position(session, player)?;
         let player_dead = crate::vitality::DamageService::is_dead(session, player);
-        let enemies: Vec<EntityId> = session.enemy_combat.keys().copied().collect();
+        let enemies: Vec<EntityId> = session
+            .facts::<EnemyCombatComponent>()
+            .into_iter()
+            .map(|(entity, _)| entity)
+            .collect();
         let mut facts = Vec::new();
         let mut navigation_goals = BTreeMap::new();
 
         for enemy in enemies {
-            if let Some(component) = session.enemy_combat.get_mut(&enemy) {
+            if let Some(mut component) = session.fact::<EnemyCombatComponent>(enemy) {
                 component.state.pain_ticks_remaining =
                     component.state.pain_ticks_remaining.saturating_sub(1);
+                session.store_fact(enemy, component);
             }
             if !EncounterService::enemy_is_active(session, enemy) {
                 continue;
             }
             let enemy_state = session
-                .enemies
-                .get(&enemy)
+                .fact::<EnemyComponent>(enemy)
                 .map(|enemy| enemy.state)
                 .unwrap_or(EnemyState::Defeated);
             if enemy_state == EnemyState::Defeated {
-                let component = session
-                    .enemy_combat
-                    .get_mut(&enemy)
+                let mut component = session
+                    .fact::<EnemyCombatComponent>(enemy)
                     .expect("enemy combat key remains present");
-                transition_posture(enemy, component, EnemyCombatPosture::Dead, &mut facts);
+                transition_posture(enemy, &mut component, EnemyCombatPosture::Dead, &mut facts);
                 component.state.last_known_target_position = None;
+                session.store_fact(enemy, component);
                 continue;
             }
 
@@ -287,13 +294,13 @@ impl EnemyCombatService {
                 .transform
                 .expect("enemy combat admission requires a transform")
                 .translation;
-            let component = session
-                .enemy_combat
-                .get_mut(&enemy)
+            let mut component = session
+                .fact::<EnemyCombatComponent>(enemy)
                 .expect("enemy combat key remains present");
 
             if player_dead {
-                transition_posture(enemy, component, EnemyCombatPosture::Alert, &mut facts);
+                transition_posture(enemy, &mut component, EnemyCombatPosture::Alert, &mut facts);
+                session.store_fact(enemy, component);
                 continue;
             }
 
@@ -326,8 +333,14 @@ impl EnemyCombatService {
                         target: player,
                         cause,
                     });
-                    transition_posture(enemy, component, EnemyCombatPosture::Alert, &mut facts);
+                    transition_posture(
+                        enemy,
+                        &mut component,
+                        EnemyCombatPosture::Alert,
+                        &mut facts,
+                    );
                 }
+                session.store_fact(enemy, component);
                 continue;
             }
 
@@ -340,16 +353,28 @@ impl EnemyCombatService {
                     [enemy, player],
                 )?;
             if can_attack {
-                transition_posture(enemy, component, EnemyCombatPosture::Attacking, &mut facts);
+                transition_posture(
+                    enemy,
+                    &mut component,
+                    EnemyCombatPosture::Attacking,
+                    &mut facts,
+                );
+                session.store_fact(enemy, component);
                 continue;
             }
 
             if let Some(goal) = component.state.last_known_target_position {
-                transition_posture(enemy, component, EnemyCombatPosture::Pursuing, &mut facts);
+                transition_posture(
+                    enemy,
+                    &mut component,
+                    EnemyCombatPosture::Pursuing,
+                    &mut facts,
+                );
                 navigation_goals.insert(enemy, goal);
             } else {
-                transition_posture(enemy, component, EnemyCombatPosture::Alert, &mut facts);
+                transition_posture(enemy, &mut component, EnemyCombatPosture::Alert, &mut facts);
             }
+            session.store_fact(enemy, component);
         }
 
         Ok(EnemyIntentPhaseReceipt {
@@ -365,7 +390,11 @@ impl EnemyCombatService {
         player: EntityId,
         projectiles: &mut ProjectileService,
     ) -> Result<EnemyAttackPhaseReceipt, RuntimeError> {
-        let enemies: Vec<EntityId> = session.enemy_combat.keys().copied().collect();
+        let enemies: Vec<EntityId> = session
+            .facts::<EnemyCombatComponent>()
+            .into_iter()
+            .map(|(entity, _)| entity)
+            .collect();
         let mut facts = Vec::new();
         let mut events = Vec::new();
 
@@ -377,10 +406,8 @@ impl EnemyCombatService {
                 break;
             }
             let component = session
-                .enemy_combat
-                .get(&enemy)
-                .expect("enemy combat key remains present")
-                .clone();
+                .fact::<EnemyCombatComponent>(enemy)
+                .expect("enemy combat key remains present");
             if component.state.posture != EnemyCombatPosture::Attacking
                 || tick.raw() < component.state.ready_at_tick.raw()
             {
@@ -542,12 +569,11 @@ impl EnemyCombatService {
                         Ok(())
                     }
                     EnemyAttackOperation::SetEnemyCooldown => {
-                        candidate
-                            .enemy_combat
-                            .get_mut(&enemy)
-                            .expect("enemy combat remains in candidate")
-                            .state
-                            .ready_at_tick = ready_at_tick;
+                        let mut enemy_combat = candidate
+                            .fact::<EnemyCombatComponent>(enemy)
+                            .expect("enemy combat remains in candidate");
+                        enemy_combat.state.ready_at_tick = ready_at_tick;
+                        candidate.store_fact(enemy, enemy_combat);
                         Ok(())
                     }
                 },

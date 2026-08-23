@@ -85,7 +85,7 @@ impl DoorService {
         session: &mut GameSession,
         door: EntityId,
     ) -> Result<Option<DoorTransition>, RuntimeError> {
-        let Some(component) = session.doors.get(&door).copied() else {
+        let Some(mut component) = session.fact::<DoorComponent>(door) else {
             return Err(RuntimeError::UnknownDoor { door });
         };
         if !component.config.is_valid() {
@@ -111,15 +111,15 @@ impl DoorService {
                     },
                 ]))
                 .map_err(RuntimeError::EntityBatch)?;
-            let live = session.doors.get_mut(&door).expect("door validated above");
-            live.state = DoorState::Open;
-            live.motion_elapsed = live.config.motion_duration;
+            component.state = DoorState::Open;
+            component.motion_elapsed = component.config.motion_duration;
+            session.store_fact(door, component);
             return Ok(Some(DoorTransition {
                 event: GameEvent::DoorOpened {
                     door,
                     entity_facts: receipt.facts,
                 },
-                auto_close_after: live.config.auto_close_after,
+                auto_close_after: component.config.auto_close_after,
                 motion_duration: TickDelta::ZERO,
             }));
         }
@@ -137,9 +137,9 @@ impl DoorService {
                 },
             ]))
             .map_err(RuntimeError::EntityBatch)?;
-        let component = session.doors.get_mut(&door).expect("door validated above");
         component.state = DoorState::Opening;
         component.motion_elapsed = motion_elapsed;
+        session.store_fact(door, component);
         Ok(Some(DoorTransition {
             event: GameEvent::DoorOpened {
                 door,
@@ -154,7 +154,7 @@ impl DoorService {
         session: &mut GameSession,
         door: EntityId,
     ) -> Result<Option<GameEvent>, RuntimeError> {
-        let Some(component) = session.doors.get(&door).copied() else {
+        let Some(mut component) = session.fact::<DoorComponent>(door) else {
             return Err(RuntimeError::UnknownDoor { door });
         };
         if !component.config.is_valid() {
@@ -180,9 +180,9 @@ impl DoorService {
                     },
                 ]))
                 .map_err(RuntimeError::EntityBatch)?;
-            let live = session.doors.get_mut(&door).expect("door validated above");
-            live.state = DoorState::Closed;
-            live.motion_elapsed = TickDelta::ZERO;
+            component.state = DoorState::Closed;
+            component.motion_elapsed = TickDelta::ZERO;
+            session.store_fact(door, component);
             return Ok(Some(GameEvent::DoorClosed {
                 door,
                 entity_facts: receipt.facts,
@@ -202,9 +202,9 @@ impl DoorService {
                 },
             ]))
             .map_err(RuntimeError::EntityBatch)?;
-        let component = session.doors.get_mut(&door).expect("door validated above");
         component.state = DoorState::Closing;
         component.motion_elapsed = motion_elapsed;
+        session.store_fact(door, component);
         Ok(Some(GameEvent::DoorClosed {
             door,
             entity_facts: receipt.facts,
@@ -214,10 +214,10 @@ impl DoorService {
     pub(crate) fn run_motion_phase(session: &mut GameSession) -> Result<(), RuntimeError> {
         let mut commands = Vec::new();
         let mut updates = Vec::new();
-        for (door, component) in &session.doors {
+        for (door, component) in session.facts::<DoorComponent>() {
             if !component.config.is_valid() {
                 return Err(RuntimeError::InvalidDoorMotionDuration {
-                    door: *door,
+                    door: door,
                     motion_duration: component.config.motion_duration.raw(),
                 });
             }
@@ -237,7 +237,7 @@ impl DoorService {
                     };
                     if state == DoorState::Open {
                         commands.push(EntityCommand::SetCollisionEnabled {
-                            entity: *door,
+                            entity: door,
                             enabled: false,
                         });
                     }
@@ -270,10 +270,10 @@ impl DoorService {
                 }
             };
             commands.push(EntityCommand::SetTranslation {
-                entity: *door,
+                entity: door,
                 translation,
             });
-            updates.push((*door, state, motion_elapsed));
+            updates.push((door, state, motion_elapsed));
         }
         if commands.is_empty() {
             return Ok(());
@@ -283,9 +283,10 @@ impl DoorService {
             .apply_batch(EntityCommandBatch::new(commands))
             .map_err(RuntimeError::EntityBatch)?;
         for (door, state, motion_elapsed) in updates {
-            let component = session.doors.get_mut(&door).expect("door validated above");
-            component.state = state;
-            component.motion_elapsed = motion_elapsed;
+            session.update_fact::<DoorComponent>(door, |component| {
+                component.state = state;
+                component.motion_elapsed = motion_elapsed;
+            });
         }
         Ok(())
     }

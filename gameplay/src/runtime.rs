@@ -13,22 +13,30 @@ use rusty_engine::engine_spatial::{
 use crate::combat::{CombatReceipt, CombatRejectionReason, CombatService, ResolvedAttackAction};
 use crate::definition::GameEntityDefinitionError;
 use crate::door::{DoorService, DoorTransition};
-use crate::encounter::{EncounterProgramRejection, EncounterService};
+use crate::encounter::{EncounterComponent, EncounterProgramRejection, EncounterService};
+use crate::enemy_combat::EnemyCombatComponent;
 use crate::enemy_combat::{
     EnemyAttackPhaseReceipt, EnemyCombatService, EnemyIntentAndMotionReceipt,
 };
+use crate::explosive_prop::ExplosivePropComponent;
 use crate::explosive_prop::{ExplosivePropError, ExplosivePropPhaseReceipt, ExplosivePropService};
 use crate::extraction_beacon::{ExtractionBeaconReceipt, ExtractionBeaconService};
+use crate::floor_action::FloorActionComponent;
 use crate::floor_action::{FloorActionPhaseReceipt, FloorActionRejection, FloorActionService};
+use crate::hazard::HazardComponent;
 use crate::hazard::{HazardPhaseReceipt, HazardRejection, HazardService};
+use crate::interaction::SwitchComponent;
 use crate::interaction::{InteractionService, SwitchProgramRejection};
 use crate::inventory::{InventoryCommand, InventoryReceipt, InventoryRejection, InventoryService};
+use crate::lift::LiftComponent;
 use crate::lift::{LiftPhaseReceipt, LiftRejection, LiftService};
 use crate::navigation::{EnemyNavigationSystem, NavigationPhaseReceipt};
+use crate::pickup::PickupComponent;
 use crate::pickup::{
     PickupCollectionCause, PickupCollectionCommand, PickupPhaseReceipt, PickupReceipt,
     PickupRejection, PickupService,
 };
+use crate::player::PlayerControllerComponent;
 use crate::player::{
     apply_player_action, apply_player_frame, PlayerControlReceipt, PlayerFrameReceipt,
     ResolvedPlayerAction, ResolvedPlayerFrame,
@@ -37,6 +45,7 @@ use crate::progression::{
     DoorAccessReceipt, DoorAccessRejection, LevelExitRejection, LoadingBayInterlockRejection,
     ProgressionFact, ProgressionService, SecretPhaseReceipt, SecretRejection,
 };
+use crate::progression::{LevelExitComponent, SecretRegionComponent};
 use crate::project_admission::{decode_and_admit_stored_project, AdmittedProject};
 use crate::projectile::{ProjectileError, ProjectilePhaseReceipt, ProjectileService};
 use crate::runtime_records::{readout, GameEvent, JournalEntry, RuntimeReadout, RuntimeReceipt};
@@ -233,10 +242,9 @@ pub struct GameRuntime {
 impl GameRuntime {
     pub fn new(session: GameSession) -> Self {
         let player_controller_services = session
-            .player_controllers
-            .keys()
-            .copied()
-            .map(|entity| (entity, CharacterControllerService::default()))
+            .facts::<PlayerControllerComponent>()
+            .into_iter()
+            .map(|(entity, _)| (entity, CharacterControllerService::default()))
             .collect();
         let pickup_triggers = PickupService::trigger_system(&session);
         let hazard_triggers = HazardService::trigger_system(&session);
@@ -536,7 +544,10 @@ impl GameRuntime {
                 entity
                     .hazard
                     .as_ref()
-                    .filter(|_| self.session.hazards.contains_key(&EntityId::new(entity.id)))
+                    .filter(|_| {
+                        self.session
+                            .has_fact::<HazardComponent>(EntityId::new(entity.id))
+                    })
                     .map(|hazard| (EntityId::new(entity.id), hazard.program.clone()))
             })
             .collect();
@@ -551,8 +562,7 @@ impl GameRuntime {
                     .as_ref()
                     .filter(|_| {
                         self.session
-                            .explosive_props
-                            .contains_key(&EntityId::new(entity.id))
+                            .has_fact::<ExplosivePropComponent>(EntityId::new(entity.id))
                     })
                     .map(|prop| (EntityId::new(entity.id), prop.program.clone()))
             })
@@ -568,8 +578,7 @@ impl GameRuntime {
                     .as_ref()
                     .filter(|_| {
                         self.session
-                            .encounters
-                            .contains_key(&EntityId::new(entity.id))
+                            .has_fact::<EncounterComponent>(EntityId::new(entity.id))
                     })
                     .map(|encounter| (EntityId::new(entity.id), encounter.program.clone()))
             })
@@ -585,8 +594,7 @@ impl GameRuntime {
                     .as_ref()
                     .filter(|_| {
                         self.session
-                            .switches
-                            .contains_key(&EntityId::new(entity.id))
+                            .has_fact::<SwitchComponent>(EntityId::new(entity.id))
                     })
                     .map(|switch| (EntityId::new(entity.id), switch.program.clone()))
             })
@@ -602,8 +610,7 @@ impl GameRuntime {
                     .as_ref()
                     .filter(|_| {
                         self.session
-                            .floor_actions
-                            .contains_key(&EntityId::new(entity.id))
+                            .has_fact::<FloorActionComponent>(EntityId::new(entity.id))
                     })
                     .map(|floor_action| (EntityId::new(entity.id), floor_action.program.clone()))
             })
@@ -617,7 +624,10 @@ impl GameRuntime {
                 entity
                     .lift
                     .as_ref()
-                    .filter(|_| self.session.lifts.contains_key(&EntityId::new(entity.id)))
+                    .filter(|_| {
+                        self.session
+                            .has_fact::<LiftComponent>(EntityId::new(entity.id))
+                    })
                     .map(|lift| (EntityId::new(entity.id), lift.program.clone()))
             })
             .collect();
@@ -632,8 +642,7 @@ impl GameRuntime {
                     .as_ref()
                     .filter(|_| {
                         self.session
-                            .secret_regions
-                            .contains_key(&EntityId::new(entity.id))
+                            .has_fact::<SecretRegionComponent>(EntityId::new(entity.id))
                     })
                     .map(|secret| (EntityId::new(entity.id), secret.program.clone()))
             })
@@ -649,29 +658,35 @@ impl GameRuntime {
                     .as_ref()
                     .filter(|_| {
                         self.session
-                            .level_exits
-                            .contains_key(&EntityId::new(entity.id))
+                            .has_fact::<LevelExitComponent>(EntityId::new(entity.id))
                     })
                     .map(|exit| (EntityId::new(entity.id), exit.program.clone()))
             })
             .collect();
         for entity in authored.scenes.iter().flat_map(|scene| &scene.entities) {
             if let Some(pickup) = &entity.pickup {
-                if let Some(runtime_pickup) =
-                    self.session.pickups.get_mut(&EntityId::new(entity.id))
+                if let Some(mut runtime_pickup) = self
+                    .session
+                    .fact::<PickupComponent>(EntityId::new(entity.id))
                 {
                     runtime_pickup.config.program = pickup.program.clone();
+                    self.session
+                        .store_fact(EntityId::new(entity.id), runtime_pickup);
                 }
             }
             let Some(combat) = &entity.enemy_combat else {
                 continue;
             };
-            let Some(runtime_combat) = self.session.enemy_combat.get_mut(&EntityId::new(entity.id))
+            let Some(mut runtime_combat) = self
+                .session
+                .fact::<EnemyCombatComponent>(EntityId::new(entity.id))
             else {
                 continue;
             };
             runtime_combat.config.attack_program = combat.attack_program.clone();
             runtime_combat.config.defeat_program = combat.defeat_program.clone();
+            self.session
+                .store_fact(EntityId::new(entity.id), runtime_combat);
         }
         Ok(())
     }

@@ -75,9 +75,7 @@ impl ExtractionBeaconService {
             .gameplay_translation(actor)
             .ok_or(RuntimeError::ExtractionBeaconActorMissingTransform { actor })?;
         let component = session
-            .extraction_beacons
-            .get(&beacon)
-            .copied()
+            .fact::<ExtractionBeaconComponent>(beacon)
             .ok_or(RuntimeError::UnknownExtractionBeacon { beacon })?;
         if component.state != ExtractionBeaconState::Standby {
             return Err(RuntimeError::ExtractionBeaconAlreadyActive { beacon });
@@ -105,11 +103,11 @@ impl ExtractionBeaconService {
             actor,
             activated_at: tick,
         };
-        session
-            .extraction_beacons
-            .get_mut(&beacon)
-            .expect("beacon validated above")
-            .state = state;
+        let mut beacon_component = session
+            .fact::<ExtractionBeaconComponent>(beacon)
+            .expect("beacon validated above");
+        beacon_component.state = state;
+        session.store_fact(beacon, beacon_component);
         Ok(ExtractionBeaconReceipt {
             fact: ExtractionBeaconFact::Activated {
                 beacon,

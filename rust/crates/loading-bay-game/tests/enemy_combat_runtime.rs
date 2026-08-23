@@ -440,14 +440,19 @@ fn snapshot_rejects_enemy_cooldown_beyond_authored_cadence() {
     let mut snapshot: serde_json::Value =
         serde_json::from_str(&encode_game_snapshot(&runtime).unwrap()).unwrap();
     let tick = snapshot["tick"].as_u64().unwrap();
-    let combat = snapshot["enemyCombat"]
+    let combat = snapshot["entities"]["registeredComponents"]
         .as_array_mut()
         .unwrap()
         .iter_mut()
-        .find(|combat| combat["entity"] == enemy.raw())
+        .find(|component| component["typeId"] == "loading-bay.enemy-combat")
+        .expect("enemy combat facts persist as durable components")["values"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|value| value["entity"] == enemy.raw())
         .unwrap();
-    let cooldown = combat["cooldownTicks"].as_u64().unwrap();
-    combat["readyAtTick"] = (tick + cooldown + 1).into();
+    let cooldown = combat["value"]["attack"]["cooldownTicks"].as_u64().unwrap();
+    combat["value"]["readyAtTick"] = (tick + cooldown + 1).into();
 
     assert!(matches!(
         decode_game_snapshot(&snapshot.to_string()),

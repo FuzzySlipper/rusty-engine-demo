@@ -190,10 +190,16 @@ pub struct PickupService;
 
 impl PickupService {
     pub(crate) fn trigger_system(session: &GameSession) -> TriggerVolumeSystem {
-        TriggerVolumeSystem::new(session.pickups.keys().copied().map(|pickup| {
-            KinematicTriggerDefinition::new(pickup, PICKUP_TRIGGER_SCOPE, ["pickup"])
-                .with_geometry_source(TriggerGeometrySource::EntityBounds)
-        }))
+        TriggerVolumeSystem::new(
+            session
+                .facts::<PickupComponent>()
+                .into_iter()
+                .map(|(pickup, _)| pickup)
+                .map(|pickup| {
+                    KinematicTriggerDefinition::new(pickup, PICKUP_TRIGGER_SCOPE, ["pickup"])
+                        .with_geometry_source(TriggerGeometrySource::EntityBounds)
+                }),
+        )
         .expect("admitted pickup trigger identities are fixed and valid")
     }
 
@@ -207,7 +213,7 @@ impl PickupService {
                 actor: command.actor,
             });
         }
-        let Some(component) = session.pickups.get(&command.pickup).cloned() else {
+        let Some(component) = session.fact::<PickupComponent>(command.pickup) else {
             return Err(PickupRejection::UnknownPickup {
                 pickup: command.pickup,
             });
@@ -355,6 +361,18 @@ impl PickupService {
                                 context: "pickup-consumed-twice",
                             });
                         }
+                        // Capture the collection receipt before the destroy:
+                        // retiring the entity removes its fact through the
+                        // Engine component store, and the collected state
+                        // lives on in the product collection ledger.
+                        let mut pickup_component = candidate_session
+                            .fact::<PickupComponent>(command.pickup)
+                            .expect("pickup was validated before staging");
+                        pickup_component.state = PickupState::Collected {
+                            actor: command.actor,
+                            collected_at_tick: command.tick,
+                            cause: command.cause.clone(),
+                        };
                         let entity_revision = candidate_session.entities.revision();
                         let receipt = EntityAuthoringService
                             .destroy(
@@ -366,14 +384,8 @@ impl PickupService {
                                 pickup: command.pickup,
                             })?;
                         candidate_session
-                            .pickups
-                            .get_mut(&command.pickup)
-                            .expect("pickup was validated before staging")
-                            .state = PickupState::Collected {
-                            actor: command.actor,
-                            collected_at_tick: command.tick,
-                            cause: command.cause.clone(),
-                        };
+                            .collected_pickups
+                            .insert(command.pickup, pickup_component);
                         entity_facts.extend(receipt.facts);
                         consumed = true;
                         effects.push("pickup-lifecycle".to_owned());
@@ -403,13 +415,9 @@ impl PickupService {
             ));
             return Err(error);
         }
-        let after = pickup_view(
-            command.pickup,
-            candidate_session
-                .pickups
-                .get(&command.pickup)
-                .expect("consume operation retained pickup component"),
-        );
+        let after = candidate_session
+            .pickup(command.pickup)
+            .expect("consume operation retains the collection receipt");
         let trigger_receipt = candidate_triggers
             .reconcile(
                 &candidate_session.entities,
@@ -485,8 +493,7 @@ impl PickupService {
                 fact.kind == rusty_engine::engine_spatial::TriggerOverlapFactKind::Enter
                     && fact.pair.subject_id() == actor
                     && session
-                        .pickups
-                        .get(&fact.pair.trigger_id())
+                        .fact::<PickupComponent>(fact.pair.trigger_id())
                         .is_some_and(|pickup| pickup.state == PickupState::Available)
             })
             .map(|fact| fact.pair.trigger_id())
@@ -562,9 +569,9 @@ fn prune_unavailable_pickup_overlaps(
     facts: Vec<TriggerOverlapFact>,
 ) -> Vec<TriggerOverlapFact> {
     let unavailable = session
-        .pickups
-        .iter()
-        .filter_map(|(entity, pickup)| (pickup.state != PickupState::Available).then_some(*entity))
+        .facts::<PickupComponent>()
+        .into_iter()
+        .filter_map(|(entity, pickup)| (pickup.state != PickupState::Available).then_some(entity))
         .collect::<std::collections::BTreeSet<_>>();
     if unavailable.is_empty() {
         return facts;

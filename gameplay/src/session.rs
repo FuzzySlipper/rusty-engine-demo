@@ -4,7 +4,9 @@ use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
 use rusty_engine::core_time::{Tick, TickDelta};
 use rusty_engine::engine_spatial::MAX_TRIGGER_DEFINITIONS;
-use rusty_engine::entity_state::{EntityState, EntityView};
+use rusty_engine::entity_state::{
+    EntityAuthoringService, EntityComponent, EntityState, EntityView,
+};
 
 use crate::combat::{EnemyComponent, EnemyState, EnemyView, WeaponState, WeaponView};
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
@@ -64,29 +66,20 @@ use crate::vitality::{HealthConfig, HealthView, VitalityState};
 #[derive(Debug, Clone)]
 pub struct GameSession {
     pub(crate) entities: EntityState,
-    pub(crate) doors: BTreeMap<EntityId, DoorComponent>,
-    pub(crate) door_access: BTreeMap<EntityId, DoorAccessConfig>,
-    pub(crate) switches: BTreeMap<EntityId, SwitchComponent>,
-    pub(crate) floor_actions: BTreeMap<EntityId, FloorActionComponent>,
-    pub(crate) lifts: BTreeMap<EntityId, LiftComponent>,
+    /// Switch-to-controlled-target relationships. Retained downstream because the
+    /// Engine relationship model has no generic named-relationship kind; this is a
+    /// product policy index, not an inert entity fact.
     pub(crate) controls: BTreeMap<EntityId, Vec<EntityId>>,
-    pub(crate) loading_bay_interlocks: BTreeMap<EntityId, LoadingBayInterlockConfig>,
-    pub(crate) enemies: BTreeMap<EntityId, EnemyComponent>,
-    pub(crate) enemy_combat: BTreeMap<EntityId, EnemyCombatComponent>,
-    pub(crate) enemy_drops: BTreeMap<EntityId, EnemyDropComponent>,
-    pub(crate) health: BTreeMap<EntityId, HealthConfig>,
-    pub(crate) explosive_props: BTreeMap<EntityId, ExplosivePropComponent>,
-    pub(crate) hazards: BTreeMap<EntityId, HazardComponent>,
-    pub(crate) encounters: BTreeMap<EntityId, EncounterComponent>,
-    pub(crate) extraction_beacons: BTreeMap<EntityId, ExtractionBeaconComponent>,
-    pub(crate) navigators: BTreeMap<EntityId, NavigationComponent>,
-    pub(crate) player_controllers: BTreeMap<EntityId, PlayerControllerComponent>,
     pub(crate) item_definitions: BTreeMap<ItemDefinitionId, ItemDefinition>,
+    /// Service-owned scheduling and capacity cache over inventory facts that already
+    /// live in Engine components; not a second durable store.
     pub(crate) inventories: BTreeMap<EntityId, InventoryRuntime>,
+    /// Collection receipts for pickups whose entities the Engine destroy path
+    /// retired. A collected pickup is a tombstoned entity, so its fact no longer
+    /// exists in the component store; this downstream ledger keeps the
+    /// product-visible collection consequence observable.
+    pub(crate) collected_pickups: BTreeMap<EntityId, PickupComponent>,
     pub(crate) mechanics: MechanicsRuntime,
-    pub(crate) pickups: BTreeMap<EntityId, PickupComponent>,
-    pub(crate) secret_regions: BTreeMap<EntityId, SecretRegionComponent>,
-    pub(crate) level_exits: BTreeMap<EntityId, LevelExitComponent>,
     pub(crate) gameplay_programs: GameplayProgramCatalog,
     pub(crate) pickup_programs: PickupProgramCatalog,
     pub(crate) player_setup_programs: PlayerSetupProgramCatalog,
@@ -260,32 +253,18 @@ impl GameSession {
                 );
             }
         }
-        let registry = mechanics::mechanics_registry()
+        let registry = crate::facts::gameplay_fact_registry()
             .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
         let mut entities =
             EntityState::from_definitions_with_registry(registry, entity_definitions)
                 .map_err(GameEntityDefinitionError::EntityState)?;
 
-        let mut doors = BTreeMap::new();
-        let mut door_access = BTreeMap::new();
-        let mut switches = BTreeMap::new();
-        let mut floor_actions = BTreeMap::new();
-        let mut lifts = BTreeMap::new();
-        let mut controls = BTreeMap::new();
-        let mut loading_bay_interlocks = BTreeMap::new();
-        let mut enemies = BTreeMap::new();
-        let mut enemy_combat = BTreeMap::new();
-        let mut enemy_drops = BTreeMap::new();
-        let mut health = BTreeMap::new();
-        let mut explosive_props = BTreeMap::new();
-        let mut hazards = BTreeMap::new();
-        let mut encounters = BTreeMap::new();
-        let mut extraction_beacons = BTreeMap::new();
-        let mut navigators = BTreeMap::new();
+        for (entity, component) in player_controllers {
+            attach(&mut entities, entity, component);
+        }
+
+        let mut controls: BTreeMap<EntityId, Vec<EntityId>> = BTreeMap::new();
         let mut inventories = BTreeMap::new();
-        let mut pickups = BTreeMap::new();
-        let mut secret_regions = BTreeMap::new();
-        let mut level_exits = BTreeMap::new();
 
         for definition in &definitions {
             let entity = definition.entity.id;
@@ -316,7 +295,8 @@ impl GameSession {
                 if view.renderable.is_none() {
                     return Err(GameEntityDefinitionError::DoorMissingRenderable { entity });
                 }
-                doors.insert(
+                attach(
+                    &mut entities,
                     entity,
                     DoorComponent {
                         config,
@@ -340,7 +320,7 @@ impl GameSession {
                 if !matches!(item.kind, crate::inventory::ItemKind::AccessKey) {
                     return Err(GameEntityDefinitionError::DoorAccessKeyNotAccessKey { entity });
                 }
-                door_access.insert(entity, config.clone());
+                attach(&mut entities, entity, config.clone());
             }
             if definition.switch_config.is_some() && !definition.switch {
                 return Err(GameEntityDefinitionError::SwitchConfigWithoutSwitch { entity });
@@ -350,7 +330,7 @@ impl GameSession {
                 if !config.is_valid() {
                     return Err(GameEntityDefinitionError::InvalidSwitchConfig { entity });
                 }
-                switches.insert(entity, SwitchComponent::new(config));
+                attach(&mut entities, entity, SwitchComponent::new(config));
             }
             if let Some(config) = &definition.floor_action {
                 let view = entities.view(entity).expect("definition created entity");
@@ -368,7 +348,8 @@ impl GameSession {
                         GameEntityDefinitionError::FloorActionConflictsWithGameplayOwner { entity },
                     );
                 }
-                floor_actions.insert(
+                attach(
+                    &mut entities,
                     entity,
                     FloorActionComponent {
                         config: config.clone(),
@@ -393,7 +374,8 @@ impl GameSession {
                         entity,
                     });
                 }
-                lifts.insert(
+                attach(
+                    &mut entities,
                     entity,
                     LiftComponent {
                         config: config.clone(),
@@ -424,7 +406,7 @@ impl GameSession {
                         GameEntityDefinitionError::LoadingBayInterlockWithoutSwitch { entity },
                     );
                 }
-                loading_bay_interlocks.insert(entity, config);
+                attach(&mut entities, entity, config);
             }
             if definition.enemy {
                 let view = entities.view(entity).expect("definition created entity");
@@ -434,7 +416,8 @@ impl GameSession {
                 if view.renderable.is_none() {
                     return Err(GameEntityDefinitionError::EnemyMissingRenderable { entity });
                 }
-                enemies.insert(
+                attach(
+                    &mut entities,
                     entity,
                     EnemyComponent {
                         state: EnemyState::Alive,
@@ -489,7 +472,8 @@ impl GameSession {
                         entity,
                     });
                 }
-                enemy_combat.insert(
+                attach(
+                    &mut entities,
                     entity,
                     EnemyCombatComponent {
                         config: config.clone(),
@@ -506,7 +490,8 @@ impl GameSession {
                 if !definition.enemy {
                     return Err(GameEntityDefinitionError::EnemyDropWithoutEnemy { entity });
                 }
-                enemy_drops.insert(
+                attach(
+                    &mut entities,
                     entity,
                     EnemyDropComponent {
                         config,
@@ -532,7 +517,7 @@ impl GameSession {
                 };
                 mechanics::attach_health(&mut entities, entity, config, preset, vitality_policy)
                     .map_err(|reason| GameEntityDefinitionError::Mechanics { reason })?;
-                health.insert(entity, config);
+                attach(&mut entities, entity, config);
             }
             if let Some(config) = definition.explosive_prop {
                 if definition.enemy {
@@ -560,7 +545,8 @@ impl GameSession {
                 if !config.is_valid() {
                     return Err(GameEntityDefinitionError::InvalidExplosivePropConfig { entity });
                 }
-                explosive_props.insert(
+                attach(
+                    &mut entities,
                     entity,
                     ExplosivePropComponent {
                         config,
@@ -598,7 +584,8 @@ impl GameSession {
                         GameEntityDefinitionError::HazardConflictsWithGameplayOwner { entity },
                     );
                 }
-                hazards.insert(
+                attach(
+                    &mut entities,
                     entity,
                     HazardComponent {
                         config,
@@ -633,7 +620,8 @@ impl GameSession {
                 if !(1..=MAX_NAVIGATION_QUERY_BUDGET).contains(&config.max_visited) {
                     return Err(GameEntityDefinitionError::InvalidNavigationQueryBudget { entity });
                 }
-                navigators.insert(
+                attach(
+                    &mut entities,
                     entity,
                     NavigationComponent {
                         config,
@@ -663,7 +651,9 @@ impl GameSession {
                         GameEntityDefinitionError::PlayerControllerMissingRenderable { entity },
                     );
                 }
-                debug_assert!(player_controllers.contains_key(&entity));
+                debug_assert!(entities
+                    .has_component::<PlayerControllerComponent>(entity)
+                    .expect("downstream fact component is registered"));
             }
             if let Some(config) = &definition.inventory {
                 if definition.player_controller.is_none() {
@@ -770,7 +760,8 @@ impl GameSession {
                         });
                     }
                 }
-                pickups.insert(
+                attach(
+                    &mut entities,
                     entity,
                     PickupComponent {
                         config: config.clone(),
@@ -789,7 +780,8 @@ impl GameSession {
                 if !config.is_valid() {
                     return Err(GameEntityDefinitionError::InvalidSecretRegionConfig { entity });
                 }
-                secret_regions.insert(
+                attach(
+                    &mut entities,
                     entity,
                     SecretRegionComponent {
                         config: config.clone(),
@@ -808,7 +800,8 @@ impl GameSession {
                 if !config.is_valid() {
                     return Err(GameEntityDefinitionError::InvalidLevelExitConfig { entity });
                 }
-                level_exits.insert(
+                attach(
+                    &mut entities,
                     entity,
                     LevelExitComponent {
                         config: config.clone(),
@@ -853,7 +846,8 @@ impl GameSession {
                         );
                     }
                 }
-                encounters.insert(
+                attach(
+                    &mut entities,
                     entity,
                     EncounterComponent {
                         config: config.clone(),
@@ -882,7 +876,8 @@ impl GameSession {
                         entity,
                     });
                 }
-                extraction_beacons.insert(
+                attach(
+                    &mut entities,
                     entity,
                     ExtractionBeaconComponent {
                         config,
@@ -893,26 +888,22 @@ impl GameSession {
         }
 
         let mut target_owners = BTreeMap::new();
-        for (action, component) in &floor_actions {
+        for (action, component) in facts_of::<FloorActionComponent>(&entities) {
             let target_platform = component.config.target_platform;
             validate_walk_trigger_target(
                 &entities,
-                &floor_actions,
-                &lifts,
                 &mut target_owners,
-                *action,
+                action,
                 target_platform,
                 true,
             )?;
         }
-        for (lift, component) in &lifts {
+        for (lift, component) in facts_of::<LiftComponent>(&entities) {
             let target_platform = component.config.target_platform;
             validate_walk_trigger_target(
                 &entities,
-                &floor_actions,
-                &lifts,
                 &mut target_owners,
-                *lift,
+                lift,
                 target_platform,
                 false,
             )?;
@@ -926,7 +917,10 @@ impl GameSession {
                         target: *target,
                     });
                 }
-                if !doors.contains_key(target) {
+                if !entities
+                    .has_component::<DoorComponent>(*target)
+                    .expect("downstream fact component is registered")
+                {
                     return Err(GameEntityDefinitionError::ControlTargetIsNotDoor {
                         switch: *switch,
                         target: *target,
@@ -934,9 +928,13 @@ impl GameSession {
                 }
             }
         }
-        for (switch, interlock) in &loading_bay_interlocks {
+        let interlocks = facts_of::<LoadingBayInterlockConfig>(&entities);
+        for (switch, interlock) in &interlocks {
             for target in [interlock.close_door, interlock.open_door] {
-                if !doors.contains_key(&target) {
+                if !entities
+                    .has_component::<DoorComponent>(target)
+                    .expect("downstream fact component is registered")
+                {
                     return Err(GameEntityDefinitionError::InvalidLoadingBayInterlock {
                         switch: *switch,
                         target,
@@ -950,51 +948,58 @@ impl GameSession {
                 });
             }
         }
-        for (switch, interlock) in &loading_bay_interlocks {
-            let component = switches
-                .get_mut(switch)
-                .expect("Loading Bay interlock switch was admitted");
+        for (switch, interlock) in &interlocks {
+            let Some(mut component) = fact_of::<SwitchComponent>(&entities, *switch) else {
+                return Err(
+                    GameEntityDefinitionError::LoadingBayInterlockWithoutSwitch { entity: *switch },
+                );
+            };
             component
                 .config
                 .push_effect_if_missing(SwitchEffect::CloseDoor(interlock.close_door));
             component
                 .config
                 .push_effect_if_missing(SwitchEffect::OpenDoor(interlock.open_door));
+            store(&mut entities, *switch, component);
         }
         for (switch, targets) in &controls {
-            let component = switches
-                .get_mut(switch)
-                .expect("control switch was admitted");
+            let Some(mut component) = fact_of::<SwitchComponent>(&entities, *switch) else {
+                return Err(GameEntityDefinitionError::ControlsWithoutSwitch { entity: *switch });
+            };
             for target in targets {
                 component
                     .config
                     .push_effect_if_missing(SwitchEffect::OpenDoor(*target));
             }
+            store(&mut entities, *switch, component);
         }
-        for (switch, component) in &switches {
+        for (switch, component) in facts_of::<SwitchComponent>(&entities) {
             if !component.config.is_valid() {
-                return Err(GameEntityDefinitionError::InvalidSwitchConfig { entity: *switch });
+                return Err(GameEntityDefinitionError::InvalidSwitchConfig { entity: switch });
             }
         }
-        for (switch, component) in &switches {
+        for (switch, component) in facts_of::<SwitchComponent>(&entities) {
             let mut effects = BTreeSet::new();
             for effect in &component.config.effects {
                 if !effects.insert(effect) {
                     return Err(GameEntityDefinitionError::DuplicateSwitchEffect {
-                        switch: *switch,
+                        switch,
                         effect: effect.clone(),
                     });
                 }
                 let target = effect.door();
                 if !entities.contains(target) {
                     return Err(GameEntityDefinitionError::UnknownSwitchEffectTarget {
-                        switch: *switch,
+                        switch,
                         target,
                     });
                 }
-                if !doors.contains_key(&target) {
+                if !entities
+                    .has_component::<DoorComponent>(target)
+                    .expect("downstream fact component is registered")
+                {
                     return Err(GameEntityDefinitionError::SwitchEffectTargetIsNotDoor {
-                        switch: *switch,
+                        switch,
                         target,
                     });
                 }
@@ -1002,17 +1007,20 @@ impl GameSession {
         }
 
         let mut encounter_by_enemy = BTreeMap::new();
-        for (encounter, component) in &encounters {
+        for (encounter, component) in facts_of::<EncounterComponent>(&entities) {
             if let Some(exit) = component.config.exit {
                 if !entities.contains(exit) {
                     return Err(GameEntityDefinitionError::UnknownEncounterExit {
-                        encounter: *encounter,
+                        encounter,
                         exit,
                     });
                 }
-                if !doors.contains_key(&exit) {
+                if !entities
+                    .has_component::<DoorComponent>(exit)
+                    .expect("downstream fact component is registered")
+                {
                     return Err(GameEntityDefinitionError::EncounterExitIsNotDoor {
-                        encounter: *encounter,
+                        encounter,
                         exit,
                     });
                 }
@@ -1020,45 +1028,48 @@ impl GameSession {
             for member in &component.config.members {
                 if !entities.contains(*member) {
                     return Err(GameEntityDefinitionError::UnknownEncounterMember {
-                        encounter: *encounter,
+                        encounter,
                         member: *member,
                     });
                 }
-                if !enemies.contains_key(member) {
+                if !entities
+                    .has_component::<EnemyComponent>(*member)
+                    .expect("downstream fact component is registered")
+                {
                     return Err(GameEntityDefinitionError::EncounterMemberIsNotEnemy {
-                        encounter: *encounter,
+                        encounter,
                         member: *member,
                     });
                 }
-                if let Some(first) = encounter_by_enemy.insert(*member, *encounter) {
+                if let Some(first) = encounter_by_enemy.insert(*member, encounter) {
                     return Err(GameEntityDefinitionError::EnemyInMultipleEncounters {
                         enemy: *member,
                         first,
-                        second: *encounter,
+                        second: encounter,
                     });
                 }
             }
         }
 
         let mut enemy_by_drop_pickup = BTreeMap::new();
-        for (enemy, drop) in &enemy_drops {
+        for (enemy, drop) in facts_of::<EnemyDropComponent>(&entities) {
             if !entities.contains(drop.config.pickup) {
                 return Err(GameEntityDefinitionError::UnknownEnemyDropPickup {
-                    enemy: *enemy,
+                    enemy,
                     pickup: drop.config.pickup,
                 });
             }
-            let Some(pickup) = pickups.get_mut(&drop.config.pickup) else {
+            let Some(mut pickup) = fact_of::<PickupComponent>(&entities, drop.config.pickup) else {
                 return Err(GameEntityDefinitionError::EnemyDropTargetIsNotPickup {
-                    enemy: *enemy,
+                    enemy,
                     pickup: drop.config.pickup,
                 });
             };
-            if let Some(first) = enemy_by_drop_pickup.insert(drop.config.pickup, *enemy) {
+            if let Some(first) = enemy_by_drop_pickup.insert(drop.config.pickup, enemy) {
                 return Err(GameEntityDefinitionError::PickupUsedByMultipleEnemyDrops {
                     pickup: drop.config.pickup,
                     first,
-                    second: *enemy,
+                    second: enemy,
                 });
             }
             if entities
@@ -1069,11 +1080,12 @@ impl GameSession {
                 .is_some_and(|renderable| renderable.visible)
             {
                 return Err(GameEntityDefinitionError::EnemyDropPickupVisibleAtStart {
-                    enemy: *enemy,
+                    enemy,
                     pickup: drop.config.pickup,
                 });
             }
             pickup.state = PickupState::Dormant;
+            store(&mut entities, drop.config.pickup, pickup);
         }
         rusty_engine::gameplay_mechanics::validate_state_against_catalog(
             &entities,
@@ -1085,29 +1097,11 @@ impl GameSession {
 
         Ok(Self {
             entities,
-            doors,
-            door_access,
-            switches,
-            floor_actions,
-            lifts,
             controls,
-            loading_bay_interlocks,
-            enemies,
-            enemy_combat,
-            enemy_drops,
-            health,
-            explosive_props,
-            hazards,
-            encounters,
-            extraction_beacons,
-            navigators,
-            player_controllers,
             item_definitions,
             inventories,
             mechanics,
-            pickups,
-            secret_regions,
-            level_exits,
+            collected_pickups: BTreeMap::new(),
             gameplay_programs,
             pickup_programs,
             player_setup_programs,
@@ -1138,6 +1132,68 @@ impl GameSession {
         &self.entities
     }
 
+    // -- Downstream fact storage helpers ------------------------------------
+    //
+    // All entity facts live in the Engine typed component store (see
+    // `crate::facts`). These helpers keep call sites readable while routing
+    // every mutation through Engine authoring boundaries with exact slot
+    // revisions. Registration failures are programmer errors and panic with
+    // context; absence is a normal outcome callers handle.
+
+    pub(crate) fn fact<T: EntityComponent + Clone>(&self, entity: EntityId) -> Option<T> {
+        self.entities
+            .component::<T>(entity)
+            .expect("downstream fact component is registered")
+            .cloned()
+    }
+
+    pub(crate) fn has_fact<T: EntityComponent>(&self, entity: EntityId) -> bool {
+        self.entities
+            .has_component::<T>(entity)
+            .expect("downstream fact component is registered")
+    }
+
+    /// Collected snapshot of one fact family; safe to iterate while mutating.
+    pub(crate) fn facts<T: EntityComponent + Clone>(&self) -> Vec<(EntityId, T)> {
+        self.entities
+            .components::<T>()
+            .expect("downstream fact component is registered")
+            .map(|(entity, value)| (entity, value.clone()))
+            .collect()
+    }
+
+    pub(crate) fn fact_count<T: EntityComponent>(&self) -> usize {
+        self.entities
+            .components::<T>()
+            .expect("downstream fact component is registered")
+            .len()
+    }
+
+    pub(crate) fn store_fact<T: EntityComponent + PartialEq>(
+        &mut self,
+        entity: EntityId,
+        value: T,
+    ) {
+        debug_assert!(self.has_fact::<T>(entity), "stored fact must exist");
+        let revision = self
+            .entities
+            .component_revision::<T>(entity)
+            .expect("downstream fact component is registered");
+        EntityAuthoringService
+            .replace_component(&mut self.entities, revision, entity, value)
+            .expect("existing gameplay fact always replaces");
+    }
+
+    pub(crate) fn update_fact<T: EntityComponent + PartialEq>(
+        &mut self,
+        entity: EntityId,
+        update: impl FnOnce(&mut T),
+    ) {
+        let mut value = self.fact::<T>(entity).expect("updated fact must exist");
+        update(&mut value);
+        self.store_fact(entity, value);
+    }
+
     /// Read-only compiled program catalog and item selection bindings for
     /// product adapters. The catalog has already passed admission bounds.
     pub fn gameplay_programs(&self) -> GameplayProgramReadout {
@@ -1153,8 +1209,8 @@ impl GameSession {
     /// Read-only pickup-family catalog and all authored pickup bindings.
     pub fn pickup_programs(&self) -> PickupProgramReadout {
         self.pickup_programs.readout(
-            self.pickups
-                .iter()
+            self.facts::<PickupComponent>()
+                .into_iter()
                 .map(|(entity, pickup)| (entity.raw(), pickup.config.program.clone())),
         )
     }
@@ -1171,13 +1227,14 @@ impl GameSession {
 
     /// Read-only family-specific enemy program catalogs and per-enemy bindings.
     pub fn enemy_programs(&self) -> EnemyProgramReadout {
+        let combatants = self.facts::<EnemyCombatComponent>();
         enemy_program_readout(
             &self.enemy_attack_programs,
             &self.enemy_defeat_programs,
-            self.enemy_combat
+            combatants
                 .iter()
                 .map(|(entity, component)| (entity.raw(), component.config.attack_program.clone())),
-            self.enemy_combat
+            combatants
                 .iter()
                 .map(|(entity, component)| (entity.raw(), component.config.defeat_program.clone())),
         )
@@ -1277,7 +1334,7 @@ impl GameSession {
     }
 
     pub fn door(&self, entity: EntityId) -> Option<DoorView> {
-        let component = self.doors.get(&entity)?;
+        let component = self.fact::<DoorComponent>(entity)?;
         Some(DoorView {
             entity,
             config: component.config,
@@ -1290,21 +1347,18 @@ impl GameSession {
     pub fn door_access(&self, entity: EntityId) -> Option<DoorAccessView> {
         Some(DoorAccessView {
             door: entity,
-            config: self.door_access.get(&entity)?.clone(),
+            config: self.fact::<DoorAccessConfig>(entity)?,
         })
     }
 
     pub fn door_accesses(&self) -> impl ExactSizeIterator<Item = DoorAccessView> + '_ {
-        self.door_access
-            .iter()
-            .map(|(door, config)| DoorAccessView {
-                door: *door,
-                config: config.clone(),
-            })
+        self.facts::<DoorAccessConfig>()
+            .into_iter()
+            .map(|(door, config)| DoorAccessView { door, config })
     }
 
     pub fn switch(&self, entity: EntityId) -> Option<SwitchView> {
-        let component = self.switches.get(&entity)?;
+        let component = self.fact::<SwitchComponent>(entity)?;
         Some(SwitchView {
             entity,
             config: component.config.clone(),
@@ -1316,21 +1370,23 @@ impl GameSession {
     }
 
     pub fn switches(&self) -> impl ExactSizeIterator<Item = SwitchView> + '_ {
-        self.switches.iter().map(|(entity, component)| SwitchView {
-            entity: *entity,
-            config: component.config.clone(),
-            activation_count: component.activation_count,
-            available: switch_is_available(self, *entity),
-            controls_targets: self.controls.get(entity).cloned().unwrap_or_default(),
-            entity_view: self
-                .entities
-                .view(*entity)
-                .expect("admitted switch remains viewable"),
-        })
+        self.facts::<SwitchComponent>()
+            .into_iter()
+            .map(|(entity, component)| SwitchView {
+                entity,
+                config: component.config.clone(),
+                activation_count: component.activation_count,
+                available: switch_is_available(self, entity),
+                controls_targets: self.controls.get(&entity).cloned().unwrap_or_default(),
+                entity_view: self
+                    .entities
+                    .view(entity)
+                    .expect("admitted switch remains viewable"),
+            })
     }
 
     pub fn floor_action(&self, entity: EntityId) -> Option<FloorActionView> {
-        let component = self.floor_actions.get(&entity)?;
+        let component = self.fact::<FloorActionComponent>(entity)?;
         Some(FloorActionView {
             entity,
             config: component.config.clone(),
@@ -1342,16 +1398,16 @@ impl GameSession {
     }
 
     pub fn floor_actions(&self) -> impl ExactSizeIterator<Item = FloorActionView> + '_ {
-        self.floor_actions
-            .iter()
+        self.facts::<FloorActionComponent>()
+            .into_iter()
             .map(|(entity, component)| FloorActionView {
-                entity: *entity,
+                entity,
                 config: component.config.clone(),
                 state: component.state,
                 motion_elapsed: component.motion_elapsed,
                 entity_view: self
                     .entities
-                    .view(*entity)
+                    .view(entity)
                     .expect("admitted floor action remains viewable"),
                 target_platform_view: self
                     .entities
@@ -1361,7 +1417,7 @@ impl GameSession {
     }
 
     pub fn lift(&self, entity: EntityId) -> Option<LiftView> {
-        let component = self.lifts.get(&entity)?;
+        let component = self.fact::<LiftComponent>(entity)?;
         Some(LiftView {
             entity,
             config: component.config.clone(),
@@ -1374,27 +1430,29 @@ impl GameSession {
     }
 
     pub fn lifts(&self) -> impl ExactSizeIterator<Item = LiftView> + '_ {
-        self.lifts.iter().map(|(entity, component)| LiftView {
-            entity: *entity,
-            config: component.config.clone(),
-            state: component.state,
-            motion_elapsed: component.motion_elapsed,
-            wait_elapsed: component.wait_elapsed,
-            entity_view: self
-                .entities
-                .view(*entity)
-                .expect("admitted lift remains viewable"),
-            target_platform_view: self
-                .entities
-                .view(component.config.target_platform)
-                .expect("admitted lift target remains viewable"),
-        })
+        self.facts::<LiftComponent>()
+            .into_iter()
+            .map(|(entity, component)| LiftView {
+                entity,
+                config: component.config.clone(),
+                state: component.state,
+                motion_elapsed: component.motion_elapsed,
+                wait_elapsed: component.wait_elapsed,
+                entity_view: self
+                    .entities
+                    .view(entity)
+                    .expect("admitted lift remains viewable"),
+                target_platform_view: self
+                    .entities
+                    .view(component.config.target_platform)
+                    .expect("admitted lift target remains viewable"),
+            })
     }
 
     pub fn loading_bay_interlock(&self, entity: EntityId) -> Option<LoadingBayInterlockView> {
         Some(LoadingBayInterlockView {
             switch: entity,
-            config: *self.loading_bay_interlocks.get(&entity)?,
+            config: self.fact::<LoadingBayInterlockConfig>(entity)?,
             entity_view: self.entities.view(entity).ok()?,
         })
     }
@@ -1402,20 +1460,20 @@ impl GameSession {
     pub fn loading_bay_interlocks(
         &self,
     ) -> impl ExactSizeIterator<Item = LoadingBayInterlockView> + '_ {
-        self.loading_bay_interlocks
-            .iter()
+        self.facts::<LoadingBayInterlockConfig>()
+            .into_iter()
             .map(|(switch, config)| LoadingBayInterlockView {
-                switch: *switch,
-                config: *config,
+                switch,
+                config,
                 entity_view: self
                     .entities
-                    .view(*switch)
+                    .view(switch)
                     .expect("admitted Loading Bay interlock remains viewable"),
             })
     }
 
     pub fn enemy(&self, entity: EntityId) -> Option<EnemyView> {
-        let component = self.enemies.get(&entity)?;
+        let component = self.fact::<EnemyComponent>(entity)?;
         Some(EnemyView {
             entity,
             state: component.state,
@@ -1424,7 +1482,7 @@ impl GameSession {
     }
 
     pub fn enemy_combat(&self, entity: EntityId) -> Option<EnemyCombatView> {
-        let component = self.enemy_combat.get(&entity)?;
+        let component = self.fact::<EnemyCombatComponent>(entity)?;
         Some(EnemyCombatView {
             entity,
             config: component.config.clone(),
@@ -1433,17 +1491,17 @@ impl GameSession {
     }
 
     pub fn enemy_combatants(&self) -> impl ExactSizeIterator<Item = EnemyCombatView> + '_ {
-        self.enemy_combat
-            .iter()
+        self.facts::<EnemyCombatComponent>()
+            .into_iter()
             .map(|(entity, component)| EnemyCombatView {
-                entity: *entity,
+                entity,
                 config: component.config.clone(),
                 state: component.state.clone(),
             })
     }
 
     pub fn enemy_drop(&self, enemy: EntityId) -> Option<EnemyDropView> {
-        let component = self.enemy_drops.get(&enemy)?;
+        let component = self.fact::<EnemyDropComponent>(enemy)?;
         Some(EnemyDropView {
             enemy,
             pickup: component.config.pickup,
@@ -1452,12 +1510,12 @@ impl GameSession {
     }
 
     pub fn health(&self, entity: EntityId) -> Option<HealthView> {
-        let config = *self.health.get(&entity)?;
+        let config = self.fact::<HealthConfig>(entity)?;
         let tracks = self
             .entities
             .component::<rusty_engine::gameplay_mechanics::TracksComponent>(entity)
             .ok()??;
-        let preset = if self.explosive_props.contains_key(&entity) {
+        let preset = if self.has_fact::<ExplosivePropComponent>(entity) {
             crate::mechanics::VitalityPreset::DestructibleObject
         } else {
             crate::mechanics::VitalityPreset::ActionActor
@@ -1543,7 +1601,7 @@ impl GameSession {
     }
 
     pub fn explosive_prop(&self, entity: EntityId) -> Option<ExplosivePropView> {
-        let component = self.explosive_props.get(&entity)?;
+        let component = self.fact::<ExplosivePropComponent>(entity)?;
         Some(ExplosivePropView {
             entity,
             config: component.config,
@@ -1567,18 +1625,17 @@ impl GameSession {
         {
             return false;
         }
-        if self.enemies.contains_key(&entity) {
-            self.enemies
-                .get(&entity)
+        if self.has_fact::<EnemyComponent>(entity) {
+            self.fact::<EnemyComponent>(entity)
                 .is_some_and(|enemy| enemy.state == EnemyState::Alive)
                 && EncounterService::enemy_is_active(self, entity)
         } else {
-            self.explosive_props.contains_key(&entity)
+            self.has_fact::<ExplosivePropComponent>(entity)
         }
     }
 
     pub fn hazard(&self, entity: EntityId) -> Option<HazardView> {
-        let component = self.hazards.get(&entity)?;
+        let component = self.fact::<HazardComponent>(entity)?;
         Some(HazardView {
             entity,
             config: component.config,
@@ -1587,15 +1644,17 @@ impl GameSession {
     }
 
     pub fn hazards(&self) -> impl ExactSizeIterator<Item = HazardView> + '_ {
-        self.hazards.iter().map(|(entity, component)| HazardView {
-            entity: *entity,
-            config: component.config,
-            ready_at_tick: component.ready_at_tick,
-        })
+        self.facts::<HazardComponent>()
+            .into_iter()
+            .map(|(entity, component)| HazardView {
+                entity,
+                config: component.config,
+                ready_at_tick: component.ready_at_tick,
+            })
     }
 
     pub fn encounter(&self, entity: EntityId) -> Option<EncounterView> {
-        let component = self.encounters.get(&entity)?;
+        let component = self.fact::<EncounterComponent>(entity)?;
         Some(EncounterView {
             entity,
             members: component.config.members.clone(),
@@ -1606,7 +1665,7 @@ impl GameSession {
     }
 
     pub fn navigation(&self, entity: EntityId) -> Option<NavigationView> {
-        let component = self.navigators.get(&entity)?;
+        let component = self.fact::<NavigationComponent>(entity)?;
         Some(NavigationView {
             entity,
             config: component.config,
@@ -1616,7 +1675,7 @@ impl GameSession {
     }
 
     pub fn extraction_beacon(&self, entity: EntityId) -> Option<ExtractionBeaconView> {
-        let component = self.extraction_beacons.get(&entity)?;
+        let component = self.fact::<ExtractionBeaconComponent>(entity)?;
         Some(ExtractionBeaconView {
             entity,
             config: component.config,
@@ -1626,7 +1685,7 @@ impl GameSession {
     }
 
     pub fn player_controller(&self, entity: EntityId) -> Option<PlayerControllerView> {
-        let component = self.player_controllers.get(&entity)?;
+        let component = self.fact::<PlayerControllerComponent>(entity)?;
         let motion = self.entities.character_motion(entity)?;
         Some(PlayerControllerView {
             entity,
@@ -1639,7 +1698,7 @@ impl GameSession {
 
     pub(crate) fn gameplay_translation(&self, entity: EntityId) -> Option<Vec3> {
         let mut translation = self.entities.transform(entity)?.translation;
-        if let Some(controller) = self.player_controllers.get(&entity) {
+        if let Some(controller) = self.fact::<PlayerControllerComponent>(entity) {
             translation.y +=
                 controller.eye_offset_from_center - controller.config.traversal.eye_height;
         }
@@ -1670,19 +1729,26 @@ impl GameSession {
     }
 
     pub fn pickup(&self, entity: EntityId) -> Option<PickupView> {
-        self.pickups
-            .get(&entity)
+        self.fact::<PickupComponent>(entity)
+            .as_ref()
+            .or_else(|| self.collected_pickups.get(&entity))
             .map(|component| pickup_view(entity, component))
     }
 
     pub fn pickups(&self) -> impl ExactSizeIterator<Item = PickupView> + '_ {
-        self.pickups
-            .iter()
-            .map(|(entity, component)| pickup_view(*entity, component))
+        let mut all_pickups = self.facts::<PickupComponent>();
+        all_pickups.extend(
+            self.collected_pickups
+                .iter()
+                .map(|(entity, component)| (*entity, component.clone())),
+        );
+        all_pickups
+            .into_iter()
+            .map(|(entity, component)| pickup_view(entity, &component))
     }
 
     pub fn secret_region(&self, entity: EntityId) -> Option<SecretRegionView> {
-        let component = self.secret_regions.get(&entity)?;
+        let component = self.fact::<SecretRegionComponent>(entity)?;
         Some(SecretRegionView {
             entity,
             config: component.config.clone(),
@@ -1692,21 +1758,21 @@ impl GameSession {
     }
 
     pub fn secret_regions(&self) -> impl ExactSizeIterator<Item = SecretRegionView> + '_ {
-        self.secret_regions
-            .iter()
+        self.facts::<SecretRegionComponent>()
+            .into_iter()
             .map(|(entity, component)| SecretRegionView {
-                entity: *entity,
+                entity,
                 config: component.config.clone(),
                 state: component.state.clone(),
                 entity_view: self
                     .entities
-                    .view(*entity)
+                    .view(entity)
                     .expect("admitted secret region remains viewable"),
             })
     }
 
     pub fn level_exit(&self, entity: EntityId) -> Option<LevelExitView> {
-        let component = self.level_exits.get(&entity)?;
+        let component = self.fact::<LevelExitComponent>(entity)?;
         Some(LevelExitView {
             entity,
             config: component.config.clone(),
@@ -1716,23 +1782,23 @@ impl GameSession {
     }
 
     pub fn level_exits(&self) -> impl ExactSizeIterator<Item = LevelExitView> + '_ {
-        self.level_exits
-            .iter()
+        self.facts::<LevelExitComponent>()
+            .into_iter()
             .map(|(entity, component)| LevelExitView {
-                entity: *entity,
+                entity,
                 config: component.config.clone(),
                 state: component.state,
                 entity_view: self
                     .entities
-                    .view(*entity)
+                    .view(entity)
                     .expect("admitted level exit remains viewable"),
             })
     }
 
     pub fn level_complete(&self) -> bool {
-        self.level_exits
-            .values()
-            .any(|component| matches!(component.state, LevelExitState::Completed { .. }))
+        self.facts::<LevelExitComponent>()
+            .iter()
+            .any(|(_, component)| matches!(component.state, LevelExitState::Completed { .. }))
     }
 
     pub fn weapon(&self, entity: EntityId) -> Option<WeaponView> {
@@ -1770,6 +1836,39 @@ impl GameSession {
     }
 }
 
+fn attach<T: EntityComponent>(entities: &mut EntityState, entity: EntityId, value: T) {
+    let revision = entities
+        .component_revision::<T>(entity)
+        .expect("downstream fact component is registered");
+    EntityAuthoringService
+        .attach_component(entities, revision, entity, value)
+        .expect("admitted gameplay fact attaches exactly once");
+}
+
+fn store<T: EntityComponent + PartialEq>(entities: &mut EntityState, entity: EntityId, value: T) {
+    let revision = entities
+        .component_revision::<T>(entity)
+        .expect("downstream fact component is registered");
+    EntityAuthoringService
+        .replace_component(entities, revision, entity, value)
+        .expect("existing gameplay fact always replaces");
+}
+
+fn fact_of<T: EntityComponent + Clone>(entities: &EntityState, entity: EntityId) -> Option<T> {
+    entities
+        .component::<T>(entity)
+        .expect("downstream fact component is registered")
+        .cloned()
+}
+
+fn facts_of<T: EntityComponent + Clone>(entities: &EntityState) -> Vec<(EntityId, T)> {
+    entities
+        .components::<T>()
+        .expect("downstream fact component is registered")
+        .map(|(entity, value)| (entity, value.clone()))
+        .collect()
+}
+
 fn conflicts_with_walk_trigger(definition: &GameEntityDefinition) -> bool {
     definition.door.is_some()
         || definition.door_access.is_some()
@@ -1793,8 +1892,6 @@ fn conflicts_with_walk_trigger(definition: &GameEntityDefinition) -> bool {
 
 fn validate_walk_trigger_target(
     entities: &EntityState,
-    floor_actions: &BTreeMap<EntityId, FloorActionComponent>,
-    lifts: &BTreeMap<EntityId, LiftComponent>,
     target_owners: &mut BTreeMap<EntityId, EntityId>,
     owner: EntityId,
     target_platform: EntityId,
@@ -1856,7 +1953,13 @@ fn validate_walk_trigger_target(
     if !entities.contains(target_platform) {
         return Err(unknown_target());
     }
-    if floor_actions.contains_key(&target_platform) || lifts.contains_key(&target_platform) {
+    if entities
+        .has_component::<FloorActionComponent>(target_platform)
+        .expect("downstream fact component is registered")
+        || entities
+            .has_component::<LiftComponent>(target_platform)
+            .expect("downstream fact component is registered")
+    {
         return Err(GameEntityDefinitionError::DuplicateMovingPlatformTarget {
             target_platform,
             first_owner: target_platform,

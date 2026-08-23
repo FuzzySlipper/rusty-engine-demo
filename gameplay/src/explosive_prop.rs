@@ -11,7 +11,8 @@ use crate::explosive_prop_program::{
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
 use crate::vitality::{
-    DamageCommand, DamageService, DamageSource, VitalityReceipt, VitalityRejection, MAX_DOOM_DAMAGE,
+    DamageCommand, DamageService, DamageSource, HealthConfig, VitalityReceipt, VitalityRejection,
+    MAX_DOOM_DAMAGE,
 };
 
 pub const MAX_EXPLOSION_RADIUS: f32 = 100_000.0;
@@ -120,11 +121,11 @@ impl ExplosivePropService {
 
         loop {
             let pending = candidate
-                .explosive_props
-                .iter()
+                .facts::<ExplosivePropComponent>()
+                .into_iter()
                 .filter_map(|(entity, component)| {
                     (component.state == ExplosivePropState::Exploded && component.pending)
-                        .then_some(*entity)
+                        .then_some(entity)
                 })
                 .collect::<Vec<_>>();
             if pending.is_empty() {
@@ -168,8 +169,7 @@ impl ExplosivePropService {
                 let context = context.into_inner();
                 if context
                     .session
-                    .explosive_props
-                    .get(&prop)
+                    .fact::<ExplosivePropComponent>(prop)
                     .is_some_and(|component| component.pending)
                 {
                     return Err(ExplosivePropError::ProgramLeftPending { prop, program_id });
@@ -211,8 +211,7 @@ impl ExplosivePropProgramContext<'_> {
         match predicate {
             ExplosivePropPredicate::ExplosionPending => Ok(self
                 .session
-                .explosive_props
-                .get(&self.prop)
+                .fact::<ExplosivePropComponent>(self.prop)
                 .is_some_and(|component| {
                     component.state == ExplosivePropState::Exploded && component.pending
                 })),
@@ -230,8 +229,7 @@ impl ExplosivePropProgramContext<'_> {
     fn select_radial_targets(&mut self) -> Result<(), ExplosivePropError> {
         let config = self
             .session
-            .explosive_props
-            .get(&self.prop)
+            .fact::<ExplosivePropComponent>(self.prop)
             .expect("pending prop remains attached")
             .config;
         self.facts.push(ExplosivePropFact::ExplosionStarted {
@@ -244,7 +242,12 @@ impl ExplosivePropProgramContext<'_> {
             return Ok(());
         };
         let origin = origin.translation;
-        let candidates = self.session.health.keys().copied().collect::<Vec<_>>();
+        let candidates = self
+            .session
+            .facts::<HealthConfig>()
+            .into_iter()
+            .map(|(entity, _)| entity)
+            .collect::<Vec<_>>();
         let mut targets = Vec::new();
         for target in candidates {
             if target == self.prop {
@@ -334,12 +337,12 @@ impl ExplosivePropProgramContext<'_> {
     }
 
     fn resolve_explosion(&mut self) -> Result<(), ExplosivePropError> {
-        let component = self
+        let mut component = self
             .session
-            .explosive_props
-            .get_mut(&self.prop)
+            .fact::<ExplosivePropComponent>(self.prop)
             .expect("pending prop remains attached");
         component.pending = false;
+        self.session.store_fact(self.prop, component);
         self.facts
             .push(ExplosivePropFact::ExplosionResolved { prop: self.prop });
         Ok(())

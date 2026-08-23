@@ -83,10 +83,16 @@ pub struct HazardService;
 
 impl HazardService {
     pub(crate) fn trigger_system(session: &GameSession) -> TriggerVolumeSystem {
-        TriggerVolumeSystem::new(session.hazards.keys().copied().map(|hazard| {
-            KinematicTriggerDefinition::new(hazard, HAZARD_TRIGGER_SCOPE, ["hazard"])
-                .with_geometry_source(TriggerGeometrySource::EntityBounds)
-        }))
+        TriggerVolumeSystem::new(
+            session
+                .facts::<HazardComponent>()
+                .into_iter()
+                .map(|(hazard, _)| hazard)
+                .map(|hazard| {
+                    KinematicTriggerDefinition::new(hazard, HAZARD_TRIGGER_SCOPE, ["hazard"])
+                        .with_geometry_source(TriggerGeometrySource::EntityBounds)
+                }),
+        )
         .expect("admitted hazard trigger identities are fixed and valid")
     }
 
@@ -113,9 +119,9 @@ impl HazardService {
         let mut facts = Vec::new();
         let mut events = Vec::new();
         let hazard_ids = candidate_session
-            .hazards
-            .keys()
-            .copied()
+            .facts::<HazardComponent>()
+            .into_iter()
+            .map(|(hazard, _)| hazard)
             .collect::<Vec<_>>();
         for hazard in hazard_ids {
             let program_id = candidate_session
@@ -185,8 +191,7 @@ impl HazardProgramContext<'_> {
                 .is_some_and(|health| health.state == crate::vitality::VitalityState::Alive)),
             HazardPredicate::CooldownReady => Ok(self
                 .session
-                .hazards
-                .get(&self.hazard)
+                .fact::<HazardComponent>(self.hazard)
                 .is_some_and(|component| self.tick.raw() >= component.ready_at_tick.raw())),
         }
     }
@@ -196,8 +201,7 @@ impl HazardProgramContext<'_> {
             HazardOperation::ApplyHazardDamage => {
                 let damage = self
                     .session
-                    .hazards
-                    .get(&self.hazard)
+                    .fact::<HazardComponent>(self.hazard)
                     .expect("hazard identity came from admitted state")
                     .config
                     .damage;
@@ -220,14 +224,14 @@ impl HazardProgramContext<'_> {
                 Ok(())
             }
             HazardOperation::ScheduleHazardCooldown => {
-                let component = self
+                let mut component = self
                     .session
-                    .hazards
-                    .get_mut(&self.hazard)
+                    .fact::<HazardComponent>(self.hazard)
                     .expect("hazard identity came from admitted state");
                 component.ready_at_tick = self
                     .tick
                     .advance(TickDelta::new(component.config.cooldown_ticks));
+                self.session.store_fact(self.hazard, component);
                 Ok(())
             }
         }

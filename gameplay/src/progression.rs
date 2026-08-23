@@ -8,7 +8,7 @@ use rusty_engine::engine_spatial::{
 };
 use rusty_engine::entity_state::EntityView;
 
-use crate::door::{DoorService, DoorState, DoorTransition};
+use crate::door::{DoorComponent, DoorService, DoorState, DoorTransition};
 use crate::inventory::{
     apply_standard_stack, InventoryAction, InventoryFact, InventoryReceipt, InventoryRejection,
     ItemDefinitionId,
@@ -252,10 +252,16 @@ pub(crate) struct ProgressionService;
 
 impl ProgressionService {
     pub(crate) fn secret_trigger_system(session: &GameSession) -> TriggerVolumeSystem {
-        TriggerVolumeSystem::new(session.secret_regions.keys().copied().map(|secret| {
-            KinematicTriggerDefinition::new(secret, SECRET_TRIGGER_SCOPE, ["secret"])
-                .with_geometry_source(TriggerGeometrySource::EntityBounds)
-        }))
+        TriggerVolumeSystem::new(
+            session
+                .facts::<SecretRegionComponent>()
+                .into_iter()
+                .map(|(secret, _)| secret)
+                .map(|secret| {
+                    KinematicTriggerDefinition::new(secret, SECRET_TRIGGER_SCOPE, ["secret"])
+                        .with_geometry_source(TriggerGeometrySource::EntityBounds)
+                }),
+        )
         .expect("admitted secret trigger identities are fixed and valid")
     }
 
@@ -274,12 +280,11 @@ impl ProgressionService {
         let actor_translation = session
             .gameplay_translation(actor)
             .ok_or(DoorAccessRejection::ActorMissingTransform { actor })?;
-        let Some(access) = session.door_access.get(&door).cloned() else {
+        let Some(access) = session.fact::<DoorAccessConfig>(door) else {
             return Err(DoorAccessRejection::UnknownDoor { door });
         };
         if session
-            .doors
-            .get(&door)
+            .fact::<DoorComponent>(door)
             .is_some_and(|component| component.state == DoorState::Open)
         {
             return Ok(DoorAccessReceipt {
@@ -380,14 +385,13 @@ impl ProgressionService {
             })?;
         let mut facts = Vec::new();
         let secret_ids = candidate_session
-            .secret_regions
-            .keys()
-            .copied()
+            .facts::<SecretRegionComponent>()
+            .into_iter()
+            .map(|(secret, _)| secret)
             .collect::<Vec<_>>();
         for secret in secret_ids {
             let component = candidate_session
-                .secret_regions
-                .get(&secret)
+                .fact::<SecretRegionComponent>(secret)
                 .expect("secret identity came from admitted state");
             if component.state != SecretRegionState::Undiscovered {
                 continue;
@@ -454,7 +458,7 @@ impl ProgressionService {
         let actor_translation = session
             .gameplay_translation(actor)
             .ok_or(LevelExitRejection::ActorMissingTransform { actor })?;
-        let Some(component) = session.level_exits.get(&exit).cloned() else {
+        let Some(component) = session.fact::<LevelExitComponent>(exit) else {
             return Err(LevelExitRejection::UnknownExit { exit });
         };
         if matches!(component.state, LevelExitState::Completed { .. }) {
@@ -529,8 +533,7 @@ impl SecretProgramContext<'_> {
                 }),
             SecretPredicate::SecretUndiscovered => Ok(self
                 .session
-                .secret_regions
-                .get(&self.secret)
+                .fact::<SecretRegionComponent>(self.secret)
                 .is_some_and(|component| component.state == SecretRegionState::Undiscovered)),
         }
     }
@@ -541,22 +544,22 @@ impl SecretProgramContext<'_> {
                 if self.discovery_recorded
                     || !self
                         .session
-                        .secret_regions
-                        .get(&self.secret)
+                        .fact::<SecretRegionComponent>(self.secret)
                         .is_some_and(|component| component.state == SecretRegionState::Undiscovered)
                 {
                     return Err(SecretRejection::DiscoveryAlreadyRecorded {
                         secret: self.secret,
                     });
                 }
-                self.session
-                    .secret_regions
-                    .get_mut(&self.secret)
-                    .expect("secret identity came from admitted state")
-                    .state = SecretRegionState::Discovered {
+                let mut secret = self
+                    .session
+                    .fact::<SecretRegionComponent>(self.secret)
+                    .expect("secret identity came from admitted state");
+                secret.state = SecretRegionState::Discovered {
                     actor: self.actor,
                     discovered_at: self.tick,
                 };
+                self.session.store_fact(self.secret, secret);
                 self.discovery_recorded = true;
                 Ok(())
             }
@@ -573,8 +576,7 @@ impl SecretProgramContext<'_> {
                 }
                 let component = self
                     .session
-                    .secret_regions
-                    .get(&self.secret)
+                    .fact::<SecretRegionComponent>(self.secret)
                     .expect("secret identity came from admitted state");
                 let SecretRegionState::Discovered {
                     actor,
@@ -613,8 +615,7 @@ impl LevelExitProgramContext<'_> {
         match predicate {
             LevelExitPredicate::ExitAvailable => Ok(self
                 .session
-                .level_exits
-                .get(&self.exit)
+                .fact::<LevelExitComponent>(self.exit)
                 .is_some_and(|component| component.state == LevelExitState::Available)),
         }
     }
@@ -625,20 +626,20 @@ impl LevelExitProgramContext<'_> {
                 if self.completion_recorded
                     || !self
                         .session
-                        .level_exits
-                        .get(&self.exit)
+                        .fact::<LevelExitComponent>(self.exit)
                         .is_some_and(|component| component.state == LevelExitState::Available)
                 {
                     return Err(LevelExitRejection::CompletionAlreadyRecorded { exit: self.exit });
                 }
-                self.session
-                    .level_exits
-                    .get_mut(&self.exit)
-                    .expect("level exit identity came from admitted state")
-                    .state = LevelExitState::Completed {
+                let mut exit_component = self
+                    .session
+                    .fact::<LevelExitComponent>(self.exit)
+                    .expect("level exit identity came from admitted state");
+                exit_component.state = LevelExitState::Completed {
                     actor: self.actor,
                     completed_at: self.tick,
                 };
+                self.session.store_fact(self.exit, exit_component);
                 self.completion_recorded = true;
                 Ok(())
             }
@@ -655,8 +656,7 @@ impl LevelExitProgramContext<'_> {
                 }
                 let component = self
                     .session
-                    .level_exits
-                    .get(&self.exit)
+                    .fact::<LevelExitComponent>(self.exit)
                     .expect("level exit identity came from admitted state");
                 let LevelExitState::Completed {
                     actor,

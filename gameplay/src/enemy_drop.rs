@@ -3,7 +3,7 @@ use rusty_engine::core_math::Vec3;
 use rusty_engine::entity_state::EntityCommand;
 
 use crate::inventory::ItemDefinitionId;
-use crate::pickup::PickupState;
+use crate::pickup::{PickupComponent, PickupState};
 use crate::session::GameSession;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,22 +55,23 @@ impl EnemyDropService {
         enemy: EntityId,
         commands: &mut Vec<EntityCommand>,
     ) -> Result<Option<EnemyDropFact>, EnemyDropRejection> {
-        let Some(drop) = session.enemy_drops.get(&enemy).copied() else {
+        let Some(mut drop) = session.fact::<EnemyDropComponent>(enemy) else {
             return Ok(None);
         };
         if drop.state == EnemyDropState::Materialized {
             return Ok(None);
         }
-        let Some(pickup) = session.pickups.get(&drop.config.pickup).cloned() else {
+        let pickup_entity = drop.config.pickup;
+        let Some(mut pickup) = session.fact::<PickupComponent>(pickup_entity) else {
             return Err(EnemyDropRejection::UnknownPickup {
                 enemy,
-                pickup: drop.config.pickup,
+                pickup: pickup_entity,
             });
         };
         if pickup.state != PickupState::Dormant {
             return Err(EnemyDropRejection::PickupNotDormant {
                 enemy,
-                pickup: drop.config.pickup,
+                pickup: pickup_entity,
             });
         }
         let position = session
@@ -82,30 +83,28 @@ impl EnemyDropService {
             .translation;
 
         commands.push(EntityCommand::SetTranslation {
-            entity: drop.config.pickup,
+            entity: pickup_entity,
             translation: position,
         });
         commands.push(EntityCommand::SetVisible {
-            entity: drop.config.pickup,
+            entity: pickup_entity,
             visible: true,
         });
-        session
-            .enemy_drops
-            .get_mut(&enemy)
-            .expect("validated enemy drop remains attached")
-            .state = EnemyDropState::Materialized;
-        session
-            .pickups
-            .get_mut(&drop.config.pickup)
-            .expect("validated drop pickup remains attached")
-            .state = PickupState::Available;
 
-        Ok(Some(EnemyDropFact {
+        drop.state = EnemyDropState::Materialized;
+        pickup.state = PickupState::Available;
+
+        let fact = EnemyDropFact {
             enemy,
-            pickup: drop.config.pickup,
-            item: pickup.config.item,
+            pickup: pickup_entity,
+            item: pickup.config.item.clone(),
             quantity: pickup.config.quantity,
             position,
-        }))
+        };
+
+        session.store_fact(enemy, drop);
+        session.store_fact(pickup_entity, pickup);
+
+        Ok(Some(fact))
     }
 }

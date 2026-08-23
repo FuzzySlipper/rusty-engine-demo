@@ -12,14 +12,16 @@ use rusty_engine::gameplay_standard::{
     STANDARD_EFFECT_CAPABILITY,
 };
 
-use crate::combat::EnemyState;
+use crate::combat::{EnemyComponent, EnemyState};
+use crate::enemy_combat::EnemyCombatComponent;
 use crate::enemy_drop::{EnemyDropFact, EnemyDropRejection, EnemyDropService};
 use crate::enemy_program::{execute_enemy_defeat_program, EnemyDefeatOperation};
-use crate::explosive_prop::{ExplosivePropFact, ExplosivePropState};
+use crate::explosive_prop::{ExplosivePropComponent, ExplosivePropFact, ExplosivePropState};
 use crate::inventory::{
     apply_standard_stack, ArmorGrantMode, ArmorTransition, InventoryAction, InventoryReceipt,
     InventoryRejection, ItemDefinitionId, ItemKind,
 };
+use crate::player::PlayerControllerComponent;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
 
@@ -286,6 +288,13 @@ impl DamageService {
         };
         let mut candidate = session.clone();
         let operation = operation_id("damage", source.raw(), command.target.raw())?;
+        let target_track = crate::mechanics::vitality_track(
+            if candidate.has_fact::<ExplosivePropComponent>(command.target) {
+                crate::mechanics::VitalityPreset::DestructibleObject
+            } else {
+                crate::mechanics::VitalityPreset::ActionActor
+            },
+        );
         let _receipt = MechanicsDamageService::apply(
             &mut candidate.entities,
             &candidate.mechanics.catalog,
@@ -294,13 +303,7 @@ impl DamageService {
                 source: request_source(operation.clone(), "damage")?,
                 actor: Some(source),
                 target: command.target,
-                target_track: crate::mechanics::vitality_track(
-                    if candidate.explosive_props.contains_key(&command.target) {
-                        crate::mechanics::VitalityPreset::DestructibleObject
-                    } else {
-                        crate::mechanics::VitalityPreset::ActionActor
-                    },
-                ),
+                target_track,
                 parts: [
                     (
                         armor_eligible,
@@ -352,12 +355,13 @@ impl DamageService {
         let mut enemy_drops = Vec::new();
         let mut explosive_props = Vec::new();
         let mut recorded_enemy_defeat_program = None;
-        if let Some(combat) = candidate.enemy_combat.get_mut(&command.target) {
+        if let Some(mut combat) = candidate.fact::<EnemyCombatComponent>(command.target) {
             combat.state.pain_ticks_remaining = if died {
                 0
             } else {
                 combat.config.pain_duration_ticks
             };
+            candidate.store_fact(command.target, combat);
         }
         if died {
             let mut commands = Vec::new();
@@ -371,12 +375,12 @@ impl DamageService {
                     velocity: Vec3::ZERO,
                 });
             }
-            if candidate.enemies.contains_key(&command.target) {
+            if candidate.has_fact::<EnemyComponent>(command.target) {
                 commands.push(EntityCommand::SetCollisionEnabled {
                     entity: command.target,
                     enabled: false,
                 });
-                if let Some(combat) = candidate.enemy_combat.get(&command.target) {
+                if let Some(combat) = candidate.fact::<EnemyCombatComponent>(command.target) {
                     let program_id = combat.config.defeat_program.clone();
                     let program = candidate
                         .enemy_defeat_programs
@@ -407,7 +411,7 @@ impl DamageService {
                     }
                 }
             }
-            if let Some(prop) = candidate.explosive_props.get_mut(&command.target) {
+            if let Some(mut prop) = candidate.fact::<ExplosivePropComponent>(command.target) {
                 if prop.state == ExplosivePropState::Armed {
                     prop.state = ExplosivePropState::Exploded;
                     prop.pending = true;
@@ -423,6 +427,7 @@ impl DamageService {
                         prop: command.target,
                         source: command.source.clone(),
                     });
+                    candidate.store_fact(command.target, prop);
                 }
             }
             let entity_facts = if commands.is_empty() {
@@ -434,18 +439,20 @@ impl DamageService {
                     .map_err(VitalityRejection::EntityMutation)?
                     .facts
             };
-            if let Some(enemy) = candidate.enemies.get_mut(&command.target) {
+            if let Some(mut enemy) = candidate.fact::<EnemyComponent>(command.target) {
                 enemy.state = EnemyState::Defeated;
-                if let Some(combat) = candidate.enemy_combat.get_mut(&command.target) {
+                if let Some(mut combat) = candidate.fact::<EnemyCombatComponent>(command.target) {
                     combat.state.posture = crate::EnemyCombatPosture::Dead;
                     combat.state.last_known_target_position = None;
+                    candidate.store_fact(command.target, combat);
                 }
+                candidate.store_fact(command.target, enemy);
                 event = Some(GameEvent::EnemyDefeated {
                     enemy: command.target,
                     actor: source,
                     entity_facts,
                 });
-            } else if candidate.player_controllers.contains_key(&command.target) {
+            } else if candidate.has_fact::<PlayerControllerComponent>(command.target) {
                 event = Some(GameEvent::PlayerDied {
                     player: command.target,
                     source,

@@ -180,10 +180,20 @@ pub struct FloorActionService;
 
 impl FloorActionService {
     pub(crate) fn trigger_system(session: &GameSession) -> TriggerVolumeSystem {
-        TriggerVolumeSystem::new(session.floor_actions.keys().copied().map(|action| {
-            KinematicTriggerDefinition::new(action, FLOOR_ACTION_TRIGGER_SCOPE, ["floor-action"])
-                .with_geometry_source(TriggerGeometrySource::EntityBounds)
-        }))
+        TriggerVolumeSystem::new(
+            session
+                .facts::<FloorActionComponent>()
+                .into_iter()
+                .map(|(action, _)| action)
+                .map(|action| {
+                    KinematicTriggerDefinition::new(
+                        action,
+                        FLOOR_ACTION_TRIGGER_SCOPE,
+                        ["floor-action"],
+                    )
+                    .with_geometry_source(TriggerGeometrySource::EntityBounds)
+                }),
+        )
         .expect("admitted floor action trigger identities are fixed and valid")
     }
 
@@ -210,7 +220,7 @@ impl FloorActionService {
             fact.kind == TriggerOverlapFactKind::Enter && fact.pair.subject_id() == actor
         }) {
             let action = fact.pair.trigger_id();
-            let Some(component) = session.floor_actions.get(&action).cloned() else {
+            let Some(component) = session.fact::<FloorActionComponent>(action) else {
                 continue;
             };
             let program_id = session
@@ -223,13 +233,14 @@ impl FloorActionService {
                 .ok_or_else(|| FloorActionRejection::UnknownProgram {
                     action,
                     program_id: program_id.clone(),
-                })?;
+                })?
+                .clone();
             let entered = component.state == FloorActionState::Armed;
             let mut recorded = false;
             let mut feedback = false;
             let mut entity_facts = Vec::new();
             execute_floor_action_program(
-                program,
+                &program,
                 &mut |predicate| {
                     Ok(match predicate {
                         FloorActionPredicate::ActivationEntered => entered,
@@ -295,12 +306,12 @@ impl FloorActionService {
                                 action,
                                 target_platform,
                             })?;
-                        let component = session
-                            .floor_actions
-                            .get_mut(&action)
+                        let mut component = session
+                            .fact::<FloorActionComponent>(action)
                             .expect("floor action remains attached");
                         component.state = FloorActionState::Lowering;
                         component.motion_elapsed = TickDelta::ZERO;
+                        session.store_fact(action, component);
                         entity_facts.extend(receipt.facts);
                         Ok(())
                     }
@@ -314,8 +325,7 @@ impl FloorActionService {
             )?;
             if feedback {
                 let component = session
-                    .floor_actions
-                    .get(&action)
+                    .fact::<FloorActionComponent>(action)
                     .expect("floor action remains attached");
                 activations.push(FloorActionActivation {
                     action,
@@ -335,11 +345,7 @@ impl FloorActionService {
     }
 
     pub(crate) fn run_motion_phase(session: &mut GameSession) -> Result<(), RuntimeError> {
-        let actions = session
-            .floor_actions
-            .iter()
-            .map(|(action, component)| (*action, component.clone()))
-            .collect::<Vec<_>>();
+        let actions = session.facts::<FloorActionComponent>();
         for (action, start) in actions {
             if !start.config.is_valid() {
                 return Err(RuntimeError::InvalidFloorActionConfig { action });
@@ -441,12 +447,12 @@ fn advance_lowering(
             action,
             target_platform: start.config.target_platform,
         })?;
-    let component = session
-        .floor_actions
-        .get_mut(&action)
+    let mut component = session
+        .fact::<FloorActionComponent>(action)
         .expect("floor action remains attached");
     component.state = state;
     component.motion_elapsed = motion_elapsed;
+    session.store_fact(action, component);
     Ok(())
 }
 

@@ -25,6 +25,7 @@ pub mod enemy_program;
 pub mod explosive_prop;
 pub mod explosive_prop_program;
 pub mod extraction_beacon;
+pub mod facts;
 pub mod floor_action;
 pub mod floor_action_program;
 pub mod gameplay_program;

@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_time::{Tick, TickDelta};
 
-use crate::door::{DoorService, DoorTransition};
+use crate::door::{DoorComponent, DoorService, DoorTransition};
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::scheduler::{ScheduledIntent, ScheduledIntentKind, Scheduler};
@@ -147,7 +147,7 @@ impl SwitchView {
 }
 
 pub(crate) fn switch_is_available(session: &GameSession, entity: EntityId) -> bool {
-    let Some(component) = session.switches.get(&entity) else {
+    let Some(component) = session.fact::<SwitchComponent>(entity) else {
         return false;
     };
     if !component.is_available() {
@@ -155,18 +155,22 @@ pub(crate) fn switch_is_available(session: &GameSession, entity: EntityId) -> bo
     }
     component.config.effects.is_empty()
         || component.config.effects.iter().any(|effect| match effect {
-            SwitchEffect::OpenDoor(door) => session.doors.get(door).is_some_and(|door| {
-                matches!(
-                    door.state,
-                    crate::DoorState::Closed | crate::DoorState::Closing
-                )
-            }),
-            SwitchEffect::CloseDoor(door) => session.doors.get(door).is_some_and(|door| {
-                matches!(
-                    door.state,
-                    crate::DoorState::Opening | crate::DoorState::Open
-                )
-            }),
+            SwitchEffect::OpenDoor(door) => {
+                session.fact::<DoorComponent>(*door).is_some_and(|door| {
+                    matches!(
+                        door.state,
+                        crate::DoorState::Closed | crate::DoorState::Closing
+                    )
+                })
+            }
+            SwitchEffect::CloseDoor(door) => {
+                session.fact::<DoorComponent>(*door).is_some_and(|door| {
+                    matches!(
+                        door.state,
+                        crate::DoorState::Opening | crate::DoorState::Open
+                    )
+                })
+            }
         })
 }
 
@@ -204,7 +208,7 @@ impl InteractionService {
         if crate::DamageService::is_dead(session, actor) {
             return Err(RuntimeError::PlayerDefeated { player: actor });
         }
-        let Some(switch) = session.switches.get(&target) else {
+        let Some(switch) = session.fact::<SwitchComponent>(target) else {
             return Err(RuntimeError::NotInteractable { entity: target });
         };
         let config = switch.config.clone();
@@ -312,12 +316,12 @@ impl SwitchProgramContext<'_> {
                 },
             ));
         }
-        let component = self
+        let mut component = self
             .session
-            .switches
-            .get_mut(&self.interaction.switch)
+            .fact::<SwitchComponent>(self.interaction.switch)
             .expect("prepared switch remains attached to candidate session");
         component.activation_count = component.activation_count.saturating_add(1);
+        self.session.store_fact(self.interaction.switch, component);
         self.activation_recorded = true;
         Ok(())
     }
@@ -383,8 +387,7 @@ impl SwitchProgramContext<'_> {
 
     fn bound_doors(&self, select: impl Fn(&SwitchEffect) -> Option<EntityId>) -> Vec<EntityId> {
         self.session
-            .switches
-            .get(&self.interaction.switch)
+            .fact::<SwitchComponent>(self.interaction.switch)
             .expect("prepared switch remains attached to candidate session")
             .config
             .effects

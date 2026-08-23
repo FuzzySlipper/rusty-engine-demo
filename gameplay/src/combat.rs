@@ -16,6 +16,7 @@ use crate::inventory::{
     apply_standard_stack, InventoryAction, InventoryFact, InventoryRejection, ItemDefinitionId,
     ItemKind, WeaponAttackMode, WeaponDefinition,
 };
+use crate::player::PlayerControllerComponent;
 use crate::runtime::RuntimeError;
 use crate::runtime_records::GameEvent;
 use crate::session::GameSession;
@@ -278,8 +279,7 @@ impl CombatService {
             });
         }
         let controller = session
-            .player_controllers
-            .get(&attacker)
+            .fact::<PlayerControllerComponent>(attacker)
             .expect("weapon admission requires a player controller");
         let look = controller
             .look_receipt()
@@ -358,7 +358,7 @@ impl CombatService {
         actor: EntityId,
         enemy: EntityId,
     ) -> Result<Option<GameEvent>, RuntimeError> {
-        let Some(component) = session.enemies.get(&enemy).copied() else {
+        let Some(component) = session.fact::<EnemyComponent>(enemy) else {
             return Err(RuntimeError::UnknownEnemy { enemy });
         };
         if component.state == EnemyState::Defeated {
@@ -800,7 +800,7 @@ pub(crate) fn nearest_combat_target(
     max_distance: f32,
 ) -> Option<CombatTargetHit> {
     let mut best = None;
-    for entity in session.health.keys().copied() {
+    for (entity, _) in session.facts::<crate::vitality::HealthConfig>() {
         if entity == attacker || !session.is_player_attack_target(entity) {
             continue;
         }
