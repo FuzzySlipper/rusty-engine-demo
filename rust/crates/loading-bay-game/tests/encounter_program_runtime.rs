@@ -7,6 +7,17 @@ use serde_json::{json, Value};
 const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const PLAYER: EntityId = EntityId::new(1);
 
+fn sync_authored_translation(project: &mut Value, id: EntityId, translation: &Value) {
+    let nodes = project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array_mut()
+        .expect("authored scene nodes");
+    let node = nodes
+        .iter_mut()
+        .find(|node| node["id"] == id.raw())
+        .expect("authored scene node for entity");
+    node["transform"]["translation"] = translation.clone();
+}
+
 #[test]
 fn canonical_e1m1_encounter_program_activates_members_in_rust() {
     let (project, encounter, member, _) = project_with_one_member_and_optional_exit();
@@ -236,7 +247,8 @@ fn project_with_one_member_and_optional_exit() -> (Value, EntityId, EntityId, En
             .expect("E1M1 has a door usable as an encounter fixture exit"),
     );
 
-    entity_mut(&mut project, PLAYER)["translation"] = position;
+    entity_mut(&mut project, PLAYER)["translation"] = position.clone();
+    sync_authored_translation(&mut project, PLAYER, &position);
     let encounter_component = &mut entity_mut(&mut project, encounter_id)["encounter"];
     encounter_component["members"] = json!([member.raw()]);
     encounter_component["exit"] = json!(exit.raw());

@@ -530,7 +530,14 @@ fn set_entity_translation(project: &mut Value, entity_id: u64, position: Value) 
         .unwrap()
         .iter_mut()
         .find(|entity| entity["id"].as_u64() == Some(entity_id))
-        .unwrap()["translation"] = position;
+        .unwrap()["translation"] = position.clone();
+    let node = project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|node| node["id"].as_u64() == Some(entity_id))
+        .expect("authored scene node for entity");
+    node["transform"]["translation"] = position;
 }
 
 fn set_environment_program(project: &mut Value, component: &str, program: &str) {

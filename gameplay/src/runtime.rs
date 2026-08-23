@@ -1354,7 +1354,17 @@ mod tests {
             .iter_mut()
             .find(|entity| entity["id"] == E1M1_PLAYER.raw())
             .expect("player");
-        player["translation"] = translation;
+        player["translation"] = translation.clone();
+        for node in project["scenes"][0]["authoredScene"]["nodes"]
+            .as_array_mut()
+            .expect("authored scene nodes")
+            .iter_mut()
+        {
+            if node["id"] == E1M1_PLAYER.raw() {
+                node["transform"]["translation"] = translation;
+                break;
+            }
+        }
         GameRuntime::from_stored_project(&project.to_string()).expect("current authored fixture")
     }
 

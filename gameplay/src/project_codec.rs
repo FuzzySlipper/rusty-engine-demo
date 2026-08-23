@@ -167,6 +167,37 @@ fn canonicalize(mut document: StoredProject) -> Result<StoredProject, StoredProj
 
 fn normalize_numbers(document: &mut StoredProject) -> Result<(), StoredProjectError> {
     for (scene_index, scene) in document.scenes.iter_mut().enumerate() {
+        // Normalize the embedded Engine authored-scene document through its
+        // owner codec so the committed bytes are canonical and round-trip
+        // stably (sorted nodes, sorted dependencies, Engine field order).
+        let encoded = serde_json::to_string(&scene.authored_scene).map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::ENCODE,
+                format!("scenes[{scene_index}].authoredScene"),
+                error.to_string(),
+            )
+        })?;
+        let authored = rusty_engine::authored_scene::decode_scene(&encoded).map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::INVALID_COMPONENT,
+                format!("scenes[{scene_index}].authoredScene{}", error.path),
+                error.to_string(),
+            )
+        })?;
+        let canonical = rusty_engine::authored_scene::encode_scene(&authored).map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::ENCODE,
+                format!("scenes[{scene_index}].authoredScene{}", error.path),
+                error.to_string(),
+            )
+        })?;
+        scene.authored_scene = serde_json::from_str(&canonical).map_err(|error| {
+            StoredProjectError::new(
+                diagnostic_code::DECODE,
+                format!("scenes[{scene_index}].authoredScene"),
+                error.to_string(),
+            )
+        })?;
         if let Some(environment) = &mut scene.voxel_environment {
             match environment {
                 StoredVoxelEnvironment::Solid(environment) => normalize_f64(

@@ -352,6 +352,22 @@ fn snapshot_rejects_one_reserved_weapon_entity_mapping_shared_by_two_inventory_o
     let mut second_player = player;
     second_player["id"] = serde_json::json!(999);
     second_player["translation"] = serde_json::json!([0.0, 2.0, 0.0]);
+    {
+        let player_node = project["scenes"][0]["authoredScene"]["nodes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|node| node["id"] == PLAYER.raw())
+            .unwrap()
+            .clone();
+        let mut second_node = player_node;
+        second_node["id"] = serde_json::json!(999);
+        second_node["transform"]["translation"] = serde_json::json!([0.0, 2.0, 0.0]);
+        project["scenes"][0]["authoredScene"]["nodes"]
+            .as_array_mut()
+            .unwrap()
+            .push(second_node);
+    }
     project["scenes"][0]["entities"]
         .as_array_mut()
         .unwrap()

@@ -579,11 +579,91 @@ export type StoredVoxelEnvironmentDefinition =
   | ({ readonly kind: "material" } & MaterialVoxelEnvironmentDefinition)
   | ({ readonly kind: "generatedRoom" } & GeneratedVoxelEnvironmentDefinition);
 
+export interface AuthoredSceneTransform {
+  readonly translation: Vec3;
+  readonly rotation: Quat;
+  readonly scale: Vec3;
+}
+
+export interface AuthoredAssetReference {
+  readonly id: string;
+  readonly version: { readonly req: "any" };
+  readonly hash: null;
+}
+
+export interface AuthoredSceneMetadata {
+  readonly name: string | null;
+  readonly authoringFormatVersion: number;
+}
+
+export type AuthoredSceneLight =
+  | {
+      readonly kind: "ambient";
+      readonly color: Vec3;
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly shadowIntent: "disabled" | "requested";
+    }
+  | {
+      readonly kind: "directional";
+      readonly color: Vec3;
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly shadowIntent: "disabled" | "requested";
+    }
+  | {
+      readonly kind: "point";
+      readonly color: Vec3;
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly range: number | null;
+      readonly decay: number;
+      readonly shadowIntent: "disabled" | "requested";
+    }
+  | {
+      readonly kind: "spot";
+      readonly color: Vec3;
+      readonly intensity: number;
+      readonly enabled: boolean;
+      readonly range: number | null;
+      readonly decay: number;
+      readonly outerAngleRadians: number;
+      readonly penumbra: number;
+      readonly shadowIntent: "disabled" | "requested";
+    };
+
+export type AuthoredSceneKind =
+  | { readonly kind: "light"; readonly light: AuthoredSceneLight }
+  | { readonly kind: "staticMesh"; readonly asset: AuthoredAssetReference }
+  | { readonly kind: "sprite"; readonly asset: AuthoredAssetReference }
+  | { readonly kind: "emptyGroup" };
+
+export interface AuthoredSceneNode {
+  readonly id: number;
+  readonly parent: number | null;
+  readonly childOrder: number;
+  readonly label: string | null;
+  readonly tags: readonly string[];
+  readonly transform: AuthoredSceneTransform;
+  readonly renderableTransform?: AuthoredSceneTransform;
+  readonly kind: AuthoredSceneKind;
+}
+
+export interface AuthoredSceneDocument {
+  readonly schemaVersion: 5;
+  readonly id: number;
+  readonly revision: number;
+  readonly metadata: AuthoredSceneMetadata;
+  readonly dependencies: readonly AuthoredAssetReference[];
+  readonly nodes: readonly AuthoredSceneNode[];
+}
+
 export interface StoredSceneDefinition {
   readonly id: string;
   readonly name: string;
   readonly voxelEnvironment?: StoredVoxelEnvironmentDefinition;
   readonly voxelObjectInstances?: readonly StoredVoxelObjectInstanceDefinition[];
+  readonly authoredScene: AuthoredSceneDocument;
   readonly entities: readonly EntityDefinition[];
 }
 
@@ -778,7 +858,7 @@ export type LevelExitProgramDefinition =
 export interface LevelExitProgramCatalogEntry { readonly id: string; readonly program: LevelExitProgramDefinition; }
 
 export interface StoredProjectContent {
-  readonly schemaVersion: 26;
+  readonly schemaVersion: 27;
   readonly projectId: string;
   readonly name: string;
   readonly entryScene: string;

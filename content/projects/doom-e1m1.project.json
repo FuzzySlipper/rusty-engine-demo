@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 26,
+  "schemaVersion": 27,
   "projectId": "doom-e1m1",
   "name": "Doom E1M1 — Hangar (VoXel Showcase)",
   "entryScene": "scene/doom-e1m1",
@@ -161764,6 +161764,6381 @@
     {
       "id": "scene/doom-e1m1",
       "name": "Hangar",
+      "authoredScene": {
+        "dependencies": [
+          {
+            "hash": null,
+            "id": "mesh/player-marker",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "mesh/prop-kit/hazard-marker",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "mesh/prop-kit/level-exit",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "mesh/prop-kit/security-door",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-blood",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-imp",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-imp-fireball",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-ammo",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-arm1",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-arm2",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-bon1",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-bon2",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-clip",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-medi",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-sbox",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-shel",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-shot",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-pickup-stim",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-puff",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-shotgun-guy",
+            "version": {
+              "req": "any"
+            }
+          },
+          {
+            "hash": null,
+            "id": "sprite/doom-zombieman",
+            "version": {
+              "req": "any"
+            }
+          }
+        ],
+        "id": 1,
+        "metadata": {
+          "authoringFormatVersion": 5,
+          "name": "Hangar"
+        },
+        "nodes": [
+          {
+            "childOrder": 0,
+            "id": 1,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/player-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "player",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                114.0,
+                9.5,
+                78.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 2,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-imp",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-imp-1",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.9238795,
+                0.0,
+                0.38268343
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                263.0,
+                16.25,
+                87.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 3,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-imp",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-imp-2",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.9238795,
+                0.0,
+                0.38268343
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                258.0,
+                16.25,
+                85.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 4,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-zombieman",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-zombieman-3",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                230.0,
+                8.75,
+                128.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 5,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-zombieman-3",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                230.0,
+                8.75,
+                128.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 6,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-zombieman",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-zombieman-4",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                239.0,
+                8.75,
+                80.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 7,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-zombieman-4",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                239.0,
+                8.75,
+                80.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 8,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-zombieman",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-zombieman-5",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                244.0,
+                8.75,
+                91.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 9,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-zombieman-5",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                244.0,
+                8.75,
+                91.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 10,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-zombieman",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-zombieman-6",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                219.0,
+                8.75,
+                38.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 11,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-zombieman-6",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                219.0,
+                8.75,
+                38.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 12,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-zombieman",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-zombieman-7",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -1.0,
+                0.0,
+                6.123234e-17
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                253.0,
+                8.75,
+                38.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 13,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-zombieman-7",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                253.0,
+                8.75,
+                38.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 14,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-imp",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-imp-8",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                236.0,
+                8.75,
+                28.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 15,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-zombieman",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-zombieman-9",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -1.0,
+                0.0,
+                6.123234e-17
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                253.0,
+                8.75,
+                35.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 16,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-zombieman-9",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                253.0,
+                8.75,
+                35.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 17,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-zombieman",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-zombieman-10",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                219.0,
+                8.75,
+                35.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 18,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-zombieman-10",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                219.0,
+                8.75,
+                35.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 19,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-imp",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-imp-11",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                236.0,
+                8.75,
+                3.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 20,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-zombieman",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-zombieman-12",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -1.0,
+                0.0,
+                6.123234e-17
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                190.0,
+                11.75,
+                152.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 21,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-zombieman-12",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                190.0,
+                11.75,
+                152.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 22,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-zombieman",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-zombieman-13",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -1.0,
+                0.0,
+                6.123234e-17
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                190.0,
+                11.75,
+                157.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 23,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-zombieman-13",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                190.0,
+                11.75,
+                157.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 24,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-14",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -1.0,
+                0.0,
+                6.123234e-17
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                190.0,
+                11.75,
+                147.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 25,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-14",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                190.0,
+                11.75,
+                147.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 26,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-15",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -1.0,
+                0.0,
+                6.123234e-17
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                202.0,
+                10.25,
+                152.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 27,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-15",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                202.0,
+                10.25,
+                152.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 28,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-16",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                249.0,
+                7.25,
+                61.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 29,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-16",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                249.0,
+                7.25,
+                61.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 30,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-17",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                38.0,
+                16.75,
+                102.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 31,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-17",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                38.0,
+                16.75,
+                102.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 32,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-18",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.9238795,
+                0.0,
+                0.38268343
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                63.0,
+                9.75,
+                93.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 33,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-18",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                63.0,
+                9.75,
+                93.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 34,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-19",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.9238795,
+                0.0,
+                -0.38268343
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                63.0,
+                9.75,
+                111.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 35,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-19",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                63.0,
+                9.75,
+                111.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 36,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-20",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                154.0,
+                10.25,
+                136.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 37,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-20",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                154.0,
+                10.25,
+                136.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 38,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-21",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                -0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                168.0,
+                10.25,
+                168.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 39,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-21",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                168.0,
+                10.25,
+                168.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 40,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-22",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                234.0,
+                8.75,
+                100.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 41,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-22",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                234.0,
+                8.75,
+                100.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 42,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-23",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                236.0,
+                8.75,
+                84.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 43,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-23",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                236.0,
+                8.75,
+                84.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 44,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-24",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                236.0,
+                8.75,
+                112.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 45,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-24",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                236.0,
+                8.75,
+                112.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 46,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-25",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                224.0,
+                9.25,
+                136.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 47,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-25",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                224.0,
+                9.25,
+                136.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 48,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-26",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                204.0,
+                1.75,
+                56.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 49,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-26",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                204.0,
+                1.75,
+                56.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 50,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-27",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                189.0,
+                1.75,
+                50.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 51,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-27",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                189.0,
+                1.75,
+                50.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 52,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-28",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                240.0,
+                8.75,
+                38.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 53,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-28",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                240.0,
+                8.75,
+                38.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 54,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-shotgun-guy-29",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                36.0,
+                16.75,
+                98.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 55,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-drop-shotgun-guy-29",
+            "parent": null,
+            "renderableTransform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                -1.0,
+                0.0
+              ]
+            },
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                36.0,
+                16.75,
+                98.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 56,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-encounter-east-lift",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                241.3,
+                10.15,
+                96.4
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 57,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-encounter-exit-annex",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                227.66667,
+                7.1944447,
+                35.666668
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 58,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-encounter-central-stairs",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                182.33333,
+                11.0,
+                152.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 59,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-encounter-west-court",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                50.0,
+                13.25,
+                101.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 60,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/hazard-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-explosive-barrel-1",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                130.0,
+                8.8125,
+                100.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 61,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/hazard-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-explosive-barrel-2",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                120.0,
+                9.8125,
+                122.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 62,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/hazard-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-explosive-barrel-3",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -0.70710677,
+                0.0,
+                0.70710677
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                102.0,
+                9.8125,
+                96.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 63,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/hazard-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-explosive-barrel-4",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -1.0,
+                0.0,
+                6.123234e-17
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                232.0,
+                8.3125,
+                34.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 64,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/hazard-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-explosive-barrel-5",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -1.0,
+                0.0,
+                6.123234e-17
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                247.0,
+                8.3125,
+                40.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 65,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/hazard-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-explosive-barrel-6",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                -1.0,
+                0.0,
+                6.123234e-17
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                225.0,
+                8.3125,
+                39.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 66,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-arm2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2019-1",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                162.0,
+                4.0,
+                99.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 67,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-medi",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2012-2",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                228.0,
+                7.5,
+                28.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 68,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2007-3",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                219.0,
+                7.5,
+                44.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 69,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2007-4",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                253.0,
+                7.5,
+                44.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 70,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-5",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                57.0,
+                8.5,
+                108.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 71,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-6",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                57.0,
+                8.5,
+                96.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 72,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-7",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                54.0,
+                8.5,
+                92.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 73,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-8",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                54.0,
+                8.5,
+                112.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 74,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-9",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                75.0,
+                8.5,
+                114.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 75,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-10",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                75.0,
+                8.5,
+                90.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 76,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-11",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                50.0,
+                15.5,
+                102.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 77,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-12",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                46.0,
+                15.5,
+                102.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 78,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-13",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                130.0,
+                9.0,
+                84.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 79,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-14",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                94.0,
+                9.0,
+                84.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 80,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-15",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                94.0,
+                9.0,
+                118.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 81,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-16",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                109.0,
+                9.0,
+                122.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 82,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-17",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                215.0,
+                8.0,
+                132.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 83,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-18",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                220.0,
+                8.0,
+                139.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 84,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shel",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2008-19",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                226.0,
+                7.5,
+                80.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 85,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shel",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2008-20",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                236.0,
+                7.5,
+                56.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 86,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-21",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                247.0,
+                7.5,
+                43.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 87,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-22",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                225.0,
+                7.5,
+                43.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 88,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-23",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                219.0,
+                7.5,
+                42.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 89,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-24",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                253.0,
+                7.5,
+                42.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 90,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2014-25",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                253.0,
+                7.5,
+                26.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 91,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-26",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                219.0,
+                7.5,
+                26.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 92,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-27",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                240.0,
+                7.5,
+                2.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 93,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-28",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                232.0,
+                7.5,
+                2.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 94,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-29",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                240.0,
+                7.5,
+                10.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 95,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-30",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                232.0,
+                7.5,
+                10.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 96,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-stim",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2011-31",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                240.0,
+                7.5,
+                6.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 97,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-medi",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2012-32",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                192.0,
+                0.5,
+                52.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 98,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-sbox",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2049-33",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                184.0,
+                0.5,
+                54.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 99,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-ammo",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2048-34",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                200.0,
+                0.5,
+                54.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 100,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-arm1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2018-35",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                34.0,
+                17.0,
+                102.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 101,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-36",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                187.0,
+                10.5,
+                159.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 102,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-37",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                187.0,
+                10.5,
+                145.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 103,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-38",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                191.0,
+                10.5,
+                145.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 104,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-39",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                191.0,
+                10.5,
+                159.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 105,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-40",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                155.0,
+                9.0,
+                170.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 106,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-41",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                188.0,
+                9.0,
+                163.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 107,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-sbox",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2049-42",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                252.0,
+                6.0,
+                63.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 108,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2001-43",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                252.0,
+                6.0,
+                58.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 109,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-medi",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2012-44",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                250.0,
+                6.0,
+                66.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 110,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-sbox",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2049-45",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                276.0,
+                15.5,
+                76.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 111,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-46",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                274.0,
+                15.5,
+                92.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 112,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-47",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                280.0,
+                15.5,
+                100.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 113,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-48",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                265.0,
+                15.5,
+                119.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 114,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-49",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                259.0,
+                15.5,
+                115.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 115,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-50",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                271.0,
+                15.5,
+                117.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 116,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-51",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                274.0,
+                15.5,
+                111.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 117,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-52",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                277.0,
+                15.5,
+                106.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 118,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-pickup-2015-53",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                276.0,
+                15.5,
+                64.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 119,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-zombieman",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-zombieman",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 120,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-shotgun-guy",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-shotgun-guy",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 121,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-imp",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-imp",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 122,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shot",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-shot",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 123,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-clip",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-clip",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 124,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-shel",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-shel",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 125,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-ammo",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-ammo",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 126,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-sbox",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-sbox",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 127,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-stim",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-stim",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 128,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-medi",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-medi",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 129,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-bon1",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 130,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-bon2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-bon2",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 131,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-arm1",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-arm1",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 132,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-pickup-arm2",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-visual-template-pickup-arm2",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 133,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-blood",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-fx-template-blood",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 134,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-puff",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-fx-template-bullet-puff",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 135,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-imp-fireball",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-fx-template-projectile-flight",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 136,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "sprite/doom-imp-fireball",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "sprite"
+            },
+            "label": "doom-fx-template-projectile-impact",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 137,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/player-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-damaging-sector-13",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                162.0,
+                4.0,
+                99.25
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 138,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/player-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-damaging-sector-55",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                226.0,
+                6.0,
+                87.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 139,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/player-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-damaging-sector-57",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                249.75,
+                6.0,
+                96.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 140,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/player-marker",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-damaging-sector-61",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                231.25,
+                6.0,
+                98.25
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 141,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/security-door",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-manual-door-sector-4",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                144.5,
+                9.0,
+                148.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 142,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/security-door",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-manual-door-sector-68",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                231.0,
+                7.5,
+                64.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 143,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/security-door",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-manual-door-sector-81",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                236.0,
+                7.5,
+                14.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 144,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/security-door",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-manual-door-sector-76",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                236.0,
+                7.5,
+                52.5
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 145,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-floor-platform-sector-59",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                260.0,
+                15.0,
+                85.25
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 146,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-walk-floor-action-linedef-308",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                236.0,
+                7.5,
+                44.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 147,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-lift-platform-sector-70",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                270.0,
+                15.5,
+                62.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 148,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-repeatable-lift-linedef-195",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                229.25,
+                7.5,
+                118.75
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 149,
+            "kind": {
+              "asset": {
+                "hash": null,
+                "id": "mesh/prop-kit/level-exit",
+                "version": {
+                  "req": "any"
+                }
+              },
+              "kind": "staticMesh"
+            },
+            "label": "doom-exit",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                230.0,
+                7.5,
+                6.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 150,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-secret-sector-68",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                231.0,
+                7.5,
+                64.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 151,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-secret-sector-69",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                252.0,
+                6.0,
+                63.0
+              ]
+            }
+          },
+          {
+            "childOrder": 0,
+            "id": 152,
+            "kind": {
+              "kind": "emptyGroup"
+            },
+            "label": "doom-secret-sector-70",
+            "parent": null,
+            "tags": [],
+            "transform": {
+              "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "translation": [
+                270.0,
+                15.5,
+                62.0
+              ]
+            }
+          }
+        ],
+        "revision": 0,
+        "schemaVersion": 5
+      },
       "voxelEnvironment": {
         "kind": "material",
         "voxelSize": 1.0,

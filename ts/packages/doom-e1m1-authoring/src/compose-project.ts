@@ -1456,8 +1456,114 @@ export function buildDoomE1M1Project(
   assets.sort((a, b) => a.id.localeCompare(b.id));
   entities.sort((a, b) => a.id - b.id);
 
+  // Derive the Engine authored-scene document from the same entity data the
+  // admission payload uses: every entity maps to one scene node, node asset
+  // ids are collected (distinct, sorted by id) into dependencies, and nodes
+  // are sorted by id ascending per the canonical authored-scene contract.
+  const authoredNode = (entity: any) => {
+    const translation = entity.translation ?? [0, 0, 0];
+    const rotation = entity.rotation ?? [0, 0, 0, 1];
+    const scale = entity.scale ?? [1, 1, 1];
+    const renderable: any = entity.renderable;
+    const asset = renderable?.asset;
+    let kind;
+    if (entity.light) {
+      const light = entity.light;
+      const base = {
+        color: light.color,
+        intensity: light.intensity,
+        enabled: light.enabled,
+        shadowIntent: light.shadows ? "requested" : "disabled",
+      };
+      kind = {
+        kind: "light",
+        light:
+          light.kind === "point"
+            ? { kind: "point", ...base, range: light.range, decay: light.decay }
+            : light.kind === "spot"
+              ? {
+                  kind: "spot",
+                  ...base,
+                  range: light.range,
+                  decay: light.decay,
+                  outerAngleRadians: light.outerAngleRadians,
+                  penumbra: light.penumbra,
+                }
+              : { kind: light.kind, ...base },
+      };
+    } else if (asset) {
+      if (asset.startsWith("mesh/")) {
+        kind = {
+          kind: "staticMesh",
+          asset: { id: asset, version: { req: "any" }, hash: null },
+        };
+      } else if (asset.startsWith("sprite/")) {
+        kind = {
+          kind: "sprite",
+          asset: { id: asset, version: { req: "any" }, hash: null },
+        };
+      } else {
+        throw new Error(`unexpected authored renderable asset prefix: ${asset}`);
+      }
+    } else {
+      kind = { kind: "emptyGroup" };
+    }
+    const node: any = {
+      id: entity.id,
+      parent: entity.parent ?? null,
+      childOrder: entity.childOrder ?? 0,
+      label: entity.name ?? null,
+      tags: [],
+      transform: { translation, rotation, scale },
+      kind,
+    };
+    // renderableTransform follows the authored-scene codec: present only on
+    // asset-bearing nodes and only when it differs from identity.
+    const localTransform = renderable?.localTransform;
+    if (
+      localTransform &&
+      (kind.kind === "staticMesh" || kind.kind === "sprite")
+    ) {
+      const identity =
+        localTransform.translation[0] === 0 &&
+        localTransform.translation[1] === 0 &&
+        localTransform.translation[2] === 0 &&
+        localTransform.rotation[0] === 0 &&
+        localTransform.rotation[1] === 0 &&
+        localTransform.rotation[2] === 0 &&
+        localTransform.rotation[3] === 1 &&
+        localTransform.scale[0] === 1 &&
+        localTransform.scale[1] === 1 &&
+        localTransform.scale[2] === 1;
+      if (!identity) {
+        node.renderableTransform = localTransform;
+      }
+    }
+    return node;
+  };
+
+  const authoredNodes = entities.map(authoredNode);
+  const dependencyAssets = new Map<string, any>();
+  for (const node of authoredNodes) {
+    if (node.kind.kind === "staticMesh" || node.kind.kind === "sprite") {
+      dependencyAssets.set(node.kind.asset.id, node.kind.asset);
+    }
+  }
+  const authoredScene = {
+    schemaVersion: 5,
+    id: 1,
+    revision: 0,
+    metadata: { name: "Hangar", authoringFormatVersion: 5 },
+    dependencies: [...dependencyAssets.values()].sort((a, b) =>
+      a.id.localeCompare(b.id),
+    ),
+    // Entities were sorted by id above; sort defensively to satisfy the
+    // canonical authored-scene ordering contract.
+    nodes: [...authoredNodes].sort((a, b) => a.id - b.id),
+  };
+
   const project = {
-    schemaVersion: 26,
+    schemaVersion: 27,
     projectId: "doom-e1m1",
     name: "Doom E1M1 — Hangar (VoXel Showcase)",
     entryScene: "scene/doom-e1m1",
@@ -1497,6 +1603,7 @@ export function buildDoomE1M1Project(
           },
         ],
         voxelObjectInstances: [],
+        authoredScene,
         entities,
       },
     ],

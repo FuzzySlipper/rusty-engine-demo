@@ -42,8 +42,20 @@ fn door_runtime(
         .iter_mut()
         .find(|entity| entity["id"] == PLAYER.raw())
         .expect("player");
-    player["translation"] = door_translation;
+    player["translation"] = door_translation.clone();
+    sync_authored_translation(&mut project, PLAYER, &door_translation);
     GameRuntime::from_stored_project(&project.to_string()).expect("current authored fixture")
+}
+
+fn sync_authored_translation(project: &mut Value, id: EntityId, translation: &Value) {
+    let nodes = project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array_mut()
+        .expect("authored scene nodes");
+    let node = nodes
+        .iter_mut()
+        .find(|node| node["id"] == id.raw())
+        .expect("authored scene node for entity");
+    node["transform"]["translation"] = translation.clone();
 }
 
 #[test]

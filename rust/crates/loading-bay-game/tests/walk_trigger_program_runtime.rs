@@ -24,12 +24,26 @@ fn activated_runtime() -> (GameRuntime, EntityId, EntityId) {
         .find(|entity| entity.get("lift").is_some())
         .unwrap();
     let lift_id = EntityId::new(lift["id"].as_u64().unwrap());
-    lift["translation"] = player_translation;
+    lift["translation"] = player_translation.clone();
+    for id in [floor_id, lift_id] {
+        sync_authored_translation(&mut project, id, &player_translation);
+    }
     (
         GameRuntime::from_stored_project(&project.to_string()).unwrap(),
         floor_id,
         lift_id,
     )
+}
+
+fn sync_authored_translation(project: &mut Value, id: EntityId, translation: &Value) {
+    let nodes = project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array_mut()
+        .expect("authored scene nodes");
+    let node = nodes
+        .iter_mut()
+        .find(|node| node["id"] == id.raw())
+        .expect("authored scene node for entity");
+    node["transform"]["translation"] = translation.clone();
 }
 
 #[test]
@@ -120,7 +134,8 @@ fn changing_only_floor_program_composition_changes_rust_owned_transition() {
         .find(|entity| entity.get("floorAction").is_some())
         .unwrap();
     let floor_id = EntityId::new(floor["id"].as_u64().unwrap());
-    floor["translation"] = player_translation;
+    floor["translation"] = player_translation.clone();
+    sync_authored_translation(&mut project, floor_id, &player_translation);
     let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
 
     let receipt = runtime.run_walk_trigger_phase(PLAYER).unwrap();
@@ -159,7 +174,8 @@ fn lift_return_is_program_selected_and_motion_predicates_use_frozen_state() {
         .find(|entity| entity.get("lift").is_some())
         .unwrap();
     let lift_id = EntityId::new(lift["id"].as_u64().unwrap());
-    lift["translation"] = player_translation;
+    lift["translation"] = player_translation.clone();
+    sync_authored_translation(&mut project, lift_id, &player_translation);
     let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
 
     runtime.run_walk_trigger_phase(PLAYER).unwrap();
@@ -201,7 +217,10 @@ fn late_floor_program_failure_rolls_back_both_walk_trigger_families_and_trigger_
         .find(|entity| entity.get("lift").is_some())
         .unwrap();
     let lift_id = EntityId::new(lift["id"].as_u64().unwrap());
-    lift["translation"] = player_translation;
+    lift["translation"] = player_translation.clone();
+    for id in [floor_id, lift_id] {
+        sync_authored_translation(&mut project, id, &player_translation);
+    }
     let mut runtime = GameRuntime::from_stored_project(&project.to_string()).unwrap();
 
     assert!(runtime.run_walk_trigger_phase(PLAYER).is_err());

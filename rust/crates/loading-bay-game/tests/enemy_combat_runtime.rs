@@ -4,10 +4,22 @@ use loading_bay_game::{
     RuntimeError,
 };
 use rusty_engine::core_ids::EntityId;
+use serde_json::Value;
 use std::collections::BTreeSet;
 
 const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const PLAYER: EntityId = EntityId::new(1);
+
+fn sync_authored_translation(project: &mut Value, id: EntityId, translation: &Value) {
+    let nodes = project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array_mut()
+        .expect("authored scene nodes");
+    let node = nodes
+        .iter_mut()
+        .find(|node| node["id"] == id.raw())
+        .expect("authored scene node for entity");
+    node["transform"]["translation"] = translation.clone();
+}
 
 #[test]
 fn e1m1_authors_projectile_and_hitscan_enemies_as_sleeping_runtime_authority() {
@@ -521,16 +533,21 @@ fn project_with_isolated_enemy(kind: &str) -> (serde_json::Value, EntityId) {
         .unwrap()["translation"]
         .clone();
     let enemy = enemy_with_attack_kind_in_project(&project, kind);
+    let mut moved = Vec::new();
     for entity in project["scenes"][0]["entities"].as_array_mut().unwrap() {
         entity.as_object_mut().unwrap().remove("encounter");
         if entity["id"] == enemy.raw() {
             entity["translation"] = player_position.clone();
+            moved.push(enemy);
             entity["enemyCombat"]["sightRange"] = 100_000.into();
             entity["enemyCombat"]["hearingRange"] = 0.into();
         } else if entity.get("enemyCombat").is_some() {
             entity["enemyCombat"]["sightRange"] = 0.01.into();
             entity["enemyCombat"]["hearingRange"] = 0.into();
         }
+    }
+    for id in moved {
+        sync_authored_translation(&mut project, id, &player_position);
     }
     (project, enemy)
 }
@@ -556,9 +573,11 @@ fn project_with_two_projectile_enemies() -> (serde_json::Value, [EntityId; 2]) {
     let [first, rejecting, ..] = enemies.as_slice() else {
         panic!("E1M1 must author at least two projectile enemies");
     };
+    let mut moved = Vec::new();
     for entity in project["scenes"][0]["entities"].as_array_mut().unwrap() {
         entity.as_object_mut().unwrap().remove("encounter");
         if [*first, *rejecting].contains(&EntityId::new(entity["id"].as_u64().unwrap())) {
+            moved.push(EntityId::new(entity["id"].as_u64().unwrap()));
             entity["translation"] = player_position.clone();
             entity["enemyCombat"]["sightRange"] = 100_000.into();
             entity["enemyCombat"]["hearingRange"] = 0.into();
@@ -566,6 +585,9 @@ fn project_with_two_projectile_enemies() -> (serde_json::Value, [EntityId; 2]) {
             entity["enemyCombat"]["sightRange"] = 0.01.into();
             entity["enemyCombat"]["hearingRange"] = 0.into();
         }
+    }
+    for id in moved {
+        sync_authored_translation(&mut project, id, &player_position);
     }
     (project, [*first, *rejecting])
 }

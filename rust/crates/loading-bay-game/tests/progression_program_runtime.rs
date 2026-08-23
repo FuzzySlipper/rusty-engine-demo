@@ -8,6 +8,17 @@ use serde_json::{json, Value};
 const PROJECT: &str = include_str!("../../../../content/projects/doom-e1m1.project.json");
 const PLAYER: EntityId = EntityId::new(1);
 
+fn sync_authored_translation(project: &mut Value, id: EntityId, translation: &Value) {
+    let nodes = project["scenes"][0]["authoredScene"]["nodes"]
+        .as_array_mut()
+        .expect("authored scene nodes");
+    let node = nodes
+        .iter_mut()
+        .find(|node| node["id"] == id.raw())
+        .expect("authored scene node for entity");
+    node["transform"]["translation"] = translation.clone();
+}
+
 #[test]
 fn canonical_e1m1_secret_and_exit_programs_preserve_once_only_progression() {
     let (project, secret, exit) = project_with_secret_and_exit_at_player();
@@ -198,7 +209,9 @@ fn project_with_secret_and_exit_at_player() -> (Value, EntityId, EntityId) {
         .unwrap();
     let exit_id = EntityId::new(exit["id"].as_u64().unwrap());
     entity_mut(&mut project, secret_id)["translation"] = player_translation.clone();
-    entity_mut(&mut project, exit_id)["translation"] = player_translation;
+    entity_mut(&mut project, exit_id)["translation"] = player_translation.clone();
+    sync_authored_translation(&mut project, secret_id, &player_translation);
+    sync_authored_translation(&mut project, exit_id, &player_translation);
     (project, secret_id, exit_id)
 }
 
