@@ -11,7 +11,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use rusty_engine::engine_spatial::VoxelCollisionScene;
 use rusty_engine::render_model::RenderFrameDiff;
 use serde::Serialize;
 
@@ -327,21 +326,19 @@ impl BrowserRuntime {
             .map_err(|error| format!("project initial gameplay frame: {error}"))?
             .unwrap_or_else(|| RenderFrameDiff::try_from_ops(Vec::new()).expect("empty frame"));
         let application_content = if uses_application_content {
+            // One canonical admitted spatial scene: browser content projects
+            // from the runtime's admitted collision scene directly. There is
+            // no projection-only reconstruction, so rendering can never
+            // observe a volume that gameplay did not.
             let admitted_scene = service
                 .runtime()
                 .runtime()
                 .collision_scene()
                 .ok_or_else(|| "Doom E1M1 has no admitted voxel environment".to_owned())?;
-            let rendered_scene = VoxelCollisionScene::from_material_voxels(
-                admitted_scene.voxel_size(),
-                admitted_scene.chunk_size(),
-                admitted_scene.material_voxels().to_vec(),
-            )
-            .map_err(|error| format!("admit Doom E1M1 rendered volume: {error:?}"))?;
             Some(
                 project_doom_e1m1_application_content(
                     service.authored_project().document(),
-                    &rendered_scene,
+                    admitted_scene,
                     &voxel_object_frame,
                     &initial_gameplay_frame,
                     &admitted_content_root(service.project_path())?,
@@ -917,6 +914,139 @@ mod tests {
         );
         assert!(value["dynamic"]["gameplayOutcome"].is_null());
         let _ = std::fs::remove_dir_all(root);
+    }
+
+    /// A Doom E1M1 candidate with no admitted voxel environment fails
+    /// admission cleanly: no runtime, no application content, nothing
+    /// published.
+    #[test]
+    fn missing_voxel_environment_fails_admission_without_publishing_content() {
+        // The candidate lives beside the canonical project so its relative
+        // gameplay-package dependencies still resolve; only the voxel
+        // environment differs.
+        let projects_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects")
+            .canonicalize()
+            .expect("content projects directory");
+        let project: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(projects_dir.join("doom-e1m1.project.json"))
+                .expect("E1M1 project"),
+        )
+        .expect("E1M1 project");
+        let mut stripped = project;
+        stripped["scenes"][0]
+            .as_object_mut()
+            .expect("entry scene object")
+            .remove("voxelEnvironment");
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let project_path = projects_dir.join(format!(
+            "doom-e1m1-no-environment-{unique}.project.check.json"
+        ));
+        std::fs::write(&project_path, stripped.to_string()).expect("write candidate");
+
+        // Admission rejects the candidate atomically and names the missing
+        // spatial authority; nothing is published.
+        let error = match InProcessLoadingBayAdapter::admit(&project_path, &projects_dir) {
+            Ok(_) => {
+                let _ = std::fs::remove_file(&project_path);
+                panic!("a Doom E1M1 without a voxel environment must fail admission");
+            }
+            Err(error) => error,
+        };
+        let _ = std::fs::remove_file(&project_path);
+        assert!(
+            error.contains("require a voxel environment"),
+            "failure must name the missing spatial authority, got {error}"
+        );
+        assert!(!error.contains("application content"));
+    }
+
+    /// Save/load round trips must never fork the spatial authority: the
+    /// restored runtime scene keeps its admitted identity, and the browser
+    /// application content projected at load remains the content derived
+    /// from that one admitted scene.
+    #[test]
+    fn save_load_round_trip_keeps_one_admitted_spatial_authority_for_browser_content() {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let save_root = std::env::temp_dir().join(format!(
+            "loading-bay-desktop-single-authority-{}-{unique}",
+            std::process::id()
+        ));
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/projects/doom-e1m1.project.json");
+        let mut adapter = InProcessLoadingBayAdapter::admit(&project, &save_root)
+            .expect("admit E1M1 desktop adapter");
+
+        let initial_hash = adapter
+            .runtime
+            .service
+            .runtime()
+            .runtime()
+            .collision_scene()
+            .map(|scene| format!("{:016x}", scene.authority_hash()))
+            .expect("admitted voxel environment");
+        let initial_content_ops = adapter
+            .runtime
+            .application_content()
+            .map(|content| content.frame.ops.len())
+            .expect("Doom E1M1 projects application content");
+        assert!(initial_content_ops > 0);
+
+        let generation = adapter.begin_session();
+        adapter
+            .submit(LoadingBayServiceCommand::SaveGame {
+                connection_generation: generation,
+                sequence: 1,
+                slot: crate::SaveSlotId::Checkpoint,
+                overwrite: false,
+                expected_storage_revision: None,
+            })
+            .expect("stage checkpoint save");
+        adapter
+            .advance(crate::FIXED_STEP_DURATION)
+            .expect("consume checkpoint save");
+        adapter
+            .submit(LoadingBayServiceCommand::LoadGame {
+                connection_generation: generation,
+                sequence: 2,
+                slot: crate::SaveSlotId::Checkpoint,
+                expected_storage_revision: None,
+            })
+            .expect("stage checkpoint load");
+        adapter
+            .advance(crate::FIXED_STEP_DURATION)
+            .expect("consume checkpoint load");
+
+        let restored_hash = adapter
+            .runtime
+            .service
+            .runtime()
+            .runtime()
+            .collision_scene()
+            .map(|scene| format!("{:016x}", scene.authority_hash()))
+            .expect("restored voxel environment");
+        assert_eq!(
+            initial_hash, restored_hash,
+            "save/load must restore the same admitted spatial authority"
+        );
+        assert_eq!(
+            adapter
+                .runtime
+                .application_content()
+                .map(|content| content.frame.ops.len())
+                .expect("application content survives reload"),
+            initial_content_ops,
+            "browser content must remain the projection of the one admitted scene"
+        );
+
+        adapter.disconnect_session(generation);
+        let _ = std::fs::remove_dir_all(save_root);
     }
 
     #[test]

@@ -1794,7 +1794,6 @@ pub fn externalize_frame_meshes(
 #[cfg(test)]
 mod tests {
     use rusty_engine::core_math::Vec3;
-    use rusty_engine::engine_spatial::VoxelCollisionScene;
     use rusty_engine::entity_state::{EntityTransform, Quat};
     use rusty_engine::render_model::RenderDiff;
     use std::path::Path;
@@ -1974,19 +1973,15 @@ mod tests {
         let source = include_str!("../../../../content/projects/doom-e1m1.project.json");
         let project = decode_project_document(source).unwrap().project;
         let runtime = GameRuntime::from_stored_project(source).unwrap();
-        let admitted = runtime.collision_scene().unwrap();
-        let scene = VoxelCollisionScene::from_material_voxels(
-            admitted.voxel_size(),
-            admitted.chunk_size(),
-            admitted.material_voxels().to_vec(),
-        )
-        .unwrap();
+        // Projection consumes the admitted collision scene directly — the
+        // same single spatial authority gameplay observes.
+        let scene = runtime.collision_scene().unwrap();
         let objects = project_stored_voxel_objects(&project).unwrap();
         let mut gameplay = GameplayApplicationProjector::new(&project);
         let entities = gameplay.project(&runtime).unwrap();
         let content = project_doom_e1m1_application_content(
             &project,
-            &scene,
+            scene,
             &objects,
             &entities,
             &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."),
