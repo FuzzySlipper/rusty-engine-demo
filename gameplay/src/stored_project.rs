@@ -2300,22 +2300,10 @@ fn validate_scene_entities(
                 ));
             }
         }
-        if let Some(bounds) = entity.bounds {
-            let valid = bounds.min.into_iter().chain(bounds.max).all(|value| {
-                value.is_finite() && value.abs() <= rusty_engine::entity_state::MAX_ABS_TRANSLATION
-            }) && bounds
-                .min
-                .into_iter()
-                .zip(bounds.max)
-                .all(|(minimum, maximum)| minimum <= maximum);
-            if !valid {
-                return Err(failure(
-                    diagnostic_code::INVALID_COMPONENT,
-                    format!("{root}.bounds"),
-                    "entity bounds must be finite, ordered, and within the spatial limit",
-                ));
-            }
-        }
+        // Bounds are admitted by the Engine entity-definition validator
+        // (finite, within the spatial limit, ordered); an invalid binding
+        // surfaces as a typed Engine rejection translated to a product
+        // path during admission rather than a restated numeric rule here.
         if let Some(presentation) = &entity.renderable {
             // The renderable asset itself is owned by the Engine scene node
             // kind; the binding only tunes its presentation.
@@ -2999,29 +2987,13 @@ fn validate_voxel_instance_transform(
     instance: &StoredVoxelInstance,
     path: &str,
 ) -> Result<(), StoredProjectError> {
-    if instance.translation.iter().any(|value| !value.is_finite())
-        || instance.rotation.iter().any(|value| !value.is_finite())
-        || instance
-            .scale
-            .iter()
-            .any(|value| !value.is_finite() || *value <= 0.0)
+    if let Some(rejection) =
+        engine_transform_rejection(instance.translation, instance.rotation, instance.scale)
     {
         return Err(failure(
             diagnostic_code::INVALID_VOXEL_INSTANCE,
             path,
-            "voxel instance transform must be finite with positive scale",
-        ));
-    }
-    let rotation_norm = instance
-        .rotation
-        .iter()
-        .map(|value| value * value)
-        .sum::<f32>();
-    if (rotation_norm - 1.0).abs() > 0.002 {
-        return Err(failure(
-            diagnostic_code::INVALID_VOXEL_INSTANCE,
-            format!("{path}.rotation"),
-            "voxel instance rotation must be a normalized quaternion",
+            rejection.message,
         ));
     }
     Ok(())
@@ -3034,29 +3006,13 @@ fn validate_voxel_object_instance(
     project: &StoredProject,
     path: &str,
 ) -> Result<(), StoredProjectError> {
-    if instance.translation.iter().any(|value| !value.is_finite())
-        || instance.rotation.iter().any(|value| !value.is_finite())
-        || instance
-            .scale
-            .iter()
-            .any(|value| !value.is_finite() || *value <= 0.0)
+    if let Some(rejection) =
+        engine_transform_rejection(instance.translation, instance.rotation, instance.scale)
     {
         return Err(failure(
             diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
             path,
-            "voxel-object instance transform must be finite with positive scale",
-        ));
-    }
-    let rotation_norm = instance
-        .rotation
-        .iter()
-        .map(|value| value * value)
-        .sum::<f32>();
-    if (rotation_norm - 1.0).abs() > 0.002 {
-        return Err(failure(
-            diagnostic_code::INVALID_VOXEL_OBJECT_INSTANCE,
-            format!("{path}.rotation"),
-            "voxel-object instance rotation must be a normalized quaternion",
+            rejection.message,
         ));
     }
     match &instance.frame {
@@ -3221,6 +3177,78 @@ pub fn authored_node_fields(
         }
     }
     Ok(fields)
+}
+
+/// Rejects a spatial transform through the Engine's canonical scene
+/// admission rules. The Engine owns the finite/range/unit-quaternion/
+/// positive-scale invariants (including tolerances); downstream routes each
+/// stored-but-not-yet-admitted spatial value through this single-node probe
+/// of the public scene validator instead of restating those rules.
+pub(crate) fn engine_transform_rejection(
+    translation: [f32; 3],
+    rotation: [f32; 4],
+    scale: [f32; 3],
+) -> Option<rusty_engine::authored_scene::SceneDiagnostic> {
+    use rusty_engine::authored_scene::{
+        validate_scene, FlatSceneDocument, NodeMetadata, SceneMetadata, SceneNodeKind,
+        SceneNodeRecord, SceneTransform, SceneValidationError,
+    };
+    use rusty_engine::core_ids::{SceneId, SceneNodeId};
+    use rusty_engine::core_math::Vec3;
+    use rusty_engine::entity_state::Quat;
+
+    let document = FlatSceneDocument {
+        id: SceneId::new(0),
+        revision: 0,
+        schema_version: 5,
+        metadata: SceneMetadata {
+            name: None,
+            authoring_format_version: 5,
+        },
+        dependencies: Vec::new(),
+        nodes: vec![SceneNodeRecord {
+            id: SceneNodeId::new(1),
+            parent: None,
+            child_order: 0,
+            transform: SceneTransform {
+                translation: Vec3::new(translation[0], translation[1], translation[2]),
+                rotation: Quat::new(rotation[0], rotation[1], rotation[2], rotation[3]),
+                scale: Vec3::new(scale[0], scale[1], scale[2]),
+            },
+            renderable_transform: SceneTransform::IDENTITY,
+            kind: SceneNodeKind::EmptyGroup,
+            metadata: NodeMetadata {
+                label: None,
+                tags: Vec::new(),
+            },
+        }],
+    };
+    let report = validate_scene(&document);
+    let rejection = report.errors.into_iter().find_map(|error| match error {
+        SceneValidationError::InvalidTransform { reason, .. } => Some(reason),
+        _ => None,
+    })?;
+    Some(rusty_engine::authored_scene::SceneDiagnostic {
+        code: rejection.code().to_owned(),
+        path: String::new(),
+        message: format!(
+            "Engine rejected the spatial transform ({})",
+            transform_rejection_message(rejection)
+        ),
+    })
+}
+
+fn transform_rejection_message(reason: rusty_engine::authored_scene::TransformInvalid) -> String {
+    use rusty_engine::authored_scene::TransformInvalid as Reason;
+    match reason {
+        Reason::RequiresSchema5 => "transform requires schema 5".to_owned(),
+        Reason::NonFiniteTranslation => "translation must be finite".to_owned(),
+        Reason::TranslationOutOfRange => "translation is outside the spatial limit".to_owned(),
+        Reason::NonFiniteRotation => "rotation must be finite".to_owned(),
+        Reason::NonUnitRotation => "rotation must be a normalized quaternion".to_owned(),
+        Reason::NonFiniteScale => "scale must be finite".to_owned(),
+        Reason::NonPositiveScale => "scale must be positive".to_owned(),
+    }
 }
 
 fn validate_authored_scene(

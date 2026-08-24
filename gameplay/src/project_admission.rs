@@ -10,7 +10,7 @@ use rusty_engine::engine_spatial::{
     validate_material_voxel, GeneratedRoomConfig, MaterialVoxel, VoxelAuthorityValidationError,
     VoxelCollisionScene,
 };
-use rusty_engine::entity_state::{EntityDefinition, EntityTransform, MAX_ABS_TRANSLATION};
+use rusty_engine::entity_state::{EntityDefinition, EntityTransform};
 
 use crate::definition::{GameEntityDefinition, GameEntityDefinitionError};
 use crate::door::DoorConfig;
@@ -1261,12 +1261,20 @@ fn authored_definition(
     };
     let mut definition = GameEntityDefinition::new(entity_definition);
     if let Some(door) = &authored.door {
-        let open_translation = array_vec3(door.open_translation);
-        if !translation_is_valid(open_translation) {
+        // The open translation is downstream door policy, but its spatial
+        // validity is an Engine-owned invariant: route it through the
+        // canonical Engine transform admission rules.
+        if crate::stored_project::engine_transform_rejection(
+            door.open_translation,
+            [0.0, 0.0, 0.0, 1.0],
+            [1.0, 1.0, 1.0],
+        )
+        .is_some()
+        {
             return Err(StoredProjectError::new(
                 diagnostic_code::INVALID_COMPONENT,
                 path("door.openTranslation"),
-                "door open translation is invalid",
+                "door open translation is outside the admitted spatial range",
             ));
         }
         let auto_close_after = match door.auto_close_after_ticks {
@@ -1288,8 +1296,12 @@ fn authored_definition(
             ));
         }
         definition = definition.as_door(
-            DoorConfig::new(transform.translation, open_translation, auto_close_after)
-                .with_motion_duration(TickDelta::new(door.motion_duration_ticks)),
+            DoorConfig::new(
+                transform.translation,
+                array_vec3(door.open_translation),
+                auto_close_after,
+            )
+            .with_motion_duration(TickDelta::new(door.motion_duration_ticks)),
         );
         if let Some(access) = &door.access {
             definition = definition.with_door_access(DoorAccessConfig {
@@ -1899,13 +1911,4 @@ fn entity_path(
 
 fn array_vec3(value: [f32; 3]) -> Vec3 {
     Vec3::new(value[0], value[1], value[2])
-}
-
-fn translation_is_valid(value: Vec3) -> bool {
-    value.x.is_finite()
-        && value.y.is_finite()
-        && value.z.is_finite()
-        && value.x.abs() <= MAX_ABS_TRANSLATION
-        && value.y.abs() <= MAX_ABS_TRANSLATION
-        && value.z.abs() <= MAX_ABS_TRANSLATION
 }
