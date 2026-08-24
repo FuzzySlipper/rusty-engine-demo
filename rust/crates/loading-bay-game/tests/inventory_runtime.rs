@@ -602,6 +602,65 @@ fn weapon_selection_uses_standard_equipment_and_selected_weapon_disposal_is_atom
     );
 }
 
+/// Fungible commands ride the Engine standard operation path through the one
+/// product boundary; the typed product value policy (max quantity) is
+/// preserved even though planning and mutation belong to the standard leaf.
+#[test]
+fn fungible_grant_through_the_public_route_preserves_product_overflow_policy() {
+    let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let bullets = ItemDefinitionId::parse("ammo/bullets").unwrap();
+    // Authored maxQuantity for ammo/bullets is 200.
+    let unchanged = runtime.session().inventory(PLAYER).unwrap();
+    let err = runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: bullets.clone(),
+                    quantity: 201,
+                },
+            },
+        )
+        .unwrap_err();
+    assert!(matches!(
+        err,
+        loading_bay_game::RuntimeError::Inventory(InventoryRejection::QuantityOverflow { .. })
+    ));
+    assert_eq!(runtime.session().inventory(PLAYER).unwrap(), unchanged);
+
+    // Within the authored limit the same route succeeds and advances the
+    // command sequence exactly once.
+    runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: bullets,
+                    quantity: 30,
+                },
+            },
+        )
+        .unwrap();
+    let repeated = runtime.apply_inventory_command(
+        PLAYER,
+        InventoryCommand {
+            sequence: 1,
+            action: InventoryAction::Grant {
+                item: ItemDefinitionId::parse("ammo/shells").unwrap(),
+                quantity: 1,
+            },
+        },
+    );
+    assert!(matches!(
+        repeated,
+        Err(loading_bay_game::RuntimeError::Inventory(
+            InventoryRejection::RepeatedCommand { .. }
+        ))
+    ));
+}
+
 fn unique_item_entity(runtime: &GameRuntime, definition: &str) -> EntityId {
     runtime
         .session()

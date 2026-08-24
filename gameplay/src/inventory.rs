@@ -4,8 +4,8 @@ use rusty_engine::core_ids::EntityId;
 use rusty_engine::core_math::Vec3;
 use rusty_engine::core_time::Tick;
 use rusty_engine::gameplay_mechanics::{
-    InventoryMutationRequest, InventoryService as MechanicsInventoryService, ItemComponent,
-    OperationId, SourceInstanceId, SourceInstanceIdentity,
+    InventoryService as MechanicsInventoryService, ItemComponent, OperationId, SourceInstanceId,
+    SourceInstanceIdentity,
 };
 use rusty_engine::gameplay_standard::{
     CapabilityRequirementId, CapabilityRoleBinding, CapabilityRoleBindings, CapabilityRoleId,
@@ -510,6 +510,20 @@ impl InventoryService {
         {
             return Err(InventoryRejection::OwnerDefeated { owner });
         }
+        // Fungible stacks ride the Engine standard operation path; unique
+        // weapons keep Loading Bay's materialization/containment policy leaf
+        // below. One route per item kind means no fungible command can reach
+        // a parallel local mutation.
+        let fungible = match &command.action {
+            InventoryAction::Grant { item, .. } | InventoryAction::Consume { item, .. } => !session
+                .item_definitions
+                .get(item)
+                .is_some_and(|definition| matches!(definition.kind, ItemKind::Weapon(_))),
+            _ => false,
+        };
+        if fungible {
+            return apply_standard_stack(session, owner, command.sequence, command.action);
+        }
         let mut candidate = session.clone();
         let facts = apply_action(&mut candidate, owner, command.sequence, &command.action)?;
         candidate
@@ -597,12 +611,36 @@ pub(crate) fn apply_standard_stack(
             });
         }
     };
+    // Product value policy stays downstream and typed even though catalog
+    // admission, planning, and mutation belong to the standard operation.
+    let definition = require_definition(&session.item_definitions, &item)?;
+    if quantity == 0 {
+        return Err(InventoryRejection::ZeroQuantity { item: item.clone() });
+    }
     let before = inventory_view(session, owner)?;
     let existing_quantity = before
         .stacks
         .iter()
         .find(|stack| stack.item == item)
         .map_or(0, |stack| stack.quantity);
+    if grant {
+        let after = existing_quantity.checked_add(quantity).ok_or_else(|| {
+            InventoryRejection::QuantityOverflow {
+                item: item.clone(),
+                current: existing_quantity,
+                requested: quantity,
+                limit: definition.max_quantity,
+            }
+        })?;
+        if after > definition.max_quantity {
+            return Err(InventoryRejection::QuantityOverflow {
+                item: item.clone(),
+                current: existing_quantity,
+                requested: quantity,
+                limit: definition.max_quantity,
+            });
+        }
+    }
     if grant && existing_quantity == 0 && before.stacks.len() == before.capacity_slots {
         return Err(InventoryRejection::InventoryFull {
             capacity_slots: before.capacity_slots,
@@ -1057,8 +1095,6 @@ fn apply_action(
 ) -> Result<Vec<InventoryFact>, InventoryRejection> {
     let definitions = &session.item_definitions;
     let before_view = inventory_view(session, owner)?;
-    let operation = operation_id(sequence)?;
-    let source = source_identity(operation.clone())?;
     match action {
         InventoryAction::Grant { item, quantity } => {
             let definition = require_definition(definitions, item)?;
@@ -1159,20 +1195,12 @@ fn apply_action(
                     });
                 }
             } else {
-                MechanicsInventoryService::grant(
-                    &mut session.entities,
-                    &session.mechanics.catalog,
-                    InventoryMutationRequest {
-                        operation,
-                        source,
-                        owner,
-                        item: mechanics_item_id(item)
-                            .map_err(|reason| InventoryRejection::Mechanics { reason })?,
-                        quantity: u64::from(*quantity),
-                        expected_revision: None,
-                    },
-                )
-                .map_err(mechanics_rejection)?;
+                // Unreachable through InventoryService::apply: fungible grants are routed to
+                // the standard operation path before any candidate exists. Kept as an explicit
+                // boundary so a future caller cannot silently reintroduce a parallel mutation.
+                return Err(InventoryRejection::Mechanics {
+                    reason: format!("fungible item {item} must use the standard stack path"),
+                });
             }
             let runtime = session
                 .inventories
@@ -1251,20 +1279,12 @@ fn apply_action(
                 crate::mechanics::clear_weapon_containment(&mut session.entities, weapon)
                     .map_err(|reason| InventoryRejection::Mechanics { reason })?;
             } else {
-                MechanicsInventoryService::consume(
-                    &mut session.entities,
-                    &session.mechanics.catalog,
-                    InventoryMutationRequest {
-                        operation,
-                        source,
-                        owner,
-                        item: mechanics_item_id(item)
-                            .map_err(|reason| InventoryRejection::Mechanics { reason })?,
-                        quantity: u64::from(*quantity),
-                        expected_revision: None,
-                    },
-                )
-                .map_err(mechanics_rejection)?;
+                // Unreachable through InventoryService::apply: fungible consumes are routed to
+                // the standard operation path before any candidate exists. Kept as an explicit
+                // boundary so a future caller cannot silently reintroduce a parallel mutation.
+                return Err(InventoryRejection::Mechanics {
+                    reason: format!("fungible item {item} must use the standard stack path"),
+                });
             }
             if after == 0 {
                 session
