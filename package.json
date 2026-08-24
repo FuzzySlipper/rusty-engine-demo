@@ -9,11 +9,11 @@
     "build:tauri": "tauri build --bundles deb,appimage",
     "build:tauri:binary": "tauri build --no-bundle",
     "certify:e1m1": "node scripts/doom-browser-smoke.mjs",
-    "check:content": "pnpm --filter @rusty-engine-demo/project-content check && node scripts/check-canonical-projects.mjs",
+    "check:content": "pnpm --filter @rusty-engine-demo/doom-e1m1-authoring compose:check && pnpm --filter @rusty-engine-demo/project-content check && node scripts/check-canonical-projects.mjs",
     "gameplay:build": "tsc -p gameplay/authoring/tsconfig.json && node gameplay/authoring/scripts/materialize.mjs",
     "gameplay:check": "pnpm gameplay:build && git diff --exit-code -- data/gameplay/",
     "gameplay:typecheck": "tsc -p gameplay/authoring/tsconfig.json --noEmit",
-    "generate:content": "pnpm --filter @rusty-engine-demo/project-content generate",
+    "generate:content": "pnpm --filter @rusty-engine-demo/doom-e1m1-authoring generate && pnpm run gameplay:build",
     "lint": "nx run-many -t lint --all",
     "serve:den": "bash scripts/serve-den.sh",
     "smoke:e1m1": "RUSTY_DOOM_SMOKE_FOCUSED=1 node scripts/doom-browser-smoke.mjs",
@@ -26,7 +26,8 @@
     "test:ts": "pnpm --filter @rusty-engine-demo/project-content test",
     "typecheck": "tsc --build ts/tsconfig.json && pnpm --filter @rusty-engine-demo/browser-shell typecheck && nx run-many -t typecheck --all",
     "verify": "bash scripts/verify.sh",
-    "verify:tauri": "pnpm run test:tauri && pnpm run build:tauri:binary && pnpm run smoke:tauri"
+    "verify:tauri": "pnpm run test:tauri && pnpm run build:tauri:binary && pnpm run smoke:tauri",
+    "check:provenance": "pnpm --filter @rusty-engine-demo/doom-e1m1-authoring check"
   },
   "dependencies": {
     "@angular/common": "~21.2.0",

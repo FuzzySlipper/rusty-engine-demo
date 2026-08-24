@@ -147,6 +147,32 @@ revision advances with each gameplay generation, so the long-lived application
 client can reacquire the live context without mistaking an ordinary restart for
 a different product runtime.
 
+### Current mechanism map (post-migration)
+
+The mechanism campaigns landed these authority placements; older write-ups
+describing side-tables, a downstream generic scene model, local mechanics
+wrappers, or a reconstructed spatial scene are obsolete:
+
+- **Facts** live in the Engine typed component store: 19 registered durable
+  `loading-bay.*` components with typed codecs, slot-guarded concurrent
+  update protection, and snapshot round-trip; `GameSession` helpers are typed
+  accessors, not a second store.
+- **Generic scene structure** lives only in the Engine `authored-scene`
+  document. Entity records are id-keyed bindings plus presentation overrides;
+  runtime entities are built one-per-node with bindings overlaid by id, so no
+  correspondence pass exists.
+- **Generic invariants** (transforms, bounds, quaternions, lights, hierarchy,
+  asset references) are admitted by Engine validators; product diagnostics are
+  translations of typed Engine rejections onto product paths.
+- **Inventory and vitality mutations** route through Engine standard
+  operations (`GrantStack`/`ConsumeStack`, equipment leaves, `ReplaceEffect`,
+  `materialize_unique`) or Engine services; every successful command retains
+  the unaltered typed Engine receipts on its product result
+  (`standard_receipts`). Doom ordering/capacity/depletion/supply policy stays
+  downstream by name.
+- **Spatial authority** is the one admitted `VoxelCollisionScene`; browser
+  application content projects from it directly with no reconstruction.
+
 ## Adapters
 
 `browser-host` is the normal development adapter: it translates bounded `loading-bay.v2` WebSocket messages to the service and exposes read-only diagnostics. The Angular shell consumes the projected content through Rusty Engine's public application-host.

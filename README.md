@@ -7,10 +7,14 @@ Loading Bay is a small Rust-authoritative game and reference consumer of [Rusty 
 ```bash
 pnpm install --frozen-lockfile
 pnpm run build:shell
-cargo run --locked -p loading-bay-game --bin browser-host
+cargo run --locked -p loading-bay-game --bin browser-host --release
 ```
 
-Open `http://127.0.0.1:8787`. The browser host admits `content/projects/doom-e1m1.project.json` and is a development HTTP/WebSocket adapter over the Rust product service.
+Open `http://127.0.0.1:8787`. The browser host admits `content/projects/doom-e1m1.project.json` and is a development HTTP/WebSocket adapter over the Rust product service. Use the release host for ordinary play: unoptimized wgpu/wgpu-hal builds misrepresent frame pacing, so debug-host FPS numbers are not evidence.
+
+## Clean clone
+
+See [docs/downstream-onboarding.md](docs/downstream-onboarding.md) for the full prerequisites, generation/admission order, minimum copyable spine, and the ownership/code-routing table. In short: a sibling `../rusty-engine` checkout, Node ≥ 26 + pnpm ≥ 11 + stable Rust, then the three commands above. No WAD is needed to build, verify, or run — only to regenerate derived assets from sources (`pnpm run check:provenance`).
 
 ## Architecture
 
@@ -47,3 +51,5 @@ The full `pnpm run certify:e1m1` route is release/manual work and currently stal
 - [doom-e1m1-gameplay-ledger.md](docs/doom-e1m1-gameplay-ledger.md) — content calibration.
 - [source-provenance.md](docs/source-provenance.md) — E1M1, WAD, sprite/texture, and prop closure.
 - [extension-recipes.md](docs/extension-recipes.md) — safe downstream changes.
+- [downstream-onboarding.md](docs/downstream-onboarding.md) — clean clone, minimum spine, ownership/code-routing table.
+- [presentation-frame.md](docs/presentation-frame.md) — bounded-viewport presentation contract.
