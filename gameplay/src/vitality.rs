@@ -164,6 +164,18 @@ pub struct DamageCommand {
     pub amount: u32,
 }
 
+/// The unaltered typed Engine receipts backing one product vitality
+/// operation. Doom armor order, depletion consequences, and HUD facts are
+/// product orchestration; these values carry the authoritative operation/
+/// source/catalog/revision provenance from the neutral mechanics route and
+/// are retained exactly as the Engine issued them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum VitalityMechanicsEvidence {
+    Damage(Box<rusty_engine::gameplay_mechanics::DamageReceipt>),
+    Track(Box<rusty_engine::gameplay_mechanics::TrackMutationReceipt>),
+    Effect(Box<rusty_engine::gameplay_mechanics::EffectMutationReceipt>),
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct VitalityReceipt {
     pub disposition: DamageDisposition,
@@ -172,6 +184,10 @@ pub struct VitalityReceipt {
     pub explosive_props: Vec<ExplosivePropFact>,
     pub inventory: Vec<InventoryReceipt>,
     pub event: Option<GameEvent>,
+    /// Unaltered Engine receipts for every mechanics leaf this operation
+    /// executed. Empty only when nothing mutated (already-dead short
+    /// circuit) or rejection prevented publication.
+    pub standard_receipts: Vec<VitalityMechanicsEvidence>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -260,6 +276,7 @@ impl DamageService {
                 explosive_props: Vec::new(),
                 inventory: Vec::new(),
                 event: None,
+                standard_receipts: Vec::new(),
             });
         }
 
@@ -295,7 +312,7 @@ impl DamageService {
                 crate::mechanics::VitalityPreset::ActionActor
             },
         );
-        let _receipt = MechanicsDamageService::apply(
+        let damage_receipt = MechanicsDamageService::apply(
             &mut candidate.entities,
             &candidate.mechanics.catalog,
             DamageRequest {
@@ -337,8 +354,9 @@ impl DamageService {
         let health_after = after.current;
         let armor_after = after.armor;
         let died = after.state == VitalityState::Dead;
+        let mut evidence = vec![VitalityMechanicsEvidence::Damage(Box::new(damage_receipt))];
         if before.armor > 0 && armor_after == 0 && before.armor_item.is_some() {
-            EffectService::remove(
+            let removal = EffectService::remove(
                 &mut candidate.entities,
                 &candidate.mechanics.catalog,
                 EffectRemovalRequest {
@@ -349,6 +367,7 @@ impl DamageService {
                 },
             )
             .map_err(mechanics_rejection)?;
+            evidence.push(VitalityMechanicsEvidence::Effect(Box::new(removal)));
         }
 
         let mut event = None;
@@ -492,6 +511,7 @@ impl DamageService {
             explosive_props,
             inventory: Vec::new(),
             event,
+            standard_receipts: evidence,
         })
     }
 
@@ -547,6 +567,7 @@ impl DamageService {
             _ => item.clone(),
         };
         let mut candidate = session.clone();
+        let mut evidence = Vec::new();
         let sequence = next_inventory_sequence(&candidate, player)?;
         let inventory = apply_standard_stack(
             &mut candidate,
@@ -564,101 +585,111 @@ impl DamageService {
             },
             other => VitalityRejection::Inventory(other),
         })?;
-        let after =
-            if target_armor > before.armor {
-                let operation = operation_id("grant-armor", player.raw(), sequence)?;
-                let track = TrackService::restore(
-                    &mut candidate.entities,
-                    &candidate.mechanics.catalog,
-                    TrackMutationRequest {
-                        operation: operation.clone(),
-                        source: request_source(operation.clone(), "armor")?,
-                        entity: player,
-                        track: crate::mechanics::armor_track(),
-                        amount: crate::mechanics::scalar(target_armor - before.armor)
-                            .map_err(|reason| VitalityRejection::Mechanics { reason })?,
-                        kind: rusty_engine::gameplay_mechanics::TrackAdjustmentKind::Restore,
-                        expected_revision: None,
-                    },
-                )
-                .map_err(mechanics_rejection)?;
-                let binding = candidate
-                    .mechanics
-                    .armor
-                    .get(&effect_item)
-                    .cloned()
-                    .ok_or_else(|| VitalityRejection::Mechanics {
-                        reason: format!("missing admitted armor effect for {effect_item}"),
-                    })?;
-                let role = CapabilityRoleId::parse("armor-target").map_err(|error| {
+        let after = if target_armor > before.armor {
+            let operation = operation_id("grant-armor", player.raw(), sequence)?;
+            let track_receipt = TrackService::restore(
+                &mut candidate.entities,
+                &candidate.mechanics.catalog,
+                TrackMutationRequest {
+                    operation: operation.clone(),
+                    source: request_source(operation.clone(), "armor")?,
+                    entity: player,
+                    track: crate::mechanics::armor_track(),
+                    amount: crate::mechanics::scalar(target_armor - before.armor)
+                        .map_err(|reason| VitalityRejection::Mechanics { reason })?,
+                    kind: rusty_engine::gameplay_mechanics::TrackAdjustmentKind::Restore,
+                    expected_revision: None,
+                },
+            )
+            .map_err(mechanics_rejection)?;
+            let binding = candidate
+                .mechanics
+                .armor
+                .get(&effect_item)
+                .cloned()
+                .ok_or_else(|| VitalityRejection::Mechanics {
+                    reason: format!("missing admitted armor effect for {effect_item}"),
+                })?;
+            let role = CapabilityRoleId::parse("armor-target").map_err(|error| {
+                VitalityRejection::Mechanics {
+                    reason: error.to_string(),
+                }
+            })?;
+            let effect_operation = StandardOperation::ReplaceEffect {
+                role: role.clone(),
+                instance: crate::mechanics::armor_effect_instance(),
+                definition: binding.effect,
+                stacks: 1,
+            };
+            let capability =
+                CapabilityRequirementId::parse(STANDARD_EFFECT_CAPABILITY).map_err(|error| {
                     VitalityRejection::Mechanics {
                         reason: error.to_string(),
                     }
                 })?;
-                let effect_operation = StandardOperation::ReplaceEffect {
-                    role: role.clone(),
-                    instance: crate::mechanics::armor_effect_instance(),
-                    definition: binding.effect,
-                    stacks: 1,
-                };
-                let capability = CapabilityRequirementId::parse(STANDARD_EFFECT_CAPABILITY)
-                    .map_err(|error| VitalityRejection::Mechanics {
-                        reason: error.to_string(),
-                    })?;
-                let bindings = CapabilityRoleBindings::admit(
-                    &effect_operation.requirements(),
-                    vec![
-                        CapabilityRoleBinding::new(role, player, vec![capability]).map_err(
-                            |error| VitalityRejection::Mechanics {
-                                reason: error.to_string(),
-                            },
-                        )?,
-                    ],
+            let bindings = CapabilityRoleBindings::admit(
+                &effect_operation.requirements(),
+                vec![
+                    CapabilityRoleBinding::new(role, player, vec![capability]).map_err(
+                        |error| VitalityRejection::Mechanics {
+                            reason: error.to_string(),
+                        },
+                    )?,
+                ],
+            )
+            .map_err(|error| VitalityRejection::Mechanics {
+                reason: error.to_string(),
+            })?;
+            let context = StandardOperationContext::new(
+                operation.clone(),
+                request_source(operation, "armor-effect")?,
+            )
+            .map_err(|error| VitalityRejection::Mechanics {
+                reason: error.to_string(),
+            })?;
+            let plan = effect_operation
+                .plan(
+                    &bindings,
+                    &ExactInputBundle::empty(),
+                    &candidate.entities,
+                    &candidate.mechanics.catalog,
+                    &context,
                 )
                 .map_err(|error| VitalityRejection::Mechanics {
                     reason: error.to_string(),
                 })?;
-                let context = StandardOperationContext::new(
-                    operation.clone(),
-                    request_source(operation, "armor-effect")?,
-                )
+            plan.validate_source_state(&candidate.entities, &candidate.mechanics.catalog)
                 .map_err(|error| VitalityRejection::Mechanics {
                     reason: error.to_string(),
                 })?;
-                let plan = effect_operation
-                    .plan(
-                        &bindings,
-                        &ExactInputBundle::empty(),
-                        &candidate.entities,
-                        &candidate.mechanics.catalog,
-                        &context,
-                    )
-                    .map_err(|error| VitalityRejection::Mechanics {
-                        reason: error.to_string(),
-                    })?;
-                plan.validate_source_state(&candidate.entities, &candidate.mechanics.catalog)
-                    .map_err(|error| VitalityRejection::Mechanics {
-                        reason: error.to_string(),
-                    })?;
-                let receipt = plan
-                    .effect()
-                    .apply_to_candidate(&mut candidate.entities, &candidate.mechanics.catalog)
-                    .map_err(mechanics_rejection)?;
-                if !matches!(receipt, StandardMechanicsReceipt::Effect(_)) {
-                    return Err(VitalityRejection::Mechanics {
-                        reason: "standard armor effect replacement returned a non-effect receipt"
-                            .to_string(),
-                    });
-                }
-                u32::try_from(track.after.get()).map_err(|_| VitalityRejection::Mechanics {
-                    reason: "armor track exceeds product representation".to_string(),
-                })?
-            } else {
-                before.armor
+            let effect_receipt = plan
+                .effect()
+                .apply_to_candidate(&mut candidate.entities, &candidate.mechanics.catalog)
+                .map_err(mechanics_rejection)?;
+            let StandardMechanicsReceipt::Effect(effect_mutation) = effect_receipt.clone() else {
+                return Err(VitalityRejection::Mechanics {
+                    reason: "standard armor effect replacement returned a non-effect receipt"
+                        .to_string(),
+                });
             };
+            // Retain both Engine leaves unaltered on the product result.
+            let armor_after = u32::try_from(track_receipt.after.get()).map_err(|_| {
+                VitalityRejection::Mechanics {
+                    reason: "armor track exceeds product representation".to_string(),
+                }
+            })?;
+            evidence.extend([
+                VitalityMechanicsEvidence::Track(Box::new(track_receipt)),
+                VitalityMechanicsEvidence::Effect(Box::new(effect_mutation)),
+            ]);
+            armor_after
+        } else {
+            before.armor
+        };
         *session = candidate;
         Ok(VitalityReceipt {
             disposition: DamageDisposition::Applied,
+            standard_receipts: evidence,
             facts: vec![VitalityFact::ArmorGranted {
                 entity: player,
                 item: effect_item,
@@ -705,6 +736,7 @@ impl DamageService {
         }
         let restored = restore_health.min(maximum_health.saturating_sub(before.current));
         let mut candidate = session.clone();
+        let mut evidence = Vec::new();
         let sequence = next_inventory_sequence(&candidate, player)?;
         let inventory = apply_standard_stack(
             &mut candidate,
@@ -718,7 +750,7 @@ impl DamageService {
         .map_err(VitalityRejection::Inventory)?;
         let after = if restored > 0 {
             let operation = operation_id("restore-health", player.raw(), sequence)?;
-            let track = TrackService::restore(
+            let track_receipt = TrackService::restore(
                 &mut candidate.entities,
                 &candidate.mechanics.catalog,
                 TrackMutationRequest {
@@ -733,15 +765,20 @@ impl DamageService {
                 },
             )
             .map_err(mechanics_rejection)?;
-            u32::try_from(track.after.get()).map_err(|_| VitalityRejection::Mechanics {
-                reason: "health track exceeds product representation".to_string(),
-            })?
+            let restored_after = u32::try_from(track_receipt.after.get()).map_err(|_| {
+                VitalityRejection::Mechanics {
+                    reason: "health track exceeds product representation".to_string(),
+                }
+            })?;
+            evidence.push(VitalityMechanicsEvidence::Track(Box::new(track_receipt)));
+            restored_after
         } else {
             before.current
         };
         *session = candidate;
         Ok(VitalityReceipt {
             disposition: DamageDisposition::Applied,
+            standard_receipts: evidence,
             facts: vec![VitalityFact::HealthRestored {
                 entity: player,
                 item,

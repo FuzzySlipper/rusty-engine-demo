@@ -410,12 +410,14 @@ impl GameRuntime {
             explosive_props: Vec::new(),
             inventory: Vec::new(),
             event: None,
+            standard_receipts: Vec::new(),
         };
         for receipt in receipts {
             result.facts.extend(receipt.facts);
             result.enemy_drops.extend(receipt.enemy_drops);
             result.explosive_props.extend(receipt.explosive_props);
             result.inventory.extend(receipt.inventory);
+            result.standard_receipts.extend(receipt.standard_receipts);
             result.event = result.event.or(receipt.event);
         }
         self.session = candidate;

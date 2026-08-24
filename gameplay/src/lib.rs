@@ -243,8 +243,8 @@ pub use switch_program::{
 };
 pub use vitality::{
     DamageCommand, DamageDisposition, DamageService, DamageSource, HealthConfig, HealthView,
-    VitalityFact, VitalityReceipt, VitalityRejection, VitalityState, MAX_COMBAT_HITBOX_HALF_EXTENT,
-    MAX_DOOM_DAMAGE,
+    VitalityFact, VitalityMechanicsEvidence, VitalityReceipt, VitalityRejection, VitalityState,
+    MAX_COMBAT_HITBOX_HALF_EXTENT, MAX_DOOM_DAMAGE,
 };
 
 pub use doom_e1m1_materials::{

@@ -578,3 +578,82 @@ fn active_armor_effect(session: &loading_bay_game::GameSession) -> ActiveEffectI
         .cloned()
         .expect("admitted armor effect remains active")
 }
+
+/// The Engine's typed receipts ride the product result unaltered: damage
+/// exposes the exact DamageReceipt (operation, target, revisions,
+/// fingerprint), and health supplies expose the track-restoration receipt
+/// with matching applied amounts.
+#[test]
+fn vitality_operations_expose_unaltered_engine_receipts() {
+    use loading_bay_game::{VitalityMechanicsEvidence, VitalityReceipt};
+
+    let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let player = EntityId::new(1);
+    let enemy = EntityId::new(2);
+
+    // Damage: the Engine receipt carries authoritative operation/revision
+    // provenance for the applied parts.
+    let receipt = DamageService::apply(
+        runtime.session_mut(),
+        DamageCommand {
+            source: DamageSource::Direct { actor: enemy },
+            target: player,
+            amount: 3,
+        },
+    )
+    .unwrap();
+    assert_eq!(receipt.standard_receipts.len(), 1);
+    let VitalityMechanicsEvidence::Damage(damage) = &receipt.standard_receipts[0] else {
+        panic!("damage must retain the Engine DamageReceipt");
+    };
+    assert!(format!("{}", damage.operation).starts_with("damage-2-1"));
+    assert_eq!(damage.target, player);
+    assert!(damage.observed_tracks_revision > 0);
+    assert!(!damage.catalog_fingerprint.is_empty());
+
+    // Health supply: consume a stimpack, take damage, then restore — the
+    // restoration leaf is retained with amounts matching the product fact.
+    runtime
+        .apply_inventory_command(
+            player,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: ItemDefinitionId::parse("supply/stimpack").unwrap(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap();
+    DamageService::apply(
+        runtime.session_mut(),
+        DamageCommand {
+            source: DamageSource::Direct { actor: enemy },
+            target: player,
+            amount: 4,
+        },
+    )
+    .unwrap();
+    let before_health = runtime.session().health(player).unwrap().current;
+    let supply_receipt: VitalityReceipt = runtime
+        .use_health_supply(player, ItemDefinitionId::parse("supply/stimpack").unwrap())
+        .unwrap();
+    let VitalityMechanicsEvidence::Track(track) = &supply_receipt.standard_receipts[0] else {
+        panic!("health supply must retain the Engine TrackMutationReceipt");
+    };
+    assert_eq!(track.entity, player);
+    assert!(
+        format!("{:?}", track.operation).contains("restore-health"),
+        "track operation must carry the product operation identity"
+    );
+    // Applied amount matches the product fact derived from the same leaf.
+    let restored_amount = supply_receipt.facts.iter().find_map(|fact| match fact {
+        loading_bay_game::VitalityFact::HealthRestored { amount, .. } => Some(*amount),
+        _ => None,
+    });
+    assert_eq!(
+        restored_amount,
+        Some(u32::try_from(track.applied_amount.get()).unwrap())
+    );
+    assert!(u32::try_from(track.after.get()).unwrap() >= before_health);
+}
