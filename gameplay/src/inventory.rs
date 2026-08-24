@@ -344,6 +344,19 @@ pub enum InventoryFact {
     },
 }
 
+/// The unaltered typed Engine receipts backing one product inventory
+/// command. Product consequences (views, facts, stack order) are
+/// orchestration; these values carry the authoritative operation/source/
+/// catalog/revision provenance from the neutral mechanics route and are
+/// retained exactly as the Engine issued them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StandardMechanicsEvidence {
+    /// A standard-operation leaf (inventory stack or equipment mutation).
+    Standard(Box<StandardMechanicsReceipt>),
+    /// The Engine unique-item materialization endpoint's own typed receipt.
+    UniqueMaterialization(rusty_engine::gameplay_mechanics::UniqueItemMaterializationReceipt),
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct InventoryReceipt {
     pub sequence: u64,
@@ -351,6 +364,10 @@ pub struct InventoryReceipt {
     pub before: InventoryView,
     pub after: InventoryView,
     pub facts: Vec<InventoryFact>,
+    /// Unaltered Engine receipts for every standard/materialization leaf
+    /// this command executed. Empty only when the command touched no
+    /// mechanics leaves at all (never for grant/consume/equipment paths).
+    pub standard_receipts: Vec<StandardMechanicsEvidence>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -525,7 +542,8 @@ impl InventoryService {
             return apply_standard_stack(session, owner, command.sequence, command.action);
         }
         let mut candidate = session.clone();
-        let facts = apply_action(&mut candidate, owner, command.sequence, &command.action)?;
+        let (facts, standard_receipts) =
+            apply_action(&mut candidate, owner, command.sequence, &command.action)?;
         candidate
             .inventories
             .get_mut(&owner)
@@ -540,6 +558,7 @@ impl InventoryService {
             before,
             after,
             facts,
+            standard_receipts,
         })
     }
 
@@ -710,11 +729,13 @@ pub(crate) fn apply_standard_stack(
         })?;
 
     let mut candidate = session.clone();
-    let receipt = plan
+    let engine_receipt = plan
         .effect()
         .apply_to_candidate(&mut candidate.entities, &candidate.mechanics.catalog)
         .map_err(|error| standard_stack_rejection(error, owner, &item))?;
-    let StandardMechanicsReceipt::Inventory(receipt) = receipt else {
+    // The typed Engine receipt is retained unaltered on the product result;
+    // only the product-representation quantities are read out below.
+    let StandardMechanicsReceipt::Inventory(receipt) = engine_receipt.clone() else {
         return Err(InventoryRejection::Mechanics {
             reason: "standard stack operation returned a non-inventory receipt".to_string(),
         });
@@ -751,6 +772,9 @@ pub(crate) fn apply_standard_stack(
             before: before_quantity,
             after: after_quantity,
         }],
+        standard_receipts: vec![StandardMechanicsEvidence::Standard(Box::new(
+            engine_receipt,
+        ))],
     })
 }
 
@@ -770,7 +794,7 @@ pub(crate) fn apply_standard_unique_equipment_operations(
     owner: EntityId,
     sequence: u64,
     operations: impl IntoIterator<Item = StandardOperation>,
-) -> Result<(), InventoryRejection> {
+) -> Result<Vec<StandardMechanicsReceipt>, InventoryRejection> {
     let operation_id = operation_id(sequence)?;
     let source = source_identity(operation_id.clone())?;
     let role = equipment_role()?;
@@ -822,6 +846,7 @@ pub(crate) fn apply_standard_unique_equipment_operations(
         plans.push(plan);
     }
 
+    let mut executed = Vec::new();
     for plan in plans {
         let receipt = plan
             .effect()
@@ -833,8 +858,9 @@ pub(crate) fn apply_standard_unique_equipment_operations(
                     .to_string(),
             });
         }
+        executed.push(receipt);
     }
-    Ok(())
+    Ok(executed)
 }
 
 /// Apply the initially selected weapon after the caller has materialized it. Planning here
@@ -845,7 +871,7 @@ pub(crate) fn equip_initial_weapon(
     catalog: &rusty_engine::gameplay_mechanics::MechanicsCatalog,
     owner: EntityId,
     weapon: EntityId,
-) -> Result<(), InventoryRejection> {
+) -> Result<Vec<StandardMechanicsReceipt>, InventoryRejection> {
     apply_standard_unique_equipment_operations(
         state,
         catalog,
@@ -1092,9 +1118,11 @@ fn apply_action(
     owner: EntityId,
     sequence: u64,
     action: &InventoryAction,
-) -> Result<Vec<InventoryFact>, InventoryRejection> {
+) -> Result<(Vec<InventoryFact>, Vec<StandardMechanicsEvidence>), InventoryRejection> {
     let definitions = &session.item_definitions;
     let before_view = inventory_view(session, owner)?;
+    // Unaltered Engine receipts for every mechanics leaf this command ran.
+    let mut evidence = Vec::new();
     match action {
         InventoryAction::Grant { item, quantity } => {
             let definition = require_definition(definitions, item)?;
@@ -1159,6 +1187,7 @@ fn apply_action(
                     .map_err(|reason| InventoryRejection::Mechanics { reason })?;
                     debug_assert_eq!(receipt.entity, weapon);
                     debug_assert_eq!(receipt.container, owner);
+                    evidence.push(StandardMechanicsEvidence::UniqueMaterialization(receipt));
                 } else if session.entities.contained_in(weapon).is_none() {
                     let expected = mechanics_item_id(item)
                         .map_err(|reason| InventoryRejection::Mechanics { reason })?;
@@ -1209,12 +1238,15 @@ fn apply_action(
             if before == 0 {
                 runtime.stack_order.push(item.clone());
             }
-            Ok(vec![InventoryFact::QuantityChanged {
-                owner,
-                item: item.clone(),
-                before,
-                after,
-            }])
+            Ok((
+                vec![InventoryFact::QuantityChanged {
+                    owner,
+                    item: item.clone(),
+                    before,
+                    after,
+                }],
+                evidence,
+            ))
         }
         InventoryAction::Consume { item, quantity } => {
             let definition = require_definition(definitions, item)?;
@@ -1257,7 +1289,7 @@ fn apply_action(
                         item: item.clone(),
                     })?;
                 if before_view.equipped_weapon.as_ref() == Some(item) {
-                    apply_standard_unique_equipment_operations(
+                    let receipts = apply_standard_unique_equipment_operations(
                         &mut session.entities,
                         &session.mechanics.catalog,
                         owner,
@@ -1267,6 +1299,11 @@ fn apply_action(
                             item: weapon,
                         }],
                     )?;
+                    evidence.extend(
+                        receipts
+                            .into_iter()
+                            .map(|receipt| StandardMechanicsEvidence::Standard(Box::new(receipt))),
+                    );
                     facts.push(InventoryFact::EquippedWeaponChanged {
                         owner,
                         before: Some(item.clone()),
@@ -1294,7 +1331,7 @@ fn apply_action(
                     .stack_order
                     .retain(|candidate| candidate != item);
             }
-            Ok(facts)
+            Ok((facts, evidence))
         }
         InventoryAction::MoveStack {
             from_index,
@@ -1323,12 +1360,15 @@ fn apply_action(
                 .stack_order;
             let item = order.remove(*from_index);
             order.insert(*to_index, item.clone());
-            Ok(vec![InventoryFact::StackMoved {
-                owner,
-                item,
-                from_index: *from_index,
-                to_index: *to_index,
-            }])
+            Ok((
+                vec![InventoryFact::StackMoved {
+                    owner,
+                    item,
+                    from_index: *from_index,
+                    to_index: *to_index,
+                }],
+                evidence,
+            ))
         }
         InventoryAction::SelectWeapon { item } => {
             let definition = require_definition(definitions, item)?;
@@ -1360,7 +1400,7 @@ fn apply_action(
                     .ok_or_else(|| InventoryRejection::Mechanics {
                         reason: format!("missing unique entity for equipped weapon {before_item}"),
                     })?;
-                apply_standard_unique_equipment_operations(
+                let receipts = apply_standard_unique_equipment_operations(
                     &mut session.entities,
                     &session.mechanics.catalog,
                     owner,
@@ -1372,8 +1412,13 @@ fn apply_action(
                         incoming_slots: vec![weapon_slot()],
                     }],
                 )?;
+                evidence.extend(
+                    receipts
+                        .into_iter()
+                        .map(|receipt| StandardMechanicsEvidence::Standard(Box::new(receipt))),
+                );
             } else {
-                apply_standard_unique_equipment_operations(
+                let receipts = apply_standard_unique_equipment_operations(
                     &mut session.entities,
                     &session.mechanics.catalog,
                     owner,
@@ -1384,13 +1429,21 @@ fn apply_action(
                         slots: vec![weapon_slot()],
                     }],
                 )?;
+                evidence.extend(
+                    receipts
+                        .into_iter()
+                        .map(|receipt| StandardMechanicsEvidence::Standard(Box::new(receipt))),
+                );
             }
             let before = before_view.equipped_weapon;
-            Ok(vec![InventoryFact::EquippedWeaponChanged {
-                owner,
-                before,
-                after: Some(item.clone()),
-            }])
+            Ok((
+                vec![InventoryFact::EquippedWeaponChanged {
+                    owner,
+                    before,
+                    after: Some(item.clone()),
+                }],
+                evidence,
+            ))
         }
     }
 }

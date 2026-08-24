@@ -661,6 +661,97 @@ fn fungible_grant_through_the_public_route_preserves_product_overflow_policy() {
     ));
 }
 
+/// The Engine's typed receipts ride the product result unaltered: a
+/// successful fungible grant exposes the exact standard inventory receipt —
+/// operation, source, catalog identity, quantities, and component revisions.
+#[test]
+fn fungible_grant_exposes_the_unaltered_engine_inventory_receipt() {
+    let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let bullets = ItemDefinitionId::parse("ammo/bullets").unwrap();
+    let before_inventory = runtime.session().inventory(PLAYER).unwrap();
+    let before_quantity = quantity(&before_inventory.stacks, &bullets);
+    let receipt = runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 7,
+                action: InventoryAction::Grant {
+                    item: bullets.clone(),
+                    quantity: 5,
+                },
+            },
+        )
+        .unwrap();
+    assert_eq!(receipt.standard_receipts.len(), 1);
+    let loading_bay_game::StandardMechanicsEvidence::Standard(engine_receipt) =
+        &receipt.standard_receipts[0]
+    else {
+        panic!("fungible grant must retain the Engine inventory receipt");
+    };
+    let rusty_engine::gameplay_standard::StandardMechanicsReceipt::Inventory(engine) =
+        engine_receipt.as_ref()
+    else {
+        panic!("fungible grant must retain the Engine inventory receipt");
+    };
+    assert_eq!(engine.operation.as_str(), "inventory-command-7");
+    assert_eq!(engine.owner, PLAYER);
+    // Engine mechanics ids use the `.` namespace separator.
+    assert_eq!(engine.item.as_str(), "ammo.bullets");
+    assert_eq!(engine.requested_quantity, 5);
+    assert_eq!(
+        u32::try_from(engine.before_quantity).unwrap(),
+        before_quantity
+    );
+    assert_eq!(
+        u32::try_from(engine.after_quantity).unwrap(),
+        before_quantity + 5
+    );
+    assert_eq!(
+        receipt
+            .facts
+            .iter()
+            .filter_map(|fact| match fact {
+                loading_bay_game::InventoryFact::QuantityChanged { after, .. } => Some(*after),
+                _ => None,
+            })
+            .collect::<Vec<_>>(),
+        vec![u32::try_from(engine.after_quantity).unwrap()]
+    );
+    assert!(engine.observed_inventory_revision < engine.committed_inventory_revision);
+    assert!(!engine.catalog_version.to_string().is_empty());
+    assert!(!engine.catalog_fingerprint.is_empty());
+    // Capacity evidence is present but empty: Loading Bay's distinct-slot
+    // policy is product-owned, so the catalog declares no Engine metrics.
+    assert!(engine.capacity_before.is_empty() && engine.capacity_after.is_empty());
+}
+
+/// A rejected command publishes neither product nor Engine success evidence:
+/// the failure returns a rejection and leaves the session untouched.
+#[test]
+fn rejected_fungible_grant_publishes_no_evidence_and_no_mutation() {
+    let mut runtime = GameRuntime::from_stored_project(PROJECT).unwrap();
+    let unchanged = runtime.session().inventory(PLAYER).unwrap();
+    let entities_revision = runtime.session().entities().revision();
+    let error = runtime
+        .apply_inventory_command(
+            PLAYER,
+            InventoryCommand {
+                sequence: 1,
+                action: InventoryAction::Grant {
+                    item: ItemDefinitionId::parse("ammo/not-authored").unwrap(),
+                    quantity: 1,
+                },
+            },
+        )
+        .unwrap_err();
+    assert!(matches!(
+        error,
+        loading_bay_game::RuntimeError::Inventory(InventoryRejection::MissingDefinition { .. })
+    ));
+    assert_eq!(runtime.session().inventory(PLAYER).unwrap(), unchanged);
+    assert_eq!(runtime.session().entities().revision(), entities_revision);
+}
+
 fn unique_item_entity(runtime: &GameRuntime, definition: &str) -> EntityId {
     runtime
         .session()

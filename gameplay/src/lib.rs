@@ -140,10 +140,11 @@ pub use inventory::{
     ArmorGrantMode, ArmorTransition, InventoryAction, InventoryAdmissionError, InventoryCommand,
     InventoryConfig, InventoryFact, InventoryReceipt, InventoryRejection, InventoryService,
     InventoryStack, InventoryView, ItemDefinition, ItemDefinitionId, ItemDefinitionIdError,
-    ItemDefinitionView, ItemKind, ProjectileDefinition, WeaponAttackMode, WeaponDefinition,
-    MAX_INVENTORY_SLOTS, MAX_ITEM_DEFINITION_ID_BYTES, MAX_ITEM_QUANTITY,
-    MAX_PROJECTILE_GRAVITY_SCALE, MAX_PROJECTILE_IMPULSE, MAX_PROJECTILE_LIFETIME_TICKS,
-    MAX_PROJECTILE_MASS, MAX_PROJECTILE_RADIUS, MAX_PROJECTILE_RESTITUTION,
+    ItemDefinitionView, ItemKind, ProjectileDefinition, StandardMechanicsEvidence,
+    WeaponAttackMode, WeaponDefinition, MAX_INVENTORY_SLOTS, MAX_ITEM_DEFINITION_ID_BYTES,
+    MAX_ITEM_QUANTITY, MAX_PROJECTILE_GRAVITY_SCALE, MAX_PROJECTILE_IMPULSE,
+    MAX_PROJECTILE_LIFETIME_TICKS, MAX_PROJECTILE_MASS, MAX_PROJECTILE_RADIUS,
+    MAX_PROJECTILE_RESTITUTION,
 };
 pub use level_exit_program::{
     LevelExitProgramBinding, LevelExitProgramReadout, LevelExitProgramShape,
