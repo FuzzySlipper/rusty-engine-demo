@@ -1,19 +1,20 @@
-# E1M1 gameplay calibration
+# Doom E1M1 gameplay ledger
 
-Loading Bay's sole supported scene is the Doom E1M1 Hangar recreation. The WAD is an offline authoring source; Rust owns the admitted runtime and all gameplay consequences.
+Doom E1M1 Hangar is Loading Bay's only supported authored content. Its exact source, derived assets, licensing boundary, and hashes are maintained in [source-provenance.md](source-provenance.md). The port is a bounded reference scene, not a Doom runtime or a claim to ship WAD bytes, music, story text, or trade dress.
 
-## Coordinate and content contract
+## Typed calibration
 
-- The port uses 16 Doom map units per Engine unit; the authored E1M1 transform and landmarks are stored in `content/projects/doom-e1m1.project.json`.
-- The project carries the map's voxel environment, extracted textures/sprites, and explicit game-owned doors, pickups, enemies, hazards, triggers, and exit. Visible meshes never become collision, navigation, trigger, or combat authority.
-- E1M1-specific identities and calibration remain downstream. Reusable Engine mechanisms must not import Doom names or coordinate assumptions.
+The active C# policy is intentionally inspectable in `csharp/LoadingBay.Game/LoadingBayTuning.cs`: starting tracks, inventory capacity, movement/look, gravity/jump, camera, spatial scale, E1M1 landmarks, perception, and effect settings are named values rather than host/UI magic numbers. Item/weapon identity is likewise typed in `LoadingBayDefinitions`.
 
-## Product scope
+The runtime validates and admits the committed project, voxel, and asset-catalog closure through Engine content services. Engine performs collision, character motion, camera, perception, voxel realization, and rendering. The C# HUD stream exposes bounded state/fact/tuning telemetry without moving gameplay evaluation to the browser.
 
-The playable route covers the Hangar's authored progression, combat, doors, pickups, hazards, secrets, and exit as modeled by this project. It is a bounded recreation, not a Doom engine or a claim to ship Doom runtime code, WAD bytes, sound, music, story text, or trade dress.
+## Evidence boundary
 
-## Verification posture
+Focused evidence currently supports Engine-hosted E1M1 rendering, the
+one-canvas browser shell, structured HUD projection, and realtime movement
+continuation. The observed frame retains a black horizontal band, and repeated
+fire while pointer-locked may be ignored after the initial shot. It does not
+establish every authored combat, encounter, pickup, door, secret, exit, or full
+traversal behavior. Keep future claims tied to direct, current observations.
 
-`pnpm run smoke:e1m1` is the focused browser relevance check. `pnpm run certify:e1m1` is the manual/release traversal route; it currently stalls at waypoint `[127,121]`. Treat that as an active limitation until a new observed run supersedes it. Deterministic content admission does not prove the full player route.
-
-Exact source bytes, derived asset manifests, and licensing boundary are maintained in [source-provenance.md](source-provenance.md).
+`pnpm run certify:e1m1` is manual/release work and currently stalls at `[127,121]`; it is an active limitation rather than a passing route.

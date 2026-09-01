@@ -11,8 +11,6 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const auditPath = resolve(repoRoot, "scripts/audit-boundary.mjs");
 const ignoredDirectories = new Set([".git", "dist", "node_modules", "target"]);
 const operationalRoots = [
-  "Cargo.toml",
-  "Cargo.lock",
   "package.json",
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
@@ -24,31 +22,15 @@ const operationalRoots = [
   "apps",
   "libs",
   "scripts",
-  "rust",
+  "csharp",
   "ts",
 ];
 const files = operationalRoots.flatMap((entry) =>
   collect(resolve(repoRoot, entry)),
 );
 const forbidden = [
-  ["historical Engine checkout", ["asha", "-engine"].join("")],
-  ["historical demo checkout", ["asha", "-demo"].join("")],
-  ["historical package scope", ["@asha", "/"].join("")],
   ["private render-contracts package", "@rusty-engine-demo/render-contracts"],
   ["private renderer-three package", "@rusty-engine-demo/renderer-three"],
-  ["old Rust product package", ["game", "-host"].join("")],
-  ["old Rust product crate", ["game", "_host"].join("")],
-  ["donor placeholder actions", "PlaceholderActions"],
-  ["donor fake store kernel", "provideTemplateStoreKernel"],
-  ["donor fake content authority", "DEMO_CONFIG"],
-  ["old runtime spine", "GameplayRuntimeHost"],
-  ["old runtime fabric", "GameplayFabric"],
-  ["old native runtime bridge", "NativeRuntimeBridge"],
-  ["old runtime session", "RuntimeSession"],
-  ["old reaction frame", "ReactionFrame"],
-  ["old decision receipt", "DecisionReceipt"],
-  ["old replay record", "ReplayRecord"],
-  ["old proposal envelope", "ProposalEnvelope"],
 ];
 
 const violations = [];
@@ -127,12 +109,12 @@ for (const file of downstreamTypeScript) {
 const expectedPackages = new Map([
   ["package.json", "rusty-engine-demo"],
   [
-    "ts/packages/browser-shell/package.json",
-    "@rusty-engine-demo/browser-shell",
-  ],
-  [
     "ts/packages/project-content/package.json",
     "@rusty-engine-demo/project-content",
+  ],
+  [
+    "ts/packages/doom-e1m1-authoring/package.json",
+    "@rusty-engine-demo/doom-e1m1-authoring",
   ],
 ]);
 for (const [relativePath, expectedName] of expectedPackages) {
@@ -169,12 +151,6 @@ for (const relativePath of [
   }
 }
 
-const browserPackage = JSON.parse(
-  readFileSync(
-    resolve(repoRoot, "ts/packages/browser-shell/package.json"),
-    "utf8",
-  ),
-);
 const rootPackage = JSON.parse(
   readFileSync(resolve(repoRoot, "package.json"), "utf8"),
 );
@@ -185,110 +161,49 @@ for (const scriptName of Object.keys(rootPackage.scripts ?? {})) {
     );
   }
 }
-const browserGameRuntime = readFileSync(
-  resolve(repoRoot, "ts/packages/browser-shell/src/game-runtime.ts"),
-  "utf8",
-);
-if (browserGameRuntime.includes("surface.renderOnce(")) {
-  violations.push(
-    "ts/packages/browser-shell/src/game-runtime.ts: the auto-started shared surface must not receive a parallel explicit render path",
-  );
-}
-const gameSessionSource = readFileSync(
-  resolve(repoRoot, "ts/packages/browser-shell/src/game-session.ts"),
-  "utf8",
-);
-for (const staticKey of ["voxelMeshes", "lights", "generatedEnvironment"]) {
-  if (!gameSessionSource.includes(`| "${staticKey}"`)) {
-    violations.push(
-      `ts/packages/browser-shell/src/game-session.ts: ${staticKey} must remain an immutable static resource`,
-    );
-  }
-}
-if (
-  !gameSessionSource.includes(
-    "type RuntimeDynamicState = Omit<RuntimeBrowserState, StaticStateKey>;",
-  )
-) {
-  violations.push(
-    "ts/packages/browser-shell/src/game-session.ts: dynamic session state must structurally omit static resource owners",
-  );
-}
-const rustBrowserSession = readFileSync(
-  resolve(
-    repoRoot,
-    "rust/crates/loading-bay-game/src/bin/browser_host/session.rs",
-  ),
-  "utf8",
-);
-if (
-  !rustBrowserSession.includes(
-    "const MAX_OUTBOUND_BUFFER_BYTES: usize = 4 * 1024 * 1024;",
-  )
-) {
-  violations.push(
-    "rust/crates/loading-bay-game/src/bin/browser_host/session.rs: cold bootstrap transport must retain its explicit 4 MiB bound (doom-e1m1 1.99M envelope requires headroom beyond 2M)",
-  );
-}
-for (const [label, packageJson] of [
-  ["package.json", rootPackage],
-  ["ts/packages/browser-shell/package.json", browserPackage],
-]) {
+for (const [label, packageJson] of [["package.json", rootPackage]]) {
   for (const section of ["dependencies", "devDependencies"]) {
     for (const dependencyName of Object.keys(packageJson[section] ?? {})) {
-      // The Engine's public downstream surfaces only: the bundled web
-      // application host, semantic-neutral rules authoring, and standard
-      // gameplay authoring/contracts used to materialize this product's typed
-      // vitality extension. Renderer and private Engine internals stay banned.
+      // The browser may use only Engine's public host artifacts. Gameplay
+      // declarations remain immutable E1M1 content and execution stays C#.
       const allowedEnginePackages =
         label === "package.json" &&
         section === "dependencies" &&
         [
           "@rusty-engine/application-host",
-          "@rusty-engine/gameplay-rules-authoring",
-          "@rusty-engine/gameplay-rules-contracts",
-          "@rusty-engine/gameplay-standard-authoring",
-          "@rusty-engine/gameplay-standard-contracts",
+          "@rusty-engine/live-debug-panel-browser",
+          "@rusty-engine/product-browser-host",
         ].includes(dependencyName);
       if (
         dependencyName.startsWith("@rusty-engine/") &&
         !allowedEnginePackages
       ) {
         violations.push(
-          `${label}: downstream ${section} must contain only public Engine application-host and gameplay authoring packages, not ${dependencyName}`,
+          `${label}: downstream ${section} must contain only public Engine host artifacts, not ${dependencyName}`,
         );
       }
     }
   }
 }
+for (const [dependency, location] of [
+  ["@rusty-engine/application-host", "application-host"],
+  ["@rusty-engine/product-browser-host", "product-browser-host"],
+]) {
+  if (
+    rootPackage.dependencies?.[dependency] !==
+    `file:../rusty-engine/render/artifacts/${location}`
+  ) {
+  violations.push(
+      `package.json: ${dependency} must use its adjacent bundled Engine artifact`,
+  );
+  }
+}
 if (
-  rootPackage.dependencies?.["@rusty-engine/application-host"] !==
-  "file:../rusty-engine/render/artifacts/application-host"
+  rootPackage.dependencies?.["@rusty-engine/live-debug-panel-browser"] !==
+  "file:../rusty-engine/studio/artifacts/live-debug-panel"
 ) {
   violations.push(
-    "package.json: the sole Engine web dependency must use the adjacent bundled application-host artifact",
-  );
-}
-const cargoManifest = readFileSync(resolve(repoRoot, "Cargo.toml"), "utf8");
-const expectedEngineDependency =
-  'rusty-engine = { path = "../rusty-engine/rust/crates/rusty-engine" }';
-if (!cargoManifest.split("\n").includes(expectedEngineDependency)) {
-  violations.push(
-    "Cargo.toml: ordinary Rust must use one adjacent rusty-engine facade dependency",
-  );
-}
-const engineDependencies = [
-  ...cargoManifest.matchAll(
-    /^([a-z0-9-]+)\s*=\s*\{[^\n]*(?:git\s*=\s*"[^"]*rusty-engine|path\s*=\s*"[^"]*rusty-engine)[^\n]*\}$/gmu,
-  ),
-];
-if (
-  engineDependencies.length !== 1 ||
-  engineDependencies[0][1] !== "rusty-engine" ||
-  engineDependencies[0][0] !== expectedEngineDependency
-) {
-  violations.push(
-    "Cargo.toml: ordinary Rust must use only the adjacent rusty-engine facade dependency",
+    "package.json: @rusty-engine/live-debug-panel-browser must use its adjacent bundled Engine artifact",
   );
 }
 
@@ -299,10 +214,11 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `downstream boundary audit passed: ${String(files.length)} operational files, one adjacent Rust facade, public Engine application-host/gameplay authoring packages, no private downstream or renderer internals`,
+  `downstream boundary audit passed: ${String(files.length)} operational files, C# product ownership, public Engine host artifacts, no private downstream renderer internals`,
 );
 
 function collect(path) {
+  if (!existsSync(path)) return [];
   const stat = statSync(path);
   if (!stat.isDirectory()) return [path];
   return readdirSync(path, { withFileTypes: true }).flatMap((entry) => {

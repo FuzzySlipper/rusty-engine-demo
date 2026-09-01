@@ -1,7 +1,0 @@
-{
-  "name": "browser-game-runtime",
-  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "library",
-  "sourceRoot": "ts/packages/browser-shell/src",
-  "tags": ["type:feature", "scope:feature"]
-}

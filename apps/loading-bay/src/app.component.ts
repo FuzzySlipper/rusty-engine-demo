@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core";
-import { RouterOutlet } from "@angular/router";
+import { LoadingBayHudComponent } from "./loading-bay-hud.component";
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet],
+  imports: [LoadingBayHudComponent],
   selector: "red-root",
   standalone: true,
   styles: [
@@ -14,6 +14,6 @@ import { RouterOutlet } from "@angular/router";
       }
     `,
   ],
-  template: `<router-outlet />`,
+  template: `<red-loading-bay-hud />`,
 })
 export class AppComponent {}

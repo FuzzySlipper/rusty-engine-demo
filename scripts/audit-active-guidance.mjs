@@ -5,7 +5,6 @@ export const activeGuidancePaths = new Set([
   "docs/extension-recipes.md",
   "docs/source-provenance.md",
   "docs/game-session-protocol.md",
-  "docs/tauri-desktop.md",
 ]);
 
 const engine = /\b(?:Rusty\s+)?Engine\b/iu;
@@ -22,6 +21,8 @@ const antiCeremony =
   /(?:\b(?:no|without|must\s+not|do\s+not|does\s+not|is\s+not|not\s+as|never)\b[^,;.!?\n]{0,120}\b(?:add|use|fetch|manage|mutate|certify|lock|pin|refresh|sync|synchronize|match|update|pull|follow|freshness|revision|commit|sha|git\s+(?:identity|ref)|tag|branch)\b|\b(?:revision|commit|sha|git\s+(?:identity|ref)|tag|branch|freshness|refresh|sync|synchronization|update|lock|pin)\b[^,;.!?\n]{0,80}\b(?:is|are)\s+not\b)/iu;
 const historicalScope =
   /\b(?:historical|predecessor|then-(?:current|reviewed)|proven\s+upstream\s+gaps?|evidence\s+(?:used|recorded)|reviewed\s+at|approved\s+at)\b/iu;
+const contentIntegrity =
+  /(?:\bcontent\/[^\n]*\bsha-?256\b|\basset-catalog\b[^\n]*\bsha-?256\b)/iu;
 const siblingPathProhibition =
   /(?:\b(?:forbid(?:den)?|reject(?:ed)?|prohibit(?:ed)?|must\s+not|do\s+not|never|wrong)\b[^\n]{0,180}\bsibling[ -]paths?\b|\bsibling[ -]paths?\b[^\n]{0,180}\b(?:forbid(?:den)?|reject(?:ed)?|prohibit(?:ed)?|must\s+not|do\s+not|never|wrong)\b)/iu;
 
@@ -38,7 +39,12 @@ export function auditActiveGuidance(relativePath, content) {
       });
     }
     if (!engine.test(excerpt)) continue;
-    if (historicalScope.test(excerpt) || antiCeremony.test(excerpt)) continue;
+    if (
+      historicalScope.test(excerpt) ||
+      antiCeremony.test(excerpt) ||
+      contentIntegrity.test(excerpt)
+    )
+      continue;
     const tiesEngineToGitIdentity = gitIdentity.test(excerpt);
     const managesEngineCheckout =
       checkout.test(excerpt) && checkoutCeremony.test(excerpt);

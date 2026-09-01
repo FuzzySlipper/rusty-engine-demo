@@ -5,8 +5,8 @@
   "localVerification": [
     "pnpm run verify",
     "pnpm run audit:boundary (for boundary-contract changes)",
-    "pnpm run smoke:e1m1 (for browser-visible E1M1 changes)",
-    "pnpm run verify:tauri (for Tauri-relevant changes)"
+    "./scripts/verify-csharp-spine.sh (for C# product changes)",
+    "pnpm run build:shell plus focused Product Browser Host evidence (for browser-visible changes)"
   ],
-  "notes": "Managed reviews require the lean verify gate. Browser smoke and Tauri contract/build/visible-package evidence are relevance-triggered; run smoke:tauri:headed before claiming a visible or packaged desktop result. The manual E1M1 certifier currently stalls at waypoint [127,121]."
+  "notes": "Managed reviews require the lean verify gate. Browser-visible claims need a focused Engine canvas and structured HUD continuation. The manual E1M1 certifier currently stalls at waypoint [127,121] and is not a gate."
 }

@@ -74,6 +74,7 @@ export function readE1M1PropAssets(): any[] {
       importSourcePath?: string;
       sourcePath?: string;
       sourceSha256?: string;
+      sourceDependencies?: { path?: string; sha256?: string }[];
     }[];
   };
   for (const license of provenance.licenses ?? []) {
@@ -100,6 +101,15 @@ export function readE1M1PropAssets(): any[] {
     const source = readFileSync(resolve(repoRoot, entry.sourcePath));
     if (sha256(source) !== entry.sourceSha256) {
       throw new Error(`${id} source provenance hash no longer matches`);
+    }
+    for (const dependency of entry.sourceDependencies ?? []) {
+      if (!dependency.path || !dependency.sha256) {
+        throw new Error(`${id} source dependency provenance is incomplete`);
+      }
+      const dependencyBytes = readFileSync(resolve(repoRoot, dependency.path));
+      if (sha256(dependencyBytes) !== dependency.sha256) {
+        throw new Error(`${id} source dependency hash no longer matches`);
+      }
     }
   }
 

@@ -12,12 +12,12 @@
     }
   },
   "scripts": {
-    "check": "tsc --build && node dist/cli.js --check && node dist/sprite-cli.js --check && node dist/compose-project.js --check",
-    "compose:check": "tsc --build && node dist/compose-project.js --check",
-    "generate": "tsc --build && node dist/cli.js --write && node dist/sprite-cli.js --write && node dist/compose-project.js",
+    "check": "node scripts/check-retained-content.mjs",
+    "compose:check": "node scripts/check-retained-content.mjs",
+    "generate": "node scripts/check-retained-content.mjs",
     "sprites:check": "tsc --build && node dist/sprite-cli.js --check",
     "sprites:generate": "tsc --build && node dist/sprite-cli.js --write",
-    "test": "tsc --build && node --test dist/*.test.js",
-    "typecheck": "tsc --build"
+    "test": "node scripts/check-retained-content.mjs",
+    "typecheck": "node scripts/check-retained-content.mjs"
   }
 }

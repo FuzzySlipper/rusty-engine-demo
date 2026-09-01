@@ -16,17 +16,6 @@
     "sourceMap": true,
     "composite": true,
     "skipLibCheck": true,
-    "paths": {
-      "@rusty-engine-demo/game-runtime": [
-        "ts/packages/browser-shell/src/game-runtime.ts"
-      ],
-      "@rusty-engine-demo/developer-command": [
-        "ts/packages/browser-shell/src/developer-command.ts"
-      ],
-      "@rusty-engine-demo/platform": ["libs/platform/src/index.ts"],
-      "@rusty-engine-demo/ui-combat-log": ["libs/ui-combat-log/src/index.ts"],
-      "@rusty-engine-demo/ui-compass": ["libs/ui-compass/src/index.ts"],
-      "@rusty-engine-demo/ui-game-panels": ["libs/ui-game-panels/src/index.ts"]
-    }
+    "paths": {}
   }
 }

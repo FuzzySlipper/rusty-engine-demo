@@ -10,8 +10,6 @@
 *.log
 *.tsbuildinfo
 .DS_Store
-/src-tauri/binaries/
-/src-tauri/gen/
-/src-tauri/resources/desktop-package-manifest.json
 .engine-development/
-gameplay/authoring/dist/
+csharp/**/bin/
+csharp/**/obj/

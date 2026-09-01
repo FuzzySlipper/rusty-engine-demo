@@ -1,0 +1,4541 @@
+{
+  "entries": [
+    {
+      "id": "material/doom-flat-ceil3-5",
+      "version": 1,
+      "hash": "77c168d323d085f8cbf2086a7c5929659d947c501f417a999b0a5a9d257f4dfb",
+      "sourcePath": "content/doom-e1m1/textures/flat/CEIL3_5.png",
+      "label": "CEIL3_5",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-ceil3-5",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "77c168d323d085f8cbf2086a7c5929659d947c501f417a999b0a5a9d257f4dfb"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-ceil3-5",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "77c168d323d085f8cbf2086a7c5929659d947c501f417a999b0a5a9d257f4dfb"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-ceil5-1",
+      "version": 1,
+      "hash": "b1c0a3108ee78beecb11cfc2d8d5f20ccedf26354f92d96628f18b277ac5e45a",
+      "sourcePath": "content/doom-e1m1/textures/flat/CEIL5_1.png",
+      "label": "CEIL5_1",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-ceil5-1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "b1c0a3108ee78beecb11cfc2d8d5f20ccedf26354f92d96628f18b277ac5e45a"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-ceil5-1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "b1c0a3108ee78beecb11cfc2d8d5f20ccedf26354f92d96628f18b277ac5e45a"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-ceil5-2",
+      "version": 1,
+      "hash": "b6746eff72cc3173498a3c0b51fca60f66539a75225c7ed69adfbbef8eebbd10",
+      "sourcePath": "content/doom-e1m1/textures/flat/CEIL5_2.png",
+      "label": "CEIL5_2",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-ceil5-2",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "b6746eff72cc3173498a3c0b51fca60f66539a75225c7ed69adfbbef8eebbd10"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-ceil5-2",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "b6746eff72cc3173498a3c0b51fca60f66539a75225c7ed69adfbbef8eebbd10"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-flat14",
+      "version": 1,
+      "hash": "913214c542f492a7c5afd2768627ea66adb6ea92d9552c3e78e816c7cb106a78",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLAT14.png",
+      "label": "FLAT14",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-flat14",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "913214c542f492a7c5afd2768627ea66adb6ea92d9552c3e78e816c7cb106a78"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-flat14",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "913214c542f492a7c5afd2768627ea66adb6ea92d9552c3e78e816c7cb106a78"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-flat18",
+      "version": 1,
+      "hash": "0304b158fe35b89e9bb34e7bd5f56b4c1284ffa53d829ed3bb425520b46d328a",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLAT18.png",
+      "label": "FLAT18",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-flat18",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "0304b158fe35b89e9bb34e7bd5f56b4c1284ffa53d829ed3bb425520b46d328a"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-flat18",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "0304b158fe35b89e9bb34e7bd5f56b4c1284ffa53d829ed3bb425520b46d328a"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-flat20",
+      "version": 1,
+      "hash": "63a81f024b3f1e9dbd410e42c4ac84e68d7222227aa74fbed9daebc84246f29d",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLAT20.png",
+      "label": "FLAT20",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-flat20",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "63a81f024b3f1e9dbd410e42c4ac84e68d7222227aa74fbed9daebc84246f29d"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-flat20",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "63a81f024b3f1e9dbd410e42c4ac84e68d7222227aa74fbed9daebc84246f29d"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-flat5-5",
+      "version": 1,
+      "hash": "225965d93b749707eab86b2c046369f015b112bbfc0e60cde54a23713af7a879",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLAT5_5.png",
+      "label": "FLAT5_5",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-flat5-5",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "225965d93b749707eab86b2c046369f015b112bbfc0e60cde54a23713af7a879"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-flat5-5",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "225965d93b749707eab86b2c046369f015b112bbfc0e60cde54a23713af7a879"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-floor1-1",
+      "version": 1,
+      "hash": "7276e451cbddc46874e000be70d259c0e25c638a0f7882e8bae6e99fcbe51d74",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR1_1.png",
+      "label": "FLOOR1_1",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-floor1-1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "7276e451cbddc46874e000be70d259c0e25c638a0f7882e8bae6e99fcbe51d74"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-floor1-1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "7276e451cbddc46874e000be70d259c0e25c638a0f7882e8bae6e99fcbe51d74"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-floor4-8",
+      "version": 1,
+      "hash": "6d5f1445e69515774bbb78fc696aea0ef74fbb0d2124997fa676588d72e9f5c6",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR4_8.png",
+      "label": "FLOOR4_8",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-floor4-8",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "6d5f1445e69515774bbb78fc696aea0ef74fbb0d2124997fa676588d72e9f5c6"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-floor4-8",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "6d5f1445e69515774bbb78fc696aea0ef74fbb0d2124997fa676588d72e9f5c6"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-floor5-1",
+      "version": 1,
+      "hash": "0bd25482a889c76e680ad9c02897621a5e9c7a6c0b1b1d0f944d667b35904e41",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR5_1.png",
+      "label": "FLOOR5_1",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-floor5-1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "0bd25482a889c76e680ad9c02897621a5e9c7a6c0b1b1d0f944d667b35904e41"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-floor5-1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "0bd25482a889c76e680ad9c02897621a5e9c7a6c0b1b1d0f944d667b35904e41"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-floor5-2",
+      "version": 1,
+      "hash": "18df567753bd8082783706f7263f4922ddfab0505f03e1598e324782747c4fd7",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR5_2.png",
+      "label": "FLOOR5_2",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-floor5-2",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "18df567753bd8082783706f7263f4922ddfab0505f03e1598e324782747c4fd7"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-floor5-2",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "18df567753bd8082783706f7263f4922ddfab0505f03e1598e324782747c4fd7"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-floor6-2",
+      "version": 1,
+      "hash": "72e18d2edd5fb2d2f5c1a7b73ec7982d5509246c491f30a4299a272884570b4a",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR6_2.png",
+      "label": "FLOOR6_2",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-floor6-2",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "72e18d2edd5fb2d2f5c1a7b73ec7982d5509246c491f30a4299a272884570b4a"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-floor6-2",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "72e18d2edd5fb2d2f5c1a7b73ec7982d5509246c491f30a4299a272884570b4a"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-floor7-1",
+      "version": 1,
+      "hash": "2bb2b48229f67be9fc7f4ebd13e24bc9fed18148cd566284b041ea4d3bb0481a",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR7_1.png",
+      "label": "FLOOR7_1",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-floor7-1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "2bb2b48229f67be9fc7f4ebd13e24bc9fed18148cd566284b041ea4d3bb0481a"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-floor7-1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "2bb2b48229f67be9fc7f4ebd13e24bc9fed18148cd566284b041ea4d3bb0481a"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-floor7-2",
+      "version": 1,
+      "hash": "64f9e17663049712b610402edba9904e6125f5387cb6fd97ece8ca16e31f5a2a",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR7_2.png",
+      "label": "FLOOR7_2",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-floor7-2",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "64f9e17663049712b610402edba9904e6125f5387cb6fd97ece8ca16e31f5a2a"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-floor7-2",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "64f9e17663049712b610402edba9904e6125f5387cb6fd97ece8ca16e31f5a2a"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-nukage3",
+      "version": 1,
+      "hash": "ddf0636c3527c963d10b43a554138271ac62bdd5186d3960d3efb4a21bc9e4ca",
+      "sourcePath": "content/doom-e1m1/textures/flat/NUKAGE3.png",
+      "label": "NUKAGE3",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-nukage3",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "ddf0636c3527c963d10b43a554138271ac62bdd5186d3960d3efb4a21bc9e4ca"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-nukage3",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "ddf0636c3527c963d10b43a554138271ac62bdd5186d3960d3efb4a21bc9e4ca"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-step2",
+      "version": 1,
+      "hash": "e54d96aab7ded0b654ee7d0c43f108eed91cbe4fa430b3c8e7a9f992da027de2",
+      "sourcePath": "content/doom-e1m1/textures/flat/STEP2.png",
+      "label": "STEP2",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-step2",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "e54d96aab7ded0b654ee7d0c43f108eed91cbe4fa430b3c8e7a9f992da027de2"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-step2",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "e54d96aab7ded0b654ee7d0c43f108eed91cbe4fa430b3c8e7a9f992da027de2"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-tlite6-1",
+      "version": 1,
+      "hash": "c4aa178c7949428c45e713a81ee00c75cad166ea0cc352ef75d941e1260a5d42",
+      "sourcePath": "content/doom-e1m1/textures/flat/TLITE6_1.png",
+      "label": "TLITE6_1",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-tlite6-1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "c4aa178c7949428c45e713a81ee00c75cad166ea0cc352ef75d941e1260a5d42"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-tlite6-1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "c4aa178c7949428c45e713a81ee00c75cad166ea0cc352ef75d941e1260a5d42"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-tlite6-4",
+      "version": 1,
+      "hash": "30e4038a6874c014c45ba489b3b745570c42c5d188d038d3809deaa84b1e9b2a",
+      "sourcePath": "content/doom-e1m1/textures/flat/TLITE6_4.png",
+      "label": "TLITE6_4",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-tlite6-4",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "30e4038a6874c014c45ba489b3b745570c42c5d188d038d3809deaa84b1e9b2a"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-tlite6-4",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "30e4038a6874c014c45ba489b3b745570c42c5d188d038d3809deaa84b1e9b2a"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-tlite6-5",
+      "version": 1,
+      "hash": "c9612267547d0e1a0c22d02a6e00497da8d34feee5a3ff8a22b98fd5c48fae31",
+      "sourcePath": "content/doom-e1m1/textures/flat/TLITE6_5.png",
+      "label": "TLITE6_5",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-tlite6-5",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "c9612267547d0e1a0c22d02a6e00497da8d34feee5a3ff8a22b98fd5c48fae31"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-tlite6-5",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "c9612267547d0e1a0c22d02a6e00497da8d34feee5a3ff8a22b98fd5c48fae31"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-flat-tlite6-6",
+      "version": 1,
+      "hash": "ffb2e7c9b9290c514789f6db8cd0e90fb8946f270f90d7a38e262968d8f2872f",
+      "sourcePath": "content/doom-e1m1/textures/flat/TLITE6_6.png",
+      "label": "TLITE6_6",
+      "dependencies": [
+        {
+          "id": "texture/doom-flat-tlite6-6",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "ffb2e7c9b9290c514789f6db8cd0e90fb8946f270f90d7a38e262968d8f2872f"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "flat",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-flat-tlite6-6",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "ffb2e7c9b9290c514789f6db8cd0e90fb8946f270f90d7a38e262968d8f2872f"
+              },
+              "tile_scale_cells": [
+                4,
+                4
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "opaque"
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-brnbigc",
+      "version": 1,
+      "hash": "fc15b130a553aea061db2273ffb3192a5e898d7ea52b149000405bc0322fff80",
+      "sourcePath": "content/doom-e1m1/textures/wall/BRNBIGC.png",
+      "label": "BRNBIGC",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-brnbigc",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "fc15b130a553aea061db2273ffb3192a5e898d7ea52b149000405bc0322fff80"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-brnbigc",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "fc15b130a553aea061db2273ffb3192a5e898d7ea52b149000405bc0322fff80"
+              },
+              "tile_scale_cells": [
+                8,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-brnbigl",
+      "version": 1,
+      "hash": "8505f1ea13c11bea0c12f82cb64f6baf3564d9de1529aa2108a6d69244f4851b",
+      "sourcePath": "content/doom-e1m1/textures/wall/BRNBIGL.png",
+      "label": "BRNBIGL",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-brnbigl",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "8505f1ea13c11bea0c12f82cb64f6baf3564d9de1529aa2108a6d69244f4851b"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-brnbigl",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "8505f1ea13c11bea0c12f82cb64f6baf3564d9de1529aa2108a6d69244f4851b"
+              },
+              "tile_scale_cells": [
+                2,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-brnbigr",
+      "version": 1,
+      "hash": "c4133c71c3ee61d5d28fa3c8df8aa57ee0e22b3cf920e80b7e314df868c8dd17",
+      "sourcePath": "content/doom-e1m1/textures/wall/BRNBIGR.png",
+      "label": "BRNBIGR",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-brnbigr",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "c4133c71c3ee61d5d28fa3c8df8aa57ee0e22b3cf920e80b7e314df868c8dd17"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-brnbigr",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "c4133c71c3ee61d5d28fa3c8df8aa57ee0e22b3cf920e80b7e314df868c8dd17"
+              },
+              "tile_scale_cells": [
+                2,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-brown1",
+      "version": 1,
+      "hash": "2834bb6c2e90168f9779df902d6eed2b1a3e1e3d98a082a9846a078beb22ac56",
+      "sourcePath": "content/doom-e1m1/textures/wall/BROWN1.png",
+      "label": "BROWN1",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-brown1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "2834bb6c2e90168f9779df902d6eed2b1a3e1e3d98a082a9846a078beb22ac56"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-brown1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "2834bb6c2e90168f9779df902d6eed2b1a3e1e3d98a082a9846a078beb22ac56"
+              },
+              "tile_scale_cells": [
+                8,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-brown144",
+      "version": 1,
+      "hash": "fced9e2c70a8f86c00460b0ec1cdb80acc1ab942b695bb71cfcbec62509b7e63",
+      "sourcePath": "content/doom-e1m1/textures/wall/BROWN144.png",
+      "label": "BROWN144",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-brown144",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "fced9e2c70a8f86c00460b0ec1cdb80acc1ab942b695bb71cfcbec62509b7e63"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-brown144",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "fced9e2c70a8f86c00460b0ec1cdb80acc1ab942b695bb71cfcbec62509b7e63"
+              },
+              "tile_scale_cells": [
+                8,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-browngrn",
+      "version": 1,
+      "hash": "3bce58e643d453b73480c7411c866079cf86b6b6c1c6aa0352a835b707a13321",
+      "sourcePath": "content/doom-e1m1/textures/wall/BROWNGRN.png",
+      "label": "BROWNGRN",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-browngrn",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "3bce58e643d453b73480c7411c866079cf86b6b6c1c6aa0352a835b707a13321"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-browngrn",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "3bce58e643d453b73480c7411c866079cf86b6b6c1c6aa0352a835b707a13321"
+              },
+              "tile_scale_cells": [
+                4,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-compspan",
+      "version": 1,
+      "hash": "db1241741152f3347df68cd36991a320abc339f7025caadd917271ecd64cdb60",
+      "sourcePath": "content/doom-e1m1/textures/wall/COMPSPAN.png",
+      "label": "COMPSPAN",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-compspan",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "db1241741152f3347df68cd36991a320abc339f7025caadd917271ecd64cdb60"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-compspan",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "db1241741152f3347df68cd36991a320abc339f7025caadd917271ecd64cdb60"
+              },
+              "tile_scale_cells": [
+                2,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-comptall",
+      "version": 1,
+      "hash": "2c4f6587ecd2542b14eafbd104b8c0f263523314cbc31d0b5b83918443c244f9",
+      "sourcePath": "content/doom-e1m1/textures/wall/COMPTALL.png",
+      "label": "COMPTALL",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-comptall",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "2c4f6587ecd2542b14eafbd104b8c0f263523314cbc31d0b5b83918443c244f9"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-comptall",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "2c4f6587ecd2542b14eafbd104b8c0f263523314cbc31d0b5b83918443c244f9"
+              },
+              "tile_scale_cells": [
+                16,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-comptile",
+      "version": 1,
+      "hash": "59a95e2985c3c2ef7b7b4ee44c56c6dc76cfc22f07872b96ea3156e5af028348",
+      "sourcePath": "content/doom-e1m1/textures/wall/COMPTILE.png",
+      "label": "COMPTILE",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-comptile",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "59a95e2985c3c2ef7b7b4ee44c56c6dc76cfc22f07872b96ea3156e5af028348"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-comptile",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "59a95e2985c3c2ef7b7b4ee44c56c6dc76cfc22f07872b96ea3156e5af028348"
+              },
+              "tile_scale_cells": [
+                8,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-compute2",
+      "version": 1,
+      "hash": "ed89cd8eabe4b475d8ab73735c30919fad4638f4b7d24149403849a10a4a2e74",
+      "sourcePath": "content/doom-e1m1/textures/wall/COMPUTE2.png",
+      "label": "COMPUTE2",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-compute2",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "ed89cd8eabe4b475d8ab73735c30919fad4638f4b7d24149403849a10a4a2e74"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-compute2",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "ed89cd8eabe4b475d8ab73735c30919fad4638f4b7d24149403849a10a4a2e74"
+              },
+              "tile_scale_cells": [
+                16,
+                3.5
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-door3",
+      "version": 1,
+      "hash": "da36dc35eb653b72f09ae25159c60384467121b41a78140a00b57e44904649e4",
+      "sourcePath": "content/doom-e1m1/textures/wall/DOOR3.png",
+      "label": "DOOR3",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-door3",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "da36dc35eb653b72f09ae25159c60384467121b41a78140a00b57e44904649e4"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-door3",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "da36dc35eb653b72f09ae25159c60384467121b41a78140a00b57e44904649e4"
+              },
+              "tile_scale_cells": [
+                4,
+                4.5
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-doorstop",
+      "version": 1,
+      "hash": "bd7b79b900e735f3d4b643bed2714d84234ad2b8891159c86a0f87918d5ef539",
+      "sourcePath": "content/doom-e1m1/textures/wall/DOORSTOP.png",
+      "label": "DOORSTOP",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-doorstop",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "bd7b79b900e735f3d4b643bed2714d84234ad2b8891159c86a0f87918d5ef539"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-doorstop",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "bd7b79b900e735f3d4b643bed2714d84234ad2b8891159c86a0f87918d5ef539"
+              },
+              "tile_scale_cells": [
+                0.5,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-doortrak",
+      "version": 1,
+      "hash": "132e7c41fc8c2ea67868bcdff16eec298a16bbab9e1a67a28249c5a1839dca99",
+      "sourcePath": "content/doom-e1m1/textures/wall/DOORTRAK.png",
+      "label": "DOORTRAK",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-doortrak",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "132e7c41fc8c2ea67868bcdff16eec298a16bbab9e1a67a28249c5a1839dca99"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-doortrak",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "132e7c41fc8c2ea67868bcdff16eec298a16bbab9e1a67a28249c5a1839dca99"
+              },
+              "tile_scale_cells": [
+                0.5,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-exitdoor",
+      "version": 1,
+      "hash": "2501c028357eb476b292a5a7e410197efd0b682411a2bd70ecadf25a22d85662",
+      "sourcePath": "content/doom-e1m1/textures/wall/EXITDOOR.png",
+      "label": "EXITDOOR",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-exitdoor",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "2501c028357eb476b292a5a7e410197efd0b682411a2bd70ecadf25a22d85662"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-exitdoor",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "2501c028357eb476b292a5a7e410197efd0b682411a2bd70ecadf25a22d85662"
+              },
+              "tile_scale_cells": [
+                8,
+                4.5
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-exitsign",
+      "version": 1,
+      "hash": "938c42fdbde4889cf3b96455a71ba66fa123414581f2f99ce54a635b0f6ae089",
+      "sourcePath": "content/doom-e1m1/textures/wall/EXITSIGN.png",
+      "label": "EXITSIGN",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-exitsign",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "938c42fdbde4889cf3b96455a71ba66fa123414581f2f99ce54a635b0f6ae089"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-exitsign",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "938c42fdbde4889cf3b96455a71ba66fa123414581f2f99ce54a635b0f6ae089"
+              },
+              "tile_scale_cells": [
+                4,
+                1
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-lite3",
+      "version": 1,
+      "hash": "63d2f56caa650cf3c74920f6ab58a67fd2332e25d957b16266dd1a1a73e966a4",
+      "sourcePath": "content/doom-e1m1/textures/wall/LITE3.png",
+      "label": "LITE3",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-lite3",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "63d2f56caa650cf3c74920f6ab58a67fd2332e25d957b16266dd1a1a73e966a4"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-lite3",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "63d2f56caa650cf3c74920f6ab58a67fd2332e25d957b16266dd1a1a73e966a4"
+              },
+              "tile_scale_cells": [
+                2,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-nuke24",
+      "version": 1,
+      "hash": "e549beaf06cfa82ea6d4c9fa7f81af73fa0de69f6504ab822695a3cc1c283958",
+      "sourcePath": "content/doom-e1m1/textures/wall/NUKE24.png",
+      "label": "NUKE24",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-nuke24",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "e549beaf06cfa82ea6d4c9fa7f81af73fa0de69f6504ab822695a3cc1c283958"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-nuke24",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "e549beaf06cfa82ea6d4c9fa7f81af73fa0de69f6504ab822695a3cc1c283958"
+              },
+              "tile_scale_cells": [
+                4,
+                1.5
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-planet1",
+      "version": 1,
+      "hash": "c084de2994185b31090a926cfc280865db82f04015de74a79c5422098d454156",
+      "sourcePath": "content/doom-e1m1/textures/wall/PLANET1.png",
+      "label": "PLANET1",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-planet1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "c084de2994185b31090a926cfc280865db82f04015de74a79c5422098d454156"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-planet1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "c084de2994185b31090a926cfc280865db82f04015de74a79c5422098d454156"
+              },
+              "tile_scale_cells": [
+                16,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-sladwall",
+      "version": 1,
+      "hash": "3d6a991e7b0f20ab908a0362fda304e0ab100c8c9f126befc811d5b78029d484",
+      "sourcePath": "content/doom-e1m1/textures/wall/SLADWALL.png",
+      "label": "SLADWALL",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-sladwall",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "3d6a991e7b0f20ab908a0362fda304e0ab100c8c9f126befc811d5b78029d484"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-sladwall",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "3d6a991e7b0f20ab908a0362fda304e0ab100c8c9f126befc811d5b78029d484"
+              },
+              "tile_scale_cells": [
+                4,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-starg3",
+      "version": 1,
+      "hash": "032535e3959581622076ab81fea34709eb0e06d6e2b7302a60497e25edb54e6b",
+      "sourcePath": "content/doom-e1m1/textures/wall/STARG3.png",
+      "label": "STARG3",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-starg3",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "032535e3959581622076ab81fea34709eb0e06d6e2b7302a60497e25edb54e6b"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-starg3",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "032535e3959581622076ab81fea34709eb0e06d6e2b7302a60497e25edb54e6b"
+              },
+              "tile_scale_cells": [
+                8,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-stargr1",
+      "version": 1,
+      "hash": "560ccedb9e872750b7bdfdb2d16f148306435fc2c7ccbd7f88c561302b597f0d",
+      "sourcePath": "content/doom-e1m1/textures/wall/STARGR1.png",
+      "label": "STARGR1",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-stargr1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "560ccedb9e872750b7bdfdb2d16f148306435fc2c7ccbd7f88c561302b597f0d"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-stargr1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "560ccedb9e872750b7bdfdb2d16f148306435fc2c7ccbd7f88c561302b597f0d"
+              },
+              "tile_scale_cells": [
+                4,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-startan1",
+      "version": 1,
+      "hash": "7c7ce8aac3276d2dc00e415f808be9f831807bd9e6681664475117266b11bb3f",
+      "sourcePath": "content/doom-e1m1/textures/wall/STARTAN1.png",
+      "label": "STARTAN1",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-startan1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "7c7ce8aac3276d2dc00e415f808be9f831807bd9e6681664475117266b11bb3f"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-startan1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "7c7ce8aac3276d2dc00e415f808be9f831807bd9e6681664475117266b11bb3f"
+              },
+              "tile_scale_cells": [
+                4,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-startan3",
+      "version": 1,
+      "hash": "b72c5adb0f268cdf61a5c43026f8cea186be4a46eb8d2de22a53c9c2942372be",
+      "sourcePath": "content/doom-e1m1/textures/wall/STARTAN3.png",
+      "label": "STARTAN3",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-startan3",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "b72c5adb0f268cdf61a5c43026f8cea186be4a46eb8d2de22a53c9c2942372be"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-startan3",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "b72c5adb0f268cdf61a5c43026f8cea186be4a46eb8d2de22a53c9c2942372be"
+              },
+              "tile_scale_cells": [
+                8,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-step1",
+      "version": 1,
+      "hash": "dc082aae89b6ca6fdcc7f36ee83015a5fcdc6a78fcb9cf8249c136b679fa7b9d",
+      "sourcePath": "content/doom-e1m1/textures/wall/STEP1.png",
+      "label": "STEP1",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-step1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "dc082aae89b6ca6fdcc7f36ee83015a5fcdc6a78fcb9cf8249c136b679fa7b9d"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-step1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "dc082aae89b6ca6fdcc7f36ee83015a5fcdc6a78fcb9cf8249c136b679fa7b9d"
+              },
+              "tile_scale_cells": [
+                2,
+                0.5
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-step6",
+      "version": 1,
+      "hash": "9de329bb95366757b2695f361122944ddb771b4e4d58ca0079a257a237e04e31",
+      "sourcePath": "content/doom-e1m1/textures/wall/STEP6.png",
+      "label": "STEP6",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-step6",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "9de329bb95366757b2695f361122944ddb771b4e4d58ca0079a257a237e04e31"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-step6",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "9de329bb95366757b2695f361122944ddb771b4e4d58ca0079a257a237e04e31"
+              },
+              "tile_scale_cells": [
+                2,
+                1
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-support2",
+      "version": 1,
+      "hash": "d98692a6a82600dfe8a40ab6b6a3632a417b44b8e2b42c9e6a43af686bade978",
+      "sourcePath": "content/doom-e1m1/textures/wall/SUPPORT2.png",
+      "label": "SUPPORT2",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-support2",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "d98692a6a82600dfe8a40ab6b6a3632a417b44b8e2b42c9e6a43af686bade978"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-support2",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "d98692a6a82600dfe8a40ab6b6a3632a417b44b8e2b42c9e6a43af686bade978"
+              },
+              "tile_scale_cells": [
+                4,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-sw1strtn",
+      "version": 1,
+      "hash": "f73dc748f159a09d0845f90863ae5d1d6eb3c1fb0f8314868d98ab7198ee4b67",
+      "sourcePath": "content/doom-e1m1/textures/wall/SW1STRTN.png",
+      "label": "SW1STRTN",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-sw1strtn",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "f73dc748f159a09d0845f90863ae5d1d6eb3c1fb0f8314868d98ab7198ee4b67"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-sw1strtn",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "f73dc748f159a09d0845f90863ae5d1d6eb3c1fb0f8314868d98ab7198ee4b67"
+              },
+              "tile_scale_cells": [
+                4,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-tekwall1",
+      "version": 1,
+      "hash": "ddad6576ca9d517b76c0fe2a91d75d17b4c64faa9a4996ecfb3d4c8a3091c5ae",
+      "sourcePath": "content/doom-e1m1/textures/wall/TEKWALL1.png",
+      "label": "TEKWALL1",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-tekwall1",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "ddad6576ca9d517b76c0fe2a91d75d17b4c64faa9a4996ecfb3d4c8a3091c5ae"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-tekwall1",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "ddad6576ca9d517b76c0fe2a91d75d17b4c64faa9a4996ecfb3d4c8a3091c5ae"
+              },
+              "tile_scale_cells": [
+                8,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "material/doom-wall-tekwall4",
+      "version": 1,
+      "hash": "fc3ce505cbdb132dae0b36f52c9cc7e46bd5c667b42822465c0c94b9df1efa5d",
+      "sourcePath": "content/doom-e1m1/textures/wall/TEKWALL4.png",
+      "label": "TEKWALL4",
+      "dependencies": [
+        {
+          "id": "texture/doom-wall-tekwall4",
+          "version": {
+            "req": "exact",
+            "value": 1
+          },
+          "hash": "fc3ce505cbdb132dae0b36f52c9cc7e46bd5c667b42822465c0c94b9df1efa5d"
+        }
+      ],
+      "material": {
+        "authority": {
+          "solid": true,
+          "collidable": true,
+          "occludes": true,
+          "structuralClass": "structural"
+        },
+        "style": {
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "texture": null,
+          "textureTint": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "emissionColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "roughness": 1,
+          "emissive": 0,
+          "uvStrategy": "planar",
+          "voxelSurface": {
+            "schemaVersion": 1,
+            "mapping": {
+              "kind": "repeat",
+              "texture": {
+                "id": "texture/doom-wall-tekwall4",
+                "version": {
+                  "req": "exact",
+                  "value": 1
+                },
+                "hash": "fc3ce505cbdb132dae0b36f52c9cc7e46bd5c667b42822465c0c94b9df1efa5d"
+              },
+              "tile_scale_cells": [
+                8,
+                8
+              ],
+              "tile_origin_cells": [
+                0,
+                0
+              ]
+            },
+            "alphaMode": {
+              "kind": "mask",
+              "cutoff": 0.5
+            }
+          }
+        }
+      },
+      "texture": null,
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-ceil3-5",
+      "version": 1,
+      "hash": "77c168d323d085f8cbf2086a7c5929659d947c501f417a999b0a5a9d257f4dfb",
+      "sourcePath": "content/doom-e1m1/textures/flat/CEIL3_5.png",
+      "label": "CEIL3_5",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-ceil5-1",
+      "version": 1,
+      "hash": "b1c0a3108ee78beecb11cfc2d8d5f20ccedf26354f92d96628f18b277ac5e45a",
+      "sourcePath": "content/doom-e1m1/textures/flat/CEIL5_1.png",
+      "label": "CEIL5_1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-ceil5-2",
+      "version": 1,
+      "hash": "b6746eff72cc3173498a3c0b51fca60f66539a75225c7ed69adfbbef8eebbd10",
+      "sourcePath": "content/doom-e1m1/textures/flat/CEIL5_2.png",
+      "label": "CEIL5_2",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-flat14",
+      "version": 1,
+      "hash": "913214c542f492a7c5afd2768627ea66adb6ea92d9552c3e78e816c7cb106a78",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLAT14.png",
+      "label": "FLAT14",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-flat18",
+      "version": 1,
+      "hash": "0304b158fe35b89e9bb34e7bd5f56b4c1284ffa53d829ed3bb425520b46d328a",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLAT18.png",
+      "label": "FLAT18",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-flat20",
+      "version": 1,
+      "hash": "63a81f024b3f1e9dbd410e42c4ac84e68d7222227aa74fbed9daebc84246f29d",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLAT20.png",
+      "label": "FLAT20",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-flat5-5",
+      "version": 1,
+      "hash": "225965d93b749707eab86b2c046369f015b112bbfc0e60cde54a23713af7a879",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLAT5_5.png",
+      "label": "FLAT5_5",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-floor1-1",
+      "version": 1,
+      "hash": "7276e451cbddc46874e000be70d259c0e25c638a0f7882e8bae6e99fcbe51d74",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR1_1.png",
+      "label": "FLOOR1_1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-floor4-8",
+      "version": 1,
+      "hash": "6d5f1445e69515774bbb78fc696aea0ef74fbb0d2124997fa676588d72e9f5c6",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR4_8.png",
+      "label": "FLOOR4_8",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-floor5-1",
+      "version": 1,
+      "hash": "0bd25482a889c76e680ad9c02897621a5e9c7a6c0b1b1d0f944d667b35904e41",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR5_1.png",
+      "label": "FLOOR5_1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-floor5-2",
+      "version": 1,
+      "hash": "18df567753bd8082783706f7263f4922ddfab0505f03e1598e324782747c4fd7",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR5_2.png",
+      "label": "FLOOR5_2",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-floor6-2",
+      "version": 1,
+      "hash": "72e18d2edd5fb2d2f5c1a7b73ec7982d5509246c491f30a4299a272884570b4a",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR6_2.png",
+      "label": "FLOOR6_2",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-floor7-1",
+      "version": 1,
+      "hash": "2bb2b48229f67be9fc7f4ebd13e24bc9fed18148cd566284b041ea4d3bb0481a",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR7_1.png",
+      "label": "FLOOR7_1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-floor7-2",
+      "version": 1,
+      "hash": "64f9e17663049712b610402edba9904e6125f5387cb6fd97ece8ca16e31f5a2a",
+      "sourcePath": "content/doom-e1m1/textures/flat/FLOOR7_2.png",
+      "label": "FLOOR7_2",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-nukage3",
+      "version": 1,
+      "hash": "ddf0636c3527c963d10b43a554138271ac62bdd5186d3960d3efb4a21bc9e4ca",
+      "sourcePath": "content/doom-e1m1/textures/flat/NUKAGE3.png",
+      "label": "NUKAGE3",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-step2",
+      "version": 1,
+      "hash": "e54d96aab7ded0b654ee7d0c43f108eed91cbe4fa430b3c8e7a9f992da027de2",
+      "sourcePath": "content/doom-e1m1/textures/flat/STEP2.png",
+      "label": "STEP2",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-tlite6-1",
+      "version": 1,
+      "hash": "c4aa178c7949428c45e713a81ee00c75cad166ea0cc352ef75d941e1260a5d42",
+      "sourcePath": "content/doom-e1m1/textures/flat/TLITE6_1.png",
+      "label": "TLITE6_1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-tlite6-4",
+      "version": 1,
+      "hash": "30e4038a6874c014c45ba489b3b745570c42c5d188d038d3809deaa84b1e9b2a",
+      "sourcePath": "content/doom-e1m1/textures/flat/TLITE6_4.png",
+      "label": "TLITE6_4",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-tlite6-5",
+      "version": 1,
+      "hash": "c9612267547d0e1a0c22d02a6e00497da8d34feee5a3ff8a22b98fd5c48fae31",
+      "sourcePath": "content/doom-e1m1/textures/flat/TLITE6_5.png",
+      "label": "TLITE6_5",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-flat-tlite6-6",
+      "version": 1,
+      "hash": "ffb2e7c9b9290c514789f6db8cd0e90fb8946f270f90d7a38e262968d8f2872f",
+      "sourcePath": "content/doom-e1m1/textures/flat/TLITE6_6.png",
+      "label": "TLITE6_6",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 64,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-brnbigc",
+      "version": 1,
+      "hash": "fc15b130a553aea061db2273ffb3192a5e898d7ea52b149000405bc0322fff80",
+      "sourcePath": "content/doom-e1m1/textures/wall/BRNBIGC.png",
+      "label": "BRNBIGC",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 128,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-brnbigl",
+      "version": 1,
+      "hash": "8505f1ea13c11bea0c12f82cb64f6baf3564d9de1529aa2108a6d69244f4851b",
+      "sourcePath": "content/doom-e1m1/textures/wall/BRNBIGL.png",
+      "label": "BRNBIGL",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 32,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-brnbigr",
+      "version": 1,
+      "hash": "c4133c71c3ee61d5d28fa3c8df8aa57ee0e22b3cf920e80b7e314df868c8dd17",
+      "sourcePath": "content/doom-e1m1/textures/wall/BRNBIGR.png",
+      "label": "BRNBIGR",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 32,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-brown1",
+      "version": 1,
+      "hash": "2834bb6c2e90168f9779df902d6eed2b1a3e1e3d98a082a9846a078beb22ac56",
+      "sourcePath": "content/doom-e1m1/textures/wall/BROWN1.png",
+      "label": "BROWN1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 128,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-brown144",
+      "version": 1,
+      "hash": "fced9e2c70a8f86c00460b0ec1cdb80acc1ab942b695bb71cfcbec62509b7e63",
+      "sourcePath": "content/doom-e1m1/textures/wall/BROWN144.png",
+      "label": "BROWN144",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 128,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-browngrn",
+      "version": 1,
+      "hash": "3bce58e643d453b73480c7411c866079cf86b6b6c1c6aa0352a835b707a13321",
+      "sourcePath": "content/doom-e1m1/textures/wall/BROWNGRN.png",
+      "label": "BROWNGRN",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-compspan",
+      "version": 1,
+      "hash": "db1241741152f3347df68cd36991a320abc339f7025caadd917271ecd64cdb60",
+      "sourcePath": "content/doom-e1m1/textures/wall/COMPSPAN.png",
+      "label": "COMPSPAN",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 32,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-comptall",
+      "version": 1,
+      "hash": "2c4f6587ecd2542b14eafbd104b8c0f263523314cbc31d0b5b83918443c244f9",
+      "sourcePath": "content/doom-e1m1/textures/wall/COMPTALL.png",
+      "label": "COMPTALL",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 256,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-comptile",
+      "version": 1,
+      "hash": "59a95e2985c3c2ef7b7b4ee44c56c6dc76cfc22f07872b96ea3156e5af028348",
+      "sourcePath": "content/doom-e1m1/textures/wall/COMPTILE.png",
+      "label": "COMPTILE",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 128,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-compute2",
+      "version": 1,
+      "hash": "ed89cd8eabe4b475d8ab73735c30919fad4638f4b7d24149403849a10a4a2e74",
+      "sourcePath": "content/doom-e1m1/textures/wall/COMPUTE2.png",
+      "label": "COMPUTE2",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 256,
+        "height": 56,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-door3",
+      "version": 1,
+      "hash": "da36dc35eb653b72f09ae25159c60384467121b41a78140a00b57e44904649e4",
+      "sourcePath": "content/doom-e1m1/textures/wall/DOOR3.png",
+      "label": "DOOR3",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 72,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-doorstop",
+      "version": 1,
+      "hash": "bd7b79b900e735f3d4b643bed2714d84234ad2b8891159c86a0f87918d5ef539",
+      "sourcePath": "content/doom-e1m1/textures/wall/DOORSTOP.png",
+      "label": "DOORSTOP",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 8,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-doortrak",
+      "version": 1,
+      "hash": "132e7c41fc8c2ea67868bcdff16eec298a16bbab9e1a67a28249c5a1839dca99",
+      "sourcePath": "content/doom-e1m1/textures/wall/DOORTRAK.png",
+      "label": "DOORTRAK",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 8,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-exitdoor",
+      "version": 1,
+      "hash": "2501c028357eb476b292a5a7e410197efd0b682411a2bd70ecadf25a22d85662",
+      "sourcePath": "content/doom-e1m1/textures/wall/EXITDOOR.png",
+      "label": "EXITDOOR",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 128,
+        "height": 72,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-exitsign",
+      "version": 1,
+      "hash": "938c42fdbde4889cf3b96455a71ba66fa123414581f2f99ce54a635b0f6ae089",
+      "sourcePath": "content/doom-e1m1/textures/wall/EXITSIGN.png",
+      "label": "EXITSIGN",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 16,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-lite3",
+      "version": 1,
+      "hash": "63d2f56caa650cf3c74920f6ab58a67fd2332e25d957b16266dd1a1a73e966a4",
+      "sourcePath": "content/doom-e1m1/textures/wall/LITE3.png",
+      "label": "LITE3",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 32,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-nuke24",
+      "version": 1,
+      "hash": "e549beaf06cfa82ea6d4c9fa7f81af73fa0de69f6504ab822695a3cc1c283958",
+      "sourcePath": "content/doom-e1m1/textures/wall/NUKE24.png",
+      "label": "NUKE24",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 24,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-planet1",
+      "version": 1,
+      "hash": "c084de2994185b31090a926cfc280865db82f04015de74a79c5422098d454156",
+      "sourcePath": "content/doom-e1m1/textures/wall/PLANET1.png",
+      "label": "PLANET1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 256,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-sladwall",
+      "version": 1,
+      "hash": "3d6a991e7b0f20ab908a0362fda304e0ab100c8c9f126befc811d5b78029d484",
+      "sourcePath": "content/doom-e1m1/textures/wall/SLADWALL.png",
+      "label": "SLADWALL",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-starg3",
+      "version": 1,
+      "hash": "032535e3959581622076ab81fea34709eb0e06d6e2b7302a60497e25edb54e6b",
+      "sourcePath": "content/doom-e1m1/textures/wall/STARG3.png",
+      "label": "STARG3",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 128,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-stargr1",
+      "version": 1,
+      "hash": "560ccedb9e872750b7bdfdb2d16f148306435fc2c7ccbd7f88c561302b597f0d",
+      "sourcePath": "content/doom-e1m1/textures/wall/STARGR1.png",
+      "label": "STARGR1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-startan1",
+      "version": 1,
+      "hash": "7c7ce8aac3276d2dc00e415f808be9f831807bd9e6681664475117266b11bb3f",
+      "sourcePath": "content/doom-e1m1/textures/wall/STARTAN1.png",
+      "label": "STARTAN1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-startan3",
+      "version": 1,
+      "hash": "b72c5adb0f268cdf61a5c43026f8cea186be4a46eb8d2de22a53c9c2942372be",
+      "sourcePath": "content/doom-e1m1/textures/wall/STARTAN3.png",
+      "label": "STARTAN3",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 128,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-step1",
+      "version": 1,
+      "hash": "dc082aae89b6ca6fdcc7f36ee83015a5fcdc6a78fcb9cf8249c136b679fa7b9d",
+      "sourcePath": "content/doom-e1m1/textures/wall/STEP1.png",
+      "label": "STEP1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 32,
+        "height": 8,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-step6",
+      "version": 1,
+      "hash": "9de329bb95366757b2695f361122944ddb771b4e4d58ca0079a257a237e04e31",
+      "sourcePath": "content/doom-e1m1/textures/wall/STEP6.png",
+      "label": "STEP6",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 32,
+        "height": 16,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-support2",
+      "version": 1,
+      "hash": "d98692a6a82600dfe8a40ab6b6a3632a417b44b8e2b42c9e6a43af686bade978",
+      "sourcePath": "content/doom-e1m1/textures/wall/SUPPORT2.png",
+      "label": "SUPPORT2",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-sw1strtn",
+      "version": 1,
+      "hash": "f73dc748f159a09d0845f90863ae5d1d6eb3c1fb0f8314868d98ab7198ee4b67",
+      "sourcePath": "content/doom-e1m1/textures/wall/SW1STRTN.png",
+      "label": "SW1STRTN",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 64,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-tekwall1",
+      "version": 1,
+      "hash": "ddad6576ca9d517b76c0fe2a91d75d17b4c64faa9a4996ecfb3d4c8a3091c5ae",
+      "sourcePath": "content/doom-e1m1/textures/wall/TEKWALL1.png",
+      "label": "TEKWALL1",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 128,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    },
+    {
+      "id": "texture/doom-wall-tekwall4",
+      "version": 1,
+      "hash": "fc3ce505cbdb132dae0b36f52c9cc7e46bd5c667b42822465c0c94b9df1efa5d",
+      "sourcePath": "content/doom-e1m1/textures/wall/TEKWALL4.png",
+      "label": "TEKWALL4",
+      "dependencies": [],
+      "material": null,
+      "texture": {
+        "width": 128,
+        "height": 128,
+        "filter": "nearest",
+        "wrap": "repeat"
+      },
+      "voxelAtlas": null
+    }
+  ]
+}

@@ -44,6 +44,12 @@
       "sourcePack": "Kenney Factory Kit 3.0",
       "sourcePath": "content/doom-e1m1/props/sources/kenney-factory-kit/button-floor-square.glb",
       "sourceSha256": "f32def1dd9a57939b096d64361fc5058a8ba240a0394951e8681fb7326ebdeb6",
+      "sourceDependencies": [
+        {
+          "path": "content/doom-e1m1/props/sources/kenney-factory-kit/Textures/colormap.png",
+          "sha256": "35d7bd6900dde0208429eeaec87fa17fbf024ed59f3f4eab54bc92802eba9dd7"
+        }
+      ],
       "modifications": "direct GLB geometry extraction; centered, bounded non-uniform scale; project palette material; texture omitted"
     },
     {

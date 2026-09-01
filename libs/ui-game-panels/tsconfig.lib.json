@@ -1,9 +1,0 @@
-{
-  "extends": "../../tsconfig.angular.json",
-  "compilerOptions": {
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "../../dist/out-tsc"
-  },
-  "include": ["src/**/*.ts"]
-}
