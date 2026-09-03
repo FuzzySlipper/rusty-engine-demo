@@ -34,6 +34,57 @@ internal sealed record LoadingBayWeapon(string Id, Mechanics.ItemDefinition Mech
 internal readonly record struct LoadingBayReceipt(bool Accepted, string Code, string? Correlation);
 internal sealed record LoadingBayPickupSnapshot(ulong EntityId, string ItemId, string ProgramId, LoadingBayPickupLifecycle Lifecycle, string Cause, ulong Tick, ulong TriggerRevision);
 internal sealed record LoadingBayEnemyReadout(ulong EntityId, string Label, int Health, LoadingBayEnemyPosture Posture, bool Visible, ulong ReadyAtTick, ulong DropPickupEntityId);
+/// <summary>Copied identity and authored surface values for one Engine-projected E1M1 material.</summary>
+internal sealed record LoadingBayAuthoredMaterialReadout(
+    string MaterialId,
+    uint MaterialVersion,
+    string MaterialHash,
+    uint MaterialSlot,
+    ulong MaterialHandle,
+    string TextureId,
+    uint TextureVersion,
+    string TextureHash,
+    string TextureSourcePath,
+    AuthoredUvStrategy UvStrategy,
+    AuthoredVoxelSurfaceMappingKind MappingKind,
+    float TileScaleX,
+    float TileScaleY,
+    float TileOriginX,
+    float TileOriginY,
+    string AtlasId,
+    string Region,
+    AuthoredTextureFilter Filter,
+    AuthoredTextureWrap Wrap);
+/// <summary>Typed catalog identity plus Engine voxel-scene realization diagnostics.</summary>
+internal sealed record LoadingBayVoxelSceneReadout(
+    string CatalogPath,
+    string CatalogHash,
+    uint CatalogEntryCount,
+    uint MaterialCount,
+    uint BoundMaterialCount,
+    uint MappingCount,
+    ulong MappingSourceRevision,
+    ulong MappingMeshRevision,
+    bool Realized,
+    ulong SceneSourceRevision,
+    ulong SceneMeshRevision,
+    ulong SceneChunkCount,
+    LoadingBayAuthoredMaterialReadout[] Materials)
+{
+    internal static LoadingBayVoxelSceneReadout Empty => new(
+        string.Empty, string.Empty, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, []);
+}
+/// <summary>Retained authored SKY1 identity and camera-view realization state.</summary>
+internal readonly record struct LoadingBaySkyReadout(
+    string SourcePath,
+    ContentSha256 SourceHash,
+    ulong SourceByteLength,
+    ulong ResourceHandle,
+    bool ResourceRealized,
+    bool BackgroundSelected)
+{
+    internal static LoadingBaySkyReadout Empty => new(string.Empty, default, 0, 0, false, false);
+}
 internal sealed record LoadingBayWeaponFirePlan(string WeaponId, string AmmunitionId, int AmmunitionCost, int DamageRolls, int Damage, int PelletCount, double SpreadDegrees, double MaximumDistance, ulong Tick);
 internal sealed record LoadingBayWeaponImpact(ulong EnemyEntityId, int Damage, int PelletIndex, bool WorldOccluded);
 /// <summary>One product-authorized enemy action; Engine performs the visibility, casts, and body simulation.</summary>

@@ -22,6 +22,8 @@ internal sealed class LoadingBayEngineServices : IDisposable
     private readonly LoadingBayVoxelScenePresentation _voxelPresentation;
     private readonly LoadingBayWorldServices _worldServices;
     private readonly LoadingBayHudProjection _hud;
+    private readonly LoadingBaySkyReadout _skyReadout;
+    private LoadingBayEngineServiceReadout _readout;
     private readonly EntityWorld _entities;
     private EntityWorld? _ownedProjectionEntities;
     private bool _disposed;
@@ -34,6 +36,7 @@ internal sealed class LoadingBayEngineServices : IDisposable
         EntityId playerEntity,
         LoadingBayExitPresentation exitPresentation,
         LoadingBayExitButtonAnimation exitButtonAnimation,
+        LoadingBaySkyReadout skyReadout,
         bool ownsProjectionEntities = false)
     {
         _entities = entities ?? throw new ArgumentNullException(nameof(entities));
@@ -41,6 +44,7 @@ internal sealed class LoadingBayEngineServices : IDisposable
         try
         {
             _ownedProjectionEntities = ownsProjectionEntities ? _entities : null;
+            _skyReadout = skyReadout;
             _content = new LoadingBayAdmittedContent(engine.Content, engine.VoxelContent, content);
             constructed.Add(_content);
             _player = new LoadingBayPlayerScene(engine, tuning);
@@ -60,6 +64,7 @@ internal sealed class LoadingBayEngineServices : IDisposable
             _player.ActivateCamera();
             _hud = new LoadingBayHudProjection(engine.Ui);
             constructed.Add(_hud);
+            _readout = LoadingBayEngineServiceReadout.Empty with { Sky = _skyReadout, VoxelScene = _voxelPresentation.Readout };
         }
         catch (Exception constructionFailure)
         {
@@ -75,6 +80,8 @@ internal sealed class LoadingBayEngineServices : IDisposable
 
     /// <summary>The managed entity world currently projected into this Engine service generation.</summary>
     internal EntityWorld EntityWorld => _entities;
+
+    internal LoadingBayEngineServiceReadout Readout => _readout;
 
     internal void Update(
         ProductUpdate update,
@@ -146,6 +153,8 @@ internal sealed class LoadingBayEngineServices : IDisposable
     {
         ThrowIfDisposed();
         LoadingBayEngineServiceReadout serviceReadout = _worldServices.Publish(readout, _player);
+        serviceReadout = serviceReadout with { Sky = _skyReadout, VoxelScene = _voxelPresentation.Readout };
+        _readout = serviceReadout;
         _hud.Publish(readout, LoadingBayAdmittedContent.ProjectPath, LoadingBayAdmittedContent.VoxelPath, serviceReadout);
     }
 

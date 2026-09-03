@@ -4,7 +4,7 @@
     "command": "./scripts/serve-den.sh --host {host} --port {port}",
     "preferredPort": 0,
     "healthUrl": "/",
-    "readyText": "Loading Bay",
+    "readyText": "Rusty Product Host",
     "reusePolicy": "broker_owned",
     "startupTimeout": "180s"
   },

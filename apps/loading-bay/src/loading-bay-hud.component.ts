@@ -31,6 +31,14 @@ interface LoadingBayHudSnapshot {
   readonly lifecycle: string;
   readonly admittedSteps: number;
   readonly droppedSteps: number;
+  readonly catalogHash: string;
+  readonly materialCount: number;
+  readonly materialMappingCount: number;
+  readonly voxelPresentationRealized: boolean;
+  readonly skyPath: string;
+  readonly skyHash: string;
+  readonly skyResourceRealized: boolean;
+  readonly skyBackgroundSelected: boolean;
 }
 
 interface LoadingBayHudFact {
@@ -58,6 +66,14 @@ const EMPTY_READOUT: LoadingBayHudSnapshot = {
   lifecycle: "",
   admittedSteps: 0,
   droppedSteps: 0,
+  catalogHash: "",
+  materialCount: 0,
+  materialMappingCount: 0,
+  voxelPresentationRealized: false,
+  skyPath: "",
+  skyHash: "",
+  skyResourceRealized: false,
+  skyBackgroundSelected: false,
 };
 
 /** A disposable DOM readout over the immutable C# Engine UI projection. */
@@ -163,6 +179,9 @@ const EMPTY_READOUT: LoadingBayHudSnapshot = {
             {{ snapshot().effectsMuted ? "MUTED" : snapshot().effectsVolume }}
             · ADMITTED {{ snapshot().admittedSteps }} · DROPPED STEPS
             {{ snapshot().droppedSteps }}
+            · MATERIALS {{ snapshot().materialCount }} / MAP
+            {{ snapshot().materialMappingCount }} · SKY
+            {{ snapshot().skyResourceRealized && snapshot().skyBackgroundSelected ? snapshot().skyPath : "UNREALIZED" }}
             @if (snapshot().animationCue) {
               · CUE {{ snapshot().animationCue }}
             }
@@ -224,6 +243,8 @@ function readHudSnapshot(envelope: LoadingBayHudProjectionEnvelope): LoadingBayH
   const effectsVolume = finite(value.effectsVolume);
   const admittedSteps = finite(value.admittedSteps);
   const droppedSteps = finite(value.droppedSteps);
+  const materialCount = finite(value.materialCount);
+  const materialMappingCount = finite(value.materialMappingCount);
   if (
     health === null ||
     armor === null ||
@@ -238,12 +259,20 @@ function readHudSnapshot(envelope: LoadingBayHudProjectionEnvelope): LoadingBayH
     effectsVolume === null ||
     admittedSteps === null ||
     droppedSteps === null ||
+    materialCount === null ||
+    materialMappingCount === null ||
     typeof value.complete !== "boolean" ||
     typeof value.exitVisibility !== "boolean" ||
     typeof value.animationCue !== "string" ||
     typeof value.updateMode !== "string" ||
     typeof value.lifecycle !== "string" ||
     typeof value.effectsMuted !== "boolean" ||
+    typeof value.catalogHash !== "string" ||
+    typeof value.voxelPresentationRealized !== "boolean" ||
+    typeof value.skyPath !== "string" ||
+    typeof value.skyHash !== "string" ||
+    typeof value.skyResourceRealized !== "boolean" ||
+    typeof value.skyBackgroundSelected !== "boolean" ||
     !Array.isArray(value.facts) ||
     !value.facts.every(isHudFact)
   ) {
@@ -270,6 +299,14 @@ function readHudSnapshot(envelope: LoadingBayHudProjectionEnvelope): LoadingBayH
     lifecycle: value.lifecycle,
     admittedSteps,
     droppedSteps,
+    catalogHash: value.catalogHash,
+    materialCount,
+    materialMappingCount,
+    voxelPresentationRealized: value.voxelPresentationRealized,
+    skyPath: value.skyPath,
+    skyHash: value.skyHash,
+    skyResourceRealized: value.skyResourceRealized,
+    skyBackgroundSelected: value.skyBackgroundSelected,
   };
 }
 

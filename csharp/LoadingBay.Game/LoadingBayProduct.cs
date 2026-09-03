@@ -44,7 +44,11 @@ public sealed class LoadingBayProduct : IEngineProduct, IDebugCommandModuleSourc
         ILoadingBaySession? session = null;
         try
         {
-            skyBackground = new LoadingBaySkyBackground(context.Engine.Appearance, context.Engine.CameraView);
+            skyBackground = new LoadingBaySkyBackground(
+                context.Engine.Content,
+                context.Content,
+                context.Engine.Appearance,
+                context.Engine.CameraView);
             _skyBackground = skyBackground;
             animation = new LoadingBayExitButtonAnimation(
                 context.Engine.Appearance,
@@ -53,7 +57,7 @@ public sealed class LoadingBayProduct : IEngineProduct, IDebugCommandModuleSourc
             _exitButtonAnimation = animation;
             presentation = new LoadingBayExitPresentation(context.Engine.Presentation, LoadingBayTuning.E1M1);
             _exitPresentation = presentation;
-            _sessionFactory = () => CreateSession(context, presentation, animation);
+            _sessionFactory = () => CreateSession(context, presentation, animation, skyBackground);
             session = _sessionFactory();
             session.ActivateSharedRealizations();
             session.Publish();
@@ -293,12 +297,14 @@ public sealed class LoadingBayProduct : IEngineProduct, IDebugCommandModuleSourc
     private static ILoadingBaySession CreateSession(
         ProductCreateContext context,
         LoadingBayExitPresentation presentation,
-        LoadingBayExitButtonAnimation animation)
+        LoadingBayExitButtonAnimation animation,
+        LoadingBaySkyBackground skyBackground)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(presentation);
         ArgumentNullException.ThrowIfNull(animation);
-        return new LoadingBaySession(context.Engine, context.Content, presentation, animation);
+        ArgumentNullException.ThrowIfNull(skyBackground);
+        return new LoadingBaySession(context.Engine, context.Content, presentation, animation, skyBackground.Readout);
     }
 
     private static EntityWorldDebugModule CreateEntityWorldDebugModule()
@@ -364,7 +370,9 @@ public sealed class LoadingBayProduct : IEngineProduct, IDebugCommandModuleSourc
 
     private string DebugReadout()
     {
-        LoadingBayReadout readout = RequireSession().Readout();
+        ILoadingBaySession session = RequireSession();
+        LoadingBayReadout readout = session.Readout();
+        LoadingBayEngineServiceReadout services = session.EngineReadout();
         LoadingBayPlayerSnapshot player = readout.PlayerState;
         return string.Join(';',
             $"lifecycle={(_shutdown ? "shutdown" : !_started ? "created" : _paused ? "paused" : "running")}",
@@ -384,7 +392,20 @@ public sealed class LoadingBayProduct : IEngineProduct, IDebugCommandModuleSourc
             $"facts={readout.Facts.Length}",
             $"latestFact={(readout.Facts.Length == 0 ? "none" : readout.Facts[^1].GetType().Name)}",
             $"droppedFacts={readout.DroppedFacts}",
-            $"pendingSchedules={readout.PendingSchedules}");
+            $"pendingSchedules={readout.PendingSchedules}",
+            $"catalogPath={services.VoxelScene.CatalogPath}",
+            $"catalogHash={services.VoxelScene.CatalogHash}",
+            $"catalogMaterials={services.VoxelScene.MaterialCount}",
+            $"catalogBoundMaterials={services.VoxelScene.BoundMaterialCount}",
+            $"catalogMappings={services.VoxelScene.MappingCount}",
+            $"voxelPresentation={services.VoxelScene.Realized}",
+            $"voxelChunks={services.VoxelScene.SceneChunkCount}",
+            $"skyPath={services.Sky.SourcePath}",
+            $"skyHash={services.Sky.SourceHash}",
+            $"skyBytes={services.Sky.SourceByteLength}",
+            $"skyHandle={services.Sky.ResourceHandle}",
+            $"skyResource={services.Sky.ResourceRealized}",
+            $"skySelected={services.Sky.BackgroundSelected}");
     }
 
     private static string Vector(Vector3 value) => string.Create(CultureInfo.InvariantCulture, $"{value.X:R},{value.Y:R},{value.Z:R}");

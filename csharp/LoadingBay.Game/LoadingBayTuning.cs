@@ -58,7 +58,9 @@ internal sealed record LoadingBayTuning(
     internal static LoadingBayTuning E1M1 { get; } = new(
         100, 200, 0, 200, 10, 32, MaximumPickupBindings: 78, MaximumPickupFactReadback: 156, MaximumSpatialEntityBindings: 94, PlayerPickupHalfExtents: new Vector3(.25f, .5f, .25f), ContentIdentity: "doom-e1m1",
         MovementSpeed: 6f,
-        LookDegreesPerUnit: 12f,
+        // Browser pointer deltas are physical CSS pixels. Keep the sensitivity in
+        // authored product tuning so a normal gesture produces a readable turn.
+        LookDegreesPerUnit: 0.12f,
         // Canonical player node from the committed E1M1 project. Spatial receives a
         // character center, so retain the authored base and conversion inputs separately.
         AuthoredPlayerPosition: new Vector3(114f, 9.5f, 78f),

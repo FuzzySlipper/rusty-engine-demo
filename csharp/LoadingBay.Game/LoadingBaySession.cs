@@ -24,6 +24,7 @@ internal sealed class LoadingBaySession : ILoadingBaySession, ILoadingBayDebugSe
     private ProductContent? _productContent;
     private LoadingBayExitPresentation? _exitPresentation;
     private LoadingBayExitButtonAnimation? _exitButtonAnimation;
+    private LoadingBaySkyReadout _skyReadout;
     private bool _sharedRealizationsActive;
     private readonly Queue<LoadingBayFact> _journal = new();
     private readonly Queue<Exception> _retiredProjectionFailures = new();
@@ -71,15 +72,16 @@ internal sealed class LoadingBaySession : ILoadingBaySession, ILoadingBayDebugSe
         IEngineContext engine,
         ProductContent content,
         LoadingBayExitPresentation exitPresentation,
-        LoadingBayExitButtonAnimation exitButtonAnimation)
+        LoadingBayExitButtonAnimation exitButtonAnimation,
+        LoadingBaySkyReadout skyReadout)
         : this()
     {
         ProductStateStore<LoadingBaySnapshot>? store = null;
         try
         {
             store = new ProductStateStore<LoadingBaySnapshot>(engine, "loading-bay", new LoadingBaySnapshotCodec());
-            _engineContext = engine; _productContent = content; _exitPresentation = exitPresentation; _exitButtonAnimation = exitButtonAnimation;
-            _engineServices = new LoadingBayEngineServices(engine, content, _tuning, _entities, _player, exitPresentation, exitButtonAnimation);
+            _engineContext = engine; _productContent = content; _exitPresentation = exitPresentation; _exitButtonAnimation = exitButtonAnimation; _skyReadout = skyReadout;
+            _engineServices = new LoadingBayEngineServices(engine, content, _tuning, _entities, _player, exitPresentation, exitButtonAnimation, skyReadout);
             _playerSnapshot = _engineServices.CapturePlayer();
             _store = store;
         }
@@ -165,6 +167,9 @@ internal sealed class LoadingBaySession : ILoadingBaySession, ILoadingBayDebugSe
     internal LoadingBayReadout Readout() => new(_player, _hasFacts ? _facts : default, _health.Current.Raw, _armor.Current.Raw, _armorProtection, BulletQuantity(), ShellQuantity(), OwnedWeaponIds(), EquippedWeaponId(), WeaponCooldowns(), _playerSnapshot, PickupSnapshots(), ActorReadouts(), _complete, _scheduler.Readout.Pending, _tuning, _journal.ToArray(), _dropped);
 
     LoadingBayReadout ILoadingBaySession.Readout() => Readout();
+
+    LoadingBayEngineServiceReadout ILoadingBaySession.EngineReadout()
+        => _engineServices?.Readout ?? LoadingBayEngineServiceReadout.Empty;
 
     EntityWorld ILoadingBayDebugSession.DebugEntityWorld => _engineServices?.EntityWorld ?? _entities;
 
@@ -647,7 +652,7 @@ internal sealed class LoadingBaySession : ILoadingBaySession, ILoadingBayDebugSe
         try
         {
             BootstrapCanonicalEntities(projection);
-            return new LoadingBayEngineServices(_engineContext, _productContent, _tuning, projection, _player, _exitPresentation, _exitButtonAnimation, ownsProjectionEntities: true);
+            return new LoadingBayEngineServices(_engineContext, _productContent, _tuning, projection, _player, _exitPresentation, _exitButtonAnimation, _skyReadout, ownsProjectionEntities: true);
         }
         catch
         {

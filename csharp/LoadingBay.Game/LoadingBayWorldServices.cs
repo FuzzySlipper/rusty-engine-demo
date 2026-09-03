@@ -67,7 +67,13 @@ internal sealed class LoadingBayWorldServices : IDisposable
             _presentation.Update(perception);
             _animation.Publish(readout.Complete);
         }
-        return new LoadingBayEngineServiceReadout(perception, _presentation.Readout, _animation.Readout, _audio.Readout);
+        return new LoadingBayEngineServiceReadout(
+            perception,
+            _presentation.Readout,
+            _animation.Readout,
+            _audio.Readout,
+            LoadingBayVoxelSceneReadout.Empty,
+            LoadingBaySkyReadout.Empty);
     }
 
     internal void ActivateSharedRealizations()
@@ -434,4 +440,19 @@ internal readonly record struct LoadingBayAnimationReadout(
 /// <summary>Bounded product-local checkpoint used only around Restart's shared animation reset.</summary>
 internal readonly record struct LoadingBayExitButtonAnimationCheckpoint(bool CompletionObserved, LoadingBayAnimationReadout Readout);
 internal readonly record struct LoadingBayExitPresentationCheckpoint(LoadingBayPerceptionReadout Observation, PresentationFactsReadout Readout);
-internal readonly record struct LoadingBayEngineServiceReadout(LoadingBayPerceptionReadout Perception, PresentationFactsReadout Presentation, LoadingBayAnimationReadout Animation, AudioBusReadout Audio);
+internal readonly record struct LoadingBayEngineServiceReadout(
+    LoadingBayPerceptionReadout Perception,
+    PresentationFactsReadout Presentation,
+    LoadingBayAnimationReadout Animation,
+    AudioBusReadout Audio,
+    LoadingBayVoxelSceneReadout VoxelScene,
+    LoadingBaySkyReadout Sky)
+{
+    internal static LoadingBayEngineServiceReadout Empty => new(
+        default,
+        default,
+        default,
+        default,
+        LoadingBayVoxelSceneReadout.Empty,
+        LoadingBaySkyReadout.Empty);
+}

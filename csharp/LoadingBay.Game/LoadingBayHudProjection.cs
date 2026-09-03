@@ -38,12 +38,37 @@ internal sealed class LoadingBayHudProjection : IDisposable
             ("commandSequence", value.Number(readout.PlayerState.Continuation?.Motion.LastCommandSequence ?? 0)),
             ("continuationGeneration", value.Number(readout.PlayerState.Continuation?.SourceGeneration ?? 0)));
         uint catalog = value.Object(
+            ("path", value.String(services.VoxelScene.CatalogPath)),
+            ("canonicalHash", value.String(services.VoxelScene.CatalogHash)),
+            ("entryCount", value.Number(services.VoxelScene.CatalogEntryCount)),
             ("programs", value.Number(LoadingBayE1M1SemanticCatalog.ProgramDescriptors.Length)),
             ("pickups", value.Number(LoadingBayE1M1SemanticCatalog.Pickups.Length)),
             ("enemies", value.Number(LoadingBayE1M1SemanticCatalog.Enemies.Length)),
             ("encounters", value.Number(LoadingBayE1M1SemanticCatalog.Encounters.Length)),
             ("doors", value.Number(LoadingBayE1M1SemanticCatalog.Doors.Length)),
-            ("hazards", value.Number(LoadingBayE1M1SemanticCatalog.Hazards.Length)));
+            ("hazards", value.Number(LoadingBayE1M1SemanticCatalog.Hazards.Length)),
+            ("materialCount", value.Number(services.VoxelScene.MaterialCount)),
+            ("boundMaterialCount", value.Number(services.VoxelScene.BoundMaterialCount)),
+            ("mappingCount", value.Number(services.VoxelScene.MappingCount)),
+            ("mappingSourceRevision", value.Number(services.VoxelScene.MappingSourceRevision)),
+            ("mappingMeshRevision", value.Number(services.VoxelScene.MappingMeshRevision)),
+            ("sceneSourceRevision", value.Number(services.VoxelScene.SceneSourceRevision)),
+            ("sceneMeshRevision", value.Number(services.VoxelScene.SceneMeshRevision)),
+            ("sceneChunkCount", value.Number(services.VoxelScene.SceneChunkCount)),
+            ("realized", value.Bool(services.VoxelScene.Realized)));
+        uint materials = value.Array(services.VoxelScene.Materials.Select(material => value.Object(
+            ("id", value.String(material.MaterialId)),
+            ("hash", value.String(material.MaterialHash)),
+            ("slot", value.Number(material.MaterialSlot)),
+            ("textureId", value.String(material.TextureId)),
+            ("textureHash", value.String(material.TextureHash)))).ToArray());
+        uint sky = value.Object(
+            ("path", value.String(services.Sky.SourcePath)),
+            ("hash", value.String(services.Sky.SourceHash.ToString())),
+            ("byteLength", value.Number(services.Sky.SourceByteLength)),
+            ("resourceHandle", value.Number(services.Sky.ResourceHandle)),
+            ("resourceRealized", value.Bool(services.Sky.ResourceRealized)),
+            ("backgroundSelected", value.Bool(services.Sky.BackgroundSelected)));
         uint programs = value.Array(LoadingBayE1M1SemanticCatalog.ProgramDescriptors.Select(program => value.Object(
             ("id", value.String(program.Id)), ("family", value.String(program.Family.ToString())), ("sourceIndex", value.Number(program.SourceIndex)), ("bindingShape", value.String(program.BindingShape.ToString())))).ToArray());
         uint pickupBindings = value.Array(readout.Pickups.Select(pickup => value.Object(
@@ -76,6 +101,14 @@ internal sealed class LoadingBayHudProjection : IDisposable
             ("content", value.String(readout.Tuning.ContentIdentity)),
             ("projectPath", value.String(projectPath)),
             ("voxelPath", value.String(voxelPath)),
+            ("catalogHash", value.String(services.VoxelScene.CatalogHash)),
+            ("materialCount", value.Number(services.VoxelScene.MaterialCount)),
+            ("materialMappingCount", value.Number(services.VoxelScene.MappingCount)),
+            ("voxelPresentationRealized", value.Bool(services.VoxelScene.Realized)),
+            ("skyPath", value.String(services.Sky.SourcePath)),
+            ("skyHash", value.String(services.Sky.SourceHash.ToString())),
+            ("skyResourceRealized", value.Bool(services.Sky.ResourceRealized)),
+            ("skyBackgroundSelected", value.Bool(services.Sky.BackgroundSelected)),
             ("health", value.Number(readout.Health)),
             ("armor", value.Number(readout.Armor)),
             ("armorProtection", value.String(readout.ArmorProtection.Mode.ToString())),
@@ -100,6 +133,8 @@ internal sealed class LoadingBayHudProjection : IDisposable
             ("programBindings", programs),
             ("pickupBindings", pickupBindings),
             ("enemyBindings", enemyBindings),
+            ("materials", materials),
+            ("sky", sky),
             ("weaponCooldowns", cooldowns),
             ("player", player),
             ("pendingSchedules", value.Number(readout.PendingSchedules)),

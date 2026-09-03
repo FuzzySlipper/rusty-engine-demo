@@ -20,6 +20,9 @@ internal interface ILoadingBaySession : IDisposable
 
     LoadingBayReadout Readout();
 
+    /// <summary>Returns copied Engine material/sky realization diagnostics for live debugging.</summary>
+    LoadingBayEngineServiceReadout EngineReadout() => LoadingBayEngineServiceReadout.Empty;
+
     LoadingBayReceipt DeveloperSetTrack(ulong generation, string track, int value, string correlation);
 
 }
