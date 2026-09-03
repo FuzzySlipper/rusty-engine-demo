@@ -621,7 +621,10 @@ internal sealed class LoadingBayEncounterCoordinator
                 _player.Session,
                 new[] { new PerceptionObserver(encounter.EntityId, encounter.Translation, Vector3.UnitZ, encounter.ActivationRadius, -1d, 1d) },
                 new[] { new PerceptionTarget(_playerEntity.Value, _player.Position) },
-                ReadOnlyMemory<SpatialEntityCollider>.Empty));
+                ReadOnlyMemory<SpatialEntityCollider>.Empty,
+                0,
+                0,
+                64));
             bool inRange = false;
             foreach (PerceptionPair pair in readout.Pairs.Span)
                 if (pair.Observer == encounter.EntityId && pair.Target == _playerEntity.Value) { inRange = true; break; }
@@ -743,7 +746,13 @@ internal sealed class LoadingBayCombatCoordinator : IDisposable
             return new PerceptionObserver(enemy.EntityId, origin, forward, enemy.SightRange, -1d, 1d);
         }).ToArray();
         PerceptionReadoutLeaseReceipt receipt = _perception.QueryVisibility(new PerceptionQueryRequest(
-            _player.Session, observers, new[] { new PerceptionTarget(_playerEntity.Value, _player.Position) }, ReadOnlyMemory<SpatialEntityCollider>.Empty));
+            _player.Session,
+            observers,
+            new[] { new PerceptionTarget(_playerEntity.Value, _player.Position) },
+            ReadOnlyMemory<SpatialEntityCollider>.Empty,
+            0,
+            0,
+            64));
         if (receipt.SelectedObservers != (uint)observers.Length || receipt.SelectedTargets != 1 || receipt.Pairs.Length > observers.Length)
             throw new InvalidOperationException("Engine Perception did not retain the bounded E1M1 enemy observation set.");
         HashSet<ulong> returnedObservers = [];
@@ -1207,8 +1216,14 @@ internal sealed class LoadingBayWorldInteractionCoordinator : IDisposable
         LoadingBayE1M1ExitDefinition[] exits = LoadingBayE1M1SemanticCatalog.Exits;
         PerceptionTarget[] targets = doors.Select(value => new PerceptionTarget(value.EntityId, value.ClosedTranslation))
             .Concat(exits.Select(value => new PerceptionTarget(value.EntityId, value.Translation))).ToArray();
-        PerceptionReadoutLeaseReceipt receipt = _perception.QueryVisibility(new PerceptionQueryRequest(_session,
-            new[] { player.CreatePerceptionObserver(_player.Value, LoadingBayTuning.E1M1) }, targets, ReadOnlyMemory<SpatialEntityCollider>.Empty));
+        PerceptionReadoutLeaseReceipt receipt = _perception.QueryVisibility(new PerceptionQueryRequest(
+            _session,
+            new[] { player.CreatePerceptionObserver(_player.Value, LoadingBayTuning.E1M1) },
+            targets,
+            ReadOnlyMemory<SpatialEntityCollider>.Empty,
+            0,
+            0,
+            64));
         if (receipt.SelectedObservers != 1 || receipt.SelectedTargets != targets.Length || receipt.Pairs.Length != targets.Length) throw new InvalidOperationException("Engine Perception returned an incomplete E1M1 use query.");
         PerceptionPair[] candidates = receipt.Pairs.ToArray().Where(pair => pair.Kind == PerceptionPairKind.Visible)
             .Where(pair => doors.Any(door => door.EntityId == pair.Target && pair.Distance <= door.ActivationRadius) || exits.Any(exit => exit.EntityId == pair.Target && pair.Distance <= exit.ActivationRadius))

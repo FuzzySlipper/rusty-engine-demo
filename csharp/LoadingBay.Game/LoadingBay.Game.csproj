@@ -4,10 +4,41 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <EngineRoot Condition="'$(EngineRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../../rusty-engine'))</EngineRoot>
+    <RustyEngineProductEntryType>LoadingBay.Game.LoadingBayProduct</RustyEngineProductEntryType>
+    <RustyEngineProductId>loading-bay.e1m1</RustyEngineProductId>
+    <RustyEngineProductTitle>Loading Bay — Doom E1M1</RustyEngineProductTitle>
+    <RustyEngineProductUiRoot>$(MSBuildThisFileDirectory)../../dist/apps/loading-bay/browser</RustyEngineProductUiRoot>
+    <RustyEngineProductContentRoot>$(MSBuildThisFileDirectory)../../content</RustyEngineProductContentRoot>
+    <RustyEngineWatchPaths>$(MSBuildProjectDirectory);$(RustyEngineProductUiRoot);$(RustyEngineProductContentRoot)</RustyEngineWatchPaths>
+    <RustyEngineProductUiEntry>main.js</RustyEngineProductUiEntry>
+    <RustyEngineProductUiAssets>assets</RustyEngineProductUiAssets>
+    <RustyEngineProductUiProjectionStream>loading-bay.hud</RustyEngineProductUiProjectionStream>
+    <RustyEngineProductUiProjectionContract>loading-bay.hud.snapshot.v1</RustyEngineProductUiProjectionContract>
+    <RustyEngineProductLifecycleMode>realtime</RustyEngineProductLifecycleMode>
+    <RustyEngineProductFixedStepHz>60</RustyEngineProductFixedStepHz>
+    <RustyEngineProductFixedStepMaxCatchUpSteps>4</RustyEngineProductFixedStepMaxCatchUpSteps>
+    <RustyEnginePackageExcludeAssets Condition="'$(RustyEngineUseSourceDevelopment)' == 'true'">compile;runtime</RustyEnginePackageExcludeAssets>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(EngineRoot)/csharp/Rusty.Engine/Rusty.Engine.csproj" />
+    <PackageReference Include="Rusty.Engine" Version="0.1.0-dev.cabba0f" ExcludeAssets="$(RustyEnginePackageExcludeAssets)" />
+    <RustyEngineProductInputIntent Include="player.move.forward" Value="digital" />
+    <RustyEngineProductInputIntent Include="player.move.left" Value="digital" />
+    <RustyEngineProductInputIntent Include="player.move.backward" Value="digital" />
+    <RustyEngineProductInputIntent Include="player.move.right" Value="digital" />
+    <RustyEngineProductInputIntent Include="player.jump" Value="digital" />
+    <RustyEngineProductInputIntent Include="player.use" Value="digital" />
+    <RustyEngineProductInputIntent Include="player.fire" Value="digital" />
+    <RustyEngineProductInputIntent Include="player.look.x" Value="axis" />
+    <RustyEngineProductInputIntent Include="player.look.y" Value="axis" />
+    <RustyEngineProductInputMapping Include="player.move.forward" Intent="player.move.forward" Trigger="key:key-w:held" />
+    <RustyEngineProductInputMapping Include="player.move.left" Intent="player.move.left" Trigger="key:key-a:held" />
+    <RustyEngineProductInputMapping Include="player.move.backward" Intent="player.move.backward" Trigger="key:key-s:held" />
+    <RustyEngineProductInputMapping Include="player.move.right" Intent="player.move.right" Trigger="key:key-d:held" />
+    <RustyEngineProductInputMapping Include="player.jump" Intent="player.jump" Trigger="key:space:pressed" />
+    <RustyEngineProductInputMapping Include="player.use" Intent="player.use" Trigger="key:key-e:pressed" />
+    <RustyEngineProductInputMapping Include="player.fire" Intent="player.fire" Trigger="pointer-button:primary:pressed" />
+    <RustyEngineProductInputMapping Include="player.look.x" Intent="player.look.x" Trigger="pointer-axis:x" />
+    <RustyEngineProductInputMapping Include="player.look.y" Intent="player.look.y" Trigger="pointer-axis:y" />
   </ItemGroup>
 </Project>

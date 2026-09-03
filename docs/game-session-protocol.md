@@ -1,10 +1,9 @@
 # Loading Bay browser integration
 
-The browser integration is the public Rusty Engine Product Browser Host. It mounts the NativeAOT `LoadingBayProduct`, owns realtime lifecycle/cadence and renderer/canvas lifetime, drains bounded semantic input, and subscribes to product UI projection.
+The matched runtime pack hosts the staged CoreCLR `LoadingBayProduct`. It owns realtime lifecycle/cadence, renderer preload and canvas lifetime, bounded semantic input, and the product UI projection channel.
 
-Loading Bay configures the host with a closed set of E1M1 semantic intents: movement, jump, use, fire, and look axes. The Angular shell may capture and normalize browser events within host bounds, but the C# product and Engine decide how admitted input affects state. The browser cannot send arbitrary product methods, mutate state through HTTP, select a renderer resource, or become a second timing authority.
+`LoadingBay.Game` declares the closed E1M1 semantic intent set: movement, jump, use, fire, and look axes. The runtime pack owns physical-event capture and transport. The C# product and Engine decide how admitted input affects state. The browser cannot send arbitrary product methods, mutate state through HTTP, select a renderer resource, or become a second timing authority.
 
-The read-only UI contract is `loading-bay.hud.snapshot.v1` on `loading-bay.hud`. Its HUD data is copied from the C# product projection and includes only bounded presentation/readout fields. Keep a contract change explicit in C#, shell validation, and focused browser proof.
+The Angular entry exports `mountProductUi`. The runtime shell calls it with the read-only UI context after its host is ready. The contract is `loading-bay.hud.snapshot.v1` on `loading-bay.hud`; its HUD data is copied from the C# product projection and includes only bounded presentation/readout fields. Keep a contract change explicit in C#, shell validation, and focused browser proof.
 
-The host owns transport details behind its public package. Downstream code
-consumes the typed product/UI surface and does not duplicate host plumbing.
+The staged Angular output keeps `main.js` as its declared module entry. It is product UI only; the runtime shell remains the owner of browser bootstrap and transport details.

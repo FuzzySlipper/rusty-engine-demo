@@ -278,7 +278,10 @@ internal sealed class LoadingBayPerceptionProjection
             player.Session,
             new[] { observer },
             new[] { new PerceptionTarget(landmark.EntityId, landmark.Position) },
-            ReadOnlyMemory<SpatialEntityCollider>.Empty));
+            ReadOnlyMemory<SpatialEntityCollider>.Empty,
+            0,
+            0,
+            64));
         if (receipt.SelectedObservers != 1 || receipt.SelectedTargets != 1 || receipt.Pairs.Length != 1 || receipt.VisibilityCasts > 1)
             throw new InvalidOperationException("Engine Perception did not return one bounded E1M1 landmark visibility query.");
 

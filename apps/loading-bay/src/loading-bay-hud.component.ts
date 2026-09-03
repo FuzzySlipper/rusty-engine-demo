@@ -5,8 +5,10 @@ import {
   inject,
   signal,
 } from "@angular/core";
-import type { RustyApplicationUiProjectionEnvelope } from "@rusty-engine/application-host";
-import { ENGINE_APPLICATION } from "./engine-application";
+import {
+  ENGINE_APPLICATION,
+  type LoadingBayHudProjectionEnvelope,
+} from "./engine-application";
 
 interface LoadingBayHudSnapshot {
   readonly health: number;
@@ -200,9 +202,7 @@ export class LoadingBayHudComponent implements OnDestroy {
   }
 }
 
-function readHudSnapshot(
-  envelope: RustyApplicationUiProjectionEnvelope,
-): LoadingBayHudSnapshot | null {
+function readHudSnapshot(envelope: LoadingBayHudProjectionEnvelope): LoadingBayHudSnapshot | null {
   if (
     envelope.stream !== "loading-bay.hud" ||
     envelope.contract !== "loading-bay.hud.snapshot.v1"

@@ -9,7 +9,7 @@ import {
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const auditPath = resolve(repoRoot, "scripts/audit-boundary.mjs");
-const ignoredDirectories = new Set([".git", "dist", "node_modules", "target"]);
+const ignoredDirectories = new Set([".git", "bin", "dist", "node_modules", "obj", "target"]);
 const operationalRoots = [
   "package.json",
   "pnpm-lock.yaml",
@@ -31,6 +31,8 @@ const files = operationalRoots.flatMap((entry) =>
 const forbidden = [
   ["private render-contracts package", "@rusty-engine-demo/render-contracts"],
   ["private renderer-three package", "@rusty-engine-demo/renderer-three"],
+  ["checked NativeAOT composition", "LoadingBay.NativeProduct"],
+  ["downstream Engine root", "EngineRoot"],
 ];
 
 const violations = [];
@@ -138,6 +140,19 @@ for (const relativePath of [
 }
 
 for (const relativePath of [
+  "csharp/LoadingBay.NativeProduct",
+  "apps/loading-bay/src/renderer-preload.ts",
+  "apps/loading-bay/src/startup-error.html",
+  "apps/loading-bay/src/styles.css",
+  "libs/theme",
+  ".gitattributes",
+]) {
+  if (existsSync(resolve(repoRoot, relativePath))) {
+    violations.push(`${relativePath}: superseded host or shell residue must remain absent`);
+  }
+}
+
+for (const relativePath of [
   "engine-source.json",
   "engine-development.json",
   "docs/engine-revision-updates.md",
@@ -161,50 +176,60 @@ for (const scriptName of Object.keys(rootPackage.scripts ?? {})) {
     );
   }
 }
-for (const [label, packageJson] of [["package.json", rootPackage]]) {
-  for (const section of ["dependencies", "devDependencies"]) {
-    for (const dependencyName of Object.keys(packageJson[section] ?? {})) {
-      // The browser may use only Engine's public host artifacts. Gameplay
-      // declarations remain immutable E1M1 content and execution stays C#.
-      const allowedEnginePackages =
-        label === "package.json" &&
-        section === "dependencies" &&
-        [
-          "@rusty-engine/application-host",
-          "@rusty-engine/live-debug-panel-browser",
-          "@rusty-engine/product-browser-host",
-        ].includes(dependencyName);
-      if (
-        dependencyName.startsWith("@rusty-engine/") &&
-        !allowedEnginePackages
-      ) {
-        violations.push(
-          `${label}: downstream ${section} must contain only public Engine host artifacts, not ${dependencyName}`,
-        );
-      }
+for (const section of ["dependencies", "devDependencies"]) {
+  for (const dependencyName of Object.keys(rootPackage[section] ?? {})) {
+    if (dependencyName.startsWith("@rusty-engine/")) {
+      violations.push(
+        `package.json: Engine browser artifacts belong to the matched runtime pack, not ${dependencyName}`,
+      );
     }
   }
 }
-for (const [dependency, location] of [
-  ["@rusty-engine/application-host", "application-host"],
-  ["@rusty-engine/product-browser-host", "product-browser-host"],
+
+const gameProjectPath = resolve(repoRoot, "csharp/LoadingBay.Game/LoadingBay.Game.csproj");
+const gameProject = readFileSync(gameProjectPath, "utf8");
+for (const [label, marker] of [
+  ["packaged Rusty.Engine SDK", '<PackageReference Include="Rusty.Engine" Version="0.1.0-dev.cabba0f"'],
+  ["explicit product entry type", "<RustyEngineProductEntryType>LoadingBay.Game.LoadingBayProduct</RustyEngineProductEntryType>"],
+  ["Angular staged UI root", "<RustyEngineProductUiRoot>$(MSBuildThisFileDirectory)../../dist/apps/loading-bay/browser</RustyEngineProductUiRoot>"],
+  ["E1M1 content root", "<RustyEngineProductContentRoot>$(MSBuildThisFileDirectory)../../content</RustyEngineProductContentRoot>"],
+  ["explicit product watch roots", "<RustyEngineWatchPaths>$(MSBuildProjectDirectory);$(RustyEngineProductUiRoot);$(RustyEngineProductContentRoot)</RustyEngineWatchPaths>"],
+  ["stable Angular staged entry", "<RustyEngineProductUiEntry>main.js</RustyEngineProductUiEntry>"],
+  ["realtime lifecycle", "<RustyEngineProductLifecycleMode>realtime</RustyEngineProductLifecycleMode>"],
+  ["HUD projection declaration", "<RustyEngineProductUiProjectionStream>loading-bay.hud</RustyEngineProductUiProjectionStream>"],
 ]) {
-  if (
-    rootPackage.dependencies?.[dependency] !==
-    `file:../rusty-engine/render/artifacts/${location}`
-  ) {
-  violations.push(
-      `package.json: ${dependency} must use its adjacent bundled Engine artifact`,
-  );
+  if (!gameProject.includes(marker)) {
+    violations.push(`csharp/LoadingBay.Game/LoadingBay.Game.csproj: missing ${label}`);
   }
 }
-if (
-  rootPackage.dependencies?.["@rusty-engine/live-debug-panel-browser"] !==
-  "file:../rusty-engine/studio/artifacts/live-debug-panel"
-) {
-  violations.push(
-    "package.json: @rusty-engine/live-debug-panel-browser must use its adjacent bundled Engine artifact",
-  );
+if (gameProject.includes("ProjectReference") || gameProject.includes("EngineRoot")) {
+  violations.push("csharp/LoadingBay.Game/LoadingBay.Game.csproj: ordinary products must not bind an Engine source project");
+}
+
+const productRunner = readFileSync(resolve(repoRoot, "scripts/run-csharp-product.sh"), "utf8");
+for (const marker of ["cargo run", "RUSTY_ENGINE_ROOT", "LoadingBay.NativeProduct", "--manifest-path"]) {
+  if (productRunner.includes(marker)) {
+    violations.push(`scripts/run-csharp-product.sh: obsolete host launch marker ${marker}`);
+  }
+}
+for (const marker of ["rusty\" dev", "--project \"$game_project\"", "--runtime \"$runtime_pack\""]) {
+  if (!productRunner.includes(marker)) {
+    violations.push(`scripts/run-csharp-product.sh: missing packaged development marker ${marker}`);
+  }
+}
+
+const shellProject = JSON.parse(readFileSync(resolve(repoRoot, "apps/loading-bay/project.json"), "utf8"));
+if (shellProject.targets?.build?.configurations?.production?.outputHashing !== "none") {
+  violations.push("apps/loading-bay/project.json: staged runtime UI must keep the declared main.js entry stable");
+}
+const shellEntry = readFileSync(resolve(repoRoot, "apps/loading-bay/src/main.ts"), "utf8");
+if (!shellEntry.includes("export async function mountProductUi")) {
+  violations.push("apps/loading-bay/src/main.ts: runtime shell entry must export mountProductUi");
+}
+for (const marker of ["mountProductBrowserHost", "createProductBrowser", "loadRendererPreloadInitialContent"]) {
+  if (shellEntry.includes(marker)) {
+    violations.push(`apps/loading-bay/src/main.ts: Engine runtime shell owns ${marker}`);
+  }
 }
 
 if (violations.length > 0) {
@@ -214,7 +239,7 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `downstream boundary audit passed: ${String(files.length)} operational files, C# product ownership, public Engine host artifacts, no private downstream renderer internals`,
+  `downstream boundary audit passed: ${String(files.length)} operational files, packaged C# SDK, runtime-pack-owned host and renderer, no private downstream renderer internals`,
 );
 
 function collect(path) {

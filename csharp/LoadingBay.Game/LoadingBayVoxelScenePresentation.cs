@@ -66,7 +66,15 @@ internal sealed class LoadingBayVoxelScenePresentation : IDisposable
 
                 AuthoredAssetReference texture = surface.ResolvedTexture;
                 AuthoredResolvedEntryLeaseReceipt resolvedTexture = engine.AuthoredContent.ResolveReference(
-                    new AuthoredCatalogResolveRequest(catalog, texture.Id, texture.VersionKind, texture.Version, texture.HasHash, texture.Hash));
+                    new AuthoredCatalogResolveRequest(
+                        catalog,
+                        texture.Id,
+                        texture.VersionKind,
+                        texture.Version,
+                        texture.HasHash,
+                        texture.Hash,
+                        true,
+                        AuthoredFallbackContext.CosmeticSurface));
                 AuthoredCatalogEntryReadout textureEntry = RequireExactlyOneTextureEntry(resolvedTexture.Entry, texture.Id);
                 if (!textureEntry.HasSourcePath || string.IsNullOrWhiteSpace(textureEntry.SourcePath))
                     throw new InvalidOperationException($"Authored texture '{texture.Id}' has no Engine catalog source path.");

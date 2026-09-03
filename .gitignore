@@ -11,5 +11,6 @@
 *.tsbuildinfo
 .DS_Store
 .engine-development/
+.runtime/
 csharp/**/bin/
 csharp/**/obj/

@@ -5,7 +5,6 @@
   "prefix": "red",
   "sourceRoot": "apps/loading-bay/src",
   "tags": ["type:app", "scope:shell"],
-  "implicitDependencies": ["theme"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",
@@ -15,18 +14,7 @@
         "outputPath": "dist/apps/loading-bay",
         "browser": "apps/loading-bay/src/main.ts",
         "index": "apps/loading-bay/src/index.html",
-        "assets": [
-          {
-            "glob": "startup-error.html",
-            "input": "apps/loading-bay/src",
-            "output": "/"
-          }
-        ],
-        "tsConfig": "apps/loading-bay/tsconfig.app.json",
-        "styles": [
-          "libs/theme/src/tokens.css",
-          "apps/loading-bay/src/styles.css"
-        ]
+        "tsConfig": "apps/loading-bay/tsconfig.app.json"
       },
       "configurations": {
         "production": {
@@ -37,7 +25,7 @@
               "maximumError": "14kb"
             }
           ],
-          "outputHashing": "all"
+        "outputHashing": "none"
         },
         "development": {
           "optimization": false,

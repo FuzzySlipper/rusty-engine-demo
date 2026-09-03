@@ -1,7 +1,7 @@
 # Presentation frame
 
-The Product Browser Host owns one Engine canvas. Angular mounts its HUD and failure/loading presentation in the same bounded product frame; it never creates, sizes, or replaces the Engine canvas.
+The matched runtime-pack browser shell owns one Engine canvas. Angular is mounted as its HUD module in the same bounded frame; it never creates, sizes, or replaces the canvas.
 
-Semantic input is accepted only inside that frame. Pointer-look is bounded before it reaches the Engine host, and outside gutters must not move, look, fire, or select a product action. Loading, runtime failure, and HUD readouts remain visible within the frame so a focused browser capture shows the relevant product state without a hidden pane or second window.
+Semantic input is admitted by the runtime shell before it reaches the product. HUD readouts remain copied presentation data. Loading and runtime failures belong to the Engine shell, while the product UI may render its own read-only state without creating a hidden pane, second window, renderer, or loop.
 
 This document describes the supported browser presentation frame.
