@@ -940,7 +940,6 @@ internal sealed class LoadingBaySession : ILoadingBaySession, ILoadingBayDebugSe
     private sealed class PersistenceOnlyContext(IPersistenceService persistence) : IEngineContext
     {
         public IDiagnosticsService Diagnostics => throw new NotSupportedException();
-        public ILookService Look => throw new NotSupportedException();
         public IDynamicsService Dynamics => throw new NotSupportedException();
         public IMotionService Motion => throw new NotSupportedException();
         public IKinematicService Kinematic => throw new NotSupportedException();
@@ -951,7 +950,7 @@ internal sealed class LoadingBaySession : ILoadingBaySession, ILoadingBayDebugSe
         public IVoxelContentService VoxelContent => throw new NotSupportedException();
         public IContentService Content => throw new NotSupportedException();
         public IAuthoredContentService AuthoredContent => throw new NotSupportedException();
-        public IAppearanceService Appearance => throw new NotSupportedException();
+        public IGraphicsService Graphics => throw new NotSupportedException();
         public IPresentationService Presentation => throw new NotSupportedException();
         public IAnimationService Animation => throw new NotSupportedException();
         public IAudioService Audio => throw new NotSupportedException();

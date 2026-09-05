@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 game_project="$repo_root/csharp/LoadingBay.Game/LoadingBay.Game.csproj"
-runtime_pack=${RUSTY_RUNTIME_PACK:-"$repo_root/.runtime/rusty-engine-csharp-pair-0.1.0-dev.5f8d75b528e1-linux-x64/runtime-pack"}
+runtime_pack=${RUSTY_RUNTIME_PACK:-"$repo_root/.runtime/rusty-engine-csharp-pair-0.1.0-dev.cbf35130d06c-linux-x64/runtime-pack"}
 rusty=${RUSTY_BIN:-"$runtime_pack/bin/rusty"}
 live_debug_args=()
 runtime_args=(--runtime "$runtime_pack")

@@ -117,7 +117,7 @@ internal sealed class LoadingBayWorldServices : IDisposable
 /// </summary>
 internal sealed class LoadingBayExitButtonAnimation : IDisposable
 {
-    private readonly IAppearanceService _appearanceService;
+    private readonly IGraphicsService _appearanceService;
     private readonly IAnimationService _animation;
     private readonly LoadingBayE1M1AnimationCue _cue;
     private readonly Appearance _appearance;
@@ -126,7 +126,7 @@ internal sealed class LoadingBayExitButtonAnimation : IDisposable
     private bool _completionObserved;
     private bool _disposed;
 
-    internal LoadingBayExitButtonAnimation(IAppearanceService appearanceService, IAnimationService animation, LoadingBayE1M1AnimationCue cue)
+    internal LoadingBayExitButtonAnimation(IGraphicsService appearanceService, IAnimationService animation, LoadingBayE1M1AnimationCue cue)
     {
         _appearanceService = appearanceService ?? throw new ArgumentNullException(nameof(appearanceService));
         _animation = animation ?? throw new ArgumentNullException(nameof(animation));
@@ -218,7 +218,7 @@ internal sealed class LoadingBayExitButtonAnimation : IDisposable
         if (failures is { Count: > 0 }) throw new AggregateException(failures);
     }
 
-    private AppearanceFact AppearanceFact() => new(_cue.ObjectId, _cue.Transform, _appearance, true, RenderLayer.Scene);
+    private AppearanceFact AppearanceFact() => new(_cue.ObjectId, false, 0, _cue.Transform, _appearance, true, RenderLayer.Scene);
 
     private AnimationPlaybackRequest SampleOff() => new(
         _instance, AnimationPlaybackKind.Sample, _cue.OffClip, AnimationLoopMode.Once,

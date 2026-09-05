@@ -47,11 +47,11 @@ public sealed class LoadingBayProduct : IEngineProduct, IDebugCommandModuleSourc
             skyBackground = new LoadingBaySkyBackground(
                 context.Engine.Content,
                 context.Content,
-                context.Engine.Appearance,
+                context.Engine.Graphics,
                 context.Engine.CameraView);
             _skyBackground = skyBackground;
             animation = new LoadingBayExitButtonAnimation(
-                context.Engine.Appearance,
+                context.Engine.Graphics,
                 context.Engine.Animation,
                 LoadingBayTuning.E1M1.ExitButtonCue);
             _exitButtonAnimation = animation;

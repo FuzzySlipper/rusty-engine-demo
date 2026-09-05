@@ -92,10 +92,10 @@ internal sealed class LoadingBayVoxelScenePresentation : IDisposable
                 if (!surface.ResolvedTexture.HasHash || surface.ResolvedTexture.Hash != textureEntry.Hash)
                     throw new InvalidOperationException($"Authored texture '{texture.Id}' lost its retained provenance hash during resolution.");
 
-                RenderResourceInfo resource = engine.Appearance.OpenResource(new RenderResourceRequest(textureEntry.SourcePath));
+                RenderResourceInfo resource = engine.Graphics.OpenResource(new RenderResourceRequest(textureEntry.SourcePath));
                 if (resource.Kind != RenderResourceKind.Texture || resource.ByteLength == 0 || resource.Handle.Value == 0)
                     throw new InvalidOperationException($"Engine could not open authored texture '{texture.Id}' as a usable texture resource.");
-                Material appearanceMaterial = engine.Appearance.CreateAuthoredMaterial(
+                Material appearanceMaterial = engine.Graphics.CreateAuthoredMaterial(
                     new AuthoredMaterialAppearanceRequest(catalog, catalogMaterial.EntryId, resource.Handle));
                 materials.Add(appearanceMaterial);
                 bindings.Add(new VoxelSceneMaterialBinding(paletteRow.MaterialSlot, appearanceMaterial));

@@ -313,7 +313,6 @@ internal sealed class LoadingBayPlayerScene : IDisposable
     private static readonly CameraViewport FullViewport = new(0d, 0d, 1d, 1d);
     private static readonly double RadiansToDegrees = 180d / Math.PI;
     private readonly ISpatialService _spatial;
-    private readonly ILookService _look;
     private readonly ICameraViewService _cameraView;
     private readonly SpatialSession _session;
     private readonly LoadingBayTuning _initialTuning;
@@ -338,7 +337,6 @@ internal sealed class LoadingBayPlayerScene : IDisposable
     internal LoadingBayPlayerScene(IEngineContext engine, LoadingBayTuning tuning)
     {
         _spatial = engine.Spatial;
-        _look = engine.Look;
         _cameraView = engine.CameraView;
         _initialTuning = tuning;
         SpatialSession? session = null;
@@ -347,7 +345,7 @@ internal sealed class LoadingBayPlayerScene : IDisposable
             session = _spatial.CreateSession(new SpatialSessionConfig(tuning.SpatialVoxelSize, tuning.SpatialChunkSize, VoxelSurfaceMode.GreedyCubes));
             _controller = Tune(_spatial.DefaultCharacterControllerConfig(), tuning);
             _position = tuning.InitialPosition;
-            LookReceipt initialLook = _look.Integrate(new LookRequest(
+            LookReceipt initialLook = Look.Integrate(new LookRequest(
                 new LookState(-DegreesToRadians(tuning.InitialYawDegrees), DegreesToRadians(tuning.InitialPitchDegrees)),
                 Vector2.Zero,
                 LookConfig(tuning)));
@@ -400,7 +398,7 @@ internal sealed class LoadingBayPlayerScene : IDisposable
         ThrowIfDisposed();
         if (!Finite(snapshot.Position) || !float.IsFinite(snapshot.Look.YawRadians) || !float.IsFinite(snapshot.Look.PitchRadians))
             throw new InvalidOperationException("Snapshot supplied a non-finite E1M1 player pose or look state.");
-        LookReceipt look = _look.Integrate(new LookRequest(snapshot.Look, Vector2.Zero, LookConfig(tuning)));
+        LookReceipt look = Look.Integrate(new LookRequest(snapshot.Look, Vector2.Zero, LookConfig(tuning)));
         if (look.After != snapshot.Look)
             throw new InvalidOperationException("Snapshot supplied an out-of-policy E1M1 player look state.");
         _position = snapshot.Position;
@@ -520,7 +518,7 @@ internal sealed class LoadingBayPlayerScene : IDisposable
             }
             if (input.Kind == InputEventKind.PointerDelta)
             {
-                LookReceipt integrated = _look.Integrate(new LookRequest(_lookState, new Vector2(input.X, input.Y), LookConfig(tuning)));
+                LookReceipt integrated = Look.Integrate(new LookRequest(_lookState, new Vector2(input.X, input.Y), LookConfig(tuning)));
                 _lookState = integrated.After;
                 _forward = integrated.Forward;
                 continue;

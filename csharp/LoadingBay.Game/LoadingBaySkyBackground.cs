@@ -21,7 +21,7 @@ internal sealed class LoadingBaySkyBackground : IDisposable
     internal LoadingBaySkyBackground(
         IContentService content,
         ProductContent admitted,
-        IAppearanceService appearance,
+        IGraphicsService appearance,
         ICameraViewService cameraView)
     {
         ArgumentNullException.ThrowIfNull(content);
